@@ -11,6 +11,11 @@
     <PackageReference Include="CUE4Parse" Version="1.2.2.202607" />
     <PackageReference Include="CUE4Parse-Conversion" Version="1.2.2.202607" />
     <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.10" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Tooltip\WebDb.html" LogicalName="FellowshipExtractor.Tooltip.WebDb.html" />
   </ItemGroup>
 
 </Project>

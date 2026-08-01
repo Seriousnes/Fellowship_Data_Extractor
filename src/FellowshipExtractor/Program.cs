@@ -20,7 +20,7 @@ catch (MappingException)
         """
         This package uses unversioned properties and no mappings are loaded.
         Set FELLOWSHIP_USMAP to a .usmap file for this build, then retry.
-        Commands that need no mappings: list, cat, raw, registry, tags, constants, locres.
+        Commands that need no mappings: list, cat, raw, registry, tags, constants, locres, webdb.
         """);
     return 2;
 }
@@ -97,6 +97,9 @@ switch (command)
     case "export-all":
         await FellowshipExtractor.Tooltip.ExportAllCommand.RunAsync(options, args[1..]);
         break;
+    case "webdb":
+        await FellowshipExtractor.Tooltip.WebDbCommand.RunAsync(options);
+        break;
     default:
         Console.Error.WriteLine(
             $"""
@@ -113,6 +116,7 @@ switch (command)
                textures <filter> [f] decode matching textures to png (or jpeg, tga, dds)
                tooltip <table> <id>  reconstruct one entity's tooltip from name, text and constants
                export-all [table...]  every entity as one JSONL file with every icon beside it
+               webdb                 that export as one self-contained, searchable HTML page
                probe [sample]        report how many packages parse with current mappings
              """);
         return 1;

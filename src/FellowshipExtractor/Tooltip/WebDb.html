@@ -1,0 +1,1027 @@
+<title>Fellowship Codex</title>
+
+<!--
+  FELLOWSHIP CODEX - page shell.
+
+  This file is the template the `webdb` command fills in. It is an embedded resource of
+  FellowshipExtractor; WebDbCommand substitutes the "__PAYLOAD__" string below for the real
+  payload and writes the result to output/export/tooltips.html. Opened straight from the repo
+  it shows its own no-data state, which is what makes it editable in isolation.
+
+  Page content only: no doctype, html, head, body or meta element appears here or in what the
+  command writes. The publishing wrapper supplies the document. A second document nested inside
+  that one is not additive - the parser drops the tags and reparents this file's head content
+  into the body, where a charset declaration is invalid and ignored.
+
+  Data contract: a single global `const DATA = { entities: [...], icons: {...}, meta: {...} }`.
+  Everything else on this page is generic and never needs editing to accept a new payload.
+
+  Render strategy: chunked append driven by an IntersectionObserver sentinel (48 cards per chunk).
+  Filtering runs over a precomputed lowercase haystack index and never touches the DOM.
+
+  No external request is ever made: icons arrive as data: URIs and there are no webfonts.
+-->
+
+<style>
+  :root {
+    --ground:#eceef1; --surface:#ffffff; --sunken:#f4f6f8;
+    --ink:#11151b; --muted:#5c6673; --faint:#8892a0; --line:#d7dce3;
+    --accent:#a55200; --accent-soft:#f4e7d6;
+    --kept:#126b52; --dropped:#9b3535;
+    --mono: ui-monospace,"SF Mono","Cascadia Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:#0d1015; --surface:#151a21; --sunken:#10151b;
+      --ink:#e4e9ef; --muted:#8a94a2; --faint:#6c7684; --line:#232a33;
+      --accent:#e8a13c; --accent-soft:#2b2216;
+      --kept:#43c39a; --dropped:#e2696e;
+    }
+  }
+
+  :root[data-theme="light"] {
+    --ground:#eceef1; --surface:#ffffff; --sunken:#f4f6f8;
+    --ink:#11151b; --muted:#5c6673; --faint:#8892a0; --line:#d7dce3;
+    --accent:#a55200; --accent-soft:#f4e7d6;
+    --kept:#126b52; --dropped:#9b3535;
+  }
+
+  :root[data-theme="dark"] {
+    --ground:#0d1015; --surface:#151a21; --sunken:#10151b;
+    --ink:#e4e9ef; --muted:#8a94a2; --faint:#6c7684; --line:#232a33;
+    --accent:#e8a13c; --accent-soft:#2b2216;
+    --kept:#43c39a; --dropped:#e2696e;
+  }
+
+  html { scrollbar-gutter: stable; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+    overflow-x: hidden;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  .app { max-width: 1320px; margin: 0 auto; padding: 0 clamp(14px, 3vw, 32px) 96px; }
+
+  /* ---- masthead -------------------------------------------------------- */
+
+  .masthead { padding: clamp(22px, 4vw, 44px) 0 18px; }
+  .cmd { font-family: var(--mono); font-size: 12px; color: var(--faint); letter-spacing: .04em; }
+  .cmd b { color: var(--accent); font-weight: 600; }
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(22px, 4.2vw, 34px);
+    font-weight: 600;
+    letter-spacing: -.03em;
+    line-height: 1.1;
+    margin: 8px 0 0;
+  }
+  .lede { color: var(--muted); margin: 8px 0 0; max-width: 68ch; font-size: 14px; }
+
+  /* ---- sticky chrome --------------------------------------------------- */
+
+  .chrome {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--ground);
+    border-bottom: 1px solid var(--line);
+    margin: 0 0 20px;
+    padding-top: 4px;
+  }
+
+  .tabs {
+    display: flex; gap: 2px;
+    overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: thin;
+    padding-bottom: 1px;
+  }
+  .tabs::-webkit-scrollbar { height: 5px; }
+  .tabs::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+
+  /* position:relative keeps the .sr label's containing block inside .tabs, so the
+     tab strip's overflow clip contains it. Without it the sr span anchors to the
+     sticky .chrome, escapes the clip and widens the whole page. */
+  .tab {
+    position: relative;
+    appearance: none; background: transparent; border: 0;
+    border-bottom: 2px solid transparent;
+    font-family: var(--mono); font-size: 13px; color: var(--muted);
+    padding: 9px 13px 8px; cursor: pointer; white-space: nowrap;
+    display: inline-flex; align-items: baseline; gap: 7px;
+    transition: color .12s ease, border-color .12s ease;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab .n {
+    font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums;
+    background: var(--sunken); border: 1px solid var(--line);
+    border-radius: 999px; padding: 0 6px; line-height: 16px;
+  }
+  .tab[aria-selected="true"] .n { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+  .chrome[data-scope="all"] .tab[aria-selected="true"] { border-bottom-color: var(--line); }
+  .chrome[data-scope="all"] .tabs { opacity: .62; }
+
+  .toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+    padding: 11px 0 12px;
+  }
+
+  .field {
+    position: relative; flex: 1 1 300px; min-width: 0; max-width: 520px;
+    display: flex; align-items: center;
+  }
+  .field svg { position: absolute; left: 11px; width: 14px; height: 14px; color: var(--faint); pointer-events: none; }
+  .field input {
+    width: 100%; font-family: var(--mono); font-size: 13px; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+    padding: 8px 34px 8px 32px; appearance: none;
+  }
+  .field input::placeholder { color: var(--faint); }
+  .field input::-webkit-search-cancel-button { display: none; }
+  .clear {
+    position: absolute; right: 5px; appearance: none; background: transparent;
+    border: 0; color: var(--faint); font-family: var(--mono); font-size: 15px;
+    line-height: 1; padding: 5px 7px; cursor: pointer; border-radius: 3px;
+  }
+  .clear:hover { color: var(--ink); }
+  .clear[hidden] { display: none; }
+
+  .scope {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  .scope input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .switch {
+    width: 30px; height: 17px; border-radius: 999px;
+    background: var(--sunken); border: 1px solid var(--line);
+    position: relative; flex: none; transition: background .14s ease, border-color .14s ease;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--faint); transition: transform .14s ease, background .14s ease;
+  }
+  .scope input:checked + .switch { background: var(--accent-soft); border-color: var(--accent); }
+  .scope input:checked + .switch::after { transform: translateX(13px); background: var(--accent); }
+  .scope input:focus-visible + .switch { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .scope:hover { color: var(--ink); }
+
+  .readout {
+    font-family: var(--mono); font-size: 12px; color: var(--faint);
+    font-variant-numeric: tabular-nums; margin-left: auto; white-space: nowrap;
+  }
+  .readout b { color: var(--ink); font-weight: 600; }
+  .readout .scope-word { color: var(--accent); }
+
+  /* ---- grid ------------------------------------------------------------ */
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+    gap: 14px;
+    align-items: start;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 15px 16px 14px;
+    display: flex; flex-direction: column; gap: 11px;
+    min-width: 0;
+  }
+
+  .card-head { display: grid; grid-template-columns: 52px 1fr; gap: 13px; align-items: start; }
+
+  .ico {
+    width: 52px; height: 52px; flex: none;
+    border-radius: 3px; border: 1px solid var(--line); background: var(--sunken);
+    display: grid; place-items: center; overflow: hidden;
+  }
+  /* contain, not cover: 35 of the thumbnails are 66x96 hero portraits and cover crops them. */
+  .ico img { width: 100%; height: 100%; display: block; object-fit: contain; }
+  .ico-none {
+    font-family: var(--mono); font-size: 15px; font-weight: 600;
+    color: var(--faint); letter-spacing: .04em;
+  }
+  .ico.missing { border-style: dashed; }
+  .ico.missing .ico-none { color: var(--dropped); font-size: 11px; }
+
+  .card-id { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .card-name {
+    font-family: var(--mono); font-size: 16px; font-weight: 600;
+    letter-spacing: -.01em; line-height: 1.25; margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .card-sub {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--faint);
+    line-height: 1.4;
+  }
+  .card-sub .tbl { color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+  .card-sub .nid { font-variant-numeric: tabular-nums; }
+  .card-sub code { overflow-wrap: anywhere; }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tags span {
+    font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 1px 8px; line-height: 1.5; white-space: nowrap;
+  }
+  .tags span.type { color: var(--accent); background: var(--accent-soft); border-color: transparent; font-weight: 600; }
+  .tags span.more { color: var(--faint); border-style: dashed; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 4px 22px; margin: 0; }
+  .chips div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .chips dt {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--faint);
+  }
+  .chips dd {
+    font-family: var(--mono); font-size: 16px; margin: 0;
+    font-variant-numeric: tabular-nums; line-height: 1.2; color: var(--ink);
+  }
+  .chips dd small { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+  .desc {
+    font-size: 13.5px; line-height: 1.6; color: var(--muted);
+    white-space: pre-line; overflow-wrap: anywhere; min-width: 0;
+  }
+  .desc.clipped {
+    max-height: 11.2em; overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 74%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 74%, transparent 100%);
+  }
+
+  /* The fade only ever accompanies this control: 119 of the 639 descriptions are longer than the
+     clip and 12 resolved percentages sit below the mask, so the hidden text has to be reachable.
+     align-self keeps it to its own width inside the column flex of .card and .nested. */
+  .expand {
+    appearance: none; align-self: flex-start;
+    background: transparent; border: 0; padding: 0;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--accent); cursor: pointer;
+    border-bottom: 1px dotted currentColor; line-height: 1.5;
+  }
+  .expand:hover { color: var(--ink); }
+
+  .rt-warning { color: var(--accent); font-weight: 600; }
+  .rt-absorb  { color: var(--ink); font-weight: 600; }
+  .rt-effect  { color: var(--kept); font-weight: 600; }
+  .rt-debuff  { color: var(--dropped); font-weight: 600; }
+  .rt-mana    { color: var(--kept); }
+  .rt-heal    { color: var(--kept); font-weight: 600; }
+  .rt-buff    { color: var(--kept); }
+  .rt-bold    { color: var(--ink); font-weight: 600; }
+  .rt-italic  { font-style: italic; }
+  .rt-grey    { color: var(--faint); font-style: italic; }
+  .rt-special { color: var(--accent); font-style: italic; }
+  .rt-unknown { color: var(--ink); }
+
+  .sub {
+    color: var(--accent); font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px dotted currentColor;
+    cursor: help;
+  }
+  .tok {
+    font-family: var(--mono); font-size: .92em; color: var(--faint);
+    background: var(--sunken); border: 1px solid var(--line);
+    border-radius: 3px; padding: 0 3px; cursor: help;
+  }
+
+  .note {
+    font-size: 12.5px; line-height: 1.55; color: var(--faint);
+    border-left: 2px solid var(--line); padding-left: 10px;
+    white-space: pre-line; overflow-wrap: anywhere;
+  }
+
+  .nested {
+    border-left: 2px solid var(--accent); background: var(--sunken);
+    border-radius: 0 3px 3px 0; padding: 9px 12px;
+    display: flex; flex-direction: column; gap: 5px; min-width: 0;
+  }
+  .nested > .lbl {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--faint);
+  }
+  .nested > .nm { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); overflow-wrap: anywhere; }
+
+  .sect { display: flex; flex-direction: column; gap: 5px; }
+  .sect > .lbl {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--faint);
+  }
+  .list { display: flex; flex-wrap: wrap; gap: 5px; }
+  .list span {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    background: var(--sunken); border: 1px solid var(--line);
+    border-radius: 3px; padding: 1px 7px; overflow-wrap: anywhere;
+  }
+  .list span em { font-style: normal; color: var(--faint); }
+
+  .foot {
+    display: flex; flex-wrap: wrap; gap: 4px 12px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--faint);
+    border-top: 1px solid var(--line); padding-top: 9px; margin-top: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- empty / end ----------------------------------------------------- */
+
+  .empty {
+    grid-column: 1 / -1;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+    padding: clamp(28px, 6vw, 56px) 24px; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .empty h2 { font-family: var(--mono); font-size: 15px; font-weight: 600; margin: 0; color: var(--ink); }
+  .empty p { margin: 0; color: var(--muted); font-size: 13.5px; max-width: 52ch; }
+  .empty code { font-family: var(--mono); color: var(--accent); overflow-wrap: anywhere; }
+  .empty .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
+  .btn {
+    appearance: none; font-family: var(--mono); font-size: 12px; cursor: pointer;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 4px; padding: 6px 13px;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent-soft); border-color: transparent; color: var(--accent); font-weight: 600; }
+
+  .sentinel { height: 1px; }
+  .endcap {
+    text-align: center; font-family: var(--mono); font-size: 11px;
+    color: var(--faint); letter-spacing: .06em; padding: 26px 0 0;
+  }
+  .endcap[hidden] { display: none; }
+
+  .sr {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+    html { scroll-behavior: auto; }
+  }
+
+  @media (max-width: 620px) {
+    .readout { margin-left: 0; width: 100%; }
+    .chips { gap: 4px 16px; }
+  }
+</style>
+
+<div class="app">
+  <header class="masthead">
+    <div class="cmd"><b>fellowship</b> &rsaquo; extracted entity codex</div>
+    <h1>Fellowship Codex</h1>
+    <p class="lede">
+      Every named entity recovered from the cooked containers, with tooltip text reconstructed and
+      attribute placeholders resolved against each entity&rsquo;s own constants.
+    </p>
+  </header>
+
+  <div class="chrome" id="chrome" data-scope="tab">
+    <div class="tabs" role="tablist" aria-label="Entity type" id="tablist"></div>
+
+    <div class="toolbar">
+      <div class="field">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14" stroke-linecap="round"/>
+        </svg>
+        <input id="q" type="search" autocomplete="off" spellcheck="false"
+               placeholder="Search by name&hellip;" aria-label="Search entities by name"
+               aria-describedby="readout">
+        <button class="clear" id="clear" type="button" aria-label="Clear search" hidden>&times;</button>
+      </div>
+
+      <label class="scope" for="scopeAll">
+        <input type="checkbox" id="scopeAll">
+        <span class="switch" aria-hidden="true"></span>
+        <span>search all tabs</span>
+      </label>
+
+      <div class="readout" id="readout" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <main>
+    <div id="panel" role="tabpanel" tabindex="0">
+      <div class="grid" id="grid"></div>
+      <div class="sentinel" id="sentinel" aria-hidden="true"></div>
+      <p class="endcap" id="endcap" hidden></p>
+    </div>
+  </main>
+</div>
+
+<script id="fellowship-data">
+/* ==========================================================================
+   BEGIN DATA
+
+   The generator swaps the "__PAYLOAD__" string below for one JSON object:
+
+   DATA.entities : flat array. One object per entity, the JSON line from
+                   entities.jsonl verbatim, filtered to rows that HAVE a
+                   displayName, plus a derived `placeholderText` map wherever
+                   the row resolves {Token} substitutions.
+   DATA.icons    : { "<icon filename>": "<data: URI>" }. Keyed by the entity's
+                   `icon` field verbatim, so the key ends in .png while the
+                   value is a WebP thumbnail. Nothing but data: URIs is allowed.
+   DATA.meta     : { generated, source } - shown in the masthead command line.
+
+   Left as a bare string here so this file is a valid page on its own: the shell
+   finds no entities and shows its own no-data state.
+   ========================================================================== */
+
+const DATA = "__PAYLOAD__";
+
+/* ============================== END DATA ================================= */
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---- configuration ---------------------------------------------------- */
+
+  var TABLE_LABELS = {
+    GameplayAbility: "Abilities",
+    GameplayEffect: "Effects",
+    ItemID: "Items",
+    CRAICharacter: "Characters",
+    CRCharacterAugmentationAsset: "Augmentations"
+  };
+  var TABLE_ORDER = Object.keys(TABLE_LABELS);
+
+  var CHUNK = 48;          // cards appended per pass
+  var FILL_MARGIN = 900;   // px of runway kept rendered below the fold
+  var CLIP_CHARS = 300;    // plain-text length past which a description gets faded
+  var uid = 0;             // ids for the aria-controls pairing of a fade and its toggle
+
+  /* ---- rich text -------------------------------------------------------- */
+
+  var ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return ESC[c]; }); }
+
+  var RT_CLASS = {
+    "rt.warning": "rt-warning", "rt.absorb": "rt-absorb", "rt.effect": "rt-effect",
+    "rt.debuff": "rt-debuff", "rt.mana": "rt-mana", "rt.heal": "rt-heal",
+    "rt.buff": "rt-buff", "rt.bold": "rt-bold", "bold": "rt-bold", "b": "rt-bold",
+    "rt.italic": "rt-italic", "i": "rt-italic", "rt.greyitalic": "rt-grey",
+    "rt.grey": "rt-grey", "rt.meikoability1": "rt-special",
+    "rt.meikoability2": "rt-special", "rt.meikoability3": "rt-special"
+  };
+
+  function fmtNum(n) { return typeof n === "number" ? String(Number(n.toPrecision(10))) : String(n); }
+
+  // Substituted text is computed by the generator in decimal, never here: 8.767 * 100 is
+  // 876.6999999999999 in binary floating point and 48 of the coefficients land like that.
+  // Operates on ALREADY-ESCAPED text so the spans we inject survive.
+  function subTokens(escaped, owner) {
+    var text = (owner && owner.placeholderText) || {};
+    var ph = (owner && owner.placeholders) || {};
+    return escaped.replace(/\{([A-Za-z0-9_.]+)\}/g, function (whole, key) {
+      if (typeof text[key] === "string") {
+        var p = ph[key] || {};
+        var formula = p.coefficient != null && p.attribute
+          ? "{" + key + "} = " + p.coefficient + " x " + p.attribute
+          : "{" + key + "}";
+        return '<span class="sub" title="' + esc(formula) + '">' + esc(text[key]) + "</span>";
+      }
+      return '<span class="tok" title="' + esc("unresolved placeholder: " + key) + '">' + whole + "</span>";
+    });
+  }
+
+  // The game's closing tag is "</>", which no HTML parser accepts. Tokenise by hand.
+  // `owner` is the entity the text belongs to, which for a granted ability is the nested
+  // entity and not its parent: an item's tokens live on the ability it grants.
+  function richText(text, owner) {
+    var src = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+    var re = /<\/>|<([A-Za-z][A-Za-z0-9._-]*)>/g;
+    var out = "", last = 0, depth = 0, m;
+    while ((m = re.exec(src)) !== null) {
+      out += subTokens(esc(src.slice(last, m.index)), owner);
+      last = re.lastIndex;
+      if (m[0] === "</>") {
+        if (depth > 0) { out += "</span>"; depth--; }
+      } else {
+        out += '<span class="rt ' + (RT_CLASS[m[1].toLowerCase()] || "rt-unknown") + '">';
+        depth++;
+      }
+    }
+    out += subTokens(esc(src.slice(last)), owner);
+    while (depth-- > 0) out += "</span>";
+    return out;
+  }
+
+  function plainLength(text) {
+    return String(text).replace(/<\/>|<[A-Za-z][A-Za-z0-9._-]*>/g, "").length;
+  }
+
+  /* ---- data ------------------------------------------------------------- */
+
+  var raw = (typeof DATA !== "undefined" && DATA) ? DATA : {};
+  var ENTITIES = Array.isArray(raw.entities) ? raw.entities : [];
+  var ICONS = raw.icons || {};
+
+  // Search index: one lowercase haystack per entity, built once. Nested display names are not
+  // optional: an item's own displayName is an internal identifier like
+  // Relic_A_Crit_Expertise_Portal and the name a player would type, "Conjure Portal", exists
+  // only on the ability it grants. 82 entities are findable no other way.
+  function haystack(e) {
+    var parts = [e.displayName, e.name, e.table, label(e.table), e.type];
+    if (e.tags) parts = parts.concat(e.tags);
+    if (e.grants) parts.push(e.grants.displayName);
+    (e.legendaryStats || []).forEach(function (l) { parts.push(l.displayName); });
+    (e.variants || []).forEach(function (v) {
+      parts.push(v.displayName, v.heroName || v.hero);
+      if (v.grants) parts.push(v.grants.displayName);
+    });
+    return parts.filter(Boolean).join(" ").toLowerCase();
+  }
+
+  var INDEX = ENTITIES.map(function (e, i) {
+    return {
+      i: i,
+      table: e.table || "Unknown",
+      sort: (e.displayName || e.name || "").toLowerCase(),
+      hay: haystack(e)
+    };
+  });
+
+  var byTable = {};
+  var tables = [];
+  INDEX.forEach(function (r) {
+    if (!byTable[r.table]) { byTable[r.table] = []; tables.push(r.table); }
+    byTable[r.table].push(r);
+  });
+
+  function rank(t) { var i = TABLE_ORDER.indexOf(t); return i < 0 ? 999 : i; }
+  tables.sort(function (a, b) { return rank(a) - rank(b) || a.localeCompare(b); });
+  var byName = function (a, b) { return a.sort.localeCompare(b.sort, undefined, { numeric: true }); };
+  tables.forEach(function (t) { byTable[t].sort(byName); });
+
+  var ALL = INDEX.slice().sort(function (a, b) {
+    return rank(a.table) - rank(b.table) || a.table.localeCompare(b.table) || byName(a, b);
+  });
+
+  function label(t) { return TABLE_LABELS[t] || t || "Unknown"; }
+
+  /* ---- elements --------------------------------------------------------- */
+
+  var elChrome = document.getElementById("chrome");
+  var elTablist = document.getElementById("tablist");
+  var elQ = document.getElementById("q");
+  var elClear = document.getElementById("clear");
+  var elScope = document.getElementById("scopeAll");
+  var elReadout = document.getElementById("readout");
+  var elPanel = document.getElementById("panel");
+  var elGrid = document.getElementById("grid");
+  var elSentinel = document.getElementById("sentinel");
+  var elEndcap = document.getElementById("endcap");
+
+  if (raw.meta && raw.meta.source) {
+    var cmd = document.querySelector(".cmd");
+    if (cmd) cmd.innerHTML = "<b>fellowship</b> &rsaquo; " + esc(raw.meta.source);
+  }
+
+  /* ---- state ------------------------------------------------------------ */
+
+  var state = { table: tables[0] || "", q: "", all: false };
+  var view = [];
+  var rendered = 0;
+
+  /* ---- tabs ------------------------------------------------------------- */
+
+  var tabEls = tables.map(function (t) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "tab";
+    b.id = "tab-" + t;
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-controls", "panel");
+    b.dataset.table = t;
+    b.innerHTML = '<span>' + esc(label(t)) + '</span><span class="n">' +
+      byTable[t].length.toLocaleString() + '</span>' +
+      '<span class="sr"> (' + esc(t) + ')</span>';
+    b.addEventListener("click", function () { setTab(t, true); });
+    elTablist.appendChild(b);
+    return b;
+  });
+
+  elTablist.addEventListener("keydown", function (ev) {
+    var i = tables.indexOf(state.table);
+    var next = -1;
+    if (ev.key === "ArrowRight") next = (i + 1) % tables.length;
+    else if (ev.key === "ArrowLeft") next = (i - 1 + tables.length) % tables.length;
+    else if (ev.key === "Home") next = 0;
+    else if (ev.key === "End") next = tables.length - 1;
+    else return;
+    ev.preventDefault();
+    setTab(tables[next], true);
+    tabEls[next].focus();
+  });
+
+  function paintTabs() {
+    tabEls.forEach(function (b, k) {
+      var on = tables[k] === state.table;
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.tabIndex = on ? 0 : -1;
+    });
+    elChrome.dataset.scope = state.all ? "all" : "tab";
+    if (state.all) {
+      elPanel.removeAttribute("aria-labelledby");
+      elPanel.setAttribute("aria-label", "All entity types");
+    } else {
+      elPanel.removeAttribute("aria-label");
+      elPanel.setAttribute("aria-labelledby", "tab-" + state.table);
+    }
+  }
+
+  /* ---- card ------------------------------------------------------------- */
+
+  function chip(lbl, val, unit) {
+    return '<div><dt>' + esc(lbl) + '</dt><dd>' + esc(fmtNum(val)) +
+      (unit ? '<small>' + esc(unit) + '</small>' : "") + '</dd></div>';
+  }
+
+  var STAT_FIELDS = [
+    ["castTime", "Cast", "s"], ["channelTime", "Channel", "s"], ["channelTick", "Tick", "s"],
+    ["cooldown", "Cooldown", "s"], ["charges", "Charges", ""], ["duration", "Duration", "s"],
+    ["period", "Period", "s"], ["range", "Range", ""], ["radius", "Radius", ""]
+  ];
+
+  function tagList(items, cls, cap) {
+    var out = "", n = Math.min(items.length, cap);
+    for (var i = 0; i < n; i++) out += "<span" + (cls ? ' class="' + cls + '"' : "") + ">" + esc(items[i]) + "</span>";
+    if (items.length > n) out += '<span class="more">+' + (items.length - n) + "</span>";
+    return out;
+  }
+
+  function initials(name) {
+    var w = String(name).replace(/[^A-Za-z0-9 ]+/g, " ").trim().split(/\s+/);
+    return ((w[0] || "?").charAt(0) + (w.length > 1 ? w[w.length - 1].charAt(0) : "")).toUpperCase();
+  }
+
+  // A description block, plus the control that unfades it when it is long enough to be clipped.
+  // The toggle is emitted only for clipped text, so a short description ships no dead button.
+  function descHTML(text, owner) {
+    var body = richText(text, owner);
+    if (plainLength(text) <= CLIP_CHARS) return '<div class="desc">' + body + "</div>";
+    var id = "d" + (++uid);
+    return '<div class="desc clipped" id="' + id + '">' + body + "</div>" +
+      '<button class="expand" type="button" data-act="expand" aria-controls="' + id +
+      '" aria-expanded="false">Show more</button>';
+  }
+
+  function cardHTML(e) {
+    var h = "";
+
+    // --- head: icon box is always 52px, present or not ---
+    var uri = e.icon ? ICONS[e.icon] : null;
+    var box;
+    if (uri) {
+      box = '<div class="ico"><img src="' + esc(uri) + '" alt="" loading="lazy" decoding="async" width="52" height="52"></div>';
+    } else if (e.icon) {
+      box = '<div class="ico missing" title="' + esc("icon asset not in payload: " + e.icon) +
+        '"><span class="ico-none" aria-hidden="true">?</span></div>';
+    } else {
+      box = '<div class="ico"><span class="ico-none" aria-hidden="true">' +
+        esc(initials(e.displayName || e.name || "?")) + "</span></div>";
+    }
+
+    h += '<div class="card-head">' + box + '<div class="card-id">' +
+      '<h3 class="card-name">' + esc(e.displayName || e.name) + "</h3>" +
+      '<div class="card-sub">' +
+        '<span class="tbl">' + esc(label(e.table)) + "</span>" +
+        (e.netId != null ? '<span class="nid">#' + esc(e.netId) + "</span>" : "") +
+        (e.name ? "<code>" + esc(e.name) + "</code>" : "") +
+      "</div></div></div>";
+
+    // --- type + tags ---
+    var tagsHtml = "";
+    if (e.type) tagsHtml += '<span class="type">' + esc(e.type) + "</span>";
+    if (e.tags && e.tags.length) {
+      // `type` is frequently repeated verbatim in `tags`; show it once, as the type chip.
+      var t = String(e.type || "").toLowerCase();
+      var rest = e.tags.filter(function (x) { return String(x).toLowerCase() !== t; });
+      tagsHtml += tagList(rest, "", 8);
+    }
+    if (tagsHtml) h += '<div class="tags">' + tagsHtml + "</div>";
+
+    // --- stat chips ---
+    var chips = "";
+    for (var i = 0; i < STAT_FIELDS.length; i++) {
+      var f = STAT_FIELDS[i];
+      if (e[f[0]] != null) chips += chip(f[1], e[f[0]], f[2]);
+    }
+    if (e.cost != null) chips += chip(e.resource || "Cost", e.cost, "");
+    else if (e.resource) chips += chip("Resource", e.resource, "");
+    if (chips) h += '<dl class="chips">' + chips + "</dl>";
+
+    // --- description ---
+    if (e.description) h += descHTML(e.description, e);
+
+    // --- detail notes ---
+    if (e.detail && e.detail.length) {
+      h += '<div class="note">' + e.detail.map(function (d) {
+        return richText(d, e);
+      }).join("\n") + "</div>";
+    }
+
+    // --- granted ability (nested entity) ---
+    if (e.grants && (e.grants.displayName || e.grants.description)) {
+      h += '<div class="nested"><span class="lbl">grants</span>';
+      if (e.grants.displayName) h += '<span class="nm">' + esc(e.grants.displayName) + "</span>";
+      if (e.grants.description) h += descHTML(e.grants.description, e.grants);
+      h += "</div>";
+    }
+
+    // --- item stats / legendary rolls / hero variants ---
+    if (e.stats && e.stats.length) {
+      h += '<div class="sect"><span class="lbl">stats</span><div class="list">' +
+        tagList(e.stats, "", 8) + "</div></div>";
+    }
+    if (e.legendaryStats && e.legendaryStats.length) {
+      h += '<div class="sect"><span class="lbl">legendary rolls (' + e.legendaryStats.length +
+        ')</span><div class="list">' + e.legendaryStats.slice(0, 6).map(function (l) {
+          return '<span title="' + esc(plainText(l.description || "", l)) + '">' +
+            esc(l.displayName || "(unnamed)") + "</span>";
+        }).join("") +
+        (e.legendaryStats.length > 6 ? '<span class="more">+' + (e.legendaryStats.length - 6) + "</span>" : "") +
+        "</div></div>";
+    }
+    if (e.variants && e.variants.length) {
+      h += '<div class="sect"><span class="lbl">hero variants (' + e.variants.length +
+        ')</span><div class="list">' + e.variants.slice(0, 6).map(function (v) {
+          var g = v.grants || {};
+          return '<span title="' + esc(plainText(g.description || "", g)) + '"><em>' +
+            esc(v.heroName || v.hero || "?") + "</em> " + esc(v.displayName || "") + "</span>";
+        }).join("") +
+        (e.variants.length > 6 ? '<span class="more">+' + (e.variants.length - 6) + "</span>" : "") +
+        "</div></div>";
+    }
+
+    // --- footer ---
+    var foot = [];
+    if (e.scalesOff && e.scalesOff.length) foot.push("scales off " + e.scalesOff.join(", "));
+    var nT = e.talents ? Object.keys(e.talents).length : 0;
+    if (nT) foot.push(nT + (nT === 1 ? " talent" : " talents"));
+    var nC = e.constants ? Object.keys(e.constants).length : 0;
+    if (nC) foot.push(nC + (nC === 1 ? " constant" : " constants"));
+    if (e.grantedTags && e.grantedTags.length) foot.push(e.grantedTags.length + " granted tags");
+    if (foot.length) {
+      h += '<div class="foot">' + foot.map(function (f) { return "<span>" + esc(f) + "</span>"; }).join("") + "</div>";
+    }
+
+    return '<article class="card">' + h + "</article>";
+  }
+
+  // Hover text for the rolls and variants that are listed by name only. It substitutes as well,
+  // because those nested descriptions carry tokens of their own and a raw {Token} in a tooltip
+  // is the same defect on screen as one in a card.
+  function plainText(s, owner) {
+    var text = (owner && owner.placeholderText) || {};
+    return String(s)
+      .replace(/<\/>|<[A-Za-z][A-Za-z0-9._-]*>/g, "")
+      .replace(/\{([A-Za-z0-9_.]+)\}/g, function (whole, key) {
+        return typeof text[key] === "string" ? text[key] : whole;
+      })
+      .replace(/\r\n/g, " ").trim();
+  }
+
+  /* ---- filtering + chunked render --------------------------------------- */
+
+  function pool() { return state.all ? ALL : (byTable[state.table] || []); }
+
+  function filterInto(source) {
+    var terms = state.q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) return source;
+    return source.filter(function (r) {
+      for (var i = 0; i < terms.length; i++) if (r.hay.indexOf(terms[i]) < 0) return false;
+      return true;
+    });
+  }
+
+  function fill() {
+    if (rendered >= view.length) { elSentinel.hidden = true; return; }
+    var end = Math.min(rendered + CHUNK, view.length);
+    var html = "";
+    for (var k = rendered; k < end; k++) html += cardHTML(ENTITIES[view[k].i]);
+    elGrid.insertAdjacentHTML("beforeend", html);
+    rendered = end;
+
+    var done = rendered >= view.length;
+    elSentinel.hidden = done;
+    elEndcap.hidden = !done || view.length <= CHUNK;
+    if (done) elEndcap.textContent = view.length.toLocaleString() + " shown";
+    // The observer will not re-fire while the sentinel stays intersecting, so top up by hand.
+    if (!done) requestAnimationFrame(topUp);
+  }
+
+  function topUp() {
+    if (elSentinel.hidden) return;
+    var r = elSentinel.getBoundingClientRect();
+    if (r.top < window.innerHeight + FILL_MARGIN) fill();
+  }
+
+  if (typeof IntersectionObserver === "function") {
+    new IntersectionObserver(function (entries) {
+      if (entries.some(function (x) { return x.isIntersecting; })) fill();
+    }, { rootMargin: "0px 0px " + FILL_MARGIN + "px 0px" }).observe(elSentinel);
+  } else {
+    window.addEventListener("scroll", topUp, { passive: true });
+  }
+  window.addEventListener("resize", topUp, { passive: true });
+
+  function emptyHTML() {
+    var crossCount = 0;
+    if (!state.all && state.q) crossCount = filterInto(ALL).length;
+    var h = '<div class="empty"><h2>No matches</h2>';
+    if (state.q) {
+      h += "<p>Nothing in <b>" + esc(label(state.table)) + "</b> matches <code>" +
+        esc(state.q) + "</code>.</p>";
+    } else {
+      h += "<p>This tab is empty.</p>";
+    }
+    h += '<div class="actions">';
+    if (!state.all && crossCount > 0) {
+      h += '<button class="btn primary" type="button" data-act="all">Search all tabs (' +
+        crossCount.toLocaleString() + " match" + (crossCount === 1 ? "" : "es") + ")</button>";
+    }
+    if (state.q) h += '<button class="btn" type="button" data-act="clear">Clear search</button>';
+    h += "</div></div>";
+    return h;
+  }
+
+  function toTop() { if (window.scrollY > 0) window.scrollTo(0, 0); }
+
+  function render() {
+    view = filterInto(pool());
+    rendered = 0;
+    elEndcap.hidden = true;
+    toTop();
+
+    if (!view.length) {
+      elGrid.innerHTML = "";
+      elSentinel.hidden = true;
+      elGrid.insertAdjacentHTML("beforeend", emptyHTML());
+      paintReadout();
+      return;
+    }
+    elGrid.innerHTML = "";
+    elSentinel.hidden = false;
+    fill();
+    paintReadout();
+  }
+
+  elGrid.addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-act]");
+    if (!b) return;
+    if (b.dataset.act === "all") { elScope.checked = true; setScope(true, true); }
+    if (b.dataset.act === "clear") { elQ.value = ""; setQuery("", true); elQ.focus(); }
+    if (b.dataset.act === "expand") {
+      var d = document.getElementById(b.getAttribute("aria-controls"));
+      if (!d) return;
+      var open = !d.classList.toggle("clipped");
+      b.setAttribute("aria-expanded", open ? "true" : "false");
+      b.textContent = open ? "Show less" : "Show more";
+    }
+  });
+
+  function paintReadout() {
+    var total = pool().length;
+    var where = state.all
+      ? '<span class="scope-word">all tabs</span>'
+      : esc(label(state.table));
+    elReadout.innerHTML = "<b>" + view.length.toLocaleString() + "</b> of " +
+      total.toLocaleString() + " in " + where;
+    elClear.hidden = !state.q;
+  }
+
+  /* ---- url hash --------------------------------------------------------- */
+
+  function stateToHash(s) {
+    var p = [];
+    if (s.table && s.table !== tables[0]) p.push("tab=" + encodeURIComponent(s.table));
+    if (s.q) p.push("q=" + encodeURIComponent(s.q));
+    if (s.all) p.push("scope=all");
+    return p.join("&");
+  }
+
+  function parseHash() {
+    var h = location.hash.replace(/^#/, "");
+    var out = { table: tables[0] || "", q: "", all: false };
+    h.split("&").forEach(function (kv) {
+      if (!kv) return;
+      var i = kv.indexOf("=");
+      var k = i < 0 ? kv : kv.slice(0, i);
+      var v = i < 0 ? "" : kv.slice(i + 1);
+      try { v = decodeURIComponent(v.replace(/\+/g, " ")); } catch (err) { /* keep raw */ }
+      if (k === "tab" && tables.indexOf(v) >= 0) out.table = v;
+      else if (k === "q") out.q = v;
+      else if (k === "scope") out.all = v === "all";
+    });
+    return out;
+  }
+
+  function writeHash(push) {
+    var h = "#" + stateToHash(state);
+    if (location.hash === h || (location.hash === "" && h === "#")) return;
+    try {
+      history[push ? "pushState" : "replaceState"](null, "", h);
+    } catch (err) {
+      location.hash = h; // sandboxed history: fall back, syncFromHash stays idempotent
+    }
+  }
+
+  // Idempotent: if the hash already describes current state this is a no-op,
+  // which is what stops write -> event -> write loops.
+  function syncFromHash() {
+    var next = parseHash();
+    if (next.table === state.table && next.q === state.q && next.all === state.all) return;
+    state = next;
+    elQ.value = state.q;
+    elScope.checked = state.all;
+    paintTabs();
+    render();
+  }
+
+  window.addEventListener("hashchange", syncFromHash);
+  window.addEventListener("popstate", syncFromHash);
+
+  /* ---- input ------------------------------------------------------------ */
+
+  // Clicking a tab is also how you leave all-tabs scope: it means "narrow to this one".
+  function setTab(t, push) {
+    if (t === state.table && !state.all) return;
+    state.table = t;
+    state.all = false;
+    elScope.checked = false;
+    paintTabs();
+    render();
+    writeHash(push);
+  }
+
+  var hashTimer = 0;
+  function setQuery(q, immediate) {
+    state.q = q;
+    render();
+    clearTimeout(hashTimer);
+    if (immediate) writeHash(false);
+    else hashTimer = setTimeout(function () { writeHash(false); }, 300);
+  }
+
+  function setScope(on, push) {
+    state.all = !!on;
+    paintTabs();
+    render();
+    writeHash(push);
+  }
+
+  elQ.addEventListener("input", function () { setQuery(elQ.value, false); });
+  elQ.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && elQ.value) { ev.preventDefault(); elQ.value = ""; setQuery("", true); }
+  });
+  elClear.addEventListener("click", function () { elQ.value = ""; setQuery("", true); elQ.focus(); });
+  elScope.addEventListener("change", function () { setScope(elScope.checked, true); });
+
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key !== "/" || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    var t = ev.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    ev.preventDefault();
+    elQ.focus();
+    elQ.select();
+  });
+
+  /* ---- boot ------------------------------------------------------------- */
+
+  if (!tables.length) {
+    elGrid.innerHTML = '<div class="empty"><h2>No data</h2><p>' +
+      'The <code>DATA</code> payload is missing or contains no entities. ' +
+      'Replace the <code>fellowship-data</code> script element.</p></div>';
+    elReadout.textContent = "";
+  } else {
+    state = parseHash();
+    elQ.value = state.q;
+    elScope.checked = state.all;
+    paintTabs();
+    render();
+  }
+})();
+</script>
