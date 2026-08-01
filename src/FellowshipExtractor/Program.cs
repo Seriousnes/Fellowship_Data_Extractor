@@ -1,0 +1,122 @@
+using CUE4Parse.UE4.Exceptions;
+using FellowshipExtractor;
+
+var command = args.Length > 0 ? args[0].ToLowerInvariant() : "list";
+var options = new ExtractorOptions
+{
+    MappingsFile = Environment.GetEnvironmentVariable("FELLOWSHIP_USMAP"),
+    Game = ExtractorOptions.ParseGame(Environment.GetEnvironmentVariable("FELLOWSHIP_UE_VERSION")),
+};
+
+Directory.CreateDirectory(options.ResolvedOutputDir);
+
+try
+{
+    return await RunAsync();
+}
+catch (MappingException)
+{
+    Console.Error.WriteLine(
+        """
+        This package uses unversioned properties and no mappings are loaded.
+        Set FELLOWSHIP_USMAP to a .usmap file for this build, then retry.
+        Commands that need no mappings: list, cat, raw, registry, tags, constants, locres.
+        """);
+    return 2;
+}
+
+async Task<int> RunAsync()
+{
+switch (command)
+{
+    case "list":
+        await ListCommand.RunAsync(options);
+        break;
+    case "cat":
+        await RawCommands.CatAsync(options, args[1], args.Length > 2 ? int.Parse(args[2]) : 20);
+        break;
+    case "raw":
+        await RawCommands.ExtractAsync(options, args[1]);
+        break;
+    case "registry":
+        await RegistryCommand.RunAsync(options);
+        break;
+    case "dump":
+        await DumpCommand.RunAsync(options, args[1]);
+        break;
+    case "tags":
+        await CsvExportCommands.ExportTagsAsync(options);
+        break;
+    case "constants":
+        await CsvExportCommands.ExportConstantsAsync(options);
+        break;
+    case "locres":
+        await LocresCommand.RunAsync(options, args.Length > 1 ? args[1] : "en");
+        break;
+    case "index":
+        await IndexCommand.RunAsync(options);
+        break;
+    case "usmap-scan":
+        await FellowshipExtractor.Usmap.UsmapScanCommand.RunAsync(options);
+        break;
+    case "usmap":
+        await FellowshipExtractor.Usmap.UsmapGenerateCommand.RunAsync(options);
+        break;
+    case "usmap-diff":
+        await FellowshipExtractor.Usmap.UsmapDiffCommand.RunAsync(options, args[1]);
+        break;
+    case "usmap-array":
+        await FellowshipExtractor.Usmap.UsmapArrayCommand.RunAsync(options, args[1]);
+        break;
+    case "usmap-count":
+        await FellowshipExtractor.Usmap.UsmapCountProbeCommand.RunAsync(options, args[1]);
+        break;
+    case "usmap-debug":
+        await FellowshipExtractor.Usmap.UsmapDebugCommand.RunAsync(options, args[1]);
+        break;
+    case "probe":
+        await ProbeCommand.RunAsync(options, args.Length > 1 ? int.Parse(args[1]) : 300);
+        break;
+    case "texture":
+    case "textures":
+        if (args.Length < 2)
+        {
+            Console.Error.WriteLine("Usage: textures <filter> [png|jpeg|tga|dds]   e.g. textures ui/icons/hero_abilities");
+            return 1;
+        }
+        await FellowshipExtractor.Textures.TextureCommand.RunAsync(options, args[1], args.Length > 2 ? args[2] : null);
+        break;
+    case "tooltip":
+        if (args.Length < 3)
+        {
+            Console.Error.WriteLine("Usage: tooltip <table> <id|name>   e.g. tooltip ItemID 5224");
+            return 1;
+        }
+        await FellowshipExtractor.Tooltip.TooltipCommand.RunAsync(options, args[1], args[2]);
+        break;
+    case "export-all":
+        await FellowshipExtractor.Tooltip.ExportAllCommand.RunAsync(options, args[1..]);
+        break;
+    default:
+        Console.Error.WriteLine(
+            $"""
+             Unknown command '{command}'. Available:
+               list                  mount containers, write the file listing
+               cat <filter> [lines]  print matching container files
+               raw <filter>          extract matching container files verbatim
+               registry              parse AssetRegistry.bin to JSONL
+               tags                  export Content/guid tag tables to JSONL
+               constants             export RawDataTables tuning constants to JSONL
+               locres [culture]      export the localization table to JSONL
+               index                 join the tag tables to the asset registry
+               dump <filter>         serialize a package's exports to JSON
+               textures <filter> [f] decode matching textures to png (or jpeg, tga, dds)
+               tooltip <table> <id>  reconstruct one entity's tooltip from name, text and constants
+               export-all [table...]  every entity as one JSONL file with every icon beside it
+               probe [sample]        report how many packages parse with current mappings
+             """);
+        return 1;
+}
+
+return 0;
+}

@@ -1,0 +1,102 @@
+using CUE4Parse.MappingsProvider.Usmap;
+
+namespace FellowshipExtractor.Usmap;
+
+/// <summary>
+/// Builds a .usmap from the shipping binary's generated reflection tables, then reads it back
+/// with CUE4Parse so a malformed container fails here rather than during extraction.
+/// </summary>
+public static class UsmapGenerateCommand
+{
+    public static Task RunAsync(ExtractorOptions options)
+    {
+        var image = new PeImage(UsmapScanCommand.ShippingExe(options));
+        var records = new ReflectionScanner(image).ScanProperties();
+        var structs = new OwnerScanner(image, records).ScanStructs();
+
+        var classScanner = new ClassScanner(image, records);
+        var registrations = classScanner.ScanRegistrations();
+        var claimed = structs.Where(s => s.Properties.Count > 0).Select(s => s.Properties[0].Va).ToHashSet();
+        var classes = classScanner.ScanClasses(registrations, claimed);
+
+        // Struct and enum constructors are not in the class registration table, so decode the
+        // functions the properties actually reference and read the name off their params record.
+        var paramsByVa = structs.ToDictionary(s => s.Va, s => s.Name);
+        var decoded = TypeFuncResolver.Resolve(
+            image, records.Select(r => r.TypeFuncVa), paramsByVa);
+        Console.WriteLine($"type functions decoded from .text: {decoded.Count}");
+
+        string? Resolve(ulong funcVa) =>
+            decoded.TryGetValue(funcVa, out var direct) ? direct
+            : registrations.TryGetValue(funcVa, out var cpp) ? ClassScanner.StripPrefix(cpp)
+            : null;
+
+        var schemas = new Dictionary<string, UsmapSchema>(StringComparer.Ordinal);
+
+        foreach (var s in structs)
+        {
+            var built = SchemaBuilder.Build(s.Name, s.Properties, Resolve);
+            Keep(schemas, new UsmapSchema(s.Name, Resolve(s.SuperFuncVa), built.Properties));
+        }
+
+        foreach (var c in classes)
+        {
+            var built = SchemaBuilder.Build(c.Name, c.Properties, Resolve);
+            var super = Resolve(c.SuperFuncVa);
+            Keep(schemas, new UsmapSchema(c.Name, super == c.Name ? null : super, built.Properties));
+        }
+
+        // A base class that declares no properties of its own never gets an FClassParams property
+        // array, so it is absent here. Emit it as an empty schema, otherwise every derived class's
+        // super chain dangles and CUE4Parse cannot resolve inherited property indices.
+        foreach (var super in schemas.Values.Select(s => s.SuperName).Where(n => n is not null).Distinct().ToArray())
+        {
+            if (!schemas.ContainsKey(super!)) schemas[super!] = new UsmapSchema(super!, null, []);
+        }
+
+        var ordered = schemas.Values.OrderBy(s => s.Name, StringComparer.Ordinal).ToArray();
+        var target = Path.Combine(options.ResolvedOutputDir, "fellowship.usmap");
+        new UsmapWriter().Write(target, ordered, []);
+
+        var size = new FileInfo(target).Length;
+        Console.WriteLine($"structs {structs.Count}, classes {classes.Count} -> {ordered.Length} schemas");
+        Console.WriteLine($"  with a super: {ordered.Count(s => s.SuperName is not null)}");
+        Console.WriteLine($"wrote {target} ({size / 1024} KB)");
+
+        try
+        {
+            var parsed = new UsmapParser(target);
+            var mappings = parsed.Mappings ?? throw new InvalidDataException("Round-trip produced no mappings.");
+            Console.WriteLine($"round-trip OK: version={parsed.Version} schemas={mappings.Types.Count} enums={mappings.Enums.Count}");
+
+            foreach (var want in new[] { "GameplayTag", "ScalableFloat", "CRMountData", "CRTalentData", "DataTable", "Object", "PrimaryDataAsset" })
+            {
+                if (mappings.Types.TryGetValue(want, out var schema))
+                {
+                    var names = Enumerable.Range(0, schema.PropertyCount)
+                        .Select(i => schema.TryGetValue(i, out var p) ? p!.Name : "?");
+                    Console.WriteLine($"  {want,-20} super={schema.SuperType ?? "(none)"} [{schema.PropertyCount}] {string.Join(", ", names)}");
+                }
+                else Console.WriteLine($"  {want,-20} missing");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"round-trip FAILED: {ex.GetType().Name}: {ex.Message}");
+        }
+
+        Console.WriteLine($"\nTo use it:  $env:FELLOWSHIP_USMAP = \"{target}\"");
+        return Task.CompletedTask;
+    }
+
+    /// <summary>The same type is emitted per translation unit; keep the richest copy.</summary>
+    private static void Keep(Dictionary<string, UsmapSchema> schemas, UsmapSchema candidate)
+    {
+        if (!schemas.TryGetValue(candidate.Name, out var existing)
+            || candidate.Properties.Count > existing.Properties.Count
+            || (candidate.Properties.Count == existing.Properties.Count && existing.SuperName is null && candidate.SuperName is not null))
+        {
+            schemas[candidate.Name] = candidate;
+        }
+    }
+}
