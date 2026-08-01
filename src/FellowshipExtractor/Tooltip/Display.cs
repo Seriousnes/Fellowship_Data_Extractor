@@ -7,7 +7,8 @@ namespace FellowshipExtractor.Tooltip;
 /// The presentation fields a tooltip shows. Abilities carry these in a CRAbilityDataRow; data
 /// assets such as mounts carry equivalents on the asset itself, so both are searched by shape.
 /// </summary>
-public sealed record Display(string? Name, string? Description, string? Icon, IReadOnlyList<string> Detail)
+public sealed record Display(
+    string? Name, string? Description, string? Icon, IReadOnlyList<string> Detail, string? Resource)
 {
     public static Display From(IPropertyHolder? row, UObject? asset)
     {
@@ -15,6 +16,7 @@ public sealed record Display(string? Name, string? Description, string? Icon, IR
         var description = row is null ? null : DescriptionOf(row);
         var icon = row is null ? null : IconOf(row);
         var detail = row is null ? [] : DetailOf(row);
+        var resource = row is null ? null : Text(row, "DetailedDescription3");
 
         // Data assets have no presentation row, so fall back to their own text and icon fields.
         if (asset is not null)
@@ -29,7 +31,7 @@ public sealed record Display(string? Name, string? Description, string? Icon, IR
             }
         }
 
-        return new Display(name, description, icon, detail);
+        return new Display(name, description, icon, detail, resource);
     }
 
     private static string? DescriptionOf(IPropertyHolder row)
@@ -43,15 +45,29 @@ public sealed record Display(string? Name, string? Description, string? Icon, IR
         return PropertyWalk.GetString(row, "DetailedDescription");
     }
 
-    /// <summary>The extra description lines a row may carry, in the order the row declares them.</summary>
+    /// <summary>
+    /// The extra description lines a row may carry, in the order the row declares them.
+    /// DetailedDescription3 is not one of them: designers use it for the resource an ability costs
+    /// - Mana, Spirit, Fury, Burning Ember - so it is read as that instead.
+    /// </summary>
     private static List<string> DetailOf(IPropertyHolder row)
     {
         var lines = new List<string>();
-        foreach (var field in new[] { "DetailedDescription", "DetailedDescription2", "DetailedDescription3", "TutorialDescription" })
+        foreach (var field in new[] { "DetailedDescription", "DetailedDescription2", "TutorialDescription" })
         {
-            if (PropertyWalk.GetString(row, field) is { } text) lines.Add(text);
+            if (Text(row, field) is { } text) lines.Add(text);
         }
         return lines;
+    }
+
+    /// <summary>
+    /// A row's text field, or null when what it holds is not text. Emptied fields are left as a
+    /// space or a full stop rather than cleared, and neither says anything.
+    /// </summary>
+    private static string? Text(IPropertyHolder row, string field)
+    {
+        var text = PropertyWalk.GetString(row, field)?.Trim(' ', '.', '\r', '\n', '\t');
+        return string.IsNullOrEmpty(text) ? null : PropertyWalk.GetString(row, field);
     }
 
     private static string? IconOf(IPropertyHolder row)

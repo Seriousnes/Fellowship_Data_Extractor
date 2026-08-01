@@ -49,7 +49,7 @@ public static class ExportAllCommand
 
         // Icons land beside the JSONL under their own texture name, so an icon shared by many
         // entities is decoded and written once and every entity referencing it agrees on the file.
-        var icons = TooltipCommand.IconWriterInto(provider, folder, reportFailures: false, prefixWithHint: false);
+        var icons = TooltipCommand.IconWriterInto(provider, folder, reportFailures: false);
 
         var target = Path.Combine(folder, FileName);
         await using var output = new StreamWriter(target, append: false);
@@ -62,7 +62,7 @@ public static class ExportAllCommand
             await output.WriteLineAsync(JsonSerializer.Serialize(record, LineOptions));
 
             written++;
-            if (record.IconImage is not null) withIcon++;
+            if (record.Icon is not null) withIcon++;
             if (record.DisplayName is not null) withText++;
 
             if (written % 500 == 0) Console.WriteLine($"  {written} of {selected.Length}...");
@@ -74,5 +74,6 @@ public static class ExportAllCommand
         Console.WriteLine($"\nwrote {target}");
         Console.WriteLine($"  {written} entities, {withText} with a display name, {withIcon} with an icon");
         Console.WriteLine($"  {images} images in {folder}");
+        Console.WriteLine($"  {resolver.NamespaceSupplied} tuning rows supplied by namespace that no asset names");
     }
 }

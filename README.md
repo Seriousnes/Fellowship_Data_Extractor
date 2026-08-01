@@ -235,9 +235,10 @@ still images. Spot-checked visually rather than by count: the Apocalypse icon is
 it should be, and a 4096x2048 BC7 hero-select background decodes clean, which is the check that
 proves the native path rather than just exercising it.
 
-`tooltip` exports its own icon as a side effect, to
-`output/textures/tooltip/<table>-<id>-<texture>.png`, and records the file, dimensions and source
-pixel format under `iconImage`.
+`tooltip` exports its own icon as a side effect, to `output/textures/tooltip/<texture>.png`, and
+records the file name under `icon`. Naming an icon after its own texture rather than after the
+entity that asked for it means a texture several entities share is decoded once and they all agree
+on the file.
 
 ## Reconstructing a tooltip
 
@@ -248,49 +249,68 @@ gameplay tag's table and network id, or its name:
 dotnet run --project src/FellowshipExtractor -- tooltip GameplayAbility 1273
 ```
 
+```json
+{
+  "table": "GameplayAbility",
+  "netId": 1273,
+  "name": "GA_Firemage_CastedPlacedAoe",
+  "displayName": "Apocalypse",
+  "tags": ["Aoe", "Casted", "Magic.Fire", "Major", "Ranged", "Skill.Offensive"],
+  "description": "Conjure a major eruption of fire in the targeted area, dealing <rt.warning>{ApocDirect}</> fire damage and applying <rt.absorb>Searing Blaze</> to all enemies in a large radius.",
+  "icon": "Firemage_Apocalypse.png",
+  "castTime": 3,
+  "cooldown": 45,
+  "range": 3000,
+  "radius": 1000,
+  "scalesOff": ["DamageScale", "Intellect"],
+  "placeholders": {
+    "ApocDirect": {
+      "scalesOff": ["DamageScale", "Intellect"],
+      "constants": { "Damage.IntellectCoefficient": 24.07 }
+    }
+  },
+  "constants": {
+    "MaxRangeUp": 2000,
+    "MaxRangeDown": 3000,
+    "Talent.StunAndCooldownReduction.StunDuration": 3,
+    "Talent.AddedCharges.MaxCharges": 2
+  }
+}
 ```
-presentation index: 1330 rows across 269 CRAbilityDataRow tables (0 unreadable)
-tuning constants:   12928 keys
-GameplayAbility coverage: 1339 of 2307 names have a presentation row
 
-  APOCALYPSE
-    castTime         3
-    cooldown         45
-    radius           1000
-    rangeHorizontal  3000
+The record goes to `output/tooltip-<table>-<id>.json`; the console prints the same thing as text.
 
-  Conjure a major eruption of fire in the targeted area, dealing <rt.warning>{ApocDirect}</> fire
-  damage and applying <rt.absorb>Searing Blaze</> to all enemies in a large radius.
-
-  {ApocDirect} <- .../GE_Firemage_CastedPlacedAoe_Damage.GE_Firemage_CastedPlacedAoe_Damage_C
-    captures  Intellect, DamageScale
-    Firemage.CastedPlacedAoe.Damage.IntellectCoefficient             24.07
-
-  icon: /Game/ui/icons/hero_abilities/Firemage/Firemage_Apocalypse.Firemage_Apocalypse
-```
-
-The full record goes to `output/tooltip-<table>-<id>.json`.
+The rule is everything the tooltip needs and nothing else. **A reference to another asset is never
+emitted as a path**, because a class name reconstructs nothing: either the value behind it is read
+and folded in, or it is left out. So the five gameplay effect classes Apocalypse names are gone and
+the one number among them is `Damage.IntellectCoefficient`; the `{ CurveTable, RowName }` handles
+are gone and the rows they point at are the constants; the byte-enum ordinals are gone because the
+usmap carries no enum table and an index names nothing. `dump <filter>` still writes the raw asset
+when that is what is wanted.
 
 Scaling comes out as the attribute and the coefficient, checkable against the ability's own text.
-Raging Stomp says "56% Strength" and resolves to exactly that:
+Raging Stomp says "56% Strength" and "1.5 seconds", and resolves to exactly that:
 
-```
-dotnet run --project src/FellowshipExtractor -- tooltip GameplayAbility 1253
-```
-
-```
-  RAGING STOMP
-    cooldown         45
-
-  Stomp the ground, dealing <rt.warning>56% Strength</> Physical damage to all enemies around you
-  and <rt.effect>Stunning</> them for 1.5 seconds.
-
-  3 applied effect(s):
-    DamageEffectRef                  GE_Gunde_AoeDamageAndStun_Damage_C  scales off Strength, DamageScale
-      Gunde.AoeDamageAndStun.DamageStrengthCoefficient                 0.56
-    DebuffEffectRef                  GE_Gunde_AoeDamageAndStun_Stun_C
-      Gunde.AoeDamageAndStun.StunDuration                              1.5
-    GlobalCooldownGameplayEffectClass GE_GlobalCooldown_C
+```json
+{
+  "table": "GameplayAbility",
+  "netId": 1253,
+  "name": "GA_Gunde_AoeDamageAndStun",
+  "displayName": "Raging Stomp",
+  "tags": ["Aoe", "Physical.Bleed", "Skill.Offensive", "Targeted"],
+  "description": "Stomp the ground, dealing <rt.warning>56% Strength</> Physical damage to all enemies around you and <rt.effect>Stunning</> them for 1.5 seconds.",
+  "icon": "T_Gunde_Shockwave.png",
+  "cooldown": 45,
+  "charges": 2,
+  "radius": 1000,
+  "scalesOff": ["DamageScale", "Strength"],
+  "constants": {
+    "VisualHitDelay": 0.21,
+    "DamageScalingTargetCountThreshold": 8,
+    "DamageStrengthCoefficient": 0.56,
+    "StunDuration": 1.5
+  }
+}
 ```
 
 ### How it resolves
@@ -310,11 +330,39 @@ The chain is the same for every table, so nothing about heroes or asset types is
    `CurveTable` is unset serializes as a bare `RowName`, so the handle is recognised by the `Curve`
    field it sits in as well as by its shape; requiring both fields dropped the cooldown of every
    ability in the build.
-4. **Scaling** is on the gameplay effect the ability applies, never on the ability. The effect
+4. **A `{Token}` resolves to a number you can compute.** The game prints
+   `coefficient x attribute`, displayed as a range of plus or minus a tenth around it, so a
+   placeholder carries both halves:
+
+   ```json
+   "placeholders": { "FireBallDirect": { "attribute": "Intellect", "coefficient": 5.8482 } }
+   ```
+
+   At 100 Intellect that is `5.8482 x 100` = 585, shown in game as 526 to 643. The spread is
+   confirmed against a screenshot of Apocalypse reading 18,835 - 23,021, which is
+   `20.9285 x 1000` = 20,928 taken x0.9 and x1.1, with the coefficient's own comment
+   (`was 22.03 then 20.9285`) dating the screenshot.
+
+   The coefficient is identified by the tuning row naming itself: `AoeDamageIntellectCoefficient`,
+   `DamageStrengthCoefficient`, `AgilityCoefficient`. That is the designer's own label, and it
+   names the attribute as well as marking the row. The row's last segment has to *end* there, which
+   is what separates Fire Ball's `AoeDamageIntellectCoefficient` (the direct hit `{FireBallDirect}`
+   prints) from its `DotIntellectCoefficientPerTick`. 278 of 404 placeholders resolve this way; a
+   token whose rows name two candidates - Temporal Barrage prints a heal and a damage number from
+   rows differing only in that word - reports neither rather than the wrong one.
+
+5. **Scaling** is on the gameplay effect the ability applies, never on the ability. The effect
    captures an attribute and holds the coefficient that multiplies it, and both are reached two
    ways: a description token such as `{ApocDirect}` names the effect the number comes from, and
    the ability's own properties reference the effect directly. Both routes are read by the same
    code, so Apocalypse reports `Intellect` and `24.07` from either.
+
+   A token does not always name an effect. 44 of the 229 that name an object name **the ability
+   that owns them**, and native code works the number out from the ability's own tuning. Reading
+   those as effects claims every constant on the ability as the token's own: Fire Ball's
+   `{FireBallDirect}` swallowed all 14 and emptied the ability's own list to do it. A self-naming
+   token is left bare and flagged `fromOwnConstants`, which separates "the data does not say which
+   rows make this number" from "this token failed to resolve".
 
    The direct route is the one that covers the game. An ability holds its damage effect in an
    ordinary blueprint variable, and designers named those `DamageEffect`, `DamageEffectRef`,
@@ -324,6 +372,79 @@ The chain is the same for every table, so nothing about heroes or asset types is
    (the two misses are AoE actors). Neither the asset name nor the native parent class identifies
    one - the parent is `CRCostEffect`, `CRProcEffect`, `CRAbsorptionEffect` or five others as often
    as it is `GameplayEffect`.
+
+6. **Naming** the numbers. A tuning row belongs to the entity whose name it starts with, so
+   `Firemage.CastedPlacedAoe.Radius` is keyed as `Radius` while a row reached from elsewhere keeps
+   its full name. The namespace comes from the asset name but counts only when the shipped tables
+   confirm rows actually sit under it, so a name that confirms nothing simply has no namespace.
+
+   The ones a tooltip puts in a fixed place - cast time, cooldown, charges, cost, range, radius -
+   are lifted out into named fields. Designers spell the same field several ways: range is
+   `MaxRange` on 154 abilities, `Max Range` on 401, `MaxRangeRef` on 117 and `Max Range Ref` on 25.
+   Matching those one at a time would leave most of the corpus behind, so a name is reduced to
+   spaces removed, a trailing `Ref` dropped and case folded before it is looked up.
+
+   A row whose name contains a `Talent` segment goes under `talents`, keyed by the talent the name
+   mentions - 1,457 rows across 647 entities. **That is a fact about the name and nothing more.** A
+   row named for a talent is very often unconditional, because a talent folded back into its ability
+   leaves its name behind in the row.
+
+   A named field is read from the entity's own top-level rows. **Charges are the exception**, and
+   worth spelling out because the obvious rules are all wrong. Fire Ball has two charges in play;
+   its only charge count is `Talent.PlacedProjectileAoeHasCharges.NumCharges` and it *declares a
+   gate* for it. Apocalypse has a single cast; it carries `Talent.AddedCharges.MaxCharges` = 2 and
+   declares *no* gate. So the row's name does not say whether it applies, the presence of a gate
+   does not, and neither does its absence.
+
+   What does is `ChargeGameplayEffectClass`. The native `/Script/fellowship.CRChargeEffect` is the
+   charge machinery; `GE_Shared_ChargeCooldownNoHaste` is a cooldown-behaviour effect that only
+   reads charge-shaped. A charge count promotes to `charges` for abilities on the native effect and
+   for no others, and for those it promotes from a talent-named row as readily as any other. That
+   moves 19 abilities - 6 gain a count they were hiding, 13 lose one they should not have shown -
+   and leaves 26 reporting charges.
+
+   The **condition**, where there is one, is declared by the asset and reported separately in
+   `talentGates`. An ability that gates a value on a talent puts a tag property beside it -
+   `TalentPlacedProjectileAoeHasChargesTag` next to `...NumChargesRef` - and the tag's last segment
+   is the talent's name, which is the join. Only 37 entities declare a gate against the 691 with
+   talent-named rows, so the name alone proves nothing.
+
+   Declaring a gate is not the same as having one: 10 of the 61 declared gate tags are granted by
+   nothing in the build. So `talentGates` says what the asset requires and `grantedTags` on a
+   character augmentation says what actually opens it, and the two are left as separate facts.
+   `Talents.Firemage.PlacedProjectileAoe.PlacedProjectileAoeHasCharges` is granted by
+   `CAA_Talent_Firemage_ReignOfFire`; `Talents.Firemage.CastedPlacedAoe.StunAndCooldownReduction` is
+   granted by nothing.
+
+   And a declared gate is still not runtime behaviour: Fire Ball has two charges in play without
+   Reign of Fire selected. Every field here describes what an asset declares, which is the only
+   thing files can say.
+
+7. **A talent's numbers are not under its own name.** `CAA_Talent_Rime_GlacialAssault` matches no
+   tuning prefix at all - a talent's rows sit under the ability it modifies, as
+   `Rime.CastedProjectileDamageOrbSpender.Talent.InstantAndBonusDamage.*`. The tag the talent grants
+   carries both halves, so stripping `Talents.` and inserting a `Talent` segment before the last
+   part reconstructs the prefix; it is checked against the tables before use, and 149 of the 231
+   granted talent tags resolve. Every depth below a talent's namespace is taken, unlike an
+   ability's where only the immediate rows are its own, because nothing nests inside a talent.
+
+   That is what makes a talent exportable. `CAA_Talent_Rime_GlacialAssault` has three properties -
+   two granted abilities and one tag - so its name, text and icon come from following
+   `GrantedAbilities` to a presentation row, and its numbers come from the tag. Without the tag
+   route it exports without `DamageMultiplier` = 1.4, the "40% more damage" its own text quotes.
+   277 of the build's 373 talent assets now carry real content.
+
+8. **Costs** are read from the tuning tables directly, because nothing in the asset points at them.
+   A cost is a `CRCostEffect`, a native class whose blueprint carries no properties at all, so the
+   cost row is reachable only as the row sitting under the ability's namespace. That recovers
+   `Vigor.InstantFrontalConeDamageHeal.ManaCost` = 37 for Radiant Blast and 1,322 rows across the
+   build, which the export reports rather than folding in silently.
+
+   What the cost is paid in is a third place again: `DetailedDescription3` on the presentation row,
+   which designers use for the resource name rather than for a description. So Radiant Blast is
+   `"cost": 37, "resource": "Mana"`, Starfall Volley is `30` `Focus` and Shield Slam is `3`
+   `Combo Points`. Reading it as a description line put a bare "Mana" in 73 entities' `detail`
+   arrays; read as what it is, `detail` drops to the three real lines in the build.
 
 Coverage is reported rather than assumed: 1,339 of 2,307 `GameplayAbility` names have a
 presentation row. The rest are passives, targeting helpers and talent monitors, which are
@@ -338,28 +459,33 @@ keyed by a hero gameplay tag, so `ItemID 5224` is five items:
 dotnet run --project src/FellowshipExtractor -- tooltip ItemID 5224
 ```
 
-```
-  5 hero variant(s):
-    Elarion (Bowguy)
-      DisplayName: Master Astronomer's Bracers
-      Ability: Astronomer's Hail
-    Gunde (Gunde)
-      DisplayName: Feathered Wraps of the Raven God
-      Ability: Carrion Onslaught
-    Meiko (Meiko)
-      DisplayName: Bracers of Everlasting Spirit
-      Ability: Everlasting Spirit
-    Sylvie (Mosse)
-      DisplayName: Bands of the First Dryad
-      Ability: Dryad's Haven
-    Xavian (Sune)
-      DisplayName: Sandworn Bands of the Fortress
-      Ability: Fortress in the Sands
-
-  3 legendary stat(s):
-    Strand of Eternity       +10% Cooldown Acceleration
-    Blood of the Undying     +10 Damage Reduction
-    Mote of Creation         +10% Primary Stat
+```json
+{
+  "table": "ItemID", "netId": 5224, "displayName": "Legendary_Wrists_A_CriticalStrike",
+  "type": "Legendary",
+  "stats": ["Stamina", "HeroRelativePrimaryStat", "CritChance"],
+  "icon": "Tex_bracers_6_b.png",
+  "legendaryStats": [
+    { "displayName": "Strand of Eternity", "description": "+10% Cooldown Acceleration",
+      "scalesOff": ["CooldownRecovery"], "constants": { "CooldownReductionMultiplier": 1.1 } },
+    { "displayName": "Blood of the Undying", "description": "+10 Damage Reduction",
+      "scalesOff": ["IncomingDamageMultiplier"], "constants": { "IncomingDamageMultiplier": 0.9 } },
+    { "displayName": "Mote of Creation", "description": "+10% Primary Stat",
+      "scalesOff": ["PrimaryAttributeMultiplier"], "constants": { "AdditionalPrimaryStatMultiplier": 0.1 } }
+  ],
+  "variants": [
+    { "hero": "Bowguy", "heroName": "Elarion", "displayName": "Master Astronomer's Bracers",
+      "grants": { "displayName": "Astronomer's Hail", "description": "..." } },
+    { "hero": "Gunde", "heroName": "Gunde", "displayName": "Feathered Wraps of the Raven God",
+      "grants": { "displayName": "Carrion Onslaught", "description": "..." } },
+    { "hero": "Meiko", "heroName": "Meiko", "displayName": "Bracers of Everlasting Spirit",
+      "grants": { "displayName": "Everlasting Spirit", "description": "..." } },
+    { "hero": "Mosse", "heroName": "Sylvie", "displayName": "Bands of the First Dryad",
+      "grants": { "displayName": "Dryad's Haven", "description": "..." } },
+    { "hero": "Sune", "heroName": "Xavian", "displayName": "Sandworn Bands of the Fortress",
+      "grants": { "displayName": "Fortress in the Sands", "description": "..." } }
+  ]
+}
 ```
 
 Every variant goes in the one file. An id names one item however many things the game shows for it,
@@ -367,9 +493,8 @@ so `tooltip-ItemID-5224.json` carries all five with their own names, abilities a
 constants, and the item's own `DisplayName` stays the placeholder it is rather than one variant's
 name standing in for the rest.
 
-Any map keyed by a `CharacterID.Hero.*` tag is picked up by shape, so a new per-hero field appears
-without a code change. A trailing `ByHero` is stripped from the field name. A hero the item is
-allowed on counts as a variant even when no field differs, because the ability it grants still can.
+A hero the item is allowed on counts as a variant even when no field differs, because the ability
+it grants still can.
 
 The name and description are not the whole tooltip, and neither is on the item:
 
@@ -382,9 +507,10 @@ The name and description are not the whole tooltip, and neither is on the item:
 
 Both are the same asset class, so one reader serves them. An augmentation carries its own name and
 line when it is a legendary stat, and usually carries neither when it is a granted ability: it names
-a gameplay ability instead, whose presentation row holds the text. So the reader follows
-`GrantedAbilities` and resolves each one as a full ability, which also brings its icon, its
-description tokens and its constants.
+gameplay abilities instead, whose presentation rows hold the text. So the reader follows
+`GrantedAbilities` and resolves **every** one, taking the text from the first that has any and the
+numbers from all of them. A talent grants several abilities that each carry their own tuning, so
+folding only the named one drops the rest.
 
 Whether an item's ability belongs to the item or to a hero is read from the mapping tables rather
 than from the item. A key that answers the same asset for every hero is one ability on the item; a
@@ -399,11 +525,9 @@ Sune is Xavian, Firemage is Ardeos, Warmaster is Helena.**
 
 The icon is shared: these items declare a single `DefaultIcon`, not one per hero.
 
-Two limits worth stating. Enum-valued fields (`abilityCategoryOrdinal`, a token's
-`calculationOrdinal`) are emitted as ordinals, because the usmap's enum table is empty. And the
-displayed damage range is not emitted: the data gives the coefficient and the attribute it
-captures, but the player's stat value and the spread the UI applies around it are not in the
-build.
+One limit worth stating: the displayed damage range is not emitted. The data gives the coefficient
+and the attribute it captures, but the player's stat value and the spread the UI applies around it
+are not in the build.
 
 ### Items with no hero dimension
 
@@ -414,27 +538,34 @@ A relic is the other shape: usable by every hero, one name, one ability. `ItemID
 dotnet run --project src/FellowshipExtractor -- tooltip ItemID 5252
 ```
 
+```json
+{
+  "table": "ItemID", "netId": 5252,
+  "name": "ItemID.HeroItem.Dynamic.Relic.C_Crit_Spirit_Polymorph",
+  "displayName": "Ancient Poultry Fetish",
+  "type": "Relic",
+  "stats": ["HeroRelativePrimaryStat", "CritChance", "Spirit"],
+  "icon": "T_Relic_Chicken.png",
+  "grants": {
+    "displayName": "Chickenize!",
+    "tags": ["Relic", "Skill.Secondary"],
+    "description": "Instantly turn your target into a chicken.\r\n\r\n<rt.absorb>Chickenize!</> can only be used a limited amount of times per dungeon. The charges are shared by everyone in the party.\r\n\r\n<rt.effect>Chickenized</> enemies <rt.warning>do not give Kill Score.</>\r\n\r\n<rt.meikoability2>Can be used during Global Cooldown</>",
+    "icon": "T_Relic_Chicken.png",
+    "cooldown": 180,
+    "range": 3000,
+    "constants": {
+      "MaxSharedCharges.Dungeon": 4,
+      "MaxSharedCharges.Adventure": 2,
+      "BaseHealthThreshold.Large": 3.5,
+      "BaseHealthThreshold.Medium": 2,
+      "ThreatAdded": 100
+    }
+  }
+}
 ```
-  ANCIENT POULTRY FETISH
-  Relic
 
-  3 stat slot(s):
-    HeroRelativePrimaryStat      hero relative
-    StatCrit                     ECRItemStat::CritChance
-    StatSpirit                   ECRItemStat::Spirit
-
-  Ability: Chickenize!
-    Instantly turn your target into a chicken.
-    <rt.absorb>Chickenize!</> can only be used a limited amount of times per dungeon. The charges
-    are shared by everyone in the party.
-    <rt.effect>Chickenized</> enemies <rt.warning>do not give Kill Score.</>
-    <rt.meikoability2>Can be used during Global Cooldown</>
-    CooldownDuration    RelicPower.PolymorphTargetWithSharedCharges.Cooldown       180
-
-  icon: /Game/ui/icons/RelicIcons/T_Relic_Chicken.T_Relic_Chicken
-        output\textures\tooltip\ItemID-5252-T_Relic_Chicken.png  (1306x1306, PF_B8G8R8A8)
-```
-
+Every line of the in-game tooltip is there: the icon, the name, the `Relic` subtitle, the three
+stat lines, the ability with all four of its paragraphs, and `3 MINUTE COOLDOWN` as `cooldown`.
 Three fields on the item make that work, and none of them is a `DisplayName`:
 
 | Wanted | Where it is |
@@ -445,8 +576,8 @@ Three fields on the item make that work, and none of them is a `DisplayName`:
 
 A display name in a map is picked up whatever the map is keyed by, so `DisplayNameByArmorType` and
 `DisplayNameByHero` need no separate handling. The name is taken from the map when it holds one
-distinct value; several values mean a dimension has to be chosen first, which is what passing a
-hero does.
+distinct value; several values mean the item reads differently per hero, and each variant carries
+its own name while the item keeps the internal placeholder.
 
 Stat **magnitudes** are not in the build. A dynamic item declares which slots it has, not what they
 roll to: `DA_StatCalculationSettings` holds the coefficients (`PrimaryPowerBase` 1.03,
@@ -469,10 +600,30 @@ dotnet run --project src/FellowshipExtractor -- export-all ItemID GameplayAbilit
 wrote output\export\entities.jsonl
   13088 entities, 2482 with a display name, 1650 with an icon
   992 images in output\export
+  1322 tuning rows supplied by namespace that no asset names
 ```
 
-Each line carries the interpreted tooltip fields *and* the asset's full property set under
-`properties`, so a field this code does not yet read is still in the export.
+Every line is the same record the `tooltip` command writes for one entity - one shape, 2.3 MB for
+the whole game, down from 22.5 MB.
+
+Changing that shape is easy to get wrong in one direction only: minimising fails by quietly
+dropping something a tooltip needed. So a shape change is verified by diffing the old export
+against the new one rather than by eye, on three invariants that a silent loss would break:
+
+| Invariant | Result |
+| --- | --- |
+| Every tuning row the old export reached is still reachable, as a named field or a constant | 12,218 rows, 0 lost |
+| Every attribute the old export captured still appears in a `scalesOff` | 4,715 attributes, 0 lost |
+| Every `{Token}` written in a description has a matching `placeholders` entry | 396 tokens, 0 unresolved |
+| Every `icon` names a file that exists in the folder | 1,728 references, 0 missing |
+
+Two of the four earned their keep immediately. The row check caught a talent's second and third
+granted abilities being dropped, 421 rows across the augmentation table. The attribute check caught
+gameplay effects losing their own scaling: an ability's comes from the effect it applies, but an
+effect asked for in its own right captures on itself, and only the referenced ones were being read.
+
+`grep -c '/Game/\|/Script/' entities.jsonl` returns 0, which is the check that no asset path
+survived anywhere in the export.
 
 Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` tables are indexed:
 
@@ -500,12 +651,14 @@ Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` t
   tables keep their rows in a map beside their properties, so those are written under `$rows`;
   without that a table serializes to its config flags and nothing else.
 - `src/FellowshipExtractor/Tooltip/` - the `tooltip` and `export-all` commands. `TooltipResolver`
-  builds the shared indexes once and turns a tag into a `TooltipRecord`, so resolving one entity
-  and resolving the whole game are the same code and the same setup cost. `PropertyWalk` is the
-  recursive property walk everything else is built on, `CurveBindings` turns `FScalableFloat`
-  references into resolved constants, `AbilityPresentationIndex` holds the `CRAbilityDataRow` join,
-  `ItemSlots` holds the item slot definition join, and `DescriptionTokens` follows a `{Token}` to
-  the gameplay effect behind it.
+  builds the shared indexes once and turns a tag into an `Entity`, so resolving one entity and
+  resolving the whole game are the same code, the same setup cost and the same record shape.
+  `Entity` is that shape and the only thing either command writes. `PropertyWalk` is the recursive
+  property walk everything else is built on, `CurveBindings` turns `FScalableFloat` references into
+  resolved constants, `Numbers` sorts those into the named tooltip fields and the rest,
+  `TuningNamespace` decides which prefix a row belongs to, `AbilityPresentationIndex` holds the
+  `CRAbilityDataRow` join, `ItemSlots` holds the item slot definition join, `GameplayEffects` reads
+  an effect for its scaling, and `DescriptionTokens` follows a `{Token}` to the effect behind it.
 
 ## Known limits
 

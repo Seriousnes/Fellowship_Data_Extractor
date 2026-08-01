@@ -6,30 +6,21 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>One of an item's stat slots, resolved to the stats it can hold.</summary>
-public sealed record ItemSlot(string Slot)
-{
-    public string[]? StatPool { get; init; }
-    public string[]? LegendaryTraitPool { get; init; }
-    public string[]? GemPowerPool { get; init; }
-
-    /// <summary>Slot and stat are byte-valued enums, which cook down to their ordinal.</summary>
-    public string? SlotTypeOrdinal { get; init; }
-    public string? StatOrdinal { get; init; }
-}
-
 /// <summary>
 /// What an item's FixedSlots entries actually are. The item names slots only - "StatCrit",
 /// "HeroRelativePrimaryStat" - and the slot definition table says which stat each one carries.
-/// The magnitude is not here: a dynamic item rolls it from its rarity and level at drop time.
+///
+/// The magnitude is not here and is not in the build: a dynamic item rolls it from its rarity and
+/// its level at drop time, so an item declares which stats it has and never how much of them.
 /// </summary>
 public sealed class ItemSlots
 {
     public const string RowStructure = "/Script/DynamicLootSystemRuntime.CRDynamicHeroItemSlotDefinition";
+    private const string StatEnumPrefix = "ECRItemStat::";
 
-    private readonly Dictionary<string, ItemSlot> _bySlot = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _statBySlot = new(StringComparer.OrdinalIgnoreCase);
 
-    public int Count => _bySlot.Count;
+    public int Count => _statBySlot.Count;
 
     public ItemSlots(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
@@ -40,33 +31,35 @@ public sealed class ItemSlots
 
             foreach (var (rowName, row) in table.RowMap)
             {
-                _bySlot.TryAdd(rowName.Text, new ItemSlot(rowName.Text)
-                {
-                    StatPool = Pool(row, "StatPool"),
-                    LegendaryTraitPool = Pool(row, "LegendaryTraitPool"),
-                    GemPowerPool = Pool(row, "GemPowerPool"),
-                    SlotTypeOrdinal = PropertyWalk.GetString(row, "SlotType"),
-                    StatOrdinal = PropertyWalk.GetString(row, "Stat"),
-                });
+                if (Stat(row) is { } stat) _statBySlot.TryAdd(rowName.Text, stat);
             }
         }
     }
 
-    /// <summary>The slots an item declares, in the order it declares them.</summary>
-    public List<ItemSlot> For(UObject asset) =>
+    /// <summary>The stats an item's slots carry, in the order the item declares them.</summary>
+    public List<string> For(UObject asset) =>
         [.. PropertyWalk.Walk(asset)
             .Where(p => p.Path.StartsWith("FixedSlots[", StringComparison.Ordinal))
             .Select(p => PropertyWalk.AsString(p.Value))
             .OfType<string>()
-            .Select(slot => _bySlot.GetValueOrDefault(slot, new ItemSlot(slot)))];
+            .Select(slot => _statBySlot.GetValueOrDefault(slot, slot))];
 
-    private static string[]? Pool(IPropertyHolder row, string name)
+    /// <summary>
+    /// The one stat a fixed slot holds. Every slot that names a pool names exactly one stat in it;
+    /// the slot whose stat depends on the hero names none, and its own name says so.
+    /// </summary>
+    private static string? Stat(IPropertyHolder row)
     {
-        if (PropertyWalk.Get(row, name)?.GenericValue is not UScriptArray array || array.Properties.Count == 0)
-        {
-            return null;
-        }
-        return [.. array.Properties.Select(p => PropertyWalk.AsString(p?.GenericValue)).OfType<string>()];
+        if (PropertyWalk.Get(row, "StatPool")?.GenericValue is not UScriptArray pool) return null;
+
+        var stats = pool.Properties
+            .Select(p => PropertyWalk.AsString(p?.GenericValue))
+            .OfType<string>()
+            .Select(s => s.StartsWith(StatEnumPrefix, StringComparison.Ordinal) ? s[StatEnumPrefix.Length..] : s)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        return stats.Length == 1 ? stats[0] : null;
     }
 }
 

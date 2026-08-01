@@ -4,16 +4,14 @@ using CUE4Parse.UE4.Assets.Exports;
 namespace FellowshipExtractor.Tooltip;
 
 /// <summary>
-/// A gameplay effect an ability applies, with the attributes it scales off and the tuning
-/// constants behind those coefficients.
+/// A gameplay effect an asset applies, reduced to what it contributes: the attributes it scales
+/// off and the coefficients behind them. The effect is its own entity elsewhere in the export, so
+/// its identity is not repeated here.
 /// </summary>
-public sealed record EffectRef(string Property, string Object)
+public sealed record EffectRef
 {
-    /// <summary>The attributes the effect captures, e.g. Strength for a Strength-scaling hit.</summary>
     public IReadOnlyList<string>? CapturedAttributes { get; init; }
-
     public IReadOnlyList<CurveBinding>? Constants { get; init; }
-    public string? Unresolved { get; init; }
 }
 
 /// <summary>
@@ -25,21 +23,18 @@ public static class GameplayEffects
 {
     private const string AttributeField = "AttributeName";
 
-    public static EffectRef Resolve(
-        AbstractFileProvider provider, ConstantsTable constants, string property, string objectPath)
+    public static EffectRef Resolve(AbstractFileProvider provider, ConstantsTable constants, string objectPath)
     {
-        var result = new EffectRef(property, objectPath);
-
         if (!provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(objectPath), out var package))
         {
-            return result with { Unresolved = $"could not load {objectPath}" };
+            return new EffectRef();
         }
 
         var effect = package.GetExports()
             .FirstOrDefault(e => e.Name.StartsWith("Default__", StringComparison.Ordinal));
-        if (effect is null) return result with { Unresolved = $"no class default object in {objectPath}" };
+        if (effect is null) return new EffectRef();
 
-        return result with
+        return new EffectRef
         {
             CapturedAttributes = Captures(effect),
             Constants = CurveBindings.Collect(effect, constants) is { Count: > 0 } bindings ? bindings : null,

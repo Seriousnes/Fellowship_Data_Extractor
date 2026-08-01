@@ -8,9 +8,9 @@ using FellowshipExtractor.Textures;
 namespace FellowshipExtractor.Tooltip;
 
 /// <summary>
-/// Reconstructs everything the game shows for one named entity and writes it out with the icon
-/// decoded to a real image. The resolution itself lives in <see cref="TooltipResolver"/> so the
-/// bulk export runs the same code over every tag.
+/// Reconstructs what the game shows for one named entity and writes it out with the icon decoded
+/// to a real image. The resolution itself lives in <see cref="TooltipResolver"/> so the bulk
+/// export runs the same code over every tag and produces the same record.
 /// </summary>
 public static class TooltipCommand
 {
@@ -49,8 +49,10 @@ public static class TooltipCommand
         var target = Path.Combine(options.ResolvedOutputDir, $"tooltip-{tag.Value.Table}-{tag.Value.NetId}.json");
         await File.WriteAllTextAsync(target, JsonSerializer.Serialize(record, JsonOptions));
 
-        Report(record);
-        Console.WriteLine($"\nwrote {target}");
+        Report(record, "  ");
+        Console.WriteLine($"\ntuning rows supplied by namespace: {resolver.NamespaceSupplied}");
+        Console.WriteLine($"icons in {iconDir}");
+        Console.WriteLine($"wrote {target}");
     }
 
     public static readonly JsonSerializerOptions JsonOptions = new()
@@ -61,16 +63,17 @@ public static class TooltipCommand
     };
 
     /// <summary>
-    /// Writes icons under one directory, decoding each texture once. A cooked texture is
-    /// block-compressed GPU data, so the path a presentation row carries is not usable as an image
-    /// until it has been through the decoder.
+    /// Writes icons under one directory, decoding each texture once, and answers with the file
+    /// name. A cooked texture is block-compressed GPU data, so the path a presentation row carries
+    /// is not usable as an image until it has been through the decoder. Files are named after the
+    /// texture, so an icon several entities share is written once and they all agree on it.
     /// </summary>
-    public static IconWriter IconWriterInto(
-        AbstractFileProvider provider, string directory, bool reportFailures, bool prefixWithHint = true)
+    public static IconWriter IconWriterInto(AbstractFileProvider provider, string directory, bool reportFailures)
     {
-        var written = new Dictionary<string, TextureExport?>(StringComparer.OrdinalIgnoreCase);
+        var written = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        Directory.CreateDirectory(directory);
 
-        return (iconPath, nameHint) =>
+        return iconPath =>
         {
             if (written.TryGetValue(iconPath, out var cached)) return cached;
 
@@ -81,8 +84,8 @@ public static class TooltipCommand
                 return written[iconPath] = null;
             }
 
-            var target = Path.Combine(directory, prefixWithHint ? $"{nameHint}-{texture.Name}" : texture.Name);
-            var export = TextureExporter.Export(texture, target, ETextureFormat.Png);
+            var export = TextureExporter.Export(
+                texture, Path.Combine(directory, texture.Name), ETextureFormat.Png);
 
             if (!export.Written)
             {
@@ -90,125 +93,102 @@ public static class TooltipCommand
                 return written[iconPath] = null;
             }
 
-            return written[iconPath] = export;
+            return written[iconPath] = Path.GetFileName(export.File);
         };
     }
 
-    private static void Report(TooltipRecord record)
+    private static void Report(Entity entity, string indent)
     {
         Console.WriteLine();
-        Console.WriteLine($"  {record.DisplayName?.ToUpperInvariant() ?? record.Name}");
-        if (record.ItemType is not null) Console.WriteLine($"  {record.ItemType}");
+        Console.WriteLine($"{indent}{entity.DisplayName?.ToUpperInvariant() ?? entity.Name}");
+        if (entity.Type is not null) Console.WriteLine($"{indent}{entity.Type}");
+        if (entity.Tags is { } tags) Console.WriteLine($"{indent}{string.Join(", ", tags)}");
+        if (entity.Stats is { } stats) Console.WriteLine($"{indent}stats: {string.Join(", ", stats)}");
+        if (entity.Resource is { } resource) Console.WriteLine($"{indent}resource: {resource}");
 
-        if (record.Slots is { } slots)
+        foreach (var (field, value) in Fields(entity))
         {
-            Console.WriteLine($"\n  {slots.Count} stat slot(s):");
-            foreach (var slot in slots)
+            Console.WriteLine($"{indent}{field,-12} {value}");
+        }
+
+        foreach (var line in (entity.Description ?? "").Split('\n'))
+        {
+            if (line.Trim().Length > 0) Console.WriteLine($"{indent}{line.TrimEnd('\r')}");
+        }
+
+        foreach (var line in entity.Detail ?? []) Console.WriteLine($"{indent}| {line.ReplaceLineEndings(" ")}");
+
+        if (entity.ScalesOff is { } scaling) Console.WriteLine($"{indent}scales off: {string.Join(", ", scaling)}");
+
+        foreach (var (token, placeholder) in entity.Placeholders ?? new Dictionary<string, Placeholder>())
+        {
+            var off = placeholder.ScalesOff is { } s ? $"  ({string.Join(", ", s)})" : "";
+            var own = placeholder.FromOwnConstants is true ? "  from this entity's own constants" : "";
+            Console.WriteLine($"{indent}{{{token}}}{off}{own}");
+            foreach (var (key, value) in placeholder.Constants ?? new Dictionary<string, object?>())
             {
-                var stats = slot.StatPool is null ? "hero relative" : string.Join(", ", slot.StatPool);
-                Console.WriteLine($"    {slot.Slot,-28} {stats}");
+                Console.WriteLine($"{indent}  {key,-58} {Show(value)}");
             }
         }
 
-        foreach (var ability in record.Abilities ?? [])
+        if (entity.Icon is { } icon) Console.WriteLine($"{indent}icon: {icon}");
+
+        if (entity.Constants is { } constants)
         {
-            Console.WriteLine($"\n  grants: {ability.DisplayName ?? ability.Asset}");
+            Console.WriteLine($"{indent}{constants.Count} constant(s):");
+            foreach (var (key, value) in constants) Console.WriteLine($"{indent}  {key,-58} {Show(value)}");
         }
 
-        if (record.GrantedAbility is { } granted) ReportAugmentation(granted, "  ");
+        if (entity.GrantedTags is { } tags2) Console.WriteLine($"{indent}grants tags: {string.Join(", ", tags2)}");
 
-        if (record.Variants is { } variants)
+        foreach (var (talent, fields) in entity.Talents ?? new Dictionary<string, IReadOnlyDictionary<string, object?>>())
         {
-            Console.WriteLine($"\n  {variants.Count} hero variant(s):");
-            foreach (var variant in variants)
-            {
-                Console.WriteLine($"    {variant.HeroName ?? variant.Hero} ({variant.Hero})");
-                foreach (var (field, value) in variant.Fields) Console.WriteLine($"      {field}: {value}");
-                if (variant.GrantedAbility is { } ability) ReportAugmentation(ability, "      ");
-            }
+            var gate = entity.TalentGates?.GetValueOrDefault(talent) is { } tag
+                ? $"  requires {tag}"
+                : "  (no condition declared)";
+            Console.WriteLine($"{indent}talent {talent}:{gate}");
+            foreach (var (key, value) in fields) Console.WriteLine($"{indent}  {key,-58} {Show(value)}");
         }
 
-        if (record.LegendaryStats is { } stats2)
+        if (entity.Grants is { } granted)
         {
-            Console.WriteLine($"\n  {stats2.Count} legendary stat(s):");
-            foreach (var stat in stats2)
-            {
-                Console.WriteLine($"    {stat.EffectiveName,-24} {stat.EffectiveDescription}");
-            }
+            Console.WriteLine($"\n{indent}grants:");
+            Report(granted, indent + "  ");
         }
 
-        if (record.Headline is { } headline)
+        foreach (var stat in entity.LegendaryStats ?? [])
         {
-            foreach (var (field, value) in headline) Console.WriteLine($"    {field,-16} {value}");
+            Console.WriteLine($"\n{indent}legendary stat:");
+            Report(stat, indent + "  ");
         }
 
-        if (record.Description is { } description) Console.WriteLine($"\n  {description}");
-
-        if (record.CapturedAttributes is { } captures)
+        foreach (var variant in entity.Variants ?? [])
         {
-            Console.WriteLine($"\n  scales off: {string.Join(", ", captures)}");
-        }
-
-        if (record.Effects is { } effects)
-        {
-            Console.WriteLine($"\n  {effects.Count} applied effect(s):");
-            foreach (var effect in effects) ReportEffect(effect, "    ");
-        }
-
-        foreach (var token in record.DescriptionTokens ?? [])
-        {
-            Console.WriteLine($"\n  {{{token.TokenName}}}");
-            foreach (var binding in token.Constants ?? [])
-            {
-                Console.WriteLine($"    {binding.RowName,-64} {binding.Value?.ToString() ?? "unresolved"}");
-            }
-        }
-
-        if (record.Icon is { } icon) Console.WriteLine($"\n  icon: {icon}");
-        if (record.IconImage is { } image)
-        {
-            Console.WriteLine($"        {image.File}  ({image.Width}x{image.Height}, {image.PixelFormat})");
-        }
-
-        if (record.Constants is { } constants)
-        {
-            Console.WriteLine($"\n  {constants.Count} curve binding(s):");
-            foreach (var binding in constants)
-            {
-                Console.WriteLine($"    {binding.Property,-40} {binding.RowName,-58} {binding.Value?.ToString() ?? "unresolved"}");
-            }
+            Console.WriteLine($"\n{indent}{variant.HeroName ?? variant.Hero} ({variant.Hero}): {variant.DisplayName}");
+            if (variant.Grants is { } ability) Report(ability, indent + "  ");
         }
     }
 
-    private static void ReportEffect(EffectRef effect, string indent)
+    private static IEnumerable<(string, double)> Fields(Entity entity)
     {
-        var scales = effect.CapturedAttributes is { } attributes ? $"  scales off {string.Join(", ", attributes)}" : "";
-        Console.WriteLine($"{indent}{effect.Property,-32} {AbilityPresentationIndex.AssetName(effect.Object)}{scales}");
-
-        foreach (var binding in effect.Constants ?? [])
-        {
-            Console.WriteLine($"{indent}  {binding.RowName,-64} {binding.Value?.ToString() ?? "unresolved"}");
-        }
-
-        if (effect.Unresolved is { } reason) Console.WriteLine($"{indent}  {reason}");
+        if (entity.CastTime is { } cast) yield return ("castTime", cast);
+        if (entity.ChannelTime is { } channel) yield return ("channelTime", channel);
+        if (entity.ChannelTick is { } tick) yield return ("channelTick", tick);
+        if (entity.Cooldown is { } cooldown) yield return ("cooldown", cooldown);
+        if (entity.Charges is { } charges) yield return ("charges", charges);
+        if (entity.Cost is { } cost) yield return ("cost", cost);
+        if (entity.Range is { } range) yield return ("range", range);
+        if (entity.Radius is { } radius) yield return ("radius", radius);
+        if (entity.Duration is { } duration) yield return ("duration", duration);
+        if (entity.Period is { } period) yield return ("period", period);
     }
 
-    private static void ReportAugmentation(Augmentation augmentation, string indent)
+    private static string Show(object? value) => value switch
     {
-        Console.WriteLine($"\n{indent}Ability: {augmentation.EffectiveName ?? augmentation.Asset}");
-        foreach (var line in (augmentation.EffectiveDescription ?? "").Split('\n'))
-        {
-            if (line.Trim().Length > 0) Console.WriteLine($"{indent}  {line.TrimEnd('\r')}");
-        }
-
-        foreach (var ability in augmentation.Abilities ?? [])
-        {
-            foreach (var binding in ability.Constants ?? [])
-            {
-                Console.WriteLine($"{indent}  {binding.Property,-32} {binding.RowName,-58} {binding.Value?.ToString() ?? "unresolved"}");
-            }
-        }
-    }
+        null => "unresolved",
+        double[] ranks => string.Join(" / ", ranks),
+        _ => value.ToString() ?? "",
+    };
 
     internal static string? TagValue(FAssetData asset, string key) =>
         asset.TagsAndValues.FirstOrDefault(kv => kv.Key.Text.Equals(key, StringComparison.OrdinalIgnoreCase)).Value;
