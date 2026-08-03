@@ -5,15 +5,20 @@ namespace FellowshipExtractor.Tooltip;
 /// every row already accounted for, whether it became a named field or a constant, so a later
 /// pass over the same rows does not report one twice under two different names.
 ///
-/// Own holds the Rest keys that came from under the entity's own namespace. A reader asking which
-/// of an entity's rows answers a question about the entity needs that distinction, because a row
+/// Own holds the keys that came from under the entity's own namespace. A reader asking which of an
+/// entity's rows answers a question about the entity needs that distinction, because a row
 /// belonging to something the entity merely waits on is reachable and is not an answer.
+///
+/// Promoted holds the entity's own rows a named field took, under the key Rest would have filed
+/// them by. They leave Rest so the constants do not repeat what a field already says, but a field
+/// and a token can name the same number and the row is the answer to both.
 /// </summary>
 public sealed record SplitNumbers(
     Dictionary<string, double> Named,
     Dictionary<string, object?> Rest,
     HashSet<string> Rows,
-    HashSet<string> Own);
+    HashSet<string> Own,
+    Dictionary<string, double> Promoted);
 
 /// <summary>
 /// Sorting an entity's tuning numbers into the ones a tooltip shows in a fixed place - cast time,
@@ -81,6 +86,7 @@ public static class Numbers
         var rest = new Dictionary<string, object?>(StringComparer.Ordinal);
         var rows = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var own = new HashSet<string>(StringComparer.Ordinal);
+        var promoted = new Dictionary<string, double>(StringComparer.Ordinal);
 
         var all = bindings as IReadOnlyCollection<CurveBinding> ?? [.. bindings];
         var claimed = new Dictionary<string, CurveBinding>(StringComparer.Ordinal);
@@ -92,7 +98,8 @@ public static class Numbers
             if (binding.Values is not null || binding.Value is null) continue;
 
             var relative = TuningNamespace.Relative(binding.RowName, tuningNamespace);
-            var shallow = relative.Length < binding.RowName.Length && !relative.Contains('.');
+            var under = relative.Length < binding.RowName.Length;
+            var shallow = under && !relative.Contains('.');
 
             // A row leaf only names a field when the row is the entity's own. Read from any row it
             // would promote Hero.AbilityPaddingCooldown.Default.Duration, which belongs to the
@@ -100,7 +107,18 @@ public static class Numbers
             var field = Field(binding.Property) ?? (shallow ? Field(relative) : null);
 
             if (field is null || (field == Charges && !usesCharges)) continue;
-            if (claimed.TryAdd(field, binding)) named[field] = binding.Value.Value;
+            if (!claimed.TryAdd(field, binding)) continue;
+
+            named[field] = binding.Value.Value;
+
+            // The row keeps its place among the entity's own even though the field takes it out of
+            // Rest. Only the entity's own: a field can be read off the property of a row belonging
+            // to something the entity waits on, and that row answers nothing about the entity.
+            if (under)
+            {
+                promoted[relative] = binding.Value.Value;
+                own.Add(relative);
+            }
         }
 
         // A charge count is the one field worth reading from a row named for a talent, and only
@@ -130,18 +148,18 @@ public static class Numbers
             }
         }
 
-        var promoted = new HashSet<string>(
+        var claimedRows = new HashSet<string>(
             claimed.Values.Select(b => b.RowName), StringComparer.OrdinalIgnoreCase);
 
         foreach (var binding in all)
         {
             rows.Add(binding.RowName);
-            if (promoted.Contains(binding.RowName)) continue;
+            if (claimedRows.Contains(binding.RowName)) continue;
 
             Place(rest, own, binding.RowName, Value(binding), tuningNamespace);
         }
 
-        return new SplitNumbers(named, rest, rows, own);
+        return new SplitNumbers(named, rest, rows, own, promoted);
     }
 
     /// <summary>Adds a binding to a plain constants map, under the reader's own namespace.</summary>
@@ -229,6 +247,12 @@ public static class Numbers
     /// asking for a period or a duration is answered from here rather than from the whole reachable
     /// set, for the same reason a field is: Echoes of Ruin reaches two rows whose leaf reads
     /// Duration and only Dot.Duration is its own.
+    ///
+    /// The rows a named field took are among the candidates, so a field and a token can name the
+    /// same number. Incinerate shows its channel interval as the tick beside the cast time and
+    /// prints it again as {IncinerateChannelInterval}; with the field's row held back the token had
+    /// nothing to print and the sentence read "every {IncinerateChannelInterval} seconds". Two
+    /// candidates still means neither is reported.
     /// </summary>
     public static (string Key, double Value)? SoleField(
         IReadOnlyDictionary<string, object?> constants,

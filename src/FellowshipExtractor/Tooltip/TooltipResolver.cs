@@ -510,7 +510,7 @@ public sealed class TooltipResolver
         // a token does take stops being available to the next one: Luminous Barrier's absorb and
         // its damage reduction are two sentences and one coefficient, and printing that coefficient
         // twice says the barrier reduces damage by twelve times the wearer's Intellect.
-        var reachable = Rejoined(baseline, claimed);
+        var reachable = Rejoined(baseline, claimed, split.Promoted);
         var taken = new HashSet<string>(claimed.Keys, StringComparer.Ordinal);
 
         foreach (var name in placeholders.Keys.ToArray())
@@ -688,7 +688,17 @@ public sealed class TooltipResolver
 
             foreach (var (field, value) in one.Named)
             {
-                if (split.Named.TryAdd(field, value)) NamespaceSupplied++;
+                if (!split.Named.TryAdd(field, value)) continue;
+
+                NamespaceSupplied++;
+
+                // The row behind the field stays reachable by name, the same as one the asset
+                // named. one holds a single binding, so this is that row.
+                foreach (var (key, row) in one.Promoted)
+                {
+                    split.Promoted[key] = row;
+                    split.Own.Add(key);
+                }
             }
 
             foreach (var (key, value) in one.Rest)
@@ -705,16 +715,24 @@ public sealed class TooltipResolver
         split.Named.TryGetValue(field, out var value) ? value : null;
 
     /// <summary>
-    /// An entity's baseline constants with the rows its tokens claimed put back, grouped the same
-    /// way, so a claimed row that names a talent stays out of the baseline either way.
+    /// An entity's baseline constants with the rows its tokens claimed and the rows its named
+    /// fields took put back, grouped the same way, so a row that names a talent stays out of the
+    /// baseline however it got here.
+    ///
+    /// This is the set a token searches, not the set the export writes. A field's row is put back
+    /// because a token can name the same number the field does; the constants the export writes
+    /// come from the baseline, where the row stays out and does not repeat the field.
     /// </summary>
     private static IReadOnlyDictionary<string, object?> Rejoined(
-        Dictionary<string, object?> baseline, Dictionary<string, object?> claimed)
+        Dictionary<string, object?> baseline,
+        Dictionary<string, object?> claimed,
+        IReadOnlyDictionary<string, double> promoted)
     {
-        if (claimed.Count == 0) return baseline;
+        if (claimed.Count == 0 && promoted.Count == 0) return baseline;
 
         var all = new Dictionary<string, object?>(baseline, StringComparer.Ordinal);
         foreach (var (key, value) in claimed) all[key] = value;
+        foreach (var (key, value) in promoted) all.TryAdd(key, value);
 
         return Numbers.SplitTalents(all).Baseline;
     }
