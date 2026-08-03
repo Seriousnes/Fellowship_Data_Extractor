@@ -1,0 +1,24 @@
+@inject CodexView Ui
+
+<a class="@Class" href="@Ui.Href(Entity)" data-tip="@Ui.Tip(Entity)" style="@Tone">
+    @if (ChildContent is null)
+    {
+        @Ui.Name(Entity)
+    }
+    else
+    {
+        @ChildContent
+    }
+</a>
+
+@code {
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public bool Tint { get; set; } = true;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string? Tone => Tint ? $"color:{Ui.NameColour(Entity)}" : null;
+}

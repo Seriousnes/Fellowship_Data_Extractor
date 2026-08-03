@@ -1,0 +1,248 @@
+@page "/entity/{table}/{netId:int}"
+@inject CodexView Ui
+@inject Codex Catalog
+@inject EntityStore Store
+@inject NavigationManager Nav
+
+@if (Readings.Count > 0)
+{
+    <PageTitle>@Name - Fellowship Codex</PageTitle>
+    <Crumbs Trail="@(new List<(string, string?)> { (Codex.Label(Table), $"/browse?type={Uri.EscapeDataString(Table)}"), (Name, null) })" />
+
+    <h1 style="color:@Ui.NameColour(Shown)">@Name</h1>
+
+    <div class="cx-entity">
+        <div class="cx-entity-top">
+            <div class="cx-entity-tip" data-stage="@Address" aria-live="polite">
+                <p class="cx-empty">Drawing the tooltip&hellip;</p>
+            </div>
+
+            <div class="cx-entity-side">
+                @if (Knobs)
+                {
+                    <div class="cx-panel">
+                        <div class="cx-panel-head">Read it as</div>
+
+                        @if (Readings.Count > 1)
+                        {
+                            <p class="cx-note">
+                                This id reads as @Readings.Count different things. A hero settles it,
+                                because a hero fixes both the armour type and the primary stat at once.
+                            </p>
+                        }
+
+                        @if (PicksHero)
+                        {
+                            <label class="cx-knob">
+                                <span>Hero</span>
+                                <select data-knob="hero"
+                                        onchange="location.search = '?hero=' + encodeURIComponent(this.value)">
+                                    @if (Readings.Count == 1)
+                                    {
+                                        <option value="">Any</option>
+                                    }
+                                    @foreach (var who in Store.Vocabulary.Heroes
+                                        .Where(h => Readings.Any(r => r.Heroes is null || r.Heroes.Contains(h.Name)))
+                                        .OrderBy(h => h.Name, StringComparer.OrdinalIgnoreCase))
+                                    {
+                                        <option value="@who.Name" selected="@(who.Name == Reading)">
+                                            @who.Name (@who.ArmorType, @who.PrimaryStat)
+                                        </option>
+                                    }
+                                </select>
+                            </label>
+                        }
+
+                        @if (Wearable || IsGem)
+                        {
+                            <div class="cx-knob">
+                                <span>Rarity</span>
+                                <div class="cx-rungs">
+                                    @foreach (var rung in Store.Vocabulary.Rarities)
+                                    {
+                                        var colour = CodexView.Readable(Ui.Tokens.Rarity(rung.Name));
+                                        <button type="button" data-knob="rarity" data-choice="@rung.Tier"
+                                                aria-pressed="false"
+                                                style="@(colour is null ? null : $"color:{colour}")">
+                                            @(IsGem ? rung.GemDisplayName : rung.DisplayName)
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (Wearable)
+                        {
+                            <label class="cx-knob">
+                                <span>Item level</span>
+                                <input type="number" min="1" max="1000" step="1"
+                                       value="@StatMagnitudes.MaximumItemLevel" data-knob="itemLevel" />
+                            </label>
+
+                            <label class="cx-knob">
+                                <span>Tempered</span>
+                                <input type="number" min="0" max="20" step="1" placeholder="none" data-knob="upgrades" />
+                            </label>
+                        }
+                    </div>
+                }
+
+                <div class="cx-panel">
+                    <div class="cx-panel-head">Identity</div>
+                    <table class="cx-facts">
+                        <tr><th>Gameplay tag</th><td>@Shown.Name</td></tr>
+                        <tr>
+                            <th>Table</th>
+                            <td><a href="/browse?type=@Uri.EscapeDataString(Table)">@Codex.Label(Table)</a></td>
+                        </tr>
+                        <tr><th>Network id</th><td>@NetId</td></tr>
+                        <tr>
+                            <th>Readings of this id</th>
+                            <td>@Readings.Count@(Kind is { } kind ? $" of {kind.Count:N0} in the table" : null)</td>
+                        </tr>
+                        <tr>
+                            <th>Tooltip</th>
+                            <td><a href="@Address">@Address</a></td>
+                        </tr>
+                    </table>
+
+                    @if (Readings.Count > 1)
+                    {
+                        <hr class="cx-rule" />
+                        <p class="cx-sub-head">Every reading</p>
+                        <ul class="cx-pills">
+                            @foreach (var reading in Readings)
+                            {
+                                var who = Ui.Reading(reading);
+                                <li>
+                                    <a href="@(Page + (who is null ? null : "?hero=" + Uri.EscapeDataString(who)))"
+                                       style="@(reading == Shown ? "color:var(--gold-bright)" : null)">
+                                        @Ui.Name(reading)
+                                        <span class="cx-num">@(reading.ArmorType ?? "any") / @(reading.PrimaryStat ?? "any")</span>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <Detail Entity="Shown" />
+
+        @if (Related.Count > 0)
+        {
+            <div class="cx-panel">
+                <div class="cx-panel-head">More like this</div>
+                <ul class="cx-pills">
+                    @foreach (var (label, href, count) in Related)
+                    {
+                        <li><a href="@href">@label <span class="cx-num">@count.ToString("N0")</span></a></li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <details class="cx-panel cx-raw-record">
+            <summary class="cx-panel-head">The exported record</summary>
+            <pre class="cx-raw">@Json</pre>
+        </details>
+    </div>
+}
+
+@code {
+    [Parameter] public string Table { get; set; } = string.Empty;
+
+    [Parameter] public int NetId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "hero")] public string? Asked { get; set; }
+
+    private IReadOnlyList<Entity> Readings = [];
+
+    private Entity Shown = new();
+
+    private IReadOnlyList<(string Label, string Href, int Count)> Related = [];
+
+    private string Name => Ui.Name(Shown);
+
+    private string? Reading => Asked ?? Ui.Reading(Shown);
+
+    private string Address => Ui.Tip(Shown);
+
+    private string Page => Ui.Href(Table, NetId);
+
+    private EntityType? Kind => Catalog.Types.FirstOrDefault(t => t.Table == Shown.Table);
+
+    private bool IsGem => Shown.GemTier is not null;
+
+    private bool Wearable => Shown.Stats is { Count: > 0 };
+
+    private bool PicksHero => Readings.Count > 1 || Shown.Heroes is { Count: > 1 };
+
+    private bool Knobs => PicksHero || Wearable || IsGem;
+
+    private string Json => System.Text.Json.JsonSerializer.Serialize(Shown, Pretty);
+
+    private static readonly System.Text.Json.JsonSerializerOptions Pretty = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+    };
+
+    protected override void OnParametersSet()
+    {
+        Readings = Store.All(Table, NetId);
+
+        if (Readings.Count == 0)
+        {
+            Shown = new Entity();
+            Related = [];
+            Nav.NotFound();
+            return;
+        }
+
+        Shown = Asked is not null && Store.Hero(Asked) is { } named
+            ? Readings.FirstOrDefault(e => Reads(e, named.Name, named.ArmorType, named.PrimaryStat)) ?? Readings[0]
+            : Readings[0];
+
+        Related = Nearby();
+    }
+
+    private static bool Reads(Entity entity, string hero, string? armor, string? stat) =>
+        (entity.Heroes is null || entity.Heroes.Contains(hero)) &&
+        (entity.ArmorType is null || entity.ArmorType == armor) &&
+        (entity.PrimaryStat is null || entity.PrimaryStat == stat);
+
+    private IReadOnlyList<(string, string, int)> Nearby()
+    {
+        var nearby = new List<(string, string, int)>();
+
+        void Add(string facet, string? value)
+        {
+            if (value is null) return;
+            if (Catalog.Facet(facet) is not { } definition) return;
+
+            var count = Store.Entities.Count(row =>
+                row.Table == Shown.Table && definition.Matches(row, [value]));
+
+            if (count < 2) return;
+
+            nearby.Add((
+                $"{definition.Label}: {Codex.Spaced(value)}",
+                $"/browse?type={Uri.EscapeDataString(Table)}&{facet}={Uri.EscapeDataString(value)}",
+                count));
+        }
+
+        Add("slot", Shown.Slot);
+        Add("set", Shown.SetBonus?.FirstOrDefault());
+        Add("ruleset", Shown.RuleSet);
+        Add("gem", Shown.GemType);
+        Add("trait", Shown.TraitCategory);
+        Add("hero", Shown.Heroes?.Count == 1 ? Shown.Heroes[0] : null);
+        Add("school", Shown.Tags?.FirstOrDefault(t =>
+            t.StartsWith("Magic", StringComparison.Ordinal) || t.StartsWith("Physical", StringComparison.Ordinal)));
+
+        return nearby;
+    }
+}

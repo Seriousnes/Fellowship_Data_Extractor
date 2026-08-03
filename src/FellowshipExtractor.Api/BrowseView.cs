@@ -1,63 +1,47 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-
-namespace FellowshipExtractor.Api.Pages;
+namespace FellowshipExtractor.Api;
 
 /// <summary>
-/// The results page: type tabs, the filter rail, and the table of everything the filter left.
+/// The results page as the component draws it: the links off every facet value, sort heading and
+/// page number, and the few things worth deciding once rather than inside a loop.
 ///
 /// The whole page is a function of the query string, so a reader's filter is a URL they can send
 /// somebody and every link the page draws - a facet value, a sort column, the next page - is that
 /// same query string with one thing changed. Nothing is held in the session and nothing is posted.
+///
+/// It is a plain object rather than anything the framework knows about because none of this needs a
+/// request: given a query and its results it can be built, tested and reasoned about on its own.
 /// </summary>
-public sealed class BrowseModel(Codex codex, CodexSearch search) : PageModel
+public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults results)
 {
-    public CodexQuery Query { get; private set; } = new();
-
-    public CodexResults Results { get; private set; } =
-        new(0, 1, 1, [], [], new Dictionary<string, int>(), 0, []);
-
-    public string? Error { get; private set; }
-
     public Codex Codex => codex;
 
-    public IActionResult OnGet()
-    {
-        Query = CodexQuery.Parse(Request.Query, codex, out var error);
-        Error = error;
+    public CodexQuery Query => query;
 
-        // A GET form posts every one of its inputs, so applying one range arrives carrying twenty
-        // empty ones. They parse to nothing and change no result, but the address is what a reader
-        // copies and sends, so the canonical form of the query is what the page settles on.
-        if (error is null && Request.Query.Any(p => p.Value.All(string.IsNullOrEmpty)))
-        {
-            return Redirect("/browse" + Query.ToQueryString());
-        }
-
-        if (error is null) Results = search.Run(Query);
-
-        return Page();
-    }
+    public CodexResults Results => results;
 
     /// <summary>This query with one facet value turned on or off, as a link.</summary>
     public string Toggle(string facet, string value) =>
-        "/browse" + Query.ToQueryString(toggle: (facet, value));
+        "/browse" + query.ToQueryString(toggle: (facet, value));
 
     public string Replace(string key, string? value) =>
-        "/browse" + Query.ToQueryString(replace: (key, value));
+        "/browse" + query.ToQueryString(replace: (key, value));
 
-    public string PageLink(int page) => "/browse" + Query.ToQueryString(page: page);
+    public string PageLink(int page) => "/browse" + query.ToQueryString(page: page);
 
     /// <summary>
     /// The link a column heading carries: sort by it, or reverse it when it is already the sort.
     /// </summary>
     public string SortLink(string column) =>
-        Query.Sort == column && !Query.Descending
-            ? "/browse" + Query.ToQueryString(replace: ("dir", "desc"))
-            : "/browse" + (Query with { Descending = false }).ToQueryString(replace: ("sort", column));
+        query.Sort == column && !query.Descending
+            ? "/browse" + query.ToQueryString(replace: ("dir", "desc"))
+            : "/browse" + (query with { Descending = false }).ToQueryString(replace: ("sort", column));
 
     public string? SortState(string column) =>
-        Query.Sort != column ? null : Query.Descending ? "descending" : "ascending";
+        query.Sort != column ? null : query.Descending ? "descending" : "ascending";
+
+    /// <summary>Everything but the filters, for the "clear all" link.</summary>
+    public string Bare =>
+        query.Text is null ? "/browse" : "/browse?q=" + Uri.EscapeDataString(query.Text);
 
     /// <summary>
     /// The measure columns worth drawing for what is on screen: a column every row leaves empty is
@@ -65,13 +49,25 @@ public sealed class BrowseModel(Codex codex, CodexSearch search) : PageModel
     /// </summary>
     public IReadOnlyList<Measure> Columns =>
     [
-        .. codex.Measures.Where(m => m.Column && (m.Key == "id" || Results.Rows.Any(row => m.Value(row) is not null))),
+        .. codex.Measures.Where(m =>
+            m.Column && (m.Key == "id" || results.Rows.Any(row => m.Value(row) is not null))),
     ];
 
     /// <summary>The facets that still have something to say about the rows on screen.</summary>
     public IReadOnlyList<FacetView> Rail =>
     [
-        .. Results.Facets.Where(facet => facet.Values.Count > 1 || Query.Selections.ContainsKey(facet.Key)),
+        .. results.Facets.Where(facet => facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Key)),
+    ];
+
+    /// <summary>
+    /// The measures worth offering a range for: the ones something on screen actually carries. A
+    /// cooldown box over a page of items is a box that can only empty the page.
+    /// </summary>
+    public IReadOnlyList<Measure> Ranges =>
+    [
+        .. codex.Measures.Where(measure =>
+            query.Ranges.ContainsKey(measure.Key) ||
+            results.Measured.Contains(measure.Key, StringComparer.OrdinalIgnoreCase)),
     ];
 
     /// <summary>
@@ -109,12 +105,12 @@ public sealed class BrowseModel(Codex codex, CodexSearch search) : PageModel
         {
             var chips = new List<(string, string)>();
 
-            foreach (var table in Query.Tables)
+            foreach (var table in query.Tables)
             {
-                chips.Add((Codex.Label(table), "/browse" + Query.ToQueryString(toggle: ("type", table))));
+                chips.Add((Codex.Label(table), "/browse" + query.ToQueryString(toggle: ("type", table))));
             }
 
-            foreach (var (key, values) in Query.Selections)
+            foreach (var (key, values) in query.Selections)
             {
                 if (codex.Facet(key) is not { } facet) continue;
 
@@ -124,14 +120,14 @@ public sealed class BrowseModel(Codex codex, CodexSearch search) : PageModel
                 }
             }
 
-            foreach (var (key, wanted) in Query.Flags)
+            foreach (var (key, wanted) in query.Flags)
             {
                 if (codex.Flag(key) is not { } flag) continue;
                 chips.Add(((wanted ? string.Empty : "Not: ") + flag.Label,
-                    "/browse" + Query.ToQueryString(replace: (key, null))));
+                    "/browse" + query.ToQueryString(replace: (key, null))));
             }
 
-            foreach (var (key, range) in Query.Ranges)
+            foreach (var (key, range) in query.Ranges)
             {
                 if (codex.Measure(key) is not { } measure) continue;
 
@@ -145,9 +141,9 @@ public sealed class BrowseModel(Codex codex, CodexSearch search) : PageModel
 
                 if (bounds is null) continue;
 
-                var without = Query with
+                var without = query with
                 {
-                    Ranges = Query.Ranges
+                    Ranges = query.Ranges
                         .Where(r => !string.Equals(r.Key, key, StringComparison.OrdinalIgnoreCase))
                         .ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase),
                 };
@@ -158,15 +154,4 @@ public sealed class BrowseModel(Codex codex, CodexSearch search) : PageModel
             return chips;
         }
     }
-
-    /// <summary>
-    /// The measures worth offering a range for: the ones something on screen actually carries. A
-    /// cooldown box over a page of items is a box that can only empty the page.
-    /// </summary>
-    public IReadOnlyList<Measure> Ranges =>
-    [
-        .. codex.Measures.Where(measure =>
-            Query.Ranges.ContainsKey(measure.Key) ||
-            Results.Measured.Contains(measure.Key, StringComparer.OrdinalIgnoreCase)),
-    ];
 }

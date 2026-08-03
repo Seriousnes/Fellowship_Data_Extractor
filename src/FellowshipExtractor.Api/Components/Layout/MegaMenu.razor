@@ -1,0 +1,41 @@
+@inject CodexView Ui
+
+<nav class="cx-mega" aria-label="Categories">
+    <ul class="cx-mega-bar">
+        @foreach (var group in Ui.Codex.Menu)
+        {
+            <li class="cx-mega-group">
+                <button type="button" class="cx-mega-open" aria-expanded="false">@group.Label</button>
+
+                <div class="cx-mega-panel">
+                    <div class="cx-mega-cols">
+                        @foreach (var entry in group.Entries)
+                        {
+                            <a class="cx-mega-head" href="/browse@(entry.Query)">
+                                @entry.Label <span class="cx-num">@entry.Count.ToString("N0")</span>
+                            </a>
+
+                            @foreach (var part in entry.Sections)
+                            {
+                                <div class="cx-mega-sec">
+                                    <p class="cx-mega-sec-head">@part.Label</p>
+                                    <ul>
+                                        @foreach (var link in part.Links)
+                                        {
+                                            <li>
+                                                <a href="/browse@(link.Query)"
+                                                   style="@(link.Colour is null ? null : $"color:{link.Colour}")">
+                                                    @link.Label <span class="cx-num">@link.Count.ToString("N0")</span>
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </li>
+        }
+    </ul>
+</nav>
