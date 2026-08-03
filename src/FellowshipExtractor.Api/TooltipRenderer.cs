@@ -118,7 +118,7 @@ public sealed class TooltipRenderer(
         string[] blocks =
         [
             Identity(entity, query, rarity),
-            Facts(entity),
+            Facts(entity, query),
             Rolls(entity, query, rarity),
             Prose(entity, query, hero),
             Overflow(entity, query, hero),
@@ -190,19 +190,27 @@ public sealed class TooltipRenderer(
     /// ability's numbers read as part of the same tooltip rather than as a strip of pills bolted to
     /// it. Only the ones the entity actually has, so an item shows none of them.
     /// </summary>
-    private string Facts(Entity entity)
+    private string Facts(Entity entity, TooltipQuery query)
     {
         var facts = new List<string>();
 
-        void Add(string label, double? value, string? unit = null)
+        void Add(string label, double? value, string? unit = null, string? title = null)
         {
             if (value is not { } number) return;
 
             var text = Math.Round((decimal)number, 2).Normalize().ToString(CultureInfo.InvariantCulture);
-            facts.Add($"<span class=\"k\">{Esc(label)}</span><span class=\"v\">{Esc(unit is null ? text : text + unit)}</span>");
+            var explained = title is null ? "" : $" title=\"{Esc(title)}\"";
+            facts.Add(
+                $"<span class=\"k\">{Esc(label)}</span>" +
+                $"<span class=\"v\"{explained}>{Esc(unit is null ? text : text + unit)}</span>");
         }
 
-        Add("Cast", entity.CastTime, "s");
+        // Of the times an ability states, the cast is the one haste shortens. The channel runs for
+        // as long as it says and lands more ticks instead, and a duration is a length rather than a
+        // rate, so neither moves.
+        var (cast, hastened) = Hastened(entity, entity.CastTime, query);
+
+        Add("Cast", cast, "s", hastened);
         Add("Channel", entity.ChannelTime, "s");
         Add("Cooldown", entity.Cooldown, "s");
         Add("Charges", entity.Charges);
@@ -223,6 +231,31 @@ public sealed class TooltipRenderer(
         }
 
         return Group(b);
+    }
+
+    /// <summary>
+    /// A cast time shortened by the caller's haste, and the sentence explaining it.
+    ///
+    /// Gated on the ability's own ScaleTimeWithHaste, which is what that flag is for: it separates
+    /// the abilities a wearer's haste reaches from the ones it does not. The separation is clean in
+    /// the shipped data - of the 224 abilities that state a cast time without the flag, 208 belong
+    /// to NPCs and bosses, 15 are never shown, and one is a hero's.
+    ///
+    /// The arithmetic is the same reading applied to a tickrate and is equally the reader's: the
+    /// build says which times haste reaches and never by how much. The title carries the number
+    /// before it so the figure is never mistaken for one the export stated.
+    /// </summary>
+    private static (double? Value, string? Title) Hastened(Entity entity, double? value, TooltipQuery query)
+    {
+        if (value is not { } seconds || entity.ScalesWithHaste is not true) return (value, null);
+        if (query.Haste is not { } haste || haste <= 0) return (value, null);
+
+        var text = (haste * 100m).Normalize().ToString(CultureInfo.InvariantCulture);
+
+        return (
+            (double)((decimal)seconds / (1m + haste)),
+            $"{seconds.ToString(CultureInfo.InvariantCulture)}s at no haste, " +
+            $"divided by {(1m + haste).Normalize().ToString(CultureInfo.InvariantCulture)} for {text}% haste");
     }
 
     /// <summary>

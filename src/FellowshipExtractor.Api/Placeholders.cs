@@ -44,7 +44,7 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
         // the effect opting out. Gating one on the other withheld haste from 22 of the 42 tickrates
         // in the build, most of them on items and augmentations, which carry no such flag to begin
         // with because they are not abilities.
-        var haste = query.Total(Haste);
+        var haste = query.Haste;
 
         foreach (var (name, placeholder) in placeholders)
         {
@@ -53,14 +53,6 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
 
         return resolved;
     }
-
-    /// <summary>
-    /// The attribute a haste value arrives under. It is the wearer's Haste as the build's own
-    /// constants express it, a fraction: Hero.Spirit.Buff.HasteIncrease is 0.3 and the ability
-    /// granting it says "+30% Haste". A gear slot's haste is a rating rather than this, and the
-    /// build states no conversion between the two, so a caller sends the attribute.
-    /// </summary>
-    private const string Haste = "Haste";
 
     /// <summary>
     /// Which damage school the owner's tags declare, or none where they declare neither. The

@@ -74,6 +74,17 @@ public sealed record TooltipQuery
     public decimal? Total(string stat) =>
         Stats.TryGetValue(stat, out var values) ? values.Sum() : null;
 
+    /// <summary>
+    /// The wearer's haste, as the build's own constants express it: a fraction, where 0.3 is the
+    /// +30% an ability grants. Hero.Spirit.Buff.HasteIncrease is 0.3 and the ability granting it
+    /// says "+30% Haste", so the unit is the build's rather than a convention. A gear slot's haste
+    /// is a rating instead, and the build states no conversion between the two.
+    ///
+    /// Named here rather than spelled at each reader, because two of them ask and a stat this one
+    /// is spelled wrong in would silently read as no haste at all.
+    /// </summary>
+    public decimal? Haste => Total("Haste");
+
     /// <summary>The names this type reads itself, so every other key is a stat or a mistake.</summary>
     private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
     {
