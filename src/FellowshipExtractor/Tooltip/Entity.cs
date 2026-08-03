@@ -115,6 +115,21 @@ public sealed record Entity
     /// </summary>
     public IconSource? IconInheritedFrom { get; init; }
 
+    /// <summary>
+    /// The entity this record's <see cref="DisplayName"/> was taken from, on the records that ship
+    /// no name of their own. An effect is anonymous in the build and the ability that applies it is
+    /// not, so the debuff a player calls Searing Blaze is named by the ability rather than by
+    /// itself; this says which entity did the naming.
+    ///
+    /// Carried rather than implied, because the inheritance puts two entities into the export under
+    /// one word, and on 1,288 records it does. Without the join a reader is offered the ability and
+    /// the debuff it lands under one name with nothing to tell them apart, and 123 of the borrowed
+    /// names are the single word "Attack", so a search index has no way to rank a borrowed name
+    /// below the entity it was borrowed from. Set only where the inheritance is unambiguous, so its
+    /// presence is also the audit trail back to the entity that supplied the word.
+    /// </summary>
+    public IconSource? NameInheritedFrom { get; init; }
+
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }

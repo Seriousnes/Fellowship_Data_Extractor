@@ -7,9 +7,9 @@
 <section class="cx-hero-band">
     <h1>The Fellowship Codex</h1>
     <p>
-        @Store.Count.ToString("N0") entities read straight out of the shipped build - every item,
-        ability, effect, talent, trait and creature the game files under a gameplay tag, with the art,
-        the tuning numbers and the tooltip the client draws from them.
+        @Entries.ToString("N0") entries read straight out of the shipped build: every item, ability,
+        effect, talent, trait and creature in it, with the art, the tuning numbers and the tooltip the
+        game draws from them.
     </p>
 </section>
 
@@ -20,11 +20,11 @@
     <div class="cx-roster">
         @foreach (var hero in Store.Vocabulary.Heroes.OrderBy(h => h.Name, StringComparer.OrdinalIgnoreCase))
         {
-            <a href="/browse?type=ItemID&hero=@Uri.EscapeDataString(hero.Name)"
+            <a href="/browse?type=items&hero=@Uri.EscapeDataString(hero.Name)"
                style="color:@(Ui.HeroColour(hero.Name) ?? "var(--muted)")">
                 <span class="cx-pip" style="background:@(Ui.HeroSwatch(hero.Name) ?? "var(--muted)")"></span>
                 <span class="cx-who">@hero.Name</span>
-                <span class="cx-code">@hero.Codename &middot; @hero.ArmorType &middot; @hero.PrimaryStat</span>
+                <span class="cx-code">@hero.ArmorType &middot; @hero.PrimaryStat</span>
             </a>
         }
     </div>
@@ -66,7 +66,7 @@
                     <span class="cx-linked">
                         <img alt="" loading="lazy" src="@Ui.Icon(entity.Icon)" />
                         <span>
-                            <span class="cx-card-name" style="color:@Ui.NameColour(entity)">@Ui.Name(entity)</span><br />
+                            <span class="cx-card-name" style="color:@Ui.NameColour(entity)">@PublicTypes.NameOf(entity)</span><br />
                             <span class="cx-card-count">@Codex.Label(entity.Table!)</span>
                         </span>
                     </span>
@@ -77,16 +77,19 @@
 }
 
 @code {
+    private int Entries => Ui.Codex.Count;
+
     private IReadOnlyList<Entity> Showcase =>
     [
         .. Store.Entities
-            .Where(e => e.DisplayName is not null && e.Icon is not null && e.Description is not null)
+            .Where(e => PublicTypes.IsPublic(e.Table))
+            .Where(e => PublicTypes.DisplayNameOf(e) is not null && e.Icon is not null && e.Description is not null)
             .GroupBy(e => e.Table!, StringComparer.Ordinal)
             .SelectMany(group => group
                 .OrderByDescending(e => (e.Description?.Length ?? 0) + (e.Constants?.Count ?? 0) * 20)
                 .Take(2))
-            .OrderBy(e => e.Table, StringComparer.Ordinal)
-            .ThenBy(e => e.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(e => Codex.Label(e.Table), StringComparer.OrdinalIgnoreCase)
+            .ThenBy(e => PublicTypes.NameOf(e), StringComparer.OrdinalIgnoreCase)
             .Take(8),
     ];
 }

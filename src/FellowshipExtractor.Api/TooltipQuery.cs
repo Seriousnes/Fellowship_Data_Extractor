@@ -64,6 +64,10 @@ public sealed record TooltipQuery
     /// <summary>
     /// The caller's stat values, one entry per stat name and one value per slot the caller holds
     /// of it, in the order they sent them.
+    ///
+    /// Keyed by the build's spelling rather than the caller's, because an item's slots, a token's
+    /// attribute and the magnitude arithmetic are all keyed that way. The translation happens once,
+    /// as the parameter is read.
     /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyList<decimal>> Stats { get; init; } =
         new Dictionary<string, IReadOnlyList<decimal>>(StringComparer.OrdinalIgnoreCase);
@@ -98,11 +102,11 @@ public sealed record TooltipQuery
     private const decimal StatCeiling = 1_000_000_000_000m;
 
     /// <summary>
-    /// Reads the whole query. A key that is neither reserved nor a stat the build defines is
-    /// rejected rather than ignored, because a caller who types spirt=17 would otherwise get a
-    /// tooltip printed from an unstated stat of zero and no indication anything went wrong.
+    /// Reads the whole query. A key that is neither reserved nor a stat the game names is rejected
+    /// rather than ignored, because a caller who types spirt=17 would otherwise get a tooltip
+    /// printed from an unstated stat of zero and no indication anything went wrong.
     /// </summary>
-    public static TooltipQuery Parse(IQueryCollection query, IReadOnlySet<string> knownStats, out string? error)
+    public static TooltipQuery Parse(IQueryCollection query, StatParameters knownStats, out string? error)
     {
         error = null;
 
@@ -122,7 +126,7 @@ public sealed record TooltipQuery
         {
             if (!Reserved.Contains(key))
             {
-                if (!knownStats.Contains(key))
+                if (knownStats.Resolve(key) is not { } stat)
                 {
                     error = $"Unknown parameter '{key}'.";
                     return result;
@@ -146,7 +150,7 @@ public sealed record TooltipQuery
                     values.Add(number);
                 }
 
-                stats[key] = values;
+                stats[stat] = values;
                 continue;
             }
 

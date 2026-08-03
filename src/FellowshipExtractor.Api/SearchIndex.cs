@@ -3,15 +3,31 @@ using FellowshipExtractor.Tooltip;
 namespace FellowshipExtractor.Api;
 
 /// <summary>
-/// The name index the omnibox runs against: every word of every display name and every segment of
-/// every gameplay tag, as one sorted term list with a posting list per term.
+/// The name index the omnibox runs against: every word of every display name a public row carries,
+/// as one sorted term list with a posting list per term.
 ///
-/// Built rather than scanned because both halves of what a reader types have to work. A tag is
-/// written as dotted CamelCase - GA_Firemage_CastedPlacedAoe - so "projectile" has to find
-/// PlacedProjectileAoe, and a linear substring scan finds that only by looking inside every one of
-/// the corpus's fourteen thousand names on every keystroke. Splitting a name into its words at build
-/// time, including at every capital, turns that into a binary search over the terms that begin with
-/// what was typed.
+/// Display names, and nothing else. The other name a row has is its gameplay tag, which is the
+/// build's internal spelling of it and is shown to a reader nowhere, so it is searched for a reader
+/// nowhere either: "ga_mara" reaches nothing, and neither does a hero's codename or a tag table's
+/// name, because no term in here was ever written that way. Dropping the tags takes the term list
+/// from 6,313 terms to 2,336.
+///
+/// A display name only counts as one where <see cref="PublicTypes.DisplayNameOf"/> says it is one,
+/// which is what keeps the build's own labels out of the box: the 48 rows named
+/// UB_CadavrianBannerman.WarHorn, AutoAttack, CastProjectile, RuinsLasher, Playtest GearToken and
+/// the like answered "warhorn", "autoattack" and "playtest" outright, and now contribute no term at
+/// all, the same as a row shipping no name.
+///
+/// The consequence is the point. 7,957 of the 14,478 public rows carry no name by that test, so they
+/// contribute no term at all and cannot be reached by any spelling of anything: they leave search by
+/// construction rather than by a filter downstream that somebody has to remember to apply. The rows
+/// of a non-public table are held out of the corpus the same way, one Where at build time rather
+/// than a test per query, which is 757 rows over 12 tables a reader is never shown.
+///
+/// Built rather than scanned because a display name is several words a reader might type any one of,
+/// and a CamelCase one is several more inside a single run. Splitting a name into its words at build
+/// time, including at every capital, turns what would be a substring scan over five thousand names
+/// on every keystroke into a binary search over the terms that begin with what was typed.
 ///
 /// Prefix rather than exact, because the box answers while the reader is still typing: "thund"
 /// reaches Thunderlord before the word is finished. Several typed words all have to match, each by
@@ -22,13 +38,11 @@ public sealed class SearchIndex
 {
     private readonly Entity[] docs;
 
-    /// <summary>The display name and the tag name, lower cased, for the whole-phrase tests.</summary>
+    /// <summary>Each row's display name, lower cased, for the whole-phrase tests.</summary>
     private readonly string[] display;
-    private readonly string[] tags;
 
     /// <summary>The words each name is made of, kept so scoring never re-tokenizes.</summary>
     private readonly string[][] displayWords;
-    private readonly string[][] tagWords;
 
     /// <summary>The terms, sorted, so a prefix is a contiguous run found by binary search.</summary>
     private readonly string[] terms;
@@ -42,25 +56,24 @@ public sealed class SearchIndex
 
     public SearchIndex(EntityStore store, ILogger<SearchIndex> logger)
     {
-        docs = [.. store.Entities];
+        docs = [.. store.Entities.Where(entity => PublicTypes.IsPublic(entity.Table))];
+
         display = new string[docs.Length];
-        tags = new string[docs.Length];
         displayWords = new string[docs.Length][];
-        tagWords = new string[docs.Length][];
 
         var building = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+        var reachable = 0;
 
         for (var at = 0; at < docs.Length; at++)
         {
-            var name = docs[at].DisplayName ?? string.Empty;
-            var tag = docs[at].Name ?? string.Empty;
+            var name = PublicTypes.DisplayNameOf(docs[at]) ?? string.Empty;
 
             display[at] = name.ToLowerInvariant();
-            tags[at] = tag.ToLowerInvariant();
-            displayWords[at] = [.. Words(name)];
-            tagWords[at] = [.. Words(tag)];
+            displayWords[at] = [.. Words(name).Distinct(StringComparer.Ordinal)];
 
-            foreach (var term in displayWords[at].Concat(tagWords[at]).Distinct(StringComparer.Ordinal))
+            if (displayWords[at].Length > 0) reachable++;
+
+            foreach (var term in displayWords[at])
             {
                 if (!building.TryGetValue(term, out var list)) building[term] = list = [];
                 list.Add(at);
@@ -71,9 +84,12 @@ public sealed class SearchIndex
         postings = new int[terms.Length][];
         for (var at = 0; at < terms.Length; at++) postings[at] = [.. building[terms[at]]];
 
+        // Both ends of the narrowing, because either one silently going wrong is a search that
+        // answers rows a reader should not be shown or misses rows they should.
         logger.LogInformation(
-            "Search index built: {Documents} documents, {Terms} terms, {Postings} postings",
-            docs.Length, terms.Length, postings.Sum(p => p.Length));
+            "Search index built: {Documents} of {Rows} rows are of a public type, {Reachable} of " +
+            "those are named and searchable, {Terms} terms, {Postings} postings",
+            docs.Length, store.Entities.Count, reachable, terms.Length, postings.Sum(p => p.Length));
     }
 
     /// <summary>
@@ -102,12 +118,16 @@ public sealed class SearchIndex
         var hits = new List<Hit>(candidates!.Count);
         foreach (var doc in candidates) hits.Add(new Hit(docs[doc], Score(doc, typed, whole)));
 
+        // Every hit is named, because a term is a word of a name and a row without one is in no
+        // posting list, so the public name and the display name are the same string here. The
+        // shorter of two names that both answer what was typed is the closer match, and the id
+        // decides between two readings of one thing so the order is stable.
         return
         [
             .. hits
                 .OrderByDescending(hit => hit.Score)
-                .ThenBy(hit => (hit.Entity.DisplayName ?? hit.Entity.Name ?? string.Empty).Length)
-                .ThenBy(hit => hit.Entity.DisplayName ?? hit.Entity.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(hit => PublicTypes.NameOf(hit.Entity).Length)
+                .ThenBy(hit => PublicTypes.NameOf(hit.Entity), StringComparer.OrdinalIgnoreCase)
                 .ThenBy(hit => hit.Entity.NetId)
                 .Take(limit),
         ];
@@ -145,41 +165,39 @@ public sealed class SearchIndex
     /// <summary>
     /// How well one row answers what was typed. The ladder is what a reader expects of a search box:
     /// the thing they named outright first, then the things whose name starts that way, then the
-    /// things that merely contain it, and a row carrying a real display name ahead of a bare gameplay
-    /// tag at every rung, because the tag is the internal spelling of something that usually has a
-    /// name of its own further down the same list.
+    /// things that merely contain it, and under all three a rung per typed word, so a name that
+    /// answers two of the words outranks one that answers one.
+    ///
+    /// There is no rung for having a name any more. Every row that can be reached has one, so the
+    /// bonus that used to lift a named row above a bare tag would now be a constant added to every
+    /// score in the list.
+    ///
+    /// The one deduction is for a name the row did not ship. 1,288 effects are named by the entity
+    /// that applies them, and the borrowed word is the same word: typing "attack" reaches the 123
+    /// effects called Attack and the abilities they took it from together, and a reader who types a
+    /// name means the thing that owns it. The deduction is sized to settle exactly that tie and
+    /// nothing else - larger than the 25 the art and description bonuses can add between them, so a
+    /// borrowed name never wins on having an icon, and smaller than the 70 that separates one rung
+    /// of match quality from the next, so it can never push a better textual match below a worse one.
     /// </summary>
     private int Score(int doc, IReadOnlyList<string> typed, string whole)
     {
         var name = display[doc];
         var score = 0;
 
-        if (name.Length > 0)
-        {
-            score += 60;
-
-            if (name == whole) score += 2000;
-            else if (name.StartsWith(whole, StringComparison.Ordinal)) score += 900;
-            else if (name.Contains(whole, StringComparison.Ordinal)) score += 400;
-        }
-
-        // The last segment of a tag is the entity's own name within its table, so a tag ending in
-        // what was typed is that thing rather than something merely filed under it.
-        if (tags[doc].EndsWith('.' + whole, StringComparison.Ordinal)) score += 500;
+        if (name == whole) score += 2000;
+        else if (name.StartsWith(whole, StringComparison.Ordinal)) score += 900;
+        else if (name.Contains(whole, StringComparison.Ordinal)) score += 400;
 
         foreach (var word in typed)
         {
-            if (name.Length > 0)
-            {
-                if (name.StartsWith(word, StringComparison.Ordinal)) score += 120;
-                else if (Starts(displayWords[doc], word)) score += 70;
-            }
-
-            if (Starts(tagWords[doc], word)) score += 25;
+            if (name.StartsWith(word, StringComparison.Ordinal)) score += 120;
+            else if (Starts(displayWords[doc], word)) score += 70;
         }
 
         if (docs[doc].Icon is not null) score += 15;
         if (docs[doc].Description is not null) score += 10;
+        if (docs[doc].NameInheritedFrom is not null) score -= 45;
 
         return score;
     }
@@ -196,8 +214,8 @@ public sealed class SearchIndex
 
     /// <summary>
     /// The words a name is made of, lower cased. A run of letters and digits is a word; so is each
-    /// capital-started part inside it, because PlacedProjectileAoe is three words a reader might type
-    /// any one of. The whole run is always kept as well, so the shipped spelling still matches.
+    /// capital-started part inside it, because MeleeAutoAttack is three words a reader might type any
+    /// one of. The whole run is always kept as well, so the shipped spelling still matches.
     /// </summary>
     public static IEnumerable<string> Words(string text)
     {
@@ -223,8 +241,8 @@ public sealed class SearchIndex
     /// <summary>
     /// One run of letters and digits: itself, and its capital-started parts after the first. The
     /// opening part needs no term of its own because the whole run already begins with it and every
-    /// lookup is by prefix. A part of a single character is dropped, so the C in C_Crit contributes
-    /// nothing rather than a posting list holding half the corpus.
+    /// lookup is by prefix. A part of a single character is dropped, because nobody searches on one
+    /// letter and a term that short costs a posting list holding a good share of the corpus.
     /// </summary>
     private static IEnumerable<string> Parts(string run)
     {

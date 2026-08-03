@@ -168,6 +168,9 @@ public static class ExportAllCommand
         }
         Console.WriteLine($"  {images} images in {folder}");
         Console.WriteLine(
+            $"  {resolver.NamesInherited} names inherited from the entity that applies them, " +
+            $"{resolver.NamesContested} withheld because two entities that apply them disagree");
+        Console.WriteLine(
             $"  {resolver.IconsInherited} icons inherited from the entity that applies them, " +
             $"{resolver.IconsContested} withheld because two entities that apply them disagree");
         Console.WriteLine(

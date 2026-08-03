@@ -614,14 +614,16 @@ dotnet run --project src/FellowshipExtractor -- export-all ItemID GameplayAbilit
 
 ```
 wrote output\export\entities.jsonl
-  14137 entries from 13088 tags, 4184 with a display name, 2871 with an icon
-  1354 images in output\export
+  15235 entries from 13088 tags, 6570 with a display name, 5916 with an icon
+  1667 images in output\export
+  1288 names inherited from the entity that applies them, 70 withheld because two entities that apply them disagree
+  1282 icons inherited from the entity that applies them, 10 withheld because two entities that apply them disagree
   1713 tuning rows supplied by namespace that no asset names
   18 coefficient rows banded by their own Spread row, 44 by their effect's calculation preset
 wrote output\export\vocabulary.json (36891 bytes)
 ```
 
-Every line is the same record the `tooltip` command writes for one entity - one shape, 2.9 MB for
+Every line is the same record the `tooltip` command writes for one entity - one shape, 4.2 MB for
 the whole game, down from 22.5 MB.
 
 ### vocabulary.json
@@ -805,22 +807,32 @@ passes the filter, so a facet can never offer a value that then matches nothing.
 each facet over the rows *every other* filter leaves, which is what keeps a second slot clickable
 after the first one is chosen.
 
-The one curated thing is which column of the menu a tag table is filed under, because nothing in
-the build groups `ItemTrait.ID` with `ItemID`. A table nobody has filed still appears, under Other
-and under its own name.
+The one curated thing is which tag tables a reader may meet at all, and which column of the menu
+each is filed under, because nothing in the build groups `ItemTrait.ID` with `ItemID` and nothing in
+it says which tables hold rows the game itself names. `PublicTypes` is where both are written, and
+a table nobody has filed is not shown: 6 tables and 14,478 of the 15,235 rows are public, and the
+other 12 tables reach no tab, no menu, no facet and no search.
 
-The details table on an entity page is read off the `Entity` record by reflection, and anything the
-record carries that the page has no section for is printed as the JSON the extractor wrote, under
-"Not yet laid out". A field added upstream therefore shows up rather than disappearing. It is empty
-for the current export, checked over 150 random entity pages spread across every table.
+The details table on an entity page is read off the `Entity` record by reflection, and a field the
+page has no section for is drawn as a fact under the words its name spells out. A field added
+upstream therefore shows up rather than disappearing. What is never drawn is a value that is a
+shipped spelling - the row's own gameplay tag, its loot rule set, its talent slot - because those
+say nothing a printed form says better; the internal *numbers* beside them are drawn in full, which
+is what the tuning and substitution panels are.
 
 ### The name index
 
-14,137 rows, and both halves of what a reader types have to work: a display name, and a gameplay
-tag written as dotted CamelCase. `SearchIndex` splits every name into words at build time -
-including at every capital, so `PlacedProjectileAoe` contributes `projectile` and `aoe` - and looks
-one up by binary search over the sorted term list. Lookups are by prefix, so the box answers while
-the reader is still typing, and several typed words all have to match, so a second word narrows.
+14,478 rows, and one half of what a reader types has to work: the display name. A row's gameplay tag
+is the build's internal spelling of it and is shown nowhere, so it is searched for nowhere either,
+which takes the term list from 6,313 terms to 2,336 and makes `ga_mara` reach nothing.
+`SearchIndex` splits every name into words at build time - including at every capital, so
+`PlacedProjectileAoe` contributes `projectile` and `aoe` - and looks one up by binary search over
+the sorted term list. Lookups are by prefix, so the box answers while the reader is still typing,
+and several typed words all have to match, so a second word narrows.
+
+7,957 of those rows carry no name the game would print and are reachable by no spelling of anything.
+1,288 more are named by the entity that applies them, an effect taking its ability's word, and those
+score below the entity that lent the name so that typing it reaches the ability first.
 
 ### Colour
 

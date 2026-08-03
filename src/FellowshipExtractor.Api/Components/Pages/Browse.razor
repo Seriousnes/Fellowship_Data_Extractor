@@ -160,7 +160,7 @@ else
                                 <th aria-sort="@View.SortState("type")"><a href="@View.SortLink("type")">Type</a></th>
                                 @if (ShowSlot) { <th>Slot</th> }
                                 @if (ShowWorn) { <th>Worn by</th> }
-                                @if (ShowTags) { <th>Tags</th> }
+                                @if (ShowSchools) { <th>School</th> }
                                 @foreach (var measure in Columns)
                                 {
                                     <th class="cx-numeric" aria-sort="@View.SortState(measure.Key)">
@@ -180,20 +180,14 @@ else
                                     {
                                         lastGroup = value;
                                         <tr class="cx-group-head">
-                                            <td colspan="12">@(value is null ? "Carries none" : Codex.Spaced(value))</td>
+                                            <td colspan="12">@(value is null ? "Carries none" : Catalog.Printed(group, value))</td>
                                         </tr>
                                     }
                                 }
 
                                 <tr>
                                     <td class="cx-art"><img alt="" loading="lazy" src="@Ui.Icon(row.Icon)" /></td>
-                                    <td>
-                                        <EntityLink Entity="row" Class="cx-nm" />
-                                        @if (row.DisplayName is not null)
-                                        {
-                                            <span class="cx-tag">@row.Name</span>
-                                        }
-                                    </td>
+                                    <td><EntityLink Entity="row" Class="cx-nm" /></td>
                                     <td>@Codex.Label(row.Table!)</td>
                                     @if (ShowSlot)
                                     {
@@ -208,7 +202,7 @@ else
                                             }
                                             @if (row.PrimaryStat is not null)
                                             {
-                                                <span class="cx-chip">@Codex.Spaced(row.PrimaryStat)</span>
+                                                <span class="cx-chip">@Ui.Store.StatName(row.PrimaryStat)</span>
                                             }
                                             @foreach (var hero in (row.Heroes ?? []).Take(3))
                                             {
@@ -221,12 +215,12 @@ else
                                             }
                                         </td>
                                     }
-                                    @if (ShowTags)
+                                    @if (ShowSchools)
                                     {
                                         <td class="cx-tags">
-                                            @foreach (var tag in (row.Tags ?? []).Take(4))
+                                            @foreach (var school in Codex.Schools(row))
                                             {
-                                                <span class="cx-chip">@Codex.Spaced(tag)</span>
+                                                <span class="cx-chip">@school</span>
                                             }
                                         </td>
                                     }
@@ -307,7 +301,10 @@ else
     private bool ShowWorn =>
         Results.Rows.Any(r => r.ArmorType is not null || r.PrimaryStat is not null || r.Heroes is { Count: > 0 });
 
-    private bool ShowTags => Results.Rows.Any(r => r.Tags is { Count: > 0 });
+    // The schools a row carries, never the rest of its tags. A tag list is the build's own filing
+    // and reads as Skill.Secondary and TrackCooldown; the schools are the part of it the game prints
+    // in a damage sentence, and they are the only part drawn.
+    private bool ShowSchools => Results.Rows.Any(r => Codex.Schools(r).Any());
 
     protected override void OnParametersSet()
     {

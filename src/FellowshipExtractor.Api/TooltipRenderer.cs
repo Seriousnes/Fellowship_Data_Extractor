@@ -67,7 +67,10 @@ public sealed class TooltipRenderer(
     {
         html.Append("<header class=\"head\">");
 
-        html.Append("<h3 class=\"title\">").Append(Esc(entity.DisplayName ?? entity.Name ?? "?")).Append("</h3>");
+        // The row's public name, which for more than half of them is "Effect 2018" rather than a
+        // display name. Falling back to the gameplay tag put the build's own spelling in the one
+        // place a tooltip is certain to be read, on 7,957 of the 14,478 rows a reader can reach.
+        html.Append("<h3 class=\"title\">").Append(Esc(PublicTypes.NameOf(entity))).Append("</h3>");
 
         if (rarity is not null && chrome.Ornament(rarity.Name) is { } ornament)
         {
@@ -255,12 +258,17 @@ public sealed class TooltipRenderer(
     private string Granted(Entity entity, TooltipQuery query, HeroEntry? hero)
     {
         if (entity.Grants is not { } grants) return string.Empty;
-        if ((grants.DisplayName ?? grants.Description) is null) return string.Empty;
+
+        // The granted ability's own name, on the same terms as any other: a nested row is addressed
+        // by nothing and has no id to fall back on, so it is named or it is drawn as "Ability" alone.
+        var named = PublicTypes.DisplayNameOf(grants);
+
+        if ((named ?? grants.Description) is null) return string.Empty;
 
         var b = new StringBuilder();
 
         b.Append("<div class=\"sec ability\">").Append(Glyph(chrome.AbilityBadge.Url)).Append("<span>Ability");
-        if (grants.DisplayName is { } name) b.Append(": ").Append(Esc(name));
+        if (named is { } name) b.Append(": ").Append(Esc(name));
         b.Append("</span></div>");
 
         if (grants.Description is { } text)
@@ -285,7 +293,10 @@ public sealed class TooltipRenderer(
 
         foreach (var roll in rolls)
         {
-            if (roll.DisplayName is { } name) b.Append("<p class=\"nm\">").Append(Esc(name)).Append("</p>");
+            if (PublicTypes.DisplayNameOf(roll) is { } name)
+            {
+                b.Append("<p class=\"nm\">").Append(Esc(name)).Append("</p>");
+            }
 
             if (roll.Description is { } text)
             {
@@ -397,7 +408,8 @@ public sealed class TooltipRenderer(
         .{{Root}} .note{color:var(--core-text-secondary)}
         .{{Root}} .desc{white-space:pre-line}
         .{{Root}} .sub{font-weight:600;border-bottom:1px dotted currentColor;cursor:help}
-        .{{Root}} .tok{color:var(--semantic-negative);font-family:ui-monospace,monospace}
+        .{{Root}} .tok{color:var(--core-text-disabled);font-style:italic;
+        border-bottom:1px dotted currentColor;cursor:help}
         .{{Root}} .rt-unstyled{color:inherit}
         {{renderer.Css(Root)}}
         """;

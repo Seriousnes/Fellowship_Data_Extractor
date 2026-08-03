@@ -25,19 +25,24 @@
     {
         var path = Nav.ToAbsoluteUri(Nav.Uri).AbsolutePath.Trim('/').Split('/');
 
-        if (path is ["entity", var table, var id] &&
+        // Matched on the slug, because the slug is what the address carries: an entity page answers
+        // /entity/talent/124 and nothing else, so comparing the segment against the table behind it
+        // would miss every type and send every missing row to the bare wording below.
+        if (path is ["entity", var slug, var id] &&
             Catalog.Types.FirstOrDefault(t =>
-                string.Equals(t.Table, Uri.UnescapeDataString(table), StringComparison.OrdinalIgnoreCase)) is { } kind)
+                string.Equals(t.Slug, Uri.UnescapeDataString(slug), StringComparison.OrdinalIgnoreCase)) is { } kind)
         {
             Said = $"The build has no {kind.Label} {id}.";
-            Where = $"/browse?type={Uri.EscapeDataString(kind.Table)}";
+            Where = $"/browse?type={Uri.EscapeDataString(kind.Slug)}";
             Offer = $"Browse the {kind.Count:N0} it does have.";
             Trail = [(kind.Label, Where), ("Nothing here", null)];
             return;
         }
 
+        // The same sentence the API gives a caller who names no type, so the page and the endpoints
+        // cannot come to disagree about which types there are.
         Said = path is ["entity", var unknown, _]
-            ? $"The build has no table called '{Uri.UnescapeDataString(unknown)}'."
+            ? PublicTypes.NoSuchType(Uri.UnescapeDataString(unknown))
             : "That address does not name anything in the build.";
     }
 }

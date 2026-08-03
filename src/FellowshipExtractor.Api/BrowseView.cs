@@ -98,7 +98,13 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
         }
     }
 
-    /// <summary>Every narrowing currently in force, as removable chips.</summary>
+    /// <summary>
+    /// Every narrowing currently in force, as removable chips.
+    ///
+    /// A chip is the one place a value the reader chose is drawn back at them, so both halves of it
+    /// go through the public spelling: the type reads as its heading and the href carries its slug,
+    /// which <see cref="CodexQuery.ToQueryString"/> writes from the table held here.
+    /// </summary>
     public IReadOnlyList<(string Label, string Href)> Chosen
     {
         get
@@ -116,7 +122,7 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
 
                 foreach (var value in values)
                 {
-                    chips.Add(($"{facet.Label}: {Codex.Spaced(value)}", Toggle(key, value)));
+                    chips.Add(($"{facet.Label}: {codex.Printed(facet, value)}", Toggle(key, value)));
                 }
             }
 

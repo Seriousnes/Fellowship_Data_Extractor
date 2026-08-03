@@ -56,6 +56,7 @@ public sealed class TooltipResolver
 
     public AbilityPresentationIndex Presentation { get; }
     public EffectIconSources EffectIcons { get; }
+    public EffectNameSources EffectNames { get; }
     public GrantedAbilityMappings Mappings { get; }
     public HeroNames Heroes { get; }
     public ItemSlots Slots { get; }
@@ -78,6 +79,17 @@ public sealed class TooltipResolver
 
     /// <summary>How many entities took their icon from the entity that applies them.</summary>
     public int IconsInherited { get; private set; }
+
+    /// <summary>How many entities took their name from the entity that applies them.</summary>
+    public int NamesInherited { get; private set; }
+
+    /// <summary>
+    /// How many entities were left anonymous because the entities that apply them are called
+    /// different things. Reported apart from the ones nothing named applies, for the same reason the
+    /// icons are: a contested pairing is a decision waiting to be made and an unapplied effect is a
+    /// name the build does not contain.
+    /// </summary>
+    public int NamesContested { get; private set; }
 
     /// <summary>
     /// How many entities were left without an icon because the entities that apply them ship
@@ -155,13 +167,41 @@ public sealed class TooltipResolver
 
         Vocabulary = new Vocabulary(provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool);
 
-        // Last, because it walks the class default object of every tag that reaches one and so
-        // needs the asset join and the presentation rows already standing. Building it here rather
-        // than recording the edges as entities are resolved is what makes an inherited icon
-        // independent of the order tags are asked for: one entity resolved on its own inherits
-        // exactly what it inherits in the bulk export.
+        // Last, because they walk the class default object of every tag that reaches one and so need
+        // the asset join, the presentation rows and the talent trees already standing. Building them
+        // here rather than recording the edges as entities are resolved is what makes an inherited
+        // icon or name independent of the order tags are asked for: one entity resolved on its own
+        // inherits exactly what it inherits in the bulk export.
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
+
+        EffectNames = new EffectNameSources(
+            _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
+    }
+
+    /// <summary>
+    /// The name a tag exports under, as far as an applier can be judged by it. Not the same question
+    /// as what its own asset says: <see cref="WithTalent"/> and <see cref="WithGemNode"/> overrule
+    /// the asset rather than filling in behind it, and 7 of the 215 augmentations disagree with the
+    /// tree on the name, so reading <see cref="Display"/> alone would hand an effect a word that
+    /// appears nowhere in the export and point the provenance at an entity that prints another. 62
+    /// of the 74 names inherited from an augmentation are the tree's or the gem ladder's, so this is
+    /// most of that path rather than an edge of it.
+    ///
+    /// The table fallbacks <see cref="WithTableText"/> and <see cref="WithFixedItem"/> supply are
+    /// left out. Both only ever fill in behind the asset's own name, so leaving them out can cost a
+    /// source but can never invent one, and every name that reached the export this way is one the
+    /// entity it came from prints too.
+    /// </summary>
+    private string? PrintedName(TagRecord tag, UObject cdo)
+    {
+        if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
+        {
+            if (Talents.ForAugmentation(tag.Name)?.DisplayName is { } talent) return talent;
+            if (Gems.ForAugmentation(tag.Name)?.DisplayName is { } node) return node;
+        }
+
+        return Display.From(Presentation.Find(tag.Name)?.Row, cdo).Name;
     }
 
     /// <summary>A rule set under the name the rarity table is keyed by, without its tag prefix.</summary>
@@ -257,15 +297,39 @@ public sealed class TooltipResolver
             if (Gems.ForAugmentation(tag.Name) is { } node) entity = WithGemNode(entity, node, icons);
         }
 
+        // A gameplay effect that ships no name of its own takes the name of the entity that applies
+        // it, where exactly one named entity does. 2,857 of the 3,261 effect tags are anonymous in
+        // the build because the game never shows an effect under a name of its own: the debuff a
+        // player calls Searing Blaze is named by the ability that lands it. 1,288 are settled here
+        // and 70 are held back because their appliers are called different things.
+        //
+        // Placed after every step that can name the entity from a table of its own and before the
+        // two expansions that copy the record, so it only ever fills a gap.
+        if (entity.DisplayName is null)
+        {
+            if (EffectNames.For(tag.Name) is { } named)
+            {
+                entity = entity with { DisplayName = named.DisplayName, NameInheritedFrom = named.Origin };
+                NamesInherited++;
+            }
+            else if (EffectNames.Disagrees(tag.Name))
+            {
+                NamesContested++;
+            }
+        }
+
         // A gameplay effect that shows a tooltip and ships no art takes the art of the entity that
         // applies it, where exactly one icon-carrying entity does. Placed here, after every step
         // that can set an icon of the entity's own and before the two expansions that copy the
         // record, so it only ever fills a gap and every line an expansion produces agrees.
         //
-        // Gated on the name as well as the icon. 1,299 of the 3,260 iconless effects have a
-        // determined source and only 197 of those are named: the rest are cooldowns, costs and
-        // charge machinery that export as a bare id, where an icon would sit beside nothing a
-        // reader could see.
+        // Gated on the name as well as the icon, and so run after the name step above rather than
+        // before it: an effect nothing names exports as a bare id, where an icon would sit beside
+        // nothing a reader could see. Naming first is what opens that gate, and it opens it wide -
+        // 1,282 effects now take art this way against the 197 that had a name to hang it on before,
+        // and 10 are held back because their appliers ship different art. Nothing forces the name
+        // and the art to come from one entity, which is why each records its own source, though on
+        // all 1,085 records carrying both they agree.
         if (entity is { Icon: null, DisplayName: not null })
         {
             if (EffectIcons.For(tag.Name) is { } source && Written(source.IconPath, icons) is { } file)

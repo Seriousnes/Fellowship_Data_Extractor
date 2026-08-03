@@ -1,4 +1,4 @@
-@page "/entity/{table}/{netId:int}"
+@page "/entity/{slug}/{netId:int}"
 @inject CodexView Ui
 @inject Codex Catalog
 @inject EntityStore Store
@@ -7,14 +7,27 @@
 @if (Readings.Count > 0)
 {
     <PageTitle>@Name - Fellowship Codex</PageTitle>
-    <Crumbs Trail="@(new List<(string, string?)> { (Codex.Label(Table), $"/browse?type={Uri.EscapeDataString(Table)}"), (Name, null) })" />
+    <Crumbs Trail="@(new List<(string, string?)> { (PublicTypes.Label(table), Under), (Name, null) })" />
 
     <h1 style="color:@Ui.NameColour(Shown)">@Name</h1>
 
     <div class="cx-entity">
         <div class="cx-entity-top">
-            <div class="cx-entity-tip" data-stage="@Address" aria-live="polite">
-                <p class="cx-empty">Drawing the tooltip&hellip;</p>
+            @* The caption is a sibling of the stage rather than a child of it: the client paints the
+               fetched tooltip into a shadow root on the staged element, which stops anything in that
+               element's own markup from being drawn once the first answer lands. *@
+            <div class="cx-entity-tip">
+                <div data-stage="@Address" aria-live="polite">
+                    <p class="cx-empty">Loading...</p>
+                </div>
+
+                @if (Drawn is { } wearer)
+                {
+                    <p class="cx-note">
+                        Showing tooltip for
+                        <b style="color:@(Ui.HeroColour(wearer) ?? "inherit")">@wearer</b>
+                    </p>
+                }
             </div>
 
             <div class="cx-entity-side">
@@ -31,11 +44,14 @@
                                     {
                                         <option value="">Any</option>
                                     }
+                                    @* Offered only where a reading answers for them, on the store's
+                                       own reading of that, so every name in the list opens a tooltip
+                                       rather than a 404. *@
                                     @foreach (var who in Store.Vocabulary.Heroes
-                                        .Where(h => Readings.Any(r => r.Heroes is null || r.Heroes.Contains(h.Name)))
-                                        .OrderBy(h => h.Name, StringComparer.OrdinalIgnoreCase))
+                                        .Where(who => Readings.Any(reading => EntityStore.Reads(reading, who)))
+                                        .OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase))
                                     {
-                                        <option value="@who.Name" selected="@(who.Name == Reading)">
+                                        <option value="@who.Name" selected="@(who.Name == Drawn)">
                                             @who.Name (@who.ArmorType, @who.PrimaryStat)
                                         </option>
                                     }
@@ -77,43 +93,59 @@
                     </div>
                 }
 
+                @if (Versions.Count > 0)
+                {
+                    <div class="cx-panel">
+                        <div class="cx-panel-head">
+                            Who can use this @PublicTypes.Noun(table)
+                            <span class="cx-num">
+                                @Versions.Count @(Versions.Count == 1 ? "version" : "versions")
+                            </span>
+                        </div>
+                        <p class="cx-note">
+                            One id, several @(PublicTypes.Noun(table))s. The name follows the armour
+                            type, the primary stat slot holds whatever the wearer's own stat is, and
+                            the art is their armour set, so each hero below is handed the version
+                            named over them.
+                        </p>
+                        @foreach (var version in Versions)
+                        {
+                            <hr class="cx-rule" />
+                            <p class="cx-sub-head" style="@(version.OnScreen ? "color:var(--gold-bright)" : null)">
+                                @version.Name
+                                @if (version.Discriminator is { } pair)
+                                {
+                                    <span class="cx-num">@pair</span>
+                                }
+                            </p>
+                            <div class="cx-roster">
+                                @foreach (var hero in version.Heroes)
+                                {
+                                    <a href="@Reading(hero)" style="@Wearer(hero)"
+                                       aria-current="@(hero == Drawn ? "page" : null)">
+                                        <span class="cx-pip"
+                                              style="background:@(Ui.HeroSwatch(hero) ?? "var(--muted)")"></span>
+                                        <span class="cx-who">@hero</span>
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
                 <div class="cx-panel">
-                    <div class="cx-panel-head">Identity</div>
+                    <div class="cx-panel-head">Address</div>
                     <table class="cx-facts">
-                        <tr><th>Gameplay tag</th><td>@Shown.Name</td></tr>
                         <tr>
-                            <th>Table</th>
-                            <td><a href="/browse?type=@Uri.EscapeDataString(Table)">@Codex.Label(Table)</a></td>
+                            <th>Type</th>
+                            <td><a href="@Under">@PublicTypes.Label(table)</a></td>
                         </tr>
                         <tr><th>Network id</th><td>@NetId</td></tr>
-                        <tr>
-                            <th>Readings of this id</th>
-                            <td>@Readings.Count@(Kind is { } kind ? $" of {kind.Count:N0} in the table" : null)</td>
-                        </tr>
                         <tr>
                             <th>Tooltip</th>
                             <td><a href="@Address">@Address</a></td>
                         </tr>
                     </table>
-
-                    @if (Readings.Count > 1)
-                    {
-                        <hr class="cx-rule" />
-                        <p class="cx-sub-head">Every reading</p>
-                        <ul class="cx-pills">
-                            @foreach (var reading in Readings)
-                            {
-                                var who = Ui.Reading(reading);
-                                <li>
-                                    <a href="@(Page + (who is null ? null : "?hero=" + Uri.EscapeDataString(who)))"
-                                       style="@(reading == Shown ? "color:var(--gold-bright)" : null)">
-                                        @Ui.Name(reading)
-                                        <span class="cx-num">@(reading.ArmorType ?? "any") / @(reading.PrimaryStat ?? "any")</span>
-                                    </a>
-                                </li>
-                            }
-                        </ul>
-                    }
                 </div>
             </div>
         </div>
@@ -132,36 +164,87 @@
                 </ul>
             </div>
         }
-
-        <details class="cx-panel cx-raw-record">
-            <summary class="cx-panel-head">The exported record</summary>
-            <pre class="cx-raw">@Json</pre>
-        </details>
     </div>
 }
 
 @code {
-    [Parameter] public string Table { get; set; } = string.Empty;
+    /// <summary>
+    /// The type's public slug, which is the only spelling this route answers to. A slug naming
+    /// nothing public leaves <see cref="table"/> null and the page answers 404, so a shipped table
+    /// name in the address opens no page rather than opening the page under a second name.
+    /// </summary>
+    [Parameter] public string Slug { get; set; } = string.Empty;
 
     [Parameter] public int NetId { get; set; }
 
     [SupplyParameterFromQuery(Name = "hero")] public string? Asked { get; set; }
 
+    /// <summary>The shipped table the slug names, resolved once and never drawn.</summary>
+    private string? table;
+
     private IReadOnlyList<Entity> Readings = [];
 
     private Entity Shown = new();
 
+    /// <summary>
+    /// The readings of this id as a reader meets them, and empty on the ids that have only one.
+    ///
+    /// 188 of the 12,523 public ids read differently per hero, every one of them an item, and they
+    /// expand into 2,143 readings between them: 174 of the 188 into twelve, one per hero of the
+    /// roster. Those 2,143 readings are only 1,465 named versions, because three heroes of one armour
+    /// type wearing one primary stat are three rows of the same named item, differing in nothing a
+    /// name would show.
+    /// </summary>
+    private IReadOnlyList<Version> Versions = [];
+
     private IReadOnlyList<(string Label, string Href, int Count)> Related = [];
+
+    /// <summary>
+    /// One named version of an id: what the game calls it, the armour type and primary stat that
+    /// tell it from its siblings, the heroes handed it, and whether it is the one on the stage.
+    ///
+    /// The heroes are the point rather than a note on it. Every one of the 2,143 readings behind the
+    /// 188 split ids names exactly one hero, because a dynamic item draws the wearer's own armour set
+    /// and no two heroes share one, so a version's hero list is never empty and the names under it
+    /// are the whole of who ever sees it.
+    /// </summary>
+    private sealed record Version(
+        string Name, string? Discriminator, IReadOnlyList<string> Heroes, bool OnScreen);
 
     private string Name => Ui.Name(Shown);
 
-    private string? Reading => Asked ?? Ui.Reading(Shown);
+    /// <summary>
+    /// The address that draws exactly what is on the stage, which is what a reader calling the API
+    /// with it gets back.
+    ///
+    /// The view carries a hero on the addresses that cannot answer without one, which is every id
+    /// with several readings. The 42 single-reading items that still name more than one hero are the
+    /// gap it leaves: their tooltip does change with the hero, the knob sends one, and the address
+    /// built for them says nothing about it. The hero on the stage is appended here so the printed
+    /// address and the drawn tooltip stay the same request. The client merges the knobs over the
+    /// carried query rather than under it, so an address that now spells the hero the knob already
+    /// holds changes nothing about what is fetched.
+    /// </summary>
+    private string Address
+    {
+        get
+        {
+            var where = Ui.Tip(Shown);
 
-    private string Address => Ui.Tip(Shown);
+            return Drawn is { } wearer && !where.Contains('?')
+                ? $"{where}?hero={Uri.EscapeDataString(wearer)}"
+                : where;
+        }
+    }
 
-    private string Page => Ui.Href(Table, NetId);
+    private string Page => Ui.Href(table, NetId);
 
-    private EntityType? Kind => Catalog.Types.FirstOrDefault(t => t.Table == Shown.Table);
+    /// <summary>
+    /// The browser, narrowed to this row's type. Built from the slug the type is filed under rather
+    /// than from the route's own spelling, so the crumb and the type row agree with the menu whatever
+    /// case a reader typed.
+    /// </summary>
+    private string Under => $"/browse?type={PublicTypes.SlugOf(table)}";
 
     private bool IsGem => Shown.GemTier is not null;
 
@@ -171,38 +254,111 @@
 
     private bool Knobs => PicksHero || Wearable || IsGem;
 
-    private string Json => System.Text.Json.JsonSerializer.Serialize(Shown, Pretty);
-
-    private static readonly System.Text.Json.JsonSerializerOptions Pretty = new()
+    /// <summary>
+    /// The hero whose reading is on the stage, or null when the tooltip above is nobody's in
+    /// particular.
+    ///
+    /// Two things put a hero there. An id with several readings is always being read as one of them,
+    /// and each of those names a hero by construction. And 42 single-reading items name more than one
+    /// hero, where the tooltip is the hero's the moment one is picked and nobody's until then. An id
+    /// with one reading and no hero to pick has nobody's on screen, which is why the line naming one
+    /// is absent rather than reading "any": a hero the reader never chose is not who the tooltip is
+    /// for. A hero asked for who cannot read this id is not one either, so the answer is the hero of
+    /// the reading actually drawn.
+    /// </summary>
+    private string? Drawn
     {
-        WriteIndented = true,
-        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-    };
+        get
+        {
+            if (!PicksHero) return null;
+
+            return Store.Hero(Asked) is { } named && EntityStore.Reads(Shown, named)
+                ? named.Name
+                : Ui.Reading(Shown);
+        }
+    }
 
     protected override void OnParametersSet()
     {
-        Readings = Store.All(Table, NetId);
+        table = PublicTypes.TableOf(Slug);
+        Readings = table is null ? [] : Store.All(table, NetId);
 
         if (Readings.Count == 0)
         {
             Shown = new Entity();
+            Versions = [];
             Related = [];
             Nav.NotFound();
             return;
         }
 
+        // Through the store's own reading of which hero sees which line, so the row on the stage is
+        // the row the tooltip endpoint resolves the same hero to. The page used to ask its own
+        // narrower question and answer Readings[0] whenever that found nothing, which put a hero's
+        // name in the address bar over somebody else's version of the item.
         Shown = Asked is not null && Store.Hero(Asked) is { } named
-            ? Readings.FirstOrDefault(e => Reads(e, named.Name, named.ArmorType, named.PrimaryStat)) ?? Readings[0]
+            ? Readings.FirstOrDefault(reading => EntityStore.Reads(reading, named)) ?? Readings[0]
             : Readings[0];
 
+        Versions = Split();
         Related = Nearby();
     }
 
-    private static bool Reads(Entity entity, string hero, string? armor, string? stat) =>
-        (entity.Heroes is null || entity.Heroes.Contains(hero)) &&
-        (entity.ArmorType is null || entity.ArmorType == armor) &&
-        (entity.PrimaryStat is null || entity.PrimaryStat == stat);
+    /// <summary>
+    /// The readings gathered into the versions a reader can tell apart, in the order the export
+    /// carries them.
+    ///
+    /// The key is exactly what a version prints, its name and the two discriminators under it, so no
+    /// two entries can ever draw as the same line. Nothing else joins it: readings sharing all three
+    /// still differ in the art they show and 64 of them in the set they count towards, and folding
+    /// those in would split "Butcher's Apron / Cloth / Agility" into three entries reading alike.
+    /// Nothing is lost by leaving them out either, because a hero's name opens that hero's own
+    /// reading and the tooltip there is theirs down to the armour set.
+    /// </summary>
+    private IReadOnlyList<Version> Split() =>
+        Readings.Count < 2
+            ? []
+            : [.. Readings
+                .GroupBy(reading => (Name: Ui.Name(reading), reading.ArmorType, reading.PrimaryStat))
+                .Select(version => new Version(
+                    version.Key.Name,
+                    Discriminator(version.Key.ArmorType, version.Key.PrimaryStat),
+                    [.. version
+                        .SelectMany(reading => reading.Heroes ?? [])
+                        .Distinct(StringComparer.Ordinal)
+                        .OrderBy(hero => hero, StringComparer.OrdinalIgnoreCase)],
+                    version.Any(reading => reading == Shown)))];
+
+    /// <summary>
+    /// What tells one version of an id from another, in the words the game prints for both halves.
+    /// The stat goes through the shipped attribute table like every other stat this app draws, even
+    /// though the three a hero can carry are spelled the same either way, because the one place a
+    /// stat key is printed raw is the place the next key with a different display name leaks through.
+    ///
+    /// 456 of the 2,143 readings carry neither half, being split by hero alone, and those versions
+    /// get no second line at all rather than the pair of "any"s the list used to print.
+    /// </summary>
+    private string? Discriminator(string? armour, string? stat)
+    {
+        string?[] halves = [armour, stat is { Length: > 0 } key ? Store.StatName(key) : null];
+        var pair = string.Join(" / ", halves.Where(half => !string.IsNullOrEmpty(half)));
+
+        return pair.Length == 0 ? null : pair;
+    }
+
+    /// <summary>This page showing one hero's reading, which is the whole of what a hero name opens.</summary>
+    private string Reading(string hero) => $"{Page}?hero={Uri.EscapeDataString(hero)}";
+
+    /// <summary>
+    /// A hero's own colour, as the roster on the front page draws it. A hero with no palette row of
+    /// their own keeps the muted default the roster falls back to.
+    ///
+    /// The colour alone, because the hero on the stage is marked by <c>aria-current</c> and the
+    /// stylesheet gives that the lit border and raised ground a pressed rarity rung carries. The
+    /// mark was written inline here first and is a rule now for the reason it is one on the rungs:
+    /// the state is in the markup either way, and only one of the two spellings can be restyled.
+    /// </summary>
+    private string Wearer(string hero) => $"color:{Ui.HeroColour(hero) ?? "var(--muted)"}";
 
     private IReadOnlyList<(string, string, int)> Nearby()
     {
@@ -218,20 +374,24 @@
 
             if (count < 2) return;
 
+            // Through the catalogue's own printer, which is what every other surface drawing a facet
+            // value already reads: the panel, the chips and the menus all come through it, so a
+            // facet that ever needs a different printed word says so once and this line follows.
             nearby.Add((
-                $"{definition.Label}: {Codex.Spaced(value)}",
-                $"/browse?type={Uri.EscapeDataString(Table)}&{facet}={Uri.EscapeDataString(value)}",
+                $"{definition.Label}: {Catalog.Printed(definition, value)}",
+                $"{Under}&{facet}={Uri.EscapeDataString(value)}",
                 count));
         }
 
+        // Every axis a reader can be sent along is one the game itself prints: a slot, a set, a gem
+        // type, a trait category, a hero, a school of magic. The loot rule set an item rolls under
+        // is the one shared field that is a shipped spelling throughout, so it offers no way in.
         Add("slot", Shown.Slot);
         Add("set", Shown.SetBonus?.FirstOrDefault());
-        Add("ruleset", Shown.RuleSet);
         Add("gem", Shown.GemType);
         Add("trait", Shown.TraitCategory);
         Add("hero", Shown.Heroes?.Count == 1 ? Shown.Heroes[0] : null);
-        Add("school", Shown.Tags?.FirstOrDefault(t =>
-            t.StartsWith("Magic", StringComparison.Ordinal) || t.StartsWith("Physical", StringComparison.Ordinal)));
+        Add("school", Catalog.Facet("school")?.Values(Shown).FirstOrDefault());
 
         return nearby;
     }

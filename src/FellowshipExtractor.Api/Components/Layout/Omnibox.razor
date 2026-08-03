@@ -33,8 +33,8 @@
                     </button>
                     @foreach (var group in found.Groups)
                     {
-                        <button type="button" class="cx-omnibox-chip" aria-pressed="@(scope == group.Table)"
-                                @onclick="() => Scope(group.Table)">
+                        <button type="button" class="cx-omnibox-chip" aria-pressed="@(scope == group.Type)"
+                                @onclick="() => Scope(group.Type)">
                             @group.Label (@group.Count)
                         </button>
                     }
@@ -56,7 +56,7 @@
                     <img alt="" loading="lazy" src="@hit.IconUrl" />
                     <span class="cx-t">
                         <span class="cx-nm">
-                            @foreach (var run in Suggestions.Mark(hit.DisplayName ?? hit.Name, Words))
+                            @foreach (var run in Suggestions.Mark(hit.Name, Words))
                             {
                                 if (run.Hit)
                                 {
@@ -68,10 +68,6 @@
                                 }
                             }
                         </span>
-                        @if (hit.DisplayName is not null)
-                        {
-                            <span class="cx-sub">@hit.Name</span>
-                        }
                     </span>
                     <span class="cx-ty">@hit.TypeLabel</span>
                 </a>
@@ -96,6 +92,8 @@
 
     private string typed = string.Empty;
     private string? applied;
+
+    /// <summary>The type chip in force, held as its slug because that is all a chip carries.</summary>
     private string? scope;
     private SearchResponse? answer;
     private int active = -1;
@@ -109,6 +107,11 @@
 
     private IReadOnlyList<string> Words => Suggestions.Words(answer?.Query);
 
+    /// <summary>
+    /// The whole result set, under the chip the reader has narrowed to. The chip already carries the
+    /// public slug rather than the table behind it, so the narrowing survives the hop to the browser
+    /// as the same spelling the browser's own type tabs post back.
+    /// </summary>
     private string All =>
         "/browse?q=" + Uri.EscapeDataString(typed.Trim()) +
         (scope is null ? string.Empty : "&type=" + Uri.EscapeDataString(scope));
@@ -155,10 +158,10 @@
         StateHasChanged();
     }
 
-    private void Scope(string? table)
+    private void Scope(string? type)
     {
         touches++;
-        scope = table;
+        scope = type;
         active = -1;
         answer = Suggest.For(typed.Trim(), scope, Rows);
         showing = true;

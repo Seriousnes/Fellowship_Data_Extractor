@@ -8,9 +8,15 @@ namespace FellowshipExtractor.Api;
 ///
 /// Every narrowing is a facet, a flag or a measure the <see cref="Codex"/> defines, so this parses
 /// against that list rather than naming fields itself: a facet added there is filterable here
-/// without this type being touched. A parameter that names nothing is an error rather than a silent
-/// no-op, for the same reason the tooltip query rejects an unknown stat - a reader who mistypes
-/// <c>slots=Head</c> would otherwise be shown the whole corpus and told nothing.
+/// without this type being touched.
+///
+/// Both halves of a narrowing are checked. A parameter that names nothing is an error rather than a
+/// silent no-op, for the same reason the tooltip query rejects an unknown stat - a reader who
+/// mistypes <c>slots=Head</c> would otherwise be shown the whole corpus and told nothing - and so is
+/// a value no row carries, which is what let <c>?hero=Lisa</c> and <c>?rarity=Champion</c> answer
+/// 200 with an empty page and a chip spelling the internal word back. <c>type</c> is checked against
+/// the slugs of the public types, refusing everything else and a shipped table name in particular,
+/// and every other value against the list <see cref="Codex.Offered"/> counts off the corpus.
 /// </summary>
 public sealed record CodexQuery
 {
@@ -20,7 +26,14 @@ public sealed record CodexQuery
     /// <summary>The words a reader typed, matched against names the same way the omnibox matches.</summary>
     public string? Text { get; init; }
 
-    /// <summary>The tag tables to read, or every table when the caller named none.</summary>
+    /// <summary>
+    /// The tables to read, or every public table when the caller named none.
+    ///
+    /// Held as the shipped table name because that is what a row carries and what a filter compares
+    /// against, and turned back into a slug on the way out. A slug is the only spelling that crosses
+    /// the wire in either direction: it is what <see cref="Parse"/> accepts and what
+    /// <see cref="ToQueryString"/> and <see cref="Fields"/> write.
+    /// </summary>
     public IReadOnlyList<string> Tables { get; init; } = [];
 
     /// <summary>What the caller chose under each facet, keyed by the facet's own key.</summary>
@@ -75,7 +88,21 @@ public sealed record CodexQuery
                     continue;
 
                 case "type":
-                    tables.AddRange(values);
+                    // A slug, and nothing else. The shipped table name is deliberately not a
+                    // spelling this understands: accepting it would keep it working as an address,
+                    // and a link carrying one is then something a reader can be handed and repeat.
+                    foreach (var slug in values)
+                    {
+                        if (PublicTypes.TableOf(slug) is not { } named)
+                        {
+                            error = $"'{slug}' is not a type. The types are " +
+                                string.Join(", ", PublicTypes.All.Select(t => t.Slug)) + ".";
+                            return new CodexQuery();
+                        }
+
+                        tables.Add(named);
+                    }
+
                     continue;
 
                 case "sort":
@@ -104,6 +131,27 @@ public sealed record CodexQuery
 
             if (codex.Facet(key) is { } facet)
             {
+                // A value no row carries is an error rather than a filter that leaves nothing, on the
+                // same terms as a parameter that names nothing. ?hero=Lisa matched no row already,
+                // because the export names heroes the way the game prints them, but it answered 200
+                // with an empty page whose chip read "Hero: Lisa" and whose every link carried the
+                // codename on: a spelling the build files and never shows was a public address a
+                // reader could bookmark and hand to somebody. Checked against the values the panel
+                // offers, so an internal spelling is turned away by the sentence a typo is.
+                //
+                // Refused outright rather than per value, so a two-value parameter cannot half apply
+                // and leave a narrowing on screen that the address does not describe.
+                var offered = codex.Offered(facet);
+
+                foreach (var value in values)
+                {
+                    if (offered.Contains(value, StringComparer.OrdinalIgnoreCase)) continue;
+
+                    error = $"'{value}' is not a value of {facet.Label}. The values are " +
+                        string.Join(", ", offered) + ".";
+                    return new CodexQuery();
+                }
+
                 selections[facet.Key] = values;
                 continue;
             }
@@ -254,7 +302,11 @@ public sealed record CodexQuery
         }
 
         if (!string.IsNullOrWhiteSpace(text)) Add("q", text);
-        foreach (var table in tables) Add("type", table);
+        foreach (var table in tables)
+        {
+            if (PublicTypes.SlugOf(table) is { } slug) Add("type", slug);
+        }
+
         foreach (var (key, values) in selections.OrderBy(p => p.Key, StringComparer.Ordinal))
         {
             foreach (var value in values) Add(key, value);
@@ -291,7 +343,13 @@ public sealed record CodexQuery
     {
         if (!string.IsNullOrWhiteSpace(Text)) yield return ("q", Text);
 
-        foreach (var table in Tables) yield return ("type", table);
+        // The same slug the links carry. A hidden field is submitted straight back to Parse, so a
+        // shipped table name here would answer "that filter could not be read" the moment a reader
+        // applied a range from a type tab.
+        foreach (var table in Tables)
+        {
+            if (PublicTypes.SlugOf(table) is { } slug) yield return ("type", slug);
+        }
 
         foreach (var (key, values) in Selections.OrderBy(p => p.Key, StringComparer.Ordinal))
         {
@@ -326,8 +384,8 @@ public sealed record CodexQuery
 }
 
 /// <summary>
-/// Runs a <see cref="CodexQuery"/> against the export: filter, then rank, then page. Filtering and
-/// facet counting both read the <see cref="Codex"/>'s selectors, so the counts beside a filter
+/// Runs a <see cref="CodexQuery"/> against the public corpus: filter, then rank, then page. Filtering
+/// and facet counting both read the <see cref="Codex"/>'s selectors, so the counts beside a filter
 /// always describe the rows that filter would leave.
 /// </summary>
 public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex index)
@@ -337,9 +395,19 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
         // A text query narrows first, because it is the one filter with a relevance order of its
         // own: the rank the index assigns is what "sort by name" means for a search, and recomputing
         // it after the other filters would cost the same and say the same thing.
-        IReadOnlyList<Entity> rows = query.Text is { } text
-            ? index.Search(text, int.MaxValue).Select(hit => hit.Entity).ToArray()
+        IEnumerable<Entity> read = query.Text is { } text
+            ? index.Search(text, int.MaxValue).Select(hit => hit.Entity)
             : store.Entities;
+
+        // The corpus a reader may meet, which is not the whole export. 11 of its 18 tables carry no
+        // row the game ever names, so a row of one of them has nothing to be called but its gameplay
+        // tag, and is not a result, a facet count or a tab.
+        //
+        // Narrowed once, here, rather than tested inside the filter. Every tally the page draws (the
+        // facet counts, the type tabs, the range boxes) is taken off this same array, and a boundary
+        // applied to some of them and not the others is exactly how a hidden row reappears in a
+        // number after being kept off the list.
+        var rows = read.Where(row => PublicTypes.IsPublic(row.Table)).ToArray();
 
         var matched = rows.Where(row => Matches(row, query)).ToArray();
 
@@ -441,18 +509,29 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
 
         IOrderedEnumerable<Entity> ordered = query.Sort switch
         {
+            // By the name the row prints, which for more than half of them is "Effect 2018" rather
+            // than a display name. Ordering by the gameplay tag underneath instead would sort the
+            // page by something none of it shows, and read as no order at all.
             "name" => query.Descending
-                ? rows.OrderByDescending(Name, StringComparer.OrdinalIgnoreCase)
-                : rows.OrderBy(Name, StringComparer.OrdinalIgnoreCase),
+                ? rows.OrderByDescending(row => PublicTypes.NameOf(row), StringComparer.OrdinalIgnoreCase)
+                : rows.OrderBy(row => PublicTypes.NameOf(row), StringComparer.OrdinalIgnoreCase),
 
+            // By the heading the type column draws, for the same reason: the shipped table names run
+            // CRAICharacter before GameplayAbility before ItemID, which beside Creatures, Ability and
+            // Items on screen is an alphabet the reader cannot see.
             "type" => query.Descending
-                ? rows.OrderByDescending(row => row.Table, StringComparer.Ordinal)
-                : rows.OrderBy(row => row.Table, StringComparer.Ordinal),
+                ? rows.OrderByDescending(row => PublicTypes.Label(row.Table), StringComparer.OrdinalIgnoreCase)
+                : rows.OrderBy(row => PublicTypes.Label(row.Table), StringComparer.OrdinalIgnoreCase),
 
             _ => Measured(rows, codex.Measure(query.Sort)!, query.Descending),
         };
 
-        return [.. ordered.ThenBy(Name, StringComparer.OrdinalIgnoreCase).ThenBy(row => row.NetId)];
+        return
+        [
+            .. ordered
+                .ThenBy(row => PublicTypes.NameOf(row), StringComparer.OrdinalIgnoreCase)
+                .ThenBy(row => row.NetId),
+        ];
     }
 
     /// <summary>
@@ -464,8 +543,6 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
         descending
             ? rows.OrderBy(row => measure.Value(row) is null).ThenByDescending(row => measure.Value(row))
             : rows.OrderBy(row => measure.Value(row) is null).ThenBy(row => measure.Value(row));
-
-    private static string Name(Entity row) => row.DisplayName ?? row.Name ?? string.Empty;
 }
 
 /// <summary>What a filtered reading answered with, and everything a results page draws from it.</summary>

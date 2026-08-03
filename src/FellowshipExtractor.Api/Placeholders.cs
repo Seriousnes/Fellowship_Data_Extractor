@@ -28,6 +28,11 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
     /// Every token of a description, resolved as far as the caller's parameters allow. A token that
     /// cannot become a number becomes the coefficient sentence instead, which is the honest reading
     /// and is what the export already says.
+    ///
+    /// Every token gets an answer, including the 47 the build settles nowhere. Leaving one out left
+    /// the renderer nothing to write but the token's own key, so a sentence reading "smash the target
+    /// for {HeavyStrikeDmg} physical damage" put the build's spelling of a number in the one place a
+    /// tooltip is certain to be read. <see cref="Unresolved"/> is what stands there now.
     /// </summary>
     public Dictionary<string, Substitution> Resolve(
         IReadOnlyDictionary<string, Placeholder> placeholders,
@@ -40,11 +45,37 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
 
         foreach (var (name, placeholder) in placeholders)
         {
-            if (One(placeholder, query, hero, school) is { } substitution) resolved[name] = substitution;
+            resolved[name] = One(placeholder, query, hero, school);
         }
 
         return resolved;
     }
+
+    /// <summary>
+    /// One token on its own, for the callers holding a substitution rather than a description: a
+    /// record listing what each number in its text is says the same reading beside the entry that
+    /// the text itself spends.
+    /// </summary>
+    public Substitution Reading(
+        Placeholder placeholder, TooltipQuery query, HeroEntry? hero, IReadOnlyList<string>? tags = null) =>
+        One(placeholder, query, hero, School(tags));
+
+    /// <summary>
+    /// What a token the build settles nowhere reads as, in the two states the export leaves one in.
+    ///
+    /// 40 of the 47 say outright that the number comes from the entity's own tuning by way of native
+    /// code, which the extractor reads bytecode rather than data to reach; the other 7 say nothing at
+    /// all. The distinction is kept because it is the difference between a number the game has and a
+    /// number the build does not, and the same two sentences are what the entry page's substitutions
+    /// panel writes under the reading.
+    /// </summary>
+    public static Substitution Unresolved(Placeholder placeholder) =>
+        placeholder.FromOwnConstants == true
+            ? new Substitution(
+                "[worked out in game]",
+                "worked out by native code from this entity's own tuning",
+                Resolved: false)
+            : Substitution.Missing;
 
     /// <summary>
     /// Which damage school the owner's tags declare, or none where they declare neither. The
@@ -70,7 +101,7 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
         return null;
     }
 
-    private Substitution? One(Placeholder placeholder, TooltipQuery query, HeroEntry? hero, string? school)
+    private Substitution One(Placeholder placeholder, TooltipQuery query, HeroEntry? hero, string? school)
     {
         // A token standing in for a name has no arithmetic at all.
         if (placeholder.Text is { } text) return new Substitution(text);
@@ -87,7 +118,7 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
 
         if (placeholder.Value is { } number) return Number(placeholder, number);
 
-        return null;
+        return Unresolved(placeholder);
     }
 
     /// <summary>
