@@ -102,6 +102,20 @@ public sealed class EntityStore
 
     public VocabularyFile Vocabulary { get; }
 
+    /// <summary>
+    /// Every line of the export in the order it was written, which is the order the browser
+    /// paginates and the order the search index numbers its documents by. A reading of an id is a
+    /// row of its own here: id 5146 is three rows because it is three differently named items, and
+    /// a browser that showed one of them would be hiding two real entries.
+    /// </summary>
+    public IReadOnlyList<Entity> Entities { get; }
+
+    /// <summary>
+    /// The tag tables the export contains, largest first. Derived rather than listed, so a table the
+    /// extractor starts exporting appears in the browser's type tabs without being named here.
+    /// </summary>
+    public IReadOnlyList<string> Tables { get; }
+
     /// <summary>The stat names an item slot can hold, which are the ones a caller may send.</summary>
     public IReadOnlySet<string> KnownStats { get; }
 
@@ -150,6 +164,7 @@ public sealed class EntityStore
 
         var groups = new Dictionary<(string, int), List<Entity>>();
         var stats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var entities = new List<Entity>();
 
         foreach (var line in File.ReadLines(paths.Entities))
         {
@@ -160,6 +175,7 @@ public sealed class EntityStore
 
             if (!groups.TryGetValue((table, netId), out var list)) groups[(table, netId)] = list = [];
             list.Add(entity);
+            entities.Add(entity);
 
             foreach (var slot in entity.Stats ?? []) stats.Add(slot.Stat);
 
@@ -168,7 +184,16 @@ public sealed class EntityStore
 
         foreach (var (key, list) in groups) byId[key] = [.. list];
 
+        Entities = entities;
         KnownStats = stats;
+
+        Tables =
+        [
+            .. entities.GroupBy(e => e.Table!, StringComparer.Ordinal)
+                .OrderByDescending(g => g.Count())
+                .ThenBy(g => g.Key, StringComparer.Ordinal)
+                .Select(g => g.Key),
+        ];
 
         logger.LogInformation(
             "Export loaded from {Path}: {Entities} entities under {Ids} ids, {Ambiguous} of which read differently per hero. " +

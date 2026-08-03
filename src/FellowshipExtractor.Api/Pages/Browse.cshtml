@@ -1,0 +1,299 @@
+@page
+@model BrowseModel
+@inject CodexView Ui
+@{
+    var query = Model.Query;
+    var results = Model.Results;
+    var heading = query.Text is { } typed
+        ? $"Search results for “{typed}”"
+        : query.Tables.Count == 1
+            ? Codex.Label(query.Tables[0])
+            : "Browse the codex";
+
+    ViewData["Title"] = heading;
+    ViewData["Query"] = query.Text;
+    ViewData["Breadcrumb"] = new List<(string Label, string? Href)> { (heading, null) };
+
+    var group = query.Group is null ? null : Model.Codex.Facet(query.Group);
+    var rows = results.Rows;
+    var showSlot = rows.Any(r => r.Slot is not null);
+    var showWorn = rows.Any(r => r.ArmorType is not null || r.PrimaryStat is not null || r.Heroes is { Count: > 0 });
+    var showTags = rows.Any(r => r.Tags is { Count: > 0 });
+    var columns = Model.Columns;
+    string? lastGroup = null;
+}
+
+<h1>@heading</h1>
+
+@if (Model.Error is { } error)
+{
+    <div class="panel">
+        <p class="empty"><b>That filter could not be read.</b><br>@error</p>
+    </div>
+}
+else
+{
+    <div class="tabs">
+        <a class="tab" href="@Model.Replace("type", null)" aria-current="@(query.Tables.Count == 0 ? "page" : null)">
+            All <span class="n">@results.AcrossTypes.ToString("N0")</span>
+        </a>
+        @foreach (var type in Model.Codex.Types.Where(t => results.Types.ContainsKey(t.Table) || query.ChosenType(t.Table)))
+        {
+            <a class="tab" href="@Model.Replace("type", type.Table)"
+               aria-current="@(query.ChosenType(type.Table) ? "page" : null)">
+                @type.Label <span class="n">@results.Types.GetValueOrDefault(type.Table).ToString("N0")</span>
+            </a>
+        }
+    </div>
+
+    <div class="browse">
+        <aside class="rail panel" aria-label="Filters">
+            <div class="panel-head">Refine</div>
+
+            @if (Model.Chosen.Count > 0)
+            {
+                <ul class="chosen">
+                    @foreach (var (label, href) in Model.Chosen)
+                    {
+                        <li><a href="@href" title="Remove this filter">@label</a></li>
+                    }
+                    @{ var bare = query.Text is null ? "/browse" : "/browse?q=" + Uri.EscapeDataString(query.Text); }
+                    <li class="clear-all"><a href="@bare">clear all</a></li>
+                </ul>
+            }
+
+            <details class="facet" open>
+                <summary>Group results by</summary>
+                <ul class="facet-values">
+                    <li>
+                        <a href="@Model.Replace("group", null)" class="@BrowseModel.On(query.Group is null)">Nothing</a>
+                    </li>
+                    @foreach (var facet in Model.Rail)
+                    {
+                        var grouping = string.Equals(query.Group, facet.Key, StringComparison.OrdinalIgnoreCase);
+                        <li>
+                            <a href="@Model.Replace("group", facet.Key)" class="@BrowseModel.On(grouping)">@facet.Label</a>
+                        </li>
+                    }
+                </ul>
+            </details>
+
+            @foreach (var facet in Model.Rail)
+            {
+                <details class="facet" open="@(query.Selections.ContainsKey(facet.Key) || facet.Values.Count <= 8)">
+                    <summary>@facet.Label</summary>
+                    <ul class="facet-values">
+                        @foreach (var value in facet.Values)
+                        {
+                            var chosen = query.Chosen(facet.Key, value.Value);
+                            var tint = chosen || value.Colour is null ? null : $"color:{value.Colour}";
+                            <li>
+                                <a href="@Model.Toggle(facet.Key, value.Value)" class="@BrowseModel.On(chosen)" style="@tint">
+                                    @value.Label <span class="n">@value.Count.ToString("N0")</span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </details>
+            }
+
+            @if (Model.Ranges.Count > 0)
+            {
+                @* A form rather than links, because a range is typed rather than chosen. It carries
+                   every other narrowing already in force as hidden fields, so applying a range adds
+                   to the filter instead of replacing it. *@
+                <details class="facet" open="@(query.Ranges.Count > 0)">
+                    <summary>Between</summary>
+                    <form class="ranges" method="get" action="/browse">
+                        @foreach (var (name, value) in query.Fields())
+                        {
+                            <input type="hidden" name="@name" value="@value">
+                        }
+                        @foreach (var measure in Model.Ranges)
+                        {
+                            <div class="range">
+                                <span>@measure.Label@(measure.Unit is null ? null : $" ({measure.Unit})")</span>
+                                <input type="number" step="any" name="@(measure.Key)Min" placeholder="min"
+                                       value="@(query.Bound(measure.Key, false) is { } low ? Codex.Number(low) : null)">
+                                <input type="number" step="any" name="@(measure.Key)Max" placeholder="max"
+                                       value="@(query.Bound(measure.Key, true) is { } high ? Codex.Number(high) : null)">
+                            </div>
+                        }
+                        <button type="submit">Apply</button>
+                    </form>
+                </details>
+            }
+
+            <details class="facet" open>
+                <summary>Only rows that</summary>
+                <ul class="facet-values">
+                    @foreach (var flag in Model.Codex.Flags)
+                    {
+                        var state = query.Flags.TryGetValue(flag.Key, out var wanted) ? wanted : (bool?)null;
+                        var next = state is null ? "1" : state.Value ? "0" : null;
+                        var prefix = state == false ? "Not: " : null;
+                        <li>
+                            <a href="@Model.Replace(flag.Key, next)" class="@BrowseModel.On(state is not null)">
+                                @prefix@flag.Label
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </details>
+        </aside>
+
+        <section>
+            <div class="results-head">
+                <span class="count">
+                    <b>@results.Total.ToString("N0")</b> @(results.Total == 1 ? "entity" : "entities")
+                    @if (results.Pages > 1)
+                    {
+                        <text>&middot; page @results.Page of @results.Pages</text>
+                    }
+                </span>
+                @if (group is not null)
+                {
+                    <span>grouped by @group.Label</span>
+                }
+            </div>
+
+            @if (rows.Count == 0)
+            {
+                <div class="panel">
+                    <p class="empty">
+                        <b>Nothing in the build answers that.</b><br>
+                        @(query.IsEmpty
+                            ? "Pick a category from the menus above, or type a name into the search box."
+                            : "Remove a filter and try again.")
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="table-scroll">
+                    <table class="rows">
+                        <thead>
+                            <tr>
+                                <th class="art"></th>
+                                <th aria-sort="@Model.SortState("name")"><a href="@Model.SortLink("name")">Name</a></th>
+                                <th aria-sort="@Model.SortState("type")"><a href="@Model.SortLink("type")">Type</a></th>
+                                @if (showSlot) { <th>Slot</th> }
+                                @if (showWorn) { <th>Worn by</th> }
+                                @if (showTags) { <th>Tags</th> }
+                                @foreach (var measure in columns)
+                                {
+                                    <th class="num" aria-sort="@Model.SortState(measure.Key)">
+                                        <a href="@Model.SortLink(measure.Key)">@measure.Label</a>
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in rows)
+                            {
+                                if (group is not null)
+                                {
+                                    var value = group.Values(row).FirstOrDefault();
+                                    if (value != lastGroup)
+                                    {
+                                        lastGroup = value;
+                                        <tr class="group-head">
+                                            <td colspan="12">@(value is null ? "Carries none" : Codex.Spaced(value))</td>
+                                        </tr>
+                                    }
+                                }
+
+                                <tr>
+                                    <td class="art"><img alt="" loading="lazy" src="@Ui.Icon(row.Icon)"></td>
+                                    <td>
+                                        <a class="nm" href="@Ui.Href(row)" style="color:@Ui.NameColour(row)">@Ui.Name(row)</a>
+                                        @if (row.DisplayName is not null)
+                                        {
+                                            <span class="tag">@row.Name</span>
+                                        }
+                                    </td>
+                                    <td>@Codex.Label(row.Table!)</td>
+                                    @if (showSlot)
+                                    {
+                                        <td>@row.Slot</td>
+                                    }
+                                    @if (showWorn)
+                                    {
+                                        <td>
+                                            @if (row.ArmorType is not null)
+                                            {
+                                                <span class="chip">@row.ArmorType</span>
+                                            }
+                                            @if (row.PrimaryStat is not null)
+                                            {
+                                                <span class="chip">@Codex.Spaced(row.PrimaryStat)</span>
+                                            }
+                                            @foreach (var hero in (row.Heroes ?? []).Take(3))
+                                            {
+                                                var tone = Ui.HeroColour(hero);
+                                                <span class="chip" style="@(tone is null ? null : $"color:{tone}")">@hero</span>
+                                            }
+                                            @if (row.Heroes is { Count: > 3 })
+                                            {
+                                                <span class="chip">+@(row.Heroes.Count - 3)</span>
+                                            }
+                                        </td>
+                                    }
+                                    @if (showTags)
+                                    {
+                                        <td class="tags">
+                                            @foreach (var tag in (row.Tags ?? []).Take(4))
+                                            {
+                                                <span class="chip">@Codex.Spaced(tag)</span>
+                                            }
+                                        </td>
+                                    }
+                                    @foreach (var measure in columns)
+                                    {
+                                        <td class="num">
+                                            @if (measure.Value(row) is { } number)
+                                            {
+                                                @Codex.Number(number)<span class="unit">@measure.Unit</span>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (results.Pages > 1)
+                {
+                    <nav class="pager" aria-label="Pagination">
+                        @if (results.Page > 1)
+                        {
+                            <a href="@Model.PageLink(1)">&laquo; First</a>
+                            <a href="@Model.PageLink(results.Page - 1)">&lsaquo; Prev</a>
+                        }
+                        @foreach (var number in BrowseModel.Window(results.Page, results.Pages))
+                        {
+                            if (number < 0)
+                            {
+                                <span class="gap">&hellip;</span>
+                            }
+                            else if (number == results.Page)
+                            {
+                                <span aria-current="page">@number</span>
+                            }
+                            else
+                            {
+                                <a href="@Model.PageLink(number)">@number</a>
+                            }
+                        }
+                        @if (results.Page < results.Pages)
+                        {
+                            <a href="@Model.PageLink(results.Page + 1)">Next &rsaquo;</a>
+                            <a href="@Model.PageLink(results.Pages)">Last &raquo;</a>
+                        }
+                    </nav>
+                }
+            }
+        </section>
+    </div>
+}
