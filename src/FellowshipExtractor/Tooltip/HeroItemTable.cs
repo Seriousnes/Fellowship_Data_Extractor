@@ -52,17 +52,15 @@ public sealed class HeroItemTable
     private const string StatEnumPrefix = "ECRItemStat::";
     private const string StaminaStat = "Stamina";
     private const string NoneValue = "None";
-    private const string SkinsField = "Skins";
-    private const string SkinMeshesField = "SkinMeshes";
 
     private readonly Dictionary<string, HeroItem> _byTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _primaryStatByHero = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, string?> _iconCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, IReadOnlyList<StatSlot>> _templateCache = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly AbstractFileProvider _provider;
     private readonly ArmorTypes _armor;
     private readonly ItemSlotNames _slots;
+    private readonly VisualCollections _visuals;
 
     public int Count => _byTag.Count;
 
@@ -80,11 +78,16 @@ public sealed class HeroItemTable
     public IReadOnlyDictionary<string, string> PrimaryStatByHero => _primaryStatByHero;
 
     public HeroItemTable(
-        AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, ArmorTypes armor, ItemSlotNames slots)
+        AbstractFileProvider provider,
+        IReadOnlyList<FAssetData> assets,
+        ArmorTypes armor,
+        ItemSlotNames slots,
+        VisualCollections visuals)
     {
         _provider = provider;
         _armor = armor;
         _slots = slots;
+        _visuals = visuals;
 
         var statsByHero = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
@@ -237,33 +240,7 @@ public sealed class HeroItemTable
         var variation = (int)(PropertyWalk.AsNumber(
             PropertyWalk.Get(row, "VisualCollectionSkinVariationIndex")?.GenericValue) ?? 0);
 
-        return SkinIcon(collectionPath, variation, slot) ?? texture;
-    }
-
-    private string? SkinIcon(string collectionPath, int variation, string slot)
-    {
-        var key = $"{collectionPath}#{variation}#{slot}";
-        if (_iconCache.TryGetValue(key, out var cached)) return cached;
-
-        return _iconCache[key] = Read();
-
-        string? Read()
-        {
-            if (!_provider.TryLoadPackageObject<UObject>(
-                AbilityPresentationIndex.PackagePath(collectionPath), out var collection)) return null;
-
-            if (PropertyWalk.Get(collection, SkinsField)?.GenericValue is not UScriptArray skins) return null;
-            if (variation < 0 || variation >= skins.Properties.Count) return null;
-
-            if (skins.Properties[variation]?.GenericValue is not FScriptStruct { StructType: IPropertyHolder skin })
-            {
-                return null;
-            }
-
-            return PropertyWalk.GetStruct(skin, SkinMeshesField) is { } meshes
-                ? PropertyWalk.GetString(meshes, "Icon" + slot)
-                : null;
-        }
+        return _visuals.Icon(collectionPath, variation, slot) ?? texture;
     }
 
     /// <summary>

@@ -215,10 +215,24 @@ public sealed class EntityStore
         return Lookup.Found;
     }
 
+    /// <summary>
+    /// Whether one reading of an id is the one a hero sees.
+    ///
+    /// A line that names its heroes has already answered the question, so nothing else is asked. The
+    /// armour type and the primary stat on such a line describe the item as that hero wears it
+    /// rather than narrowing which hero it is for, and demanding they equal the hero's own is how
+    /// every dynamic cloak used to answer 404 for nine heroes in twelve: a cloak is Cloth for
+    /// everyone who wears one, so the three Cloth heroes matched and Mail, Leather and Plate heroes
+    /// were turned away from their own item.
+    ///
+    /// The two remaining tests are for the lines that name no hero at all, where the pair is the
+    /// only discriminator there is.
+    /// </summary>
     private static bool Matches(Entity entity, HeroEntry hero) =>
-        (entity.ArmorType is null || entity.ArmorType == hero.ArmorType) &&
-        (entity.PrimaryStat is null || entity.PrimaryStat == hero.PrimaryStat) &&
-        (entity.Heroes is null || entity.Heroes.Contains(hero.Name));
+        entity.Heroes is { } heroes
+            ? heroes.Contains(hero.Name)
+            : (entity.ArmorType is null || entity.ArmorType == hero.ArmorType) &&
+              (entity.PrimaryStat is null || entity.PrimaryStat == hero.PrimaryStat);
 
     /// <summary>
     /// The rarity rung a caller's word names. A rung has more than one word: the ordinal the build

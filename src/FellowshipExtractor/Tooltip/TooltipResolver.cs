@@ -24,6 +24,8 @@ public sealed class TooltipResolver
     private const string RuleSetField = "RuleSet";
     private const string RuleSetPrefix = "DynamicHeroItemRuleSet.";
     private const string SetBonusKeyField = "SetBonusMappingKey";
+    private const string VisualKeyField = "VisualCollectionMappingKey";
+    private const string SlotOrdinalField = "HeroItemType";
     private const string EffectTable = "GameplayEffect";
     private const string AbilityTypePrefix = "AbilityType.";
     private const string TalentTagPrefix = "Talents.";
@@ -61,6 +63,7 @@ public sealed class TooltipResolver
     public ItemSlotNames SlotNames { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
+    public DynamicItemVisuals DynamicVisuals { get; }
     public GrantedCharges Charges { get; }
     public ItemSetBonuses SetBonuses { get; }
     public ItemTableNames TableNames { get; }
@@ -138,8 +141,11 @@ public sealed class TooltipResolver
 
         // The fixed item table is read before the heroes are, because the weight templates its
         // rows name are the only shipped source that says what each hero's primary stat is.
-        HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames);
+        var collections = new VisualCollections(provider);
+        HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, collections);
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
+
+        DynamicVisuals = new DynamicItemVisuals(provider, _assets, collections, rarities);
 
         Charges = new GrantedCharges(provider, _assets, Presentation);
 
@@ -281,9 +287,31 @@ public sealed class TooltipResolver
 
         return cdo is not null && ItemNames.Read(cdo) is { } naming
             ? ItemVariants.Expand(
-                entity, naming, Heroes,
-                SetBonuses, cdo is null ? null : PropertyWalk.GetString(cdo, SetBonusKeyField))
+                entity, naming, Heroes, SetBonuses,
+                PropertyWalk.GetString(cdo, SetBonusKeyField),
+                DynamicArt(cdo, icons))
             : [entity];
+    }
+
+    /// <summary>
+    /// What one hero's copy of a dynamic item looks like, at each rarity it drops at. The slot
+    /// comes off the definition as an ECRHeroItemType ordinal, which is the spelling the icon
+    /// fields on a visual collection are named for, and an unversioned property left at its
+    /// default is not serialized, so a definition with no HeroItemType is the enum's first value.
+    /// </summary>
+    private HeroArt DynamicArt(UObject cdo, IconWriter? icons)
+    {
+        var mappingKey = PropertyWalk.GetString(cdo, VisualKeyField);
+        var slot = SlotNames.ByOrdinal(PropertyWalk.AsOrdinal(PropertyWalk.Get(cdo, SlotOrdinalField)?.GenericValue) ?? 0);
+        var tiers = DynamicVisuals.Tiers(cdo);
+
+        return codename =>
+        [
+            .. DynamicVisuals.Icons(mappingKey, codename, slot?.Type, tiers)
+                .Select(entry => (entry.Rarity, Image: Written(entry.IconPath, icons)))
+                .Where(entry => entry.Image is not null)
+                .Select(entry => new RarityImage(entry.Rarity, entry.Image!)),
+        ];
     }
 
     /// <summary>

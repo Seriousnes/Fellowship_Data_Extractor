@@ -57,7 +57,7 @@ public sealed class TooltipRenderer(
 
         html.Append("<style>").Append(Style()).Append("</style>");
 
-        Art(html, entity);
+        Art(html, entity, rarity);
 
         html.Append("<div class=\"card\">");
         Head(html, entity, rarity);
@@ -76,9 +76,16 @@ public sealed class TooltipRenderer(
     /// repeating it in the header is a thing the game never does. A page that has no cursor has to
     /// show both, so the pair sits side by side the way an item database lays them out.
     /// </summary>
-    private void Art(StringBuilder html, Entity entity)
+    private void Art(StringBuilder html, Entity entity, RarityEntry? rarity)
     {
-        if (entity.Icon is not { } icon) return;
+        // A hero's armour set ships three rungs of art and the item's rarity picks one, so the
+        // picture follows the rung being drawn rather than the entity's own best. Keyed by the
+        // rung's internal name, which is what the export keys it by.
+        var icon = rarity is not null && entity.IconByRarity?.GetValueOrDefault(rarity.Name) is { } art
+            ? art
+            : entity.Icon;
+
+        if (icon is null) return;
 
         html.Append("<figure class=\"slot\"><img class=\"art\" alt=\"\" src=\"")
             .Append(Esc(Url(icon)))

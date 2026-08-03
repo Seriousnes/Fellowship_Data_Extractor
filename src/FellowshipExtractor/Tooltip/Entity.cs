@@ -46,9 +46,10 @@ public sealed record Entity
     public string? PrimaryStat { get; init; }
 
     /// <summary>
-    /// The shipped names of the heroes this entry is for, where the item names them. A legendary
-    /// has no single name at all, so a one-name list here is part of what identifies the line
-    /// rather than a note on it.
+    /// The shipped names of the heroes this entry is for. A dynamic item is one entry per hero and
+    /// names exactly one, because the art it shows is the wearer's own armour set and no two heroes
+    /// share one; a fixed item names every hero its row is for. Either way the list is part of what
+    /// identifies the line rather than a note on it.
     /// </summary>
     public IReadOnlyList<string>? Heroes { get; init; }
 
@@ -89,6 +90,18 @@ public sealed record Entity
 
     /// <summary>The exported image, by file name, in the same folder as this record.</summary>
     public string? Icon { get; init; }
+
+    /// <summary>
+    /// The image a dynamic hero item shows at each rarity it drops at, where they are not all the
+    /// same image. A hero's armour set ships three rungs of art and the item's rarity picks one,
+    /// so one line covers up to three pictures of the same item and <see cref="Icon"/> is only the
+    /// best of them. Keyed by the rarity's internal name, which is what
+    /// <c>vocabulary.rarities</c> joins on.
+    ///
+    /// Absent wherever the item looks the same at every rarity it has, which is every legendary -
+    /// their collections ship one rung - and every item whose slot has no collection art at all.
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? IconByRarity { get; init; }
 
     /// <summary>
     /// The entity this record's <see cref="Icon"/> was taken from, on the records that ship no art

@@ -285,6 +285,7 @@ public sealed class RarityNames
     public const string RowStructure = "/Script/DynamicLootSystemRuntime.CRDynamicHeroItemLootRarityRuleSet";
 
     private const string TierField = "RarityTier";
+    private const string EnumSeparator = "::";
 
     private readonly Dictionary<int, string> _byOrdinal = [];
 
@@ -376,6 +377,29 @@ public sealed class RarityNames
 
     /// <summary>The name of a rarity ordinal, or null when the ladder has no such tier.</summary>
     public string? Label(int? ordinal) => ordinal is { } tier ? _byOrdinal.GetValueOrDefault(tier) : null;
+
+    /// <summary>
+    /// The tier a stored ECRItemRarity value names, or null when it names none. A dynamic item
+    /// lists the rarities it drops at as enum entries rather than as ordinals, and the same enum
+    /// reaches other properties as a bare number, so both readings answer here.
+    /// </summary>
+    public int? Tier(object? value)
+    {
+        if (PropertyWalk.AsOrdinal(value) is { } ordinal) return _byOrdinal.ContainsKey(ordinal) ? ordinal : null;
+
+        var text = PropertyWalk.AsString(value);
+        if (text is null) return null;
+
+        var separator = text.LastIndexOf(EnumSeparator, StringComparison.Ordinal);
+        var leaf = separator < 0 ? text : text[(separator + EnumSeparator.Length)..];
+
+        foreach (var (tier, name) in _byOrdinal)
+        {
+            if (name.Equals(leaf, StringComparison.OrdinalIgnoreCase)) return tier;
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// The name of a rarity ordinal on a gem. A tier the gem vocabulary does not rename answers
