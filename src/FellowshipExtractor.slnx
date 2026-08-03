@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="FellowshipExtractor.Tests/FellowshipExtractor.Tests.csproj" />
   <Project Path="FellowshipExtractor/FellowshipExtractor.csproj" />
   <Project Path="FellowshipExtractor.Api/FellowshipExtractor.Api.csproj" />
   <Project Path="FellowshipExtractor.AppHost/FellowshipExtractor.AppHost.csproj" />
