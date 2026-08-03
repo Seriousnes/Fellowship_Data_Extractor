@@ -31,6 +31,21 @@ public static class TooltipCommand
         Console.WriteLine($"granted abilities:  {resolver.Mappings.RowCount} mappings across {resolver.Mappings.TableCount} tables");
         Console.WriteLine($"item slot types:    {resolver.Slots.Count}");
         Console.WriteLine($"hero names:         {resolver.Heroes.Count} resolved from metadata assets");
+        Console.WriteLine($"named augmentations:{resolver.Charges.NamedAugmentations} searched for the charges they supply");
+        Console.WriteLine($"talents:            {resolver.Talents.Count} across {resolver.Talents.HeroCount} trees");
+        Console.WriteLine(
+            $"gems:               {resolver.Gems.TypeCount} types, {resolver.Gems.SizeCount} sizes, " +
+            $"{resolver.Gems.NodeCount} ladder nodes, {resolver.Gems.ReplacementCount} superseded");
+        Console.WriteLine(
+            $"item traits:        {resolver.Traits.Count} rows, {resolver.Traits.BoundRuns} of " +
+            $"{resolver.Traits.TotalRuns} rank runs bound to a curve");
+        Console.WriteLine($"calculation presets:{resolver.PresetCount} rows carrying a default spread");
+        Console.WriteLine(
+            $"effect icon sources:{resolver.EffectIcons.Determined} effects can take an icon from the entity " +
+            $"that applies them, {resolver.EffectIcons.Contested} contested");
+        Console.WriteLine(
+            $"vocabulary:         {resolver.Vocabulary.Heroes.Count} heroes, {resolver.Vocabulary.Rarities.Count} " +
+            $"rarities, {resolver.Vocabulary.PrintFormats.Count} print formats");
 
         var (covered, total) = resolver.Coverage(table);
         Console.WriteLine($"{table} coverage: {covered} of {total} names have a presentation row");
@@ -44,12 +59,16 @@ public static class TooltipCommand
         }
 
         var iconDir = Path.Combine(options.ResolvedOutputDir, "textures", "tooltip");
-        var record = resolver.Resolve(tag.Value, IconWriterInto(provider, iconDir, reportFailures: true));
+
+        // The same call the bulk export makes, so what is checked here is what ships. An item that
+        // spreads into several named entries answers with all of them.
+        var records = resolver.Resolve(tag.Value, IconWriterInto(provider, iconDir, reportFailures: true));
 
         var target = Path.Combine(options.ResolvedOutputDir, $"tooltip-{tag.Value.Table}-{tag.Value.NetId}.json");
-        await File.WriteAllTextAsync(target, JsonSerializer.Serialize(record, JsonOptions));
+        await File.WriteAllTextAsync(target, JsonSerializer.Serialize(records, JsonOptions));
 
-        Report(record, "  ");
+        Console.WriteLine($"\n{records.Count} entr{(records.Count == 1 ? "y" : "ies")} for {tag.Value.Name}");
+        foreach (var record in records) Report(record, "  ");
         Console.WriteLine($"\ntuning rows supplied by namespace: {resolver.NamespaceSupplied}");
         Console.WriteLine($"icons in {iconDir}");
         Console.WriteLine($"wrote {target}");
@@ -101,7 +120,24 @@ public static class TooltipCommand
     {
         Console.WriteLine();
         Console.WriteLine($"{indent}{entity.DisplayName?.ToUpperInvariant() ?? entity.Name}");
-        if (entity.Type is not null) Console.WriteLine($"{indent}{entity.Type}");
+
+        var reading = new[] { entity.Slot, entity.ArmorType, entity.PrimaryStat }.OfType<string>();
+        if (reading.Any()) Console.WriteLine($"{indent}{string.Join(" / ", reading)}");
+
+        if (entity.Heroes is { } wearers) Console.WriteLine($"{indent}for: {string.Join(", ", wearers)}");
+        if (entity.SetBonus is { } set) Console.WriteLine($"{indent}set: {string.Join(", ", set)}");
+        if (entity.SetCount is { } pieces) Console.WriteLine($"{indent}pieces: {pieces}");
+        if (entity.AllowedRoles is { } roles) Console.WriteLine($"{indent}roles: {string.Join(", ", roles)}");
+        if (entity.AllowedAttributes is { } gates) Console.WriteLine($"{indent}attributes: {string.Join(", ", gates)}");
+        if (entity.TraitCategory is { } category) Console.WriteLine($"{indent}category: {category} ({entity.TraitCategoryTag})");
+        if (entity.MaxRank is { } ranks) Console.WriteLine($"{indent}max rank: {ranks}, rolled at weight {entity.RandomChance}");
+        if (entity.GemType is { } gem) Console.WriteLine($"{indent}gem: {gem}");
+        if (entity.GemTier is { } tier) Console.WriteLine($"{indent}tier {tier}, {entity.GemPower} power, {entity.Rarity}");
+        if (entity.GemNode is { } node) Console.WriteLine($"{indent}node {node} at {entity.RequiredGemPower} power, replaces {entity.Replaces?.ToString() ?? "nothing"}");
+        if (entity.GemAttribute is { } attribute) Console.WriteLine($"{indent}accumulates: {attribute}");
+        if (entity.Augmentation is { } augmentation) Console.WriteLine($"{indent}augmentation: {augmentation}");
+        if (entity.GemSlot is true) Console.WriteLine($"{indent}gem socket");
+        if (entity.UniqueEquipped is true) Console.WriteLine($"{indent}unique equipped");
         if (entity.Tags is { } tags) Console.WriteLine($"{indent}{string.Join(", ", tags)}");
         if (entity.Stats is { } stats) Console.WriteLine($"{indent}stats: {string.Join(", ", stats)}");
         if (entity.Resource is { } resource) Console.WriteLine($"{indent}resource: {resource}");
@@ -124,11 +160,42 @@ public static class TooltipCommand
         {
             var off = placeholder.ScalesOff is { } s ? $"  ({string.Join(", ", s)})" : "";
             var own = placeholder.FromOwnConstants is true ? "  from this entity's own constants" : "";
-            Console.WriteLine($"{indent}{{{token}}}{off}{own}");
+            var shown = placeholder.Text is { } word
+                ? $" = {word}"
+                : placeholder.Value is { } printed ? $" = {printed}" : "";
+            var format = placeholder.Format is { } f ? $" as {f}" : "";
+            var band = placeholder.Spread is { } spread
+                ? $" x{placeholder.Coefficient} of {placeholder.Attribute ?? "nothing named"}, " +
+                  $"spread {spread} ({1 - spread / 2:0.###} to {1 + spread / 2:0.###} of the mean)"
+                : "";
+            Console.WriteLine($"{indent}{{{token}}}{shown}{format}{band}{off}{own}");
             foreach (var (key, value) in placeholder.Constants ?? new Dictionary<string, object?>())
             {
                 Console.WriteLine($"{indent}  {key,-58} {Show(value)}");
             }
+        }
+
+        foreach (var run in entity.RankRuns ?? [])
+        {
+            var bound = run.Key is null
+                ? "bound to no curve"
+                : $"{run.Key} [{run.Transform}{(run.Ticks is { } ticks ? $" x{ticks}" : "")}] " +
+                  $"{string.Join(" / ", (run.Values ?? []).Select(v => v?.ToString() ?? "?"))}" +
+                  (run.Disagrees is true ? "  DISAGREES with the printed text" : "");
+
+            Console.WriteLine($"{indent}rank run {string.Join(" / ", run.Printed)}");
+            Console.WriteLine($"{indent}  {bound}");
+        }
+
+        if (entity.GemOverflow is { } overflow)
+        {
+            Console.WriteLine($"{indent}overflow: {overflow.Description}");
+            foreach (var (token, argument) in overflow.Placeholders ?? new Dictionary<string, Placeholder>())
+            {
+                var reads = argument.Text ?? $"{argument.Value} as {argument.Format}";
+                Console.WriteLine($"{indent}  {{{token}}} {reads}");
+            }
+            if (overflow.Icon is { } overflowIcon) Console.WriteLine($"{indent}  icon: {overflowIcon}");
         }
 
         if (entity.Icon is { } icon) Console.WriteLine($"{indent}icon: {icon}");
@@ -162,11 +229,6 @@ public static class TooltipCommand
             Report(stat, indent + "  ");
         }
 
-        foreach (var variant in entity.Variants ?? [])
-        {
-            Console.WriteLine($"\n{indent}{variant.HeroName ?? variant.Hero} ({variant.Hero}): {variant.DisplayName}");
-            if (variant.Grants is { } ability) Report(ability, indent + "  ");
-        }
     }
 
     private static IEnumerable<(string, double)> Fields(Entity entity)

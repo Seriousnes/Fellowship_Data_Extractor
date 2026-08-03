@@ -31,6 +31,11 @@ public static class ProviderFactory
             provider.MappingsContainer = new FileUsmapTypeMappingsProvider(mappings);
         }
 
+        // Blueprint bodies are skipped by default. Two of the numbers a tooltip needs - the stat
+        // pool an item level is worth - are not a data table anywhere in the build; they are the
+        // compiled arithmetic of HeroItemStatCalculation, so the bytecode has to survive loading.
+        provider.ReadScriptData = true;
+
         return provider;
     }
 

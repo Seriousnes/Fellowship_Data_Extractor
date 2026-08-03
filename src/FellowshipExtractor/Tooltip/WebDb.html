@@ -497,8 +497,11 @@ const DATA = "__PAYLOAD__";
     return escaped.replace(/\{([A-Za-z0-9_.]+)\}/g, function (whole, key) {
       if (typeof text[key] === "string") {
         var p = ph[key] || {};
+        // The card shows the band; the hover shows the mean it is centred on and how wide the
+        // roll around it is, which is the only place those two numbers are still visible.
+        var band = p.spread != null ? ", rolled over a band " + p.spread * 100 + "% wide" : "";
         var formula = p.coefficient != null && p.attribute
-          ? "{" + key + "} = " + p.coefficient + " x " + p.attribute
+          ? "{" + key + "} = " + p.coefficient + " x " + p.attribute + band
           : "{" + key + "}";
         return '<span class="sub" title="' + esc(formula) + '">' + esc(text[key]) + "</span>";
       }
@@ -542,15 +545,18 @@ const DATA = "__PAYLOAD__";
   // optional: an item's own displayName is an internal identifier like
   // Relic_A_Crit_Expertise_Portal and the name a player would type, "Conjure Portal", exists
   // only on the ability it grants. 82 entities are findable no other way.
+  // The overflow sentence is the one description text in the index, and only because on the six
+  // gem type cards it is the whole card: nothing else on those lines says "gem essence". It goes in
+  // resolved rather than raw, so the tag names and the brace tokens do not become search terms.
   function haystack(e) {
-    var parts = [e.displayName, e.name, e.table, label(e.table), e.type];
+    var parts = [e.displayName, e.name, e.table, label(e.table), e.slot,
+      e.armorType, e.primaryStat, e.traitCategory, e.gemType, e.gemAttribute, e.rarity];
+    if (e.setBonus) parts = parts.concat(e.setBonus);
     if (e.tags) parts = parts.concat(e.tags);
+    if (e.heroes) parts = parts.concat(e.heroes);
     if (e.grants) parts.push(e.grants.displayName);
+    if (e.gemOverflow) parts.push(plainText(e.gemOverflow.description || "", e.gemOverflow));
     (e.legendaryStats || []).forEach(function (l) { parts.push(l.displayName); });
-    (e.variants || []).forEach(function (v) {
-      parts.push(v.displayName, v.heroName || v.hero);
-      if (v.grants) parts.push(v.grants.displayName);
-    });
     return parts.filter(Boolean).join(" ").toLowerCase();
   }
 
@@ -662,7 +668,8 @@ const DATA = "__PAYLOAD__";
   var STAT_FIELDS = [
     ["castTime", "Cast", "s"], ["channelTime", "Channel", "s"], ["channelTick", "Tick", "s"],
     ["cooldown", "Cooldown", "s"], ["charges", "Charges", ""], ["duration", "Duration", "s"],
-    ["period", "Period", "s"], ["range", "Range", ""], ["radius", "Radius", ""]
+    ["period", "Period", "s"], ["range", "Range", ""], ["radius", "Radius", ""],
+    ["maxRank", "Max rank", ""], ["gemPower", "Gem power", ""], ["requiredGemPower", "Unlocks at", ""]
   ];
 
   function tagList(items, cls, cap) {
@@ -712,12 +719,36 @@ const DATA = "__PAYLOAD__";
         (e.name ? "<code>" + esc(e.name) + "</code>" : "") +
       "</div></div></div>";
 
-    // --- type + tags ---
+    // --- slot + tags ---
+    // One item id is several cards, so the armour type and the hero that tell them apart go
+    // beside the slot: without them eight cards read as the same item under the same number. A
+    // card naming exactly one hero is that hero's reading of the item and nobody else's, which is
+    // the only thing separating Xavian's and Helena's legendaries: same plate, same strength,
+    // different names.
     var tagsHtml = "";
-    if (e.type) tagsHtml += '<span class="type">' + esc(e.type) + "</span>";
+    if (e.slot) tagsHtml += '<span class="type">' + esc(e.slot) + "</span>";
+    if (e.armorType) tagsHtml += '<span class="type">' + esc(e.armorType) + "</span>";
+    if (e.heroes && e.heroes.length === 1) tagsHtml += '<span class="type">' + esc(e.heroes[0]) + "</span>";
+    (e.setBonus || []).forEach(function (s) {
+      tagsHtml += '<span class="type">' + esc(s + " set") + "</span>";
+    });
+    if (e.setCount != null) tagsHtml += '<span class="type">' + esc(e.setCount + " pieces") + "</span>";
+    // A set bonus offered to some roles rather than all of them ships as one row per role, so the
+    // gate is what tells three cards called Sin Warding apart.
+    (e.allowedRoles || []).concat(e.allowedAttributes || []).forEach(function (g) {
+      tagsHtml += '<span class="type">' + esc(g) + "</span>";
+    });
+    if (e.traitCategory) tagsHtml += '<span class="type">' + esc(e.traitCategory) + "</span>";
+    if (e.gemType) tagsHtml += '<span class="type">' + esc(e.gemType) + "</span>";
+    if (e.gemAttribute) tagsHtml += '<span class="type">' + esc(e.gemAttribute) + "</span>";
+    if (e.gemTier != null) tagsHtml += '<span class="type">' + esc("tier " + e.gemTier) + "</span>";
+    if (e.rarity) tagsHtml += '<span class="type">' + esc(e.rarity) + "</span>";
+    if (e.gemNode != null) tagsHtml += '<span class="type">' + esc("node " + e.gemNode) + "</span>";
+    if (e.gemSlot) tagsHtml += '<span class="type">gem socket</span>';
+    if (e.uniqueEquipped) tagsHtml += '<span class="type">unique</span>';
     if (e.tags && e.tags.length) {
-      // `type` is frequently repeated verbatim in `tags`; show it once, as the type chip.
-      var t = String(e.type || "").toLowerCase();
+      // `slot` is frequently repeated verbatim in `tags`; show it once, as the slot chip.
+      var t = String(e.slot || "").toLowerCase();
       var rest = e.tags.filter(function (x) { return String(x).toLowerCase() !== t; });
       tagsHtml += tagList(rest, "", 8);
     }
@@ -743,6 +774,14 @@ const DATA = "__PAYLOAD__";
       }).join("\n") + "</div>";
     }
 
+    // --- what the type keeps paying once its ladder is exhausted ---
+    // The owner is the overflow struct, not the entity: a gem type line carries no placeholders of
+    // its own, so handing this descHTML `e` renders four raw {Token} chips instead of the numbers.
+    if (e.gemOverflow && e.gemOverflow.description) {
+      h += '<div class="nested"><span class="lbl">past max power</span>' +
+        descHTML(e.gemOverflow.description, e.gemOverflow) + "</div>";
+    }
+
     // --- granted ability (nested entity) ---
     if (e.grants && (e.grants.displayName || e.grants.description)) {
       h += '<div class="nested"><span class="lbl">grants</span>';
@@ -751,10 +790,13 @@ const DATA = "__PAYLOAD__";
       h += "</div>";
     }
 
-    // --- item stats / legendary rolls / hero variants ---
+    // --- item stats / legendary rolls / who wears it ---
     if (e.stats && e.stats.length) {
+      // A stat carries the share of the item's budget its slot is worth, which is what turns an
+      // item level into the number a player reads, so the share is shown beside the name.
       h += '<div class="sect"><span class="lbl">stats</span><div class="list">' +
-        tagList(e.stats, "", 8) + "</div></div>";
+        tagList(e.stats.map(function (s) { return s.stat + " " + s.weight + "%"; }), "", 8) +
+        "</div></div>";
     }
     if (e.legendaryStats && e.legendaryStats.length) {
       h += '<div class="sect"><span class="lbl">legendary rolls (' + e.legendaryStats.length +
@@ -765,15 +807,9 @@ const DATA = "__PAYLOAD__";
         (e.legendaryStats.length > 6 ? '<span class="more">+' + (e.legendaryStats.length - 6) + "</span>" : "") +
         "</div></div>";
     }
-    if (e.variants && e.variants.length) {
-      h += '<div class="sect"><span class="lbl">hero variants (' + e.variants.length +
-        ')</span><div class="list">' + e.variants.slice(0, 6).map(function (v) {
-          var g = v.grants || {};
-          return '<span title="' + esc(plainText(g.description || "", g)) + '"><em>' +
-            esc(v.heroName || v.hero || "?") + "</em> " + esc(v.displayName || "") + "</span>";
-        }).join("") +
-        (e.variants.length > 6 ? '<span class="more">+' + (e.variants.length - 6) + "</span>" : "") +
-        "</div></div>";
+    if (e.heroes && e.heroes.length > 1) {
+      h += '<div class="sect"><span class="lbl">heroes (' + e.heroes.length +
+        ')</span><div class="list">' + tagList(e.heroes, "", 12) + "</div></div>";
     }
 
     // --- footer ---
@@ -791,7 +827,7 @@ const DATA = "__PAYLOAD__";
     return '<article class="card">' + h + "</article>";
   }
 
-  // Hover text for the rolls and variants that are listed by name only. It substitutes as well,
+  // Hover text for the rolls that are listed by name only. It substitutes as well,
   // because those nested descriptions carry tokens of their own and a raw {Token} in a tooltip
   // is the same defect on screen as one in a card.
   function plainText(s, owner) {

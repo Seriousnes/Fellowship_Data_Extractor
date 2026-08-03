@@ -4,9 +4,16 @@ namespace FellowshipExtractor.Tooltip;
 /// The tooltip fields a tuning number can land in, and everything else it reaches. Rows records
 /// every row already accounted for, whether it became a named field or a constant, so a later
 /// pass over the same rows does not report one twice under two different names.
+///
+/// Own holds the Rest keys that came from under the entity's own namespace. A reader asking which
+/// of an entity's rows answers a question about the entity needs that distinction, because a row
+/// belonging to something the entity merely waits on is reachable and is not an answer.
 /// </summary>
 public sealed record SplitNumbers(
-    Dictionary<string, double> Named, Dictionary<string, object?> Rest, HashSet<string> Rows);
+    Dictionary<string, double> Named,
+    Dictionary<string, object?> Rest,
+    HashSet<string> Rows,
+    HashSet<string> Own);
 
 /// <summary>
 /// Sorting an entity's tuning numbers into the ones a tooltip shows in a fixed place - cast time,
@@ -33,6 +40,11 @@ public static class Numbers
         ["channelingdata.channelingtickinterval"] = "channelTick",
         ["cooldownduration"] = "cooldown",
         ["cooldown"] = "cooldown",
+        // Vigor.SingleTargetAbsorb.BaselineChargeCount is the only row of its name in all 13,156,
+        // and Luminous Barrier is the only ability declaring its baseline outright. Recognising the
+        // spelling is all it takes for the baseline to win: an entity's own top-level row is read
+        // before any row named for a talent, and the talent's count stays under its talent.
+        ["baselinechargecount"] = "charges",
         ["maxcharges"] = "charges",
         ["maxnumcharges"] = "charges",
         ["numcharges"] = "charges",
@@ -56,13 +68,19 @@ public static class Numbers
     /// reader takes for the ability's own.
     /// </summary>
     public const string Charges = "charges";
+    public const string Period = "period";
+    public const string Duration = "duration";
 
     public static SplitNumbers Split(
-        IEnumerable<CurveBinding> bindings, string? tuningNamespace, bool usesCharges = true)
+        IEnumerable<CurveBinding> bindings,
+        string? tuningNamespace,
+        bool usesCharges = true,
+        Func<string, bool>? chargeFromItem = null)
     {
         var named = new Dictionary<string, double>(StringComparer.Ordinal);
         var rest = new Dictionary<string, object?>(StringComparer.Ordinal);
         var rows = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var own = new HashSet<string>(StringComparer.Ordinal);
 
         var all = bindings as IReadOnlyCollection<CurveBinding> ?? [.. bindings];
         var claimed = new Dictionary<string, CurveBinding>(StringComparer.Ordinal);
@@ -90,6 +108,9 @@ public static class Numbers
         // Talent.PlacedProjectileAoeHasCharges.NumCharges and has two charges in play; Apocalypse
         // has an identically shaped Talent.AddedCharges.MaxCharges and has none. What separates
         // them is not the row and not a gate tag but the effect the ability charges through.
+        //
+        // A count that a named legendary is the only source of is not the ability's baseline, so it
+        // stays where a row named for a talent otherwise goes, under that talent's grouping.
         if (usesCharges && !named.ContainsKey(Charges))
         {
             foreach (var binding in all)
@@ -101,6 +122,7 @@ public static class Numbers
 
                 var leaf = relative[(relative.LastIndexOf('.') + 1)..];
                 if (Field(leaf) != Charges) continue;
+                if (chargeFromItem?.Invoke(binding.RowName) == true) continue;
 
                 claimed[Charges] = binding;
                 named[Charges] = binding.Value.Value;
@@ -116,10 +138,10 @@ public static class Numbers
             rows.Add(binding.RowName);
             if (promoted.Contains(binding.RowName)) continue;
 
-            rest[TuningNamespace.Relative(binding.RowName, tuningNamespace)] = Value(binding);
+            Place(rest, own, binding.RowName, Value(binding), tuningNamespace);
         }
 
-        return new SplitNumbers(named, rest, rows);
+        return new SplitNumbers(named, rest, rows, own);
     }
 
     /// <summary>Adds a binding to a plain constants map, under the reader's own namespace.</summary>
@@ -130,7 +152,25 @@ public static class Numbers
     public static void Add(SplitNumbers split, CurveBinding binding, string? tuningNamespace)
     {
         split.Rows.Add(binding.RowName);
-        Add(split.Rest, binding, tuningNamespace);
+        Place(split.Rest, split.Own, binding.RowName, Value(binding), tuningNamespace);
+    }
+
+    /// <summary>
+    /// Files a row under the name the entity sees it by, recording whether the name shortened. A
+    /// row that did not is not the entity's: Hero.AbilityPaddingCooldown.Default.Duration is
+    /// reachable from almost every ability and belongs to none of them.
+    /// </summary>
+    private static void Place(
+        Dictionary<string, object?> rest,
+        HashSet<string> own,
+        string rowName,
+        object? value,
+        string? tuningNamespace)
+    {
+        var relative = TuningNamespace.Relative(rowName, tuningNamespace);
+        rest[relative] = value;
+
+        if (relative.Length < rowName.Length) own.Add(relative);
     }
 
     private static readonly string[] TalentSegments = ["Talent", "Talents"];
@@ -184,7 +224,34 @@ public static class Numbers
     private static object? Value(CurveBinding binding) =>
         binding.Values is { Length: > 1 } ranks ? ranks : binding.Value;
 
-    private static string? Field(string name)
+    /// <summary>
+    /// The one row of the entity's own naming a field, or null when none or several do. A token
+    /// asking for a period or a duration is answered from here rather than from the whole reachable
+    /// set, for the same reason a field is: Echoes of Ruin reaches two rows whose leaf reads
+    /// Duration and only Dot.Duration is its own.
+    /// </summary>
+    public static (string Key, double Value)? SoleField(
+        IReadOnlyDictionary<string, object?> constants,
+        IReadOnlySet<string> own,
+        IReadOnlySet<string> accountedFor,
+        string field)
+    {
+        (string Key, double Value)? found = null;
+
+        foreach (var (key, value) in constants)
+        {
+            if (value is not double number) continue;
+            if (!own.Contains(key) || accountedFor.Contains(key)) continue;
+            if (Field(key[(key.LastIndexOf('.') + 1)..]) != field) continue;
+
+            if (found is not null) return null;
+            found = (key, number);
+        }
+
+        return found;
+    }
+
+    public static string? Field(string name)
     {
         var key = Normalize(name);
         if (Fields.TryGetValue(key, out var field)) return field;

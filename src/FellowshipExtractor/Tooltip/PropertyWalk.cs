@@ -1,3 +1,4 @@
+using System.Globalization;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Objects.Properties;
@@ -99,12 +100,33 @@ public static class PropertyWalk
 
     public static string? GetString(IPropertyHolder holder, string name) => AsString(Get(holder, name)?.GenericValue);
 
+    /// <summary>
+    /// A row's text, whether it is stored as a plain string or as the formatted-text struct the
+    /// item tables use. The same field name arrives as both across the shipped tables: a trait's
+    /// Description is a string and a set bonus's is a FormatString with an empty argument list.
+    /// </summary>
+    public static string? GetText(IPropertyHolder holder, string name)
+    {
+        if (GetStruct(holder, name) is { } formatted && GetString(formatted, "FormatString") is { } format)
+        {
+            return format;
+        }
+
+        return GetString(holder, name);
+    }
+
     public static string? AsString(object? value) => value switch
     {
         null => null,
         FName name => name.IsNone ? null : name.Text,
         FGameplayTag tag => tag.TagName.IsNone ? null : tag.TagName.Text,
-        FSoftObjectPath soft => soft.AssetPathName.IsNone ? null : soft.ToString(),
+        // A cleared soft reference keeps an empty asset path rather than the none name, so it
+        // stringifies to "" and reads as a path to nothing unless it is emptied here too. Five
+        // hero item rows point at a visual collection whose icon for their slot is cleared that
+        // way, and they need the fallback icon rather than an empty path.
+        FSoftObjectPath soft => soft.AssetPathName.IsNone || soft.ToString() is not { Length: > 0 } path
+            ? null
+            : path,
         FPackageIndex index => index.IsNull ? null : index.ResolvedObject?.GetPathName() ?? index.Name,
         string s => s.Length == 0 ? null : s,
         // Native structs stringify with their type appended, so unwrap before falling back.
@@ -137,9 +159,23 @@ public static class PropertyWalk
     public static string[]? GetTags(IPropertyHolder holder, string name) =>
         AsTags(Get(holder, name)?.GenericValue);
 
+    /// <summary>
+    /// The ordinal behind an enum property. The usmap carries no enum tables, so CUE4Parse hands
+    /// an enum it cannot describe back as a name whose text is the number rather than as a byte.
+    /// </summary>
+    public static int? AsOrdinal(object? value)
+    {
+        if (AsNumber(value) is { } number) return (int)number;
+        return int.TryParse(AsString(value), out var parsed) ? parsed : null;
+    }
+
     public static double? AsNumber(object? value) => value switch
     {
-        float f => f,
+        // A float widens to a double exactly, and exactly is not what a reader wants: 0.8f becomes
+        // 0.800000011920929 and would export with fourteen digits of storage artefact. A float
+        // carries seven significant digits, so its own shortest round-trip is the number that was
+        // authored, and every number the tuning tables supply is a parsed decimal already.
+        float f => double.Parse(f.ToString("R", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture),
         double d => d,
         byte or sbyte or short or ushort or int or uint or long => Convert.ToDouble(value),
         _ => null,

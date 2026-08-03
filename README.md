@@ -330,18 +330,34 @@ The chain is the same for every table, so nothing about heroes or asset types is
    `CurveTable` is unset serializes as a bare `RowName`, so the handle is recognised by the `Curve`
    field it sits in as well as by its shape; requiring both fields dropped the cooldown of every
    ability in the build.
-4. **A `{Token}` resolves to a number you can compute.** The game prints
-   `coefficient x attribute`, displayed as a range of plus or minus a tenth around it, so a
-   placeholder carries both halves:
+4. **A `{Token}` resolves to a number you can compute.** The game rolls
+   `coefficient x attribute` inside a band, so a placeholder carries the mean and the band:
 
    ```json
-   "placeholders": { "FireBallDirect": { "attribute": "Intellect", "coefficient": 5.8482 } }
+   "placeholders": {
+     "FireBallDirect": { "attribute": "Intellect", "coefficient": 5.8482, "spread": 0.2 }
+   }
    ```
 
-   At 100 Intellect that is `5.8482 x 100` = 585, shown in game as 526 to 643. The spread is
-   confirmed against a screenshot of Apocalypse reading 18,835 - 23,021, which is
+   `spread` is the **total** width of the band as a share of the mean, not a plus or minus:
+   `min = mean x (1 - spread / 2)` and `max = mean x (1 + spread / 2)`, so 0.2 is 90 to 110 percent
+   and 0.4 is 80 to 120. At 100 Intellect Fire Ball is `5.8482 x 100` = 585 at spread 0.2, shown in
+   game as 526 to 643, and Apocalypse reproduces a screenshot reading 18,835 - 23,021 from
    `20.9285 x 1000` = 20,928 taken x0.9 and x1.1, with the coefficient's own comment
-   (`was 22.03 then 20.9285`) dating the screenshot.
+   (`was 22.03 then 20.9285`) dating the screenshot. Total width is what
+   `DR_SlaughtervineArchephyte.AutoAttackMelee.Spread = 1` settles: read as a plus or minus, a basic
+   melee swing would roll anywhere between nothing and double.
+
+   A spread of 0 is a band of nothing, meaning the number is exact. That is a different fact from
+   the field being absent, which means nothing in the build says.
+
+   The band comes from two layers. A tuning row named `Spread` sitting beside the coefficient row is
+   the ability's own override, and 456 of the 12,928 shipped rows are one. Everything else falls
+   back to the `DefaultSpread` of the calculation preset the gameplay effect names, 27 rows of
+   `DT_EffectCalculationPresets` at 0.2 or 0. Both are resolved at export time so nothing downstream
+   needs either table: the whole Firemage namespace has no `Spread` row at all, and Fire Ball's
+   direct hit still exports 0.2 because `GE_Firemage_PlacedProjectileAoe_Damage` names the
+   `HeroMagicalArea` preset.
 
    The coefficient is identified by the tuning row naming itself: `AoeDamageIntellectCoefficient`,
    `DamageStrengthCoefficient`, `AgilityCoefficient`. That is the designer's own label, and it
@@ -525,9 +541,9 @@ Sune is Xavian, Firemage is Ardeos, Warmaster is Helena.**
 
 The icon is shared: these items declare a single `DefaultIcon`, not one per hero.
 
-One limit worth stating: the displayed damage range is not emitted. The data gives the coefficient
-and the attribute it captures, but the player's stat value and the spread the UI applies around it
-are not in the build.
+One limit worth stating: the displayed damage range needs a stat value the caller supplies. The
+export gives the coefficient, the attribute it captures and the `spread` the roll uses, so
+everything but the player's own Intellect or Strength is there.
 
 ### Items with no hero dimension
 
@@ -598,13 +614,59 @@ dotnet run --project src/FellowshipExtractor -- export-all ItemID GameplayAbilit
 
 ```
 wrote output\export\entities.jsonl
-  13088 entities, 2482 with a display name, 1650 with an icon
-  992 images in output\export
-  1322 tuning rows supplied by namespace that no asset names
+  14142 entries from 13088 tags, 4184 with a display name, 2643 with an icon
+  1328 images in output\export
+  1713 tuning rows supplied by namespace that no asset names
+  18 coefficient rows banded by their own Spread row, 44 by their effect's calculation preset
+wrote output\export\vocabulary.json (3634 bytes)
 ```
 
-Every line is the same record the `tooltip` command writes for one entity - one shape, 2.3 MB for
+Every line is the same record the `tooltip` command writes for one entity - one shape, 2.9 MB for
 the whole game, down from 22.5 MB.
+
+### vocabulary.json
+
+The one file beside `entities.jsonl` that is not an entity. 3,634 bytes, three lookup tables that
+no entity line can carry, written by the same `export-all` run so the two always describe the same
+build:
+
+```json
+{
+  "heroes": [
+    { "codename": "Firemage", "name": "Ardeos", "armorType": "Cloth",
+      "primaryStat": "Intellect", "color": "EB6328" }
+  ],
+  "rarities": [
+    { "tier": 4, "name": "Champion", "displayName": "Heroic" }
+  ],
+  "printFormats": { "DamageRangeMagic": "<rt.warning>{0} - {1}</> magic damage" }
+}
+```
+
+**heroes**, 12 rows, is the reverse index an item needs. An item expands into rows keyed by
+`armorType` and `primaryStat` and carries no hero at all, so `hero=Ardeos` selects one of them only
+through a table saying Ardeos is Cloth and Intellect. `codename` is the spelling every asset uses
+and `name` the one every tooltip prints. `color` is six hex digits from the design system row the
+hero's metadata asset points at, followed rather than the `ClassColor` literal beside it because the
+two disagree: Aeona's asset says `BC00FF` while the row it names is `FC9FEC`.
+
+**rarities**, 7 rows, is the ladder under both of its names. `name` is what the build files a tier
+under and what every `rarity` field in `entities.jsonl` says; `displayName` is what a player sees.
+They differ on two tiers and the difference is a shift, so a join by name is wrong in both
+directions: internal `Champion` prints as "Heroic" and internal `Heroic` prints as "Regal".
+
+**printFormats**, 20 rows of `DT_DynamicTooltipTexts`, is how the game writes a substituted number.
+`DamageRange` is the band `spread` produces, `UnitSeconds` and `UnitPercent` the two units, and the
+`ModDesc*` family the way a modifier states itself.
+
+The damage-school variants take three things to select, not one. The `showDamageType` flag a
+placeholder carries says the school is wanted in the number rather than in the sentence around it;
+a `coefficient` says the number is damage at all; and the `Magic.*` or `Physical` entry in the
+entity's own `tags` says which school. All three are needed because the flag is shipped on two
+tokens that are not damage: Reaver's Edge and Blood Arc both set it on their `{Radius}`, and a
+renderer going by the flag alone would print "500 physical damage" for a distance. 10 tokens of 225
+carry the flag and 8 of those carry a coefficient. Without the flag the same renderer would write
+"fire damage magic damage" on the sentences that already name the school.
 
 Changing that shape is easy to get wrong in one direction only: minimising fails by quietly
 dropping something a tooltip needed. So a shape change is verified by diffing the old export
@@ -622,8 +684,8 @@ granted abilities being dropped, 421 rows across the augmentation table. The att
 gameplay effects losing their own scaling: an ability's comes from the effect it applies, but an
 effect asked for in its own right captures on itself, and only the referenced ones were being read.
 
-`grep -c '/Game/\|/Script/' entities.jsonl` returns 0, which is the check that no asset path
-survived anywhere in the export.
+`grep -c '/Game/\|/Script/' entities.jsonl vocabulary.json` returns 0 for both, which is the check
+that no asset path survived anywhere in the export.
 
 Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` tables are indexed:
 
@@ -658,7 +720,9 @@ Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` t
   resolved constants, `Numbers` sorts those into the named tooltip fields and the rest,
   `TuningNamespace` decides which prefix a row belongs to, `AbilityPresentationIndex` holds the
   `CRAbilityDataRow` join, `ItemSlots` holds the item slot definition join, `GameplayEffects` reads
-  an effect for its scaling, and `DescriptionTokens` follows a `{Token}` to the effect behind it.
+  an effect for its scaling, `DescriptionTokens` follows a `{Token}` to the effect behind it,
+  `Spread` works out the band a coefficient rolls in from the ability's own tuning or the effect's
+  calculation preset, and `Vocabulary` writes the shared lookup tables beside the entity stream.
 
 ## Known limits
 

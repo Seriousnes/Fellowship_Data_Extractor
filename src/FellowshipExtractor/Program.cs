@@ -1,5 +1,7 @@
 using CUE4Parse.UE4.Exceptions;
 using FellowshipExtractor;
+using FellowshipExtractor.Textures;
+using FellowshipExtractor.Usmap;
 
 var command = args.Length > 0 ? args[0].ToLowerInvariant() : "list";
 var options = new ExtractorOptions
@@ -57,22 +59,22 @@ switch (command)
         await IndexCommand.RunAsync(options);
         break;
     case "usmap-scan":
-        await FellowshipExtractor.Usmap.UsmapScanCommand.RunAsync(options);
+        await UsmapScanCommand.RunAsync(options);
         break;
     case "usmap":
-        await FellowshipExtractor.Usmap.UsmapGenerateCommand.RunAsync(options);
+        await UsmapGenerateCommand.RunAsync(options);
         break;
     case "usmap-diff":
-        await FellowshipExtractor.Usmap.UsmapDiffCommand.RunAsync(options, args[1]);
+        await UsmapDiffCommand.RunAsync(options, args[1]);
         break;
     case "usmap-array":
-        await FellowshipExtractor.Usmap.UsmapArrayCommand.RunAsync(options, args[1]);
+        await UsmapArrayCommand.RunAsync(options, args[1]);
         break;
     case "usmap-count":
-        await FellowshipExtractor.Usmap.UsmapCountProbeCommand.RunAsync(options, args[1]);
+        await UsmapCountProbeCommand.RunAsync(options, args[1]);
         break;
     case "usmap-debug":
-        await FellowshipExtractor.Usmap.UsmapDebugCommand.RunAsync(options, args[1]);
+        await UsmapDebugCommand.RunAsync(options, args[1]);
         break;
     case "probe":
         await ProbeCommand.RunAsync(options, args.Length > 1 ? int.Parse(args[1]) : 300);
@@ -84,7 +86,10 @@ switch (command)
             Console.Error.WriteLine("Usage: textures <filter> [png|jpeg|tga|dds]   e.g. textures ui/icons/hero_abilities");
             return 1;
         }
-        await FellowshipExtractor.Textures.TextureCommand.RunAsync(options, args[1], args.Length > 2 ? args[2] : null);
+        await TextureCommand.RunAsync(options, args[1], args.Length > 2 ? args[2] : null);
+        break;
+    case "ui":
+        await UiCommand.RunAsync(options);
         break;
     case "tooltip":
         if (args.Length < 3)
@@ -114,6 +119,7 @@ switch (command)
                index                 join the tag tables to the asset registry
                dump <filter>         serialize a package's exports to JSON
                textures <filter> [f] decode matching textures to png (or jpeg, tga, dds)
+               ui                    write the item tooltip's chrome textures to output/export/ui
                tooltip <table> <id>  reconstruct one entity's tooltip from name, text and constants
                export-all [table...]  every entity as one JSONL file with every icon beside it
                webdb                 that export as one self-contained, searchable HTML page

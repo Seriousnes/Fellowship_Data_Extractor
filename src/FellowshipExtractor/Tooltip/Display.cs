@@ -25,9 +25,13 @@ public sealed record Display(
             description ??= FirstText(asset, "Description", "Tooltip", "FlavorText");
             icon ??= FirstIcon(asset);
 
-            if (name is null || name.Equals(asset.Name, StringComparison.OrdinalIgnoreCase))
+            // An item's own DisplayName is the identifier it was generated under on all but one of
+            // the 237 definitions, so the maps decide. An item that reads the same way for every
+            // hero has one name here; one that does not has none until a hero or an armour type
+            // is chosen, which is what the expansion does.
+            if (ItemNames.Read(asset) is { } naming)
             {
-                name = MappedName(asset) ?? name;
+                name = naming.Unambiguous ?? naming.Scalar;
             }
         }
 
@@ -97,31 +101,6 @@ public sealed record Display(
         return null;
     }
 
-    /// <summary>
-    /// A dynamic item's own DisplayName is the internal asset name. The name the game shows sits
-    /// in a "DisplayNameBy&lt;dimension&gt;" map instead - by hero for items that read differently
-    /// per hero, by armour type for the rest. One distinct value across the map means the item
-    /// has a single name; several means the caller has to choose a dimension first.
-    /// </summary>
-    private static string? MappedName(UObject asset)
-    {
-        foreach (var property in asset.Properties)
-        {
-            if (!property.Name.Text.StartsWith("DisplayName", StringComparison.OrdinalIgnoreCase)) continue;
-            if (property.Tag?.GenericValue is not UScriptMap map) continue;
-
-            var values = map.Properties
-                .Select(pair => PropertyWalk.AsString(pair.Value?.GenericValue))
-                .OfType<string>()
-                .Distinct(StringComparer.Ordinal)
-                .ToArray();
-
-            if (values.Length == 1) return values[0];
-        }
-
-        return null;
-    }
-
     /// <summary>Any texture or brush reference on the asset, preferring fields named as icons.</summary>
     private static string? FirstIcon(UObject asset)
     {
@@ -135,15 +114,36 @@ public sealed record Display(
                 || name.Contains("Texture", StringComparison.OrdinalIgnoreCase);
             if (!looksLikeIcon) continue;
 
-            var value = property.Tag?.GenericValue is FScriptStruct { StructType: IPropertyHolder brush }
-                ? PropertyWalk.GetString(brush, "ResourceObject")
-                : PropertyWalk.AsString(property.Tag?.GenericValue);
-
-            if (value is null) continue;
+            if (Referenced(property) is not { } value) continue;
             if (name.Contains("Icon", StringComparison.OrdinalIgnoreCase)) return value;
             fallback ??= value;
         }
 
         return fallback;
+    }
+
+    /// <summary>
+    /// The asset a property points at, and nothing when pointing at an asset is not what the
+    /// property does. The mappings record which it is, so the question is asked of the reflection
+    /// data rather than of the field's name: only an object or soft-object reference can name a
+    /// texture, and a class reference, a flag, a size or an array cannot, however they are named.
+    ///
+    /// Four assets in the build turn on this. BP_TargetDummyAI's AIControllerClass,
+    /// GA_SP_BossMarcass_PairUp's IconEffect and GA_Meiko_DurationalAoeDamageBuff's "Buff Icon
+    /// Effect" are class references whose paths read exactly like an icon's, and
+    /// GA_Warmaster_ToughnessMonitor's IconEffects is an array, which stringifies to its element
+    /// type and length rather than to a path.
+    /// </summary>
+    private static string? Referenced(FPropertyTag property)
+    {
+        // A brush names the texture it draws rather than being one.
+        if (property.Tag?.GenericValue is FScriptStruct { StructType: IPropertyHolder brush })
+        {
+            return PropertyWalk.GetString(brush, "ResourceObject");
+        }
+
+        return property.TagData?.Type is "ObjectProperty" or "SoftObjectProperty"
+            ? PropertyWalk.AsString(property.Tag?.GenericValue)
+            : null;
     }
 }

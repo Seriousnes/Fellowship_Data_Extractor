@@ -22,9 +22,9 @@ public sealed class TooltipResolver
 {
     private const string MappingKeyField = "GrantedAbilityMappingKey";
     private const string RuleSetField = "RuleSet";
+    private const string RuleSetPrefix = "DynamicHeroItemRuleSet.";
+    private const string SetBonusKeyField = "SetBonusMappingKey";
     private const string EffectTable = "GameplayEffect";
-    private const string ClassSuffix = "_C";
-    private const string ScriptRoot = "/Script/";
     private const string AbilityTypePrefix = "AbilityType.";
     private const string TalentTagPrefix = "Talents.";
     private const string TagSuffix = "Tag";
@@ -35,18 +35,69 @@ public sealed class TooltipResolver
     private readonly AbstractFileProvider _provider;
     private readonly FAssetData[] _assets;
     private readonly ConstantsTable _constants;
+    private readonly EffectCalculationPresets _presets;
+
+    /// <summary>
+    /// Where each coefficient row's band came from, keyed by the row so the count is over shipped
+    /// tuning rows rather than over how many times the export happened to resolve one. True is an
+    /// ability's own Spread row, false the calculation preset behind its effect.
+    /// </summary>
+    private readonly Dictionary<string, bool> _spreadSources = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Rows two effects claim under different bands, which answer with no band at all.</summary>
+    private readonly HashSet<string> _contestedBands = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly List<TagRecord> _tags;
     private readonly Dictionary<string, FAssetData> _byPrimaryAssetName = new(StringComparer.Ordinal);
     private readonly Dictionary<string, FAssetData> _byAssetName = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
 
     public AbilityPresentationIndex Presentation { get; }
+    public EffectIconSources EffectIcons { get; }
     public GrantedAbilityMappings Mappings { get; }
     public HeroNames Heroes { get; }
     public ItemSlots Slots { get; }
+    public StatCalculation StatCalculation { get; }
+    public ItemSlotNames SlotNames { get; }
+    public ArmorTypes Armor { get; }
+    public HeroItemTable HeroItems { get; }
+    public GrantedCharges Charges { get; }
+    public ItemSetBonuses SetBonuses { get; }
+    public ItemTableNames TableNames { get; }
+    public DynamicItemRuleSets RuleSets { get; }
+    public TalentTrees Talents { get; }
+    public GemDefinitions Gems { get; }
+    public ItemTraits Traits { get; }
+    public Vocabulary Vocabulary { get; }
 
     /// <summary>How many numbers the tuning tables supplied that no asset names. Reported, not silent.</summary>
     public int NamespaceSupplied { get; private set; }
+
+    /// <summary>How many entities took their icon from the entity that applies them.</summary>
+    public int IconsInherited { get; private set; }
+
+    /// <summary>
+    /// How many entities were left without an icon because the entities that apply them ship
+    /// different art. Reported apart from the ones nothing applies, because a contested pairing is
+    /// a decision waiting to be made and an unapplied effect is art the build does not contain.
+    /// </summary>
+    public int IconsContested { get; private set; }
+
+    /// <summary>How many calculation preset rows the build ships.</summary>
+    public int PresetCount => _presets.Count;
+
+    /// <summary>Coefficient rows whose band came from an ability's own Spread row.</summary>
+    public int SpreadOverrides => _spreadSources.Values.Count(fromRow => fromRow);
+
+    /// <summary>Coefficient rows whose band came from the preset behind their effect.</summary>
+    public int SpreadPresetDefaults => _spreadSources.Values.Count(fromRow => !fromRow);
+
+    /// <summary>
+    /// Rows two effects bind under different bands, which therefore export none. Named rather than
+    /// counted, because one is a shipped disagreement worth looking at and a hundred would mean the
+    /// join is wrong.
+    /// </summary>
+    public IReadOnlyCollection<string> SpreadContested => _contestedBands;
 
     public TooltipResolver(AbstractFileProvider provider)
     {
@@ -54,6 +105,7 @@ public sealed class TooltipResolver
         _assets = [.. RegistryCommand.ReadAssets(provider)];
         _tags = [.. CsvExportCommands.ReadTags(provider)];
         _constants = new ConstantsTable(provider);
+        _presets = new EffectCalculationPresets(provider, _assets);
 
         IndexAssets();
 
@@ -65,11 +117,52 @@ public sealed class TooltipResolver
             if (tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) _effectNames.Add(tag.Name);
         }
 
+        var augmentations = new AugmentationIds(_tags);
+        var rarities = new RarityNames(provider, _assets);
+
         Presentation = new AbilityPresentationIndex(provider, _assets);
         Mappings = new GrantedAbilityMappings(provider, _assets);
-        Heroes = new HeroNames(provider, _assets);
         Slots = new ItemSlots(provider, _assets);
+        SlotNames = new ItemSlotNames(provider, _assets);
+        Armor = new ArmorTypes(provider, _assets);
+        SetBonuses = new ItemSetBonuses(provider, _assets, augmentations);
+        TableNames = new ItemTableNames(provider, _assets);
+        RuleSets = new DynamicItemRuleSets(provider, _assets);
+        Gems = new GemDefinitions(provider, _assets, _constants, augmentations, rarities);
+        Traits = new ItemTraits(
+            provider, _assets, _constants, augmentations, new TraitCategoryNames(provider, _assets));
+
+        // Read after the slot and armour vocabularies, because the two weight tables it publishes
+        // are keyed by ordinal in the build and by the printed name in the export.
+        StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor);
+
+        // The fixed item table is read before the heroes are, because the weight templates its
+        // rows name are the only shipped source that says what each hero's primary stat is.
+        HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames);
+        Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
+
+        Charges = new GrantedCharges(provider, _assets, Presentation);
+
+        // Read after the heroes, because a tree is one hero's and says so only through the asset
+        // name it is filed under.
+        Talents = new TalentTrees(provider, _assets, _tags, Heroes);
+
+        Vocabulary = new Vocabulary(provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool);
+
+        // Last, because it walks the class default object of every tag that reaches one and so
+        // needs the asset join and the presentation rows already standing. Building it here rather
+        // than recording the edges as entities are resolved is what makes an inherited icon
+        // independent of the order tags are asked for: one entity resolved on its own inherits
+        // exactly what it inherits in the bulk export.
+        EffectIcons = new EffectIconSources(
+            _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
     }
+
+    /// <summary>A rule set under the name the rarity table is keyed by, without its tag prefix.</summary>
+    private static string ShortRuleSet(string tagName) =>
+        tagName.StartsWith(RuleSetPrefix, StringComparison.OrdinalIgnoreCase)
+            ? tagName[RuleSetPrefix.Length..]
+            : tagName;
 
     public int ConstantCount => _constants.Count;
 
@@ -107,10 +200,11 @@ public sealed class TooltipResolver
     }
 
     /// <summary>
-    /// One entity, whole. An item that reads differently per hero carries every one of its
-    /// variants here rather than being asked for a hero at a time.
+    /// One entity, as the entries a player would recognise. Most tags are one entry; an item that
+    /// reads as a different named thing per armour type or per hero is every one of those things,
+    /// each carrying the stats and the granted ability that reading actually has.
     /// </summary>
-    public Entity Resolve(TagRecord tag, IconWriter? icons)
+    public IReadOnlyList<Entity> Resolve(TagRecord tag, IconWriter? icons)
     {
         var asset = FindAsset(tag.Name);
         var cdo = LoadDefaultObject(asset);
@@ -131,18 +225,200 @@ public sealed class TooltipResolver
 
         var granted = ResolveGranted(cdo, variants, restricted, icons);
 
-        return body with
+        var ruleSet = cdo is null ? null : PropertyWalk.GetString(cdo, RuleSetField);
+
+        var entity = body with
         {
             Table = tag.Table,
             NetId = tag.NetId,
             Name = tag.Name,
-            Type = cdo is null ? null : ItemTypeOf(cdo),
-            Stats = cdo is null ? null : Empty(Slots.For(cdo)),
+            Slot = SlotNames.FromTag(tag.Name)?.Shipped,
+            GemSlot = RuleSets.HasGemSocket(ruleSet) ? true : null,
+            RuleSet = ruleSet is null ? null : ShortRuleSet(ruleSet),
+            Stats = cdo is null ? null : Empty(Slots.For(cdo, StatCalculation)),
             Grants = granted,
             LegendaryStats = cdo is null ? null : Empty(LegendaryStats(cdo, icons)),
             Variants = Empty(variants),
         };
+
+        entity = WithTableText(entity, tag.Name, icons);
+
+        if (HeroItems.Find(tag.Name) is { } fixedItem) entity = WithFixedItem(entity, fixedItem, icons);
+
+        if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
+        {
+            if (Talents.ForAugmentation(tag.Name) is { } talent) entity = WithTalent(entity, talent, icons);
+            if (Gems.ForAugmentation(tag.Name) is { } node) entity = WithGemNode(entity, node, icons);
+        }
+
+        // A gameplay effect that shows a tooltip and ships no art takes the art of the entity that
+        // applies it, where exactly one icon-carrying entity does. Placed here, after every step
+        // that can set an icon of the entity's own and before the two expansions that copy the
+        // record, so it only ever fills a gap and every line an expansion produces agrees.
+        //
+        // Gated on the name as well as the icon. 1,299 of the 3,260 iconless effects have a
+        // determined source and only 197 of those are named: the rest are cooldowns, costs and
+        // charge machinery that export as a bare id, where an icon would sit beside nothing a
+        // reader could see.
+        if (entity is { Icon: null, DisplayName: not null })
+        {
+            if (EffectIcons.For(tag.Name) is { } source && Written(source.IconPath, icons) is { } file)
+            {
+                entity = entity with { Icon = file, IconInheritedFrom = source.Origin };
+                IconsInherited++;
+            }
+            else if (EffectIcons.Disagrees(tag.Name))
+            {
+                IconsContested++;
+            }
+        }
+
+        if (tag.Table.Equals(TalentTrees.SlotTable, StringComparison.OrdinalIgnoreCase) &&
+            Talents.InSlot(tag.NetId) is { Count: > 0 } occupants)
+        {
+            return TalentTrees.Expand(entity, occupants, icons);
+        }
+
+        return cdo is not null && ItemNames.Read(cdo) is { } naming
+            ? ItemVariants.Expand(
+                entity, naming, Heroes,
+                SetBonuses, cdo is null ? null : PropertyWalk.GetString(cdo, SetBonusKeyField))
+            : [entity];
     }
+
+    /// <summary>
+    /// Text a shipped table holds for a tag that reaches no asset at all. Set bonuses, item traits,
+    /// currencies and gem types are data tables and nothing else, so without this they export as a
+    /// bare id however much a tooltip would show for them.
+    /// </summary>
+    private Entity WithTableText(Entity entity, string tagName, IconWriter? icons)
+    {
+        if (SetBonuses.ForTag(tagName) is { } bonus)
+        {
+            return entity with
+            {
+                DisplayName = entity.DisplayName ?? bonus.DisplayName,
+                Description = entity.Description ?? bonus.Description,
+                SetCount = bonus.SetCount,
+                AllowedRoles = bonus.AllowedRoles,
+                AllowedAttributes = bonus.AllowedAttributes,
+                Augmentation = bonus.Augmentation,
+                Icon = entity.Icon ?? Written(bonus.IconPath, icons),
+            };
+        }
+
+        if (Traits.ForTag(tagName) is { } trait)
+        {
+            return entity with
+            {
+                DisplayName = entity.DisplayName ?? trait.DisplayName,
+                Description = entity.Description ?? trait.Description,
+                TraitCategoryTag = trait.CategoryTag,
+                TraitCategory = trait.Category,
+                MaxRank = trait.MaxRank,
+                RandomChance = trait.RandomChance,
+                Augmentation = trait.Augmentation,
+                RankRuns = trait.Runs,
+                Icon = entity.Icon ?? Written(trait.IconPath, icons),
+            };
+        }
+
+        if (Gems.ForType(tagName) is { } gem)
+        {
+            return entity with
+            {
+                DisplayName = entity.DisplayName ?? gem.DisplayName,
+                GemAttribute = gem.Attribute,
+                GemOverflow = WithOverflow(gem.Overflow, icons),
+            };
+        }
+
+        if (Gems.ForSize(tagName) is { } size)
+        {
+            return entity with
+            {
+                DisplayName = entity.DisplayName ?? size.DisplayName,
+                GemType = size.TypeName,
+                GemTier = size.Tier,
+                GemPower = size.Power,
+                Rarity = size.Rarity,
+                Icon = entity.Icon ?? Written(size.IconPath, icons),
+            };
+        }
+
+        if (TableNames.Find(tagName) is { } row)
+        {
+            return entity with
+            {
+                DisplayName = entity.DisplayName ?? row.DisplayName,
+                Description = entity.Description ?? row.Description,
+                Icon = entity.Icon ?? Written(row.IconPath, icons),
+            };
+        }
+
+        return entity;
+    }
+
+    /// <summary>
+    /// A gem ladder node on the augmentation that grants it. The augmentation is where the node's
+    /// mechanics already are, and the table is where its name, its threshold and the sentence a
+    /// player reads are, so the two only make one tooltip together.
+    /// </summary>
+    private static Entity WithGemNode(Entity entity, GemLadderNode node, IconWriter? icons) => entity with
+    {
+        DisplayName = node.DisplayName ?? entity.DisplayName,
+        Description = node.Description ?? entity.Description,
+        Placeholders = node.Placeholders ?? entity.Placeholders,
+        GemType = node.TypeName,
+        GemNode = node.Node,
+        RequiredGemPower = node.RequiredPower,
+        Replaces = node.Replaces,
+        Icon = Written(node.IconPath, icons) ?? entity.Icon,
+    };
+
+    private static GemOverflow? WithOverflow(GemOverflow? overflow, IconWriter? icons) =>
+        overflow is null ? null : overflow with { Icon = Written(overflow.Icon, icons) };
+
+    private static string? Written(string? iconPath, IconWriter? icons) =>
+        iconPath is null ? null : icons?.Invoke(iconPath);
+
+    /// <summary>
+    /// A tag that names a row of the fixed item table rather than an asset. Nothing else in the
+    /// build defines these 480 items, so without this they export as a bare id and a tag name.
+    /// </summary>
+    private Entity WithFixedItem(Entity entity, HeroItem item, IconWriter? icons) => entity with
+    {
+        DisplayName = entity.DisplayName ?? item.DisplayName,
+        Slot = item.Slot ?? entity.Slot,
+        ArmorType = item.ArmorType,
+        Stats = entity.Stats ?? Empty(item.Stats),
+        SetBonus = SetBonuses.ForRow(item.SetBonus),
+        UniqueEquipped = item.UniqueEquipped ? true : null,
+        Heroes = Empty([.. item.Heroes.Select(hero => Heroes.Shipped(hero) ?? hero)]),
+        Icon = entity.Icon ?? (item.IconPath is { } path ? icons?.Invoke(path) : null),
+    };
+
+    /// <summary>
+    /// A talent as the tree that places it states it. This is the one text path in the file that
+    /// runs the other way round: CRTalentData overrides whatever the augmentation and the ability
+    /// fallthrough produced instead of filling in behind it.
+    ///
+    /// It has to. An augmentation carrying no text of its own falls through GrantedAbilities to the
+    /// ability it modifies, so Slow Burn exports as "Fire Ball" with Reign of Fire's art. Where the
+    /// augmentation does carry text it is a stale draft: 7 of the 215 disagree with the tree on the
+    /// name and all 12 that carry a description disagree on the numbers.
+    /// </summary>
+    private static Entity WithTalent(Entity entity, Talent talent, IconWriter? icons) => entity with
+    {
+        DisplayName = talent.DisplayName ?? entity.DisplayName,
+        Description = talent.Description ?? entity.Description,
+        Icon = (talent.IconPath is { } path ? icons?.Invoke(path) : null) ?? entity.Icon,
+        Heroes = [talent.HeroName],
+        TalentSlot = talent.Slot,
+        TalentRow = talent.Row,
+        TalentColumn = talent.Column,
+        TalentCost = talent.Cost,
+    };
 
     /// <summary>
     /// Everything an asset itself contributes to a tooltip: the text, the icon, the numbers a
@@ -161,11 +437,20 @@ public sealed class TooltipResolver
         var placeholders = presentation is null
             ? []
             : DescriptionTokens.Align(
-                DescriptionTokens.Resolve(presentation.Row, _provider, _constants, tuning, assetName),
+                DescriptionTokens.Resolve(presentation.Row, _provider, _constants, _presets, tuning, assetName),
                 display.Description);
 
-        var split = Numbers.Split(bindings, tuning, UsesCharges(cdo));
+        var split = Numbers.Split(
+            bindings, tuning, UsesCharges(cdo), row => Charges.Supplies(row, display.Name));
         var scaling = new SortedSet<string>(StringComparer.Ordinal);
+
+        // Which of the entity's numbers roll in which band. An effect names its calculation preset
+        // and binds the coefficient rows it multiplies, so the row is the join between the two.
+        var bands = new EffectSpreads();
+
+        // An entity that is itself a gameplay effect names its preset on its own class default
+        // object, where the walk over referenced effects never looks.
+        var ownBand = cdo is null ? null : _presets.Of(cdo);
 
         // The effects the asset applies, folded in. Their coefficients are the only record of what
         // an ability's damage scales off, and the effect itself is a separate entity in its own
@@ -178,25 +463,33 @@ public sealed class TooltipResolver
 
             foreach (var effect in Effects(cdo))
             {
+                if (effect.Spread is { } band) bands.Add(effect.Constants ?? [], band);
                 if (effect.Constants is null && effect.CapturedAttributes is null) continue;
 
                 foreach (var attribute in effect.CapturedAttributes ?? []) scaling.Add(attribute);
                 foreach (var binding in effect.Constants ?? []) Numbers.Add(split, binding, tuning);
             }
+
+            foreach (var row in bands.Contested) _contestedBands.Add(row);
         }
+
+        var claimed = new Dictionary<string, object?>(StringComparer.Ordinal);
 
         foreach (var placeholder in placeholders.Values)
         {
             foreach (var attribute in placeholder.ScalesOff ?? []) scaling.Add(attribute);
 
             // A number the description already accounts for is not repeated in the constants.
-            foreach (var key in placeholder.Constants?.Keys ?? []) split.Rest.Remove(key);
+            foreach (var key in placeholder.Constants?.Keys ?? [])
+            {
+                if (split.Rest.Remove(key, out var value)) claimed[key] = value;
+            }
         }
 
         // Rows the tuning tables place under this entity that no property names. Native code reads
         // an ability's cost that way, so the table is the only record that the cost is the
         // ability's at all.
-        Supplement(split, tuning);
+        Supplement(split, tuning, UsesCharges(cdo));
 
         // A talent asset reaches almost none of its own numbers: they sit under the ability it
         // modifies rather than under anything named after the talent, and the tag it grants is the
@@ -207,16 +500,59 @@ public sealed class TooltipResolver
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
         var (baseline, talents) = Numbers.SplitTalents(split.Rest);
 
-        // The number a token prints is a coefficient times a stat, so a token that carries neither
-        // reconstructs nothing. A token drawing on an effect finds it among that effect's rows; a
-        // token that names its own ability has to find it among the ability's.
+        // The number a token prints is a coefficient times a stat, or a plain scalar where the
+        // token's Calculation named a period or a duration. A token drawing on an effect finds
+        // either among the rows that Calculation selected; a token that names its own ability has
+        // to find its answer among the ability's, where a lone row means nothing.
+        //
+        // That search runs over every row the entity reaches, the rows other tokens account for
+        // among them, because those are rivals even though they are not this token's answer. A row
+        // a token does take stops being available to the next one: Luminous Barrier's absorb and
+        // its damage reduction are two sentences and one coefficient, and printing that coefficient
+        // twice says the barrier reduces damage by twelve times the wearer's Intellect.
+        var reachable = Rejoined(baseline, claimed);
+        var taken = new HashSet<string>(claimed.Keys, StringComparer.Ordinal);
+
         foreach (var name in placeholders.Keys.ToArray())
         {
             var placeholder = placeholders[name];
-            var source = placeholder.Constants ?? baseline;
+            var own = placeholder.Constants is not null;
+            var source = placeholder.Constants ?? reachable;
 
-            if (Coefficients.From(source) is not { } resolved) continue;
-            placeholders[name] = placeholder with { Attribute = resolved.Attribute, Coefficient = resolved.Value };
+            var wanted = placeholder.Quantity switch
+            {
+                TokenQuantity.Period => Numbers.Period,
+                TokenQuantity.Duration => Numbers.Duration,
+                _ => null,
+            };
+
+            // A token asking for a period or a duration is not asking for a coefficient, and taking
+            // one puts the ability's damage where its clock should be.
+            if (wanted is null)
+            {
+                if (Coefficients.From(source, own ? null : taken, placeholder.ScalesOff) is { } resolved)
+                {
+                    taken.Add(resolved.Key);
+                    placeholders[name] = placeholder with
+                    {
+                        Attribute = resolved.Attribute,
+                        Coefficient = resolved.Value,
+                        Spread = Band(resolved.Key, tuning, bands, ownBand, placeholder.PresetSpread),
+                    };
+                    continue;
+                }
+            }
+            else if (!own && Numbers.SoleField(reachable, split.Own, taken, wanted) is { } row)
+            {
+                taken.Add(row.Key);
+                placeholders[name] = placeholder with { Value = row.Value };
+                continue;
+            }
+
+            if (placeholder.Constants is { } selected && Sole(selected) is { } value)
+            {
+                placeholders[name] = placeholder with { Value = value };
+            }
         }
 
         return new Entity
@@ -246,6 +582,21 @@ public sealed class TooltipResolver
             TalentGates = cdo is null ? null : Empty(TalentGates(cdo, talents.Keys)),
             GrantedTags = Empty(grantedTags),
         };
+    }
+
+    /// <summary>
+    /// The band a coefficient rolls in, recording which layer answered so the export can report the
+    /// split. Both fallbacks are wanted: the effect the token itself names is not always one the
+    /// ability references directly, and an entity that is a gameplay effect names its own.
+    /// </summary>
+    private double? Band(
+        string coefficientKey, string? tuning, EffectSpreads bands, double? ownBand, double? tokenBand)
+    {
+        var spread = Spread.For(
+            coefficientKey, tuning, _constants, bands, ownBand, tokenBand, out var overridden);
+
+        if (spread is not null) _spreadSources.TryAdd(coefficientKey, overridden);
+        return spread;
     }
 
     /// <summary>
@@ -311,8 +662,12 @@ public sealed class TooltipResolver
     /// The tuning rows sitting directly under an entity's namespace that nothing in the asset
     /// references. A cost effect is a native class with an empty default object, so an ability's
     /// cost is reachable no other way.
+    ///
+    /// A charge count arriving this way has to clear the same gate a referenced one does. A row
+    /// nothing in the asset names is the weakest evidence in the build, and reading it as a charge
+    /// count made Brimborn's stack cap of 20 an ability with twenty charges.
     /// </summary>
-    private void Supplement(SplitNumbers split, string? tuning)
+    private void Supplement(SplitNumbers split, string? tuning, bool usesCharges)
     {
         if (tuning is null) return;
 
@@ -328,7 +683,7 @@ public sealed class TooltipResolver
                 ConstantsTable = record.Table,
             };
 
-            var one = Numbers.Split([binding], tuning);
+            var one = Numbers.Split([binding], tuning, usesCharges);
             split.Rows.Add(record.Key);
 
             foreach (var (field, value) in one.Named)
@@ -338,13 +693,49 @@ public sealed class TooltipResolver
 
             foreach (var (key, value) in one.Rest)
             {
-                if (split.Rest.TryAdd(key, value)) NamespaceSupplied++;
+                if (!split.Rest.TryAdd(key, value)) continue;
+
+                split.Own.Add(key);
+                NamespaceSupplied++;
             }
         }
     }
 
     private static double? Named(SplitNumbers split, string field) =>
         split.Named.TryGetValue(field, out var value) ? value : null;
+
+    /// <summary>
+    /// An entity's baseline constants with the rows its tokens claimed put back, grouped the same
+    /// way, so a claimed row that names a talent stays out of the baseline either way.
+    /// </summary>
+    private static IReadOnlyDictionary<string, object?> Rejoined(
+        Dictionary<string, object?> baseline, Dictionary<string, object?> claimed)
+    {
+        if (claimed.Count == 0) return baseline;
+
+        var all = new Dictionary<string, object?>(baseline, StringComparer.Ordinal);
+        foreach (var (key, value) in claimed) all[key] = value;
+
+        return Numbers.SplitTalents(all).Baseline;
+    }
+
+    /// <summary>
+    /// The one number a token's selected rows hold, or null when they hold none or several. A row
+    /// that scales with rank is four numbers and is not one of them.
+    /// </summary>
+    private static double? Sole(IReadOnlyDictionary<string, object?> constants)
+    {
+        double? found = null;
+
+        foreach (var value in constants.Values)
+        {
+            if (value is not double number) continue;
+            if (found is not null) return null;
+            found = number;
+        }
+
+        return found;
+    }
 
     /// <summary>
     /// A wrapper asset read as one tooltip with everything it grants. A talent grants several
@@ -470,35 +861,13 @@ public sealed class TooltipResolver
     }
 
     /// <summary>
-    /// The gameplay effects an asset applies, with the attributes they scale off. An ability holds
-    /// its damage effect as an ordinary class reference - DamageEffect, DamageEffectRef, DotEffect
-    /// and a dozen other names designers chose - so the reference is recognised by its target being
-    /// a known effect rather than by the field it sits in.
+    /// The gameplay effects an asset applies, with the attributes they scale off. Which references
+    /// count is <see cref="GameplayEffects.ReferencedIn"/>'s to say, because the same predicate
+    /// inverted is what lets an effect inherit an icon from the entity that applies it.
     /// </summary>
-    private List<EffectRef> Effects(UObject asset)
-    {
-        var found = new List<EffectRef>();
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var property in PropertyWalk.Walk(asset))
-        {
-            if (PropertyWalk.AsString(property.Value) is not { } path) continue;
-
-            // A native class shares its name with the effect tag but has no package to read, so a
-            // "/Script/..." reference is a class the effect derives from, not an effect.
-            if (!path.Contains('/') || path.StartsWith(ScriptRoot, StringComparison.OrdinalIgnoreCase)) continue;
-
-            var name = AbilityPresentationIndex.AssetName(path);
-            if (name.EndsWith(ClassSuffix, StringComparison.Ordinal)) name = name[..^ClassSuffix.Length];
-
-            if (!_effectNames.Contains(name)) continue;
-            if (!seen.Add(path)) continue;
-
-            found.Add(GameplayEffects.Resolve(_provider, _constants, path));
-        }
-
-        return found;
-    }
+    private List<EffectRef> Effects(UObject asset) =>
+        [.. GameplayEffects.ReferencedIn(asset, _effectNames)
+            .Select(reference => GameplayEffects.Resolve(_provider, _constants, _presets, reference.Path))];
 
     /// <summary>What kind of ability this is, as the tooltip labels it: Aoe, Casted, Magic.Fire, Major.</summary>
     private static List<string> AbilityTypes(UObject cdo) =>
@@ -563,13 +932,6 @@ public sealed class TooltipResolver
         return exports.FirstOrDefault(e => e.Name.StartsWith("Default__", StringComparison.Ordinal))
             ?? exports.FirstOrDefault();
     }
-
-    /// <summary>
-    /// The line under an item's name. A dynamic item's HeroItemType is a byte enum, which cooks
-    /// down to an ordinal, but the rule set it names is a gameplay tag and spells the type out.
-    /// </summary>
-    private static string? ItemTypeOf(UObject cdo) =>
-        PropertyWalk.GetString(cdo, RuleSetField) is { } ruleSet ? HeroNames.LastSegment(ruleSet) : null;
 
     /// <summary>
     /// The same join the index command uses: data assets advertise their tag as PrimaryAssetName,

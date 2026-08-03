@@ -12,6 +12,9 @@ public sealed record EffectRef
 {
     public IReadOnlyList<string>? CapturedAttributes { get; init; }
     public IReadOnlyList<CurveBinding>? Constants { get; init; }
+
+    /// <summary>The band this effect rolls its magnitude in, from the preset row it names.</summary>
+    public double? Spread { get; init; }
 }
 
 /// <summary>
@@ -22,8 +25,49 @@ public sealed record EffectRef
 public static class GameplayEffects
 {
     private const string AttributeField = "AttributeName";
+    private const string ClassSuffix = "_C";
+    private const string ScriptRoot = "/Script/";
 
-    public static EffectRef Resolve(AbstractFileProvider provider, ConstantsTable constants, string objectPath)
+    /// <summary>
+    /// The gameplay effects an asset references, each as the name the tag table knows it by and the
+    /// path that reaches it. An ability holds its damage effect as an ordinary class reference -
+    /// DamageEffect, DamageEffectRef, DotEffect and a dozen other names designers chose - so the
+    /// reference is recognised by its target being a known effect rather than by the field it sits
+    /// in.
+    ///
+    /// Both directions of the relation are read from here. The resolver follows it forwards to fold
+    /// an effect's numbers into the entity that applies them, and <see cref="EffectIconSources"/>
+    /// inverts it to find the entity an effect can take an icon from, so the two can never disagree
+    /// about what counts as a reference.
+    /// </summary>
+    public static IEnumerable<(string Name, string Path)> ReferencedIn(
+        UObject asset, IReadOnlySet<string> effectNames)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var property in PropertyWalk.Walk(asset))
+        {
+            if (PropertyWalk.AsString(property.Value) is not { } path) continue;
+
+            // A native class shares its name with the effect tag but has no package to read, so a
+            // "/Script/..." reference is a class the effect derives from, not an effect.
+            if (!path.Contains('/') || path.StartsWith(ScriptRoot, StringComparison.OrdinalIgnoreCase)) continue;
+
+            var name = AbilityPresentationIndex.AssetName(path);
+            if (name.EndsWith(ClassSuffix, StringComparison.Ordinal)) name = name[..^ClassSuffix.Length];
+
+            if (!effectNames.Contains(name)) continue;
+            if (!seen.Add(path)) continue;
+
+            yield return (name, path);
+        }
+    }
+
+    public static EffectRef Resolve(
+        AbstractFileProvider provider,
+        ConstantsTable constants,
+        EffectCalculationPresets presets,
+        string objectPath)
     {
         if (!provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(objectPath), out var package))
         {
@@ -38,6 +82,7 @@ public static class GameplayEffects
         {
             CapturedAttributes = Captures(effect),
             Constants = CurveBindings.Collect(effect, constants) is { Count: > 0 } bindings ? bindings : null,
+            Spread = presets.Of(effect),
         };
     }
 

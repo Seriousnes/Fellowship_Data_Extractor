@@ -22,9 +22,13 @@ public sealed class AbilityPresentationIndex
 
     private readonly Dictionary<string, AbilityPresentation> _byRowName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AbilityPresentation> _byAbilityAsset = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _names = new(StringComparer.OrdinalIgnoreCase);
 
     public int TableCount { get; }
     public int RowCount { get; }
+
+    /// <summary>Every name the game shows an ability under. The vocabulary a description names one in.</summary>
+    public IReadOnlyCollection<string> AbilityNames => _names;
 
     /// <summary>Tables that would not load, with the reason. Reported rather than swallowed.</summary>
     public List<(string Path, string Reason)> FailedTables { get; } = [];
@@ -68,6 +72,8 @@ public sealed class AbilityPresentationIndex
                 {
                     _byAbilityAsset.TryAdd(StripClassSuffix(AssetName(asset)), presentation);
                 }
+
+                if (PropertyWalk.GetString(row, "Name") is { } shown) _names.Add(shown);
             }
         }
     }

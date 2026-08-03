@@ -77,7 +77,7 @@ public static class WebDbCommand
         var bytes = new FileInfo(target).Length;
         Console.WriteLine($"\nwrote {target}");
         Console.WriteLine($"  payload {payload.Length:N0} bytes, page {bytes:N0} bytes");
-        Console.WriteLine($"  {resolvedTokens} description tokens resolved to a percentage of an attribute");
+        Console.WriteLine($"  {resolvedTokens} description tokens resolved to a share of an attribute or a number");
     }
 
     private static bool HasDisplayName(JsonElement entity) =>
@@ -177,9 +177,9 @@ public static class WebDbCommand
 
     /// <summary>
     /// Copies one row through verbatim and adds a placeholderText map beside every placeholders
-    /// map it contains, at every depth: 61 of the per-hero variants carry their own tokens, so a
-    /// top-level-only pass would leave {Token} on screen for all of them. Answers with the number
-    /// of tokens the row resolved.
+    /// map it contains, at every depth: the ability an item grants and a legendary's rolls carry
+    /// tokens of their own, so a top-level-only pass would leave {Token} on screen for all of
+    /// them. Answers with the number of tokens the row resolved.
     /// </summary>
     private static int WriteEntity(JsonElement value, Utf8JsonWriter writer)
     {
@@ -226,9 +226,12 @@ public static class WebDbCommand
 
     /// <summary>
     /// What each {Token} in the description prints, worked out here rather than in the page.
-    /// The coefficient is read as a decimal straight from the JSON text because binary floating
-    /// point does not survive the multiplication: 8.767 x 100 is 876.6999999999999 as a double,
-    /// and 48 of the shipped coefficients land like that.
+    /// A token that scales off a stat prints as a share of it; a period, a duration or a count
+    /// prints as itself.
+    ///
+    /// Every number is read as a decimal straight from the JSON text because binary floating point
+    /// does not survive the multiplication: 8.767 x 100 is 876.6999999999999 as a double, and 48 of
+    /// the shipped coefficients land like that.
     /// </summary>
     private static int WritePlaceholderText(JsonElement placeholders, Utf8JsonWriter writer)
     {
@@ -239,24 +242,98 @@ public static class WebDbCommand
         foreach (var placeholder in placeholders.EnumerateObject())
         {
             if (placeholder.Value.ValueKind != JsonValueKind.Object) continue;
-
-            if (!placeholder.Value.TryGetProperty("attribute", out var attribute)) continue;
-            if (attribute.ValueKind != JsonValueKind.String) continue;
-
-            if (!placeholder.Value.TryGetProperty("coefficient", out var coefficient)) continue;
-            if (coefficient.ValueKind != JsonValueKind.Number) continue;
-            if (!coefficient.TryGetDecimal(out var value)) continue;
+            if (Substitution(placeholder.Value) is not { } text) continue;
 
             if (written == 0) writer.WriteStartObject("placeholderText");
             written++;
 
-            var percentage = (value * 100m).ToString("0.############", CultureInfo.InvariantCulture);
-            writer.WriteString(placeholder.Name, $"{percentage}% of {attribute.GetString()}");
+            writer.WriteString(placeholder.Name, text);
         }
 
         if (written > 0) writer.WriteEndObject();
         return written;
     }
+
+    /// <summary>
+    /// One token's text. A token that carries a word rather than a number prints that word: the
+    /// gem overflow sentences substitute the gem type's name this way.
+    ///
+    /// A coefficient prints as a share of the attribute the row named, or as a
+    /// bare share where the row named none: Heart Splitter's "{BonusOfRend} of the Total Rend
+    /// Damage" supplies its own object and wants 30%, not 30% of a thing called Dot.
+    ///
+    /// A coefficient with a spread prints as the band rather than the mean, because the band is
+    /// what the game rolls in and the mean is a number it never shows. The band is written in
+    /// shares of the attribute rather than in hit points so the page needs no assumed stat value:
+    /// Fire Ball reads 526.338% to 643.302% of Intellect, which at 100 Intellect is 526 to 643.
+    ///
+    /// A scalar prints as itself unless the token declares otherwise. Two of the game's own token
+    /// flags decide that: ShowPercent, which turns 0.5 into 50%, and ShowUnit, which supplies the
+    /// word a sentence like "healing you every {BloodRushPeriod}" leaves out.
+    /// </summary>
+    private static string? Substitution(JsonElement placeholder)
+    {
+        // A token standing in for a name is already the words it prints and has no arithmetic to do.
+        if (Text(placeholder, "text") is { } word) return word;
+
+        if (Decimal(placeholder, "coefficient") is { } coefficient)
+        {
+            var attribute = Text(placeholder, "attribute");
+            var of = attribute is null ? "" : $" of {attribute}";
+
+            // Spread is the whole band, so half of it lies either side of the mean. Zero is a band
+            // of nothing and prints as the single exact number.
+            return Decimal(placeholder, "spread") is { } spread && spread > 0m
+                ? $"{Share(coefficient * (1m - spread / 2m))} to {Share(coefficient * (1m + spread / 2m))}{of}"
+                : Share(coefficient) + of;
+        }
+
+        if (Decimal(placeholder, "value") is not { } value) return null;
+
+        // A gem or set bonus argument says outright how it is printed, and the arithmetic differs
+        // per format: Ruby node 1 stores 0.8 and 1.02 in the same sentence and prints "+2% ... above
+        // 80% health".
+        if (Text(placeholder, "format") is { } format)
+        {
+            return format switch
+            {
+                "percent" => Share(value),
+                "delta" => Signed(value - 1m),
+                _ => Number(value),
+            };
+        }
+
+        if (Flag(placeholder, "percent")) return Share(value);
+
+        var number = Number(value);
+        return Text(placeholder, "unit") is { } unit ? $"{number} {Singular(unit, value)}" : number;
+    }
+
+    private static string Share(decimal value) => Number(value * 100m) + "%";
+
+    private static string Signed(decimal value) => (value < 0 ? "" : "+") + Share(value);
+
+    private static string Number(decimal value) =>
+        value.ToString("0.############", CultureInfo.InvariantCulture);
+
+    /// <summary>Only "1 second" needs it, and the shipped units are all plural nouns ending in s.</summary>
+    private static string Singular(string unit, decimal value) =>
+        value == 1m && unit.EndsWith('s') ? unit[..^1] : unit;
+
+    private static string? Text(JsonElement holder, string name) =>
+        holder.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : null;
+
+    private static bool Flag(JsonElement holder, string name) =>
+        holder.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.True;
+
+    private static decimal? Decimal(JsonElement holder, string name) =>
+        holder.TryGetProperty(name, out var property) &&
+        property.ValueKind == JsonValueKind.Number &&
+        property.TryGetDecimal(out var value)
+            ? value
+            : null;
 
     /// <summary>
     /// Every referenced icon as a WebP data URI, keyed by its png file name.
