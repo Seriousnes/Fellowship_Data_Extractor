@@ -54,7 +54,8 @@ public sealed class Tooltips(EntityStore store, TooltipRenderer renderer)
 {
     public IResult Get(string table, int netId, IQueryCollection request)
     {
-        var query = TooltipQuery.Parse(request, store.KnownStats, out var error);
+        var query = TooltipQuery.Parse(
+            request, store.KnownStats, store.Vocabulary.StatCalculation.Attributes, out var error);
 
         if (error is not null)
         {

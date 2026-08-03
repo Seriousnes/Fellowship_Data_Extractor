@@ -50,10 +50,36 @@ public sealed record SlotWeight(double StatWeight, double ArmorWeight);
 public sealed record ArmorTypeWeight(double ArmorWeight, double FlatArmor);
 
 /// <summary>
-/// How the game writes one attribute: the words it prints, how many decimals, and whether the
-/// number is a percentage.
+/// One band of a rating's diminishing returns: the share of the raw percentage kept up to
+/// <see cref="MaxBracketValue"/>. The bands are cumulative, so a raw percentage past a band's top
+/// keeps that band's share of the part inside it and moves on to the next.
 /// </summary>
-public sealed record AttributeDisplay(string DisplayName, int RoundToDecimals, bool IsPercent);
+public sealed record RatingBracket(double MaxBracketValue, double PenaltyPercentage);
+
+/// <summary>
+/// How the game writes one attribute, and how a rating on an item becomes the attribute it feeds.
+///
+/// A gear slot holds a rating and the attribute behind it is a percentage: 50 haste rating is 8%,
+/// through BaseStatMultiplier of 0.16. Past that the brackets take their cut, keeping the whole of
+/// the first 10 percent, 98% of the next five, 96% of the five after and 94% of the five after
+/// that, with FinalPenaltyPercentage on everything above the last band.
+///
+/// The four rated stats say so themselves by naming a different attribute from the one their row is
+/// keyed by: the Haste row's attribute is HasteRating on CRHeroAttributeSet, while the Haste that
+/// gameplay effects capture is on CRBasicAttributeSet. They are two quantities and this row is the
+/// conversion between them.
+///
+/// A stat with no brackets and a multiplier of one is not a rating at all - Strength, Intellect and
+/// Stamina are the number they say - and converting one is the identity.
+/// </summary>
+public sealed record AttributeDisplay(
+    string DisplayName,
+    int RoundToDecimals,
+    bool IsPercent,
+    string? Attribute = null,
+    double BaseStatMultiplier = 1,
+    IReadOnlyList<RatingBracket>? Brackets = null,
+    double FinalPenaltyPercentage = 1);
 
 /// <summary>
 /// The extra slots a rarity grants an item on top of the ones the item itself declares. The
@@ -385,10 +411,43 @@ public sealed class StatCalculation
                 DisplayName: displayName,
                 RoundToDecimals: (int)(PropertyWalk.AsNumber(
                     PropertyWalk.Get(row, "RoundToDecimals")?.GenericValue) ?? 0),
-                IsPercent: PropertyWalk.Get(row, "bIsPercent")?.GenericValue is true));
+                IsPercent: PropertyWalk.Get(row, "bIsPercent")?.GenericValue is true,
+                Attribute: PropertyWalk.GetStruct(row, "Attribute") is { } attribute
+                    ? PropertyWalk.GetString(attribute, "AttributeName")
+                    : null,
+                BaseStatMultiplier: PropertyWalk.AsNumber(
+                    PropertyWalk.Get(row, "BaseStatMultiplier")?.GenericValue) ?? 1,
+                Brackets: Brackets(row),
+                FinalPenaltyPercentage: PropertyWalk.AsNumber(
+                    PropertyWalk.Get(row, "FinalPenaltyPercentage")?.GenericValue) ?? 1));
         }
 
         return found;
+    }
+
+    /// <summary>
+    /// A rating's diminishing-return bands, in the order the row states them. Kept in that order
+    /// rather than sorted: the bands are read as a run from the bottom up, and the shipped
+    /// CooldownReduction row states three of them at the same ceiling, which sorting would hide.
+    /// </summary>
+    private static IReadOnlyList<RatingBracket>? Brackets(IPropertyHolder row)
+    {
+        if (PropertyWalk.Get(row, "Brackets")?.GenericValue is not UScriptArray array) return null;
+
+        var bands = new List<RatingBracket>(array.Properties.Count);
+
+        foreach (var entry in array.Properties)
+        {
+            if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder bracket }) continue;
+
+            bands.Add(new RatingBracket(
+                MaxBracketValue: PropertyWalk.AsNumber(
+                    PropertyWalk.Get(bracket, "MaxBracketValue")?.GenericValue) ?? 0,
+                PenaltyPercentage: PropertyWalk.AsNumber(
+                    PropertyWalk.Get(bracket, "PenaltyPercentage")?.GenericValue) ?? 1));
+        }
+
+        return bands.Count == 0 ? null : bands;
     }
 
     private static Dictionary<string, IReadOnlyDictionary<int, RaritySlots>> RarityRows(

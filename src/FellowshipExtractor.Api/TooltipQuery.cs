@@ -1,4 +1,5 @@
 using System.Globalization;
+using FellowshipExtractor.Tooltip;
 using Microsoft.Extensions.Primitives;
 
 namespace FellowshipExtractor.Api;
@@ -75,10 +76,12 @@ public sealed record TooltipQuery
         Stats.TryGetValue(stat, out var values) ? values.Sum() : null;
 
     /// <summary>
-    /// The wearer's haste, as the build's own constants express it: a fraction, where 0.3 is the
-    /// +30% an ability grants. Hero.Spirit.Buff.HasteIncrease is 0.3 and the ability granting it
-    /// says "+30% Haste", so the unit is the build's rather than a convention. A gear slot's haste
-    /// is a rating instead, and the build states no conversion between the two.
+    /// The wearer's haste as a fraction, where 0.3 is the +30% an ability advertises, matching the
+    /// build's own constants: Hero.Spirit.Buff.HasteIncrease is 0.3.
+    ///
+    /// The caller sends the rating and it arrives converted. haste=50 is 50 haste rating, which
+    /// DT_AttributeProperties turns into 8% and this reads back as 0.08; hastePercentage=8 says the
+    /// same thing for a caller reading the number off their own character sheet.
     ///
     /// Named here rather than spelled at each reader, because two of them ask and a stat this one
     /// is spelled wrong in would silently read as no haste at all.
@@ -113,7 +116,11 @@ public sealed record TooltipQuery
     /// rejected rather than ignored, because a caller who types spirt=17 would otherwise get a
     /// tooltip printed from an unstated stat of zero and no indication anything went wrong.
     /// </summary>
-    public static TooltipQuery Parse(IQueryCollection query, IReadOnlySet<string> knownStats, out string? error)
+    public static TooltipQuery Parse(
+        IQueryCollection query,
+        IReadOnlySet<string> knownStats,
+        IReadOnlyDictionary<string, AttributeDisplay> attributes,
+        out string? error)
     {
         error = null;
 
@@ -133,9 +140,28 @@ public sealed record TooltipQuery
         {
             if (!Reserved.Contains(key))
             {
-                if (!knownStats.Contains(key))
+                // A stat named plainly is the rating on the gear. The same stat with Percentage
+                // after it is the caller saying they hold the converted number already, which is
+                // what a player reads off their own character sheet.
+                var percentage = key.EndsWith(StatConversion.PercentageSuffix, StringComparison.OrdinalIgnoreCase)
+                    && knownStats.Contains(key[..^StatConversion.PercentageSuffix.Length]);
+
+                var stat = percentage ? key[..^StatConversion.PercentageSuffix.Length] : key;
+
+                if (!knownStats.Contains(stat))
                 {
                     error = $"Unknown parameter '{key}'.";
+                    return result;
+                }
+
+                attributes.TryGetValue(stat, out var attribute);
+
+                // A stat the build converts nothing for has no percentage to be given: Strength is
+                // the number it says, and accepting strengthPercentage would quietly answer a
+                // question the build does not ask.
+                if (percentage && (attribute is null || !StatConversion.Converts(attribute)))
+                {
+                    error = $"'{stat}' is not a rating, so '{key}' has nothing to convert.";
                     return result;
                 }
 
@@ -154,10 +180,18 @@ public sealed record TooltipQuery
                         return result;
                     }
 
-                    values.Add(number);
+                    values.Add(attribute is null
+                        ? number
+                        : percentage
+                            ? StatConversion.FromPercentage(number, attribute)
+                            : StatConversion.FromRating(number, attribute));
                 }
 
-                stats[key] = values;
+                // Both spellings of one stat land under the stat's own name, so a reader asking for
+                // its total does not have to know which the caller wrote.
+                stats[stat] = stats.TryGetValue(stat, out var already)
+                    ? [.. already, .. values]
+                    : values;
                 continue;
             }
 

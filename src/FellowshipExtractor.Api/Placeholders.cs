@@ -214,9 +214,11 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
         if (placeholder.Tickrate is not true || placeholder.IgnoresHaste is true) return (value, null);
         if (haste is not { } fraction || fraction <= 0) return (value, null);
 
+        // The divisor keeps enough places to be checkable: 8% haste divides by 1.08, and rounding
+        // that to 1.1 states arithmetic the number beside it did not come from.
         return (
             value / (1m + fraction),
-            $"{Round(value)}s at no haste, divided by {Round(1m + fraction)} for {Share(fraction)}% haste");
+            $"{Round(value)}s at no haste, divided by {Round(1m + fraction, 4)} for {Share(fraction)}% haste");
     }
 
     /// <summary>A fraction as the percentage a reader recognises, kept in decimal throughout.</summary>
