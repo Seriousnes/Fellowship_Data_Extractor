@@ -1,0 +1,422 @@
+@inject CodexView Ui
+
+@if (Entity.Description is not null || Entity.Detail is { Count: > 0 })
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Text</div>
+        @if (Entity.Description is not null)
+        {
+            <p class="cx-prose">@Ui.Text(Entity.Description, Entity.Placeholders, Entity.Tags)</p>
+        }
+        @foreach (var line in Entity.Detail ?? [])
+        {
+            <hr class="cx-rule" />
+            <p class="cx-prose">@Ui.Text(line, Entity.Placeholders, Entity.Tags)</p>
+        }
+    </div>
+}
+
+@if (Facts.Count > 0 || Entity.Tags is { Count: > 0 } || Entity.Heroes is { Count: > 0 } ||
+     Entity.SetBonus is { Count: > 0 } || Entity.ScalesOff is { Count: > 0 } ||
+     Entity.AllowedRoles is { Count: > 0 } || Entity.AllowedAttributes is { Count: > 0 })
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Details</div>
+
+        @if (Facts.Count > 0)
+        {
+            <div class="cx-pairs">
+                @for (var half = 0; half < 2; half++)
+                {
+                    var split = (Facts.Count + 1) / 2;
+                    var slice = half == 0 ? Facts.Take(split) : Facts.Skip(split);
+
+                    <table class="cx-facts">
+                        @foreach (var fact in slice)
+                        {
+                            <tr>
+                                <th>@fact.Label</th>
+                                <td>
+                                    @if (fact.Href is null)
+                                    {
+                                        @fact.Value
+                                    }
+                                    else
+                                    {
+                                        <a href="@fact.Href" data-tip="@fact.Tip">@fact.Value</a>
+                                    }
+                                    <span class="cx-unit">@fact.Unit</span>
+                                </td>
+                            </tr>
+                        }
+                    </table>
+                }
+            </div>
+        }
+
+        @if (Entity.Tags is { Count: > 0 } tags)
+        {
+            <hr class="cx-rule" />
+            <p class="cx-sub-head">Tags</p>
+            <ul class="cx-pills">
+                @foreach (var tag in tags)
+                {
+                    var facet = tag.StartsWith("Magic", StringComparison.Ordinal) ||
+                                tag.StartsWith("Physical", StringComparison.Ordinal) ? "school" : "tag";
+                    var where = $"/browse?type={Uri.EscapeDataString(Entity.Table ?? string.Empty)}" +
+                                $"&{facet}={Uri.EscapeDataString(tag)}";
+                    <li><a href="@where">@Codex.Spaced(tag)</a></li>
+                }
+            </ul>
+        }
+
+        @if (Entity.Heroes is { Count: > 0 } heroes)
+        {
+            <hr class="cx-rule" />
+            <p class="cx-sub-head">Heroes</p>
+            <ul class="cx-pills">
+                @foreach (var hero in heroes)
+                {
+                    var tone = Ui.HeroColour(hero);
+                    <li>
+                        <a href="/browse?hero=@Uri.EscapeDataString(hero)"
+                           style="@(tone is null ? null : $"color:{tone}")">@hero</a>
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (Entity.SetBonus is { Count: > 0 } sets)
+        {
+            <hr class="cx-rule" />
+            <p class="cx-sub-head">Set@(Entity.SetCount is { } pieces ? $" ({pieces} pieces)" : "")</p>
+            <ul class="cx-pills">
+                @foreach (var set in sets)
+                {
+                    <li><a href="/browse?set=@Uri.EscapeDataString(set)">@set</a></li>
+                }
+            </ul>
+        }
+
+        @if (Entity.ScalesOff is { Count: > 0 } scaling)
+        {
+            <hr class="cx-rule" />
+            <p class="cx-sub-head">Scales off</p>
+            <ul class="cx-pills">
+                @foreach (var stat in scaling)
+                {
+                    <li><span>@Codex.Spaced(stat)</span></li>
+                }
+            </ul>
+        }
+
+        @if (Entity.AllowedRoles is { Count: > 0 } roles)
+        {
+            <hr class="cx-rule" />
+            <p class="cx-sub-head">Offered to</p>
+            <ul class="cx-pills">
+                @foreach (var role in roles)
+                {
+                    <li><span style="color:@(Ui.Tokens.Role(role) ?? "inherit")">@role</span></li>
+                }
+                @foreach (var stat in Entity.AllowedAttributes ?? [])
+                {
+                    <li><span>@stat</span></li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@if (Entity.Stats is { Count: > 0 } slots)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Stat slots <span class="cx-num">@slots.Count</span></div>
+        <p class="cx-note">
+            A slot's weight is its share of the item's stat budget. The magnitude is not in the build:
+            a dynamic item rolls it from its level and rarity when it drops, which is what the tooltip
+            above computes.
+        </p>
+        <ul class="cx-stat-lines">
+            @foreach (var slot in slots)
+            {
+                <li class="@(Ui.Store.PrimaryAttributes.Contains(slot.Stat) || slot.Stat == "Stamina" ? "cx-primary" : "cx-secondary")">
+                    <span>@Codex.Spaced(slot.Stat)</span>
+                    <span class="cx-w">@slot.Kind &middot; weight @slot.Weight</span>
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+@if (Entity.Placeholders is { Count: > 0 } tokens)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Substitutions <span class="cx-num">@tokens.Count</span></div>
+        <p class="cx-note">
+            What each <code>{Token}</code> in the text above resolves to. A coefficient is multiplied by
+            the attribute it names; a spread is the total width of the band the roll lands in, so the
+            printed range is the mean less and plus half of it.
+        </p>
+        @foreach (var (name, token) in tokens.OrderBy(t => t.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            <div class="cx-token">
+                <span class="cx-token-name">{@name}</span>
+                <div class="cx-token-read">
+                    @if (token.Text is { } word)
+                    {
+                        @word
+                    }
+                    else if (token.Coefficient is { } coefficient)
+                    {
+                        @($"{Codex.Number(coefficient * 100)}% " +
+                          (token.Attribute is { } attribute ? "of " + Codex.Spaced(attribute) : "of the captured attribute"))
+                    }
+                    else if (token.Value is { } value)
+                    {
+                        @($"{Codex.Number(value)}{(token.Percent == true ? "%" : "")} {token.Unit}")
+                    }
+                    else if (token.FromOwnConstants == true)
+                    {
+                        <span class="cx-miss">worked out by native code from this entity's own tuning</span>
+                    }
+                    else
+                    {
+                        <span class="cx-miss">nothing in the build resolves this token</span>
+                    }
+                </div>
+                @if (Working(token) is { Length: > 0 } working)
+                {
+                    <div class="cx-token-work">@working</div>
+                }
+                @if (token.Constants is { Count: > 0 } constants)
+                {
+                    <ul class="cx-kv">
+                        @foreach (var (key, value) in constants)
+                        {
+                            <li>
+                                <span class="cx-k">@key</span>
+                                <span class="cx-v @(value is null ? "cx-miss" : null)">@CodexView.Constant(value)</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        }
+    </div>
+}
+
+@if (Entity.Constants is { Count: > 0 } rows)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Tuning rows <span class="cx-num">@rows.Count</span></div>
+        <p class="cx-note">
+            Every shipped tuning value this entity reaches that is not already a field above, under its
+            row name with the entity's own namespace stripped.
+        </p>
+        <ul class="cx-kv">
+            @foreach (var (key, value) in rows)
+            {
+                <li>
+                    <span class="cx-k">@key</span>
+                    <span class="cx-v @(value is null ? "cx-miss" : null)">@CodexView.Constant(value)</span>
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+@if (Entity.Talents is { Count: > 0 } talents)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Talent-named rows <span class="cx-num">@talents.Count</span></div>
+        <p class="cx-note">
+            Tuning rows whose names name a talent. The name is all this says: a row named for a talent
+            is very often unconditional, because a talent folded back into its ability leaves its name
+            behind in the row. Where the asset declares a condition it is listed as a gate.
+        </p>
+        @foreach (var (talent, values) in talents.OrderBy(t => t.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            <hr class="cx-rule" />
+            <p class="cx-sub-head">
+                @Codex.Spaced(talent)
+                @if (Entity.TalentGates?.TryGetValue(talent, out var gate) == true)
+                {
+                    <span class="cx-num">gated on @gate</span>
+                }
+            </p>
+            <ul class="cx-kv">
+                @foreach (var (key, value) in values)
+                {
+                    <li>
+                        <span class="cx-k">@key</span>
+                        <span class="cx-v @(value is null ? "cx-miss" : null)">@CodexView.Constant(value)</span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@if (Entity.RankRuns is { Count: > 0 } runs)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Rank progression <span class="cx-num">@runs.Count</span></div>
+        <p class="cx-note">
+            The slash-separated numbers the description prints, matched to the shipped curve row behind
+            them. The printed column is what the game shows; the values are what it computes with.
+        </p>
+        @foreach (var run in runs)
+        {
+            <hr class="cx-rule" />
+            <ul class="cx-kv">
+                <li><span class="cx-k">In the text</span><span class="cx-v"><code>@run.Literal</code></span></li>
+                <li>
+                    <span class="cx-k">Printed</span>
+                    <span class="cx-v cx-prose">
+                        @for (var rank = 0; rank < run.Printed.Count; rank++)
+                        {
+                            @if (rank > 0)
+                            {
+                                <span> / </span>
+                            }
+                            @Ui.Text(run.Printed[rank], null, Entity.Tags)
+                        }
+                    </span>
+                </li>
+                @if (run.Values is { Count: > 0 })
+                {
+                    <li>
+                        <span class="cx-k">Shipped values</span>
+                        <span class="cx-v">@string.Join(" / ", run.Values.Select(v => v is null ? "-" : Codex.Number(v.Value)))</span>
+                    </li>
+                }
+                @if (run.Key is not null)
+                {
+                    <li><span class="cx-k">Tuning row</span><span class="cx-v">@run.Key</span></li>
+                }
+                @if (run.Transform is not null)
+                {
+                    <li>
+                        <span class="cx-k">Arithmetic</span>
+                        <span class="cx-v">@run.Transform@(run.Ticks is { } ticks ? $" over {ticks} ticks" : "")</span>
+                    </li>
+                }
+                @if (run.Disagrees == true)
+                {
+                    <li><span class="cx-k">Note</span><span class="cx-v cx-miss">printed and computed values disagree</span></li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@if (Entity.GemOverflow is { } overflow)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Past max power</div>
+        <p class="cx-prose">@Ui.Text(overflow.Description, overflow.Placeholders, Entity.Tags)</p>
+    </div>
+}
+
+@if (Entity.GrantedTags is { Count: > 0 } granted)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Grants tags <span class="cx-num">@granted.Count</span></div>
+        <ul class="cx-pills">
+            @foreach (var tag in granted)
+            {
+                <li><span>@tag</span></li>
+            }
+        </ul>
+    </div>
+}
+
+@if (Entity.IconInheritedFrom is { } source)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Borrowed art</div>
+        <p class="cx-note">
+            This record ships no art of its own. The image above belongs to
+            <a href="@Ui.Addresses(source.Table, source.NetId).Href"
+               data-tip="@Ui.Addresses(source.Table, source.NetId).Tip">@source.Name</a>, which is
+            where it was taken from.
+        </p>
+    </div>
+}
+
+@if (Entity.Grants is { } grants)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">
+            Grants an ability
+            @if (grants.DisplayName is { } named)
+            {
+                <span class="cx-num">@named</span>
+            }
+        </div>
+        <Detail Entity="grants" />
+    </div>
+}
+
+@if (Entity.LegendaryStats is { Count: > 0 } legendaries)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Legendary stats <span class="cx-num">@legendaries.Count</span></div>
+        @foreach (var roll in legendaries)
+        {
+            <hr class="cx-rule" />
+            <p class="cx-sub-head">@(roll.DisplayName ?? roll.Name)</p>
+            <Detail Entity="roll" />
+        }
+    </div>
+}
+
+@if (Uncovered.Count > 0)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">Not yet laid out <span class="cx-num">@Uncovered.Count</span></div>
+        <p class="cx-note">
+            Fields the export carries that this page has no section for. They appear here as the JSON
+            the extractor wrote rather than being dropped, so a field added upstream is visible before
+            anybody remembers to lay it out.
+        </p>
+        @foreach (var (label, json) in Uncovered)
+        {
+            <hr class="cx-rule" />
+            <p class="cx-sub-head">@label</p>
+            <pre class="cx-raw">@json</pre>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+
+    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts = [];
+
+    private IReadOnlyList<(string Label, string Json)> Uncovered = [];
+
+    protected override void OnParametersSet()
+    {
+        Facts = Ui.Facts(Entity);
+        Uncovered = Ui.Uncovered(Entity);
+    }
+
+    private static string Working(Placeholder token)
+    {
+        var parts = new List<string>();
+
+        if (token.Spread is { } spread)
+        {
+            parts.Add($"spread {Codex.Number(spread)} ({Codex.Number(100 - spread * 50)}% to " +
+                $"{Codex.Number(100 + spread * 50)}% of the mean)");
+        }
+
+        if (token.Format is { } format) parts.Add($"printed as {format}");
+        if (token.ShowDamageType == true) parts.Add("speaks its damage school");
+        if (token.ScalesOff is { Count: > 0 } scaling) parts.Add("scales off " + string.Join(", ", scaling));
+
+        return string.Join(" · ", parts);
+    }
+}

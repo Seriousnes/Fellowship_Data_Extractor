@@ -1,0 +1,231 @@
+@rendermode InteractiveServer
+@inject Suggestions Suggest
+@inject NavigationManager Nav
+@implements IDisposable
+
+<div class="cx-omnibox" role="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"></circle>
+        <path d="M16 16l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+    </svg>
+
+    <input id="cx-omnibox" type="search" role="combobox" autocomplete="off"
+           aria-label="Search the codex" aria-controls="cx-omnibox-drop" aria-autocomplete="list"
+           aria-expanded="@(Open ? "true" : "false")"
+           placeholder="Search items, abilities, talents, creatures"
+           @bind="typed" @bind:event="oninput" @bind:after="Typing"
+           @onkeydown="Key" @onfocus="Focus" @onblur="Blur" />
+
+    @if (typed.Length > 0)
+    {
+        <button type="button" class="cx-omnibox-clear" aria-label="Clear search" @onclick="Clear">&times;</button>
+    }
+
+    @if (Open && answer is { } found)
+    {
+        <div class="cx-omnibox-drop" id="cx-omnibox-drop" role="listbox">
+            @if (found.Groups.Count > 1)
+            {
+                <div class="cx-omnibox-chips">
+                    <button type="button" class="cx-omnibox-chip" aria-pressed="@(scope is null)"
+                            @onclick="() => Scope(null)">
+                        All (@found.Total)
+                    </button>
+                    @foreach (var group in found.Groups)
+                    {
+                        <button type="button" class="cx-omnibox-chip" aria-pressed="@(scope == group.Table)"
+                                @onclick="() => Scope(group.Table)">
+                            @group.Label (@group.Count)
+                        </button>
+                    }
+                </div>
+            }
+
+            @if (found.Results.Count == 0)
+            {
+                <p class="cx-omnibox-none">Nothing in the build is named that.</p>
+            }
+
+            @for (var at = 0; at < found.Results.Count; at++)
+            {
+                var hit = found.Results[at];
+                var mine = at;
+
+                <a class="cx-omnibox-hit" href="@hit.Href" role="option" data-tip="@hit.Tooltip"
+                   aria-selected="@(active == mine ? "true" : "false")" data-active="@On(active == mine)">
+                    <img alt="" loading="lazy" src="@hit.IconUrl" />
+                    <span class="cx-t">
+                        <span class="cx-nm">
+                            @foreach (var run in Suggestions.Mark(hit.DisplayName ?? hit.Name, Words))
+                            {
+                                if (run.Hit)
+                                {
+                                    <mark>@run.Text</mark>
+                                }
+                                else
+                                {
+                                    @run.Text
+                                }
+                            }
+                        </span>
+                        @if (hit.DisplayName is not null)
+                        {
+                            <span class="cx-sub">@hit.Name</span>
+                        }
+                    </span>
+                    <span class="cx-ty">@hit.TypeLabel</span>
+                </a>
+            }
+
+            @if (found.Total > found.Results.Count)
+            {
+                <a class="cx-omnibox-all" href="@All" data-active="@On(active == found.Results.Count)">
+                    View all @found.Total.ToString("N0") results
+                </a>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Text { get; set; }
+
+    private const int Rows = 12;
+
+    private const int Least = 2;
+
+    private string typed = string.Empty;
+    private string? applied;
+    private string? scope;
+    private SearchResponse? answer;
+    private int active = -1;
+    private bool showing;
+
+    private int touches;
+
+    private CancellationTokenSource? pending;
+
+    private bool Open => showing && typed.Trim().Length >= Least;
+
+    private IReadOnlyList<string> Words => Suggestions.Words(answer?.Query);
+
+    private string All =>
+        "/browse?q=" + Uri.EscapeDataString(typed.Trim()) +
+        (scope is null ? string.Empty : "&type=" + Uri.EscapeDataString(scope));
+
+    private static string? On(bool set) => set ? "on" : null;
+
+    protected override void OnParametersSet()
+    {
+        if (Text == applied) return;
+
+        applied = Text;
+        typed = Text ?? string.Empty;
+        answer = null;
+        showing = false;
+        active = -1;
+    }
+
+    private async Task Typing()
+    {
+        active = -1;
+
+        if (typed.Trim().Length < Least)
+        {
+            answer = null;
+            showing = false;
+            return;
+        }
+
+        pending?.Cancel();
+        pending?.Dispose();
+        var mine = pending = new CancellationTokenSource();
+
+        try
+        {
+            await Task.Delay(120, mine.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        answer = Suggest.For(typed.Trim(), scope, Rows);
+        showing = true;
+        StateHasChanged();
+    }
+
+    private void Scope(string? table)
+    {
+        touches++;
+        scope = table;
+        active = -1;
+        answer = Suggest.For(typed.Trim(), scope, Rows);
+        showing = true;
+    }
+
+    private void Focus()
+    {
+        touches++;
+        if (answer is not null) showing = true;
+    }
+
+    private async Task Blur()
+    {
+        var mine = ++touches;
+        await Task.Delay(200);
+
+        if (mine != touches) return;
+
+        showing = false;
+        StateHasChanged();
+    }
+
+    private void Key(KeyboardEventArgs key)
+    {
+        var hits = answer?.Results.Count ?? 0;
+        var last = hits + (answer is { } found && found.Total > hits ? 1 : 0) - 1;
+
+        switch (key.Key)
+        {
+            case "Escape":
+                showing = false;
+                active = -1;
+                return;
+
+            case "Enter":
+                touches++;
+                if (typed.Trim().Length == 0) return;
+                Nav.NavigateTo(active >= 0 && active < hits ? answer!.Results[active].Href : All);
+                showing = false;
+                return;
+
+            case "ArrowDown" when last >= 0:
+                touches++;
+                showing = true;
+                active = active >= last ? 0 : active + 1;
+                return;
+
+            case "ArrowUp" when last >= 0:
+                touches++;
+                showing = true;
+                active = active <= 0 ? last : active - 1;
+                return;
+        }
+    }
+
+    private void Clear()
+    {
+        touches++;
+        typed = string.Empty;
+        answer = null;
+        showing = false;
+        active = -1;
+    }
+
+    public void Dispose()
+    {
+        pending?.Cancel();
+        pending?.Dispose();
+    }
+}

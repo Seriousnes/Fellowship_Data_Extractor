@@ -1,4 +1,5 @@
 using FellowshipExtractor.Api;
+using FellowshipExtractor.Api.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,12 +7,10 @@ builder.AddServiceDefaults();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 
-// The blob container the AppHost provisions, and the export on disk it is filled from.
 builder.AddAzureBlobContainerClient("icons");
 builder.Services.AddSingleton<ExportPaths>();
 builder.Services.AddHostedService<IconSeeder>();
 
-// The export is read once and shared. Everything downstream of it is stateless.
 builder.Services.AddSingleton<EntityStore>();
 builder.Services.AddSingleton(s => new DesignTokens(
     s.GetRequiredService<EntityStore>().Vocabulary.Colors,
@@ -19,18 +18,30 @@ builder.Services.AddSingleton(s => new DesignTokens(
 builder.Services.AddSingleton(s => new RichTextRenderer(
     s.GetRequiredService<EntityStore>().Vocabulary.TextStyles));
 
-// Where the tooltip's chrome lives in the container, including the per-rarity tinted masks the
-// seeder above generates. Anything that needs one of those URLs asks this rather than spelling the
-// naming rule out again.
 builder.Services.AddSingleton<ChromeAssets>();
 builder.Services.AddSingleton<Placeholders>();
 builder.Services.AddSingleton<TooltipRenderer>();
 builder.Services.AddSingleton<Tooltips>();
 
+builder.Services.AddSingleton<Codex>();
+builder.Services.AddSingleton<SearchIndex>();
+builder.Services.AddSingleton<CodexSearch>();
+builder.Services.AddSingleton<CodexView>();
+builder.Services.AddSingleton<Suggestions>();
+
+builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
+
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
 app.MapOpenApi();
+
+app.UseResponseCompression();
+app.MapStaticAssets();
+app.UseAntiforgery();
+
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.MapGet("/api/ability/{abilityId:int}", (int abilityId, HttpContext http, Tooltips tooltips) =>
         tooltips.Get("GameplayAbility", abilityId, http.Request.Query))
@@ -44,12 +55,72 @@ app.MapGet("/api/item/{itemId:int}", (int itemId, HttpContext http, Tooltips too
     .WithSummary("One item's tooltip as a self-contained HTML fragment.")
     .Produces<string>(StatusCodes.Status200OK, "text/html");
 
+app.MapGet("/api/tooltip/{table}/{netId:int}", (string table, int netId, HttpContext http, Tooltips tooltips) =>
+        tooltips.Get(table, netId, http.Request.Query))
+    .WithName("GetTooltip")
+    .WithSummary("Any entity's tooltip as a self-contained HTML fragment.")
+    .Produces<string>(StatusCodes.Status200OK, "text/html");
+
+app.MapGet("/api/search", (HttpContext http, Suggestions suggestions) =>
+{
+    var limit = int.TryParse(http.Request.Query["limit"], out var wanted) ? Math.Clamp(wanted, 1, 100) : 10;
+
+    return Results.Ok(suggestions.For(
+        http.Request.Query["q"].ToString(), http.Request.Query["type"].ToString(), limit));
+})
+    .WithName("Search")
+    .WithSummary("Ranked name matches across every entity type.");
+
+app.MapGet("/api/entities", (HttpContext http, Codex codex, CodexSearch search, CodexView view) =>
+{
+    var query = CodexQuery.Parse(http.Request.Query, codex, out var error);
+
+    if (error is not null)
+    {
+        return Results.Problem(
+            title: "The filter could not be read.", detail: error, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    var results = search.Run(query);
+
+    return Results.Ok(new EntitiesResponse(
+        results.Total,
+        results.Page,
+        results.Pages,
+        [.. results.Rows.Select(row => SearchResult.From(row, view))]));
+})
+    .WithName("GetEntities")
+    .WithSummary("Every entity a filter leaves, paged.");
+
+app.MapGet("/api/entity/{table}/{netId:int}", (string table, int netId, EntityStore store) =>
+{
+    var readings = store.All(table, netId);
+
+    return readings.Count == 0
+        ? Results.Problem(
+            title: "No such id.", detail: $"The build has no {table} {netId}.",
+            statusCode: StatusCodes.Status404NotFound)
+        : Results.Ok(readings);
+})
+    .WithName("GetEntity")
+    .WithSummary("One entity's exported record, with every per-hero reading of its id.");
+
+app.MapGet("/api/catalog", (Codex codex, EntityStore store) => Results.Ok(new
+{
+    entities = store.Count,
+    types = codex.Types,
+    menu = codex.Menu,
+    facets = codex.Facets.Select(facet => codex.View(facet, store.Entities)),
+    flags = codex.Flags.Select(flag => new { flag.Key, flag.Label }),
+    measures = codex.Measures.Select(measure => new { measure.Key, measure.Label, measure.Unit }),
+    store.Vocabulary.Heroes,
+    store.Vocabulary.Rarities,
+}))
+    .WithName("GetCatalog")
+    .WithSummary("The menus, entity types and filter facets the browser is driven by.");
+
 app.Run();
 
-/// <summary>
-/// What both endpoints do, which is the same thing against a different table: read the query, find
-/// the one entity the caller means, and render it.
-/// </summary>
 public sealed class Tooltips(EntityStore store, TooltipRenderer renderer)
 {
     public IResult Get(string table, int netId, IQueryCollection request)
@@ -73,9 +144,6 @@ public sealed class Tooltips(EntityStore store, TooltipRenderer renderer)
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
-        // A rung a caller misspells has to be rejected rather than dropped. The rung decides how
-        // many stat slots the item's rarity grants it, so a tooltip rendered from an unread rarity
-        // is short a stat line or two and says nothing about why.
         if (query.Rarity is { } rung && store.Rarity(rung, gem: false) is null && store.Rarity(rung, gem: true) is null)
         {
             return Results.Problem(
@@ -98,9 +166,6 @@ public sealed class Tooltips(EntityStore store, TooltipRenderer renderer)
                 detail: $"The build has no {table} {netId}.",
                 statusCode: StatusCodes.Status404NotFound),
 
-            // The id is real and names several things at once. Answering with one of them would be
-            // a guess, and the caller cannot tell a guess from an answer, so the readings are listed
-            // and the discriminator that settles them is named.
             Lookup.NeedsHero => Results.Problem(
                 title: "This id reads differently per hero.",
                 detail: $"{table} {netId} has {store.All(table, netId).Count} readings and no hero was given. " +

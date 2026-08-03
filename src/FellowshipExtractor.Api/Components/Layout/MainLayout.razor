@@ -1,0 +1,42 @@
+@inherits LayoutComponentBase
+@inject CodexView Ui
+@inject NavigationManager Nav
+
+<a class="cx-skip" href="#main">Skip to content</a>
+
+<header class="cx-masthead">
+    <div class="cx-bar">
+        <a class="cx-brand" href="/">
+            <span class="cx-brand-mark" aria-hidden="true"></span>
+            <span class="cx-brand-name">Fellowship <b>Codex</b></span>
+        </a>
+
+        <MegaMenu />
+
+        <Omnibox Text="@Typed" />
+    </div>
+</header>
+
+<main id="main">@Body</main>
+
+<footer class="cx-foot">
+    <p>
+        Every name, number, colour and texture on this page is read out of the shipped Fellowship
+        build by <b>FellowshipExtractor</b>. @Ui.Store.Count.ToString("N0") entities,
+        @Ui.Store.Vocabulary.Colors.Count design-system colours,
+        @Ui.Store.Vocabulary.Rarities.Count rarity rungs.
+    </p>
+    <p class="cx-foot-links">
+        <a href="/api/catalog">catalog</a>
+        <a href="/openapi/v1.json">openapi</a>
+    </p>
+</footer>
+
+<div id="cx-tip" class="cx-tip-layer" hidden></div>
+
+@code {
+    private string? Typed =>
+        Microsoft.AspNetCore.WebUtilities.QueryHelpers
+            .ParseQuery(Nav.ToAbsoluteUri(Nav.Uri).Query)
+            .TryGetValue("q", out var typed) ? typed.ToString() : null;
+}

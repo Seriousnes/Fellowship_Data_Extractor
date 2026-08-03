@@ -1,0 +1,43 @@
+@page "/not-found"
+@inject NavigationManager Nav
+@inject Codex Catalog
+
+<PageTitle>Nothing here - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>Nothing here</h1>
+
+<div class="cx-panel">
+    <p class="cx-empty">
+        <b>@Said</b><br />
+        <a href="@Where">@Offer</a>
+    </p>
+</div>
+
+@code {
+    private string Said = string.Empty;
+    private string Where = "/";
+    private string Offer = "Start from the front page.";
+    private IReadOnlyList<(string Label, string? Href)> Trail = [("Nothing here", null)];
+
+    protected override void OnParametersSet()
+    {
+        var path = Nav.ToAbsoluteUri(Nav.Uri).AbsolutePath.Trim('/').Split('/');
+
+        if (path is ["entity", var table, var id] &&
+            Catalog.Types.FirstOrDefault(t =>
+                string.Equals(t.Table, Uri.UnescapeDataString(table), StringComparison.OrdinalIgnoreCase)) is { } kind)
+        {
+            Said = $"The build has no {kind.Label} {id}.";
+            Where = $"/browse?type={Uri.EscapeDataString(kind.Table)}";
+            Offer = $"Browse the {kind.Count:N0} it does have.";
+            Trail = [(kind.Label, Where), ("Nothing here", null)];
+            return;
+        }
+
+        Said = path is ["entity", var unknown, _]
+            ? $"The build has no table called '{Uri.UnescapeDataString(unknown)}'."
+            : "That address does not name anything in the build.";
+    }
+}

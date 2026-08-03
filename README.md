@@ -614,11 +614,11 @@ dotnet run --project src/FellowshipExtractor -- export-all ItemID GameplayAbilit
 
 ```
 wrote output\export\entities.jsonl
-  14142 entries from 13088 tags, 4184 with a display name, 2643 with an icon
-  1328 images in output\export
+  14137 entries from 13088 tags, 4184 with a display name, 2871 with an icon
+  1354 images in output\export
   1713 tuning rows supplied by namespace that no asset names
   18 coefficient rows banded by their own Spread row, 44 by their effect's calculation preset
-wrote output\export\vocabulary.json (3634 bytes)
+wrote output\export\vocabulary.json (36891 bytes)
 ```
 
 Every line is the same record the `tooltip` command writes for one entity - one shape, 2.9 MB for
@@ -626,9 +626,11 @@ the whole game, down from 22.5 MB.
 
 ### vocabulary.json
 
-The one file beside `entities.jsonl` that is not an entity. 3,634 bytes, three lookup tables that
-no entity line can carry, written by the same `export-all` run so the two always describe the same
-build:
+The one file beside `entities.jsonl` that is not an entity. 36,891 bytes of lookup tables that no
+entity line can carry, written by the same `export-all` run so the two always describe the same
+build. Three of them are below; the rest are the design system's named colours, the rich text style
+set and the stat calculation settings, which is what lets a renderer draw a tooltip in the game's
+own colours without reading the build itself:
 
 ```json
 {
@@ -702,6 +704,155 @@ Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` t
 `CRItemTraitsDefinitionRow`, `CRModifierInfoDataRow` and `CRLevelInfoRow` are the equivalents for
 `ItemTrait.ID`, `Modifiers` and `Level.ID`. Indexing those is what raises item coverage.
 
+## The codex
+
+`src/FellowshipExtractor.Api` serves the export as a website and as an API from one process. The
+Aspire AppHost starts it beside the blob store its icons live in:
+
+```powershell
+dotnet run --project src/FellowshipExtractor -- usmap
+$env:FELLOWSHIP_USMAP = "$PWD/output/fellowship.usmap"
+dotnet run --project src/FellowshipExtractor -- export-all
+dotnet run --project src/FellowshipExtractor -- ui
+
+aspire run
+```
+
+The three extractor commands are what the site reads: `output/export` is a build output and is not
+in the repository, so a fresh clone or a fresh worktree has to produce it before the app will start.
+
+| Address | What it answers |
+| --- | --- |
+| `/` | The front page: the roster, every entity type counted, a sample of what is in there |
+| `/browse` | Type tabs, the filter rail, the results table. The whole page is the query string |
+| `/entity/{table}/{netId}` | One entity in full, with its live tooltip at the top |
+| `/not-found` | What answers an address that names nothing. A 404 set while a component is rendering discards the markup that set it, so the message is worked back out of the address here |
+| `/api/search?q=` | Ranked name matches across every type, grouped by type with counts |
+| `/api/entities?...` | Every entity a filter leaves, paged |
+| `/api/entity/{table}/{netId}` | One entity's exported record, every per-hero reading of it |
+| `/api/tooltip/{table}/{netId}` | Any entity's tooltip as a self-contained HTML fragment |
+| `/api/catalog` | The menus, types and facets the browser is built from |
+
+### Static HTML, one island
+
+The site is a Blazor Web App rendered statically. Every page - the menus with their counts, the
+filter rail, the results table, the whole of an entity page - is rendered once on the server and
+sent as HTML, so it needs no circuit, works with scripting off, and is what a crawler and a reader
+both get. `Routes.razor` names no render mode.
+
+The exception is the search box, which cannot be static because it answers between keystrokes.
+`Omnibox.razor` declares `@rendermode InteractiveServer` on itself, so one component on the page is
+interactive and nothing else is. It reads `SearchIndex` in process rather than calling `/api/search`,
+which is the same answer one hop shorter; both go through `Suggestions`, so the dropdown and the
+endpoint cannot disagree about ranking, grouping or the cap. Anything the island is handed has to
+survive serialization across that boundary, so it takes a string and injects the rest.
+
+The three remaining behaviours that are genuinely the browser's - opening a menu, drawing a hovered
+tooltip, and the knobs on an entity page - are one script. Every listener in it is delegated from
+`document`, because enhanced navigation replaces the body in place: a handler bound to an element
+goes with the element, and the script itself is loaded once and never runs again.
+
+### The browser is a consumer of its own API
+
+Nothing here draws a tooltip. `EntityLink` puts the address of one on every link it renders, and
+the script fetches that fragment on hover and paints it into a floating layer - the same endpoint,
+the same bytes, that any other caller gets. The entity page's own tooltip is the same path with
+knobs on the URL, which is what makes the rarity buttons real: choosing Legendary on `ItemID 5382`
+returns the tooltip with the legendary frame, the legendary ornament and the stat slots the rung
+grants, because the API worked them out and not the page.
+
+The shape is FellowshipAnalyzer's, which renders fellows.gg tooltips the same way: a data attribute
+naming where the fragment comes from, one container, a lazy fetch, an answer cache, and a shadow
+root. What differs is the bootstrap - that app is WebAssembly, so a provider component imports the
+module through `IJSRuntime`; here the pages are static and the module is loaded by a script tag and
+arms itself.
+
+### The page's styles and the tooltip's cannot touch
+
+Both sides are the same shipped design system laid out by the same kind of markup, so they land on
+the same class names: `card`, `rule`, `sub`, `tok`, `k`, `v`, `n` all exist in both. A page rule
+reaching into a fragment is not a small mistake either, since `.card` is 274px with a nine-sliced
+border on one side and a grid tile on the other.
+
+Every fragment is therefore painted into a **shadow root**, through one function both callers share.
+Nothing in a page style sheet crosses that boundary in either direction, whatever either side is
+called, and that holds for rules nobody has written yet. Checked with four `!important` page rules
+written directly at the fragment's own selectors: `.card{width:60px}`, `h3{color:red}`,
+`.fx-tip *{display:none}` and `.title{letter-spacing:12px}` all failed to cross, and the card stayed
+274px.
+
+Two things sit on top of it, neither load-bearing. Every class the pages use is prefixed `cx-`,
+reserved for the pages, which makes the separation legible in the source rather than resting on a
+fact about a script; and `codex.css` sits inside `@scope (body) to (.fx-tip)`, which does nothing
+today but keeps a fragment rendered straight into the page out of reach of every rule in the file.
+
+What no boundary stops is inheritance - colour, font, letter-spacing and text-transform all cross a
+shadow root. That is closed on the other side, in `TooltipRenderer`'s root rule, because it is the
+fragment's business to be legible wherever it is embedded rather than every host's business to be
+careful with it.
+
+### Nothing in the browser is a list of the game's content
+
+The menus, the filter rail, the type tabs and every count in them are read off `entities.jsonl` at
+startup. A facet is declared once, as a name and a selector:
+
+```csharp
+new Facet("slot", "Slot", e => One(e.Slot))
+```
+
+and that one selector both counts what the export holds under each value and decides whether a row
+passes the filter, so a facet can never offer a value that then matches nothing. The rail counts
+each facet over the rows *every other* filter leaves, which is what keeps a second slot clickable
+after the first one is chosen.
+
+The one curated thing is which column of the menu a tag table is filed under, because nothing in
+the build groups `ItemTrait.ID` with `ItemID`. A table nobody has filed still appears, under Other
+and under its own name.
+
+The details table on an entity page is read off the `Entity` record by reflection, and anything the
+record carries that the page has no section for is printed as the JSON the extractor wrote, under
+"Not yet laid out". A field added upstream therefore shows up rather than disappearing. It is empty
+for the current export, checked over 150 random entity pages spread across every table.
+
+### The name index
+
+14,137 rows, and both halves of what a reader types have to work: a display name, and a gameplay
+tag written as dotted CamelCase. `SearchIndex` splits every name into words at build time -
+including at every capital, so `PlacedProjectileAoe` contributes `projectile` and `aoe` - and looks
+one up by binary search over the sorted term list. Lookups are by prefix, so the box answers while
+the reader is still typing, and several typed words all have to match, so a second word narrows.
+
+### Colour
+
+Every colour on the page is a CSS custom property written out of the shipped design system, and the
+panel edge, the header band and the rules between sections are the client's own textures served
+from the same container as the icons. One accommodation is made and is the only one: a hero colour
+used as text is mixed toward white until it clears a 4.5:1 contrast ratio against the page ground.
+The client draws those on lit 3D and on bright panels, where Gunde's `#5A1F20` is legible; on
+`#0C1722` it is not. The hue is kept, and a swatch beside the name is still filled with the shipped
+value.
+
+### One stack per worktree
+
+Several worktrees of this repo are open at once and each runs its own AppHost. Every address an
+AppHost claims is global to the machine or to the Docker daemon, and the ports in
+`launchSettings.json` are literals every worktree shares, so a second AppHost fails on
+`Failed to bind to address https://127.0.0.1:22186` before any resource starts.
+
+`AppHost.cs` derives a discriminator from its own build output directory and moves every port along
+by it - the dashboard, its OTLP and resource-service endpoints, the blob port and the web app's own
+port - and files the containers under one Docker Compose project named after the same
+discriminator, with the discriminator in the container name as well: a compose label groups
+containers, it does not namespace their names, so two worktrees both naming an emulator `azurite`
+still collide. The offset is stable across restarts, because a blob URL is baked into every tooltip
+fragment already handed out; `FELLOWSHIP_PORT_OFFSET` pins it by hand. Checked both ways round, with
+a second AppHost from another worktree already running: `dotnet run --project` and `aspire run` each
+start clean and land on the same derived ports.
+
+Each worktree also gets its own `fellowship-azurite-<hash>` data volume, which nothing removes when
+the worktree goes: `docker volume rm` it, or leave it and it will be reused if the worktree comes
+back at the same path.
+
 ## Layout
 
 - `src/FellowshipExtractor/ProviderFactory.cs` - the single place that knows about the install path,
@@ -723,6 +874,18 @@ Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` t
   an effect for its scaling, `DescriptionTokens` follows a `{Token}` to the effect behind it,
   `Spread` works out the band a coefficient rolls in from the ability's own tuning or the effect's
   calculation preset, and `Vocabulary` writes the shared lookup tables beside the entity stream.
+- `src/FellowshipExtractor.Api/` - the codex. `EntityStore` reads the export once; `Codex` declares
+  the facets, flags and measures the whole browser is driven by and counts them off that; `SearchIndex`
+  is the name index behind the omnibox and `Suggestions` is the one answer both it and `/api/search`
+  give; `CodexQuery` parses a query string against the facets, `CodexSearch` runs it and `BrowseView`
+  turns the result into the links the results page draws; `TooltipRenderer` draws one entity the way
+  the game draws it, and `CodexView` is what the pages ask for a URL, a colour, a tooltip address or
+  a piece of the game's own text so no page spells any of those out twice.
+- `src/FellowshipExtractor.Api/Components/` - the pages. `App.razor` is the document and writes the
+  design system out as custom properties; `Layout/` holds the masthead, the mega menu and the one
+  interactive component; `Pages/` holds the four routes; `Shared/Detail.razor` is every field of an
+  entity, recursive so a granted ability and a legendary roll are drawn by the same component, and
+  `Shared/EntityLink.razor` is the only place a link to an entity is built.
 
 ## Known limits
 

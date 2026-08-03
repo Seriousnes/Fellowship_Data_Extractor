@@ -1,0 +1,92 @@
+@page "/"
+@inject CodexView Ui
+@inject EntityStore Store
+
+<PageTitle>Fellowship Codex</PageTitle>
+
+<section class="cx-hero-band">
+    <h1>The Fellowship Codex</h1>
+    <p>
+        @Store.Count.ToString("N0") entities read straight out of the shipped build - every item,
+        ability, effect, talent, trait and creature the game files under a gameplay tag, with the art,
+        the tuning numbers and the tooltip the client draws from them.
+    </p>
+</section>
+
+<div class="cx-panel">
+    <div class="cx-panel-head">
+        The roster <span class="cx-num">@Store.Vocabulary.Heroes.Count heroes</span>
+    </div>
+    <div class="cx-roster">
+        @foreach (var hero in Store.Vocabulary.Heroes.OrderBy(h => h.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            <a href="/browse?type=ItemID&hero=@Uri.EscapeDataString(hero.Name)"
+               style="color:@(Ui.HeroColour(hero.Name) ?? "var(--muted)")">
+                <span class="cx-pip" style="background:@(Ui.HeroSwatch(hero.Name) ?? "var(--muted)")"></span>
+                <span class="cx-who">@hero.Name</span>
+                <span class="cx-code">@hero.Codename &middot; @hero.ArmorType &middot; @hero.PrimaryStat</span>
+            </a>
+        }
+    </div>
+</div>
+
+@foreach (var group in Ui.Codex.Menu)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">@group.Label</div>
+        <div class="cx-cards">
+            @foreach (var entry in group.Entries)
+            {
+                <a class="cx-card" href="/browse@(entry.Query)">
+                    <span class="cx-card-name">@entry.Label</span><br />
+                    <span class="cx-card-count">@entry.Count.ToString("N0") entities</span>
+                    @if (entry.Sections.Count > 0)
+                    {
+                        <ul class="cx-card-links">
+                            @foreach (var link in entry.Sections[0].Links.Take(8))
+                            {
+                                <li>@link.Label</li>
+                            }
+                        </ul>
+                    }
+                </a>
+            }
+        </div>
+    </div>
+}
+
+@if (Showcase.Count > 0)
+{
+    <div class="cx-panel">
+        <div class="cx-panel-head">A sample of what is in there</div>
+        <div class="cx-cards">
+            @foreach (var entity in Showcase)
+            {
+                <EntityLink Entity="entity" Class="cx-card" Tint="false">
+                    <span class="cx-linked">
+                        <img alt="" loading="lazy" src="@Ui.Icon(entity.Icon)" />
+                        <span>
+                            <span class="cx-card-name" style="color:@Ui.NameColour(entity)">@Ui.Name(entity)</span><br />
+                            <span class="cx-card-count">@Codex.Label(entity.Table!)</span>
+                        </span>
+                    </span>
+                </EntityLink>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<Entity> Showcase =>
+    [
+        .. Store.Entities
+            .Where(e => e.DisplayName is not null && e.Icon is not null && e.Description is not null)
+            .GroupBy(e => e.Table!, StringComparer.Ordinal)
+            .SelectMany(group => group
+                .OrderByDescending(e => (e.Description?.Length ?? 0) + (e.Constants?.Count ?? 0) * 20)
+                .Take(2))
+            .OrderBy(e => e.Table, StringComparer.Ordinal)
+            .ThenBy(e => e.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .Take(8),
+    ];
+}

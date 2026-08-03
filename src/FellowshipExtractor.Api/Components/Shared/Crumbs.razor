@@ -1,0 +1,22 @@
+<nav class="cx-crumbs" aria-label="Breadcrumb">
+    <ol>
+        <li><a href="/">Database</a></li>
+        @foreach (var (label, href) in Trail)
+        {
+            <li>
+                @if (href is null)
+                {
+                    <span>@label</span>
+                }
+                else
+                {
+                    <a href="@href">@label</a>
+                }
+            </li>
+        }
+    </ol>
+</nav>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<(string Label, string? Href)> Trail { get; set; } = [];
+}
