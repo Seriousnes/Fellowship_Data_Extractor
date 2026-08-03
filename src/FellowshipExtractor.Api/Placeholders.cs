@@ -43,9 +43,17 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
         var resolved = new Dictionary<string, Substitution>(StringComparer.Ordinal);
         var school = School(tags);
 
+        // A tickrate is haste's to change, and the ability's ScaleTimeWithHaste is not consulted for
+        // it. The two are separate axes: that flag governs the ability's own cast and channel, while
+        // an effect's period follows the tickrate default and the only thing that overrides it is
+        // the effect opting out. Gating one on the other withheld haste from 22 of the 42 tickrates
+        // in the build, most of them on items and augmentations, which carry no such flag to begin
+        // with because they are not abilities.
+        var haste = query.Haste;
+
         foreach (var (name, placeholder) in placeholders)
         {
-            resolved[name] = One(placeholder, query, hero, school);
+            resolved[name] = One(placeholder, query, hero, school, haste);
         }
 
         return resolved;
@@ -58,7 +66,7 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
     /// </summary>
     public Substitution Reading(
         Placeholder placeholder, TooltipQuery query, HeroEntry? hero, IReadOnlyList<string>? tags = null) =>
-        One(placeholder, query, hero, School(tags));
+        One(placeholder, query, hero, School(tags), query.Haste);
 
     /// <summary>
     /// What a token the build settles nowhere reads as, in the two states the export leaves one in.
@@ -101,7 +109,8 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
         return null;
     }
 
-    private Substitution One(Placeholder placeholder, TooltipQuery query, HeroEntry? hero, string? school)
+    private Substitution One(
+        Placeholder placeholder, TooltipQuery query, HeroEntry? hero, string? school, decimal? haste)
     {
         // A token standing in for a name has no arithmetic at all.
         if (placeholder.Text is { } text) return new Substitution(text);
@@ -116,7 +125,7 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
                 : Unscaled(placeholder, coefficient, attribute);
         }
 
-        if (placeholder.Value is { } number) return Number(placeholder, number);
+        if (placeholder.Value is { } number) return Number(placeholder, number, haste);
 
         return Unresolved(placeholder);
     }
@@ -184,29 +193,68 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
     /// A token that prints a number outright. Seconds is the only unit the build ever asks for, and
     /// it asks through the shipped print formats rather than by spelling the word.
     /// </summary>
-    private Substitution Number(Placeholder placeholder, double value)
+    private Substitution Number(Placeholder placeholder, double value, decimal? haste)
     {
-        var number = Round((decimal)value);
-
         if (placeholder.Percent == true || placeholder.Format == "percent")
         {
-            return new Substitution(Print("UnitPercent", Percent(value)) ?? number + "%");
+            return new Substitution(Print("UnitPercent", Percent(value)) ?? Round((decimal)value) + "%");
         }
 
-        if (placeholder.Unit is null) return new Substitution(number);
+        var (quickened, title) = Quickened(placeholder, (decimal)value, haste);
+
+        // A quickened tickrate keeps a second place. One is enough for a damage number and loses
+        // too much here: Incinerate's 0.5s interval at 30% haste is 0.3846, and rounding it to 0.4
+        // is the difference between six ticks in the channel and five.
+        var number = title is null ? Round(quickened) : Round(quickened, 2);
+
+        if (placeholder.Unit is null) return new Substitution(number, title);
 
         // The unit is spoken only where the sentence leaves the word out, and the shipped format
         // that speaks it carries the game's own emphasis. Rendered rather than stripped, so
         // "every 3 seconds" keeps the weight the game gives it, with the plain reading kept beside
         // it for the title and for anywhere the markup is not wanted.
-        var name = value == 1 ? "UnitSecondSingular" : "UnitSeconds";
+        var name = quickened == 1m ? "UnitSecondSingular" : "UnitSeconds";
         var printed = Print(name, number);
 
         return new Substitution(
             Strip(printed) ?? $"{number} seconds",
-            null,
+            title,
             printed is null ? null : renderer.Render(printed));
     }
+
+    /// <summary>
+    /// A period shortened by the caller's haste, with the sentence that explains it.
+    ///
+    /// Haste raises the rate an effect ticks at rather than shortening the window it ticks in: a
+    /// channelled ability runs for the time it states and lands more ticks inside it. So this
+    /// applies to a period and to nothing else - not to the channel, not to the cast, not to a
+    /// duration, which are lengths rather than rates.
+    ///
+    /// The build declares which abilities haste reaches and never the arithmetic. The cooldown
+    /// magnitude that reads Haste, GEC_CooldownReductionAndHasteMagnitude, computes in Blueprint
+    /// bytecode this project does not recover. Treating haste as a rate, so an interval divides by
+    /// 1 + haste, is this reader's reading and not the build's, which is why the title always states
+    /// the number before it and the haste applied: a figure nobody can derive from the export is
+    /// never presented as one that came out of it.
+    /// </summary>
+    private static (decimal Value, string? Title) Quickened(
+        Placeholder placeholder, decimal value, decimal? haste)
+    {
+        // An effect that declares its tickrate out of haste keeps its period whatever the wearer
+        // holds, which is the one case the build states outright rather than by default.
+        if (placeholder.Tickrate is not true || placeholder.IgnoresHaste is true) return (value, null);
+        if (haste is not { } fraction || fraction <= 0) return (value, null);
+
+        // The divisor keeps enough places to be checkable: 8% haste divides by 1.08, and rounding
+        // that to 1.1 states arithmetic the number beside it did not come from.
+        return (
+            value / (1m + fraction),
+            $"{Round(value)}s at no haste, divided by {Round(1m + fraction, 4)} for {Share(fraction)}% haste");
+    }
+
+    /// <summary>A fraction as the percentage a reader recognises, kept in decimal throughout.</summary>
+    private static string Share(decimal fraction) =>
+        (fraction * 100m).Normalize().ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
     /// The number wrapped in the sentence the game writes it in. The shipped formats carry the
@@ -265,9 +313,9 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
     private static string Percent(double value) =>
         ((decimal)value * 100m).Normalize().ToString(CultureInfo.InvariantCulture);
 
-    /// <summary>Whole numbers print whole, and the rest keep one place.</summary>
-    private static string Round(decimal value) =>
-        Math.Round(value, 1).Normalize().ToString(CultureInfo.InvariantCulture);
+    /// <summary>Whole numbers print whole, and the rest keep one place unless asked for more.</summary>
+    private static string Round(decimal value, int places = 1) =>
+        Math.Round(value, places).Normalize().ToString(CultureInfo.InvariantCulture);
 }
 
 internal static class DecimalExtensions

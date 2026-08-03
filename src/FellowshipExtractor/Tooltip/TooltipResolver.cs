@@ -602,7 +602,7 @@ public sealed class TooltipResolver
         // a token does take stops being available to the next one: Luminous Barrier's absorb and
         // its damage reduction are two sentences and one coefficient, and printing that coefficient
         // twice says the barrier reduces damage by twelve times the wearer's Intellect.
-        var reachable = Rejoined(baseline, claimed);
+        var reachable = Rejoined(baseline, claimed, split.Promoted);
         var taken = new HashSet<string>(claimed.Keys, StringComparer.Ordinal);
 
         foreach (var name in placeholders.Keys.ToArray())
@@ -617,6 +617,10 @@ public sealed class TooltipResolver
                 TokenQuantity.Duration => Numbers.Duration,
                 _ => null,
             };
+
+            // A period is marked as one wherever it is answered, because a reader deciding whether a
+            // haste value applies needs the quantity and not just the number.
+            var tickrate = placeholder.Quantity == TokenQuantity.Period ? true : (bool?)null;
 
             // A token asking for a period or a duration is not asking for a coefficient, and taking
             // one puts the ability's damage where its clock should be.
@@ -637,13 +641,13 @@ public sealed class TooltipResolver
             else if (!own && Numbers.SoleField(reachable, split.Own, taken, wanted) is { } row)
             {
                 taken.Add(row.Key);
-                placeholders[name] = placeholder with { Value = row.Value };
+                placeholders[name] = placeholder with { Value = row.Value, Tickrate = tickrate };
                 continue;
             }
 
             if (placeholder.Constants is { } selected && Sole(selected) is { } value)
             {
-                placeholders[name] = placeholder with { Value = value };
+                placeholders[name] = placeholder with { Value = value, Tickrate = tickrate };
             }
         }
 
@@ -665,6 +669,8 @@ public sealed class TooltipResolver
             Radius = Named(split, "radius"),
             Duration = Named(split, "duration"),
             Period = Named(split, "period"),
+            ScalesWithHaste = ScalesWithHaste(cdo) ? true : null,
+            TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Constants = baseline.Count == 0 ? null : baseline,
@@ -702,6 +708,17 @@ public sealed class TooltipResolver
         cdo is not null &&
         PropertyWalk.GetString(cdo, ChargeEffectField) is { } effect &&
         effect.EndsWith(NativeChargeEffect, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Whether the ability declares that its own times run with haste. This is read rather than
+    /// inferred: CRGameplayAbility carries ScaleTimeWithHaste beside ScaleTimeWithAttackSpeed, and
+    /// unversioned properties omit a flag left at its default, so an ability that says nothing is
+    /// not making the claim.
+    /// </summary>
+    private static bool ScalesWithHaste(UObject? cdo) =>
+        cdo is not null && PropertyWalk.Get(cdo, HasteScalingField)?.GenericValue is true;
+
+    private const string HasteScalingField = "ScaleTimeWithHaste";
 
     /// <summary>
     /// The condition a talent group actually declares. An ability that gates something on a talent
@@ -780,7 +797,17 @@ public sealed class TooltipResolver
 
             foreach (var (field, value) in one.Named)
             {
-                if (split.Named.TryAdd(field, value)) NamespaceSupplied++;
+                if (!split.Named.TryAdd(field, value)) continue;
+
+                NamespaceSupplied++;
+
+                // The row behind the field stays reachable by name, the same as one the asset
+                // named. one holds a single binding, so this is that row.
+                foreach (var (key, row) in one.Promoted)
+                {
+                    split.Promoted[key] = row;
+                    split.Own.Add(key);
+                }
             }
 
             foreach (var (key, value) in one.Rest)
@@ -797,16 +824,24 @@ public sealed class TooltipResolver
         split.Named.TryGetValue(field, out var value) ? value : null;
 
     /// <summary>
-    /// An entity's baseline constants with the rows its tokens claimed put back, grouped the same
-    /// way, so a claimed row that names a talent stays out of the baseline either way.
+    /// An entity's baseline constants with the rows its tokens claimed and the rows its named
+    /// fields took put back, grouped the same way, so a row that names a talent stays out of the
+    /// baseline however it got here.
+    ///
+    /// This is the set a token searches, not the set the export writes. A field's row is put back
+    /// because a token can name the same number the field does; the constants the export writes
+    /// come from the baseline, where the row stays out and does not repeat the field.
     /// </summary>
     private static IReadOnlyDictionary<string, object?> Rejoined(
-        Dictionary<string, object?> baseline, Dictionary<string, object?> claimed)
+        Dictionary<string, object?> baseline,
+        Dictionary<string, object?> claimed,
+        IReadOnlyDictionary<string, double> promoted)
     {
-        if (claimed.Count == 0) return baseline;
+        if (claimed.Count == 0 && promoted.Count == 0) return baseline;
 
         var all = new Dictionary<string, object?>(baseline, StringComparer.Ordinal);
         foreach (var (key, value) in claimed) all[key] = value;
+        foreach (var (key, value) in promoted) all.TryAdd(key, value);
 
         return Numbers.SplitTalents(all).Baseline;
     }
@@ -864,6 +899,7 @@ public sealed class TooltipResolver
         Radius = outer.Radius ?? inner.Radius,
         Duration = outer.Duration ?? inner.Duration,
         Period = outer.Period ?? inner.Period,
+        ScalesWithHaste = outer.ScalesWithHaste ?? inner.ScalesWithHaste,
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
         Placeholders = Union(outer.Placeholders, inner.Placeholders),
         Constants = Union(outer.Constants, inner.Constants),

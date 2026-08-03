@@ -96,10 +96,12 @@ public enum Lookup
 public sealed class StatParameters
 {
     private readonly IReadOnlyDictionary<string, string> byName;
+    private readonly IReadOnlyDictionary<string, AttributeDisplay> byStat;
 
     public StatParameters(IEnumerable<string> stats, IReadOnlyDictionary<string, AttributeDisplay> attributes)
     {
         var named = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var rows = new Dictionary<string, AttributeDisplay>(StringComparer.OrdinalIgnoreCase);
         var printed = new List<string>();
 
         foreach (var stat in stats)
@@ -116,10 +118,12 @@ public sealed class StatParameters
             }
 
             named[Compact(attribute.DisplayName)] = stat;
+            rows[stat] = attribute;
             printed.Add(attribute.DisplayName);
         }
 
         byName = named;
+        byStat = rows;
         Names = [.. printed.Order(StringComparer.OrdinalIgnoreCase)];
     }
 
@@ -133,6 +137,13 @@ public sealed class StatParameters
     /// </summary>
     public string? Resolve(string parameter) =>
         byName.TryGetValue(Compact(parameter), out var stat) ? stat : null;
+
+    /// <summary>
+    /// The shipped attribute row behind a stat, which is what says whether the number a caller sends
+    /// is a rating and what it converts to. A stat is registered only where the table has a row for
+    /// it, so anything <see cref="Resolve"/> answered has one.
+    /// </summary>
+    public AttributeDisplay Row(string stat) => byStat[stat];
 
     private static string Compact(string name) => name.Replace(" ", string.Empty, StringComparison.Ordinal);
 }

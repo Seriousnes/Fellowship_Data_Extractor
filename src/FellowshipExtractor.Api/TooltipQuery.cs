@@ -78,6 +78,19 @@ public sealed record TooltipQuery
     public decimal? Total(string stat) =>
         Stats.TryGetValue(stat, out var values) ? values.Sum() : null;
 
+    /// <summary>
+    /// The wearer's haste as a fraction, where 0.3 is the +30% an ability advertises, matching the
+    /// build's own constants: Hero.Spirit.Buff.HasteIncrease is 0.3.
+    ///
+    /// The caller sends the rating and it arrives converted. haste=50 is 50 haste rating, which
+    /// DT_AttributeProperties turns into 8% and this reads back as 0.08; hastePercentage=8 says the
+    /// same thing for a caller reading the number off their own character sheet.
+    ///
+    /// Named here rather than spelled at each reader, because two of them ask and a stat this one
+    /// is spelled wrong in would silently read as no haste at all.
+    /// </summary>
+    public decimal? Haste => Total("Haste");
+
     /// <summary>The names this type reads itself, so every other key is a stat or a mistake.</summary>
     private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -126,9 +139,37 @@ public sealed record TooltipQuery
         {
             if (!Reserved.Contains(key))
             {
-                if (knownStats.Resolve(key) is not { } stat)
+                // A stat named plainly is the rating on the gear. The same stat with Percentage
+                // after it is the caller saying they hold the converted number already, which is
+                // what a player reads off their own character sheet. The plain spelling is tried
+                // first, so a printed name that ends in the word would still be read as itself.
+                var stat = knownStats.Resolve(key);
+                var percentage = false;
+
+                if (stat is null &&
+                    key.EndsWith(StatConversion.PercentageSuffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    stat = knownStats.Resolve(key[..^StatConversion.PercentageSuffix.Length]);
+                    percentage = stat is not null;
+                }
+
+                if (stat is null)
                 {
                     error = $"Unknown parameter '{key}'.";
+                    return result;
+                }
+
+                var attribute = knownStats.Row(stat);
+
+                // A stat the build converts nothing for has no percentage to be given: Strength is
+                // the number it says, and accepting strengthPercentage would quietly answer a
+                // question the build does not ask. Named back to the caller in their own spelling,
+                // because the build's is not an address this accepts.
+                if (percentage && !StatConversion.Converts(attribute))
+                {
+                    error =
+                        $"'{key[..^StatConversion.PercentageSuffix.Length]}' is not a rating, " +
+                        $"so '{key}' has nothing to convert.";
                     return result;
                 }
 
@@ -147,10 +188,16 @@ public sealed record TooltipQuery
                         return result;
                     }
 
-                    values.Add(number);
+                    values.Add(percentage
+                        ? StatConversion.FromPercentage(number, attribute)
+                        : StatConversion.FromRating(number, attribute));
                 }
 
-                stats[stat] = values;
+                // Both spellings of one stat land under the stat's own name, so a reader asking for
+                // its total does not have to know which the caller wrote.
+                stats[stat] = stats.TryGetValue(stat, out var already)
+                    ? [.. already, .. values]
+                    : values;
                 continue;
             }
 
