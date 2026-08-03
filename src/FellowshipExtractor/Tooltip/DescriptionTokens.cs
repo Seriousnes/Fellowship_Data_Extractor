@@ -144,7 +144,11 @@ public static class DescriptionTokens
         // The token points at the gameplay effect that produces the number, and it is read exactly
         // as an effect the ability references directly is, so both routes report the same thing.
         var effect = GameplayEffects.Resolve(provider, constants, presets, objectPath);
-        declared = declared with { PresetSpread = effect.Spread };
+        declared = declared with
+        {
+            PresetSpread = effect.Spread,
+            IgnoresHaste = effect.TickrateIgnoresHaste ? true : null,
+        };
 
         // Only a Type 0 token's Calculation was shown to select off an effect. Types 2 and 4 name
         // an ability, and the five of those that name someone else's keep the whole-object reading.

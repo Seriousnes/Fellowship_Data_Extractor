@@ -117,6 +117,28 @@ public sealed record Entity
     public double? Duration { get; init; }
     public double? Period { get; init; }
 
+    /// <summary>
+    /// Set when the ability declares that its own times run faster with the wearer's haste, which
+    /// CRGameplayAbility states outright as ScaleTimeWithHaste. It says which numbers a haste value
+    /// applies to and nothing about the arithmetic: the ability's cooldown reaches its magnitude
+    /// through GEC_CooldownReductionAndHasteMagnitude, whose captures read Haste and
+    /// CooldownReduction and whose CalculateBaseMagnitude is Blueprint bytecode. So a reader holding
+    /// a haste value supplies the formula; the build supplies only the fact that one applies.
+    ///
+    /// Haste is a fraction. Hero.Spirit.Buff.HasteIncrease is 0.3 and carries the designer comment
+    /// "adds haste to hero for duration", and the ability granting it says "+30% Haste" in its own
+    /// description, so the unit is settled by the build twice over rather than assumed.
+    /// </summary>
+    public bool? ScalesWithHaste { get; init; }
+
+    /// <summary>
+    /// Set when this gameplay effect declares EffectLogic.TickrateNotAffectedByHasteExclusively,
+    /// which keeps its period fixed however much haste the wearer holds. The tag is an opt-out, and
+    /// that is what settles the default: an effect ticks faster with haste unless it says otherwise,
+    /// so only the exceptions are written and their absence is the rule rather than missing data.
+    /// </summary>
+    public bool? TickrateIgnoresHaste { get; init; }
+
     /// <summary>The attributes this entity's damage, healing or buffs scale off.</summary>
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
@@ -404,6 +426,28 @@ public sealed record Placeholder
     /// not say which rows. Distinguishes that from a token that failed to resolve.
     /// </summary>
     public bool? FromOwnConstants { get; init; }
+
+    /// <summary>
+    /// Set when the token's <see cref="Value"/> is a tickrate - the interval between an effect's
+    /// ticks - because the Calculation ordinal that answered it named a period. A duration answered
+    /// by the neighbouring ordinal is a length of time and not this: the two are different
+    /// quantities and only one of them is a rate. Named for the rate rather than for the ordinal so
+    /// it does not serialize as the "period" an entity already carries as a number.
+    ///
+    /// <see cref="Unit"/> cannot stand in for it. That is written only where the token also asks for
+    /// the word to be spoken, and Incinerate's channel interval is a tickrate whose sentence already
+    /// says "seconds", so it asks for neither.
+    /// </summary>
+    public bool? Tickrate { get; init; }
+
+    /// <summary>
+    /// Set when the effect this period came from declares
+    /// EffectLogic.TickrateNotAffectedByHasteExclusively, taking its tickrate out of the wearer's
+    /// haste. Reported beside the period rather than folded into it: the tag and the ability's
+    /// ScaleTimeWithHaste are two facts the build states separately, and how a reader combines them
+    /// into a number is the reader's.
+    /// </summary>
+    public bool? IgnoresHaste { get; init; }
 
     /// <summary>
     /// The quantity the token's Calculation ordinal asks for. Not exported: it says which of the

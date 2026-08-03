@@ -15,6 +15,14 @@ public sealed record EffectRef
 
     /// <summary>The band this effect rolls its magnitude in, from the preset row it names.</summary>
     public double? Spread { get; init; }
+
+    /// <summary>
+    /// Set when the effect declares EffectLogic.TickrateNotAffectedByHasteExclusively, which takes
+    /// its period out of the wearer's haste. The tag is an opt-out, and that is what says the
+    /// default runs the other way: an effect ticks faster with haste unless it says otherwise, and
+    /// only the exceptions are written. Fire Ball's damage-over-time is one and Incinerate's is not.
+    /// </summary>
+    public bool TickrateIgnoresHaste { get; init; }
 }
 
 /// <summary>
@@ -83,8 +91,34 @@ public static class GameplayEffects
             CapturedAttributes = Captures(effect),
             Constants = CurveBindings.Collect(effect, constants) is { Count: > 0 } bindings ? bindings : null,
             Spread = presets.Of(effect),
+            TickrateIgnoresHaste = IgnoresHaste(effect),
         };
     }
+
+    private const string HasteExemptTag = "EffectLogic.TickrateNotAffectedByHasteExclusively";
+
+    /// <summary>
+    /// Whether the effect declares a gameplay tag, in whichever container it states it in. Every
+    /// container the object holds is read rather than one being named, because an effect states its
+    /// tags on InheritableGameplayEffectTags and again on an asset-tags component and either is the
+    /// effect saying it.
+    ///
+    /// Read through <see cref="PropertyWalk.AsTags"/> and not as a string. A tag container is a
+    /// struct CUE4Parse reads natively, so asking for its text yields nothing and every effect comes
+    /// back as declaring no tags at all - which reads exactly like a build where none of them do.
+    /// </summary>
+    /// <summary>
+    /// Whether this effect takes its tickrate out of the wearer's haste, which the effect states
+    /// itself. Public so an effect read as an entity in its own right reports the same fact as one
+    /// read through a token that names it, and so the count is observable across the build.
+    /// </summary>
+    public static bool IgnoresHaste(UObject effect) => Declares(effect, HasteExemptTag);
+
+    private static bool Declares(UObject effect, string tag) =>
+        PropertyWalk.Walk(effect)
+            .Select(p => PropertyWalk.AsTags(p.Value))
+            .OfType<string[]>()
+            .Any(tags => tags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase)));
 
     /// <summary>The attributes an effect captures, wherever in its executions and modifiers they sit.</summary>
     public static IReadOnlyList<string>? Captures(UObject effect)

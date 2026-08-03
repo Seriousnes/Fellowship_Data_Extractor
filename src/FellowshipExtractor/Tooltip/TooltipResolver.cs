@@ -526,6 +526,10 @@ public sealed class TooltipResolver
                 _ => null,
             };
 
+            // A period is marked as one wherever it is answered, because a reader deciding whether a
+            // haste value applies needs the quantity and not just the number.
+            var tickrate = placeholder.Quantity == TokenQuantity.Period ? true : (bool?)null;
+
             // A token asking for a period or a duration is not asking for a coefficient, and taking
             // one puts the ability's damage where its clock should be.
             if (wanted is null)
@@ -545,13 +549,13 @@ public sealed class TooltipResolver
             else if (!own && Numbers.SoleField(reachable, split.Own, taken, wanted) is { } row)
             {
                 taken.Add(row.Key);
-                placeholders[name] = placeholder with { Value = row.Value };
+                placeholders[name] = placeholder with { Value = row.Value, Tickrate = tickrate };
                 continue;
             }
 
             if (placeholder.Constants is { } selected && Sole(selected) is { } value)
             {
-                placeholders[name] = placeholder with { Value = value };
+                placeholders[name] = placeholder with { Value = value, Tickrate = tickrate };
             }
         }
 
@@ -573,6 +577,8 @@ public sealed class TooltipResolver
             Radius = Named(split, "radius"),
             Duration = Named(split, "duration"),
             Period = Named(split, "period"),
+            ScalesWithHaste = ScalesWithHaste(cdo) ? true : null,
+            TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Constants = baseline.Count == 0 ? null : baseline,
@@ -610,6 +616,17 @@ public sealed class TooltipResolver
         cdo is not null &&
         PropertyWalk.GetString(cdo, ChargeEffectField) is { } effect &&
         effect.EndsWith(NativeChargeEffect, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Whether the ability declares that its own times run with haste. This is read rather than
+    /// inferred: CRGameplayAbility carries ScaleTimeWithHaste beside ScaleTimeWithAttackSpeed, and
+    /// unversioned properties omit a flag left at its default, so an ability that says nothing is
+    /// not making the claim.
+    /// </summary>
+    private static bool ScalesWithHaste(UObject? cdo) =>
+        cdo is not null && PropertyWalk.Get(cdo, HasteScalingField)?.GenericValue is true;
+
+    private const string HasteScalingField = "ScaleTimeWithHaste";
 
     /// <summary>
     /// The condition a talent group actually declares. An ability that gates something on a talent
@@ -790,6 +807,7 @@ public sealed class TooltipResolver
         Radius = outer.Radius ?? inner.Radius,
         Duration = outer.Duration ?? inner.Duration,
         Period = outer.Period ?? inner.Period,
+        ScalesWithHaste = outer.ScalesWithHaste ?? inner.ScalesWithHaste,
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
         Placeholders = Union(outer.Placeholders, inner.Placeholders),
         Constants = Union(outer.Constants, inner.Constants),
