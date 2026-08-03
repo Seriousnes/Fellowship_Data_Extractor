@@ -20,14 +20,6 @@
                 <div data-stage="@Address" aria-live="polite">
                     <p class="cx-empty">Loading...</p>
                 </div>
-
-                @if (Drawn is { } wearer)
-                {
-                    <p class="cx-note">
-                        Showing tooltip for
-                        <b style="color:@(Ui.HeroColour(wearer) ?? "inherit")">@wearer</b>
-                    </p>
-                }
             </div>
 
             <div class="cx-entity-side">
