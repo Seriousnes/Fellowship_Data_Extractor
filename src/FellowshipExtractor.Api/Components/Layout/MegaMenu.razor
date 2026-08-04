@@ -11,8 +11,10 @@
                     <div class="cx-mega-cols">
                         @foreach (var entry in group.Entries)
                         {
+                            var entered = entry.Count.ToString("N0");
+
                             <a class="cx-mega-head" href="/browse@(entry.Query)">
-                                @entry.Label <span class="cx-num">@entry.Count.ToString("N0")</span>
+                                @entry.Label <CountBadge Text="@entered" />
                             </a>
 
                             @foreach (var part in entry.Sections)
@@ -22,10 +24,12 @@
                                     <ul>
                                         @foreach (var link in part.Links)
                                         {
+                                            var linked = link.Count.ToString("N0");
+
                                             <li>
                                                 <a href="/browse@(link.Query)"
                                                    style="@(link.Colour is null ? null : $"color:{link.Colour}")">
-                                                    @link.Label <span class="cx-num">@link.Count.ToString("N0")</span>
+                                                    @link.Label <CountBadge Text="@linked" />
                                                 </a>
                                             </li>
                                         }

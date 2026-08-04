@@ -13,10 +13,7 @@
     </p>
 </section>
 
-<div class="cx-panel">
-    <div class="cx-panel-head">
-        The roster <span class="cx-num">@Store.Vocabulary.Heroes.Count heroes</span>
-    </div>
+<Panel Head="The roster" Badge="@Roster">
     <div class="cx-roster">
         @foreach (var hero in Store.Vocabulary.Heroes.OrderBy(h => h.Name, StringComparer.OrdinalIgnoreCase))
         {
@@ -28,12 +25,11 @@
             </a>
         }
     </div>
-</div>
+</Panel>
 
 @foreach (var group in Ui.Codex.Menu)
 {
-    <div class="cx-panel">
-        <div class="cx-panel-head">@group.Label</div>
+    <Panel Head="@group.Label">
         <div class="cx-cards">
             @foreach (var entry in group.Entries)
             {
@@ -52,19 +48,18 @@
                 </a>
             }
         </div>
-    </div>
+    </Panel>
 }
 
 @if (Showcase.Count > 0)
 {
-    <div class="cx-panel">
-        <div class="cx-panel-head">A sample of what is in there</div>
+    <Panel Head="A sample of what is in there">
         <div class="cx-cards">
             @foreach (var entity in Showcase)
             {
                 <EntityLink Entity="entity" Class="cx-card" Tint="false">
                     <span class="cx-linked">
-                        <img alt="" loading="lazy" src="@Ui.Icon(entity.Icon)" />
+                        <Icon Src="@Ui.Icon(entity.Icon)" />
                         <span>
                             <span class="cx-card-name" style="color:@Ui.NameColour(entity)">@PublicTypes.NameOf(entity)</span><br />
                             <span class="cx-card-count">@Codex.Label(entity.Table!)</span>
@@ -73,11 +68,14 @@
                 </EntityLink>
             }
         </div>
-    </div>
+    </Panel>
 }
 
 @code {
     private int Entries => Ui.Codex.Count;
+
+    /// <summary>The roster's badge, which counts heroes rather than entries.</summary>
+    private string Roster => $"{Store.Vocabulary.Heroes.Count} heroes";
 
     private IReadOnlyList<Entity> Showcase =>
     [

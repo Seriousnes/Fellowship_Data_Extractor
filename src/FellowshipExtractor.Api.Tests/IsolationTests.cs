@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace FellowshipExtractor.Api.Tests;
 
 /// <summary>
@@ -5,8 +7,18 @@ namespace FellowshipExtractor.Api.Tests;
 /// dropped ::deep is visible: the rule compiles, bundles and matches nothing, and no rendered
 /// markup differs.
 /// </summary>
-public class IsolationTests
+public partial class IsolationTests
 {
+    /// <summary>
+    /// A code element carrying the scope attribute, which is what a rule reaching a caller's markup
+    /// compiles to when its ::deep is dropped.
+    ///
+    /// The lookbehind is what keeps it to the element: .cx-code is a class this design system
+    /// genuinely has, on the hero codename line, and a plain substring test reports it as a failure.
+    /// </summary>
+    [GeneratedRegex(@"(?<![\w.-])code\[b-")]
+    private static partial Regex ScopedCode();
+
     [Fact]
     public void No_generated_selector_reaches_a_code_element_through_the_scope_attribute()
     {
@@ -24,7 +36,7 @@ public class IsolationTests
             var path = Path.Combine(project, sheet);
 
             Assert.True(File.Exists(path), $"{path} was not generated. Sass compiles it on build.");
-            Assert.DoesNotContain("code[b-", File.ReadAllText(path), StringComparison.Ordinal);
+            Assert.DoesNotMatch(ScopedCode(), File.ReadAllText(path));
         }
     }
 
@@ -32,7 +44,7 @@ public class IsolationTests
     /// The three rules that reach a caller's markup, read out of the bundle the browser is served
     /// rather than out of the per-component sheet. The rewrite from ::deep to an attribute on the
     /// first element of the selector happens in the bundle, so this is where a dropped ::deep would
-    /// show as "code[b-" and where a kept one shows as the attribute on the ancestor instead.
+    /// show as a scoped code element and where a kept one shows as the attribute on the ancestor.
     /// </summary>
     [Fact]
     public void The_bundle_puts_the_attribute_on_the_ancestor_of_a_caller_written_code_element()
@@ -45,8 +57,12 @@ public class IsolationTests
 
         var css = File.ReadAllText(bundle);
 
-        Assert.DoesNotContain("code[b-", css, StringComparison.Ordinal);
-        Assert.Contains(".cx-note[b-", css, StringComparison.Ordinal);
+        Assert.DoesNotMatch(ScopedCode(), css);
+
+        // The three ancestors the attribute does land on, one per ::deep rule in the library.
+        Assert.Matches(@"\.cx-note\[b-[a-z0-9]{10}\]\s+code", css);
+        Assert.Matches(@"td\[b-[a-z0-9]{10}\]\s+code", css);
+        Assert.Matches(@"li\[b-[a-z0-9]{10}\]\s+code", css);
     }
 
     /// <summary>

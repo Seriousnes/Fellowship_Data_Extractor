@@ -8,12 +8,9 @@
 
 <h1>Nothing here</h1>
 
-<div class="cx-panel">
-    <p class="cx-empty">
-        <b>@Said</b><br />
-        <a href="@Where">@Offer</a>
-    </p>
-</div>
+<Panel>
+    <Empty Said="@Said"><a href="@Where">@Offer</a></Empty>
+</Panel>
 
 @code {
     private string Said = string.Empty;

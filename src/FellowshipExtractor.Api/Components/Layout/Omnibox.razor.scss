@@ -1,0 +1,69 @@
+@use "../../Styles/shared" as *;
+
+.cx-omnibox {
+  position: relative; flex: 1 1 260px; min-width: 0;
+  display: flex; align-items: center; margin-left: auto;
+}
+.cx-omnibox svg {
+  position: absolute; left: 10px; width: 15px; height: 15px; color: var(--faint); pointer-events: none;
+}
+.cx-omnibox input {
+  width: 100%; appearance: none;
+  @include sunken;
+  border-radius: 3px; font: 400 13px/1 var(--sans); padding: 9px 30px 9px 32px;
+}
+.cx-omnibox input::placeholder { color: var(--faint); }
+.cx-omnibox input::-webkit-search-cancel-button { display: none; }
+.cx-omnibox input:focus { @include edged; box-shadow: 0 0 0 1px var(--gold-deep); }
+.cx-omnibox-clear {
+  position: absolute; right: 4px; appearance: none; background: transparent; border: 0;
+  color: var(--faint); font-size: 18px; line-height: 1; padding: 4px 8px; cursor: pointer;
+}
+.cx-omnibox-clear:hover { color: var(--ink); }
+
+.cx-omnibox-drop {
+  position: absolute; top: calc(100% + 6px); right: 0; width: min(640px, 92vw);
+  background: #0d1721; border: 1px solid var(--line); border-top-color: var(--gold-deep);
+  box-shadow: 0 26px 40px -22px #000; z-index: 70;
+  max-height: min(70vh, 560px); overflow-y: auto;
+}
+.cx-omnibox-chips {
+  display: flex; gap: 4px; padding: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--line-soft);
+}
+.cx-omnibox-chip {
+  appearance: none; cursor: pointer; border: 1px solid transparent; border-radius: 2px;
+  background: var(--raised); color: var(--muted); font: 600 11px/1 var(--sans);
+  padding: 6px 9px; letter-spacing: .04em;
+}
+.cx-omnibox-chip[aria-pressed="true"] { @include gold-slab; }
+.cx-omnibox-chip:hover { color: var(--ink); }
+.cx-omnibox-chip[aria-pressed="true"]:hover { color: $on-gold; }
+
+.cx-omnibox-hit {
+  display: flex; align-items: center; gap: 10px; padding: 6px 10px;
+  border-bottom: 1px solid var(--line-soft); color: var(--ink);
+}
+.cx-omnibox-hit:hover,
+.cx-omnibox-hit[data-active] { background: var(--raised); text-decoration: none; }
+.cx-omnibox-hit .cx-t { flex: 1 1 auto; min-width: 0; }
+
+/* A different element from the .cx-nm in the results table, which is an EntityLink. */
+.cx-omnibox-hit .cx-nm {
+  display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cx-omnibox-hit .cx-sub {
+  display: block; font-size: 11px; color: var(--faint); font-family: var(--mono);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cx-omnibox-hit .cx-ty { flex: 0 0 auto; font-size: 11px; color: var(--muted); }
+
+/* The <mark> runs are emitted by this component element by element rather than as one
+   MarkupString, so they carry its attribute and need no ::deep. */
+.cx-omnibox-hit mark { background: transparent; color: var(--gold-bright); text-decoration: underline; }
+
+.cx-omnibox-all {
+  display: block; text-align: center; padding: 10px; font-weight: 600; letter-spacing: .05em;
+  @include gold-slab;
+}
+.cx-omnibox-all:hover, .cx-omnibox-all[data-active] { background: var(--gold); text-decoration: none; }
+.cx-omnibox-none { padding: 18px; text-align: center; color: var(--muted); }

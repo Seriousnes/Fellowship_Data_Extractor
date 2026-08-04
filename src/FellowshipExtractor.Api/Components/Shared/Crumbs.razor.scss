@@ -1,0 +1,8 @@
+.cx-crumbs { margin: 0 0 4px; }
+.cx-crumbs ol {
+  list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; font-size: 12px;
+}
+.cx-crumbs li + li::before { content: "\203A"; color: var(--faint); margin-right: 6px; }
+.cx-crumbs a { color: var(--muted); }
+.cx-crumbs a:hover { color: var(--gold-bright); }
+.cx-crumbs span { color: var(--ink); }

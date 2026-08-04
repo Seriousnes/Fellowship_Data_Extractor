@@ -12,30 +12,33 @@
 
 @if (Error is { } error)
 {
-    <div class="cx-panel">
-        <p class="cx-empty"><b>That filter could not be read.</b><br />@error</p>
-    </div>
+    <Panel>
+        <Empty Said="That filter could not be read.">@error</Empty>
+    </Panel>
 }
 else
 {
     <div class="cx-tabs">
+        @{
+            var across = Results.AcrossTypes.ToString("N0");
+        }
         <a class="cx-tab" href="@View.Replace("type", null)"
            aria-current="@(Query.Tables.Count == 0 ? "page" : null)">
-            All <span class="cx-num">@Results.AcrossTypes.ToString("N0")</span>
+            All <CountBadge Text="@across" />
         </a>
         @foreach (var type in Catalog.Types.Where(t => Results.Types.ContainsKey(t.Table) || Query.ChosenType(t.Table)))
         {
+            var counted = Results.Types.GetValueOrDefault(type.Table).ToString("N0");
+
             <a class="cx-tab" href="@View.Replace("type", type.Table)"
                aria-current="@(Query.ChosenType(type.Table) ? "page" : null)">
-                @type.Label <span class="cx-num">@Results.Types.GetValueOrDefault(type.Table).ToString("N0")</span>
+                @type.Label <CountBadge Text="@counted" />
             </a>
         }
     </div>
 
     <div class="cx-browse">
-        <aside class="cx-rail cx-panel" aria-label="Filters">
-            <div class="cx-panel-head">Refine</div>
-
+        <Panel As="aside" Class="cx-rail" Aria="Filters" Head="Refine">
             @if (View.Chosen.Count > 0)
             {
                 <ul class="cx-chosen">
@@ -71,10 +74,12 @@ else
                         @foreach (var value in facet.Values)
                         {
                             var chosen = Query.Chosen(facet.Key, value.Value);
+                            var counted = value.Count.ToString("N0");
+
                             <li>
                                 <a href="@View.Toggle(facet.Key, value.Value)" class="@BrowseView.On(chosen)"
                                    style="@(chosen || value.Colour is null ? null : $"color:{value.Colour}")">
-                                    @value.Label <span class="cx-num">@value.Count.ToString("N0")</span>
+                                    @value.Label <CountBadge Text="@counted" />
                                 </a>
                             </li>
                         }
@@ -121,7 +126,7 @@ else
                     }
                 </ul>
             </details>
-        </aside>
+        </Panel>
 
         <section>
             <div class="cx-results-head">
@@ -140,14 +145,13 @@ else
 
             @if (Results.Rows.Count == 0)
             {
-                <div class="cx-panel">
-                    <p class="cx-empty">
-                        <b>Nothing in the build answers that.</b><br />
+                <Panel>
+                    <Empty Said="Nothing in the build answers that.">
                         @(Query.IsEmpty
                             ? "Pick a category from the menus above, or type a name into the search box."
                             : "Remove a filter and try again.")
-                    </p>
-                </div>
+                    </Empty>
+                </Panel>
             }
             else
             {
@@ -186,7 +190,7 @@ else
                                 }
 
                                 <tr>
-                                    <td class="cx-art"><img alt="" loading="lazy" src="@Ui.Icon(row.Icon)" /></td>
+                                    <td class="cx-art"><Icon Src="@Ui.Icon(row.Icon)" /></td>
                                     <td><EntityLink Entity="row" Class="cx-nm" /></td>
                                     <td>@Codex.Label(row.Table!)</td>
                                     @if (ShowSlot)
@@ -198,20 +202,19 @@ else
                                         <td>
                                             @if (row.ArmorType is not null)
                                             {
-                                                <span class="cx-chip">@row.ArmorType</span>
+                                                <Chip>@row.ArmorType</Chip>
                                             }
                                             @if (row.PrimaryStat is not null)
                                             {
-                                                <span class="cx-chip">@Ui.Store.StatName(row.PrimaryStat)</span>
+                                                <Chip>@Ui.Store.StatName(row.PrimaryStat)</Chip>
                                             }
                                             @foreach (var hero in (row.Heroes ?? []).Take(3))
                                             {
-                                                var tone = Ui.HeroColour(hero);
-                                                <span class="cx-chip" style="@(tone is null ? null : $"color:{tone}")">@hero</span>
+                                                <Chip Colour="@Ui.HeroColour(hero)">@hero</Chip>
                                             }
                                             @if (row.Heroes is { Count: > 3 })
                                             {
-                                                <span class="cx-chip">+@(row.Heroes.Count - 3)</span>
+                                                <Chip>+@(row.Heroes.Count - 3)</Chip>
                                             }
                                         </td>
                                     }
@@ -220,7 +223,7 @@ else
                                         <td class="cx-tags">
                                             @foreach (var school in Codex.Schools(row))
                                             {
-                                                <span class="cx-chip">@school</span>
+                                                <Chip>@school</Chip>
                                             }
                                         </td>
                                     }

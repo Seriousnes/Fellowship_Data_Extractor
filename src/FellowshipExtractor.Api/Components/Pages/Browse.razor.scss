@@ -1,0 +1,124 @@
+@use "../../Styles/shared" as *;
+
+.cx-browse {
+  display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); gap: 18px; align-items: start;
+}
+
+/* One column below the rail's width, and the results first: a filter panel a reader has to scroll
+   past to reach what they asked for is a filter panel in the way. The rail's half of this rule is
+   in Panel.razor.scss, which owns the <aside> the cx-rail class lands on. */
+@media (max-width: 1080px) {
+  .cx-browse { grid-template-columns: minmax(0, 1fr); }
+  .cx-browse > section { order: 1; }
+}
+
+.cx-facet + .cx-facet { border-top: 1px solid var(--line-soft); margin-top: 10px; padding-top: 10px; }
+.cx-facet > summary {
+  cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;
+  font-size: 11px; letter-spacing: .13em; text-transform: uppercase; color: var(--faint);
+  padding: 2px 0;
+}
+.cx-facet > summary::-webkit-details-marker { display: none; }
+.cx-facet > summary::after { content: "+"; margin-left: auto; color: var(--gold-deep); font-size: 14px; }
+.cx-facet[open] > summary::after { content: "\2212"; }
+.cx-facet > summary:hover { color: var(--gold-bright); }
+
+.cx-facet-values { list-style: none; margin: 6px 0 0; padding: 0; max-height: 260px; overflow-y: auto; }
+.cx-facet-values li a {
+  display: flex; align-items: baseline; gap: 7px; padding: 2px 4px; border-radius: 2px;
+  color: var(--core-secondary-000); font-size: 13px;
+}
+.cx-facet-values li a:hover { background: var(--raised); text-decoration: none; }
+.cx-facet-values li a.on { background: var(--raised); color: var(--gold-bright); font-weight: 600; }
+.cx-facet-values li a.on::before { content: "\2713"; color: var(--gold-bright); font-size: 11px; }
+
+.cx-ranges { margin-top: 8px; }
+.cx-range { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 7px; }
+.cx-range > span { grid-column: 1 / -1; font-size: 12px; color: var(--core-secondary-000); }
+.cx-range input {
+  width: 100%; min-width: 0; appearance: textfield;
+  @include sunken;
+  border-radius: 2px; font: 400 12px/1 var(--sans); padding: 5px 6px;
+}
+.cx-range input:focus { @include edged; }
+.cx-ranges button {
+  width: 100%; appearance: none; cursor: pointer; margin-top: 4px;
+  @include gold-slab;
+  border: 0; border-radius: 2px; font: 600 12px/1 var(--sans); letter-spacing: .06em; padding: 8px;
+}
+.cx-ranges button:hover { background: var(--gold); }
+
+.cx-chosen { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 12px; padding: 0; list-style: none; }
+.cx-chosen li a {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--raised); border: 1px solid var(--line); border-radius: 2px;
+  padding: 3px 8px; font-size: 12px; color: var(--ink);
+}
+.cx-chosen li a:hover {
+  border-color: var(--semantic-negative); color: var(--semantic-negative); text-decoration: none;
+}
+.cx-chosen li a::after { content: "\00d7"; color: var(--faint); }
+.cx-chosen .cx-clear-all a { color: var(--muted); font-size: 12px; background: none; border: 0; }
+.cx-chosen .cx-clear-all a::after { content: none; }
+
+.cx-tabs {
+  display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 12px;
+}
+.cx-tab {
+  display: inline-flex; align-items: baseline; gap: 7px; white-space: nowrap;
+  padding: 9px 13px; font-size: 13px; color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+.cx-tab:hover { color: var(--ink); text-decoration: none; }
+.cx-tab[aria-current] { color: var(--gold-bright); border-bottom-color: var(--gold); font-weight: 600; }
+
+.cx-results-head {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 8px; font-size: 12px; color: var(--muted);
+}
+.cx-results-head .cx-count { margin-right: auto; }
+.cx-results-head .cx-count b { color: var(--ink); }
+
+.cx-table-scroll { overflow-x: auto; }
+
+table.cx-rows {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+
+  /* Not sticky. The scroll container round the table is what a sticky header would resolve against,
+     and an offset inside it pushes the header down over the first row instead of holding it under
+     the masthead, which is what it did. */
+  thead th {
+    text-align: left; font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--faint); padding: 7px 10px; border-bottom: 1px solid var(--line);
+    background: var(--sunken); white-space: nowrap;
+
+    a { color: inherit; display: inline-flex; align-items: center; gap: 4px; }
+    a:hover { color: var(--gold-bright); text-decoration: none; }
+  }
+  thead th[aria-sort] a { color: var(--gold-bright); }
+
+  tbody td { padding: 5px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+  tbody tr:hover td { background: #131f2a; }
+
+  .cx-numeric { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .cx-art { width: 40px; }
+  .cx-group-head td {
+    background: var(--raised); font-family: var(--display); letter-spacing: .09em; text-transform: uppercase;
+    color: var(--gold-bright); font-size: 13px; padding: 7px 10px;
+  }
+  .cx-tags { max-width: 230px; }
+  .cx-unit { color: var(--faint); }
+}
+
+.cx-pager {
+  display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 12px; font-size: 12px;
+}
+.cx-pager a, .cx-pager span {
+  padding: 5px 10px; border: 1px solid var(--line); border-radius: 2px; color: var(--muted);
+}
+.cx-pager a:hover { border-color: var(--gold-deep); color: var(--gold-bright); text-decoration: none; }
+.cx-pager [aria-current] {
+  @include gold-slab;
+  border-color: var(--gold-deep); font-weight: 600;
+}
+.cx-pager .cx-gap { border: 0; padding: 5px 2px; }
