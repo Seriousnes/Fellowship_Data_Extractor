@@ -1,0 +1,7 @@
+/* The class reads as part of the entity page's grid and is listed with it in the stylesheet this
+   replaces, but the div is this component's, so the rule lives here. EntityPage.razor.scss owns the
+   flex container round it.
+
+   The tooltip fragment codex.js paints into the inner div goes into a shadow root, and neither this
+   sheet nor any other in the bundle enters one: the fragment keeps supplying its own styling. */
+.cx-entity-tip { flex: 0 0 auto; min-width: 340px; }

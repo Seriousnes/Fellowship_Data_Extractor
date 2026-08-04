@@ -1,4 +1,4 @@
-<p class="cx-sub-head">@ChildContent</p>
+<p class="cx-sub-head" style="@Tone">@ChildContent</p>
 
 @code {
     /// <summary>
@@ -7,4 +7,12 @@
     /// and a talent group trails a conditional badge.
     /// </summary>
     [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>
+    /// The ink colour, on the same terms as a Pill's: null omits the style attribute entirely. The
+    /// versions panel lights the one named version the tooltip above is currently showing.
+    /// </summary>
+    [Parameter] public string? Colour { get; set; }
+
+    private string? Tone => Colour is null ? null : $"color:{Colour}";
 }

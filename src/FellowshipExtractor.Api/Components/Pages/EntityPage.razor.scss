@@ -1,0 +1,12 @@
+/* The page's own grid. The two rules that reach through it are elsewhere, each with the component
+   that renders the element it styles: .cx-entity-tip with Stage, and .cx-entity-side .cx-panel +
+   .cx-panel with Panel. Both match this grid on its class alone, so neither needs an attribute. */
+.cx-entity { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+
+.cx-entity-top { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+
+.cx-entity-side {
+  flex: 1 1 420px; min-width: 0;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;
+  align-items: start;
+}

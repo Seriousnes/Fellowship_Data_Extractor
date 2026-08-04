@@ -1,0 +1,74 @@
+@inject CodexView Ui
+@inject EntityStore Store
+
+@if (PicksHero || Wearable || IsGem)
+{
+    <Panel>
+        @if (PicksHero)
+        {
+            <Knob Caption="Hero">
+                @* A plain HTML onchange carrying JavaScript, not a Blazor directive: the page is
+                   statically rendered, and a full navigation is the only way the hero can change,
+                   because the server has to re-resolve the shown reading, the name, its colour,
+                   the detail and the related list. *@
+                <select data-knob="hero"
+                        onchange="location.search = '?hero=' + encodeURIComponent(this.value)">
+                    @if (Here.Readings.Count == 1)
+                    {
+                        <option value="">Any</option>
+                    }
+                    @* Offered only where a reading answers for them, on the store's own reading of
+                       that, so every name in the list opens a tooltip rather than a 404. *@
+                    @foreach (var who in Store.Vocabulary.Heroes
+                        .Where(who => Here.Readings.Any(reading => EntityStore.Reads(reading, who)))
+                        .OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        <option value="@who.Name" selected="@(who.Name == Here.Reading)">
+                            @who.Name (@who.ArmorType, @who.PrimaryStat)
+                        </option>
+                    }
+                </select>
+            </Knob>
+        }
+
+        @if (Wearable || IsGem)
+        {
+            <Knob Caption="Rarity" As="div">
+                <div class="cx-rungs">
+                    @foreach (var rung in Store.Vocabulary.Rarities)
+                    {
+                        var colour = CodexView.Readable(Ui.Tokens.Rarity(rung.Name));
+                        <button type="button" data-knob="rarity" data-choice="@rung.Tier"
+                                aria-pressed="false"
+                                style="@(colour is null ? null : $"color:{colour}")">
+                            @(IsGem ? rung.GemDisplayName : rung.DisplayName)
+                        </button>
+                    }
+                </div>
+            </Knob>
+        }
+
+        @if (Wearable)
+        {
+            <Knob Caption="Item level">
+                <input type="number" min="1" max="1000" step="1"
+                       value="@StatMagnitudes.MaximumItemLevel" data-knob="itemLevel" />
+            </Knob>
+
+            <Knob Caption="Tempered">
+                <input type="number" min="0" max="20" step="1" placeholder="none" data-knob="upgrades" />
+            </Knob>
+        }
+    </Panel>
+}
+
+@code {
+    /// <summary>The page's own facts.</summary>
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+
+    private bool IsGem => Here.Shown.GemTier is not null;
+
+    private bool Wearable => Here.Shown.Stats is { Count: > 0 };
+
+    private bool PicksHero => Here.Readings.Count > 1 || Here.Shown.Heroes is { Count: > 1 };
+}

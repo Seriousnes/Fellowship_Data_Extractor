@@ -1,0 +1,17 @@
+@if (Here.Related.Count > 0)
+{
+    <Panel Head="More like this">
+        <Pills>
+            @foreach (var (label, href, count) in Here.Related)
+            {
+                var badge = count.ToString("N0");
+                <Pill Href="@href" Badge="@badge">@label</Pill>
+            }
+        </Pills>
+    </Panel>
+}
+
+@code {
+    /// <summary>The page's own facts, carrying the related list already labelled and counted.</summary>
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+}

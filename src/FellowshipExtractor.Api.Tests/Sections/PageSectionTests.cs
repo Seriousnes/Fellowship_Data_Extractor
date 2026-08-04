@@ -1,0 +1,208 @@
+namespace FellowshipExtractor.Api.Tests;
+
+/// <summary>
+/// The four page sections that need no service: the tooltip stage, the address panel, the versions
+/// list and the related list. Only Versions injects, so it takes the corpus.
+/// </summary>
+public class StageTests : BunitContext
+{
+    /// <summary>
+    /// codex.js finds this element with querySelector('[data-stage]'), splits the value on ? into
+    /// an address and a carried query, and attaches a shadow root to it. The attribute is plain
+    /// HTML and is emitted verbatim, query and all.
+    /// </summary>
+    [Fact]
+    public void Stages_the_address_verbatim_including_a_carried_hero()
+    {
+        var here = new Bearings { Address = "/api/tooltip/items/5208?hero=Aeona" };
+
+        var cut = Render<Stage>(p => p.AddCascadingValue(here));
+
+        var box = cut.Find("[data-stage]");
+
+        Assert.Equal("/api/tooltip/items/5208?hero=Aeona", box.GetAttribute("data-stage"));
+        Assert.Equal("polite", box.GetAttribute("aria-live"));
+        Assert.Equal("<p class=\"cx-empty\">Loading...</p>", box.InnerHtml.Bare());
+    }
+
+    /// <summary>
+    /// The staged element is a sibling of the sized one, because a shadow root replaces the staged
+    /// element's own markup once the first answer lands.
+    /// </summary>
+    [Fact]
+    public void Sizes_an_outer_element_and_stages_an_inner_one()
+    {
+        var cut = Render<Stage>(p => p.AddCascadingValue(new Bearings()));
+
+        var outer = cut.Find("div.cx-entity-tip");
+
+        Assert.False(outer.HasAttribute("data-stage"));
+        Assert.True(outer.FirstElementChild!.HasAttribute("data-stage"));
+    }
+}
+
+public class IdentityTests : BunitContext
+{
+    [Fact]
+    public void Names_the_type_the_id_and_the_tooltip_address()
+    {
+        var here = new Bearings
+        {
+            Under = "/browse?type=items",
+            Label = "Items",
+            NetId = 5208,
+            Address = "/api/tooltip/items/5208",
+        };
+
+        var cut = Render<Identity>(p => p.AddCascadingValue(here));
+
+        Assert.Equal("Address", cut.Find("div.cx-panel-head").TextContent);
+
+        var rows = cut.FindAll("table.cx-facts tr");
+
+        Assert.Equal(3, rows.Count);
+        Assert.Equal("/browse?type=items", rows[0].QuerySelector("a")!.GetAttribute("href"));
+        Assert.Equal("Items", rows[0].QuerySelector("a")!.TextContent);
+        Assert.Equal("5208", rows[1].QuerySelector("td")!.TextContent);
+        Assert.Equal("/api/tooltip/items/5208", rows[2].QuerySelector("a")!.GetAttribute("href"));
+    }
+}
+
+public class NearbyTests : BunitContext
+{
+    [Fact]
+    public void Renders_nothing_when_nowhere_else_to_go()
+    {
+        var cut = Render<Nearby>(p => p.AddCascadingValue(new Bearings()));
+
+        Assert.Empty(cut.Markup);
+    }
+
+    [Fact]
+    public void Lists_each_way_out_with_its_count()
+    {
+        var here = new Bearings
+        {
+            Related = [("Slot: Head", "/browse?type=items&slot=Head", 1271)],
+        };
+
+        var cut = Render<Nearby>(p => p.AddCascadingValue(here));
+
+        Assert.Equal("More like this", cut.Find("div.cx-panel-head").TextContent);
+
+        var pill = cut.Find("ul.cx-pills a");
+
+        Assert.Equal("/browse?type=items&slot=Head", pill.GetAttribute("href"));
+        Assert.Equal("1,271", pill.QuerySelector("span.cx-num")!.TextContent);
+    }
+}
+
+[Collection(Corpus.Name)]
+public class VersionsTests : BunitContext
+{
+    private readonly Export export;
+
+    public VersionsTests(Export export)
+    {
+        this.export = export;
+        Services.AddSingleton(export.View);
+        Services.AddSingleton(export.Store);
+    }
+
+    /// <summary>An id with one reading has no versions to tell apart, so the panel is absent.</summary>
+    [Fact]
+    public void Renders_nothing_for_an_id_with_one_reading()
+    {
+        var only = new Entity { Table = "ItemID", NetId = 1 };
+        var here = new Bearings { Shown = only, Readings = [only], Noun = "item" };
+
+        var cut = Render<Versions>(p => p.AddCascadingValue(here));
+
+        Assert.Empty(cut.Markup);
+    }
+
+    [Fact]
+    public void Groups_the_readings_into_named_versions_and_lists_who_wears_each()
+    {
+        var cloth = new Entity
+        {
+            Table = "ItemID", NetId = 1, DisplayName = "Scholar's Headscarf",
+            ArmorType = "Cloth", PrimaryStat = "Intellect", Heroes = ["Aeona"],
+        };
+        var leather = new Entity
+        {
+            Table = "ItemID", NetId = 1, DisplayName = "Scribe's Headband",
+            ArmorType = "Leather", PrimaryStat = "Agility", Heroes = ["Mara"],
+        };
+
+        var here = new Bearings
+        {
+            Shown = cloth,
+            Readings = [cloth, leather],
+            Reading = "Aeona",
+            Page = "/entity/items/1",
+            Noun = "item",
+        };
+
+        var cut = Render<Versions>(p => p.AddCascadingValue(here));
+
+        Assert.Equal("Who can use this item", cut.Find("div.cx-panel-head").FirstChild!.TextContent.Trim());
+        Assert.Equal("2 versions", cut.Find("div.cx-panel-head span.cx-num").TextContent);
+
+        var heads = cut.FindAll("p.cx-sub-head");
+
+        Assert.Equal(2, heads.Count);
+        Assert.Equal("Cloth / Intellect", heads[0].QuerySelector("span.cx-num")!.TextContent);
+
+        // The version on the stage is the lit one; the other carries no style at all.
+        Assert.Equal("color:var(--gold-bright)", heads[0].GetAttribute("style"));
+        Assert.False(heads[1].HasAttribute("style"));
+
+        var wearer = cut.Find("div.cx-roster a");
+
+        Assert.Equal("/entity/items/1?hero=Aeona", wearer.GetAttribute("href"));
+        Assert.Equal("page", wearer.GetAttribute("aria-current"));
+        Assert.Equal("Aeona", wearer.QuerySelector("span.cx-who")!.TextContent);
+    }
+
+    [Fact]
+    public void Names_one_version_in_the_singular()
+    {
+        var reading = new Entity
+        {
+            Table = "ItemID", NetId = 1, DisplayName = "Twin Cowl",
+            ArmorType = "Cloth", PrimaryStat = "Intellect", Heroes = ["Aeona"],
+        };
+
+        var here = new Bearings
+        {
+            Shown = reading, Readings = [reading, reading], Page = "/entity/items/1", Noun = "item",
+        };
+
+        var cut = Render<Versions>(p => p.AddCascadingValue(here));
+
+        Assert.Equal("1 version", cut.Find("div.cx-panel-head span.cx-num").TextContent);
+    }
+
+    /// <summary>
+    /// 456 of the 2,143 readings carry neither half and are split by hero alone. Those versions get
+    /// no second line at all rather than a pair of "any"s.
+    /// </summary>
+    [Fact]
+    public void Gives_a_version_split_by_hero_alone_no_discriminator()
+    {
+        var first = new Entity { Table = "ItemID", NetId = 1, DisplayName = "Plain Band", Heroes = ["Aeona"] };
+        var second = new Entity { Table = "ItemID", NetId = 1, DisplayName = "Plain Band", Heroes = ["Mara"] };
+
+        var here = new Bearings
+        {
+            Shown = first, Readings = [first, second], Page = "/entity/items/1", Noun = "item",
+        };
+
+        var cut = Render<Versions>(p => p.AddCascadingValue(here));
+
+        Assert.Single(cut.FindAll("p.cx-sub-head"));
+        Assert.Null(cut.Find("p.cx-sub-head").QuerySelector("span.cx-num"));
+        Assert.Equal(2, cut.FindAll("div.cx-roster a").Count);
+    }
+}
