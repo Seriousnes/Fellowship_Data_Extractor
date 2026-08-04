@@ -1,0 +1,9 @@
+<span class="cx-num">@Text</span>
+
+@code {
+    /// <summary>
+    /// What the badge reads. A string rather than a number because four of the twelve call sites
+    /// carry a name or a composed phrase rather than a count.
+    /// </summary>
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+}

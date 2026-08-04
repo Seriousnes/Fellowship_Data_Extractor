@@ -1,0 +1,8 @@
+.cx-num { font-size: 10.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* Each positional rule keeps its ancestor selector, which belongs to another component and is
+   matched on its class alone. The scope attribute lands on this span, which is what is styled. */
+.cx-panel-head .cx-num { margin-left: auto; }
+.cx-facet-values .cx-num { margin-left: auto; }
+.cx-tab[aria-current] .cx-num { color: var(--gold-deep); }
+.cx-pills .cx-num { border: 0; background: none; padding: 0 0 0 4px; }

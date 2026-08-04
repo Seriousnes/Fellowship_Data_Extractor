@@ -1,0 +1,10 @@
+<p class="cx-sub-head">@ChildContent</p>
+
+@code {
+    /// <summary>
+    /// The sub-head's text. Child content rather than a string because several call sites compose it
+    /// from an expression: the school count picks singular or plural, a set trails its piece count,
+    /// and a talent group trails a conditional badge.
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
