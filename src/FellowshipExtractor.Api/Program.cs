@@ -288,7 +288,7 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
 
         if (outcome == Lookup.Found)
         {
-            var fragment = await fragments.Render<FellowshipExtractor.Api.Components.Shared.Tooltip>(new()
+            var fragment = await fragments.Render<FellowshipExtractor.Api.Components.Tooltip.Tooltip>(new()
             {
                 ["Entity"] = entity!,
                 ["Query"] = query,

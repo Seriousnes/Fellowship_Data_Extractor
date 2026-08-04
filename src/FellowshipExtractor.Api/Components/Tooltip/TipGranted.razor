@@ -1,0 +1,25 @@
+@inject TooltipView Ui
+
+@* The ability the item grants, under its badge. Named or drawn as "Ability" alone: a nested row is
+   addressed by nothing and has no id to fall back on. *@
+@if (Entity.Grants is { } grants)
+{
+    <div class="grp">
+        <div class="sec ability"><img class="gi" alt="" src="@Ui.Chrome.AbilityBadge.Url"><span>Ability@(Named is { } name ? ": " + name : null)</span></div>
+        @if (grants.Description is { } text)
+        {
+            <p class="desc">@Ui.Text(text, grants.Placeholders, Query, Hero, grants.Tags ?? Entity.Tags)</p>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    /// <summary>What the granted ability is called, or null where it ships no name of its own.</summary>
+    [Parameter] public string? Named { get; set; }
+}

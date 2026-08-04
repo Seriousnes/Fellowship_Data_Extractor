@@ -1,0 +1,16 @@
+@inject TooltipView Ui
+
+@* The set this piece counts towards, and how many pieces the bonus asks for. The count follows the
+   caption with no space between them, which is where the flex gap goes instead. *@
+@if (Entity.SetBonus is { Count: > 0 } sets)
+{
+    <div class="grp">
+        <div class="sec setbonus"><img class="gi" alt="" src="@Ui.Chrome.SetBonusBadge.Url"><span>Set Bonus</span>@if (Entity.SetCount is { } pieces)
+            {<span class="n">(@pieces pieces)</span>}</div>
+        <p class="desc">@string.Join(", ", sets)</p>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+}

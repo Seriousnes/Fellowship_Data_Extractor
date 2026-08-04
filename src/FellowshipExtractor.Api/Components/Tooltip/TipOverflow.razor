@@ -1,0 +1,20 @@
+@inject TooltipView Ui
+
+@* What a gem type gives past the top of its ladder, where further power would otherwise buy
+   nothing. A second sentence about the type rather than the type's description: a gem type has no
+   description of its own at all. *@
+@if (Entity.GemOverflow is { } overflow)
+{
+    <div class="grp">
+        <div class="sec"><span>Past Max Power</span></div>
+        <p class="desc">@Ui.Text(overflow.Description, overflow.Placeholders, Query, Hero, Entity.Tags)</p>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+}

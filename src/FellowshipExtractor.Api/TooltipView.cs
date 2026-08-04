@@ -274,4 +274,48 @@ public sealed class TooltipView(
     /// namespace scope would be ambiguous in every component that imports both folders.
     /// </summary>
     public sealed record Fact(string Label, string Value, string? Title);
+
+    /// <summary>The eight things a tooltip can say, in the order it says them.</summary>
+    public enum Block { Identity, Facts, Rolls, Prose, Overflow, Granted, Legendaries, Sets }
+
+    /// <summary>
+    /// Which blocks this reading has anything to say in, in order.
+    ///
+    /// Worked out here rather than left to each block, because the separator between two blocks is
+    /// markup and a component cannot be asked whether it rendered anything. One rule goes above
+    /// every block but the first, so the ordering and the guards are one question and this answers
+    /// it once.
+    /// </summary>
+    public IReadOnlyList<Block> Blocks(
+        Entity entity,
+        TooltipQuery query,
+        RarityEntry? rarity,
+        IReadOnlyList<Fact> facts,
+        IReadOnlyList<StatLine> rolls)
+    {
+        var shown = new List<Block>(8);
+
+        if ((entity.ArmorType ?? entity.GemType) is not null || entity.Slot is not null ||
+            Level(entity, query) is not null || rarity is not null || Temper(query) is not null ||
+            entity.GemSlot == true || entity.UniqueEquipped == true) shown.Add(Block.Identity);
+
+        if (facts.Count > 0) shown.Add(Block.Facts);
+
+        if (Potential(query) is not null || rolls.Count > 0) shown.Add(Block.Rolls);
+
+        if (entity.Description is not null || entity.Detail is { Count: > 0 }) shown.Add(Block.Prose);
+
+        if (entity.GemOverflow is not null) shown.Add(Block.Overflow);
+
+        // A nested row is addressed by nothing and has no id to fall back on, so a granted ability
+        // is named or it is drawn as "Ability" alone; one with neither is not drawn at all.
+        if (entity.Grants is { } grants &&
+            (PublicTypes.DisplayNameOf(grants) ?? grants.Description) is not null) shown.Add(Block.Granted);
+
+        if (entity.LegendaryStats is { Count: > 0 }) shown.Add(Block.Legendaries);
+
+        if (entity.SetBonus is { Count: > 0 }) shown.Add(Block.Sets);
+
+        return shown;
+    }
 }

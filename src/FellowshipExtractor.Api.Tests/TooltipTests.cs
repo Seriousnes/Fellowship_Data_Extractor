@@ -15,8 +15,8 @@ public class TooltipTests : BunitContext
         Services.AddSingleton(export.Tooltip);
     }
 
-    private IRenderedComponent<Components.Shared.Tooltip> Draw(Entity entity) =>
-        Render<Components.Shared.Tooltip>(p => p.Add(x => x.Entity, entity));
+    private IRenderedComponent<Components.Tooltip.Tooltip> Draw(Entity entity) =>
+        Render<Components.Tooltip.Tooltip>(p => p.Add(x => x.Entity, entity));
 
     /// <summary>
     /// The fragment is painted into a shadow root that no stylesheet of this app enters, and is
@@ -202,11 +202,11 @@ public class TooltipTests : BunitContext
     {
         var rung = Store.Vocabulary.Rarities[^1];
 
-        var asGem = Render<Components.Shared.Tooltip>(p => p
+        var asGem = Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, new Entity { GemTier = 3 })
             .Add(x => x.Query, new TooltipQuery { Rarity = rung.Name }));
 
-        var asItem = Render<Components.Shared.Tooltip>(p => p
+        var asItem = Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, new Entity { Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] })
             .Add(x => x.Query, new TooltipQuery { Rarity = rung.Name }));
 
@@ -219,7 +219,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Prints_the_item_level_the_caller_asked_for()
     {
-        var cut = Render<Components.Shared.Tooltip>(p => p
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, new Entity { Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] })
             .Add(x => x.Query, new TooltipQuery { ItemLevel = 400 }));
 

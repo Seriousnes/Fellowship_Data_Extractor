@@ -1,0 +1,24 @@
+@inject TooltipView Ui
+
+@* The row's own words, with the caller's numbers substituted in.
+
+   .desc and .note are white-space: pre-line, so each paragraph is written on one line and carries
+   no literal text: a newline from source indentation would be a rendered blank line. *@
+<div class="grp">
+    @if (Entity.Description is { } description)
+    {
+        <p class="desc">@Ui.Text(description, Entity.Placeholders, Query, Hero, Entity.Tags)</p>
+    }
+    @foreach (var detail in Entity.Detail ?? [])
+    {
+        <p class="note">@Ui.Text(detail, Entity.Placeholders, Query, Hero, Entity.Tags)</p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+}

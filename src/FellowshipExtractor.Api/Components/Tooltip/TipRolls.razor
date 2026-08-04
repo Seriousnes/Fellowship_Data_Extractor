@@ -1,0 +1,29 @@
+@* What the item rolled: the power it could reach, and a line per stat slot at the level and rung
+   it is read at. The magnitude is not in the build - a dynamic item rolls it when it drops - so
+   every number here is computed. *@
+<div class="grp">
+    @if (Potential is { } potential)
+    {
+        <div class="row">
+            <span><span class="k">Power Potential</span></span>
+            <span><span class="pot">@potential</span></span>
+        </div>
+    }
+    @if (Lines.Count > 0)
+    {
+        <ul class="stats">
+            @foreach (var line in Lines)
+            {
+                <li class="@TooltipView.Weight(line)"><span class="v">@TooltipView.Magnitude(line)</span><span>@line.DisplayName</span></li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    /// <summary>The power potential the caller asked to see, already formatted.</summary>
+    [Parameter] public string? Potential { get; set; }
+
+    /// <summary>The rolled stat lines, in the order the item declares its slots.</summary>
+    [Parameter] public IReadOnlyList<StatLine> Lines { get; set; } = [];
+}

@@ -1,0 +1,65 @@
+@inject TooltipView Ui
+
+@* What the item is: its kind, the slot it fills, the power it is read at, the rung it rolled and
+   how far it has been tempered. Two to a row, left and right. *@
+<div class="grp">
+    @if ((Entity.ArmorType ?? Entity.GemType) is { } kind)
+    {
+        <p class="kind">@kind</p>
+    }
+    @if (Entity.Slot is not null || Level is not null)
+    {
+        <div class="row">
+            @if (Entity.Slot is { } slot)
+            {
+                <span><img class="gi" alt="" src="@Ui.Chrome.SlotGlyph">@slot</span>
+            }
+            @if (Level is { } power)
+            {
+                <span><img class="gi" alt="" src="@Ui.Chrome.ItemPowerGlyph"><span class="power">@power</span></span>
+            }
+        </div>
+    }
+    @if (Rung is not null || Temper is not null)
+    {
+        <div class="row">
+            @if (Rung is { } rung)
+            {
+                <span><span class="rar">@Ui.Rung(Entity, rung)</span></span>
+            }
+            @if (Temper is { } tempered)
+            {
+                <span>@tempered</span>
+            }
+        </div>
+    }
+    @if (Entity.GemSlot == true || Entity.UniqueEquipped == true)
+    {
+        <div class="row">
+            @if (Entity.GemSlot == true)
+            {
+                <span><span class="k">@(Query.NoSocket ? "No gem socket" : "Gem socket")</span></span>
+            }
+            @if (Entity.UniqueEquipped == true)
+            {
+                <span><span class="k">Unique Equipped</span></span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+
+    /// <summary>Read for the socket line, which says whether the caller filled the socket.</summary>
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    /// <summary>The rung this reading is drawn at, which a gem spells under its own ladder.</summary>
+    [Parameter] public RarityEntry? Rung { get; set; }
+
+    /// <summary>The item power on the line, resolved by the tooltip before this is placed.</summary>
+    [Parameter] public int? Level { get; set; }
+
+    /// <summary>How far the caller has tempered it, in the words the line prints.</summary>
+    [Parameter] public string? Temper { get; set; }
+}
