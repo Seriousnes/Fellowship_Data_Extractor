@@ -1,0 +1,6 @@
+.cx-empty {
+  padding: 40px 16px; text-align: center; color: var(--muted);
+
+  /* The <b> is rendered by this component from Said, not passed in, so it needs no ::deep. */
+  b { color: var(--ink); }
+}

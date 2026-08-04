@@ -1,0 +1,12 @@
+@* One line, carrying no literal text: Styles/codex.scss sets .cx-prose { white-space: pre-line },
+   so a newline this component contributed would be a rendered line break. *@
+<p class="cx-prose">@ChildContent</p>
+
+@code {
+    /// <summary>
+    /// The rendered description. The paragraph itself carries cx-prose because that class is the
+    /// scope every generated rich-text rule is written under, so a run nested one level deeper
+    /// draws unstyled with no error.
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

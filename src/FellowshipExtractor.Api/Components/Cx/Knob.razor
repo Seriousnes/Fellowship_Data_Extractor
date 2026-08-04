@@ -1,0 +1,27 @@
+@if (As == "div")
+{
+    <div class="cx-knob">
+        <span>@Caption</span>
+        @ChildContent
+    </div>
+}
+else
+{
+    <label class="cx-knob">
+        <span>@Caption</span>
+        @ChildContent
+    </label>
+}
+
+@code {
+    /// <summary>The caption, which .cx-knob > span styles.</summary>
+    [Parameter, EditorRequired] public string Caption { get; set; } = string.Empty;
+
+    /// <summary>
+    /// "label" when the knob holds one form control, which gives the caption its click target, and
+    /// "div" when it holds a button group, which a label may not wrap.
+    /// </summary>
+    [Parameter] public string As { get; set; } = "label";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

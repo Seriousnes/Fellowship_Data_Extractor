@@ -1,0 +1,15 @@
+<p class="cx-empty">
+    @if (Said is not null)
+    {
+        <b>@Said</b><br />
+    }
+    @ChildContent
+</p>
+
+@code {
+    /// <summary>The bold headline and its line break. Null renders neither.</summary>
+    [Parameter] public string? Said { get; set; }
+
+    /// <summary>The detail line under the headline.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

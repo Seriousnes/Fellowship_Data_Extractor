@@ -1,0 +1,11 @@
+.cx-knob {
+  display: block; margin-bottom: 10px;
+
+  /* The caption span is this component's. The select, the inputs and the rung buttons are the
+     Knobs section's child content, so their rules live in Knobs.razor.scss written on the elements
+     that section renders: the ownership rule, not ::deep, because the control has an owner. */
+  > span {
+    display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--faint); margin-bottom: 3px;
+  }
+}

@@ -1,0 +1,17 @@
+li {
+  display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--line-soft);
+
+  &:last-child { border-bottom: 0; }
+
+  /* A <code> in a row is the caller's child content, so it is reached through ::deep. Written on
+     the <li> rather than on .cx-v, which is what .cx-kv code reaches today. */
+  ::deep code { font: 12px/1.5 var(--mono); color: var(--core-secondary-100); }
+}
+
+.cx-k { color: var(--muted); flex: 1 1 auto; min-width: 0; word-break: break-word; }
+.cx-v { flex: 0 0 auto; font-weight: 600; }
+
+/* The narrower of the two absent-value rules. The bare .cx-miss is in Styles/codex.scss, because
+   the substitutions panel writes it on a span of its own and a class with two owners cannot be
+   scoped to one of them. */
+.cx-v.cx-miss { font-weight: 400; color: var(--faint); font-style: italic; }
