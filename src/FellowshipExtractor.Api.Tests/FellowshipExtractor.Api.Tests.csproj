@@ -1,0 +1,32 @@
+<!--
+  Microsoft.NET.Sdk.Razor rather than Microsoft.NET.Sdk: without it the .razor fixtures in this
+  project are not compiled, and the failure reads as a missing type rather than as a missing SDK.
+-->
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+
+    <!--
+      The components under test are compiled by the Api project, so the scope attribute Blazor's CSS
+      isolation bakes in is already on them by the time a test renders one. This project references
+      AspNetCore.SassCompiler nowhere and carries no sasscompiler.json.
+    -->
+    <ProjectReference Include="..\FellowshipExtractor.Api\FellowshipExtractor.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="bunit" Version="2.8.6" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+
+</Project>

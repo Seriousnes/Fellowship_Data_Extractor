@@ -4,4 +4,5 @@
   <Project Path="FellowshipExtractor.Api/FellowshipExtractor.Api.csproj" />
   <Project Path="FellowshipExtractor.AppHost/FellowshipExtractor.AppHost.csproj" />
   <Project Path="FellowshipExtractor.ServiceDefaults/FellowshipExtractor.ServiceDefaults.csproj" />
+  <Project Path="FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj" />
 </Solution>
