@@ -1,0 +1,127 @@
+@inject CodexView Ui
+
+@if (Facts.Count > 0 || Schools.Count > 0 || Entity.Heroes is { Count: > 0 } ||
+     Entity.SetBonus is { Count: > 0 } || Scaling.Count > 0 ||
+     Entity.AllowedRoles is { Count: > 0 } || Entity.AllowedAttributes is { Count: > 0 })
+{
+    <Panel Head="Details">
+        @if (Facts.Count > 0)
+        {
+            <div class="cx-pairs">
+                @for (var half = 0; half < 2; half++)
+                {
+                    var split = (Facts.Count + 1) / 2;
+                    var slice = half == 0 ? Facts.Take(split) : Facts.Skip(split);
+
+                    <Facts>
+                        @foreach (var fact in slice)
+                        {
+                            <Fact Label="@fact.Label" Unit="@fact.Unit">
+                                @if (fact.Href is null)
+                                {
+                                    @fact.Value
+                                }
+                                else
+                                {
+                                    <a href="@fact.Href" data-tip="@fact.Tip">@fact.Value</a>
+                                }
+                            </Fact>
+                        }
+                    </Facts>
+                }
+            </div>
+        }
+
+        @if (Schools.Count > 0)
+        {
+            <Rule />
+            <SubHead>@(Schools.Count == 1 ? "School" : "Schools")</SubHead>
+            <Pills>
+                @foreach (var school in Schools)
+                {
+                    <Pill Href="@school.Href">@school.Label</Pill>
+                }
+            </Pills>
+        }
+
+        @if (Entity.Heroes is { Count: > 0 } heroes)
+        {
+            <Rule />
+            <SubHead>Heroes</SubHead>
+            <Pills>
+                @foreach (var hero in heroes)
+                {
+                    var where = $"/browse?hero={Uri.EscapeDataString(hero)}";
+                    <Pill Href="@where" Colour="@Ui.HeroColour(hero)">@hero</Pill>
+                }
+            </Pills>
+        }
+
+        @if (Entity.SetBonus is { Count: > 0 } sets)
+        {
+            <Rule />
+            <SubHead>Set@(Entity.SetCount is { } pieces ? $" ({pieces} pieces)" : "")</SubHead>
+            <Pills>
+                @foreach (var set in sets)
+                {
+                    var where = $"/browse?set={Uri.EscapeDataString(set)}";
+                    <Pill Href="@where">@set</Pill>
+                }
+            </Pills>
+        }
+
+        @if (Scaling.Count > 0)
+        {
+            <Rule />
+            <SubHead>Scales off</SubHead>
+            <Pills>
+                @foreach (var stat in Scaling)
+                {
+                    <Pill>@stat</Pill>
+                }
+            </Pills>
+        }
+
+        @if (Entity.AllowedRoles is { Count: > 0 } roles)
+        {
+            <Rule />
+            <SubHead>Offered to</SubHead>
+            <Pills>
+                @foreach (var role in roles)
+                {
+                    var tone = Ui.Tokens.Role(role) ?? "inherit";
+                    <Pill Colour="@tone">@role</Pill>
+                }
+                @foreach (var stat in Entity.AllowedAttributes ?? [])
+                {
+                    <Pill>@Ui.Store.StatName(stat)</Pill>
+                }
+            </Pills>
+        }
+    </Panel>
+}
+
+@code {
+    /// <summary>The record this panel draws, re-supplied by every Detail.</summary>
+    [CascadingParameter] private Entity Entity { get; set; } = new();
+
+    /// <summary>
+    /// The scalar facts, already formatted and already carrying any address they link to, because
+    /// a nested row carries no table and no id of its own to build one from.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts { get; set; } = [];
+
+    /// <summary>
+    /// The damage schools this entry is, each with the filter it links into, built by Detail
+    /// through the school facet's own selector.
+    /// </summary>
+    [Parameter] public IReadOnlyList<(string Label, string Href)> Schools { get; set; } = [];
+
+    /// <summary>
+    /// The attributes this entry's numbers grow with, under the words the game prints for them.
+    /// Resolved by Detail through the catalogue, which is what takes the run-together spelling off,
+    /// so a pill reads Damage Scale and never DamageScale.
+    /// </summary>
+    [Parameter] public IReadOnlyList<string> Scaling { get; set; } = [];
+}

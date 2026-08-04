@@ -1,0 +1,14 @@
+/* The list, the rows and both spans are this section's own elements, so nothing here needs ::deep.
+   The class pair is kept in both spellings, on the row and on a span inside it, exactly as the
+   stylesheet this refactor starts from carries them. */
+.cx-stat-lines {
+  list-style: none; margin: 0; padding: 0; font-size: 13px;
+
+  li { display: flex; gap: 8px; padding: 3px 0; }
+
+  .cx-w { color: var(--faint); margin-left: auto; font-size: 11px; }
+  .cx-primary { color: var(--game-stat-primary); }
+  .cx-secondary { color: var(--game-stat-secondary); }
+  li.cx-primary { color: var(--game-stat-primary); }
+  li.cx-secondary { color: var(--game-stat-secondary); }
+}

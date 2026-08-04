@@ -1,0 +1,3 @@
+/* The one class this section draws itself. The two <table class="cx-facts"> inside it are Facts
+   components and are styled in Facts.razor.scss. */
+.cx-pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0 28px; }

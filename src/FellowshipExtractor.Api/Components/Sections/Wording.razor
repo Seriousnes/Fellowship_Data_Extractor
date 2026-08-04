@@ -1,0 +1,23 @@
+@inject CodexView Ui
+
+@if (Entity.Description is not null || Entity.Detail is { Count: > 0 })
+{
+    <Panel Head="Text">
+        @if (Entity.Description is not null)
+        {
+            <Prose>@Ui.Text(Entity.Description, Entity.Placeholders, Entity.Tags)</Prose>
+        }
+        @foreach (var line in Entity.Detail ?? [])
+        {
+            <Rule />
+            <Prose>@Ui.Text(line, Entity.Placeholders, Entity.Tags)</Prose>
+        }
+    </Panel>
+}
+
+@code {
+    /// <summary>
+    /// The record this panel draws, re-supplied by every Detail so a nested row draws its own text.
+    /// </summary>
+    [CascadingParameter] private Entity Entity { get; set; } = new();
+}
