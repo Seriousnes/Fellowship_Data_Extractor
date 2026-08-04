@@ -1,0 +1,24 @@
+namespace FellowshipExtractor.Api.Tests;
+
+public class ScopedTests : BunitContext
+{
+    [Fact]
+    public void Strips_the_scope_attribute_a_component_renders()
+    {
+        var cut = Render<Note>(p => p.AddChildContent("plain"));
+
+        Assert.Matches(@"\sb-[a-z0-9]{10}", cut.Markup);
+        Assert.Equal("<p class=\"cx-note\">plain</p>", cut.Markup.Bare());
+    }
+
+    [Fact]
+    public void Leaves_a_data_attribute_a_class_and_the_text_between_two_elements_alone()
+    {
+        const string markup =
+            "<p class=\"cx-note\">belongs to " +
+            "<a href=\"/entity/items/12\" data-tip=\"/api/tooltip/items/12\">Old Boots</a>" +
+            ", which is where it was taken from.</p>";
+
+        Assert.Equal(markup, markup.Bare());
+    }
+}

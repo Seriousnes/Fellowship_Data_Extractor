@@ -1,0 +1,72 @@
+@if (As == "details")
+{
+    <details class="@Classes" aria-label="@Aria">
+        @if (Head is not null)
+        {
+            <summary class="cx-panel-head">
+                @Head
+                @if (Badge is not null)
+                {
+                    <CountBadge Text="@Badge" />
+                }
+            </summary>
+        }
+        @ChildContent
+    </details>
+}
+else if (As == "aside")
+{
+    <aside class="@Classes" aria-label="@Aria">
+        @if (Head is not null)
+        {
+            <div class="cx-panel-head">
+                @Head
+                @if (Badge is not null)
+                {
+                    <CountBadge Text="@Badge" />
+                }
+            </div>
+        }
+        @ChildContent
+    </aside>
+}
+else
+{
+    <div class="@Classes" aria-label="@Aria">
+        @if (Head is not null)
+        {
+            <div class="cx-panel-head">
+                @Head
+                @if (Badge is not null)
+                {
+                    <CountBadge Text="@Badge" />
+                }
+            </div>
+        }
+        @ChildContent
+    </div>
+}
+
+@code {
+    /// <summary>The head's text. Null renders no head element at all.</summary>
+    [Parameter] public string? Head { get; set; }
+
+    /// <summary>
+    /// The count badge trailing the head. A string rather than a number: one call site names the
+    /// granted ability and another reads "12 heroes".
+    /// </summary>
+    [Parameter] public string? Badge { get; set; }
+
+    /// <summary>Extra classes, appended after cx-panel.</summary>
+    [Parameter] public string? Class { get; set; }
+
+    /// <summary>The root element: "div", "aside" or "details".</summary>
+    [Parameter] public string As { get; set; } = "div";
+
+    /// <summary>The aria-label. Null omits the attribute.</summary>
+    [Parameter] public string? Aria { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string Classes => Class is null ? "cx-panel" : $"cx-panel {Class}";
+}

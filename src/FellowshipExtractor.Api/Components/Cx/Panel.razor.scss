@@ -1,0 +1,39 @@
+@use "../../Styles/shared" as *;
+
+.cx-panel {
+  position: relative;
+  @include plated;
+}
+
+.cx-panel + .cx-panel { margin-top: 16px; }
+
+/* The entity page's side column is a grid and spaces its own children, so the panels stacked in it
+   drop the adjacency margin. Both elements in the selector are this component's, and the attribute
+   lands on the second, which is the one being styled. */
+.cx-entity-side .cx-panel + .cx-panel { margin-top: 0; }
+
+.cx-panel-head {
+  display: flex; align-items: center; gap: 10px; margin: -14px -16px 12px;
+  padding: 9px 16px;
+  background: var(--chrome-header) center/100% 100% no-repeat;
+  font-family: var(--display); font-size: 15px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+/* Browse's filter rail is a Panel with As="aside" and Class="cx-rail". The class is the caller's
+   word but the <aside> it lands on is this component's element, so the rule lives here. */
+.cx-rail { position: sticky; top: 66px; max-height: calc(100vh - 82px); overflow-y: auto; }
+
+/* One column below the rail's width, and the results first: a filter panel a reader has to scroll
+   past to reach what they asked for is a filter panel in the way. The grid half of this rule is in
+   Browse.razor.scss, which owns .cx-browse. */
+@media (max-width: 1080px) {
+  .cx-rail { position: static; max-height: none; order: 2; }
+}
+
+/* The As="details" variant: a summary that opens and shuts rather than a head that only names. */
+.cx-raw-record > summary { cursor: pointer; list-style: none; }
+.cx-raw-record > summary::-webkit-details-marker { display: none; }
+.cx-raw-record > summary::after { content: "\002B"; margin-left: auto; color: var(--gold-deep); }
+.cx-raw-record[open] > summary::after { content: "\2212"; }
+.cx-raw-record[open] > summary { margin-bottom: 12px; }

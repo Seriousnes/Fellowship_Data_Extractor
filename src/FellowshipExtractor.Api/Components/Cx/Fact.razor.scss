@@ -1,0 +1,21 @@
+/* The row, both cells and the unit span are all this component's elements, so the shipped rules
+   drop their .cx-facts ancestor: a row outside a facts table is not a position this component can
+   be rendered in, so the bare selectors state nothing wider than the shipped ones did. */
+tr { border-bottom: 1px solid var(--line-soft); }
+
+th {
+  text-align: left; font-weight: 600; color: var(--muted); padding: 6px 12px 6px 0; width: 1%;
+  white-space: nowrap;
+}
+
+td {
+  padding: 6px 0;
+
+  /* A <code> in a fact cell arrives as the caller's child content and carries the caller's scope
+     attribute, so it is reached through ::deep. Written on the <td>, which narrows it from anywhere
+     in the table to the value cell; the <th> is drawn from a string, so no caller can put markup
+     in a header cell at all. */
+  ::deep code { font: 12px/1.5 var(--mono); color: var(--core-secondary-100); }
+}
+
+.cx-unit { color: var(--faint); }

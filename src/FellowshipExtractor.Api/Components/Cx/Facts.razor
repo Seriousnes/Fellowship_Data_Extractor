@@ -1,0 +1,12 @@
+<table class="cx-facts">
+    @ChildContent
+</table>
+
+@code {
+    /// <summary>
+    /// The rows, as bare table rows. The table carries no head or body section because that is what
+    /// the stylesheet selects and what both existing tables emit, and it renders empty rather than
+    /// not at all so the two-column pairs grid keeps its second column.
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
