@@ -25,7 +25,8 @@ builder.Services.AddSingleton(s => new RichTextRenderer(
 
 builder.Services.AddSingleton<ChromeAssets>();
 builder.Services.AddSingleton<Placeholders>();
-builder.Services.AddSingleton<TooltipRenderer>();
+builder.Services.AddSingleton<TooltipView>();
+builder.Services.AddSingleton<Fragments>();
 builder.Services.AddSingleton<Tooltips>();
 
 builder.Services.AddSingleton<Codex>();
@@ -196,7 +197,38 @@ public static class PublicRoutes
         statusCode: status);
 }
 
-public sealed class Tooltips(EntityStore store, TooltipRenderer renderer)
+/// <summary>
+/// A component rendered to a string, for the callers who ask for markup rather than for a page.
+///
+/// The same component the pages place, so a tooltip a caller fetches and a tooltip the entity page
+/// draws cannot come to disagree: there is one definition of what a tooltip is, and this is the
+/// path to it for readers who have no browser.
+/// </summary>
+public sealed class Fragments(IServiceScopeFactory scopes, ILoggerFactory loggers)
+{
+    public async Task<string> Render<T>(Dictionary<string, object?> parameters)
+        where T : Microsoft.AspNetCore.Components.IComponent
+    {
+        // A scope of its own, because the renderer resolves scoped services of the component model's
+        // and the root provider refuses to hand those out.
+        await using var scope = scopes.CreateAsyncScope();
+
+        await using var renderer = new Microsoft.AspNetCore.Components.Web.HtmlRenderer(
+            scope.ServiceProvider, loggers);
+
+        // The renderer has a dispatcher of its own and every render has to run on it, the same way a
+        // component's lifecycle does anywhere else.
+        return await renderer.Dispatcher.InvokeAsync(async () =>
+        {
+            var rendered = await renderer.RenderComponentAsync<T>(
+                Microsoft.AspNetCore.Components.ParameterView.FromDictionary(parameters));
+
+            return rendered.ToHtmlString();
+        });
+    }
+}
+
+public sealed class Tooltips(EntityStore store, Fragments fragments)
 {
     /// <summary>
     /// One tooltip, for the type a slug names and the id beside it.
@@ -206,7 +238,7 @@ public sealed class Tooltips(EntityStore store, TooltipRenderer renderer)
     /// lives in is an internal fact, so a caller who sends one is sending a type this app does not
     /// have and is answered the same as any other misspelling.
     /// </summary>
-    public IResult Get(string slug, int netId, IQueryCollection request)
+    public async Task<IResult> Get(string slug, int netId, IQueryCollection request)
     {
         if (PublicTypes.TableOf(slug) is not { } table)
         {
@@ -254,10 +286,20 @@ public sealed class Tooltips(EntityStore store, TooltipRenderer renderer)
         var noun = PublicTypes.Noun(table);
         var readings = store.All(table, netId);
 
+        if (outcome == Lookup.Found)
+        {
+            var fragment = await fragments.Render<FellowshipExtractor.Api.Components.Shared.Tooltip>(new()
+            {
+                ["Entity"] = entity!,
+                ["Query"] = query,
+                ["Hero"] = hero,
+            });
+
+            return Results.Content(fragment, "text/html; charset=utf-8");
+        }
+
         return outcome switch
         {
-            Lookup.Found => Results.Content(renderer.Render(entity!, query, hero), "text/html; charset=utf-8"),
-
             Lookup.NoSuchId => Results.Problem(
                 title: "No such id.",
                 detail: $"The build has no {noun} {netId}.",

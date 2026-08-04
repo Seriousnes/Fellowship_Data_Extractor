@@ -1,17 +1,25 @@
+using Azure.Storage.Blobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FellowshipExtractor.Api.Tests;
 
 /// <summary>
-/// A CodexView over the export the app itself reads, built once for the whole run. Chrome and the
-/// blob client are left null: they are reached only by CodexView.Icon and CodexView.Chrome, no
-/// section draws art, and constructing ChromeAssets measures the PNG corpus in the export's ui
-/// folder.
+/// A CodexView over the export the app itself reads, built once for the whole run. CodexView's
+/// chrome and blob client are left null: they are reached only by CodexView.Icon and
+/// CodexView.Chrome, and no section draws art.
+///
+/// TooltipView gets real ones, because a tooltip's palette, frame and stylesheet all come off the
+/// chrome. Neither needs a live container: ChromeAssets reads the export's own ui folder and asks
+/// the client only for its Uri, so a client pointed at an address nothing serves composes the same
+/// URLs without a request.
 /// </summary>
 public sealed class Export
 {
     public CodexView View { get; }
+
+    /// <summary>The view behind the Tooltip component, over the same export.</summary>
+    public TooltipView Tooltip { get; }
 
     public EntityStore Store { get; }
 
@@ -30,8 +38,15 @@ public sealed class Export
         var tokens = new DesignTokens(Store.Vocabulary);
         var richText = new RichTextRenderer(Store.Vocabulary.TextStyles);
 
+        var substitutions = new Placeholders(Store, richText);
+
         View = new CodexView(Store, new Codex(Store, tokens), tokens, chrome: null!, richText,
-            new Placeholders(Store, richText), icons: null!);
+            substitutions, icons: null!);
+
+        var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
+
+        Tooltip = new TooltipView(
+            Store, tokens, richText, substitutions, new ChromeAssets(icons, paths, Store, tokens), icons);
     }
 
     /// <summary>

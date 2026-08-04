@@ -1,9 +1,14 @@
-/* The page's own grid. The two rules that reach through it are elsewhere, each with the component
-   that renders the element it styles: .cx-entity-tip with Stage, and .cx-entity-side .cx-panel +
-   .cx-panel with Panel. Both match this grid on its class alone, so neither needs an attribute. */
+/* The page's own grid. The one rule that reaches through it from elsewhere is
+   .cx-entity-side .cx-panel + .cx-panel, which is Panel's; it matches this grid on its class alone
+   and needs no attribute here. */
 .cx-entity { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 
 .cx-entity-top { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+
+/* The box the tooltip is drawn in. It was the Stage section's until the page began drawing the
+   tooltip itself; this page renders the div now, so the rule follows it here. The Tooltip inside
+   carries its own stylesheet and owns no scoped sheet at all, so nothing in this file reaches it. */
+.cx-entity-tip { flex: 0 0 auto; min-width: 340px; }
 
 .cx-entity-side {
   flex: 1 1 420px; min-width: 0;

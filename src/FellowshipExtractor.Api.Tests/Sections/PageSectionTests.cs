@@ -1,46 +1,5 @@
 namespace FellowshipExtractor.Api.Tests;
 
-/// <summary>
-/// The four page sections that need no service: the tooltip stage, the address panel, the versions
-/// list and the related list. Only Versions injects, so it takes the corpus.
-/// </summary>
-public class StageTests : BunitContext
-{
-    /// <summary>
-    /// codex.js finds this element with querySelector('[data-stage]'), splits the value on ? into
-    /// an address and a carried query, and attaches a shadow root to it. The attribute is plain
-    /// HTML and is emitted verbatim, query and all.
-    /// </summary>
-    [Fact]
-    public void Stages_the_address_verbatim_including_a_carried_hero()
-    {
-        var here = new Bearings { Address = "/api/tooltip/items/5208?hero=Aeona" };
-
-        var cut = Render<Stage>(p => p.AddCascadingValue(here));
-
-        var box = cut.Find("[data-stage]");
-
-        Assert.Equal("/api/tooltip/items/5208?hero=Aeona", box.GetAttribute("data-stage"));
-        Assert.Equal("polite", box.GetAttribute("aria-live"));
-        Assert.Equal("<p class=\"cx-empty\">Loading...</p>", box.InnerHtml.Bare());
-    }
-
-    /// <summary>
-    /// The staged element is a sibling of the sized one, because a shadow root replaces the staged
-    /// element's own markup once the first answer lands.
-    /// </summary>
-    [Fact]
-    public void Sizes_an_outer_element_and_stages_an_inner_one()
-    {
-        var cut = Render<Stage>(p => p.AddCascadingValue(new Bearings()));
-
-        var outer = cut.Find("div.cx-entity-tip");
-
-        Assert.False(outer.HasAttribute("data-stage"));
-        Assert.True(outer.FirstElementChild!.HasAttribute("data-stage"));
-    }
-}
-
 public class IdentityTests : BunitContext
 {
     [Fact]

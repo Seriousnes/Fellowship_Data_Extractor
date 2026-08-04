@@ -14,7 +14,13 @@
     <CascadingValue Value="Here">
         <div class="cx-entity">
             <div class="cx-entity-top">
-                <Stage />
+                @* The tooltip is drawn here rather than fetched: the page already knows the reading
+                   and the knobs it is read at, so the first paint needs no request at all. The
+                   attribute stays because a knob a reader turns is answered by the API, which
+                   renders this same component, and the client replaces this element's contents. *@
+                <div class="cx-entity-tip" data-stage="@Address" aria-live="polite">
+                    <Tooltip Entity="Shown" Query="Asking" Hero="Wearer" />
+                </div>
 
                 <div class="cx-entity-side">
                     <Knobs />
@@ -89,6 +95,16 @@
     }
 
     private bool PicksHero => Readings.Count > 1 || Shown.Heroes is { Count: > 1 };
+
+    /// <summary>
+    /// What the tooltip above is read at before a reader has turned anything. Only the hero, which
+    /// the address carries and the server resolves; every other knob starts at its own default and
+    /// the tooltip works those out for itself, so the first paint needs no request.
+    /// </summary>
+    private TooltipQuery Asking => new() { Hero = Drawn };
+
+    /// <summary>The hero on the stage as the roster knows them, for the numbers the text substitutes.</summary>
+    private HeroEntry? Wearer => Drawn is null ? null : Store.Hero(Drawn);
 
     /// <summary>
     /// The hero whose reading is on the stage, or null when the tooltip above is nobody's in
