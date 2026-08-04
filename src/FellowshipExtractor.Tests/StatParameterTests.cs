@@ -19,19 +19,30 @@ public sealed class StatParameterTests
     private static StatParameters Parameters() =>
         new(["Haste", "Strength", "CritChance"], Export.Loaded.Vocabulary.StatCalculation.Attributes);
 
+    /// <summary>
+    /// The pairs as a query string carries them: a key repeated in the URL is one key holding
+    /// several values, which is how a caller writes an item with two slots of one stat.
+    /// </summary>
     private static TooltipQuery Parse(out string? error, params (string Key, string Value)[] pairs) =>
         TooltipQuery.Parse(
-            new QueryCollection(pairs.ToDictionary(pair => pair.Key, pair => new StringValues(pair.Value))),
+            new QueryCollection(pairs
+                .GroupBy(pair => pair.Key, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => new StringValues(group.Select(p => p.Value).ToArray()))),
             Parameters(),
             out error);
 
-    /// <summary>50 haste rating is the 8% the conversion makes it, read back as the build's own fraction.</summary>
+    /// <summary>
+    /// A slot keeps the number the caller wrote. 50 haste rating stays 50, because that is what the
+    /// item's line prints, and the 8% it is worth is a second reading of the same parameter rather
+    /// than a replacement for it.
+    /// </summary>
     [Fact]
-    public void ARatingArrivesConverted()
+    public void ASlotKeepsTheNumberTheCallerWrote()
     {
         var query = Parse(out var error, ("haste", "50"));
 
         Assert.Null(error);
+        Assert.Equal([50m], query.Stats["Haste"]);
         Assert.Equal(0.08m, query.Haste);
     }
 
@@ -43,6 +54,19 @@ public sealed class StatParameterTests
 
         Assert.Null(error);
         Assert.Equal(0.08m, query.Haste);
+    }
+
+    /// <summary>
+    /// And states the wearer rather than the item, so it claims no slot. An item asked about with it
+    /// computes its own lines from its level, which is what it does for a caller who named no stat.
+    /// </summary>
+    [Fact]
+    public void ThePercentageFormClaimsNoSlot()
+    {
+        var query = Parse(out var error, ("hastePercentage", "8"));
+
+        Assert.Null(error);
+        Assert.False(query.Stats.ContainsKey("Haste"));
     }
 
     /// <summary>
@@ -59,7 +83,7 @@ public sealed class StatParameterTests
         var query = Parse(out var error, (key, value));
 
         Assert.Null(error);
-        Assert.Equal(0.08m, query.Total("CritChance"));
+        Assert.Equal(0.08m, query.Attribute("CritChance"));
     }
 
     /// <summary>Both spellings of one stat land under the stat, so a reader asking its total gets both.</summary>
@@ -70,6 +94,21 @@ public sealed class StatParameterTests
 
         Assert.Null(error);
         Assert.Equal(0.16m, query.Haste);
+    }
+
+    /// <summary>
+    /// Two slots of one rating are one ladder, not two. 50 and 50 is 100 rating, worth 15.86% rather
+    /// than the 16% converting each slot on its own would give, because the diminishing returns are
+    /// taken once against everything the character holds.
+    /// </summary>
+    [Fact]
+    public void TheLadderIsClimbedOnceForTheWholeStat()
+    {
+        var query = Parse(out var error, ("haste", "50"), ("haste", "50"));
+
+        Assert.Null(error);
+        Assert.Equal([50m, 50m], query.Stats["Haste"]);
+        Assert.Equal(0.1586m, query.Haste);
     }
 
     /// <summary>A stat that is not a rating is the number it says, which is what keeps coefficients still.</summary>

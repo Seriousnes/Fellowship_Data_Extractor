@@ -63,7 +63,12 @@ public sealed record TooltipQuery
 
     /// <summary>
     /// The caller's stat values, one entry per stat name and one value per slot the caller holds
-    /// of it, in the order they sent them.
+    /// of it, in the order they sent them, each the number the caller wrote.
+    ///
+    /// Kept in the caller's own scale, because these are slots: spirit=17 is a slot that rolled 17
+    /// and an item's line prints +17, which is what the game prints on the gear. The attribute the
+    /// 17 feeds is a different quantity and lives in <see cref="Attributes"/>, so neither reader
+    /// has to undo the other's arithmetic.
     ///
     /// Keyed by the build's spelling rather than the caller's, because an item's slots, a token's
     /// attribute and the magnitude arithmetic are all keyed that way. The translation happens once,
@@ -72,24 +77,43 @@ public sealed record TooltipQuery
     public IReadOnlyDictionary<string, IReadOnlyList<decimal>> Stats { get; init; } =
         new Dictionary<string, IReadOnlyList<decimal>>(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// What the caller holds of each stat as the attribute it feeds, which for a rating is not the
+    /// number they wrote: 50 haste rating is 8%, and lands here as 0.08.
+    ///
+    /// Both spellings arrive here, so a reader asking what the wearer holds does not have to know
+    /// which one the caller used. haste=50 converts on the way in and hastePercentage=8 is taken as
+    /// already converted, and the two say the same thing.
+    ///
+    /// One total per stat rather than a value per slot, because the diminishing returns are the
+    /// character's and not the slot's: two 50-rating slots are 100 rating through one ladder, worth
+    /// 15.86% rather than the 16% two separate conversions would give.
+    /// </summary>
+    public IReadOnlyDictionary<string, decimal> Attributes { get; init; } =
+        new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+
     public IReadOnlyList<GemPower> GemPowers { get; init; } = [];
 
     /// <summary>A stat's total across its slots, which is what a coefficient multiplies.</summary>
     public decimal? Total(string stat) =>
         Stats.TryGetValue(stat, out var values) ? values.Sum() : null;
 
+    /// <summary>What one stat is worth as the attribute it feeds, where the caller named it at all.</summary>
+    public decimal? Attribute(string stat) =>
+        Attributes.TryGetValue(stat, out var value) ? value : null;
+
     /// <summary>
     /// The wearer's haste as a fraction, where 0.3 is the +30% an ability advertises, matching the
     /// build's own constants: Hero.Spirit.Buff.HasteIncrease is 0.3.
     ///
-    /// The caller sends the rating and it arrives converted. haste=50 is 50 haste rating, which
-    /// DT_AttributeProperties turns into 8% and this reads back as 0.08; hastePercentage=8 says the
-    /// same thing for a caller reading the number off their own character sheet.
+    /// Read as the attribute rather than as the slots, because this is a fact about the wearer:
+    /// haste=50 is 50 haste rating, which DT_AttributeProperties turns into 8%, and hastePercentage=8
+    /// says the same thing for a caller reading the number off their own character sheet.
     ///
     /// Named here rather than spelled at each reader, because two of them ask and a stat this one
     /// is spelled wrong in would silently read as no haste at all.
     /// </summary>
-    public decimal? Haste => Total("Haste");
+    public decimal? Haste => Attribute("Haste");
 
     /// <summary>The names this type reads itself, so every other key is a stat or a mistake.</summary>
     private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
@@ -124,6 +148,7 @@ public sealed record TooltipQuery
         error = null;
 
         var stats = new Dictionary<string, IReadOnlyList<decimal>>(StringComparer.OrdinalIgnoreCase);
+        var attributes = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
         var gems = new List<GemPower>();
 
         // A query string is matched case sensitively by IQueryCollection and case insensitively by
@@ -188,16 +213,26 @@ public sealed record TooltipQuery
                         return result;
                     }
 
-                    values.Add(percentage
-                        ? StatConversion.FromPercentage(number, attribute)
-                        : StatConversion.FromRating(number, attribute));
+                    values.Add(number);
                 }
 
-                // Both spellings of one stat land under the stat's own name, so a reader asking for
-                // its total does not have to know which the caller wrote.
-                stats[stat] = stats.TryGetValue(stat, out var already)
-                    ? [.. already, .. values]
-                    : values;
+                // The plain form is a slot, so it is kept as the caller wrote it and the item's
+                // line prints that number. The percentage form is not a slot at all: it states what
+                // the wearer's character sheet reads, so it says nothing about what this item
+                // rolled and leaves the item's own slots to be computed.
+                if (!percentage)
+                {
+                    stats[stat] = stats.TryGetValue(stat, out var already)
+                        ? [.. already, .. values]
+                        : values;
+                }
+
+                // What the whole of it is worth as the attribute it feeds. Converted from the total
+                // rather than slot by slot, because a rating's diminishing returns are taken once
+                // against everything the character holds.
+                attributes[stat] = attributes.GetValueOrDefault(stat) + (percentage
+                    ? StatConversion.FromPercentage(values.Sum(), attribute)
+                    : StatConversion.FromRating(values.Sum(), attribute));
                 continue;
             }
 
@@ -262,6 +297,7 @@ public sealed record TooltipQuery
                 ? decimal.Parse(p, NumberStyles.Number, CultureInfo.InvariantCulture)
                 : null,
             Stats = stats,
+            Attributes = attributes,
             GemPowers = gems,
         };
     }
