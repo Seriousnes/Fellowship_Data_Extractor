@@ -1,0 +1,11 @@
+/* The token card and its three lines are this section's own elements. The stylesheet this refactor
+   starts from keeps them global on the grounds that no component draws them; this one does, so
+   they follow it here.
+
+   The bare .cx-miss on the unresolved reading stays global: KeyValue writes the class too, and a
+   class with two owners cannot be scoped to one of them. */
+.cx-token { border-bottom: 1px solid var(--line-soft); padding: 8px 0; }
+.cx-token:last-child { border-bottom: 0; }
+.cx-token-name { font-family: var(--mono); color: var(--gold-bright); font-size: 12.5px; }
+.cx-token-read { color: var(--ink); font-weight: 600; }
+.cx-token-work { color: var(--faint); font-size: 12px; }

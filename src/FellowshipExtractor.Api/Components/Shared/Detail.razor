@@ -1,357 +1,27 @@
 @inject CodexView Ui
 
-@if (Entity.Description is not null || Entity.Detail is { Count: > 0 })
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Text</div>
-        @if (Entity.Description is not null)
-        {
-            <p class="cx-prose">@Ui.Text(Entity.Description, Entity.Placeholders, Entity.Tags)</p>
-        }
-        @foreach (var line in Entity.Detail ?? [])
-        {
-            <hr class="cx-rule" />
-            <p class="cx-prose">@Ui.Text(line, Entity.Placeholders, Entity.Tags)</p>
-        }
-    </div>
-}
-
-@if (Facts.Count > 0 || Schools.Count > 0 || Entity.Heroes is { Count: > 0 } ||
-     Entity.SetBonus is { Count: > 0 } || Scaling.Count > 0 ||
-     Entity.AllowedRoles is { Count: > 0 } || Entity.AllowedAttributes is { Count: > 0 })
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Details</div>
-
-        @if (Facts.Count > 0)
-        {
-            <div class="cx-pairs">
-                @for (var half = 0; half < 2; half++)
-                {
-                    var split = (Facts.Count + 1) / 2;
-                    var slice = half == 0 ? Facts.Take(split) : Facts.Skip(split);
-
-                    <table class="cx-facts">
-                        @foreach (var fact in slice)
-                        {
-                            <tr>
-                                <th>@fact.Label</th>
-                                <td>
-                                    @if (fact.Href is null)
-                                    {
-                                        @fact.Value
-                                    }
-                                    else
-                                    {
-                                        <a href="@fact.Href" data-tip="@fact.Tip">@fact.Value</a>
-                                    }
-                                    <span class="cx-unit">@fact.Unit</span>
-                                </td>
-                            </tr>
-                        }
-                    </table>
-                }
-            </div>
-        }
-
-        @if (Schools.Count > 0)
-        {
-            <hr class="cx-rule" />
-            <p class="cx-sub-head">@(Schools.Count == 1 ? "School" : "Schools")</p>
-            <ul class="cx-pills">
-                @foreach (var school in Schools)
-                {
-                    <li><a href="@Filter(school)">@school</a></li>
-                }
-            </ul>
-        }
-
-        @if (Entity.Heroes is { Count: > 0 } heroes)
-        {
-            <hr class="cx-rule" />
-            <p class="cx-sub-head">Heroes</p>
-            <ul class="cx-pills">
-                @foreach (var hero in heroes)
-                {
-                    var tone = Ui.HeroColour(hero);
-                    <li>
-                        <a href="/browse?hero=@Uri.EscapeDataString(hero)"
-                           style="@(tone is null ? null : $"color:{tone}")">@hero</a>
-                    </li>
-                }
-            </ul>
-        }
-
-        @if (Entity.SetBonus is { Count: > 0 } sets)
-        {
-            <hr class="cx-rule" />
-            <p class="cx-sub-head">Set@(Entity.SetCount is { } pieces ? $" ({pieces} pieces)" : "")</p>
-            <ul class="cx-pills">
-                @foreach (var set in sets)
-                {
-                    <li><a href="/browse?set=@Uri.EscapeDataString(set)">@set</a></li>
-                }
-            </ul>
-        }
-
-        @if (Scaling.Count > 0)
-        {
-            <hr class="cx-rule" />
-            <p class="cx-sub-head">Scales off</p>
-            <ul class="cx-pills">
-                @foreach (var stat in Scaling)
-                {
-                    <li><span>@stat</span></li>
-                }
-            </ul>
-        }
-
-        @if (Entity.AllowedRoles is { Count: > 0 } roles)
-        {
-            <hr class="cx-rule" />
-            <p class="cx-sub-head">Offered to</p>
-            <ul class="cx-pills">
-                @foreach (var role in roles)
-                {
-                    <li><span style="color:@(Ui.Tokens.Role(role) ?? "inherit")">@role</span></li>
-                }
-                @foreach (var stat in Entity.AllowedAttributes ?? [])
-                {
-                    <li><span>@Ui.Store.StatName(stat)</span></li>
-                }
-            </ul>
-        }
-    </div>
-}
-
-@if (Slots.Count > 0)
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Stat slots <span class="cx-num">@Slots.Count</span></div>
-        <p class="cx-note">
-            A slot's weight is its share of the item's stat budget. The magnitude is not in the build:
-            a dynamic item rolls it from its level and rarity when it drops, which is what the tooltip
-            above computes.
-        </p>
-        <ul class="cx-stat-lines">
-            @foreach (var slot in Slots)
-            {
-                <li class="@(Major(slot) ? "cx-primary" : "cx-secondary")">
-                    <span>@Ui.Store.StatName(slot.Stat)</span>
-                    <span class="cx-w">@slot.Kind &middot; weight @slot.Weight</span>
-                </li>
-            }
-        </ul>
-    </div>
-}
-
-@if (Tokens.Count > 0)
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Substitutions <span class="cx-num">@Tokens.Count</span></div>
-        <p class="cx-note">
-            Where each number in the text above comes from, in the order the text spends them. A
-            coefficient is multiplied by the attribute it names; a band is the width the roll lands
-            in, so the printed range is the mean less and plus half of it.
-        </p>
-        @foreach (var token in Tokens)
-        {
-            <div class="cx-token">
-                <span class="cx-token-name">#@token.Ordinal</span>
-                <div class="cx-token-read">
-                    @if (token.Resolved)
-                    {
-                        @token.Reading
-                    }
-                    else
-                    {
-                        <span class="cx-miss">@token.Reading</span>
-                    }
-                </div>
-                @if (token.Working.Length > 0)
-                {
-                    <div class="cx-token-work">@token.Working</div>
-                }
-                @if (token.Tuning.Count > 0)
-                {
-                    <ul class="cx-kv">
-                        @foreach (var row in token.Tuning)
-                        {
-                            <li>
-                                <span class="cx-k">@row.Label</span>
-                                <span class="cx-v @(row.Absent ? "cx-miss" : null)">@row.Value</span>
-                            </li>
-                        }
-                    </ul>
-                }
-            </div>
-        }
-    </div>
-}
-
-@if (Tuning.Count > 0)
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Tuning <span class="cx-num">@Tuning.Count</span></div>
-        <p class="cx-note">
-            Every shipped tuning number this entry reaches that no field above already states, under
-            the words it tunes. The asset a number belongs to is not part of what it tunes and is
-            left off; the hero one is written for is, and is named. A stat a row names is printed the
-            way the game prints it.
-        </p>
-        <ul class="cx-kv">
-            @foreach (var row in Tuning)
-            {
-                <li>
-                    <span class="cx-k">@row.Label</span>
-                    <span class="cx-v @(row.Absent ? "cx-miss" : null)">@row.Value</span>
-                </li>
-            }
-        </ul>
-    </div>
-}
-
-@if (Entity.Talents is { Count: > 0 } talents)
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Tuning by talent <span class="cx-num">@talents.Count</span></div>
-        <p class="cx-note">
-            Tuning numbers whose rows are named after a talent, under that name. The name is all this
-            says: a row named for a talent is very often unconditional, because a talent folded into
-            its ability leaves its name behind in the row. Where the asset states a condition the
-            group is marked as one.
-        </p>
-        @foreach (var (talent, rows) in talents.OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
-        {
-            <hr class="cx-rule" />
-            <p class="cx-sub-head">
-                @Ui.TuningName(talent)
-                @if (Entity.TalentGates?.ContainsKey(talent) == true)
-                {
-                    <span class="cx-num">conditional</span>
-                }
-            </p>
-            <ul class="cx-kv">
-                @foreach (var row in Ui.Tuning(rows))
-                {
-                    <li>
-                        <span class="cx-k">@row.Label</span>
-                        <span class="cx-v @(row.Absent ? "cx-miss" : null)">@row.Value</span>
-                    </li>
-                }
-            </ul>
-        }
-    </div>
-}
-
-@if (Entity.RankRuns is { Count: > 0 } runs)
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Rank progression <span class="cx-num">@runs.Count</span></div>
-        <p class="cx-note">
-            The slash-separated numbers the description prints, one entry per run of them, matched to
-            the curve behind it. The printed row is what the game shows; the values are what it
-            computes with.
-        </p>
-        @foreach (var run in runs)
-        {
-            <hr class="cx-rule" />
-            <ul class="cx-kv">
-                <li>
-                    <span class="cx-k">Printed</span>
-                    <span class="cx-v cx-prose">
-                        @for (var rank = 0; rank < run.Printed.Count; rank++)
-                        {
-                            @if (rank > 0)
-                            {
-                                <span> / </span>
-                            }
-                            @Ui.Text(run.Printed[rank], null, Entity.Tags)
-                        }
-                    </span>
-                </li>
-                @if (run.Values is { Count: > 0 })
-                {
-                    <li>
-                        <span class="cx-k">Shipped values</span>
-                        <span class="cx-v">@string.Join(" / ", run.Values.Select(v => v is null ? "-" : Codex.Number(v.Value)))</span>
-                    </li>
-                }
-                @if (run.Transform is not null)
-                {
-                    <li>
-                        <span class="cx-k">Arithmetic</span>
-                        <span class="cx-v">@run.Transform@(run.Ticks is { } ticks ? $" over {ticks} ticks" : "")</span>
-                    </li>
-                }
-                @if (run.Disagrees == true)
-                {
-                    <li><span class="cx-k">Note</span><span class="cx-v cx-miss">printed and computed values disagree</span></li>
-                }
-            </ul>
-        }
-    </div>
-}
-
-@if (Entity.GemOverflow is { } overflow)
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Past max power</div>
-        <p class="cx-prose">@Ui.Text(overflow.Description, overflow.Placeholders, Entity.Tags)</p>
-    </div>
-}
-
-@if (Entity.NameInheritedFrom is { } naming && Ui.Addresses(naming.Table, naming.NetId) is { } namer)
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Borrowed name</div>
-        <p class="cx-note">
-            This record ships no name of its own. The heading above belongs to
-            <a href="@namer.Href" data-tip="@namer.Tip">@Ui.Name(naming.Table, naming.NetId)</a>,
-            which is the entry that applies this one: a player reads a debuff as the ability that
-            landed it, so the word is that ability's rather than this record's.
-        </p>
-    </div>
-}
-
-@if (Entity.IconInheritedFrom is { } source && Ui.Addresses(source.Table, source.NetId) is { } lender)
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Borrowed art</div>
-        <p class="cx-note">
-            This record ships no art of its own. The image above belongs to
-            <a href="@lender.Href" data-tip="@lender.Tip">@Ui.Name(source.Table, source.NetId)</a>,
-            which is where it was taken from.
-        </p>
-    </div>
-}
-
-@if (Entity.Grants is { } grants)
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">
-            Grants an ability
-            @if (PublicTypes.DisplayNameOf(grants) is { } named)
-            {
-                <span class="cx-num">@named</span>
-            }
-        </div>
-        <Detail Entity="grants" />
-    </div>
-}
-
-@if (Entity.LegendaryStats is { Count: > 0 } legendaries)
-{
-    <div class="cx-panel">
-        <div class="cx-panel-head">Legendary stats <span class="cx-num">@legendaries.Count</span></div>
-        @foreach (var roll in legendaries)
-        {
-            <hr class="cx-rule" />
-            <p class="cx-sub-head">@Ui.Name(roll)</p>
-            <Detail Entity="roll" />
-        }
-    </div>
-}
+@* The cascade is re-supplied here rather than once on the page, because Detail renders itself
+   again for Entity.Grants and once per legendary roll. A single cascade declared on the page would
+   flow past the nested Detail unchanged, and every section below it would draw the outer record
+   while its guard was evaluated on the inner one - including the Grants guard, which would then
+   recurse until the renderer stopped it. IsFixed is deliberately off: with it on, a Detail
+   re-rendered with a different entity keeps drawing the first. CascadingValue emits no element, so
+   the twelve panels stay siblings at the component root and .cx-panel + .cx-panel still spaces
+   them. *@
+<CascadingValue Value="Entity">
+    <Wording />
+    <Particulars Facts="Facts" Schools="Schools" Scaling="Scaling" />
+    <StatSlots />
+    <Substitutions Tokens="Tokens" />
+    <Tuning Rows="Rows" />
+    <TalentTuning />
+    <Ranks />
+    <Overflow />
+    <BorrowedName Href="@(Namer?.Href)" Tip="@(Namer?.Tip)" Name="@(Namer?.Name)" />
+    <BorrowedArt Href="@(Lender?.Href)" Tip="@(Lender?.Tip)" Name="@(Lender?.Name)" />
+    <Grants />
+    <Legendaries />
+</CascadingValue>
 
 @code {
     [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
@@ -359,10 +29,11 @@
     private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts = [];
 
     /// <summary>
-    /// The damage schools this entry is, which is the one part of an ability's tag list a player
-    /// meets. The rest of the list is the build's own classification and is drawn nowhere.
+    /// The damage schools this entry is, each with the filter it links into. The schools are the one
+    /// part of an ability's tag list a player meets; the rest of the list is the build's own
+    /// classification and is drawn nowhere.
     /// </summary>
-    private IReadOnlyList<string> Schools = [];
+    private IReadOnlyList<(string Label, string Href)> Schools = [];
 
     /// <summary>
     /// The attributes this entry's numbers grow with, under the words the game prints for them.
@@ -371,36 +42,35 @@
     /// 15, so two pills in three carry a tuning knob rather than a stat anybody wears and Damage
     /// Scale stands beside Critical Strike. They are drawn rather than held back because a
     /// coefficient and the knob it turns are what a reader opens a catalogue for; what has to stay
-    /// hidden is the run-together spelling, and <c>EntityStore.StatName</c> is what takes that off,
-    /// so a pill reads Damage Scale and never DamageScale.
+    /// hidden is the run-together spelling, which the catalogue's own reading takes off.
     /// </summary>
     private IReadOnlyList<string> Scaling = [];
 
     /// <summary>
-    /// The item's stat slots, every one of them.
-    ///
-    /// Nothing is held back for the shipped table naming no word for a stat, because a hidden slot
-    /// understates the item's stat budget and the budget is the whole of what the panel says. The
-    /// 8 stats a slot holds in the export are all named outright - Agility, Critical Strike,
-    /// Expertise, Haste, Intellect, Spirit, Stamina and Strength - so a ninth the build added would
-    /// print its key spaced out rather than leave the item a slot short.
-    /// </summary>
-    private IReadOnlyList<StatSlot> Slots = [];
-
-    /// <summary>
     /// The shipped tuning numbers this entry reaches, under the words each one tunes. 3,239 rows of
     /// the export carry them and they were reachable nowhere in the browser: they are the whole of
-    /// what a coefficient, a radius or a tick period is set to, and the panel is what a reader came
-    /// to a catalogue for.
+    /// what a coefficient, a radius or a tick period is set to.
     /// </summary>
-    private IReadOnlyList<TuningRow> Tuning = [];
+    private IReadOnlyList<TuningRow> Rows = [];
 
     /// <summary>
     /// The substitutions the text above spends, numbered in the order it spends them. 207 rows carry
     /// them; the count is small because a token is a number a sentence works out rather than a
-    /// number a row states, and a row with none has nothing here to explain.
+    /// number a row states, and a row with none has nothing to explain.
     /// </summary>
     private IReadOnlyList<TokenReading> Tokens = [];
+
+    /// <summary>
+    /// The row this entry's name belongs to, resolved here because a section is given a record and
+    /// never an address. Null when the record ships its own name, and null when the naming row is
+    /// filed under a table no reader can open.
+    /// </summary>
+    private (string Href, string? Tip, string Name)? Namer;
+
+    /// <summary>
+    /// The row this entry's art belongs to, on the same terms as <see cref="Namer"/>.
+    /// </summary>
+    private (string Href, string? Tip, string Name)? Lender;
 
     private const string SchoolFacet = "school";
 
@@ -408,15 +78,29 @@
     {
         Facts = Ui.Facts(Entity);
         Scaling = [.. Ui.Codex.Scaling(Entity.ScalesOff)];
-        Slots = Entity.Stats ?? [];
-        Tuning = Ui.Tuning(Entity.Constants);
+        Rows = Ui.Tuning(Entity.Constants);
         Tokens = Ui.Substitutions(Entity);
 
         // Read through the school facet's own selector rather than repeating the rule for what a
         // school is, because these pills link into that facet: a second copy could offer a value
         // the filter behind the link does not recognise.
-        Schools = [.. Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? []];
+        IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
+
+        Schools = [.. schools.Select(school => (school, Filter(school)))];
+
+        Namer = Borrowed(Entity.NameInheritedFrom);
+        Lender = Borrowed(Entity.IconInheritedFrom);
     }
+
+    /// <summary>
+    /// A lending row's address, tip and name, and null where the row is filed under a table no
+    /// reader can open, which is what makes the borrowed-name and borrowed-art panels disappear
+    /// rather than link nowhere.
+    /// </summary>
+    private (string Href, string? Tip, string Name)? Borrowed(IconSource? source) =>
+        source is not null && Ui.Addresses(source.Table, source.NetId) is { } found
+            ? (found.Href, found.Tip, Ui.Name(source.Table, source.NetId))
+            : null;
 
     /// <summary>
     /// A school pill's destination. A nested row - a granted ability, a legendary stat line -
@@ -426,12 +110,4 @@
     private string Filter(string school) =>
         (PublicTypes.SlugOf(Entity.Table) is { } slug ? $"/browse?type={slug}&" : "/browse?") +
         $"{SchoolFacet}={Uri.EscapeDataString(school)}";
-
-    /// <summary>
-    /// Whether a slot draws on the primary pool, which is what the game draws its line in the
-    /// heavier colour for. The wearer's own attributes are the ones the roster names, so the split
-    /// comes from the export beside stamina, which draws on that pool without being anyone's.
-    /// </summary>
-    private bool Major(StatSlot slot) =>
-        Ui.Store.PrimaryAttributes.Contains(slot.Stat) || slot.Stat == "Stamina";
 }

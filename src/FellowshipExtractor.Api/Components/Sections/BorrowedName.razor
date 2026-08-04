@@ -1,0 +1,26 @@
+@if (Href is not null)
+{
+    <Panel Head="Borrowed name">
+        <Note>
+            This record ships no name of its own. The heading above belongs to
+            <a href="@Href" data-tip="@Tip">@Name</a>,
+            which is the entry that applies this one: a player reads a debuff as the ability that
+            landed it, so the word is that ability's rather than this record's.
+        </Note>
+    </Panel>
+}
+
+@code {
+    /// <summary>
+    /// The naming row's page. Null renders nothing at all, for the reason BorrowedArt gives: the
+    /// guard is a link-availability test, and Detail resolves the address because a section is
+    /// given a record and never an address.
+    /// </summary>
+    [Parameter] public string? Href { get; set; }
+
+    /// <summary>The naming row's tooltip address, for the hover card.</summary>
+    [Parameter] public string? Tip { get; set; }
+
+    /// <summary>What the naming row is called.</summary>
+    [Parameter] public string? Name { get; set; }
+}

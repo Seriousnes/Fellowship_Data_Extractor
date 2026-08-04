@@ -1,0 +1,50 @@
+@inject CodexView Ui
+
+@if (Entity.RankRuns is { Count: > 0 } runs)
+{
+    var badge = runs.Count.ToString();
+    <Panel Head="Rank progression" Badge="@badge">
+        <Note>
+            The slash-separated numbers the description prints, one entry per run of them, matched to
+            the curve behind it. The printed row is what the game shows; the values are what it
+            computes with.
+        </Note>
+        @foreach (var run in runs)
+        {
+            <Rule />
+            <KeyValues>
+                @* <span> / </span> is a literal text node carrying a non-whitespace character, so
+                   the spaces around the slash survive and are the rendered separator. Every other
+                   text node in this loop is whitespace containing a newline, which the compiler
+                   removes, so the source indentation never reaches a pre-line context. *@
+                <KeyValue Key="Printed" Class="cx-prose">
+                    @for (var rank = 0; rank < run.Printed.Count; rank++)
+                    {
+                        @if (rank > 0)
+                        {
+                            <span> / </span>
+                        }
+                        @Ui.Text(run.Printed[rank], null, Entity.Tags)
+                    }
+                </KeyValue>
+                @if (run.Values is { Count: > 0 })
+                {
+                    <KeyValue Key="Shipped values">@string.Join(" / ", run.Values.Select(v => v is null ? "-" : Codex.Number(v.Value)))</KeyValue>
+                }
+                @if (run.Transform is not null)
+                {
+                    <KeyValue Key="Arithmetic">@run.Transform@(run.Ticks is { } ticks ? $" over {ticks} ticks" : "")</KeyValue>
+                }
+                @if (run.Disagrees == true)
+                {
+                    <KeyValue Key="Note" Missing="true">printed and computed values disagree</KeyValue>
+                }
+            </KeyValues>
+        }
+    </Panel>
+}
+
+@code {
+    /// <summary>The record this panel draws, re-supplied by every Detail.</summary>
+    [CascadingParameter] private Entity Entity { get; set; } = new();
+}

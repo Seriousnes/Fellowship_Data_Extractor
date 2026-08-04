@@ -1,0 +1,26 @@
+@if (Href is not null)
+{
+    <Panel Head="Borrowed art">
+        <Note>
+            This record ships no art of its own. The image above belongs to
+            <a href="@Href" data-tip="@Tip">@Name</a>,
+            which is where it was taken from.
+        </Note>
+    </Panel>
+}
+
+@code {
+    /// <summary>
+    /// The lending row's page. Null renders nothing at all: the guard is a link-availability test,
+    /// so the panel disappears when the lender's table is not public and no address is ever built
+    /// out of a shipped table name. Detail resolves it, because a section is given a record and
+    /// never an address.
+    /// </summary>
+    [Parameter] public string? Href { get; set; }
+
+    /// <summary>The lending row's tooltip address, for the hover card.</summary>
+    [Parameter] public string? Tip { get; set; }
+
+    /// <summary>What the lending row is called.</summary>
+    [Parameter] public string? Name { get; set; }
+}

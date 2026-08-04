@@ -1,0 +1,13 @@
+@inject CodexView Ui
+
+@if (Entity.GemOverflow is { } overflow)
+{
+    <Panel Head="Past max power">
+        <Prose>@Ui.Text(overflow.Description, overflow.Placeholders, Entity.Tags)</Prose>
+    </Panel>
+}
+
+@code {
+    /// <summary>The record this panel draws, re-supplied by every Detail.</summary>
+    [CascadingParameter] private Entity Entity { get; set; } = new();
+}

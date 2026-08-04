@@ -10,8 +10,14 @@ namespace FellowshipExtractor.Api.Tests;
 /// </summary>
 internal static partial class Scoped
 {
-    /// <summary>b- and ten base-36 characters, valueless, followed by a space or the tag's end.</summary>
-    [GeneratedRegex(@"\sb-[a-z0-9]{10}(?=[\s>])")]
+    /// <summary>
+    /// b- and ten base-36 characters, followed by a space or the tag's end.
+    ///
+    /// The optional ="" is what an assertion reading through Find(...).OuterHtml needs: the
+    /// renderer writes the attribute valueless, and AngleSharp serialises a valueless attribute
+    /// with an empty value. cut.Markup is the renderer's own string and carries neither.
+    /// </summary>
+    [GeneratedRegex(@"\sb-[a-z0-9]{10}(?:="""")?(?=[\s>])")]
     private static partial Regex Attribute();
 
     public static string Bare(this string markup) => Attribute().Replace(markup, string.Empty);

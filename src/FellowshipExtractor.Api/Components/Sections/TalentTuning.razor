@@ -1,0 +1,40 @@
+@inject CodexView Ui
+
+@if (Entity.Talents is { Count: > 0 } talents)
+{
+    var badge = talents.Count.ToString();
+    <Panel Head="Tuning by talent" Badge="@badge">
+        <Note>
+            Tuning numbers whose rows are named after a talent, under that name. The name is all this
+            says: a row named for a talent is very often unconditional, because a talent folded into
+            its ability leaves its name behind in the row. Where the asset states a condition the
+            group is marked as one.
+        </Note>
+        @foreach (var (talent, rows) in talents.OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            <Rule />
+            <SubHead>
+                @Ui.TuningName(talent)
+                @if (Entity.TalentGates?.ContainsKey(talent) == true)
+                {
+                    <CountBadge Text="conditional" />
+                }
+            </SubHead>
+            <KeyValues>
+                @foreach (var row in Ui.Tuning(rows))
+                {
+                    <KeyValue Key="@row.Label" Missing="row.Absent">@row.Value</KeyValue>
+                }
+            </KeyValues>
+        }
+    </Panel>
+}
+
+@code {
+    /// <summary>
+    /// The record this panel draws, re-supplied by every Detail. This section resolves its own rows
+    /// rather than taking them as a parameter, because they are per talent group and a single
+    /// flattened list could not say which group a row belongs to.
+    /// </summary>
+    [CascadingParameter] private Entity Entity { get; set; } = new();
+}
