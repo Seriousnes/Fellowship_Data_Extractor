@@ -37,9 +37,12 @@ public sealed record StatLine(string? Stat, string DisplayName, decimal Value, s
 public static class StatMagnitudes
 {
     /// <summary>
-    /// The item level a request that names none is answered at. Stated by the user as the highest
-    /// in the game rather than read from a table: the build's own item-level curves are curve
-    /// tables, which this build ships with no keyframes that CUE4Parse can read.
+    /// The item level a request that names none is answered at.
+    ///
+    /// Read from the build: this is where the Default row of CT_DungeonDifficultyToDropItemLevel
+    /// plateaus, at dungeon difficulty 21, and no non-legendary drop passes it. The Legendary row
+    /// of that same curve plateaus at 360, so a legendary answered here is answered 45 levels
+    /// below the highest it drops at.
     /// </summary>
     public const int MaximumItemLevel = 315;
 

@@ -3,6 +3,8 @@ using FellowshipExtractor;
 using FellowshipExtractor.Textures;
 using FellowshipExtractor.Usmap;
 
+ReadFailureLog.EnableIfRequested();
+
 var command = args.Length > 0 ? args[0].ToLowerInvariant() : "list";
 var options = new ExtractorOptions
 {
@@ -44,7 +46,7 @@ switch (command)
         await RegistryCommand.RunAsync(options);
         break;
     case "dump":
-        await DumpCommand.RunAsync(options, args[1]);
+        await DumpCommand.RunAsync(options, args[1], args.Length > 2 ? int.Parse(args[2]) : 1);
         break;
     case "tags":
         await CsvExportCommands.ExportTagsAsync(options);

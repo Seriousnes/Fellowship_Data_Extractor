@@ -4,6 +4,7 @@ using CUE4Parse.UE4.Assets.Exports.Engine;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Objects.Properties;
 using CUE4Parse.UE4.Objects.Core.i18N;
+using CUE4Parse.UE4.Objects.Engine.Curves;
 using CUE4Parse.UE4.Objects.UObject;
 
 namespace FellowshipExtractor;
@@ -197,6 +198,36 @@ public static class UeJson
         {
             writer.WriteNullValue();
             return;
+        }
+
+        // A curve's keys are the curve. CUE4Parse models them as native value types rather than
+        // property holders, so without these two a curve table reads as a row of type names.
+        //
+        // A rich key carries its tangents as well, and they decide the shape between keys. Writing
+        // only its time and value would read as a well-formed curve that is silently piecewise
+        // linear, so every field goes out.
+        switch (structType)
+        {
+            case FSimpleCurveKey simple:
+                writer.WriteStartObject();
+                writer.WriteNumber("Time", simple.Time);
+                writer.WriteNumber("Value", simple.Value);
+                writer.WriteEndObject();
+                return;
+
+            case FRichCurveKey rich:
+                writer.WriteStartObject();
+                writer.WriteNumber("Time", rich.Time);
+                writer.WriteNumber("Value", rich.Value);
+                writer.WriteString("InterpMode", rich.InterpMode.ToString());
+                writer.WriteString("TangentMode", rich.TangentMode.ToString());
+                writer.WriteString("TangentWeightMode", rich.TangentWeightMode.ToString());
+                writer.WriteNumber("ArriveTangent", rich.ArriveTangent);
+                writer.WriteNumber("ArriveTangentWeight", rich.ArriveTangentWeight);
+                writer.WriteNumber("LeaveTangent", rich.LeaveTangent);
+                writer.WriteNumber("LeaveTangentWeight", rich.LeaveTangentWeight);
+                writer.WriteEndObject();
+                return;
         }
 
         // Native structs (FVector, FGameplayTag, ...) carry their own layout. Stringify for now

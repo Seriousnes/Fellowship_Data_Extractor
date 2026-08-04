@@ -21,9 +21,19 @@ public static class UsmapGenerateCommand
 
         // Struct and enum constructors are not in the class registration table, so decode the
         // functions the properties actually reference and read the name off their params record.
+        //
+        // A super has to be decoded the same way, and it is not enough to decode only what
+        // properties point at: a base struct nothing is ever declared as - FRealCurve behind
+        // FSimpleCurve, for one - is referenced solely by its subclass's SuperFunc. Leaving it out
+        // wrote those structs with no super, which truncates their schema to the properties they
+        // declare themselves and makes every asset holding one unreadable.
         var paramsByVa = structs.ToDictionary(s => s.Va, s => s.Name);
         var decoded = TypeFuncResolver.Resolve(
-            image, records.Select(r => r.TypeFuncVa), paramsByVa);
+            image,
+            records.Select(r => r.TypeFuncVa)
+                .Concat(structs.Select(s => s.SuperFuncVa))
+                .Concat(classes.Select(c => c.SuperFuncVa)),
+            paramsByVa);
         Console.WriteLine($"type functions decoded from .text: {decoded.Count}");
 
         string? Resolve(ulong funcVa) =>

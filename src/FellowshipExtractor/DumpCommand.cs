@@ -10,7 +10,12 @@ namespace FellowshipExtractor;
 /// </summary>
 public static class DumpCommand
 {
-    public static async Task RunAsync(ExtractorOptions options, string filter)
+    /// <summary>
+    /// One asset by default, because a filter is usually a name and mounting the build again per
+    /// asset is what makes a sweep expensive. Raise <paramref name="limit"/> to dump a whole folder
+    /// in one mount.
+    /// </summary>
+    public static async Task RunAsync(ExtractorOptions options, string filter, int limit = 1)
     {
         var provider = await ProviderFactory.CreateAsync(options);
 
@@ -18,7 +23,7 @@ public static class DumpCommand
             .Where(f => f.Path.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
             .Where(f => f.Path.Contains(filter, StringComparison.OrdinalIgnoreCase))
             .OrderBy(f => f.Path, StringComparer.OrdinalIgnoreCase)
-            .Take(1)
+            .Take(limit)
             .ToArray();
 
         if (matches.Length == 0)
