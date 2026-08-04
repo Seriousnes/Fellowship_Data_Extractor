@@ -4,3 +4,8 @@ output/
 *.user
 /src/.vs/FellowshipExtractor.slnx
 .vs/
+
+# Every stylesheet is generated from a .scss by AspNetCore.SassCompiler during the build, so .scss
+# is the only committed source of styling and a fresh clone produces the rest on its first build.
+*.css
+*.css.map

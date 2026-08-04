@@ -19,6 +19,13 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.4.6" />
+
+    <!--
+      Carries its own dart-sass binaries per RID, so there is no npm, no node and no PATH
+      dependency. Its targets run before ResolveScopedCssInputs, which is what lets a
+      Foo.razor.scss become the Foo.razor.css the Razor SDK scopes and bundles.
+    -->
+    <PackageReference Include="AspNetCore.SassCompiler" Version="1.102.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
 
     <!--

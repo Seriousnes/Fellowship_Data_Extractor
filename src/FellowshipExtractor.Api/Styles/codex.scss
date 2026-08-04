@@ -1,0 +1,112 @@
+@use "shared" as *;
+
+/*
+    Values for the properties and variables here are set in App.razor from data-mined tokens.
+*/
+:root {
+  --ground: var(--core-secondary-1000);
+  --panel: var(--core-secondary-900);
+  --raised: var(--core-secondary-800);
+  --sunken: #08111a;
+  --line: var(--core-secondary-700);
+  --line-soft: #16212c;
+  --ink: var(--core-text-primary);
+  --muted: var(--core-text-secondary);
+  --faint: var(--core-text-info);
+  --gold: var(--core-primary-main);
+  --gold-bright: var(--core-primary-200);
+  --gold-deep: var(--core-primary-500);
+
+  --display: ArnoPro, "Arno Pro", "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
+             "Times New Roman", serif;
+  --sans: "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --rail: 268px;
+  --wide: 1440px;
+}
+
+html { scrollbar-gutter: stable; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 50% -280px, #16222e 0%, transparent 70%),
+    var(--ground);
+  color: var(--ink);
+  font: 400 14px/1.55 var(--sans);
+  font-variant-numeric: tabular-nums;
+  min-height: 100vh;
+}
+
+@scope (body) to (.fx-tip) {
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  a { color: var(--gold-bright); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  :focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+
+  h1 {
+    font-family: var(--display); font-weight: 400; letter-spacing: .04em;
+    font-size: clamp(26px, 4vw, 40px); line-height: 1.1; margin: 6px 0 14px;
+  }
+  h2 {
+    font-family: var(--display); font-weight: 400; letter-spacing: .07em; text-transform: uppercase;
+    font-size: 19px; margin: 0 0 10px; color: var(--core-secondary-000);
+  }
+
+  /* Two components draw a card: Home's own menu-entry anchor, and the EntityLink the showcase
+     passes Class="cx-card" to. A class with two owners is styled here, where no scope attribute
+     narrows it to one of them. */
+  .cx-card {
+    @include plated;
+    display: block; color: var(--ink);
+  }
+  .cx-card:hover { text-decoration: none; }
+
+  /* Prose is styled here for the same reason - a <p> from Prose and a <span class="cx-v cx-prose">
+     from KeyValue both wear the class - and for a second one. App.razor emits
+     Ui.RichTextCss("cx-prose") into the page's inline <style>, which writes one .cx-prose .rt-xxx
+     rule per shipped text-style row at runtime. Those values are mined from the build and nothing
+     here knows them, so the colour table cannot move into a stylesheet. Keeping the rest of the
+     family beside it keeps one specificity story for the whole of .cx-prose. The runs themselves
+     arrive as a MarkupString and carry no scope attribute, which is the other reason these rules
+     cannot be scoped. */
+  .cx-prose { white-space: pre-line; color: var(--ink); }
+  .cx-prose .sub { font-weight: 600; border-bottom: 1px dotted currentColor; cursor: help; }
+
+  /* A substitution the build settles nowhere. It used to be the token's own key drawn as code, which
+     is what monospace was saying; it is now the sentence explaining the gap, so it takes the faint
+     italic the catalogue already marks a missing value in, and the dotted rule its title earns. */
+  .cx-prose .tok { color: var(--faint); font-style: italic; border-bottom: 1px dotted currentColor; cursor: help; }
+  .cx-prose .rt-unstyled { color: inherit; }
+
+  /* The roster of heroes, drawn by two components: the front page lists the whole roster, and the
+     entity page draws one under each named version of a split id. Two owners, so no scope attribute
+     can narrow these to one of them. Keeping the pair together also keeps the hover rule and the
+     aria-current rule - equal specificity, decided by source order - in one file in that order. */
+  .cx-roster { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cx-roster a {
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px;
+    @include sunken;
+    border-radius: 2px; font-size: 13px;
+  }
+  .cx-roster a:hover { text-decoration: none; border-color: currentColor; }
+  .cx-roster a[aria-current] { border-color: currentColor; background: var(--raised); }
+  .cx-pip { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+  .cx-who { font-weight: 600; }
+
+  /* Two components mark a value absent: KeyValue writes "cx-v cx-miss" on its own span, and the
+     substitutions panel writes a bare "cx-miss" on the reading of a token nothing settles. The
+     narrower .cx-v.cx-miss goes with KeyValue, which is the only thing that renders it. */
+  .cx-miss { color: var(--faint); font-style: italic; }
+
+  /* Drawn by no component. Kept whole, because the panel this markup belongs to comes back with the
+     shape it had: a Panel As="details" wrapping the record. */
+  pre.cx-raw {
+    margin: 0; padding: 10px 12px; background: var(--sunken); border: 1px solid var(--line);
+    overflow-x: auto; font: 12px/1.5 var(--mono); color: var(--core-secondary-100);
+  }
+}
