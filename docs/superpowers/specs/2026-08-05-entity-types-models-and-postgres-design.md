@@ -205,7 +205,32 @@ public sealed class TalentSlot : EntityDocument
 
 `Placeholder`, `StatSlot` and `RankRun` carry over and are used by the types that have them.
 
-### 4.1 Rows that were nested
+### 4.1 The enumerated fields
+
+A field whose values are a closed set the build states is an enum, not a string:
+
+```csharp
+public enum ArmorType { Cloth, Leather, Mail, Plate }
+public enum PrimaryStat { Agility, Intellect, Strength }
+public enum Hero { Aeona, Ardeos, Elarion, Gunde, Helena, Mara, Meiko, Rime, Sylvie, Tariq, Vigour, Xavian }
+public enum GemType { Amethyst, Diamond, Emerald, Ruby, Sapphire, Topaz }
+```
+
+Every member is a word the game prints. A hero is named by the name a player reads and never by the
+codename their assets are filed under, which is the rule `EntityStore` already holds and the reason
+`?hero=Bowguy` resolves nowhere.
+
+The members are the build's rather than this repo's, so they are generated from `vocabulary.json`
+into the extractor and committed, and one generator emits both these and the `CREATE TYPE` statements
+in 6.1. A build that adds a hero is caught rather than absorbed: a test asserts each enum's members
+are exactly the set the current vocabulary states, so the run fails and the generator is re-run.
+Committing them is what breaks the circle, since the vocabulary the members come from is itself
+something a run produces.
+
+`Rarity` is generated the same way and is keyed by ordinal, because a rung is filed under one word,
+prints another, and prints differently again on a gem.
+
+### 4.2 Rows that were nested
 
 An item's granted ability and a legendary's stat lines are rows rather than nested documents. Both
 already resolve through `LoadAugmentation`, and `AugmentationIds.For` answers the netId of an
@@ -250,8 +275,7 @@ global to the machine and several worktrees of this repo run at once.
 
 ### 6.1 Enumerated types
 
-Each is generated from `vocabulary.json` at schema creation, so a hero the build adds arrives as a
-member without this file being touched:
+The same members the C# enums in 4.1 carry, emitted by the same generator so the two cannot drift:
 
 ```sql
 CREATE TYPE armor_type   AS ENUM ('Cloth', 'Leather', 'Mail', 'Plate');
@@ -261,53 +285,64 @@ CREATE TYPE hero         AS ENUM ('Aeona', 'Ardeos', 'Elarion', 'Gunde', 'Helena
 CREATE TYPE gem_type     AS ENUM ('Amethyst', 'Diamond', 'Emerald', 'Ruby', 'Sapphire', 'Topaz');
 ```
 
-Every member is a word the game prints. A hero is named by the name a player reads and never by the
-codename their assets are filed under, which is the rule `EntityStore` already holds and the reason
-`?hero=Bowguy` resolves nowhere.
-
-`rarity` is generated the same way from the shipped ladder. It is keyed by ordinal rather than by
-word, because a rung is filed under one word and prints another and prints differently again on a
-gem.
+`rarity` is emitted the same way from the shipped ladder, keyed by ordinal rather than by word,
+because a rung is filed under one word and prints another and prints differently again on a gem.
 
 ### 6.2 A table per type
 
-Each table declares the columns its type has. `item` is the one type an id does not identify on its
-own, because one item reads as a different named item per armour type, primary stat and hero:
+The document is the row. Every column beside `id` is generated from it and stored, so a column and
+the document it came from cannot disagree and a writer states each fact once.
+
+`talent_slot` is the shape where every generated column is present on every row. All 216 rows state a
+hero, a grid position and a cost, which is what lets the key be a primary key:
+
+```sql
+CREATE TABLE talent_slot (
+    id       integer NOT NULL,
+    document jsonb   NOT NULL,
+    hero     hero     GENERATED ALWAYS AS ((document->>'hero')::hero)  STORED NOT NULL,
+    "row"    smallint GENERATED ALWAYS AS ((document->>'row')::smallint)    STORED NOT NULL,
+    "column" smallint GENERATED ALWAYS AS ((document->>'column')::smallint) STORED NOT NULL,
+    cost     smallint GENERATED ALWAYS AS ((document->>'cost')::smallint)   STORED NOT NULL,
+    talent   integer  GENERATED ALWAYS AS ((document->>'talentId')::integer) STORED NOT NULL,
+    PRIMARY KEY (id, hero)
+);
+```
+
+`item` is the type an id does not identify on its own, because one item reads as a different named
+item per armour type, primary stat and hero:
 
 ```sql
 CREATE TABLE item (
     id           integer NOT NULL,
-    armor_type   armor_type,
-    primary_stat primary_stat,
-    hero         hero,
-    name         text,
     document     jsonb,
+    name         text         GENERATED ALWAYS AS (document->>'name') STORED,
+    armor_type   armor_type   GENERATED ALWAYS AS ((document->>'armorType')::armor_type)     STORED,
+    primary_stat primary_stat GENERATED ALWAYS AS ((document->>'primaryStat')::primary_stat) STORED,
+    hero         hero         GENERATED ALWAYS AS ((document->>'hero')::hero)                STORED,
     UNIQUE NULLS NOT DISTINCT (id, armor_type, primary_stat, hero)
-);
-
-CREATE TABLE talent_slot (
-    id       integer NOT NULL,
-    hero     hero    NOT NULL,
-    row      smallint NOT NULL,
-    "column" smallint NOT NULL,
-    cost     smallint NOT NULL,
-    talent   integer NOT NULL REFERENCES talent (id),
-    PRIMARY KEY (id, hero)
 );
 
 CREATE TABLE ability (
     id       integer PRIMARY KEY,
-    name     text,
-    document jsonb
+    document jsonb,
+    name     text GENERATED ALWAYS AS (document->>'name') STORED
 );
 ```
 
-Measured over the corpus, `item` and `talent_slot` are the only two types where an id carries more
-than one row: 188 item ids and 19 slot ids. Every other type takes `id` as its primary key.
+`id` is the one column that is not a projection, because it is the only thing a row carrying no
+document has.
 
-The discriminator columns are nullable rather than carrying a stand-in member, because absent is what
-the build states and no enum member exists for it. `NULLS NOT DISTINCT` is what makes that key hold,
-so two rows absent the same discriminators collide rather than both being written.
+Measured over the corpus, `item` and `talent_slot` are the only two types where an id carries more
+than one row: 188 item ids and 19 slot ids. Every other type takes `id` as its primary key and
+generates `name` alone.
+
+**Why `item`'s three discriminators are nullable and its key is not a primary key.** A generated
+column is null wherever the document does not state its path, and on `item` that is most rows: the
+corpus states an armour type on 26% of them, a primary stat on 22% and a single hero on 35%. A
+primary key admits no null, so the key is `UNIQUE NULLS NOT DISTINCT`, which is what makes two rows
+absent the same discriminators collide rather than both being written. The alternative, a `None`
+member in each enum, would put a value in the store that the build does not state.
 
 `document` is null on a row carrying nothing yet, which makes the extraction worklist a query:
 
@@ -409,8 +444,13 @@ spelling.
 **Keys.** Loading the corpus raises no duplicate key, and `NULLS NOT DISTINCT` rejects a second item
 row absent the same three discriminators.
 
-**Enums.** Every value the corpus spells for an enumerated column is a member of that enum, and the
-members are those `vocabulary.json` states.
+**Enums.** Every value the corpus spells for an enumerated field is a member of that enum. Each C#
+enum's members are exactly the set the current `vocabulary.json` states, which is the test that fails
+when the build adds a hero, and each Postgres enum's members are its C# enum's.
+
+**Generated columns.** A column and the document it is generated from agree, over every row of every
+type: writing a document and reading the column back gives what the model held. A row whose document
+states no armour type has a null `armor_type` rather than a stand-in member.
 
 **Formats.** A run under `--output-format jsonl` and a run under `--output-format postgres` describe
 the same rows: each type's count agrees, and each row's document agrees field for field.
