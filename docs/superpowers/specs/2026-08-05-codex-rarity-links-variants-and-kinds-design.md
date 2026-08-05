@@ -58,12 +58,17 @@ the per-version roster in `Versions.razor`. Each of those keeps `CodexView.HeroC
 The heading on `EntityPage.razor` follows the rarity knob and re-tints as the reader turns it, which
 is what the tooltip beside it already does through `--fx-title`.
 
-The page renders the colour from section 2.2 into a custom property on the entity wrapper,
-`--cx-name`, and the heading is `color: var(--cx-name)`. `stage()` in `codex.js`, which already runs
-on every knob change, sets that property from the pressed rarity button's own colour and removes the
-override when no rung is pressed, so the heading returns to the served colour. The rarity buttons in
-`Knobs.razor` already carry their rung's colour inline, so the value is read from the same place the
-button was painted from.
+Two custom properties, so the served colour survives being overridden. The page renders the colour
+from section 2.2 as `--cx-name` on the entity wrapper, and the heading is
+`color: var(--cx-rung, var(--cx-name))`. `stage()` in `codex.js`, which already runs on every knob
+change, sets `--cx-rung` on the heading from the pressed rarity button's own colour and removes it
+when no rung is pressed, at which point the served `--cx-name` shows through untouched. The rarity
+buttons in `Knobs.razor` already carry their rung's colour inline, so the value is read from the
+same place the button was painted from.
+
+`arrived()` clears `--cx-rung`, so a rung pressed before a hero is chosen does not carry its colour
+across the navigation the hero knob performs, whether the document is replaced or Blazor's enhanced
+navigation keeps the element.
 
 ---
 
@@ -103,6 +108,12 @@ The reading a row is named and pictured by is whichever answers the filter in fo
 - In the omnibox, the typed text is the filter: the primary is the highest-scoring reading of that
   id under `SearchIndex.Score`, so typing a plate name opens the row named by the plate reading.
 - With nothing narrowing, the first reading in export order is the primary.
+
+`SearchIndex` goes on indexing and scoring readings, because a reader typing a plate name is typing
+one reading's name. The fold to one entry per id happens after scoring and before the limit is
+applied, so `Search(text, limit)` answers `limit` ids: a word matching twelve readings of one id
+returns one suggestion and leaves eleven places for other ids. The per-type counts in `Suggestions`
+count the folded entries, which is what section 4.5 asks of every count.
 
 ### 4.3 The variant links
 
@@ -284,6 +295,13 @@ caller. `Codex.Of(table)` becomes a lookup by type rather than by table.
 
 The augmentation pointer's heading in `CodexView.Heading` reads the label of the type its
 destination row belongs to, so a gem trait's pointer is headed "Gem Traits" and a talent's "Talent".
+
+`PublicEntity.Type` carries a slug to a caller reading the catalogue as data, and its answer changes
+for 303 rows: the 299 that answered `talent` and now answer `gem-traits`, `trait-mechanics`,
+`mounts`, `set-bonuses`, `weapon-powers`, `relic-powers` or `legendary-stats`, and the four that
+answered `talent` and now answer nothing, being no longer public. The `Type` a nested pointer
+carries in `PublicEntity` changes for the same rows. The record now states each row's kind where it
+previously stated the asset class they share, which is the whole of the change a caller sees.
 
 ---
 
