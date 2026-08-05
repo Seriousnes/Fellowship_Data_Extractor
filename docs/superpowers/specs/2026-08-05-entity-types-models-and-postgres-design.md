@@ -129,14 +129,14 @@ columns and moves no row.
 | mount | 78 | | companion pet | 9 |
 | trait | 62 | | gem type | 6 |
 | gem trait | 60 | | legendary stat | 3 |
-| mount power | 57 | | | |
+| mount power | 54 | | | |
 | trait power | 40 | | | |
 | currency | 32 | | | |
 
-12,422 rows over 21 types, from the 12,421 export rows that are written: `Talent.ID.Talent8` is one
+12,419 rows over 21 types, from the 12,418 export rows that are written: `Talent.ID.Talent8` is one
 export row and two entities, its slot and the talent the slot carries.
 
-2,814 export rows are not written, under the three rules in 3.3:
+2,817 export rows are not written, under the three rules in 3.3:
 
 | Not written | Rows |
 |---|---:|
@@ -145,13 +145,13 @@ export row and two entities, its slot and the talent the slot carries.
 | &nbsp;&nbsp;player and community customization | 215 |
 | &nbsp;&nbsp;creatures carrying nothing | 106 |
 | &nbsp;&nbsp;mounts pairing with no augmentation | 61 |
-| **reached by no rule** | **892** |
+| **reached by no rule** | **895** |
 | **an empty branch of the tag tree** | **807** |
 
-The 892 are two populations. 547 are every row of a segment or a table no rule in 3.1 names: hero
+The 895 are two populations. 547 are every row of a segment or a table no rule in 3.1 names: hero
 skins, hero abilities, cosmetic swatches, progression, visual trims, SDT entries, the 21 `Talent.ID`
-rows carrying no coordinates, and the tag tables whose rows say nothing at all. 345 are augmentation
-rows that no reference claims and whose folder names no type, of which 210 ship no asset and 126 sit
+rows carrying no coordinates, and the tag tables whose rows say nothing at all. 348 are augmentation
+rows that no reference claims and whose folder names no type, of which 213 ship no asset the resolver can find and 126 sit
 in a hero's talent folder under a name no slot points at.
 
 Named rows are among them, and each is a row the game would print that this store does not hold. 37
@@ -412,15 +412,17 @@ each type. 24 gem tiers, 4 for each type, and they are the only rows in the corp
 **Enumerated columns.** The corpus spells 4 armour types, 3 primary stats and 12 heroes, and each set
 is exactly the set `vocabulary.json` states.
 
-**Augmentations.** 562 of the 772 augmentation tags reach an asset, and the folder answers the type
-for every one the four references do not.
+**Augmentations.** 559 of the 772 augmentation tags reach an asset under `TooltipResolver.FindAsset`,
+which matches a tag to an asset by primary asset name and then by asset name, and never by prefix.
+The folder answers the type for every one the four references do not. Matching by prefix as well
+would reach 3 further `CA_Mount` tags, which is the whole of the difference it makes.
 
 **Keys.** 188 item ids and 19 talent slot ids carry more than one row. No id of any other type does.
 
 **Grants.** 200 granted abilities and 111 legendary stat lines resolve to augmentation rows already
 in the corpus, so promoting them mints no id.
 
-**Rows written.** 12,421 of the 15,235 export rows are written, producing 12,422 entity rows.
+**Rows written.** 12,418 of the 15,235 export rows are written, producing 12,419 entity rows.
 
 ---
 
