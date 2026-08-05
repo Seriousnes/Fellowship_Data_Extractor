@@ -50,6 +50,7 @@ public sealed class TooltipResolver
     private readonly HashSet<string> _contestedBands = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly List<TagRecord> _tags;
+    private readonly AugmentationIds _augmentationIds;
     private readonly Dictionary<string, FAssetData> _byPrimaryAssetName = new(StringComparer.Ordinal);
     private readonly Dictionary<string, FAssetData> _byAssetName = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
@@ -73,6 +74,7 @@ public sealed class TooltipResolver
     public GemDefinitions Gems { get; }
     public ItemTraits Traits { get; }
     public Vocabulary Vocabulary { get; }
+    public TypeResolver Types { get; }
 
     /// <summary>How many numbers the tuning tables supplied that no asset names. Reported, not silent.</summary>
     public int NamespaceSupplied { get; private set; }
@@ -132,7 +134,7 @@ public sealed class TooltipResolver
             if (tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) _effectNames.Add(tag.Name);
         }
 
-        var augmentations = new AugmentationIds(_tags);
+        _augmentationIds = new AugmentationIds(_tags);
         var rarities = new RarityNames(provider, _assets);
 
         Presentation = new AbilityPresentationIndex(provider, _assets);
@@ -140,12 +142,12 @@ public sealed class TooltipResolver
         Slots = new ItemSlots(provider, _assets);
         SlotNames = new ItemSlotNames(provider, _assets);
         Armor = new ArmorTypes(provider, _assets);
-        SetBonuses = new ItemSetBonuses(provider, _assets, augmentations);
+        SetBonuses = new ItemSetBonuses(provider, _assets, _augmentationIds);
         TableNames = new ItemTableNames(provider, _assets);
         RuleSets = new DynamicItemRuleSets(provider, _assets);
-        Gems = new GemDefinitions(provider, _assets, _constants, augmentations, rarities);
+        Gems = new GemDefinitions(provider, _assets, _constants, _augmentationIds, rarities);
         Traits = new ItemTraits(
-            provider, _assets, _constants, augmentations, new TraitCategoryNames(provider, _assets));
+            provider, _assets, _constants, _augmentationIds, new TraitCategoryNames(provider, _assets));
 
         // Read after the slot and armour vocabularies, because the two weight tables it publishes
         // are keyed by ordinal in the build and by the printed name in the export.
@@ -165,7 +167,8 @@ public sealed class TooltipResolver
         // name it is filed under.
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
-        Vocabulary = new Vocabulary(provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool);
+        Vocabulary = new Vocabulary(
+            provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types);
 
         // Last, because they walk the class default object of every tag that reaches one and so need
         // the asset join, the presentation rows and the talent trees already standing. Building them
@@ -177,6 +180,8 @@ public sealed class TooltipResolver
 
         EffectNames = new EffectNameSources(
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
+
+        Types = new TypeResolver(_tags, Talents, Gems, Traits, SetBonuses);
     }
 
     /// <summary>
@@ -269,7 +274,7 @@ public sealed class TooltipResolver
         var body = Body(cdo, asset?.AssetName.Text ?? tag.Name, display, presentation, icons);
         if (cdo is not null) body = FillFrom(body, GrantedAbilities(cdo, icons));
 
-        var granted = ResolveGranted(cdo, variants, restricted, icons);
+        var (granted, grantedPath) = ResolveGranted(cdo, variants, restricted, icons);
 
         var ruleSet = cdo is null ? null : PropertyWalk.GetString(cdo, RuleSetField);
 
@@ -283,7 +288,9 @@ public sealed class TooltipResolver
             RuleSet = ruleSet is null ? null : ShortRuleSet(ruleSet),
             Stats = cdo is null ? null : Empty(Slots.For(cdo, StatCalculation)),
             Grants = granted,
+            GrantsId = _augmentationIds.For(grantedPath),
             LegendaryStats = cdo is null ? null : Empty(LegendaryStats(cdo, icons)),
+            LegendaryStatIds = cdo is null ? null : Empty(LegendaryStatIds(cdo)),
             Variants = Empty(variants),
         };
 
@@ -296,6 +303,8 @@ public sealed class TooltipResolver
             if (Talents.ForAugmentation(tag.Name) is { } talent) entity = WithTalent(entity, talent, icons);
             if (Gems.ForAugmentation(tag.Name) is { } node) entity = WithGemNode(entity, node, icons);
         }
+
+        entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
 
         // A gameplay effect that ships no name of its own takes the name of the entity that applies
         // it, where exactly one named entity does. 2,857 of the 3,261 effect tags are anonymous in
@@ -420,6 +429,7 @@ public sealed class TooltipResolver
             return entity with
             {
                 DisplayName = entity.DisplayName ?? gem.DisplayName,
+                GemType = gem.DisplayName,
                 GemAttribute = gem.Attribute,
                 GemOverflow = WithOverflow(gem.Overflow, icons),
             };
@@ -434,6 +444,7 @@ public sealed class TooltipResolver
                 GemTier = size.Tier,
                 GemPower = size.Power,
                 Rarity = size.Rarity,
+                RarityTier = size.RarityTier,
                 Icon = entity.Icon ?? Written(size.IconPath, icons),
             };
         }
@@ -957,16 +968,17 @@ public sealed class TooltipResolver
     /// hero and belongs on the item, a legendary answers a different one per hero and belongs on
     /// the variants, and the tables are what tells the two apart.
     /// </summary>
-    private Entity? ResolveGranted(UObject? cdo, List<Variant> variants, bool restricted, IconWriter? icons)
+    private (Entity? Entity, string? Path) ResolveGranted(
+        UObject? cdo, List<Variant> variants, bool restricted, IconWriter? icons)
     {
-        if (cdo is null) return null;
-        if (PropertyWalk.GetString(cdo, MappingKeyField) is not { } key) return null;
+        if (cdo is null) return (null, null);
+        if (PropertyWalk.GetString(cdo, MappingKeyField) is not { } key) return (null, null);
 
         var matches = Mappings.FindAll(key);
-        if (matches.Count == 0) return null;
+        if (matches.Count == 0) return (null, null);
 
         var distinct = matches.Select(m => m.Asset).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        if (distinct.Length == 1) return LoadAugmentation(distinct[0], icons);
+        if (distinct.Length == 1) return (LoadAugmentation(distinct[0], icons), distinct[0]);
 
         // Different abilities per hero. An item that names no heroes of its own is for all of them
         // and gets a variant per mapping row, because the tables are the only place that
@@ -985,7 +997,7 @@ public sealed class TooltipResolver
         }
 
         variants.Sort((a, b) => string.Compare(a.HeroName ?? a.Hero, b.HeroName ?? b.Hero, StringComparison.OrdinalIgnoreCase));
-        return null;
+        return (null, null);
     }
 
     /// <summary>
@@ -1019,6 +1031,15 @@ public sealed class TooltipResolver
             .Select(p => PropertyWalk.AsString(p.Value))
             .OfType<string>()
             .Select(path => LoadAugmentation(path, icons))];
+
+    /// <summary>A legendary's bonus stats, by the id each augmentation exports under.</summary>
+    private List<int> LegendaryStatIds(UObject cdo) =>
+        [.. PropertyWalk.Walk(cdo)
+            .Where(p => p.Path.StartsWith("LegendaryStats[", StringComparison.Ordinal))
+            .Select(p => PropertyWalk.AsString(p.Value))
+            .OfType<string>()
+            .Select(_augmentationIds.For)
+            .OfType<int>()];
 
     /// <summary>
     /// A character augmentation and, when it carries no text of its own, the ability it grants.

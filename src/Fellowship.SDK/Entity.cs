@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace FellowshipExtractor.Tooltip;
+namespace Fellowship.SDK;
 
 /// <summary>
 /// One thing the game shows a tooltip for, reduced to what the tooltip needs and nothing else.
@@ -17,6 +17,9 @@ public sealed record Entity
 {
     /// <summary>Identity. Set on a top-level entity and absent from anything nested inside one.</summary>
     public string? Table { get; init; }
+
+    /// <summary>What this row is. Set on a top-level entity and absent from anything nested inside one.</summary>
+    public EntityType? Type { get; init; }
 
     public int? NetId { get; init; }
     public string? Name { get; init; }
@@ -252,6 +255,13 @@ public sealed record Entity
     /// </summary>
     public string? Rarity { get; init; }
 
+    /// <summary>
+    /// The rung's own number, as the loot rule sets number the ladder. A rung is filed under one
+    /// word, prints another on an item and a third on a gem, so <see cref="Rarity"/> is a printed
+    /// word rather than a name anything can join on and this is what names the rung once.
+    /// </summary>
+    public int? RarityTier { get; init; }
+
     /// <summary>Where on its type's ten-step ladder a gem bonus sits, 1 to 10.</summary>
     public int? GemNode { get; init; }
 
@@ -300,6 +310,23 @@ public sealed record Entity
 
     /// <summary>A legendary's bonus stats, each with its own name and line.</summary>
     public IReadOnlyList<Entity>? LegendaryStats { get; init; }
+
+    /// <summary>
+    /// The relic or weapon power this item grants, by id. The grant resolves through
+    /// <c>LoadAugmentation</c> and every augmentation exports as a line of its own, so the reference
+    /// is the whole of what an item needs to carry and the ability is not nested twice.
+    /// </summary>
+    public int? GrantsId { get; init; }
+
+    /// <summary>The legendary stat lines this item carries, by id.</summary>
+    public IReadOnlyList<int>? LegendaryStatIds { get; init; }
+
+    /// <summary>
+    /// Set on the one talent slot carrying its talent's text rather than pointing at an augmentation.
+    /// Mara's row 4 column 1 is Macabre Stratagem, and without this the corpus holds 215 talents for
+    /// 216 slots.
+    /// </summary>
+    public bool? SlotBorneTalent { get; init; }
 
     /// <summary>
     /// What an item id reads as per hero, while it is being worked out. Nothing exports it: the
@@ -492,4 +519,48 @@ public sealed record Placeholder
     /// </summary>
     [JsonIgnore]
     public double? PresetSpread { get; init; }
+}
+
+/// <summary>
+/// The kinds of slot an item's stats come out of, as ECRDynamicItemSlotType orders them. Each kind
+/// is scaled by its own block of the shipped calculation settings, so which one a stat sits in is
+/// part of what its magnitude is.
+/// </summary>
+public static class SlotKinds
+{
+    /// <summary>The slot the wearer's own attribute goes in, whatever that attribute is.</summary>
+    public const string Primary = "primary";
+
+    /// <summary>A slot the item names a single stat for.</summary>
+    public const string Fixed = "fixed";
+
+    /// <summary>A slot whose stat is rolled from a pool when the item drops.</summary>
+    public const string Random = "random";
+}
+
+/// <summary>
+/// One stat an item carries and the share of its budget the slot holding it is worth. The weight
+/// is a percentage of the pool the stat draws from, so an item whose weights fall short of a
+/// hundred is one whose remaining budget goes to the slots its rarity adds.
+/// </summary>
+public sealed record StatSlot(string Stat, int Weight)
+{
+    /// <summary>One of <see cref="SlotKinds"/>.</summary>
+    public required string Kind { get; init; }
+}
+
+/// <summary>The quantity a token's Calculation ordinal selects off the object the token names.</summary>
+public enum TokenQuantity
+{
+    /// <summary>No ordinal the shipped tokens use maps here; the reader falls back to the whole object.</summary>
+    Unsettled,
+
+    /// <summary>The effect's Period, which is how often a periodic effect ticks.</summary>
+    Period,
+
+    /// <summary>The effect's DurationMagnitude, however that magnitude is spelled.</summary>
+    Duration,
+
+    /// <summary>The base magnitude of an execution's calculation modifiers: a damage or heal number.</summary>
+    ExecutionMagnitude,
 }

@@ -18,6 +18,13 @@ public sealed record GemKind(string DisplayName)
 /// <summary>One gem a player can hold: a type and a size, worth a flat amount of power.</summary>
 public sealed record GemSize(string TypeName, int Tier, string DisplayName, int Power)
 {
+    /// <summary>
+    /// The rung of the rarity ladder this size drops at, by the ordinal the row states.
+    /// <see cref="Rarity"/> is the word a gem prints for that rung, which the item ladder spells
+    /// differently, so the ordinal is what names the rung once.
+    /// </summary>
+    public int? RarityTier { get; init; }
+
     public string? Rarity { get; init; }
 
     public string? IconPath { get; init; }
@@ -87,6 +94,10 @@ public sealed class GemDefinitions
     public int TypeCount => _byType.Count;
     public int SizeCount => _byTierTag.Count;
     public int NodeCount => _byAugmentation.Count;
+
+    /// <summary>The gem types the build ships, under the words it prints for them.</summary>
+    public IReadOnlyList<string> Types =>
+        [.. _byType.Values.Select(kind => kind.DisplayName).Order(StringComparer.Ordinal)];
 
     /// <summary>How many ladder nodes state which lower node they take the place of.</summary>
     public int ReplacementCount { get; private set; }
@@ -164,9 +175,14 @@ public sealed class GemDefinitions
             var separator = tag.LastIndexOf(TierSegment, StringComparison.OrdinalIgnoreCase);
             if (separator < 0 || !int.TryParse(tag[(separator + TierSegment.Length)..], out var ordinal)) continue;
 
+            // The rung's number and the word a gem prints for it come from one reading, so the two
+            // can never name different rungs, and a rarity off the ladder leaves both unset.
+            var rung = rarities.Tier(PropertyWalk.Get(tier, RarityField)?.GenericValue);
+
             _byTierTag[tag] = new GemSize(typeName, ordinal, name, power)
             {
-                Rarity = rarities.GemLabel(PropertyWalk.AsOrdinal(PropertyWalk.Get(tier, RarityField)?.GenericValue)),
+                RarityTier = rung,
+                Rarity = rarities.GemLabel(rung),
                 IconPath = PropertyWalk.GetString(tier, TierIconField),
             };
         }

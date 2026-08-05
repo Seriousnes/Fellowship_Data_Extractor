@@ -8,13 +8,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FellowshipExtractor.ServiceDefaults\FellowshipExtractor.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Fellowship.SDK\Fellowship.SDK.csproj" />
+  </ItemGroup>
 
-    <!--
-      The extractor owns Entity, Placeholder and the vocabulary rows, and the API reads the export
-      it writes. Referencing it keeps one definition of those shapes rather than a second copy here
-      that drifts the next time a field is added.
-    -->
-    <ProjectReference Include="..\FellowshipExtractor\FellowshipExtractor.csproj" />
+  <ItemGroup>
+    <Using Include="Fellowship.SDK" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,6 +31,7 @@
       GHSA-v5pm-xwqc-g5wc. Patched in 2.7.5, so the direct reference lifts the transitive one.
     -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 
 </Project>

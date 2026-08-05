@@ -58,6 +58,7 @@ public sealed class ItemSetBonuses
     private readonly Dictionary<string, SetBonus> _byRow = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Dictionary<string, string>> _byMappingKey =
         new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<int> _augmentations = [];
 
     public int Count => _byRow.Count;
 
@@ -73,16 +74,20 @@ public sealed class ItemSetBonuses
             {
                 if (PropertyWalk.GetString(row, DisplayNameField) is not { } name) continue;
 
-                _byRow.TryAdd(rowName.Text, new SetBonus(
+                var augmentationId = augmentations.For(PropertyWalk.GetString(row, GrantedField));
+
+                if (!_byRow.TryAdd(rowName.Text, new SetBonus(
                     name,
                     PropertyWalk.GetText(row, DescriptionField),
                     (int?)PropertyWalk.AsNumber(PropertyWalk.Get(row, SetCountField)?.GenericValue))
                 {
                     AllowedRoles = Gate(row, RolesField),
                     AllowedAttributes = Gate(row, AttributesField),
-                    Augmentation = augmentations.For(PropertyWalk.GetString(row, GrantedField)),
+                    Augmentation = augmentationId,
                     IconPath = PropertyWalk.GetString(row, IconField),
-                });
+                })) continue;
+
+                if (augmentationId is not null) _augmentations.Add(augmentationId.Value);
             }
         }
 
@@ -112,6 +117,9 @@ public sealed class ItemSetBonuses
         tagName.StartsWith(TagPrefix, StringComparison.OrdinalIgnoreCase)
             ? _byRow.GetValueOrDefault(tagName[TagPrefix.Length..])
             : null;
+
+    /// <summary>Whether an augmentation id is the mechanics behind one of these rows.</summary>
+    public bool PointsAt(int netId) => _augmentations.Contains(netId);
 
     /// <summary>The set an item's own SetBonusA row key names, as the one-name list a card carries.</summary>
     public IReadOnlyList<string>? ForRow(string? rowName) =>

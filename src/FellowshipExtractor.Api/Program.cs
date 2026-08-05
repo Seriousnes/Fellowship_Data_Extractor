@@ -333,6 +333,6 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
     /// name is the reader's name for the row and never its gameplay tag, and the pair beside it is
     /// the two things the readings of an id differ by.
     /// </summary>
-    private static string Describe(FellowshipExtractor.Tooltip.Entity entity) =>
+    private static string Describe(Fellowship.SDK.Entity entity) =>
         $"{PublicTypes.NameOf(entity)} [{entity.ArmorType ?? "any"}/{entity.PrimaryStat ?? "any"}]";
 }

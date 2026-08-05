@@ -1,5 +1,3 @@
-using FellowshipExtractor.Tooltip;
-
 namespace FellowshipExtractor.Api;
 
 /// <summary>

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FellowshipExtractor.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
@@ -17,6 +18,33 @@ public sealed class RollLineTests
     /// <summary>Frosted Cloak, whose four slots include both a rated stat and a primary one.</summary>
     private const int FrostedCloak = 2665;
 
+    private static readonly JsonSerializerOptions Reading = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
+
+    /// <summary>
+    /// The item as the magnitudes are worked out from it: the equipment position it is worn in and
+    /// the weighted slots it declares, which with no rarity in play is everything the arithmetic
+    /// reads. One id is an item and a gameplay effect both, so the type is what picks the item.
+    /// </summary>
+    private static Entity Cloak()
+    {
+        var body = Export.Loaded.Documents
+            .Where(document => document.Type == Fellowship.SDK.EntityType.Item && document.Id == FrostedCloak)
+            .Select(document => document.Body)
+            .FirstOrDefault()
+            ?? throw new InvalidOperationException(
+                $"Item {FrostedCloak} is not in the export. Either the id moved or the entity is gone.");
+
+        return new Entity
+        {
+            Slot = body["slot"]?.GetValue<string>(),
+            Stats = body["stats"].Deserialize<IReadOnlyList<StatSlot>>(Reading),
+        };
+    }
+
     private static StatParameters Parameters() =>
         new(["Stamina", "Agility", "Expertise", "Spirit"], Export.Loaded.Vocabulary.StatCalculation.Attributes);
 
@@ -32,7 +60,7 @@ public sealed class RollLineTests
         Assert.Null(error);
 
         return StatMagnitudes.For(
-            Export.Loaded.Entity("ItemID", FrostedCloak),
+            Cloak(),
             Export.Loaded.Vocabulary.StatCalculation,
             new HashSet<string>(["Strength", "Intellect", "Agility"], StringComparer.OrdinalIgnoreCase),
             rarity: null,

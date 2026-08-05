@@ -1,21 +1,5 @@
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>The quantity a token's Calculation ordinal selects off the object the token names.</summary>
-public enum TokenQuantity
-{
-    /// <summary>No ordinal the shipped tokens use maps here; the reader falls back to the whole object.</summary>
-    Unsettled,
-
-    /// <summary>The effect's Period, which is how often a periodic effect ticks.</summary>
-    Period,
-
-    /// <summary>The effect's DurationMagnitude, however that magnitude is spelled.</summary>
-    Duration,
-
-    /// <summary>The base magnitude of an execution's calculation modifiers: a damage or heal number.</summary>
-    ExecutionMagnitude,
-}
-
 /// <summary>
 /// What a CRDynamicTextToken's Type and Calculation ordinals mean.
 ///

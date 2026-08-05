@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using FellowshipExtractor.Api;
 
 namespace FellowshipExtractor.Tests;
@@ -98,10 +99,13 @@ public sealed class AttributeTableTests
     {
         var attributes = Export.Loaded.Vocabulary.StatCalculation.Attributes;
 
-        var multiplied = Export.Loaded.All()
-            .SelectMany(e => e.Placeholders?.Values ?? [])
-            .Where(p => p.Coefficient is not null)
-            .Select(p => p.Attribute)
+        var multiplied = Export.Loaded.Documents
+            .Select(document => document.Body["placeholders"])
+            .OfType<JsonArray>()
+            .SelectMany(tokens => tokens)
+            .OfType<JsonObject>()
+            .Where(token => token["coefficient"] is not null)
+            .Select(token => token["attribute"]?.GetValue<string>())
             .OfType<string>()
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
@@ -166,5 +170,5 @@ public sealed class AttributeTableTests
     }
 
     /// <summary>A named holder, so a failure names the stat rather than an index into a dictionary.</summary>
-    private readonly record struct AttributeDisplayView(Tooltip.AttributeDisplay Value);
+    private readonly record struct AttributeDisplayView(Fellowship.SDK.AttributeDisplay Value);
 }

@@ -1,5 +1,4 @@
 using System.Globalization;
-using FellowshipExtractor.Tooltip;
 
 namespace FellowshipExtractor.Api;
 

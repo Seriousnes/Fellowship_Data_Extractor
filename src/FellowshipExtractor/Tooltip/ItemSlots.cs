@@ -7,34 +7,6 @@ using CUE4Parse.UE4.Assets.Objects;
 namespace FellowshipExtractor.Tooltip;
 
 /// <summary>
-/// The kinds of slot an item's stats come out of, as ECRDynamicItemSlotType orders them. Each kind
-/// is scaled by its own block of the shipped calculation settings, so which one a stat sits in is
-/// part of what its magnitude is.
-/// </summary>
-public static class SlotKinds
-{
-    /// <summary>The slot the wearer's own attribute goes in, whatever that attribute is.</summary>
-    public const string Primary = "primary";
-
-    /// <summary>A slot the item names a single stat for.</summary>
-    public const string Fixed = "fixed";
-
-    /// <summary>A slot whose stat is rolled from a pool when the item drops.</summary>
-    public const string Random = "random";
-}
-
-/// <summary>
-/// One stat an item carries and the share of its budget the slot holding it is worth. The weight
-/// is a percentage of the pool the stat draws from, so an item whose weights fall short of a
-/// hundred is one whose remaining budget goes to the slots its rarity adds.
-/// </summary>
-public sealed record StatSlot(string Stat, int Weight)
-{
-    /// <summary>One of <see cref="SlotKinds"/>.</summary>
-    public required string Kind { get; init; }
-}
-
-/// <summary>
 /// What an item's FixedSlots entries actually are. The item names slots only - "StatCrit",
 /// "HeroRelativePrimaryStat" - and the slot definition table says which stat each one carries and
 /// which kind of slot it is.
