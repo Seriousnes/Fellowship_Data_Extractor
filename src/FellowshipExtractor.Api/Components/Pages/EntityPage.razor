@@ -123,8 +123,11 @@
             if (value is null) return;
             if (Catalog.Facet(facet) is not { } definition) return;
 
-            var count = Store.Entities.Count(row =>
-                EntityTypes.TypeOf(row) == type && definition.Matches(row, [value]));
+            var count = Store.Entities
+                .Where(row => EntityTypes.TypeOf(row) == type && definition.Matches(row, [value]))
+                .Select(row => row.Id)
+                .Distinct()
+                .Count();
 
             if (count < 2) return;
 

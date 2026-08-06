@@ -75,6 +75,21 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public async Task An_entity_page_offers_more_like_this_and_the_browse_it_points_at_answers()
+    {
+        var page = await client.GetStringAsync("/entity/item/5191", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains("More like this", page, StringComparison.Ordinal);
+
+        var slot = ((ItemDocument)Factory.Store.All(EntityType.Item, 5191)[0]).Slot;
+
+        var browse = await client.GetStringAsync(
+            $"/browse?type=item&slot={Uri.EscapeDataString(slot!)}", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains("entities", browse, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task An_unknown_type_answers_404_rather_than_throwing()
     {
         var response = await client.GetAsync("/api/tooltip/no-such-type/1", Xunit.TestContext.Current.CancellationToken);

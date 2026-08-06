@@ -122,4 +122,20 @@ public class ListingTests(Export export)
 
         Assert.Equal(chosen.Count, Run(("type", "item"), ("hero", "Meiko"), ("slot", chosen.Value)).Total);
     }
+
+    [Fact]
+    public void A_more_like_this_badge_counts_the_ids_its_link_opens()
+    {
+        var slot = ((ItemDocument)export.Store.All(EntityType.Item, Betrayers)[0]).Slot!;
+        var facet = export.View.Codex.Facet("slot")!;
+
+        var badge = export.Store.Entities
+            .Where(row => EntityTypes.TypeOf(row) == EntityType.Item && facet.Matches(row, [slot]))
+            .Select(row => row.Id)
+            .Distinct()
+            .Count();
+
+        Assert.True(badge >= 2);
+        Assert.Equal(badge, Run(("type", "item"), ("slot", slot)).Total);
+    }
 }
