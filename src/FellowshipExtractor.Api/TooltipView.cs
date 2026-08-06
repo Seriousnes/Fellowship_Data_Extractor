@@ -14,12 +14,13 @@ namespace FellowshipExtractor.Api;
 /// different questions: a haste-shortened cast time is a reading of the build, and the markup it
 /// lands in is a reading of the design system.
 ///
-/// Typed to <see cref="EntityDocument"/> like every other reader in this project. <see cref="Rolls"/>
-/// reaches <see cref="StatMagnitudes.For"/>, which keys a rung's extra stat slots by
-/// <see cref="Item.RuleSet"/> - the loot rule set an item is rolled under, now carried on the typed
-/// document alongside <see cref="Item.Rarity"/>, the different fact of the rung a rule set fixes the
-/// item at. A field that lives on one document class rather than every one of them is read by
-/// matching on that class, the way <see cref="CodexView"/> and <see cref="PublicEntity"/> already do.
+/// Typed to <see cref="EntityDocument"/>, like <see cref="CodexView"/> and <see cref="PublicEntity"/>
+/// before it. <see cref="Rolls"/> reaches <see cref="StatMagnitudes.For"/>, which keys a rung's extra
+/// stat slots by <see cref="Item.RuleSet"/> - the loot rule set an item is rolled under, now carried
+/// on the typed document alongside <see cref="Item.Rarity"/>, the different fact of the rung a rule
+/// set fixes the item at. A field that lives on one document class rather than every one of them is
+/// read by matching on that class, the way <see cref="CodexView"/> and <see cref="PublicEntity"/>
+/// already do.
 /// </summary>
 public sealed class TooltipView(
     EntityStore store,
@@ -378,27 +379,18 @@ public sealed class TooltipView(
         document is Item { ArmorType: not null } or GemTier or GemTrait or GemType;
 
     /// <summary>
-    /// The row this document points at for its own mechanics and text: an item's granted relic or
-    /// weapon power, a trait's or a set bonus's power, or a talent slot's talent, which every slot
-    /// names outright. The same resolution as <see cref="PublicEntity"/>'s own <c>Granted</c>, kept
-    /// here too because that one hands back a <see cref="PublicEntity"/> already read through a
-    /// <see cref="CodexView"/> rather than the document this class still needs to draw with.
+    /// The relic or weapon power an item grants, drawn as its own nested tooltip. Only an item ever
+    /// carries <see cref="Item.GrantsId"/> - <see cref="Trait.PowerId"/>, <see cref="SetBonus.PowerId"/>
+    /// and <see cref="TalentSlot.TalentId"/> point at the asset a row's own mechanics and text live
+    /// on rather than at something the row grants besides itself, which is a different question this
+    /// block does not answer; <see cref="PublicEntity"/>'s own <c>Granted</c> folds all four into one
+    /// JSON field, but that is a wider concept than the one "Grants an ability" draws here.
     /// </summary>
-    public EntityDocument? Granted(EntityDocument document)
-    {
-        (EntityType Type, int Id)? address = document switch
-        {
-            Item { GrantsId: { } id } => Power(id),
-            Trait { PowerId: { } id } => (EntityType.TraitPower, id),
-            SetBonus { PowerId: { } id } => (EntityType.SetBonusPower, id),
-            TalentSlot slot => (EntityType.Talent, slot.TalentId),
-            _ => null,
-        };
-
-        return address is { } found && store.All(found.Type, found.Id) is { Count: > 0 } readings
+    public EntityDocument? Granted(EntityDocument document) =>
+        document is Item { GrantsId: { } id } && Power(id) is { } found &&
+        store.All(found.Type, found.Id) is { Count: > 0 } readings
             ? readings[0]
             : null;
-    }
 
     /// <summary>
     /// Which power an item's <see cref="Item.GrantsId"/> names. The id is per type rather than
