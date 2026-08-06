@@ -312,8 +312,32 @@ list on `Placeholder.Key`.
 - `/api/catalog` faceted over the whole corpus, since every row is public.
 - `Describe` writes an item's pair from the document's enums.
 
+**The item carries the rule set it rolls under.** `StatMagnitudes.RandomSlots` asks how many stat
+slots a rung grants an item beyond the ones it declares, and joins the item to
+`StatCalculation.RarityAdditions` on `Entity.RuleSet`. No typed `Item` carries it, so the lookup
+answers 0 for every item and a tooltip draws fewer stat lines than the build gives it.
+
+`Item.Rarity` does not answer instead. It is set only where the rule set's spelling parses as a rung,
+which is the `Legendary` rule set alone, so it conflates the ladder with the rung. The vocabulary
+ships nine rule sets: `Default_GemSlot`, `Default_NoGemSlot`, `Default_NoGemSlot_Necklace`, `Relic`,
+`SetBonus_GemSlot`, `SetBonus_NoGemSlot`, `SetBonus_NoGemSlot_Necklace`, `Weapon` and `Legendary`.
+The first eight state the same slot counts as each other today, 0, 1, 1, 1, 2, 2, 0 by tier, and
+`Legendary` states 0 through tier 5 and 2 at tier 6. Reading the eight as interchangeable would be
+deriving from a coincidence of this build rather than from a rule.
+
+So `Item` gains `RuleSet`, and `StatMagnitudes` joins on it as it always did. It publishes no
+spelling a reader could not already see: `vocabulary.json` carries those same nine as the keys of
+`rarityAdditions`, and the API reads that file. This is the reasoning Task 1 used to keep
+`Placeholder.Key`.
+
+`TooltipView`'s eight public methods move from `Entity` to `EntityDocument` with it, since they are
+what `Tooltip.razor` calls and Task 6 cannot proceed while they take the old type. `StatMagnitudes`
+moves to `Item`.
+
 **Verification.** `dotnet build src/FellowshipExtractor.slnx` builds every project but the Razor
-components in `FellowshipExtractor.Api`. Report what the components still break on.
+components in `FellowshipExtractor.Api`, and no `.cs` file reports an error. The export is
+regenerated after this task, because the projection changed. Report what the components still break
+on.
 
 **Commit** the files and the report.
 
