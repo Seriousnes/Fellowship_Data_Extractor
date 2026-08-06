@@ -69,6 +69,7 @@ public static class DocumentProjection
             // Default and SetBonus rule sets name no rung and parse to none.
             Rarity = Enum.TryParse<Rarity>(entity.RuleSet, out var fixedRarity) ? fixedRarity : null,
 
+            RuleSet = entity.RuleSet,
             SetBonus = entity.SetBonus,
             Stats = entity.Stats,
             Description = entity.Description,

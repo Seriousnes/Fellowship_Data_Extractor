@@ -28,10 +28,18 @@ public sealed class Item : EntityDocument
     public IReadOnlyList<string>? SetBonus { get; init; }
     public IReadOnlyList<StatSlot>? Stats { get; init; }
 
+    /// <summary>
+    /// The loot rule set the item is rolled under, without its tag prefix. Which extra slots a
+    /// rarity grants the item is stated per rule set, so this is what joins an item to the rarity
+    /// table in the vocabulary. The nine spellings this ever states are already the keys of
+    /// rarityAdditions in vocabulary.json, so carrying it here publishes nothing new.
+    /// </summary>
+    public string? RuleSet { get; init; }
+
     public string? Description { get; init; }
     public string? Icon { get; init; }
 
-    /// <summary>The art at each rarity it differs at, keyed by the word the game prints for the rung.</summary>
+    /// <summary>The art at each rarity it differs at, keyed by the rarity's internal name.</summary>
     public IReadOnlyDictionary<string, string>? IconByRarity { get; init; }
 
     /// <summary>The relic or weapon power this item grants.</summary>

@@ -1,3 +1,5 @@
+using Fellowship.SDK.Documents;
+
 namespace FellowshipExtractor.Api;
 
 /// <summary>
@@ -72,17 +74,17 @@ public static class StatMagnitudes
     /// rolled slots still unnamed stay one line each, because two unknown stats are not one stat.
     /// </summary>
     public static IReadOnlyList<StatLine> For(
-        Entity entity,
+        Item item,
         StatCalculationFile calculation,
         IReadOnlySet<string> primaryAttributes,
         RarityEntry? rarity,
         int itemLevel,
         TooltipQuery query)
     {
-        var rolledSlots = RandomSlots(entity, calculation, rarity);
-        if (entity.Stats is not { Count: > 0 } && rolledSlots == 0) return [];
+        var rolledSlots = RandomSlots(item, calculation, rarity);
+        if (item.Stats is not { Count: > 0 } && rolledSlots == 0) return [];
 
-        var slotWeight = entity.Slot is { } slot && calculation.SlotWeights.TryGetValue(slot, out var weights)
+        var slotWeight = item.Slot is { } slot && calculation.SlotWeights.TryGetValue(slot, out var weights)
             ? (decimal)weights.StatWeight
             : 0m;
 
@@ -94,7 +96,7 @@ public static class StatMagnitudes
 
         // The wearer's own attribute is drawn first. OrderBy is stable, so every other slot keeps
         // the order the item declares it in.
-        foreach (var declared in (entity.Stats ?? []).OrderBy(slot => slot.Kind == SlotKinds.Primary ? 0 : 1))
+        foreach (var declared in (item.Stats ?? []).OrderBy(slot => slot.Kind == SlotKinds.Primary ? 0 : 1))
         {
             var at = taken.GetValueOrDefault(declared.Stat);
             taken[declared.Stat] = at + 1;
@@ -120,7 +122,7 @@ public static class StatMagnitudes
 
         // A rolled slot takes whatever the caller sent that no declared slot claimed, because a
         // caller listing five stats on an item that declares three is naming the two it rolled.
-        var spare = Spare(entity, query, taken);
+        var spare = Spare(item, query, taken);
         var spareAt = 0;
 
         for (var index = 0; index < rolledSlots; index++)
@@ -194,9 +196,9 @@ public static class StatMagnitudes
     /// slots are counted: the rest are drawn at random from a pool that holds gem power and
     /// ability ranks as well as stats, so how many of them are stats differs per copy.
     /// </summary>
-    private static int RandomSlots(Entity entity, StatCalculationFile calculation, RarityEntry? rarity)
+    private static int RandomSlots(Item item, StatCalculationFile calculation, RarityEntry? rarity)
     {
-        if (rarity is null || entity.RuleSet is not { } ruleSet) return 0;
+        if (rarity is null || item.RuleSet is not { } ruleSet) return 0;
         if (!calculation.RarityAdditions.TryGetValue(ruleSet, out var byTier)) return 0;
         if (!byTier.TryGetValue(rarity.Tier, out var added)) return 0;
 
@@ -208,7 +210,7 @@ public static class StatMagnitudes
     /// The caller's stat values that no declared slot consumed, in the order the stats were named.
     /// </summary>
     private static List<(string Stat, decimal Value)> Spare(
-        Entity entity, TooltipQuery query, IReadOnlyDictionary<string, int> taken)
+        Item item, TooltipQuery query, IReadOnlyDictionary<string, int> taken)
     {
         var spare = new List<(string, decimal)>();
 
