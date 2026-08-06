@@ -42,6 +42,15 @@ end of Tasks 3, 4 and 5. An implementer in the wave verifies by building the pro
 touches and by reading the call sites its change breaks, and records the breakage its task leaves in
 its report so the next task's implementer has the list.
 
+Neither test suite runs during the wave. `src/FellowshipExtractor.Tests` carries a project reference
+to `FellowshipExtractor.Api`, for the four files that test API types over the extractor's own export
+fixture: `StatParameterTests.cs`, `StatConversionTests.cs`, `RollLineTests.cs` and
+`AttributeTableTests.cs`. So a broken API stops the extractor's suite from building too, and MSBuild
+gives up before the runner starts. Tasks 4 and 5 change no extractor behaviour, so the suite is not
+the signal for them in any case. An implementer needing to run the extractor's suite inside the wave
+does it in a separate `git worktree` at HEAD, never by stashing this one. Task 7 restores both
+suites and runs them.
+
 ## File structure
 
 | File | What happens |
@@ -222,9 +231,9 @@ name reads "Set bonus power 4012". That is the sentence a reader gets; capitalis
 read as a title the build never gave the row.
 
 **Verification.** `dotnet build src/FellowshipExtractor` and `dotnet build src/Fellowship.SDK` are
-green, and `dotnet test src/FellowshipExtractor.Tests` is green, since the extractor half of this
-task stands on its own. Add a test asserting that a row whose shipped name is a build label projects
-no `Name`, and that one written as words keeps it; the 18 spellings above are the fixture material.
+green. Add a test asserting that a row whose shipped name is a build label projects no `Name`, and
+that one written as words keeps it; the 18 spellings above are the fixture material. Run the
+extractor's suite in a separate `git worktree` at HEAD, per the wave rule above.
 `FellowshipExtractor.Api` does not build; list in your report every call site the change breaks, by
 file and line, from the compiler's own output.
 
