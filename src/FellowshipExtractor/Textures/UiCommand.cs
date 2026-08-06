@@ -13,6 +13,10 @@ public static class UiCommand
         "T_Borders_WindowBackground_TooltipSimple",
         "T_Borders_BGPatterns_SmallIndentAlt",
 
+        "T_Borders_Thin",
+        "T_Borders_Rounded_16",
+        "T_Borders_WindowBackground_Windowed",
+
         "T_Backgrounds_TooltipHeader_Rarity",
         "T_Backgrounds_TooltipHeader_Rarity_Alt",
         "T_Backgrounds_TooltipHeader_Subheader",

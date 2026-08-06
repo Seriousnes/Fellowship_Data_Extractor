@@ -5,6 +5,8 @@ $header-decor-brush-width: 254;
 $rarity-frame-height: 106px;
 $header-decor-height: 14px;
 $window-corner: 7;
+$rounded-window-slice: 32;
+$rounded-window-corner: 16px;
 
 .fx-tip {
   display: flex;
@@ -88,6 +90,18 @@ $window-corner: 7;
     position: relative;
     padding: 9px 0 7px;
     background: var(--fx-header) 0 0/100% 100% no-repeat;
+  }
+
+  &.plain {
+    .card::after {
+      border-width: $rounded-window-corner;
+      border-image: var(--fx-window) $rounded-window-slice stretch;
+    }
+
+    .head {
+      margin: 0 14px;
+      border-bottom: 1px solid var(--core-secondary-600);
+    }
   }
 
   .title {

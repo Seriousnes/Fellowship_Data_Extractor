@@ -50,7 +50,8 @@ public sealed class TooltipView(
             tokens.CssVariables() +
             "--fx-frame:" + (chrome.Frame(rarity?.Name) is { } frame ? $"url({frame})" : "none") +
             ";--fx-slot:" + (chrome.IconFrame(rarity?.Name) is { } slot ? $"url({slot})" : "none") +
-            ";--fx-header:url(" + chrome.Header(rarity?.Name) +
+            ";--fx-header:" + (rarity is null ? "none" : $"url({chrome.Header(rarity.Name)})") +
+            ";--fx-window:url(" + (rarity is null ? chrome.RoundedWindow : chrome.Window) +
             ");--fx-title:" + (colour ?? "var(--core-text-primary)") +
             ";";
     }

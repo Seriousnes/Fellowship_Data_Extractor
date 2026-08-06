@@ -1,6 +1,6 @@
 @inject TooltipView Ui
 
-<div class="@TooltipView.Root" style="@Ui.Variables(Rung)">
+<div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
     <style>@Sheet</style>
     @if (Art is { } art)
     {

@@ -21,6 +21,7 @@ public sealed class ChromeAssets(
 
     private const string PanelTexture = "T_Borders_WindowBackground_TooltipSimple";
     private const string WindowTexture = "T_Borders_BGPatterns_SmallIndentAlt";
+    private const string RoundedWindowTexture = "T_Borders_Rounded_16";
     private const string NeutralHeaderTexture = "T_Backgrounds_TooltipHeader_Subheader";
     private const string SlotTexture = "T_Icons_Generic_TooltipSlot";
     private const string ItemPowerTexture = "T_Icons_Progression_ItemLevel";
@@ -63,6 +64,8 @@ public sealed class ChromeAssets(
     public string Panel => Url(Name(PanelTexture));
 
     public string Window => Url(Name(WindowTexture));
+
+    public string RoundedWindow => Url(Name(RoundedWindowTexture));
 
     public string SlotGlyph(string? slot) =>
         Url(Name(slot is not null && store.Vocabulary.SlotIcons.TryGetValue(slot, out var gear)
