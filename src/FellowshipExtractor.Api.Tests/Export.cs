@@ -37,10 +37,6 @@ public sealed class Export
 
     public EntityStore Store { get; }
 
-    public ChromeAssets Chrome { get; }
-
-    public ExportPaths Paths { get; }
-
     public Export()
     {
         var folder = Environment.GetEnvironmentVariable("FELLOWSHIP_EXPORT") ?? Found();
@@ -49,7 +45,7 @@ public sealed class Export
             .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = folder })
             .Build();
 
-        var paths = Paths = new ExportPaths(configuration);
+        var paths = new ExportPaths(configuration);
 
         Store = new EntityStore(paths, NullLogger<EntityStore>.Instance);
 
@@ -59,7 +55,7 @@ public sealed class Export
         var substitutions = new Placeholders(Store, richText);
 
         var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
-        var chrome = Chrome = new ChromeAssets(icons, paths, Store, tokens);
+        var chrome = new ChromeAssets(icons, paths, Store, tokens);
 
         View = new CodexView(Store, new Codex(Store, tokens), tokens, chrome, richText, substitutions, icons);
 

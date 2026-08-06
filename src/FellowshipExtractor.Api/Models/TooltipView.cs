@@ -48,9 +48,9 @@ public sealed class TooltipView(
 
         return
             tokens.CssVariables() +
-            "--fx-frame:url(" + chrome.Frame(rarity?.Name) +
-            ");--fx-slot:url(" + chrome.IconFrame(rarity?.Name) +
-            ");--fx-header:url(" + chrome.Header(rarity?.Name) +
+            "--fx-frame:" + (chrome.Frame(rarity?.Name) is { } frame ? $"url({frame})" : "none") +
+            ";--fx-slot:" + (chrome.IconFrame(rarity?.Name) is { } slot ? $"url({slot})" : "none") +
+            ";--fx-header:url(" + chrome.Header(rarity?.Name) +
             ");--fx-title:" + (colour ?? "var(--core-text-primary)") +
             ";";
     }

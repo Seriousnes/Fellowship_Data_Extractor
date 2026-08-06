@@ -36,10 +36,6 @@ public sealed class ChromeAssets(
 
     private static readonly string[] RarityTinted = [FrameMask, HeaderMask, IconFrameMask];
 
-    private static readonly string[] NeutralTinted = [FrameMask, IconFrameMask];
-
-    private const string NeutralRung = "neutral";
-
     private static readonly PngEncoder Encoder = new()
     {
         ColorType = PngColorType.RgbWithAlpha,
@@ -51,19 +47,16 @@ public sealed class ChromeAssets(
 
     private readonly IReadOnlyDictionary<string, string> ornaments = MatchOrnaments(paths, store, tokens);
     private readonly IReadOnlyDictionary<string, string> badgeColours = ReadBadgeColours(paths);
-    private readonly Rgba32 border = BorderColour(paths);
 
-    public string Frame(string? rarity) => Url(Name(FrameMask, rarity ?? NeutralRung));
+    public string? Frame(string? rarity) => rarity is null ? null : Url(Name(FrameMask, rarity));
 
     public string Header(string? rarity) =>
-        Url(rarity is null ? Name(NeutralHeaderTexture, NeutralRung) : Name(HeaderMask, rarity));
-
-    public string PanelHeader => Url(Name(NeutralHeaderTexture));
+        rarity is null ? Url(Name(NeutralHeaderTexture)) : Url(Name(HeaderMask, rarity));
 
     public string? Ornament(string rarity) =>
         ornaments.TryGetValue(rarity, out var texture) ? Url(Name(texture)) : null;
 
-    public string IconFrame(string? rarity) => Url(Name(IconFrameMask, rarity ?? NeutralRung));
+    public string? IconFrame(string? rarity) => rarity is null ? null : Url(Name(IconFrameMask, rarity));
 
     public string SlotPlate => Url(Name(SlotPlateTexture));
 
@@ -111,17 +104,6 @@ public sealed class ChromeAssets(
             }
         }
 
-        foreach (var texture in NeutralTinted)
-        {
-            using var mask = Image.Load<Rgba32>(Path.Combine(paths.Ui, texture + ".png"));
-
-            payloads.Add((Name(texture, NeutralRung), Tint(mask, border)));
-        }
-
-        using var plate = Image.Load<Rgba32>(Path.Combine(paths.Ui, NeutralHeaderTexture + ".png"));
-
-        payloads.Add((Name(NeutralHeaderTexture, NeutralRung), Paint(plate, border)));
-
         return payloads;
     }
 
@@ -154,63 +136,6 @@ public sealed class ChromeAssets(
         using var png = new MemoryStream();
         tinted.Save(png, Encoder);
         return png.ToArray();
-    }
-
-    private static byte[] Paint(Image<Rgba32> source, Rgba32 colour)
-    {
-        using var painted = source.Clone();
-
-        painted.ProcessPixelRows(rows =>
-        {
-            for (var y = 0; y < rows.Height; y++)
-            {
-                var row = rows.GetRowSpan(y);
-                for (var x = 0; x < row.Length; x++)
-                {
-                    ref var pixel = ref row[x];
-                    pixel.R = colour.R;
-                    pixel.G = colour.G;
-                    pixel.B = colour.B;
-                }
-            }
-        });
-
-        using var png = new MemoryStream();
-        painted.Save(png, Encoder);
-        return png.ToArray();
-    }
-
-    private static Rgba32 BorderColour(ExportPaths paths)
-    {
-        var file = Path.Combine(paths.Ui, WindowTexture + ".png");
-
-        using var window = Image.Load<Rgba32>(file);
-
-        var drawn = new Dictionary<Rgba32, int>();
-
-        window.ProcessPixelRows(rows =>
-        {
-            for (var y = 0; y < rows.Height; y++)
-            {
-                var row = rows.GetRowSpan(y);
-                for (var x = 0; x < row.Length; x++)
-                {
-                    var pixel = row[x];
-                    if (pixel.A < 128) continue;
-
-                    pixel.A = 255;
-                    drawn[pixel] = 1 + drawn.GetValueOrDefault(pixel);
-                }
-            }
-        });
-
-        if (drawn.Count == 0)
-        {
-            throw new InvalidOperationException(
-                $"{file} draws no opaque pixel, so the colour of the tooltip's border cannot be read.");
-        }
-
-        return drawn.MaxBy(shade => shade.Value).Key;
     }
 
     private static IReadOnlyDictionary<string, string> MatchOrnaments(
