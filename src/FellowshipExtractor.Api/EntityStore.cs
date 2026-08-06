@@ -1,6 +1,9 @@
+using System.Collections.Concurrent;
 using System.Globalization;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Fellowship.SDK.Documents;
 
 namespace FellowshipExtractor.Api;
 
@@ -90,12 +93,20 @@ public sealed class StatParameters
 /// <summary>
 /// The export, read once at startup and indexed by the two things a route carries.
 ///
-/// An id does not always name one thing. 207 of the 13,083 ids in the build expand into several
-/// entries, up to twelve, because one item reads as a different item per armour type and primary
-/// stat: id 5146 is a Webbed Robe in cloth, a Tribal Hauberk in leather and a Venom Pitted
-/// Chestpiece in plate. A hero settles it, and settles all 207, because a hero fixes both
-/// discriminators at once. Without one the request is genuinely ambiguous and is answered as such
-/// rather than by picking a variant and hoping.
+/// An id does not always name one thing. 207 of the 10,285 ids in the build expand into several
+/// entries, up to twelve. 188 of them are items that read as a different item per armour type and
+/// primary stat: id 5146 is a Webbed Robe in cloth, a Tribal Hauberk in leather, a Skittershard
+/// Bound Chestpiece in mail and a Venom Pitted Chestpiece in plate, across its twelve readings. A
+/// hero settles every one of the 188, because a hero fixes both discriminators at once. Without
+/// one the request is genuinely ambiguous and is answered as such rather than by picking a
+/// variant and hoping.
+///
+/// The other 19 are talent slots, not items: <see cref="TalentSlot"/> numbers a position in a
+/// hero's own grid, and every hero's grid reuses that same small pool of numbers for its own
+/// eighteen slots, so the id collides across all twelve heroes rather than naming one slot twice.
+/// A hero does not settle these - <see cref="Reads"/> answers true for every hero on a document
+/// that is not an <see cref="Item"/> - so a caller narrows a talent slot by hero and position
+/// rather than by this id.
 /// </summary>
 public sealed class EntityStore
 {
@@ -104,9 +115,10 @@ public sealed class EntityStore
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter(), new EntityDocumentConverter() },
     };
 
-    private readonly Dictionary<(string Table, int NetId), Entity[]> byId = new();
+    private readonly Dictionary<(Fellowship.SDK.EntityType Type, int Id), EntityDocument[]> byId = new();
 
     /// <summary>
     /// The roster by the name the game prints, and by that name alone.
@@ -124,16 +136,19 @@ public sealed class EntityStore
     /// <summary>
     /// Every line of the export in the order it was written, which is the order the browser
     /// paginates and the order the search index numbers its documents by. A reading of an id is a
-    /// row of its own here: id 5146 is three rows because it is three differently named items, and
-    /// a browser that showed one of them would be hiding two real entries.
+    /// row of its own here: id 5146 is twelve rows, one per hero, spelling four differently named
+    /// items (Webbed Robe in cloth, Tribal Hauberk in leather, Skittershard Bound Chestpiece in
+    /// mail, Venom Pitted Chestpiece in plate), and a browser that showed one of them would be
+    /// hiding eleven real entries.
     /// </summary>
-    public IReadOnlyList<Entity> Entities { get; }
+    public IReadOnlyList<EntityDocument> Entities { get; }
 
     /// <summary>
-    /// The tag tables the export contains, largest first. Derived rather than listed, so a table the
-    /// extractor starts exporting appears in the browser's type tabs without being named here.
+    /// The document types the export contains, largest first then by slug. Derived rather than
+    /// listed, so a type the extractor starts writing appears in the browser's type tabs without
+    /// being named here.
     /// </summary>
-    public IReadOnlyList<string> Tables { get; }
+    public IReadOnlyList<Fellowship.SDK.EntityType> Types { get; }
 
     /// <summary>The stat names an item slot can hold, as a caller spells them.</summary>
     public StatParameters Stats { get; }
@@ -141,15 +156,12 @@ public sealed class EntityStore
     /// <summary>The three attributes a wearer brings to an item, which draw on the primary pool.</summary>
     public IReadOnlySet<string> PrimaryAttributes { get; }
 
-    public int Count { get; }
-
     /// <summary>
-    /// How many of those rows a reader can reach, which is what every surface stating a corpus size
-    /// states. 757 of the 15,235 rows sit in the 12 tables <see cref="PublicTypes"/> files no slug
-    /// for, and a footer counting them told a reader about entries no page, tab, facet or search can
-    /// answer with.
+    /// How many rows the export holds. The drop rules the extractor applies already keep a row a
+    /// reader cannot meet out of the export, so every row here is one a reader can reach and this is
+    /// the whole of what a surface stating a corpus size states.
     /// </summary>
-    public int PublicCount { get; }
+    public int Count { get; }
 
     public EntityStore(ExportPaths paths, ILogger<EntityStore> logger)
     {
@@ -188,27 +200,25 @@ public sealed class EntityStore
         // of what the build allows in that slot.
         PrimaryAttributes = attributes;
 
-        var groups = new Dictionary<(string, int), List<Entity>>();
+        var groups = new Dictionary<(Fellowship.SDK.EntityType, int), List<EntityDocument>>();
         var stats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var spelled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var entities = new List<Entity>();
+        var entities = new List<EntityDocument>();
 
         foreach (var line in File.ReadLines(paths.Entities))
         {
             if (line.Length == 0) continue;
 
-            var entity = JsonSerializer.Deserialize<Entity>(line, Options);
-            if (entity?.Table is not { } table || entity.NetId is not { } netId) continue;
+            var document = JsonSerializer.Deserialize<EntityDocument>(line, Options)
+                ?? throw new InvalidOperationException($"A line of {paths.Entities} deserialised to nothing.");
 
-            if (!groups.TryGetValue((table, netId), out var list)) groups[(table, netId)] = list = [];
-            list.Add(entity);
-            entities.Add(entity);
+            var key = (EntityTypes.TypeOf(document), document.Id);
 
-            foreach (var slot in entity.Stats ?? []) stats.Add(slot.Stat);
+            if (!groups.TryGetValue(key, out var list)) groups[key] = list = [];
+            list.Add(document);
+            entities.Add(document);
 
-            Census(entity, spelled);
-
-            if (PublicTypes.IsPublic(table)) PublicCount++;
+            Census(document, stats, spelled);
 
             Count++;
         }
@@ -218,11 +228,11 @@ public sealed class EntityStore
         Entities = entities;
         Stats = new StatParameters(stats, Vocabulary.StatCalculation.Attributes);
 
-        Tables =
+        Types =
         [
-            .. entities.GroupBy(e => e.Table!, StringComparer.Ordinal)
+            .. entities.GroupBy(EntityTypes.TypeOf)
                 .OrderByDescending(g => g.Count())
-                .ThenBy(g => g.Key, StringComparer.Ordinal)
+                .ThenBy(g => EntityTypes.Slug(g.Key), StringComparer.Ordinal)
                 .Select(g => g.Key),
         ];
 
@@ -231,10 +241,9 @@ public sealed class EntityStore
         var unnamed = spelled.Count(key => !rows.ContainsKey(key));
 
         logger.LogInformation(
-            "Export loaded from {Path}: {Entities} entities under {Ids} ids, {Ambiguous} of which read differently per hero, " +
-            "{Public} of them public. " +
+            "Export loaded from {Path}: {Entities} entities under {Ids} ids, {Ambiguous} of which read differently per hero. " +
             "{Heroes} heroes, {Rarities} rarity rungs, {Formats} print formats, {Colors} colours, {Styles} text styles, {Stats} stat names",
-            paths.Export, Count, byId.Count, byId.Count(e => e.Value.Length > 1), PublicCount, Vocabulary.Heroes.Count,
+            paths.Export, Count, byId.Count, byId.Count(e => e.Value.Length > 1), Vocabulary.Heroes.Count,
             Vocabulary.Rarities.Count, Vocabulary.PrintFormats.Count, Vocabulary.Colors.Count,
             Vocabulary.TextStyles.Count, Stats.Names.Count);
 
@@ -252,20 +261,52 @@ public sealed class EntityStore
     }
 
     /// <summary>
+    /// Cached by document runtime type and property name, so the reflection <see cref="Field{T}"/>
+    /// runs only once per document class per field rather than once per row.
+    /// </summary>
+    private static readonly ConcurrentDictionary<(Type Document, string Property), PropertyInfo?> Fields = new();
+
+    /// <summary>
+    /// One list-valued field, read off a document by its own runtime type rather than by a
+    /// hand-kept list of which document classes carry it. A document class with no property of that
+    /// name, or one of a different shape, contributes nothing rather than throwing.
+    /// </summary>
+    private static IReadOnlyList<T> Field<T>(EntityDocument document, string name) =>
+        Fields.GetOrAdd((document.GetType(), name), key => key.Document.GetProperty(key.Property))
+            ?.GetValue(document) as IReadOnlyList<T> ?? [];
+
+    /// <summary>
     /// Every attribute name one row spells, over the three fields that carry one: the stat slots an
     /// item rolls, the scaling list a description's numbers grow with, and the tuning row behind each
     /// {Token}. The census is what the startup log counts the build's naming against.
     ///
-    /// The rows nested inside a row are not walked, because they name nothing new: the 200 granted
-    /// abilities and 111 legendary stat lines spell no attribute across these three fields that the
-    /// row carrying them does not already spell, so the census is the same 82 names either way.
+    /// Read off each document's own runtime type rather than off one shape. Only <see cref="Item"/>
+    /// carries <see cref="Item.Stats"/>; a smaller family of document types carries a
+    /// <c>ScalesOff</c> list and, on most of those, a <c>Placeholders</c> list besides.
+    /// <see cref="Field{T}"/> asks a document's own runtime type for the property by name rather
+    /// than working from a list of which types carry it, so a document type that gains one of these
+    /// fields is counted from the day it ships rather than the day someone remembers to add it here.
+    ///
+    /// Nothing here is nested to skip. An item names the power it grants and the legendary stats it
+    /// carries by id - <see cref="Item.GrantsId"/> and <see cref="Item.LegendaryStatIds"/> - and the
+    /// line behind each id is exported on its own, which this walks when it reaches that line rather
+    /// than through the item pointing at it. <see cref="GemType.OverflowPlaceholders"/> is the one
+    /// token-bearing field this does not walk, matching this store's predecessor, which never
+    /// counted a gem type's overflow sentence either.
+    ///
+    /// Measured over the current export: 82 attribute names.
     /// </summary>
-    private static void Census(Entity entity, HashSet<string> spelled)
+    private static void Census(EntityDocument document, HashSet<string> stats, HashSet<string> spelled)
     {
-        foreach (var slot in entity.Stats ?? []) spelled.Add(slot.Stat);
-        foreach (var attribute in entity.ScalesOff ?? []) spelled.Add(attribute);
+        foreach (var slot in Field<StatSlot>(document, nameof(Item.Stats)))
+        {
+            stats.Add(slot.Stat);
+            spelled.Add(slot.Stat);
+        }
 
-        foreach (var token in entity.Placeholders?.Values ?? [])
+        foreach (var attribute in Field<string>(document, nameof(Ability.ScalesOff))) spelled.Add(attribute);
+
+        foreach (var token in Field<Placeholder>(document, nameof(Ability.Placeholders)))
         {
             if (token.Attribute is { } attribute) spelled.Add(attribute);
             foreach (var scaling in token.ScalesOff ?? []) spelled.Add(scaling);
@@ -342,25 +383,29 @@ public sealed class EntityStore
         name is not null && heroesByName.TryGetValue(name, out var hero) ? hero : null;
 
     /// <summary>Every reading of an id, in export order, or empty when the build has no such id.</summary>
-    public IReadOnlyList<Entity> All(string table, int netId) =>
-        byId.TryGetValue((table, netId), out var found) ? found : [];
+    public IReadOnlyList<EntityDocument> All(Fellowship.SDK.EntityType type, int id) =>
+        byId.TryGetValue((type, id), out var found) ? found : [];
 
     /// <summary>
-    /// The one reading of an id a caller means. A hero narrows on the two things an entry is split
-    /// by and on the hero list an entry names, which between them leave at most one entry in every
-    /// case the build contains.
+    /// The one reading of an id a caller means. A hero narrows on the two things an
+    /// <see cref="Item"/> entry is split by and on the hero list it names, which between them leave
+    /// at most one entry on every one of the 188 item ids that split. <see cref="Reads"/> answers
+    /// true for every hero on anything that is not an <see cref="Item"/>, so on the 19 talent-slot
+    /// ids that split nothing narrows and the first reading answers regardless of which hero, if
+    /// any, the caller named.
     /// </summary>
-    public Lookup Resolve(string table, int netId, string? heroName, out Entity? entity, out HeroEntry? hero)
+    public Lookup Resolve(
+        Fellowship.SDK.EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero)
     {
-        entity = null;
+        document = null;
         hero = Hero(heroName);
 
-        var candidates = All(table, netId);
+        var candidates = All(type, id);
         if (candidates.Count == 0) return Lookup.NoSuchId;
 
         if (candidates.Count == 1)
         {
-            entity = candidates[0];
+            document = candidates[0];
             return Lookup.Found;
         }
 
@@ -371,7 +416,7 @@ public sealed class EntityStore
 
         if (matches.Length == 0) return Lookup.NotForThatHero;
 
-        entity = matches[0];
+        document = matches[0];
         return Lookup.Found;
     }
 
@@ -379,15 +424,28 @@ public sealed class EntityStore
     /// Whether one reading of an id is the one a hero sees, and the only place that question is
     /// answered.
     ///
-    /// A line that names its heroes has already answered it, so nothing else is asked. The armour
-    /// type and the primary stat on such a line describe the item as that hero wears it rather than
-    /// narrowing which hero it is for, and demanding they equal the hero's own is how every dynamic
-    /// cloak used to answer 404 for nine heroes in twelve: a cloak is Cloth for everyone who wears
-    /// one, so the three Cloth heroes matched and Mail, Leather and Plate heroes were turned away
-    /// from their own item.
+    /// Only <see cref="Item"/> carries the three fields this tests; a document of any other type
+    /// reads for every hero, because nothing else in the corpus reads differently by armour type,
+    /// primary stat or wearer.
+    ///
+    /// A line that names its heroes has already answered it, so nothing else is asked.
+    /// <see cref="Item.Heroes"/> is the field tested, not <see cref="Item.Hero"/>:
+    /// <see cref="Item.Hero"/> is null on exactly the rows this clause exists for, the ones naming
+    /// several heroes at once. Item 2055, the Expedition Cloak, names Elarion, Meiko and Mara
+    /// together with no singular <see cref="Item.Hero"/> and an armour type of Cloth, which is none
+    /// of the three heroes' own (Mail, Leather, Leather); testing <see cref="Item.Hero"/> here would
+    /// fall through to the armour pair below and match none of them.
+    ///
+    /// The armour type and the primary stat on a line that names its heroes describe the item as
+    /// that hero wears it rather than narrowing which hero it is for, and demanding they equal the
+    /// hero's own is how every dynamic cloak used to answer 404 for nine heroes in twelve: a cloak
+    /// is Cloth for everyone who wears one, so the three Cloth heroes matched and Mail, Leather and
+    /// Plate heroes were turned away from their own item.
     ///
     /// The two remaining tests are for the lines that name no hero at all, where the pair is the
-    /// only discriminator there is.
+    /// only discriminator there is. The hero's own words are parsed through the same generated
+    /// enums the document carries, so a vocabulary spelling that no longer names a member fails
+    /// loudly rather than comparing two strings that have quietly drifted apart.
     ///
     /// Public because the page and the endpoint both ask it and disagreeing is what they did. The
     /// browser carried its own copy without the first clause, so items 5127 to 5144 - eighteen
@@ -396,23 +454,41 @@ public sealed class EntityStore
     /// screen, and advertised a tooltip address that answered 400 for want of the hero it had just
     /// declined to name.
     /// </summary>
-    public static bool Reads(Entity entity, HeroEntry hero) =>
-        entity.Heroes is { } heroes
-            ? heroes.Contains(hero.Name)
-            : (entity.ArmorType is null || entity.ArmorType == hero.ArmorType) &&
-              (entity.PrimaryStat is null || entity.PrimaryStat == hero.PrimaryStat);
+    public static bool Reads(EntityDocument document, HeroEntry hero) =>
+        document is not Item item ||
+        (item.Heroes is { } heroes
+            ? heroes.Contains(ParseHero(hero.Name))
+            : (item.ArmorType is null || item.ArmorType == ParseArmorType(hero.ArmorType)) &&
+              (item.PrimaryStat is null || item.PrimaryStat == ParsePrimaryStat(hero.PrimaryStat)));
+
+    private static Hero ParseHero(string name) =>
+        Enum.TryParse<Hero>(name, out var hero) ? hero : throw new FormatException($"'{name}' names no {nameof(Hero)}.");
+
+    private static ArmorType? ParseArmorType(string? name) =>
+        name is null ? null
+            : Enum.TryParse<ArmorType>(name, out var armorType) ? armorType
+            : throw new FormatException($"'{name}' names no {nameof(ArmorType)}.");
+
+    private static PrimaryStat ParsePrimaryStat(string name) =>
+        Enum.TryParse<PrimaryStat>(name, out var primaryStat)
+            ? primaryStat
+            : throw new FormatException($"'{name}' names no {nameof(PrimaryStat)}.");
 
     /// <summary>
     /// The hero a reading is drawn for when the caller named none: the first of the roster who sees
     /// it, in the order the build lists them.
     ///
-    /// Every one of the 2,143 readings behind the 188 split ids names exactly one hero, so on the
-    /// ids this is asked about the answer is that hero rather than a choice between several. A
-    /// reading naming none falls to the armour and stat pair, which is why this can still answer for
-    /// the 42 single-reading items that name a roster without splitting by it.
+    /// Every one of the 2,143 readings behind the 188 split item ids names exactly one hero, so on
+    /// those ids the answer is that hero rather than a choice between several. A reading naming
+    /// none falls to the armour and stat pair, which is why this can still answer for the 42
+    /// single-reading items that name a roster without splitting by it.
+    ///
+    /// Meaningful for items only. On a document that is not an <see cref="Item"/>,
+    /// <see cref="Reads"/> answers true for every hero, so this answers with whichever hero the
+    /// roster lists first rather than the one the row is actually for.
     /// </summary>
-    public HeroEntry? Wearer(Entity entity) =>
-        Vocabulary.Heroes.FirstOrDefault(hero => Reads(entity, hero));
+    public HeroEntry? Wearer(EntityDocument document) =>
+        Vocabulary.Heroes.FirstOrDefault(hero => Reads(document, hero));
 
     /// <summary>
     /// The rarity rung a caller's word names, out of the words the game prints. A rung has more than
