@@ -57,7 +57,7 @@
         <div class="cx-cards">
             @foreach (var entity in Showcase)
             {
-                <EntityLink Entity="entity" Class="cx-card" Tint="false">
+                <EntityLink Entity="entity" Class="cx-card">
                     <span class="cx-linked">
                         <Icon Src="@Ui.Icon(DocumentFields.Text(entity, nameof(ItemDocument.Icon)))" />
                         <span>

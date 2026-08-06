@@ -16,9 +16,7 @@
 
     [Parameter] public string? Class { get; set; }
 
-    [Parameter] public bool Tint { get; set; } = true;
-
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
-    private string? Tone => Tint ? $"color:{Ui.NameColour(Entity)}" : null;
+    private string? Tone => Ui.LinkColour(Entity) is { } colour ? $"color:{colour}" : null;
 }

@@ -31,17 +31,17 @@ public sealed class CodexView(
 
     public string Icon(string? icon) => icon is null ? chrome.SlotPlate : $"{icons.Uri}/{icon}";
 
-    public string NameColour(EntityDocument document)
+    public string? LinkColour(EntityDocument document)
     {
-        Rarity? rarity = document switch
+        Rarity? rung = document switch
         {
-            ItemDocument { Rarity: { } value } => value,
-            CurrencyDocument { Rarity: { } coin } => coin,
+            ItemDocument { Rarities: { Count: > 0 } rungs } => rungs[^1],
+            ItemDocument { Rarity: { } stated } => stated,
             GemTierDocument tier => tier.Rarity,
             _ => null,
         };
 
-        if (rarity is { } rung && tokens.Rarity(rung.ToString()) is { } shade) return Readable(shade)!;
+        if (rung is { } found && Rung(found) is { } shade) return shade;
 
         GemTypeName? gem = document switch
         {
@@ -51,24 +51,19 @@ public sealed class CodexView(
             _ => null,
         };
 
-        if (gem is { } stone && tokens.Gem(stone.ToString()) is { } colour) return Readable(colour)!;
-
-        var tint = document switch
-        {
-            ItemDocument { Heroes: [{ } hero] } => HeroTint(hero),
-            TalentSlotDocument slot => HeroTint(slot.Hero),
-            _ => null,
-        };
-
-        if (tint is not null) return Readable(tint)!;
-
-        return PublicTypes.DisplayNameOf(document) is null
-            ? tokens.Color("core.text-secondary") ?? "#909BA6"
-            : tokens.Color("core.text-primary") ?? "#EAE3DB";
+        return gem is { } stone ? Readable(tokens.Gem(stone.ToString())) : null;
     }
 
-    private string? HeroTint(Hero hero) =>
-        store.Hero(hero.ToString())?.Codename is { } codename ? tokens.Hero(codename) : null;
+    private string? Rung(Rarity rarity) =>
+        store.Vocabulary.Rarities.FirstOrDefault(entry => entry.Tier == (int)rarity) is { } rung
+            ? Readable(tokens.Rarity(rung.Name))
+            : null;
+
+    public string NameColour(EntityDocument document) =>
+        LinkColour(document)
+        ?? (PublicTypes.DisplayNameOf(document) is null
+            ? tokens.Color("core.text-secondary") ?? "#909BA6"
+            : tokens.Color("core.text-primary") ?? "#EAE3DB");
 
     public string? HeroColour(string name) => Readable(tokens.Hero(store.Hero(name)?.Codename ?? name));
 
