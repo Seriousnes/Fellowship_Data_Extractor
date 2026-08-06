@@ -127,12 +127,14 @@ public sealed class EntityStore
         var spelled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var entities = new List<EntityDocument>();
 
+        var number = 0;
+
         foreach (var line in File.ReadLines(paths.Entities))
         {
+            number++;
             if (line.Length == 0) continue;
 
-            var document = JsonSerializer.Deserialize<EntityDocument>(line, Options)
-                ?? throw new InvalidOperationException($"A line of {paths.Entities} deserialised to nothing.");
+            var document = Read(line, number, paths.Entities);
 
             var key = (EntityTypes.TypeOf(document), document.Id);
 
@@ -173,6 +175,23 @@ public sealed class EntityStore
             "Attribute names: {Named} of {Attributes} shipped rows print a word, and {Unnamed} of the {Spelled} attribute " +
             "names the export spells have no row, so they print spaced out",
             named, rows.Count, unnamed, spelled.Count);
+    }
+
+    private static EntityDocument Read(string line, int number, string path)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<EntityDocument>(line, Options)
+                ?? throw new InvalidOperationException($"Line {number} of {path} deserialised to nothing.");
+        }
+        catch (JsonException failure)
+        {
+            throw new InvalidOperationException(
+                $"Line {number} of {path} does not read as a document: {failure.Message} An export written " +
+                "before a document carried the type it is read back as reads this way. Write it again with " +
+                "'dotnet run --project src/FellowshipExtractor -- export-all'.",
+                failure);
+        }
     }
 
     private static void Census(EntityDocument document, HashSet<string> stats, HashSet<string> spelled)
