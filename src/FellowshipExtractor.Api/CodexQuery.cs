@@ -1,4 +1,5 @@
 using System.Globalization;
+using Fellowship.SDK.Documents;
 
 namespace FellowshipExtractor.Api;
 
@@ -14,8 +15,8 @@ namespace FellowshipExtractor.Api;
 /// mistypes <c>slots=Head</c> would otherwise be shown the whole corpus and told nothing - and so is
 /// a value no row carries, which is what let <c>?hero=Lisa</c> and <c>?rarity=Champion</c> answer
 /// 200 with an empty page and a chip spelling the internal word back. <c>type</c> is checked against
-/// the slugs of the public types, refusing everything else and a shipped table name in particular,
-/// and every other value against the list <see cref="Codex.Offered"/> counts off the corpus.
+/// the slugs <see cref="EntityTypes"/> hands out, refusing everything else, and every other value
+/// against the list <see cref="Codex.Offered"/> counts off the corpus.
 /// </summary>
 public sealed record CodexQuery
 {
@@ -26,14 +27,14 @@ public sealed record CodexQuery
     public string? Text { get; init; }
 
     /// <summary>
-    /// The tables to read, or every public table when the caller named none.
+    /// The types to read, or every type when the caller named none.
     ///
-    /// Held as the shipped table name because that is what a row carries and what a filter compares
-    /// against, and turned back into a slug on the way out. A slug is the only spelling that crosses
-    /// the wire in either direction: it is what <see cref="Parse"/> accepts and what
-    /// <see cref="ToQueryString"/> and <see cref="Fields"/> write.
+    /// Held as the <see cref="EntityType"/> itself, which is what a row's runtime class resolves to
+    /// and what a filter compares against, and turned into a slug only on the way out. A slug is the
+    /// only spelling that crosses the wire in either direction: it is what <see cref="Parse"/>
+    /// accepts and what <see cref="ToQueryString"/> and <see cref="Fields"/> write.
     /// </summary>
-    public IReadOnlyList<string> Tables { get; init; } = [];
+    public IReadOnlyList<EntityType> Types { get; init; } = [];
 
     /// <summary>What the caller chose under each facet, keyed by the facet's own key.</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<string>> Selections { get; init; } =
@@ -65,7 +66,7 @@ public sealed record CodexQuery
         var selections = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
         var flags = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         var ranges = new Dictionary<string, (double?, double?)>(StringComparer.OrdinalIgnoreCase);
-        var tables = new List<string>();
+        var types = new List<EntityType>();
 
         string? text = null, sort = "name", group = null;
         var descending = false;
@@ -87,19 +88,18 @@ public sealed record CodexQuery
                     continue;
 
                 case "type":
-                    // A slug, and nothing else. The shipped table name is deliberately not a
-                    // spelling this understands: accepting it would keep it working as an address,
-                    // and a link carrying one is then something a reader can be handed and repeat.
+                    // Resolved through EntityTypes.TryParse, which is the one place a slug and a
+                    // type join in either direction, so a value this accepts is always one
+                    // ToQueryString and Fields can write back out.
                     foreach (var slug in values)
                     {
-                        if (PublicTypes.TableOf(slug) is not { } named)
+                        if (!EntityTypes.TryParse(slug, out var named))
                         {
-                            error = $"'{slug}' is not a type. The types are " +
-                                string.Join(", ", PublicTypes.All.Select(t => t.Slug)) + ".";
+                            error = PublicTypes.NoSuchType(slug);
                             return new CodexQuery();
                         }
 
-                        tables.Add(named);
+                        types.Add(named);
                     }
 
                     continue;
@@ -199,7 +199,7 @@ public sealed record CodexQuery
         return new CodexQuery
         {
             Text = string.IsNullOrWhiteSpace(text) ? null : text.Trim(),
-            Tables = tables,
+            Types = types,
             Selections = selections,
             Flags = flags,
             Ranges = ranges,
@@ -246,7 +246,7 @@ public sealed record CodexQuery
             parts.Add($"{Uri.EscapeDataString(key)}={Uri.EscapeDataString(value)}");
 
         var text = Text;
-        var tables = Tables.ToList();
+        var types = Types.ToList();
         var selections = Selections.ToDictionary(
             pair => pair.Key, pair => pair.Value.ToList(), StringComparer.OrdinalIgnoreCase);
         var flags = new Dictionary<string, bool>(Flags, StringComparer.OrdinalIgnoreCase);
@@ -258,7 +258,7 @@ public sealed record CodexQuery
         {
             if (string.Equals(switched.Key, "type", StringComparison.OrdinalIgnoreCase))
             {
-                if (!tables.Remove(switched.Value)) tables.Add(switched.Value);
+                if (EntityTypes.TryParse(switched.Value, out var type) && !types.Remove(type)) types.Add(type);
             }
             else
             {
@@ -277,7 +277,7 @@ public sealed record CodexQuery
                 case "dir": descending = set.Value?.StartsWith('d') == true; break;
                 case "group": group = set.Value; break;
                 case "type":
-                    tables = set.Value is null ? [] : [set.Value];
+                    types = set.Value is null ? [] : EntityTypes.TryParse(set.Value, out var replaced) ? [replaced] : [];
                     break;
                 default:
                     // A flag lives in its own map, so replacing one has to reach that map: reading
@@ -301,10 +301,7 @@ public sealed record CodexQuery
         }
 
         if (!string.IsNullOrWhiteSpace(text)) Add("q", text);
-        foreach (var table in tables)
-        {
-            if (PublicTypes.SlugOf(table) is { } slug) Add("type", slug);
-        }
+        foreach (var type in types) Add("type", EntityTypes.Slug(type));
 
         foreach (var (key, values) in selections.OrderBy(p => p.Key, StringComparer.Ordinal))
         {
@@ -342,13 +339,9 @@ public sealed record CodexQuery
     {
         if (!string.IsNullOrWhiteSpace(Text)) yield return ("q", Text);
 
-        // The same slug the links carry. A hidden field is submitted straight back to Parse, so a
-        // shipped table name here would answer "that filter could not be read" the moment a reader
-        // applied a range from a type tab.
-        foreach (var table in Tables)
-        {
-            if (PublicTypes.SlugOf(table) is { } slug) yield return ("type", slug);
-        }
+        // The same slug the links carry. A hidden field is submitted straight back to Parse, and
+        // EntityTypes.Slug is the one spelling Parse's own "type" case reads back.
+        foreach (var type in Types) yield return ("type", EntityTypes.Slug(type));
 
         foreach (var (key, values) in Selections.OrderBy(p => p.Key, StringComparer.Ordinal))
         {
@@ -374,18 +367,18 @@ public sealed record CodexQuery
         Selections.TryGetValue(facet, out var values) &&
         values.Contains(value, StringComparer.OrdinalIgnoreCase);
 
-    public bool ChosenType(string table) => Tables.Contains(table, StringComparer.OrdinalIgnoreCase);
+    public bool ChosenType(EntityType type) => Types.Contains(type);
 
     /// <summary>Whether anything at all narrows the corpus, which is what an empty state reads.</summary>
     public bool IsEmpty =>
-        Text is null && Tables.Count == 0 && Selections.All(s => s.Value.Count == 0) &&
+        Text is null && Types.Count == 0 && Selections.All(s => s.Value.Count == 0) &&
         Flags.Count == 0 && Ranges.Count == 0;
 }
 
 /// <summary>
-/// Runs a <see cref="CodexQuery"/> against the public corpus: filter, then rank, then page. Filtering
-/// and facet counting both read the <see cref="Codex"/>'s selectors, so the counts beside a filter
-/// always describe the rows that filter would leave.
+/// Runs a <see cref="CodexQuery"/> against the corpus: filter, then rank, then page. Filtering and
+/// facet counting both read the <see cref="Codex"/>'s selectors, so the counts beside a filter always
+/// describe the rows that filter would leave.
 /// </summary>
 public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex index)
 {
@@ -394,19 +387,14 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
         // A text query narrows first, because it is the one filter with a relevance order of its
         // own: the rank the index assigns is what "sort by name" means for a search, and recomputing
         // it after the other filters would cost the same and say the same thing.
-        IEnumerable<Entity> read = query.Text is { } text
-            ? index.Search(text, int.MaxValue).Select(hit => hit.Entity)
+        IEnumerable<EntityDocument> read = query.Text is { } text
+            ? index.Search(text, int.MaxValue).Select(hit => hit.Document)
             : store.Entities;
 
-        // The corpus a reader may meet, which is not the whole export. 11 of its 18 tables carry no
-        // row the game ever names, so a row of one of them has nothing to be called but its gameplay
-        // tag, and is not a result, a facet count or a tab.
-        //
-        // Narrowed once, here, rather than tested inside the filter. Every tally the page draws (the
-        // facet counts, the type tabs, the range boxes) is taken off this same array, and a boundary
-        // applied to some of them and not the others is exactly how a hidden row reappears in a
-        // number after being kept off the list.
-        var rows = read.Where(row => PublicTypes.IsPublic(row.Table)).ToArray();
+        // Read straight off the store or the index, with no further narrowing: the extractor's own
+        // drop rules already keep everything a reader cannot meet out of the export, so every row
+        // read here is a result, a facet count and a tab candidate.
+        var rows = read.ToArray();
 
         var matched = rows.Where(row => Matches(row, query)).ToArray();
 
@@ -427,11 +415,11 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
         // The type tabs count every type the *rest* of the filter leaves, not the chosen one only.
         // A reader on the Items tab of a search wants to see that there are also three abilities by
         // that name; counting under the type filter would show zero beside every other tab.
-        var across = rows.Where(row => Matches(row, query, skipTables: true)).ToArray();
+        var across = rows.Where(row => Matches(row, query, skipTypes: true)).ToArray();
 
         var types = across
-            .GroupBy(row => row.Table!, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
+            .GroupBy(EntityTypes.TypeOf)
+            .ToDictionary(g => g.Key, g => g.Count());
 
         // Which measures are worth offering a range box for, counted the same way a facet is: over
         // the rows every filter but the ranges leaves. Counting over the page instead would make a
@@ -450,13 +438,12 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
         new Dictionary<string, (double?, double?)>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The rows every filter but one leaves, which is what that one filter's counts are of.</summary>
-    private Entity[] Without(IReadOnlyList<Entity> rows, CodexQuery query, string facet) =>
+    private EntityDocument[] Without(IReadOnlyList<EntityDocument> rows, CodexQuery query, string facet) =>
         [.. rows.Where(row => Matches(row, query, skipFacet: facet))];
 
-    private bool Matches(Entity row, CodexQuery query, string? skipFacet = null, bool skipTables = false)
+    private bool Matches(EntityDocument row, CodexQuery query, string? skipFacet = null, bool skipTypes = false)
     {
-        if (!skipTables && query.Tables.Count > 0 &&
-            !query.Tables.Contains(row.Table!, StringComparer.OrdinalIgnoreCase))
+        if (!skipTypes && query.Types.Count > 0 && !query.Types.Contains(EntityTypes.TypeOf(row)))
         {
             return false;
         }
@@ -489,7 +476,7 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
         return true;
     }
 
-    private Entity[] Order(Entity[] rows, CodexQuery query)
+    private EntityDocument[] Order(EntityDocument[] rows, CodexQuery query)
     {
         // A grouped table has to arrive grouped, because the page draws a heading whenever the value
         // changes and rows in sort order would head every second row.
@@ -506,21 +493,21 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
         // by name would throw away the ranking that put the exact match first.
         if (query.Text is not null && query.Sort == "name" && !query.Descending) return rows;
 
-        IOrderedEnumerable<Entity> ordered = query.Sort switch
+        IOrderedEnumerable<EntityDocument> ordered = query.Sort switch
         {
             // By the name the row prints, which for more than half of them is "Effect 2018" rather
-            // than a display name. Ordering by the gameplay tag underneath instead would sort the
-            // page by something none of it shows, and read as no order at all.
+            // than a display name. Ordering by the id underneath instead would sort the page by
+            // something none of it shows, and read as no order at all.
             "name" => query.Descending
                 ? rows.OrderByDescending(row => PublicTypes.NameOf(row), StringComparer.OrdinalIgnoreCase)
                 : rows.OrderBy(row => PublicTypes.NameOf(row), StringComparer.OrdinalIgnoreCase),
 
-            // By the heading the type column draws, for the same reason: the shipped table names run
-            // CRAICharacter before GameplayAbility before ItemID, which beside Creatures, Ability and
-            // Items on screen is an alphabet the reader cannot see.
+            // By the heading the type column draws, for the same reason: the enum members sort
+            // Ability before Creature before Item, which beside Abilities, Creatures and Items on
+            // screen is an alphabet the reader cannot see.
             "type" => query.Descending
-                ? rows.OrderByDescending(row => PublicTypes.Label(row.Table), StringComparer.OrdinalIgnoreCase)
-                : rows.OrderBy(row => PublicTypes.Label(row.Table), StringComparer.OrdinalIgnoreCase),
+                ? rows.OrderByDescending(row => PublicTypes.Label(EntityTypes.TypeOf(row)), StringComparer.OrdinalIgnoreCase)
+                : rows.OrderBy(row => PublicTypes.Label(EntityTypes.TypeOf(row)), StringComparer.OrdinalIgnoreCase),
 
             _ => Measured(rows, codex.Measure(query.Sort)!, query.Descending),
         };
@@ -529,7 +516,7 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
         [
             .. ordered
                 .ThenBy(row => PublicTypes.NameOf(row), StringComparer.OrdinalIgnoreCase)
-                .ThenBy(row => row.NetId),
+                .ThenBy(row => row.Id),
         ];
     }
 
@@ -538,7 +525,7 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
     /// cooldown sort exists to see the longest cooldowns, and putting every item with no cooldown at
     /// the top would answer with a page of them.
     /// </summary>
-    private static IOrderedEnumerable<Entity> Measured(Entity[] rows, Measure measure, bool descending) =>
+    private static IOrderedEnumerable<EntityDocument> Measured(EntityDocument[] rows, Measure measure, bool descending) =>
         descending
             ? rows.OrderBy(row => measure.Value(row) is null).ThenByDescending(row => measure.Value(row))
             : rows.OrderBy(row => measure.Value(row) is null).ThenBy(row => measure.Value(row));
@@ -549,8 +536,8 @@ public sealed record CodexResults(
     int Total,
     int Page,
     int Pages,
-    IReadOnlyList<Entity> Rows,
+    IReadOnlyList<EntityDocument> Rows,
     IReadOnlyList<FacetView> Facets,
-    IReadOnlyDictionary<string, int> Types,
+    IReadOnlyDictionary<EntityType, int> Types,
     int AcrossTypes,
     IReadOnlyList<string> Measured);

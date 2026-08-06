@@ -1,30 +1,26 @@
+using Fellowship.SDK.Documents;
+
 namespace FellowshipExtractor.Api;
 
 /// <summary>
-/// The name index the omnibox runs against: every word of every display name a public row carries,
-/// as one sorted term list with a posting list per term.
+/// The name index the omnibox runs against: every word of every display name a document carries, as
+/// one sorted term list with a posting list per term.
 ///
-/// Display names, and nothing else. The other name a row has is its gameplay tag, which is the
-/// build's internal spelling of it and is shown to a reader nowhere, so it is searched for a reader
-/// nowhere either: "ga_mara" reaches nothing, and neither does a hero's codename or a tag table's
-/// name, because no term in here was ever written that way. Dropping the tags takes the term list
-/// from 6,313 terms to 2,336.
+/// Display names, and nothing else. <see cref="PublicTypes.DisplayNameOf"/> is just
+/// <see cref="EntityDocument.Name"/>, and the extractor has already dropped a row's own build label
+/// from that field before the row ever reaches the export, so there is no second spelling left here
+/// to keep out: a document that carries no name contributes no term, the same as one this index has
+/// never met.
 ///
-/// A display name only counts as one where <see cref="PublicTypes.DisplayNameOf"/> says it is one,
-/// which is what keeps the build's own labels out of the box: the 48 rows named
-/// UB_CadavrianBannerman.WarHorn, AutoAttack, CastProjectile, RuinsLasher, Playtest GearToken and
-/// the like answered "warhorn", "autoattack" and "playtest" outright, and now contribute no term at
-/// all, the same as a row shipping no name.
-///
-/// The consequence is the point. 7,957 of the 14,478 public rows carry no name by that test, so they
-/// contribute no term at all and cannot be reached by any spelling of anything: they leave search by
-/// construction rather than by a filter downstream that somebody has to remember to apply. The rows
-/// of a non-public table are held out of the corpus the same way, one Where at build time rather
-/// than a test per query, which is 757 rows over 12 tables a reader is never shown.
+/// Measured over the export: 6,440 of the 12,437 documents carry a name and contribute a term, for
+/// 2,285 terms and 16,278 postings between them. 1,288 of the named ones are effects named by the
+/// ability that applies them, and 123 of those share the single word "Attack" with the ability they
+/// took it from - typing "attack" reaches both, and a reader who types a name means the thing that
+/// owns it, which is what <see cref="Score"/>'s one deduction settles.
 ///
 /// Built rather than scanned because a display name is several words a reader might type any one of,
 /// and a CamelCase one is several more inside a single run. Splitting a name into its words at build
-/// time, including at every capital, turns what would be a substring scan over five thousand names
+/// time, including at every capital, turns what would be a substring scan over several thousand names
 /// on every keystroke into a binary search over the terms that begin with what was typed.
 ///
 /// Prefix rather than exact, because the box answers while the reader is still typing: "thund"
@@ -34,7 +30,7 @@ namespace FellowshipExtractor.Api;
 /// </summary>
 public sealed class SearchIndex
 {
-    private readonly Entity[] docs;
+    private readonly EntityDocument[] docs;
 
     /// <summary>Each row's display name, lower cased, for the whole-phrase tests.</summary>
     private readonly string[] display;
@@ -54,7 +50,7 @@ public sealed class SearchIndex
 
     public SearchIndex(EntityStore store, ILogger<SearchIndex> logger)
     {
-        docs = [.. store.Entities.Where(entity => PublicTypes.IsPublic(entity.Table))];
+        docs = [.. store.Entities];
 
         display = new string[docs.Length];
         displayWords = new string[docs.Length][];
@@ -85,9 +81,8 @@ public sealed class SearchIndex
         // Both ends of the narrowing, because either one silently going wrong is a search that
         // answers rows a reader should not be shown or misses rows they should.
         logger.LogInformation(
-            "Search index built: {Documents} of {Rows} rows are of a public type, {Reachable} of " +
-            "those are named and searchable, {Terms} terms, {Postings} postings",
-            docs.Length, store.Entities.Count, reachable, terms.Length, postings.Sum(p => p.Length));
+            "Search index built: {Documents} documents, {Reachable} named and searchable, {Terms} terms, {Postings} postings",
+            docs.Length, reachable, terms.Length, postings.Sum(p => p.Length));
     }
 
     /// <summary>
@@ -124,9 +119,9 @@ public sealed class SearchIndex
         [
             .. hits
                 .OrderByDescending(hit => hit.Score)
-                .ThenBy(hit => PublicTypes.NameOf(hit.Entity).Length)
-                .ThenBy(hit => PublicTypes.NameOf(hit.Entity), StringComparer.OrdinalIgnoreCase)
-                .ThenBy(hit => hit.Entity.NetId)
+                .ThenBy(hit => PublicTypes.NameOf(hit.Document).Length)
+                .ThenBy(hit => PublicTypes.NameOf(hit.Document), StringComparer.OrdinalIgnoreCase)
+                .ThenBy(hit => hit.Document.Id)
                 .Take(limit),
         ];
     }
@@ -193,9 +188,9 @@ public sealed class SearchIndex
             else if (Starts(displayWords[doc], word)) score += 70;
         }
 
-        if (docs[doc].Icon is not null) score += 15;
-        if (docs[doc].Description is not null) score += 10;
-        if (docs[doc].NameInheritedFrom is not null) score -= 45;
+        if (DocumentFields.Text(docs[doc], nameof(Item.Icon)) is not null) score += 15;
+        if (DocumentFields.Text(docs[doc], nameof(Item.Description)) is not null) score += 10;
+        if (docs[doc] is Effect { NameBorrowedFrom: not null }) score -= 45;
 
         return score;
     }
@@ -258,5 +253,5 @@ public sealed class SearchIndex
         }
     }
 
-    public readonly record struct Hit(Entity Entity, int Score);
+    public readonly record struct Hit(EntityDocument Document, int Score);
 }

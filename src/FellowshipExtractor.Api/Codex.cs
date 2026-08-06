@@ -1,4 +1,7 @@
+using System.Collections.Concurrent;
 using System.Globalization;
+using System.Reflection;
+using Fellowship.SDK.Documents;
 
 namespace FellowshipExtractor.Api;
 
@@ -16,7 +19,7 @@ namespace FellowshipExtractor.Api;
 public sealed record Facet(
     string Key,
     string Label,
-    Func<Entity, IEnumerable<string>> Values)
+    Func<EntityDocument, IEnumerable<string>> Values)
 {
     /// <summary>
     /// Where a value's colour comes from, for the facets the design system has a palette for. The
@@ -31,24 +34,25 @@ public sealed record Facet(
     /// No facet needs one today. A value is both what the panel prints and what its links, its
     /// chips and the list of values a caller may ask for all carry, so a facet whose rows spell
     /// their value the build's way spells it at the selector instead, where every one of those
-    /// readings picks it up: that is what <see cref="Codex.Schools"/> and the primary stat facet
-    /// do. Printing alone would leave the build's own spelling in the address bar, which is the
-    /// half of the fix a reader can hand on to somebody else.
+    /// readings picks it up: that is what the school facet's own selector and the primary stat
+    /// facet do, both reading a word the document already carries printed. Printing alone would
+    /// leave the build's own spelling in the address bar, which is the half of the fix a reader
+    /// can hand on to somebody else.
     /// </summary>
     public Func<EntityStore, string, string>? Display { get; init; }
 
-    public bool Matches(Entity entity, IReadOnlyCollection<string> wanted) =>
-        Values(entity).Any(value => wanted.Contains(value, StringComparer.OrdinalIgnoreCase));
+    public bool Matches(EntityDocument document, IReadOnlyCollection<string> wanted) =>
+        Values(document).Any(value => wanted.Contains(value, StringComparer.OrdinalIgnoreCase));
 }
 
 /// <summary>A yes-or-no narrowing, which needs no value list.</summary>
-public sealed record Flag(string Key, string Label, Func<Entity, bool> Predicate);
+public sealed record Flag(string Key, string Label, Func<EntityDocument, bool> Predicate);
 
 /// <summary>
 /// A number a row carries, which is both a sortable column and a range to filter on. The browser
 /// sends <c>&lt;key&gt;Min</c> and <c>&lt;key&gt;Max</c>.
 /// </summary>
-public sealed record Measure(string Key, string Label, Func<Entity, double?> Value)
+public sealed record Measure(string Key, string Label, Func<EntityDocument, double?> Value)
 {
     /// <summary>The unit the browser writes after the number, where the field has one.</summary>
     public string? Unit { get; init; }
@@ -64,11 +68,11 @@ public sealed record FacetValue(string Value, string Label, int Count, string? C
 public sealed record FacetView(string Key, string Label, IReadOnlyList<FacetValue> Values);
 
 /// <summary>
-/// A public type, counted: the shipped table behind it, the route segment that addresses it, the
-/// heading the browser prints and the column it is filed in. The table is carried so code can match a
-/// row against it; only the slug is ever written into a link.
+/// One entity type, counted: the route segment that addresses it, the heading the browser prints and
+/// the column it is filed in. The type itself is carried so code can match a row against it; only the
+/// slug is ever written into a link.
 /// </summary>
-public sealed record EntityType(string Table, string Slug, string Label, string Group, int Count);
+public sealed record TypeView(EntityType Type, string Slug, string Label, string Group, int Count);
 
 /// <summary>
 /// One line of a category menu: a browse query and what it is called. The count is the number of
@@ -88,19 +92,50 @@ public sealed record MenuSection(string Label, IReadOnlyList<MenuLink> Links);
 public sealed record MenuGroup(string Label, IReadOnlyList<MenuEntry> Entries);
 
 /// <summary>
+/// A field several sibling document classes declare under the same name and shape but share no
+/// common interface for, read off a document by its own runtime type rather than by a hand-kept
+/// list of which classes carry it. The same idiom <see cref="EntityStore"/> uses privately for its
+/// list-valued fields, here for the scalar shapes a facet, a flag or a measure reads: a number, a
+/// word and a list of words.
+///
+/// A document class with no property of that name answers null or empty rather than throwing, which
+/// is what lets a measure like cooldown span seven document types with no list of them written here,
+/// and pick up an eighth the day a document class gains the field. Restricted to <c>double?</c>,
+/// <c>string?</c> and a list of strings: an <c>int</c> or a <c>bool</c> field boxes as its own type
+/// and does not unbox through <c>as double?</c>, so those are read by pattern matching instead, each
+/// living on exactly one document type today.
+/// </summary>
+internal static class DocumentFields
+{
+    private static readonly ConcurrentDictionary<(Type Document, string Property), PropertyInfo?> Cache = new();
+
+    private static PropertyInfo? Property(EntityDocument document, string name) =>
+        Cache.GetOrAdd((document.GetType(), name), key => key.Document.GetProperty(key.Property));
+
+    public static double? Number(EntityDocument document, string name) =>
+        Property(document, name)?.GetValue(document) as double?;
+
+    public static string? Text(EntityDocument document, string name) =>
+        Property(document, name)?.GetValue(document) as string;
+
+    public static IReadOnlyList<string> Words(EntityDocument document, string name) =>
+        Property(document, name)?.GetValue(document) as IReadOnlyList<string> ?? [];
+}
+
+/// <summary>
 /// Everything the browser needs to draw its menus, its filter panel and its type tabs, worked out
 /// once from the export.
 ///
-/// Nothing here is a list of the game's content. Which types are public and what a reader calls them
-/// is <see cref="PublicTypes"/>'s decision; every value inside them - which slots exist, which
+/// Nothing here is a list of the game's content. What a reader calls each type is
+/// <see cref="PublicTypes"/>'s decision; every value inside them - which slots exist, which
 /// heroes, which schools of magic, how many of each - is counted off the export, so a slot the game
 /// adds appears in the menu without this file being touched.
 ///
-/// What a facet may offer is decided the same way a type is: by whether its values are words the game
-/// itself prints. A slot is Chest and a school is Magic / Fire, both read off the game's own screens; a
-/// loot rule set is Default_NoGemSlot_Necklace and a gameplay tag is Skill.Secondary, neither of which
-/// a player has ever been shown. So the corpus carries axes this offers no way to browse by, and that
-/// is the point rather than an omission.
+/// What a facet may offer is decided the same way a type's label is: by whether its values are words
+/// the game itself prints. A slot is Chest and a school is Magic / Fire, both read off the game's own
+/// screens; a loot rule set is Default_NoGemSlot_Necklace and a gameplay tag is Skill.Secondary,
+/// neither of which a document carries at all any more. So the corpus carries axes this offers no way
+/// to browse by, and that is the point rather than an omission.
 ///
 /// The values a facet offers are also the whole of what it may be asked for, which
 /// <see cref="Offered"/> answers and <see cref="CodexQuery.Parse"/> enforces. A filter is a URL a
@@ -132,22 +167,21 @@ public sealed class Codex
     public IReadOnlyList<Measure> Measures { get; }
 
     /// <summary>
-    /// The public types, counted, in the order the menu draws them. A table nothing public is filed
-    /// under is absent, so a tab, a menu entry and a heading can only ever name one of these.
+    /// Every entity type, counted, in the order <see cref="PublicTypes"/> declares its menu columns.
+    /// A type the export happens to hold no row of today is absent, so a tab, a menu entry and a
+    /// heading can only ever name a type a reader can actually open.
     /// </summary>
-    public IReadOnlyList<EntityType> Types { get; }
+    public IReadOnlyList<TypeView> Types { get; }
 
     /// <summary>
-    /// How much of the build a reader can actually reach, which is what every surface stating a
-    /// corpus size states. The export's own line count is 757 rows and 12 tables larger, and the
-    /// footer telling a reader that number promised them entries no page, tab, facet or search can
-    /// answer with.
+    /// How many rows a reader can browse, tab into or search: the whole of the export. The
+    /// extractor's own drop rules already keep a row a reader cannot meet out of the file, so there
+    /// is no narrower count left to take, and every surface stating a corpus size states this one.
     ///
-    /// Read off the store rather than summed over the types. The two are the same number by
-    /// construction - both count the rows whose table <see cref="PublicTypes"/> files a slug for -
-    /// and a second derivation of a number on screen is how the first one comes to be wrong.
+    /// Read off the store rather than summed over the types, so a second derivation of the number on
+    /// screen cannot drift from the first.
     /// </summary>
-    public int Count => store.PublicCount;
+    public int Count => store.Count;
 
     public IReadOnlyList<MenuGroup> Menu { get; }
 
@@ -158,41 +192,66 @@ public sealed class Codex
 
         Facets =
         [
-            new Facet("slot", "Slot", e => One(e.Slot)),
-            new Facet("armor", "Armour", e => One(e.ArmorType)),
+            new Facet("slot", "Slot", document => One(document is Item item ? item.Slot : null)),
+            new Facet("armor", "Armour", document =>
+                One(document is Item { ArmorType: { } armor } ? armor.ToString() : null)),
 
-            // Read through the shipped attribute table, because the field holds the build's key for
-            // the attribute rather than the word the game prints for it. The three keys an item's
-            // primary slot carries are Agility, Intellect and Strength and each is its own printed
-            // word, so nothing moves on screen today; a key the table names differently would
-            // otherwise reach the panel, the chip and the address bar as CritChance, which is the
-            // one spelling of that attribute the game has never shown anybody.
-            new Facet("stat", "Primary stat", e =>
-                One(e.PrimaryStat is { } attribute ? store.StatName(attribute) : null)),
-            new Facet("hero", "Hero", e => e.Heroes ?? [])
+            // The primary-stat enum's own members are Agility, Intellect and Strength, which is
+            // exactly the word the game prints for each, so the facet reads the document's own value
+            // rather than asking the shipped attribute table for a translation nothing here still
+            // needs.
+            new Facet("stat", "Primary stat", document =>
+                One(document is Item { PrimaryStat: { } stat } ? stat.ToString() : null)),
+
+            // Both the items an id splits by and the talent slots one does: an item names every
+            // hero the row is for, and a talent slot names exactly one, because a hero's grid never
+            // shares a slot position with another hero's.
+            new Facet("hero", "Hero", document => document switch
+            {
+                Item { Heroes: { } heroes } => heroes.Select(hero => hero.ToString()),
+                TalentSlot slot => [slot.Hero.ToString()],
+                _ => [],
+            })
             {
                 Colour = (t, value) => t.Hero(Codename(store, value)),
             },
+
             new Facet("school", "School", Schools),
-            new Facet("set", "Set", e => e.SetBonus ?? []),
-            new Facet("resource", "Resource", e => One(e.Resource)),
-            new Facet("gem", "Gem type", e => One(e.GemType))
+            new Facet("set", "Set", document => document is Item { SetBonus: { } sets } ? sets : []),
+            new Facet("resource", "Resource", document =>
+                One(document is Ability { Resource: { } resource } ? resource : null)),
+
+            new Facet("gem", "Gem type", document => One(document switch
+            {
+                GemType gem => gem.Gem.ToString(),
+                GemTier tier => tier.Gem.ToString(),
+                GemTrait trait => trait.Gem.ToString(),
+                _ => null,
+            }))
             {
                 Colour = (t, value) => t.Gem(value),
             },
-            new Facet("trait", "Trait category", e => One(e.TraitCategory)),
-            new Facet("role", "Role", e => e.AllowedRoles ?? [])
+
+            new Facet("trait", "Trait category", document =>
+                One(document is Trait { Category: { } category } ? category : null)),
+
+            new Facet("role", "Role", document => document is SetBonus { AllowedRoles: { } roles } ? roles : [])
             {
                 Colour = (t, value) => t.Role(value),
             },
-            // The word is the export's own and is already the printed one: the 24 rows carrying a
-            // rarity are the six gem types at four tiers each, and a gem tier ships the word a gem
-            // prints, so the values are Uncommon, Rare, Epic and Flawless. The lookup that used to
-            // print a rung's word in place of the word it is filed under returned its input on all
-            // four of them, and left the filed word in the link besides.
+
+            // The printed word rather than the filed one the document carries, joined on the tier
+            // ordinal the enum's own members carry as their value: an item's rung prints through the
+            // item column of the ladder and a gem tier's through the gem column, which is why the
+            // same filed Champion prints Heroic on one and Flawless on the other.
             //
             // The colour is the reading that still needs the filed word, exactly as a hero's does.
-            new Facet("rarity", "Rarity", e => One(e.Rarity))
+            new Facet("rarity", "Rarity", document => One(document switch
+            {
+                Item { Rarity: { } rarity } => RarityWord(store, rarity, gem: false),
+                GemTier tier => RarityWord(store, tier.Rarity, gem: true),
+                _ => null,
+            }))
             {
                 Colour = (t, value) => t.Rarity(Filed(store, value)),
             },
@@ -200,71 +259,84 @@ public sealed class Codex
 
         Flags =
         [
-            new Flag("named", "Named in the game", e => PublicTypes.DisplayNameOf(e) is not null),
-            new Flag("icon", "Has art", e => e.Icon is not null),
-            new Flag("described", "Has description text", e => e.Description is not null),
-            new Flag("grants", "Grants an ability", e => e.Grants is not null),
-            new Flag("socket", "Rolls with a gem socket", e => e.GemSlot == true),
-            new Flag("unique", "Unique equipped", e => e.UniqueEquipped == true),
-            new Flag("scaling", "Scales off an attribute", e => Scaling(e.ScalesOff).Any()),
+            new Flag("named", "Named in the game", document => PublicTypes.DisplayNameOf(document) is not null),
+            new Flag("icon", "Has art", document => DocumentFields.Text(document, nameof(Item.Icon)) is not null),
+            new Flag("described", "Has description text",
+                document => DocumentFields.Text(document, nameof(Item.Description)) is not null),
+            new Flag("grants", "Grants an ability", document => document is Item { GrantsId: not null }),
+            new Flag("socket", "Rolls with a gem socket", document => document is Item { GemSlot: true }),
+            new Flag("unique", "Unique equipped", document => document is Item { UniqueEquipped: true }),
+            new Flag("scaling", "Scales off an attribute",
+                document => DocumentFields.Words(document, nameof(Ability.ScalesOff)).Count > 0),
         ];
 
         Measures =
         [
-            new Measure("cooldown", "Cooldown", e => e.Cooldown) { Unit = "s", Column = true },
-            new Measure("cast", "Cast time", e => e.CastTime) { Unit = "s", Column = true },
-            new Measure("channel", "Channel", e => e.ChannelTime) { Unit = "s" },
-            new Measure("range", "Range", e => e.Range) { Column = true },
-            new Measure("radius", "Radius", e => e.Radius),
-            new Measure("duration", "Duration", e => e.Duration) { Unit = "s" },
-            new Measure("cost", "Cost", e => e.Cost),
-            new Measure("charges", "Charges", e => e.Charges),
-            new Measure("tier", "Gem tier", e => e.GemTier),
-            new Measure("rank", "Max rank", e => e.MaxRank),
-            // An id is addressable and so is public - /api/tooltip/talent/124 is how the game's own
-            // talent is asked for - but "network id" is the engine's word for it and not a reader's.
-            new Measure("id", "ID", e => e.NetId) { Column = true },
+            new Measure("cooldown", "Cooldown", document => DocumentFields.Number(document, nameof(Ability.Cooldown)))
+            {
+                Unit = "s", Column = true,
+            },
+            new Measure("cast", "Cast time", document => DocumentFields.Number(document, nameof(Ability.CastTime)))
+            {
+                Unit = "s", Column = true,
+            },
+            new Measure("channel", "Channel", document => DocumentFields.Number(document, nameof(Ability.ChannelTime)))
+            {
+                Unit = "s",
+            },
+            new Measure("range", "Range", document => DocumentFields.Number(document, nameof(Ability.Range)))
+            {
+                Column = true,
+            },
+            new Measure("radius", "Radius", document => DocumentFields.Number(document, nameof(Ability.Radius))),
+            new Measure("duration", "Duration", document => DocumentFields.Number(document, nameof(Ability.Duration)))
+            {
+                Unit = "s",
+            },
+            new Measure("cost", "Cost", document => DocumentFields.Number(document, nameof(Ability.Cost))),
+            new Measure("charges", "Charges", document => DocumentFields.Number(document, nameof(Ability.Charges))),
+            new Measure("tier", "Gem tier", document => document is GemTier tier ? (double?)tier.Tier : null),
+            new Measure("rank", "Max rank", document => document is Trait { MaxRank: { } rank } ? (double?)rank : null),
+
+            // Addressable on its own: /api/tooltip/talent/124 is how the game's own talent is asked
+            // for. Every document carries one, so this is the one measure with no row ever missing.
+            new Measure("id", "ID", document => (double?)document.Id) { Column = true },
         ];
 
         var counts = store.Entities
-            .GroupBy(e => e.Table!, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
+            .GroupBy(EntityTypes.TypeOf)
+            .ToDictionary(g => g.Key, g => g.Count());
 
-        // Driven off the public list rather than off what the export happens to hold, which is the
-        // whole of the fix: a table the extractor starts writing is invisible until someone files it
-        // as public, where reading the export's own tables would put it in the tabs the same day. A
-        // public type the export does not carry is dropped, so no tab offers an empty page.
+        // Counted off the corpus and ordered by PublicTypes.All: the corpus says how many rows of
+        // each type there are and PublicTypes says which column and heading each is drawn under, and
+        // its declaration order is the only place that column order is written. A type the extractor
+        // starts writing appears in the browser's type tabs without either file being touched twice.
         Types =
         [
             .. PublicTypes.All
-                .Select(type => new EntityType(
-                    type.Table, type.Slug, type.Label, type.Group, counts.GetValueOrDefault(type.Table)))
+                .Select(type => new TypeView(
+                    type.Type, type.Slug, type.Label, type.Group, counts.GetValueOrDefault(type.Type)))
                 .Where(type => type.Count > 0),
         ];
 
-        // Counted over the reachable rows alone, for the reason the menus and the filter panel are:
-        // a value only the 757 rows outside the public tables carry is a value no page ever offers,
-        // and accepting it would leave one filterable spelling of the corpus that nothing shows.
-        var reachable = store.Entities.Where(entity => PublicTypes.IsPublic(entity.Table)).ToArray();
-
         offered = Facets.ToDictionary(
             facet => facet.Key,
-            facet => View(facet, reachable).Values.Select(value => value.Value).ToArray(),
+            facet => View(facet, store.Entities).Values.Select(value => value.Value).ToArray(),
             StringComparer.OrdinalIgnoreCase);
 
         Menu = BuildMenu();
     }
 
-    /// <summary>Every row of one table, which is what a menu column and its counts are drawn from.</summary>
-    public IReadOnlyList<Entity> Of(string table) =>
-        [.. store.Entities.Where(e => string.Equals(e.Table, table, StringComparison.Ordinal))];
+    /// <summary>Every row of one type, which is what a menu column and its counts are drawn from.</summary>
+    public IReadOnlyList<EntityDocument> Of(EntityType type) =>
+        [.. store.Entities.Where(document => EntityTypes.TypeOf(document) == type)];
 
     /// <summary>
     /// One facet counted over a given set of rows. The browser asks for this twice: over the whole
     /// export when it draws the menus, and over the rows a search or a filter left when it draws the
     /// panel beside the results, so a value that nothing left can answer is not offered.
     /// </summary>
-    public FacetView View(Facet facet, IReadOnlyList<Entity> rows)
+    public FacetView View(Facet facet, IReadOnlyList<EntityDocument> rows)
     {
         var counted = new Dictionary<string, int>(StringComparer.Ordinal);
 
@@ -315,8 +387,9 @@ public sealed class Codex
     ///
     /// Every place a chosen value is drawn comes through here, not only the list it was picked from,
     /// so a chip, a group heading and a menu entry can never disagree about what a value is called.
-    /// The facets that would once have needed a different word here spell it at their selector now,
-    /// so this is the value itself on all 90 of them.
+    /// Measured over the export, the 11 facets offer 91 values between them and the longest list is
+    /// the 15 resources, and every one of the 91 is already the word a page prints, so this is the
+    /// value itself on all of them.
     /// </summary>
     public string Printed(Facet facet, string value) =>
         facet.Display?.Invoke(store, value) ?? Spaced(value);
@@ -333,9 +406,6 @@ public sealed class Codex
     /// but a filter that merely matched nothing answered 200 with an empty page and a chip reading
     /// "Hero: Lisa", so the codename was still a linkable address that said nothing about being
     /// wrong.
-    ///
-    /// The 11 facets offer 90 values between them and the longest list is the 15 resources, so a
-    /// caller who asks for something else can simply be told all of them.
     /// </summary>
     public IReadOnlyList<string> Offered(Facet facet) => offered.GetValueOrDefault(facet.Key, []);
 
@@ -359,16 +429,14 @@ public sealed class Codex
 
         // The columns, in the order the public types declare them, which is the only place that order
         // is written down. Taken off the counted types rather than off a list of column names, so a
-        // column exists exactly when something public is filed in it: the three that remain are Items,
-        // Abilities and Characters, and the Rules column stopped being drawn the moment the one type
-        // filed under it was withdrawn, without a line here or anywhere else being touched.
+        // column exists exactly when something is filed in it.
         foreach (var group in Types.Select(type => type.Group).Distinct(StringComparer.Ordinal))
         {
             var entries = new List<MenuEntry>();
 
             foreach (var type in Types.Where(t => t.Group == group))
             {
-                var rows = Of(type.Table);
+                var rows = Of(type.Type);
                 var sections = new List<MenuSection>();
 
                 foreach (var facet in Facets)
@@ -405,39 +473,36 @@ public sealed class Codex
     private static IEnumerable<string> One(string? value) => value is null ? [] : [value];
 
     /// <summary>
-    /// The damage schools a row carries, spelled the way a page prints them: the tags whose first
-    /// segment says which of the two families it is, read out as Magic / Fire and Physical / Bleed.
+    /// The damage schools a row is, read straight off the document rather than out of a tag list:
+    /// the extractor already lifts them out and spells each one the way a tooltip's damage sentence
+    /// does, Magic / Fire and Physical / Bleed. Measured over the export, 4 document types carry the
+    /// field - Ability, Effect, RelicPower and WeaponPower - and between them print 14 distinct
+    /// schools.
     ///
-    /// The one family of the build's tags a player meets by name, read straight off a tooltip's
-    /// damage sentence, where the other three dozen tags on the same rows are the build talking to
-    /// itself: Skill.Secondary, TrackCooldown, Targeting. So the schools are lifted out here and every
-    /// other tag is neither browsable nor drawn.
-    ///
-    /// The tag's own spelling stops here rather than at each place one is drawn. A facet value is
-    /// both what a page prints and what its links carry, and this was the one facet whose value was a
-    /// shipped tag: the printed word said Magic / Fire while the address said school=Magic.Fire, on
-    /// the menu, the filter panel, the results column, the entry pills and /api/entity alike, so a
-    /// reader could hand on a link with a gameplay tag in it. Spelling it once at the selector every
-    /// one of those reads settles all of them, and the 14 tags this answers for hold nothing but a
-    /// family and a school, so nothing is lost in the reading.
+    /// Public because the facet is not the only reader: a caller holding an arbitrary
+    /// <see cref="EntityDocument"/> - a results row, a nested grant - has no narrower type to switch
+    /// on itself, so the fan-out across the four document types lives here once rather than once per
+    /// caller.
     /// </summary>
-    public static IEnumerable<string> Schools(Entity entity) =>
-        (entity.Tags ?? [])
-            .Where(tag =>
-                tag.StartsWith("Magic", StringComparison.Ordinal) ||
-                tag.StartsWith("Physical", StringComparison.Ordinal))
-            .Select(Spaced);
+    public static IReadOnlyList<string> Schools(EntityDocument document) => document switch
+    {
+        Ability ability => ability.Schools ?? [],
+        Effect effect => effect.Schools ?? [],
+        RelicPower relic => relic.Schools ?? [],
+        WeaponPower weapon => weapon.Schools ?? [],
+        _ => [],
+    };
 
     /// <summary>
     /// The attributes a scaling list names, in the words the game prints where it prints one and
     /// spelled out where it does not.
     ///
-    /// 3,081 public rows carry a scaling list and between them name 82 attributes, of which 15 sit
-    /// in the shipped attribute table: Strength on 1,145 rows, Intellect on 487, Critical Strike,
-    /// Move Speed and eleven more. The other 67 are DamageScale, IncomingDamageMultiplier, MaxHealth
-    /// and the like, the tuning knobs behind a number rather than a stat anybody wears, and they
-    /// used to be dropped: the flag counted 2,166 rows instead of 3,081, and the 915 rows scaling
-    /// off none of the named 15 offered a reader a filter that then drew them an empty panel.
+    /// Measured over the export: 3,045 rows across 11 document types carry a scaling list and
+    /// between them name 82 attributes, of which 15 sit in the shipped attribute table: Strength on
+    /// 1,145 rows, Intellect on 486, Critical Strike, Move Speed and eleven more. The other 67 are
+    /// DamageScale, IncomingDamageMultiplier, MaxHealth and the like, the tuning knobs behind a
+    /// number rather than a stat anybody wears, and 893 of the 3,045 rows name none of the 15: a
+    /// reader filtering by one of those knobs would meet an empty panel if this dropped them.
     ///
     /// They are read out instead. A coefficient and the knob it turns are the data a database like
     /// this exists to show; what has to stay hidden is the run-together spelling, and
@@ -459,8 +524,20 @@ public sealed class Codex
         store.Hero(name)?.Codename ?? name;
 
     /// <summary>
+    /// The word a rarity rung prints, for the document type asking: the item column of the ladder or
+    /// the gem column, joined on the tier ordinal the <see cref="Rarity"/> enum's own members carry
+    /// as their value. A rung the ladder names no tier for prints its own filed spelling, which is
+    /// unreachable on the export today - every <see cref="Rarity"/> value a document carries is one
+    /// of the shipped ladder's own tiers.
+    /// </summary>
+    private static string RarityWord(EntityStore store, Rarity rarity, bool gem) =>
+        store.Vocabulary.Rarities.FirstOrDefault(r => r.Tier == (int)rarity) is { } entry
+            ? (gem ? entry.GemDisplayName : entry.DisplayName)
+            : rarity.ToString();
+
+    /// <summary>
     /// The word a rarity rung is filed under, which is what the palette keys its colour by while the
-    /// export writes the word the rung prints.
+    /// facet offers the word the rung prints.
     ///
     /// The same shape as <see cref="Codename"/> and for the same reason: the two spellings diverge
     /// at the top of the ladder, where the rung a gem calls Flawless is filed as Champion, so the
@@ -499,10 +576,10 @@ public sealed class Codex
     }
 
     /// <summary>
-    /// What a reader is shown for a table. Kept as the name every razor page already reaches for,
+    /// What a reader is shown for a type. Kept as the name every razor page already reaches for,
     /// answered by <see cref="PublicTypes"/>, which is where the decision now lives.
     /// </summary>
-    public static string Label(string? table) => PublicTypes.Label(table);
+    public static string Label(EntityType type) => PublicTypes.Label(type);
 
     /// <summary>A number as the browser prints it: no trailing zeros, invariant.</summary>
     public static string Number(double value) =>
