@@ -400,9 +400,11 @@ public static class DocumentProjection
     /// by key ordinal, each carrying its key. A token the text never spends sorts after every token it
     /// does.
     ///
-    /// Measured over the export, 212 rows carry a token or a placeholder list and the 363 `{Token}`
-    /// occurrences in them. `CodexView.Spent` and `CodexView.Spends(string, string)`, copied, because
-    /// the extractor cannot reference the API.
+    /// Measured over the documents this projection writes, 212 placeholder lists reach this method:
+    /// 206 ordered against a description-and-detail text, 6 against a gem's overflow sentence. Those
+    /// texts spend 363 `{Token}` occurrences between them, and 8 tokens are spent by no text and sort
+    /// last. `CodexView.Spent` and `CodexView.Spends(string, string)`, copied, because the extractor
+    /// cannot reference the API.
     /// </summary>
     private static IReadOnlyList<Placeholder>? Spent(string? text, IReadOnlyDictionary<string, Placeholder>? tokens) =>
         tokens is not { Count: > 0 }

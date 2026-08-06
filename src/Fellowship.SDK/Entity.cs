@@ -406,10 +406,11 @@ public sealed record Variant(string Hero)
 public sealed record Placeholder
 {
     /// <summary>
-    /// The name between the braces, which is what the row's dictionary files this token under. The
-    /// description already publishes the spelling in its own text wherever it spends the token, so
-    /// carrying it here costs nothing a reader can see and is what lets a renderer put a number where
-    /// the sentence asks for one.
+    /// The name between the braces, which is what the row's dictionary files this token under, and
+    /// what lets a renderer put a number where the sentence asks for one. Wherever a sentence spends
+    /// the token, Key is the spelling that sentence already carries in its own braces; a token no
+    /// sentence spends is the one case where the document would otherwise say nothing about it at
+    /// all.
     /// </summary>
     public string? Key { get; init; }
 
