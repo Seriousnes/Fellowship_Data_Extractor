@@ -130,7 +130,7 @@ app.MapGet("/api/entities", (HttpContext http, Codex codex, CodexSearch search, 
         results.Total,
         results.Page,
         results.Pages,
-        [.. results.Rows.Select(row => SearchResult.From(row, view))]));
+        [.. results.Rows.Select(row => SearchResult.From(row.Shown, view))]));
 })
     .WithName("GetEntities")
     .WithTags(ApiDocument.Browsing)

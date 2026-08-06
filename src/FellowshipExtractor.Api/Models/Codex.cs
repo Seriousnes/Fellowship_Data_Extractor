@@ -216,14 +216,18 @@ public sealed class Codex
 
     public FacetView View(Facet facet, IReadOnlyList<EntityDocument> rows)
     {
-        var counted = new Dictionary<string, int>(StringComparer.Ordinal);
+        var counted = new Dictionary<string, HashSet<(EntityType, int)>>(StringComparer.Ordinal);
 
         foreach (var row in rows)
         {
+            var key = (EntityTypes.TypeOf(row), row.Id);
+
             foreach (var value in facet.Values(row))
             {
                 if (value.Length == 0) continue;
-                counted[value] = 1 + counted.GetValueOrDefault(value);
+                if (!counted.TryGetValue(value, out var ids)) counted[value] = ids = [];
+
+                ids.Add(key);
             }
         }
 
@@ -231,7 +235,9 @@ public sealed class Codex
         [
             .. counted
                 .GroupBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
-                .Select(spellings => (Value: Written(spellings), Count: spellings.Sum(pair => pair.Value)))
+                .Select(spellings => (
+                    Value: Written(spellings),
+                    Count: spellings.SelectMany(pair => pair.Value).Distinct().Count()))
                 .OrderByDescending(value => value.Count)
                 .ThenBy(value => value.Value, StringComparer.OrdinalIgnoreCase)
                 .Select(value => new FacetValue(
@@ -242,9 +248,9 @@ public sealed class Codex
         ]);
     }
 
-    private static string Written(IEnumerable<KeyValuePair<string, int>> spellings) =>
+    private static string Written(IEnumerable<KeyValuePair<string, HashSet<(EntityType, int)>>> spellings) =>
         spellings
-            .OrderByDescending(pair => pair.Value)
+            .OrderByDescending(pair => pair.Value.Count)
             .ThenBy(pair => pair.Key, StringComparer.Ordinal)
             .First()
             .Key;

@@ -84,6 +84,7 @@
             .Where(e => PublicTypes.DisplayNameOf(e) is not null &&
                 DocumentFields.Text(e, nameof(ItemDocument.Icon)) is not null &&
                 DocumentFields.Text(e, nameof(AbilityDocument.Description)) is not null)
+            .DistinctBy(e => (EntityTypes.TypeOf(e), e.Id))
             .GroupBy(EntityTypes.TypeOf)
             .SelectMany(group => group
                 .OrderByDescending(e => DocumentFields.Text(e, nameof(AbilityDocument.Description))?.Length ?? 0)

@@ -30,7 +30,7 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
     public IReadOnlyList<Measure> Columns =>
     [
         .. codex.Measures.Where(m =>
-            m.Column && (m.Key == "id" || results.Rows.Any(row => m.Value(row) is not null))),
+            m.Column && (m.Key == "id" || results.Rows.Any(row => m.Value(row.Shown) is not null))),
     ];
 
     public IReadOnlyList<FacetView> Rail =>

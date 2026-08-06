@@ -177,9 +177,11 @@ else
                             @{ string? lastGroup = null; }
                             @foreach (var row in Results.Rows)
                             {
+                                var shown = row.Shown;
+
                                 if (Grouping is { } group)
                                 {
-                                    var value = group.Values(row).FirstOrDefault();
+                                    var value = group.Values(shown).FirstOrDefault();
                                     if (value != lastGroup)
                                     {
                                         lastGroup = value;
@@ -190,10 +192,24 @@ else
                                 }
 
                                 <tr>
-                                    @{ var item = row as ItemDocument; }
-                                    <td class="cx-art"><Icon Src="@Ui.Icon(DocumentFields.Text(row, nameof(ItemDocument.Icon)))" /></td>
-                                    <td><EntityLink Entity="row" Class="cx-nm" /></td>
-                                    <td>@Codex.Label(EntityTypes.TypeOf(row))</td>
+                                    @{ var item = shown as ItemDocument; }
+                                    <td class="cx-art"><Icon Src="@Ui.Icon(DocumentFields.Text(shown, nameof(ItemDocument.Icon)))" /></td>
+                                    <td>
+                                        <EntityLink Entity="shown" Class="cx-nm" />
+                                        @if (row.Variants.Count > 0)
+                                        {
+                                            <span class="cx-variants">
+                                                @foreach (var variant in row.Variants)
+                                                {
+                                                    <a href="@variant.Href" title="@variant.Name" aria-label="@variant.Name"
+                                                       style="@(variant.Colour is null ? null : $"color:{variant.Colour}")">
+                                                        <Icon Src="@Ui.Icon(variant.Icon)" />
+                                                    </a>
+                                                }
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>@Codex.Label(EntityTypes.TypeOf(shown))</td>
                                     @if (ShowSlot)
                                     {
                                         <td>@item?.Slot</td>
@@ -222,7 +238,7 @@ else
                                     @if (ShowSchools)
                                     {
                                         <td class="cx-tags">
-                                            @foreach (var school in Codex.Schools(row))
+                                            @foreach (var school in Codex.Schools(shown))
                                             {
                                                 <Chip>@school</Chip>
                                             }
@@ -231,7 +247,7 @@ else
                                     @foreach (var measure in Columns)
                                     {
                                         <td class="cx-numeric">
-                                            @if (measure.Value(row) is { } number)
+                                            @if (measure.Value(shown) is { } number)
                                             {
                                                 @Codex.Number(number)<span class="cx-unit">@measure.Unit</span>
                                             }
@@ -300,13 +316,13 @@ else
 
     private IReadOnlyList<Measure> Columns => View.Columns;
 
-    private bool ShowSlot => Results.Rows.Any(r => (r as ItemDocument)?.Slot is not null);
+    private bool ShowSlot => Results.Rows.Any(r => (r.Shown as ItemDocument)?.Slot is not null);
 
     private bool ShowWorn =>
-        Results.Rows.Any(r => r is ItemDocument { ArmorType: not null } or ItemDocument { PrimaryStat: not null } or
+        Results.Rows.Any(r => r.Shown is ItemDocument { ArmorType: not null } or ItemDocument { PrimaryStat: not null } or
             ItemDocument { Heroes: { Count: > 0 } });
 
-    private bool ShowSchools => Results.Rows.Any(r => Codex.Schools(r).Any());
+    private bool ShowSchools => Results.Rows.Any(r => Codex.Schools(r.Shown).Any());
 
     protected override void OnParametersSet()
     {

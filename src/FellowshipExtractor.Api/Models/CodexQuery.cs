@@ -344,7 +344,12 @@ public sealed record CodexQuery
         Flags.Count == 0 && Ranges.Count == 0;
 }
 
-public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex index)
+public sealed record Listing(EntityDocument Shown, IReadOnlyList<Listing.Variant> Variants)
+{
+    public sealed record Variant(string Name, string? Icon, string Href, string? Colour);
+}
+
+public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex index, CodexView view)
 {
     public CodexResults Run(CodexQuery query)
     {
@@ -356,7 +361,7 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
 
         var matched = rows.Where(row => Matches(row, query)).ToArray();
 
-        var ordered = Order(matched, query);
+        var ordered = Fold(Order(matched, query));
 
         var pages = Math.Max(1, (ordered.Length + query.PageSize - 1) / query.PageSize);
         var page = Math.Min(query.Page, pages);
@@ -371,7 +376,9 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
 
         var types = across
             .GroupBy(EntityTypes.TypeOf)
-            .ToDictionary(g => g.Key, g => g.Count());
+            .ToDictionary(group => group.Key, group => group.Select(row => row.Id).Distinct().Count());
+
+        var acrossTypes = across.Select(row => (EntityTypes.TypeOf(row), row.Id)).Distinct().Count();
 
         var unbounded = rows.Where(row => Matches(row, query with { Ranges = NoRanges })).ToArray();
 
@@ -380,7 +387,44 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
             .Select(measure => measure.Key)
             .ToArray();
 
-        return new CodexResults(ordered.Length, page, pages, window, facets, types, across.Length, measured);
+        return new CodexResults(ordered.Length, page, pages, window, facets, types, acrossTypes, measured);
+    }
+
+    private Listing[] Fold(EntityDocument[] rows) =>
+    [
+        .. rows.GroupBy(row => (EntityTypes.TypeOf(row), row.Id))
+            .Select(readings => Listed(readings.First())),
+    ];
+
+    private Listing Listed(EntityDocument shown)
+    {
+        var type = EntityTypes.TypeOf(shown);
+        var drawn = view.Name(shown);
+
+        var variants = store.All(type, shown.Id)
+            .GroupBy(view.Name, StringComparer.Ordinal)
+            .Where(readings => !string.Equals(readings.Key, drawn, StringComparison.Ordinal))
+            .Select(readings => Variant(type, shown.Id, readings.Key, [.. readings]))
+            .ToArray();
+
+        return new Listing(shown, variants);
+    }
+
+    private Listing.Variant Variant(EntityType type, int id, string name, EntityDocument[] readings)
+    {
+        var heroes = readings
+            .Select(reading => store.Wearer(reading)?.Name)
+            .OfType<string>()
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        var address = view.Href(type, id);
+
+        return new Listing.Variant(
+            name,
+            (readings[0] as ItemDocument)?.Icon,
+            heroes is [var first, ..] ? $"{address}?hero={Uri.EscapeDataString(first)}" : address,
+            heroes is [{ } one] ? view.HeroColour(one) : null);
     }
 
     private static readonly IReadOnlyDictionary<string, (double?, double?)> NoRanges =
@@ -466,7 +510,7 @@ public sealed record CodexResults(
     int Total,
     int Page,
     int Pages,
-    IReadOnlyList<EntityDocument> Rows,
+    IReadOnlyList<Listing> Rows,
     IReadOnlyList<FacetView> Facets,
     IReadOnlyDictionary<EntityType, int> Types,
     int AcrossTypes,
