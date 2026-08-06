@@ -734,6 +734,28 @@ in the repository, so a fresh clone or a fresh worktree has to produce it before
 | `/api/entity/{table}/{netId}` | One entity's exported record, every per-hero reading of it |
 | `/api/tooltip/{table}/{netId}` | Any entity's tooltip as a self-contained HTML fragment |
 | `/api/catalog` | The menus, types and facets the browser is built from |
+| `/openapi/v1.json` | The OpenAPI 3.1 description of every route above |
+| `/swagger` | Swagger UI, reading that description |
+
+### The description is written from the parsers
+
+`AddOpenApi` is handed two transformers. `ApiInfo` titles the document and counts the entities it
+answers. `ApiParameters` fills in the query string every route reads, which the handlers take off
+`HttpContext.Request.Query` rather than as bound arguments, so nothing about it would otherwise
+reach the document.
+
+What it fills in is read rather than restated. `TooltipQuery.Parameters`, `CodexQuery.Parameters`
+and `Suggestions.Parameters` are the one declaration of each route's query string, and both the
+parser and the document read it. `TooltipQuery` builds its reserved set from that list, and
+`CodexQuery` looks a key up in it before dispatching, so in each the set of names a caller can give
+is the set the document publishes and neither can gain a name the other has not.
+
+The filters on `/api/entities` are read off `Codex` as the app is running, so a facet or flag added
+there appears in the document with no second edit, and the stat parameters a tooltip accepts are
+named in the operation's description from the shipped attribute table.
+
+A test asserts that giving any parameter the document offers changes the reading it produces, so a
+parameter that is declared and then ignored fails rather than sitting in the published document.
 
 ### Static HTML, one island
 

@@ -82,15 +82,31 @@ public sealed record TooltipQuery
 
     public decimal? Haste => Attribute("Haste");
 
-    private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "hero", "rarity", "itemLevel", "upgrades", "maxUpgrades", "noSocket", "potentialPower",
-        "gemPowers", "armor", "trait", "allocatedTraits", "maxTraits",
-    };
-
     private const int LevelCeiling = 10_000;
 
     private const decimal StatCeiling = 1_000_000_000_000m;
+
+    public static readonly IReadOnlyList<ApiParameter> Parameters =
+    [
+        new("hero", ApiValue.Text, "The hero whose reading of the id to draw, where one id reads differently per hero."),
+        new("rarity", ApiValue.Text, "The rung to read at, by the name the game prints or by tier."),
+        new("itemLevel", ApiValue.Whole, $"The item level to compute stat magnitudes at, 0 to {LevelCeiling:N0}."),
+        new("upgrades", ApiValue.Whole, "How many times the item has been tempered."),
+        new("maxUpgrades", ApiValue.Whole,
+            "The tempering ceiling to print in place of the one the shipped ladder states for this rung and level."),
+        new("noSocket", ApiValue.Flag, "Given when the item's gem socket is to read as empty."),
+        new("potentialPower", ApiValue.Number, "The power potential to print."),
+        new("gemPowers", ApiValue.Text,
+            "A gem type id and its power separated by a colon, comma separated for several."),
+        new("armor", ApiValue.Number, "The armour to print above the stats the tooltip computes."),
+        new("trait", ApiValue.Text,
+            "An item trait id, optionally a colon and the rank it sits at, comma separated for several."),
+        new("allocatedTraits", ApiValue.Whole, "How many trait slots are filled."),
+        new("maxTraits", ApiValue.Whole, "How many trait slots the item carries."),
+    ];
+
+    private static readonly HashSet<string> Reserved =
+        new(Parameters.Select(parameter => parameter.Name), StringComparer.OrdinalIgnoreCase);
 
     public static TooltipQuery Parse(IQueryCollection query, StatParameters knownStats, out string? error)
     {

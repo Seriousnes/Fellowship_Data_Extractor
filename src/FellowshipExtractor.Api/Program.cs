@@ -4,7 +4,11 @@ using FellowshipExtractor.Api.Components;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(ApiDocument.Name, options =>
+{
+    options.AddDocumentTransformer<ApiInfo>();
+    options.AddOperationTransformer<ApiParameters>();
+});
 builder.Services.AddProblemDetails();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -42,6 +46,14 @@ app.MapOpenApi();
 
 app.UseResponseCompression();
 app.MapStaticAssets();
+
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint(ApiDocument.Route, ApiDocument.Title);
+    options.RoutePrefix = ApiDocument.Ui;
+    options.DocumentTitle = ApiDocument.Title;
+});
+
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
@@ -49,24 +61,36 @@ app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 app.MapGet("/api/ability/{abilityId:int}", (int abilityId, HttpContext http, Tooltips tooltips) =>
         tooltips.Get("ability", abilityId, http.Request.Query))
     .WithName("GetAbilityTooltip")
+    .WithTags(ApiDocument.Tooltips)
     .WithSummary("One ability's tooltip as a self-contained HTML fragment.")
-    .Produces<string>(StatusCodes.Status200OK, "text/html");
+    .WithQuery(ApiQuerySet.Tooltip)
+    .Produces<string>(StatusCodes.Status200OK, "text/html")
+    .ProducesProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status404NotFound);
 
 app.MapGet("/api/item/{itemId:int}", (int itemId, HttpContext http, Tooltips tooltips) =>
         tooltips.Get("items", itemId, http.Request.Query))
     .WithName("GetItemTooltip")
+    .WithTags(ApiDocument.Tooltips)
     .WithSummary("One item's tooltip as a self-contained HTML fragment.")
-    .Produces<string>(StatusCodes.Status200OK, "text/html");
+    .WithQuery(ApiQuerySet.Tooltip)
+    .Produces<string>(StatusCodes.Status200OK, "text/html")
+    .ProducesProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status404NotFound);
 
 app.MapGet("/api/tooltip/{slug}/{netId:int}", (string slug, int netId, HttpContext http, Tooltips tooltips) =>
         tooltips.Get(slug, netId, http.Request.Query))
     .WithName("GetTooltip")
+    .WithTags(ApiDocument.Tooltips)
     .WithSummary("Any entity's tooltip as a self-contained HTML fragment, addressed by type and id.")
-    .Produces<string>(StatusCodes.Status200OK, "text/html");
+    .WithQuery(ApiQuerySet.Tooltip)
+    .Produces<string>(StatusCodes.Status200OK, "text/html")
+    .ProducesProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status404NotFound);
 
 app.MapGet("/api/search", (HttpContext http, Suggestions suggestions) =>
 {
-    var limit = int.TryParse(http.Request.Query["limit"], out var wanted) ? Math.Clamp(wanted, 1, 100) : 10;
+    var limit = Suggestions.Limit(http.Request.Query["limit"]);
 
     var asked = http.Request.Query["type"].ToString();
     var narrowed = string.IsNullOrWhiteSpace(asked) ? null : asked;
@@ -79,7 +103,11 @@ app.MapGet("/api/search", (HttpContext http, Suggestions suggestions) =>
     return Results.Ok(suggestions.For(http.Request.Query["q"].ToString(), narrowed, limit));
 })
     .WithName("Search")
-    .WithSummary("Ranked name matches, across every type or the one the type= slug names.");
+    .WithTags(ApiDocument.Browsing)
+    .WithSummary("Ranked name matches, across every type or the one the type= slug names.")
+    .WithQuery(ApiQuerySet.Search)
+    .Produces<SearchResponse>()
+    .ProducesProblem(StatusCodes.Status400BadRequest);
 
 app.MapGet("/api/entities", (HttpContext http, Codex codex, CodexSearch search, CodexView view) =>
 {
@@ -100,7 +128,11 @@ app.MapGet("/api/entities", (HttpContext http, Codex codex, CodexSearch search, 
         [.. results.Rows.Select(row => SearchResult.From(row, view))]));
 })
     .WithName("GetEntities")
-    .WithSummary("Every entity a filter leaves, paged.");
+    .WithTags(ApiDocument.Browsing)
+    .WithSummary("Every entity a filter leaves, paged.")
+    .WithQuery(ApiQuerySet.Catalogue)
+    .Produces<EntitiesResponse>()
+    .ProducesProblem(StatusCodes.Status400BadRequest);
 
 app.MapGet("/api/entity/{slug}/{netId:int}", (string slug, int netId, EntityStore store, CodexView view) =>
 {
@@ -118,7 +150,10 @@ app.MapGet("/api/entity/{slug}/{netId:int}", (string slug, int netId, EntityStor
         : Results.Ok(readings.Select(reading => PublicEntity.From(reading, view)));
 })
     .WithName("GetEntity")
-    .WithSummary("One entity's record, with every per-hero reading of its id.");
+    .WithTags(ApiDocument.Records)
+    .WithSummary("One entity's record, with every per-hero reading of its id.")
+    .Produces<IReadOnlyList<PublicEntity>>()
+    .ProducesProblem(StatusCodes.Status404NotFound);
 
 app.MapGet("/api/catalog", (Codex codex, EntityStore store) =>
 {
@@ -150,6 +185,7 @@ app.MapGet("/api/catalog", (Codex codex, EntityStore store) =>
     });
 })
     .WithName("GetCatalog")
+    .WithTags(ApiDocument.Browsing)
     .WithSummary("The menus, entity types and filter facets the browser is driven by.");
 
 app.Run();
