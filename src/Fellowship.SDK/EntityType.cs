@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Fellowship.SDK.Documents;
 
 namespace Fellowship.SDK;
 
@@ -54,6 +56,39 @@ public static class EntityTypes
 
         return slug.ToString();
     }
+
+    /// <summary>
+    /// The route back from a slug to the member it names. The one map either direction reads, so what
+    /// <see cref="Slug"/> writes always reads back and there is no second table of names to drift from
+    /// the first.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, EntityType> BySlug =
+        Enum.GetValues<EntityType>().ToDictionary(Slug, type => type, StringComparer.Ordinal);
+
+    /// <summary>The member a slug names, or the failure stating which slug named none.</summary>
+    public static EntityType Parse(string slug) =>
+        TryParse(slug, out var type) ? type : throw new FormatException($"'{slug}' names no {nameof(EntityType)}.");
+
+    public static bool TryParse(string slug, out EntityType type) => BySlug.TryGetValue(slug, out type);
+
+    /// <summary>
+    /// Resolved and cached the first time a member is asked for, not all twenty-one at once, so a
+    /// member added without its class only fails the read of that member and leaves the other twenty
+    /// working.
+    /// </summary>
+    private static readonly ConcurrentDictionary<EntityType, Type> ByMember = new();
+
+    /// <summary>
+    /// The document class for a member, found by name in the assembly holding
+    /// <see cref="EntityDocument"/> rather than listed here, so a member added without its class fails
+    /// the first read that names it rather than deserialising to nothing.
+    /// </summary>
+    public static Type Document(EntityType type) => ByMember.GetOrAdd(type, Resolve);
+
+    private static Type Resolve(EntityType type) =>
+        typeof(EntityDocument).Assembly.GetType($"{typeof(EntityDocument).Namespace}.{type}")
+        ?? throw new InvalidOperationException(
+            $"{type} names no document class in {typeof(EntityDocument).Assembly.GetName().Name}.");
 }
 
 /// <summary>
@@ -67,11 +102,8 @@ public static class EntityTypes
 /// </summary>
 public sealed class EntityTypeSlugConverter : JsonConverter<EntityType>
 {
-    private static readonly Dictionary<string, EntityType> BySlug =
-        Enum.GetValues<EntityType>().ToDictionary(EntityTypes.Slug, type => type, StringComparer.Ordinal);
-
     public override EntityType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-        reader.GetString() is { } slug && BySlug.TryGetValue(slug, out var type)
+        reader.GetString() is { } slug && EntityTypes.TryParse(slug, out var type)
             ? type
             : throw new JsonException($"'{reader.GetString()}' names no {nameof(EntityType)}.");
 
