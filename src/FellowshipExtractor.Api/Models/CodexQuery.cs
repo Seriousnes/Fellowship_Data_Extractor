@@ -9,6 +9,17 @@ public sealed record CodexQuery
     public const int DefaultPageSize = 50;
     private const int MaximumPageSize = 200;
 
+    public static readonly IReadOnlyList<ApiParameter> Parameters =
+    [
+        new("q", ApiValue.Text, "Free text matched against every name."),
+        new("type", ApiValue.Text, "Entity type slug, comma separated for several."),
+        new("sort", ApiValue.Text, "The column to order by. Defaults to name."),
+        new("dir", ApiValue.Text, "Given as desc to order the other way."),
+        new("group", ApiValue.Text, "The facet to group the page by."),
+        new("page", ApiValue.Whole, "Which page to answer, from 1."),
+        new("size", ApiValue.Whole, $"How many rows a page holds, up to {MaximumPageSize}. Defaults to {DefaultPageSize}."),
+    ];
+
     public string? Text { get; init; }
 
     public IReadOnlyList<EntityType> Types { get; init; } = [];
@@ -54,48 +65,59 @@ public sealed record CodexQuery
                 .Where(value => value.Length > 0)
                 .ToArray();
 
-            switch (key.ToLowerInvariant())
+            if (Declared(key) is { } control)
             {
-                case "q":
-                    text = raw.Count > 0 ? raw[^1] : null;
-                    continue;
+                switch (control)
+                {
+                    case "q":
+                        text = raw.Count > 0 ? raw[^1] : null;
+                        break;
 
-                case "type":
-                    foreach (var slug in values)
-                    {
-                        if (!EntityTypes.TryParse(slug, out var named))
+                    case "type":
+                        foreach (var slug in values)
                         {
-                            error = PublicTypes.NoSuchType(slug);
-                            return new CodexQuery();
+                            if (PublicTypes.TableOf(slug) is not { } named)
+                            {
+                                error = $"'{slug}' is not a type. The types are " +
+                                    string.Join(", ", PublicTypes.All.Select(t => t.Slug)) + ".";
+                                return new CodexQuery();
+                            }
+
+                            tables.Add(named);
                         }
 
-                        types.Add(named);
-                    }
+                        break;
 
-                    continue;
+                    case "sort":
+                        if (values.Length > 0) sort = values[^1];
+                        break;
 
-                case "sort":
-                    if (values.Length > 0) sort = values[^1];
-                    continue;
+                    case "dir":
+                        descending = values.Length > 0 &&
+                            values[^1].StartsWith('d');
+                        break;
 
-                case "dir":
-                    descending = values.Length > 0 &&
-                        values[^1].StartsWith('d');
-                    continue;
+                    case "group":
+                        group = values.Length > 0 ? values[^1] : null;
+                        break;
 
-                case "group":
-                    group = values.Length > 0 ? values[^1] : null;
-                    continue;
+                    case "page":
+                        if (!TryNumber(values, out var wanted, out error)) return new CodexQuery();
+                        page = wanted is > 0 ? (int)wanted : 1;
+                        break;
 
-                case "page":
-                    if (!TryNumber(values, out var wanted, out error)) return new CodexQuery();
-                    page = wanted is > 0 ? (int)wanted : 1;
-                    continue;
+                    case "size":
+                        if (!TryNumber(values, out var size, out error)) return new CodexQuery();
+                        pageSize = size is > 0 ? Math.Min((int)size, MaximumPageSize) : DefaultPageSize;
+                        break;
 
-                case "size":
-                    if (!TryNumber(values, out var size, out error)) return new CodexQuery();
-                    pageSize = size is > 0 ? Math.Min((int)size, MaximumPageSize) : DefaultPageSize;
-                    continue;
+                    default:
+                        throw new InvalidOperationException(
+                            $"'{control}' is declared as a filter parameter and nothing reads it, so a caller " +
+                            "would find it in the published document and see it do nothing.");
+                }
+
+                continue;
             }
 
             if (codex.Facet(key) is { } facet)
@@ -136,7 +158,7 @@ public sealed record CodexQuery
                 string.Join(", ", codex.Facets.Select(f => f.Key)
                     .Concat(codex.Flags.Select(f => f.Key))
                     .Concat(codex.Measures.SelectMany(m => new[] { m.Key + "Min", m.Key + "Max" }))
-                    .Concat(["q", "type", "sort", "dir", "group", "page", "size"])) + ".";
+                    .Concat(Parameters.Select(p => p.Name))) + ".";
             return new CodexQuery();
         }
 
@@ -168,6 +190,9 @@ public sealed record CodexQuery
             PageSize = pageSize,
         };
     }
+
+    private static string? Declared(string key) => Parameters
+        .FirstOrDefault(parameter => parameter.Name.Equals(key, StringComparison.OrdinalIgnoreCase))?.Name;
 
     private static (string Key, bool IsMax) Bound(string key) =>
         key.EndsWith("Max", StringComparison.OrdinalIgnoreCase) ? (key[..^3], true)
