@@ -183,6 +183,13 @@ app.MapGet("/api/catalog", (Codex codex, EntityStore store) =>
 app.Run();
 
 /// <summary>
+/// The type the top-level statements above compile into, made public so
+/// <c>WebApplicationFactory&lt;Program&gt;</c> can host this app from a test project. Otherwise
+/// unused: nothing in this file or any other references it by name.
+/// </summary>
+public partial class Program;
+
+/// <summary>
 /// The answer an address gives when the type it names is not one a reader can be addressed to.
 ///
 /// The sentence itself is <see cref="PublicTypes.NoSuchType"/>, which the not-found page says too;

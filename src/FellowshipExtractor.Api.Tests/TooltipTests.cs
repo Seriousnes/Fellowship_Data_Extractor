@@ -1,8 +1,14 @@
+using Fellowship.SDK.Documents;
+
 namespace FellowshipExtractor.Api.Tests;
 
 /// <summary>
 /// The one component both readers of a tooltip go through: the entity page places it, and the API
 /// renders it to a string for callers who have no page.
+///
+/// Granted and legendary rolls resolve against the store rather than nesting a bare record, so
+/// those two tests read real corpus rows: item 5246 (Humming Portalstone) grants relic power 432
+/// (Conjure Portal), and item 5216 carries the three legendary stat ids 696, 695 and 694.
 /// </summary>
 [Collection(Corpus.Name)]
 public class TooltipTests : BunitContext
@@ -15,8 +21,8 @@ public class TooltipTests : BunitContext
         Services.AddSingleton(export.Tooltip);
     }
 
-    private IRenderedComponent<Components.Tooltip.Tooltip> Draw(Entity entity) =>
-        Render<Components.Tooltip.Tooltip>(p => p.Add(x => x.Entity, entity));
+    private IRenderedComponent<Components.Tooltip.Tooltip> Draw(EntityDocument document) =>
+        Render<Components.Tooltip.Tooltip>(p => p.Add(x => x.Entity, document));
 
     /// <summary>
     /// The fragment is painted into a shadow root that no stylesheet of this app enters, and is
@@ -27,7 +33,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Carries_its_own_stylesheet_and_no_scope_attribute()
     {
-        var cut = Draw(new Entity { Description = "burns" });
+        var cut = Draw(new Ability { Id = 1, Description = "burns" });
 
         Assert.DoesNotMatch(@"\sb-[a-z0-9]{10}", cut.Markup);
 
@@ -47,7 +53,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Writes_the_stylesheet_as_css_rather_than_as_encoded_text()
     {
-        var cut = Draw(new Entity { Description = "burns" });
+        var cut = Draw(new Ability { Id = 1, Description = "burns" });
 
         var style = cut.Find("div.fx-tip > style").InnerHtml;
 
@@ -59,7 +65,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Names_the_row_in_its_head()
     {
-        var cut = Draw(new Entity { DisplayName = "Frosted Cloak" });
+        var cut = Draw(new Ability { Id = 1, Name = "Frosted Cloak" });
 
         Assert.Equal("Frosted Cloak", cut.Find("header.head h3.title").TextContent);
     }
@@ -71,7 +77,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Draws_no_body_when_the_row_states_nothing()
     {
-        var cut = Draw(new Entity { DisplayName = "Bare" });
+        var cut = Draw(new Ability { Id = 1, Name = "Bare" });
 
         Assert.Empty(cut.FindAll("div.lines"));
     }
@@ -84,10 +90,11 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Rules_between_blocks_and_never_above_the_first()
     {
-        // Identity, prose and a set bonus: three blocks, so two rules, none of them leading.
-        var entity = new Entity
+        // Identity (an armour type), prose and a set bonus: three blocks, so two rules, none leading.
+        var entity = new Item
         {
-            Slot = "Back",
+            Id = 1,
+            ArmorType = ArmorType.Cloth,
             Description = "burns",
             SetBonus = ["Ironhide"],
         };
@@ -105,7 +112,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Draws_one_block_with_no_rule_at_all()
     {
-        var cut = Draw(new Entity { Description = "burns" });
+        var cut = Draw(new Ability { Id = 1, Description = "burns" });
 
         Assert.Single(cut.FindAll("div.grp"));
         Assert.Empty(cut.FindAll("hr.rule"));
@@ -118,7 +125,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Renders_a_description_with_no_whitespace_of_its_own()
     {
-        var cut = Draw(new Entity { Description = "one two" });
+        var cut = Draw(new Ability { Id = 1, Description = "one two" });
 
         Assert.Equal("<p class=\"desc\">one two</p>", cut.Find("p.desc").OuterHtml.Bare());
     }
@@ -126,7 +133,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Renders_a_rich_text_run_inside_the_description()
     {
-        var cut = Draw(new Entity { Description = "grants you <rt.warning>+3%</> haste" });
+        var cut = Draw(new Ability { Id = 1, Description = "grants you <rt.warning>+3%</> haste" });
 
         var run = cut.Find("p.desc span.rt");
 
@@ -137,7 +144,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void States_its_scalars_two_to_a_row()
     {
-        var entity = new Entity { Cooldown = 30, Range = 25, Duration = 8 };
+        var entity = new Ability { Id = 1, Cooldown = 30, Range = 25, Duration = 8 };
 
         var cut = Draw(entity);
 
@@ -153,43 +160,38 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Names_a_granted_ability_beside_its_badge()
     {
-        var entity = new Entity
-        {
-            Grants = new Entity { DisplayName = "Sunder", Description = "cleaves" },
-        };
+        var entity = new Item { Id = 5246, GrantsId = 432 };
 
         var cut = Draw(entity);
 
-        Assert.Equal("Ability: Sunder", cut.Find("div.sec.ability span").TextContent);
-        Assert.Equal("cleaves", cut.Find("p.desc").TextContent);
+        Assert.Equal("Ability: Conjure Portal", cut.Find("div.sec.ability span").TextContent);
+        Assert.Contains("Conjures two interactable", cut.Find("p.desc").TextContent, StringComparison.Ordinal);
     }
 
     [Fact]
     public void Counts_the_legendary_rolls_it_draws()
     {
-        var entity = new Entity
-        {
-            LegendaryStats =
-            [
-                new Entity { DisplayName = "First", Description = "one" },
-                new Entity { DisplayName = "Second", Description = "two" },
-            ],
-        };
+        var entity = new Item { Id = 5216, LegendaryStatIds = [696, 695, 694] };
 
         var cut = Draw(entity);
 
-        Assert.Equal("(2)", cut.Find("div.sec.legendary span.n").TextContent);
-        Assert.Equal(2, cut.FindAll("p.nm").Count);
+        Assert.Equal("(3)", cut.Find("div.sec.legendary span.n").TextContent);
+        Assert.Equal(3, cut.FindAll("p.nm").Count);
     }
 
+    /// <summary>
+    /// How many pieces a set bonus asks for is stated on the set bonus's own row now, not the
+    /// item's - the typed model carries Pieces on SetBonus rather than SetCount on Item - so the
+    /// badge this line draws is the plain "Set Bonus" heading with no count beside it.
+    /// </summary>
     [Fact]
-    public void Counts_the_pieces_a_set_bonus_asks_for()
+    public void Names_the_sets_a_piece_counts_towards_with_no_piece_count()
     {
-        var entity = new Entity { SetBonus = ["Ironhide", "Emberweave"], SetCount = 4 };
+        var entity = new Item { Id = 1, SetBonus = ["Ironhide", "Emberweave"] };
 
         var cut = Draw(entity);
 
-        Assert.Equal("(4 pieces)", cut.Find("div.sec.setbonus span.n").TextContent);
+        Assert.Equal("Set Bonus", cut.Find("div.sec.setbonus span").TextContent);
         Assert.Equal("Ironhide, Emberweave", cut.Find("div.grp p.desc").TextContent);
     }
 
@@ -203,11 +205,11 @@ public class TooltipTests : BunitContext
         var rung = Store.Vocabulary.Rarities[^1];
 
         var asGem = Render<Components.Tooltip.Tooltip>(p => p
-            .Add(x => x.Entity, new Entity { GemTier = 3 })
+            .Add(x => x.Entity, new GemTier { Id = 1, Gem = GemTypeName.Amethyst, Tier = 3, Power = 10, Rarity = Rarity.Champion })
             .Add(x => x.Query, new TooltipQuery { Rarity = rung.Name }));
 
         var asItem = Render<Components.Tooltip.Tooltip>(p => p
-            .Add(x => x.Entity, new Entity { Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] })
+            .Add(x => x.Entity, new Item { Id = 2, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] })
             .Add(x => x.Query, new TooltipQuery { Rarity = rung.Name }));
 
         Assert.Equal(rung.GemDisplayName, asGem.Find("span.rar").TextContent);
@@ -220,7 +222,7 @@ public class TooltipTests : BunitContext
     public void Prints_the_item_level_the_caller_asked_for()
     {
         var cut = Render<Components.Tooltip.Tooltip>(p => p
-            .Add(x => x.Entity, new Entity { Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] })
+            .Add(x => x.Entity, new Item { Id = 3, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] })
             .Add(x => x.Query, new TooltipQuery { ItemLevel = 400 }));
 
         Assert.Equal("400", cut.Find("span.power").TextContent);

@@ -1,36 +1,35 @@
+using Fellowship.SDK.Documents;
+
 namespace FellowshipExtractor.Api.Tests;
 
 /// <summary>
 /// The four hazards the cascade carries. Each of them compiles cleanly when broken and shows only
 /// as the wrong record on screen, which is the reason this project exists.
+///
+/// Grants and Legendaries resolve their nested rows against the store rather than nesting a bare
+/// record, so the two tests exercising them read real corpus rows instead of hand-built fixtures:
+/// item 5246 (Humming Portalstone) grants relic power 432 (Conjure Portal), and item 5216 carries
+/// the three legendary stat ids 696, 695 and 694.
 /// </summary>
 [Collection(Corpus.Name)]
 public class DetailTests : BunitContext
 {
-    public DetailTests(Export export) => Services.AddSingleton(export.View);
+    public DetailTests(Export export)
+    {
+        Services.AddSingleton(export.View);
+        Services.AddSingleton(export.Tooltip);
+    }
 
     /// <summary>
     /// A single cascade declared on the page would flow past the nested Detail unchanged, so the
-    /// granted ability's panels would draw the outer item's text and stats. The outer Grants guard
+    /// granted power's panels would draw the outer item's text and stats. The outer Grants guard
     /// would also still be truthy inside, and the recursion would only stop when the renderer said
-    /// so - which is what the "exactly once" assertions catch.
+    /// so - which is what the "exactly once" assertion catches.
     /// </summary>
     [Fact]
-    public void A_nested_detail_draws_the_granted_ability_and_not_the_record_that_grants_it()
+    public void A_nested_detail_draws_the_granted_power_and_not_the_record_that_grants_it()
     {
-        var granted = new Entity
-        {
-            Description = "the granted sentence",
-            Stats = [new StatSlot("StatHaste", 15) { Kind = "Secondary" }],
-            RankRuns = [new RankRun("7", ["7"])],
-        };
-
-        var outer = new Entity
-        {
-            Description = "the outer sentence",
-            Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }],
-            Grants = granted,
-        };
+        var outer = new Item { Id = 5246, GrantsId = 432 };
 
         var cut = Render<Detail>(p => p.Add(x => x.Entity, outer));
         var markup = cut.Markup;
@@ -38,11 +37,10 @@ public class DetailTests : BunitContext
         var panel = cut.FindAll("div.cx-panel")
             .Single(e => e.QuerySelector("div.cx-panel-head")?.TextContent.StartsWith("Grants an ability") == true);
 
-        Assert.Contains("the granted sentence", panel.TextContent, StringComparison.Ordinal);
-        Assert.DoesNotContain("the outer sentence", panel.TextContent, StringComparison.Ordinal);
-        Assert.DoesNotContain("Stamina", panel.TextContent, StringComparison.Ordinal);
+        Assert.Contains("Conjures two interactable", panel.TextContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("Agility", panel.TextContent, StringComparison.Ordinal);
+        Assert.Empty(panel.QuerySelectorAll("ul.cx-stat-lines"));
 
-        Assert.Equal(1, Occurrences(markup, "the outer sentence"));
         Assert.Equal(1, Occurrences(markup, "Grants an ability"));
     }
 
@@ -53,8 +51,8 @@ public class DetailTests : BunitContext
     [Fact]
     public void A_detail_re_rendered_with_a_different_entity_draws_the_new_one()
     {
-        var first = new Entity { Description = "the first sentence" };
-        var second = new Entity { Description = "the second sentence" };
+        var first = new Ability { Id = 1, Description = "the first sentence" };
+        var second = new Ability { Id = 2, Description = "the second sentence" };
 
         var cut = Render<Detail>(p => p.Add(x => x.Entity, first));
 
@@ -66,47 +64,44 @@ public class DetailTests : BunitContext
         Assert.DoesNotContain("the first sentence", cut.Markup, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void Each_legendary_roll_draws_its_own_text_under_its_own_sub_head()
-    {
-        var entity = new Entity
-        {
-            LegendaryStats =
-            [
-                new Entity { Description = "the first roll" },
-                new Entity { Description = "the second roll" },
-            ],
-        };
-
-        var cut = Render<Detail>(p => p.Add(x => x.Entity, entity));
-
-        Assert.Equal(2, cut.FindAll("p.cx-sub-head").Count);
-        Assert.Contains("the first roll", cut.Markup, StringComparison.Ordinal);
-        Assert.Contains("the second roll", cut.Markup, StringComparison.Ordinal);
-    }
-
     /// <summary>
-    /// The key is the loop index and never the roll. Entity is a record, so two structurally equal
-    /// rolls compare equal, and duplicate sibling keys throw out of the render tree diff on any
-    /// keyed re-render. This is that case.
+    /// Every legendary roll draws under its own sub-head, in the order
+    /// <see cref="Item.LegendaryStatIds"/> lists them, and the loop's
+    /// <c>@@key="index"</c> keeps that true across a re-render.
+    ///
+    /// Each roll's own nested Detail draws its own Particulars panel too, and all three of these
+    /// rolls carry a ScalesOff list, so each nested Detail contributes its own "Scales off" sub-head
+    /// beside the roll's name one. Both panels emit no wrapper, so the nested one lands as a sibling
+    /// div rather than inside the roll-name sub-head; direct children of the Legendary stats panel is
+    /// what tells the two kinds of sub-head apart.
     /// </summary>
     [Fact]
-    public void Two_structurally_equal_legendary_rolls_survive_a_re_render()
+    public void Each_legendary_roll_draws_its_own_text_under_its_own_sub_head_and_survives_a_re_render()
     {
-        var entity = new Entity
-        {
-            LegendaryStats =
-            [
-                new Entity { Description = "the same words" },
-                new Entity { Description = "the same words" },
-            ],
-        };
+        var entity = new Item { Id = 5216, LegendaryStatIds = [696, 695, 694] };
 
         var cut = Render<Detail>(p => p.Add(x => x.Entity, entity));
 
-        cut.Render(p => p.Add(x => x.Entity, entity with { }));
+        IElement[] RollHeads()
+        {
+            var panel = cut.FindAll("div.cx-panel")
+                .Single(e => e.QuerySelector(":scope > div.cx-panel-head")?.TextContent.StartsWith("Legendary stats") == true);
 
-        Assert.Equal(2, cut.FindAll("p.cx-sub-head").Count);
+            return [.. panel.Children.Where(c => c.TagName == "P" && c.ClassList.Contains("cx-sub-head"))];
+        }
+
+        var heads = RollHeads();
+
+        Assert.Equal(3, heads.Length);
+        Assert.Equal(["Strand of Eternity", "Blood of the Undying", "Mote of Creation"],
+            heads.Select(head => head.TextContent));
+        Assert.Contains("+10% Cooldown Acceleration", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("+10 Damage Reduction", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("+10% Primary Stat", cut.Markup, StringComparison.Ordinal);
+
+        cut.Render(p => p.Add(x => x.Entity, entity));
+
+        Assert.Equal(3, RollHeads().Length);
     }
 
     /// <summary>
@@ -117,8 +112,9 @@ public class DetailTests : BunitContext
     [Fact]
     public void The_panels_are_siblings_with_no_wrapper_around_them()
     {
-        var entity = new Entity
+        var entity = new Item
         {
+            Id = 1,
             Description = "some words",
             Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }],
         };
@@ -131,23 +127,26 @@ public class DetailTests : BunitContext
         Assert.All(roots, root => Assert.Contains("cx-panel", root.ClassList));
     }
 
+    /// <summary>
+    /// Every document is a real, separately-typed row now, nested or not, so its school pill links
+    /// with a type filter unconditionally: there is no longer a "this row has no table of its own"
+    /// branch to fall back from.
+    /// </summary>
     [Fact]
-    public void A_nested_row_builds_its_school_filter_without_a_type()
+    public void A_rows_school_filter_carries_its_own_type()
     {
-        // A granted ability carries no table of its own, so the type half of the query is left off
-        // rather than sent empty. The school facet reads a Magic or Physical tag.
-        var granted = new Entity { Tags = ["MagicFire"] };
-        var outer = new Entity { Table = "GameplayAbility", Tags = ["MagicFire"], Grants = granted };
+        var entity = new Ability { Id = 1, Schools = ["Magic / Fire"] };
 
-        var cut = Render<Detail>(p => p.Add(x => x.Entity, outer));
+        var cut = Render<Detail>(p => p.Add(x => x.Entity, entity));
 
         var hrefs = cut.FindAll("ul.cx-pills a")
             .Select(a => a.GetAttribute("href"))
             .Where(href => href?.Contains("school=") == true)
             .ToList();
 
-        Assert.Contains(hrefs, href => href!.StartsWith("/browse?type=", StringComparison.Ordinal));
-        Assert.Contains(hrefs, href => href!.StartsWith("/browse?school=", StringComparison.Ordinal));
+        var expected = $"/browse?type={EntityTypes.Slug(EntityType.Ability)}&school={Uri.EscapeDataString("Magic / Fire")}";
+
+        Assert.Contains(hrefs, href => href == expected);
     }
 
     private static int Occurrences(string haystack, string needle)

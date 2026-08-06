@@ -15,7 +15,8 @@ public sealed class EntityDocumentConverterTests
     /// <summary>
     /// Mirrors what <c>JsonlOutputFormat</c> writes with, plus the converter under test. Enums are
     /// bare in the SDK - the generator declares no <see cref="JsonConverterAttribute"/> on them - so
-    /// they only read and write as the words the export carries when this converter is present too.
+    /// they only read and write as the words the export carries when <see cref="JsonStringEnumConverter"/>
+    /// is present too; that behaviour is its own, not <see cref="EntityDocumentConverter"/>'s.
     /// </summary>
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -108,5 +109,30 @@ public sealed class EntityDocumentConverterTests
 
         var readEffect = Assert.IsType<Effect>(read);
         Assert.Equal(effect.NameBorrowedFrom, readEffect.NameBorrowedFrom);
+    }
+
+    /// <summary>
+    /// <see cref="EntityStore"/>'s own <c>Options</c> sets <c>PropertyNameCaseInsensitive</c>, so the
+    /// converter's fallback scan for a differently-cased "type" property is a path the running app
+    /// reaches and this had no test of its own for.
+    /// </summary>
+    [Fact]
+    public void ADifferentlyCasedTypePropertyResolvesWhenCaseInsensitive()
+    {
+        var caseInsensitive = new JsonSerializerOptions(Options) { PropertyNameCaseInsensitive = true };
+
+        var read = JsonSerializer.Deserialize<EntityDocument>("""{"Type":"ability","id":1}""", caseInsensitive);
+
+        Assert.IsType<Ability>(read);
+    }
+
+    /// <summary>The other side of the same claim: case still matters when the flag is off.</summary>
+    [Fact]
+    public void ADifferentlyCasedTypePropertyFailsWhenCaseSensitive()
+    {
+        var caseSensitive = new JsonSerializerOptions(Options) { PropertyNameCaseInsensitive = false };
+
+        Assert.Throws<JsonException>(
+            () => JsonSerializer.Deserialize<EntityDocument>("""{"Type":"ability","id":1}""", caseSensitive));
     }
 }

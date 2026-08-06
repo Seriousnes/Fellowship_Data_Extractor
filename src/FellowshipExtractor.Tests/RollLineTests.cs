@@ -29,7 +29,7 @@ public sealed class RollLineTests
     /// the weighted slots it declares, which with no rarity in play is everything the arithmetic
     /// reads. One id is an item and a gameplay effect both, so the type is what picks the item.
     /// </summary>
-    private static Entity Cloak()
+    private static Fellowship.SDK.Documents.Item Cloak()
     {
         var body = Export.Loaded.Documents
             .Where(document => document.Type == Fellowship.SDK.EntityType.Item && document.Id == FrostedCloak)
@@ -38,8 +38,9 @@ public sealed class RollLineTests
             ?? throw new InvalidOperationException(
                 $"Item {FrostedCloak} is not in the export. Either the id moved or the entity is gone.");
 
-        return new Entity
+        return new Fellowship.SDK.Documents.Item
         {
+            Id = FrostedCloak,
             Slot = body["slot"]?.GetValue<string>(),
             Stats = body["stats"].Deserialize<IReadOnlyList<StatSlot>>(Reading),
         };
