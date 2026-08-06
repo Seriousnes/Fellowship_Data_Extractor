@@ -54,14 +54,12 @@ public sealed class Export
 
         var substitutions = new Placeholders(Store, richText);
 
-        View = new CodexView(Store, new Codex(Store, tokens), tokens, chrome: null!, richText,
-            substitutions, icons: null!);
-
         var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
+        var chrome = new ChromeAssets(icons, paths, Store, tokens);
 
-        Tooltip = new TooltipView(
-            Store, tokens, richText, substitutions, new ChromeAssets(icons, paths, Store, tokens), icons,
-            new ApiWebRoot());
+        View = new CodexView(Store, new Codex(Store, tokens), tokens, chrome, richText, substitutions, icons);
+
+        Tooltip = new TooltipView(Store, tokens, richText, substitutions, chrome, icons, new ApiWebRoot());
     }
 
     private static string Found()

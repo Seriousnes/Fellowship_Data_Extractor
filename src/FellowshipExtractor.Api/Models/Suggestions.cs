@@ -25,7 +25,10 @@ public sealed class Suggestions(SearchIndex index, CodexView view)
     {
         if (string.IsNullOrWhiteSpace(text)) return SearchResponse.Empty;
 
-        var hits = index.Search(text, Ceiling);
+        var hits = index.Search(text, Ceiling)
+            .GroupBy(hit => (EntityTypes.TypeOf(hit.Document), hit.Document.Id))
+            .Select(readings => readings.First())
+            .ToArray();
 
         var groups = hits
             .GroupBy(hit => EntityTypes.TypeOf(hit.Document))
@@ -44,7 +47,7 @@ public sealed class Suggestions(SearchIndex index, CodexView view)
 
         return new SearchResponse(
             text,
-            hits.Count,
+            hits.Length,
             groups,
             [.. chosen.Take(limit).Select(hit => SearchResult.From(hit.Document, view))]);
     }
