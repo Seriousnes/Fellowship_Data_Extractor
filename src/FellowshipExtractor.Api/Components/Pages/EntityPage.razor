@@ -9,7 +9,7 @@
     <PageTitle>@Name - Fellowship Codex</PageTitle>
     <Crumbs Trail="@(new List<(string, string?)> { (PublicTypes.Label(type), Under), (Name, null) })" />
 
-    <h1 style="color:@Ui.NameColour(Shown)">@Name</h1>
+    <h1 class="cx-entity-name" style="--cx-name:@Ui.NameColour(Shown);color:var(--cx-rung, var(--cx-name))">@Name</h1>
 
     <CascadingValue Value="Here">
         <div class="cx-entity">

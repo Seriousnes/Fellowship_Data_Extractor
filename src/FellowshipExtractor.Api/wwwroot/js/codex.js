@@ -199,6 +199,15 @@ document.addEventListener('click', event => {
         rung.dataset.value = rung.dataset.choice;
     }
 
+    const heading = document.querySelector('.cx-entity-name');
+    if (heading && rung.dataset.knob === 'rarity') {
+        if (rung.getAttribute('aria-pressed') === 'true') {
+            heading.style.setProperty('--cx-rung', getComputedStyle(rung).color);
+        } else {
+            heading.style.removeProperty('--cx-rung');
+        }
+    }
+
     stage();
 });
 
@@ -231,6 +240,7 @@ window.addEventListener('resize', hide);
 
 function arrived() {
     hide();
+    document.querySelector('.cx-entity-name')?.style.removeProperty('--cx-rung');
 }
 
 if (document.readyState === 'loading') {

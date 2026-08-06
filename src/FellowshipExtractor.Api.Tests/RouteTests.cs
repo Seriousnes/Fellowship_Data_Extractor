@@ -66,6 +66,15 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public async Task An_entity_page_serves_its_name_colour_as_a_custom_property()
+    {
+        var page = await client.GetStringAsync("/entity/item/5250", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains("--cx-name:#", page, StringComparison.Ordinal);
+        Assert.Contains("var(--cx-rung, var(--cx-name))", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task An_unknown_type_answers_404_rather_than_throwing()
     {
         var response = await client.GetAsync("/api/tooltip/no-such-type/1", Xunit.TestContext.Current.CancellationToken);
