@@ -405,6 +405,14 @@ public sealed record Variant(string Hero)
 /// </summary>
 public sealed record Placeholder
 {
+    /// <summary>
+    /// The name between the braces, which is what the row's dictionary files this token under. The
+    /// description already publishes the spelling in its own text wherever it spends the token, so
+    /// carrying it here costs nothing a reader can see and is what lets a renderer put a number where
+    /// the sentence asks for one.
+    /// </summary>
+    public string? Key { get; init; }
+
     /// <summary>The attribute the coefficient multiplies, named by the tuning row itself.</summary>
     public string? Attribute { get; init; }
 

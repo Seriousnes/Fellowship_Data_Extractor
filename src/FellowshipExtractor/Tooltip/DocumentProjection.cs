@@ -48,7 +48,7 @@ public static class DocumentProjection
             Period = entity.Period,
             ScalesWithHaste = entity.ScalesWithHaste,
             ScalesOff = entity.ScalesOff,
-            Placeholders = Spent(entity.Placeholders),
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
             Schools = Schools(entity.Tags),
         },
 
@@ -122,7 +122,7 @@ public static class DocumentProjection
             Cost = entity.Cost,
             TickrateIgnoresHaste = entity.TickrateIgnoresHaste,
             ScalesOff = entity.ScalesOff,
-            Placeholders = Spent(entity.Placeholders),
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
             Schools = Schools(entity.Tags),
             NameBorrowedFrom = Reference(entity.NameInheritedFrom, lookup),
             ArtBorrowedFrom = Reference(entity.IconInheritedFrom, lookup),
@@ -188,7 +188,7 @@ public static class DocumentProjection
             Attribute = entity.GemAttribute!,
             Icon = entity.GemOverflow?.Icon,
             OverflowDescription = entity.GemOverflow?.Description,
-            OverflowPlaceholders = Spent(entity.GemOverflow?.Placeholders),
+            OverflowPlaceholders = Spent(entity.GemOverflow?.Description, entity.GemOverflow?.Placeholders),
         },
 
         EntityType.GemTrait => new GemTrait
@@ -201,7 +201,7 @@ public static class DocumentProjection
             ReplacesId = entity.Replaces,
             Description = entity.Description,
             Icon = entity.Icon,
-            Placeholders = Spent(entity.Placeholders),
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
         },
 
@@ -211,7 +211,7 @@ public static class DocumentProjection
             Name = entity.DisplayName,
             Description = entity.Description,
             Icon = entity.Icon,
-            Placeholders = Spent(entity.Placeholders),
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
             Cooldown = entity.Cooldown,
             Duration = entity.Duration,
@@ -226,7 +226,7 @@ public static class DocumentProjection
             Name = entity.DisplayName,
             Description = entity.Description,
             Icon = entity.Icon,
-            Placeholders = Spent(entity.Placeholders),
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
         },
 
@@ -251,7 +251,7 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             Duration = entity.Duration,
-            Placeholders = Spent(entity.Placeholders),
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
         },
 
@@ -296,7 +296,7 @@ public static class DocumentProjection
             Radius = entity.Radius,
             ScalesWithHaste = entity.ScalesWithHaste,
             Schools = Schools(entity.Tags),
-            Placeholders = Spent(entity.Placeholders),
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
         },
 
@@ -396,12 +396,40 @@ public static class DocumentProjection
     }
 
     /// <summary>
-    /// A row's tokens as a list. The key was how a caller found a token in the sentence it
-    /// substituted into, and 221 of the 237 distinct keys read like StrCoeff50. Plan 2 replaces the
-    /// dictionary's own order with the order the description spends them.
+    /// A row's tokens as a list, ordered by where the text it is spent in first spends each one, then
+    /// by key ordinal, each carrying its key. A token the text never spends sorts after every token it
+    /// does.
+    ///
+    /// Measured over the export, 212 rows carry a token or a placeholder list and the 363 `{Token}`
+    /// occurrences in them. `CodexView.Spent` and `CodexView.Spends(string, string)`, copied, because
+    /// the extractor cannot reference the API.
     /// </summary>
-    private static IReadOnlyList<Placeholder>? Spent(IReadOnlyDictionary<string, Placeholder>? tokens) =>
-        tokens is { Count: > 0 } ? [.. tokens.Values] : null;
+    private static IReadOnlyList<Placeholder>? Spent(string? text, IReadOnlyDictionary<string, Placeholder>? tokens) =>
+        tokens is not { Count: > 0 }
+            ? null
+            : [.. tokens
+                .OrderBy(spent => Spends(text ?? string.Empty, spent.Key))
+                .ThenBy(spent => spent.Key, StringComparer.Ordinal)
+                .Select(spent => spent.Value with { Key = spent.Key })];
+
+    /// <summary>
+    /// Everything of a row a substitution can be spent in, as one string. A detail line spends tokens
+    /// as readily as the description does, and a token spent only there sorts by where it falls
+    /// rather than after everything. `CodexView.Spends(Entity)`, copied.
+    /// </summary>
+    private static string Spends(Entity entity) =>
+        string.Join('\n', new[] { entity.Description }.Concat(entity.Detail ?? []).OfType<string>());
+
+    /// <summary>
+    /// Where a description first spends a token, or past the end of it where the text never does.
+    /// `CodexView.Spends(string, string)`, copied.
+    /// </summary>
+    private static int Spends(string text, string name)
+    {
+        var at = text.IndexOf($"{{{name}}}", StringComparison.Ordinal);
+
+        return at < 0 ? int.MaxValue : at;
+    }
 
     /// <summary>Another row, addressed by its type rather than by the table it is filed in.</summary>
     private static EntityReference? Reference(IconSource? source, TypeLookup lookup) =>

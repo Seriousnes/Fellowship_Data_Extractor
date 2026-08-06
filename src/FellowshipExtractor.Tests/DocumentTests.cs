@@ -74,6 +74,31 @@ public sealed class DocumentTests
             new TalentSlot { Id = 8, Hero = Hero.Mara, Row = 4, Column = 1, Cost = 1, TalentId = 8 }));
     }
 
+    /// <summary>
+    /// The dictionary files Alpha before Bravo, but the description spends Bravo first. The projected
+    /// list follows the text rather than the dictionary, and each entry carries the key the text
+    /// spelled it under.
+    /// </summary>
+    [Fact]
+    public void PlaceholdersAreOrderedByWhereTheTextSpendsThemAndCarryTheirKey()
+    {
+        var entity = new Entity
+        {
+            Type = EntityType.Ability,
+            NetId = 1,
+            Description = "Deals {Bravo} damage, then {Alpha} healing.",
+            Placeholders = new Dictionary<string, Placeholder>
+            {
+                ["Alpha"] = new Placeholder { Value = 1 },
+                ["Bravo"] = new Placeholder { Value = 2 },
+            },
+        };
+
+        var ability = (Ability)DocumentProjection.From(entity, (_, _) => null);
+
+        Assert.Equal(["Bravo", "Alpha"], ability.Placeholders?.Select(token => token.Key));
+    }
+
     private static bool IsRequired(System.Reflection.PropertyInfo property) =>
         property.GetCustomAttributes(typeof(System.Runtime.CompilerServices.RequiredMemberAttribute), false).Length > 0;
 }
