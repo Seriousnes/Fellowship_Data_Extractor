@@ -12,6 +12,17 @@ namespace FellowshipExtractor.Api;
 /// The arithmetic lives here and the emission lives in Tooltip.razor, because the two answer
 /// different questions: a haste-shortened cast time is a reading of the build, and the markup it
 /// lands in is a reading of the design system.
+///
+/// Still typed to the flat <see cref="Entity"/> rather than to
+/// <see cref="Fellowship.SDK.Documents.EntityDocument"/>, unlike every other reader in this project.
+/// <see cref="Rolls"/> reaches <see cref="StatMagnitudes.For"/>, which keys a rung's extra stat slots
+/// by <see cref="Entity.RuleSet"/> - the loot rule set an item is rolled under - and no typed
+/// document carries that field: <see cref="Fellowship.SDK.Documents.Item.Rarity"/> replaced it with
+/// the fixed rung a rule set names, which answers a different question and cannot rebuild the rule
+/// set's own spelling. Moving this class to the typed model needs that rung-slot lookup rebuilt on
+/// whatever <see cref="Fellowship.SDK.Documents.Item"/> can state instead, which is a design
+/// question for <see cref="StatMagnitudes"/> rather than a retyping exercise, so it stays out of
+/// this pass.
 /// </summary>
 public sealed class TooltipView(
     EntityStore store,
@@ -308,8 +319,14 @@ public sealed class TooltipView(
 
         // A nested row is addressed by nothing and has no id to fall back on, so a granted ability
         // is named or it is drawn as "Ability" alone; one with neither is not drawn at all.
+        //
+        // Reads Entity.DisplayName directly rather than through PublicTypes.DisplayNameOf, which
+        // now takes only the typed EntityDocument the API's other surfaces have moved to. This whole
+        // class is still on the flat Entity model - see the class remarks - so this stays the field
+        // read it always was; nothing in the Api constructs an Entity at runtime today, so the path
+        // is unreachable rather than silently wrong.
         if (entity.Grants is { } grants &&
-            (PublicTypes.DisplayNameOf(grants) ?? grants.Description) is not null) shown.Add(Block.Granted);
+            (grants.DisplayName ?? grants.Description) is not null) shown.Add(Block.Granted);
 
         if (entity.LegendaryStats is { Count: > 0 }) shown.Add(Block.Legendaries);
 

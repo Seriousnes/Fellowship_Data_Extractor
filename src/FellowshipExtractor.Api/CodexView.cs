@@ -1,8 +1,10 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Azure.Storage.Blobs;
+using Fellowship.SDK.Documents;
 using Microsoft.AspNetCore.Components;
 
 namespace FellowshipExtractor.Api;
@@ -28,24 +30,57 @@ public sealed class CodexView(
 
     public bool HasIcon(string? icon) => icon is not null;
 
-    public string NameColour(Entity entity)
+    /// <summary>
+    /// The colour a row's name is drawn in: a gem tier's or an item's rarity, failing that a gem
+    /// type's own colour, failing that the hero it is for where it is for exactly one, and failing
+    /// all three the ordinary text colour, muted for a row printing its noun and id rather than a
+    /// name of its own.
+    ///
+    /// The rarity and gem lookups read the enum member's own name, which is the ladder's filed word
+    /// rather than the word a page prints: <see cref="DesignTokens.Rarity"/> and
+    /// <see cref="DesignTokens.Gem"/> both key their palette by that filed spelling, on the same
+    /// terms <see cref="Codex"/>'s own facet colours do.
+    /// </summary>
+    public string NameColour(EntityDocument document)
     {
-        if (entity.Rarity is { } rarity && tokens.Rarity(rarity) is { } rung) return Readable(rung)!;
-        if (entity.GemType is { } gem && tokens.Gem(gem) is { } stone) return Readable(stone)!;
-
-        if (entity.Heroes is { Count: 1 } && store.Hero(entity.Heroes[0]) is { } hero &&
-            tokens.Hero(hero.Codename) is { } colour)
+        Rarity? rarity = document switch
         {
-            return Readable(colour)!;
-        }
+            Item { Rarity: { } value } => value,
+            GemTier tier => tier.Rarity,
+            _ => null,
+        };
+
+        if (rarity is { } rung && tokens.Rarity(rung.ToString()) is { } shade) return Readable(shade)!;
+
+        GemTypeName? gem = document switch
+        {
+            GemType type => type.Gem,
+            GemTier tier => tier.Gem,
+            GemTrait trait => trait.Gem,
+            _ => null,
+        };
+
+        if (gem is { } stone && tokens.Gem(stone.ToString()) is { } colour) return Readable(colour)!;
+
+        var tint = document switch
+        {
+            Item { Heroes: [{ } hero] } => HeroTint(hero),
+            TalentSlot slot => HeroTint(slot.Hero),
+            _ => null,
+        };
+
+        if (tint is not null) return Readable(tint)!;
 
         // The muted tone is what a row named only by its noun and id is drawn in, so it follows the
         // same reading of "named" the heading does: a row whose shipped name is an asset path prints
         // as "Effect 2812" and is drawn as the unnamed row it now is.
-        return PublicTypes.DisplayNameOf(entity) is null
+        return PublicTypes.DisplayNameOf(document) is null
             ? tokens.Color("core.text-secondary") ?? "#909BA6"
             : tokens.Color("core.text-primary") ?? "#EAE3DB";
     }
+
+    private string? HeroTint(Hero hero) =>
+        store.Hero(hero.ToString())?.Codename is { } codename ? tokens.Hero(codename) : null;
 
     public string? HeroColour(string name) => Readable(tokens.Hero(store.Hero(name)?.Codename ?? name));
 
@@ -87,38 +122,33 @@ public sealed class CodexView(
         return scaled <= 0.03928 ? scaled / 12.92 : Math.Pow((scaled + 0.055) / 1.055, 2.4);
     }
 
-    public string Name(Entity entity) => PublicTypes.NameOf(entity);
+    public string Name(EntityDocument document) => PublicTypes.NameOf(document);
 
     /// <summary>
-    /// The public name of a row known only by its address, for the references that carry a table,
-    /// an id and the row's shipped tag: the tag is the one thing about the reference that must not
-    /// be drawn, so the row itself is read and named as it is named everywhere else.
+    /// The public name of a row known only by its address, for the <see cref="EntityReference"/>s a
+    /// name or an icon is borrowed from: the extractor never writes a reference's own
+    /// <see cref="EntityReference.Name"/>, so the row itself is read off the store and named as it is
+    /// named everywhere else.
+    ///
+    /// Every reference the export carries addresses a real row - measured over the corpus, all 2,570
+    /// of the borrowed-name and borrowed-art references on the 3,261 effects resolve - so the first
+    /// reading is taken outright rather than defended against an address nothing in the build writes.
     /// </summary>
-    public string Name(string? table, int netId) =>
-        store.All(table ?? string.Empty, netId) is { Count: > 0 } readings
-            ? PublicTypes.NameOf(readings[0])
-            : PublicTypes.NameOf(new Entity { Table = table, NetId = netId });
+    public string Name(EntityType type, int id) => PublicTypes.NameOf(store.All(type, id)[0]);
 
-    public string Href(Entity entity) => Href(entity.Table, entity.NetId ?? 0);
+    public string Href(EntityDocument document) => Href(EntityTypes.TypeOf(document), document.Id);
 
-    /// <summary>
-    /// A row's page, under the slug its type is addressed by. A row of a non-public table has no
-    /// page, and the empty string is the answer rather than a path with the table's shipped name in
-    /// it: a caller that renders this links nowhere instead of publishing the name.
-    /// </summary>
-    public string Href(string? table, int netId) =>
-        PublicTypes.SlugOf(table) is { } slug
-            ? $"/entity/{slug}/{netId.ToString(CultureInfo.InvariantCulture)}"
-            : string.Empty;
+    /// <summary>A row's page, under the slug its type is addressed by.</summary>
+    public string Href(EntityType type, int id) =>
+        $"/entity/{EntityTypes.Slug(type)}/{id.ToString(CultureInfo.InvariantCulture)}";
 
     /// <summary>The tooltip address of a row, under the same slug and on the same terms.</summary>
-    public string Tip(Entity entity)
+    public string Tip(EntityDocument document)
     {
-        if (PublicTypes.SlugOf(entity.Table) is not { } slug) return string.Empty;
+        var where = $"/api/tooltip/{EntityTypes.Slug(EntityTypes.TypeOf(document))}/" +
+            document.Id.ToString(CultureInfo.InvariantCulture);
 
-        var where = $"/api/tooltip/{slug}/{(entity.NetId ?? 0).ToString(CultureInfo.InvariantCulture)}";
-
-        return Reading(entity) is { } hero ? $"{where}?hero={Uri.EscapeDataString(hero)}" : where;
+        return Reading(document) is { } hero ? $"{where}?hero={Uri.EscapeDataString(hero)}" : where;
     }
 
     /// <summary>
@@ -129,20 +159,14 @@ public sealed class CodexView(
     /// what the tooltip endpoint will resolve the same address to and two readings of that question
     /// is how the two surfaces came to disagree.
     /// </summary>
-    public string? Reading(Entity entity)
-    {
-        if (entity.Table is not { } table || entity.NetId is not { } netId) return null;
-        if (store.All(table, netId).Count <= 1) return null;
+    public string? Reading(EntityDocument document) =>
+        store.All(EntityTypes.TypeOf(document), document.Id).Count <= 1 ? null : store.Wearer(document)?.Name;
 
-        return store.Wearer(entity)?.Name;
-    }
-
-    public MarkupString Text(string? source, IReadOnlyDictionary<string, Placeholder>? tokenValues,
-        IReadOnlyList<string>? tags)
+    public MarkupString Text(string? source, IReadOnlyList<Placeholder>? tokens, IReadOnlyList<string>? tags)
     {
         if (source is null) return default;
 
-        return new MarkupString(richText.Render(source, Resolved(tokenValues, tags)));
+        return new MarkupString(richText.Render(source, Resolved(tokens, tags)));
     }
 
     /// <summary>
@@ -150,18 +174,56 @@ public sealed class CodexView(
     /// data rather than with a page. Resolved through the one path the page resolves through, so a
     /// record and the page over it cannot say different things about one row.
     /// </summary>
-    public string? PlainText(string? source, IReadOnlyDictionary<string, Placeholder>? tokenValues,
-        IReadOnlyList<string>? tags) =>
-        source is null ? null : richText.Plain(source, Resolved(tokenValues, tags));
+    public string? PlainText(string? source, IReadOnlyList<Placeholder>? tokens, IReadOnlyList<string>? tags) =>
+        source is null ? null : richText.Plain(source, Resolved(tokens, tags));
 
     /// <summary>
     /// A row's tokens as far as the build alone settles them, which is the reading with no caller
     /// attached: no hero, no item level and no stat totals, so a coefficient stays the share it is
     /// rather than becoming a number for somebody.
+    ///
+    /// <see cref="Placeholders.Resolve"/> still reads a key-to-token map, because the renderer finds a
+    /// substitution by the name between a sentence's own <c>{Token}</c> braces; the document carries
+    /// the list instead, each entry naming its own key, so the map is built here rather than kept.
     /// </summary>
     private IReadOnlyDictionary<string, Substitution>? Resolved(
-        IReadOnlyDictionary<string, Placeholder>? tokenValues, IReadOnlyList<string>? tags) =>
-        tokenValues is null ? null : placeholders.Resolve(tokenValues, new TooltipQuery(), null, tags);
+        IReadOnlyList<Placeholder>? tokens, IReadOnlyList<string>? tags) =>
+        tokens is not { Count: > 0 } ? null : placeholders.Resolve(Keyed(tokens), new TooltipQuery(), null, tags);
+
+    /// <summary>
+    /// A row's tokens keyed by their own name, for <see cref="Placeholders.Resolve"/>. Built with a
+    /// loop rather than <c>ToDictionary</c> so a key one row spent twice, if the build ever ships one,
+    /// overwrites rather than throws: measured over the export, no document's own list repeats a key
+    /// today, but nothing here depends on that staying true.
+    /// </summary>
+    private static IReadOnlyDictionary<string, Placeholder> Keyed(IReadOnlyList<Placeholder> tokens)
+    {
+        var keyed = new Dictionary<string, Placeholder>(tokens.Count, StringComparer.Ordinal);
+        foreach (var token in tokens)
+        {
+            if (token.Key is { } key) keyed[key] = token;
+        }
+
+        return keyed;
+    }
+
+    /// <summary>
+    /// A row's own placeholder list, already ordered by the text that spends it, read off whichever
+    /// of the seven document types carrying one actually declares this row's field. Public so a
+    /// caller holding an arbitrary <see cref="EntityDocument"/> - a results row, a nested grant - has
+    /// one fan-out to read rather than a copy of this switch of its own.
+    /// </summary>
+    public static IReadOnlyList<Placeholder> PlaceholdersOf(EntityDocument document) => document switch
+    {
+        Ability ability => ability.Placeholders ?? [],
+        Effect effect => effect.Placeholders ?? [],
+        Finesse finesse => finesse.Placeholders ?? [],
+        GemTrait trait => trait.Placeholders ?? [],
+        Talent talent => talent.Placeholders ?? [],
+        TraitPower power => power.Placeholders ?? [],
+        WeaponPower power => power.Placeholders ?? [],
+        _ => [],
+    };
 
     /// <summary>
     /// What one substitution prints as on those same terms, which is the string a caller will find
@@ -174,15 +236,24 @@ public sealed class CodexView(
 
     public static string Number(double value) => Codex.Number(value);
 
-    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts(Entity entity)
+    /// <summary>
+    /// Every scalar fact one row states, in the order its own document class declares them, each
+    /// already formatted the way a reader would read it.
+    ///
+    /// Reflected off the document's own runtime type rather than off one shared shape: a document
+    /// carries no field its type never fills, so an <see cref="Item"/> and an <see cref="Ability"/>
+    /// state entirely different facts here and neither is padded with the other's nulls.
+    /// </summary>
+    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts(
+        EntityDocument document)
     {
         var facts = new List<(string, string, string?, string?, string?)>();
 
-        foreach (var property in Scalars)
+        foreach (var property in Scalars(document))
         {
-            if (Drawn.Contains(property.Name) || Internal.Contains(property.Name)) continue;
+            if (Drawn.Contains(property.Name) || Hidden(document, property.Name)) continue;
 
-            var value = property.GetValue(entity);
+            var value = property.GetValue(document);
             if (value is null) continue;
 
             var text = value switch
@@ -195,134 +266,132 @@ public sealed class CodexView(
 
             if (text.Length == 0) continue;
 
-            var points = Points(entity, property.Name, value);
+            var points = Points(document, property.Name, value);
 
-            facts.Add((Heading(property.Name), text, Unit(property.Name), points?.Href, points?.Tip));
+            facts.Add((Heading(document, property.Name), text, Unit(property.Name), points?.Href, points?.Tip));
         }
 
         return facts;
     }
 
     /// <summary>
-    /// Where a numeric fact leads, on the two fields whose number is another row's id rather than a
-    /// quantity. A gem node replaces a node of its own table; an augmentation is always a talent
-    /// record, and the item and trait rows carrying one do not say so.
+    /// Where a numeric fact leads, on the four fields whose number is another row's id rather than a
+    /// quantity: a trait's or a set bonus's power, a talent slot's talent, and the weaker gem node a
+    /// ladder's upper half replaces.
     /// </summary>
-    private (string Href, string? Tip)? Points(Entity entity, string property, object value) => property switch
-    {
-        nameof(Entity.Augmentation) when value is int id => Addresses(TalentAsset, id),
-        nameof(Entity.Replaces) when value is int id => Addresses(entity.Table, id),
-        _ => null,
-    };
+    private (string Href, string? Tip)? Points(EntityDocument document, string property, object value) =>
+        document switch
+        {
+            Trait when property == nameof(Trait.PowerId) && value is int id => Addresses(EntityType.TraitPower, id),
+            SetBonus when property == nameof(SetBonus.PowerId) && value is int id =>
+                Addresses(EntityType.SetBonusPower, id),
+            TalentSlot when property == nameof(TalentSlot.TalentId) && value is int id =>
+                Addresses(EntityType.Talent, id),
+            GemTrait when property == nameof(GemTrait.ReplacesId) && value is int id =>
+                Addresses(EntityType.GemTrait, id),
+            _ => null,
+        };
+
+    /// <summary>Where a pointer to another row leads, and that row's own tooltip address beside it.</summary>
+    public (string Href, string? Tip)? Addresses(EntityType type, int id) =>
+        (Href(type, id), store.All(type, id) is { Count: > 0 } readings ? Tip(readings[0]) : null);
+
+    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> ScalarsByType = new();
 
     /// <summary>
-    /// Where a pointer to another row leads, or null when it leads into a table no reader can open.
-    /// A caller draws plain text rather than a link in that case, which is what stops an address
-    /// from being built out of a shipped table name.
+    /// A document's own scalar properties, cached by its runtime type so the reflection runs once per
+    /// document class rather than once per row.
     /// </summary>
-    public (string Href, string? Tip)? Addresses(string? table, int netId)
-    {
-        if (!PublicTypes.IsPublic(table)) return null;
-
-        return (Href(table, netId), store.All(table!, netId) is { Count: > 0 } readings ? Tip(readings[0]) : null);
-    }
-
-    private static readonly PropertyInfo[] Properties = typeof(Entity)
-        .GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-    private static readonly PropertyInfo[] Scalars =
-        [.. Properties.Where(p => IsScalar(Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType))];
+    private static PropertyInfo[] Scalars(EntityDocument document) =>
+        ScalarsByType.GetOrAdd(document.GetType(), type =>
+        [
+            .. type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => IsScalar(Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType)),
+        ]);
 
     private static bool IsScalar(Type type) =>
-        type == typeof(string) || type.IsPrimitive || type == typeof(decimal);
+        type == typeof(string) || type.IsPrimitive || type == typeof(decimal) || type.IsEnum;
 
     /// <summary>
-    /// Fields the page has a section of its own for, so a fact would repeat them.
+    /// Fields the page has a section of its own for, so a fact would repeat them: every document's
+    /// own <see cref="EntityDocument.Id"/> and <see cref="EntityDocument.Name"/>, and the
+    /// description and the icon wherever a document class states them.
     ///
-    /// <see cref="Entity.Table"/> belongs here rather than below because the page does state it, as
-    /// the public label its slug is addressed by; the shipped spelling behind that label is what
-    /// never reaches a reader, and <see cref="PublicTypes"/> is where that is enforced.
+    /// <see cref="GemType.OverflowDescription"/> belongs here for a different reason than
+    /// <see cref="Ability.Description"/> does: it is not a field the layout moved but the shipped
+    /// sentence itself, {Token} braces and style tags intact, the same string
+    /// <see cref="PublicEntity.Description"/>'s own remarks say must never be handed over. It is
+    /// drawn through <see cref="PublicEntity.GemOverflow"/>'s resolved reading instead, so a fact row
+    /// would only ever repeat it in the one spelling a reader must not see.
     /// </summary>
     private static readonly HashSet<string> Drawn = new(StringComparer.Ordinal)
     {
-        nameof(Entity.Table), nameof(Entity.NetId), nameof(Entity.DisplayName),
-        nameof(Entity.Description), nameof(Entity.Icon),
+        nameof(EntityDocument.Id), nameof(EntityDocument.Name),
+        nameof(Ability.Description), nameof(Item.Icon), nameof(GemType.OverflowDescription),
     };
 
     /// <summary>
-    /// Fields whose value is a shipped spelling, which is never drawn. Measured over the export,
-    /// every value each of these carries is internal and none has a printed form to fall back on:
-    /// <see cref="Entity.RuleSet"/> is 9 values on 2,204 items, all of the Default_NoGemSlot kind;
-    /// <see cref="Entity.TalentSlot"/> is 19 values on 215 talents, all spelled Talent.ID.Talent15;
-    /// <see cref="Entity.TraitCategoryTag"/> is 4 values on 38 traits, all spelled
-    /// ItemTrait.TraitCategory.Heroic, and <see cref="Entity.TraitCategory"/> beside it already
-    /// carries the word the game prints for the same fact; and <see cref="Entity.GemAttribute"/> is
-    /// 6 values on the 6 gem roots, one per root and every one of them the root's own name run
-    /// together with Power, so Amethyst holds AmethystPower and Topaz TopazPower.
-    ///
-    /// <see cref="Entity.Name"/> is here for the same reason and is the plainest case of it: it is
-    /// the row's gameplay tag, which is the one spelling this whole catalogue is built to keep out.
-    /// A row with no display name is named by <see cref="PublicTypes.NameOf"/> with its noun and its
-    /// number instead, so the tag is not a fallback either.
-    ///
-    /// The test is not whether a field is internal, because an internal number is exactly what a
-    /// catalogue like this exists to state and the tuning panels below print thousands of them. It
-    /// is whether the value is a spelling and the fact it states is already drawn beside it: the
-    /// attribute a gem root accumulates into says the root's own name back, and each trait carries
-    /// the printed category beside the tag for it.
-    ///
-    /// The tag lists are out of reach here rather than named, because <see cref="Scalars"/> walks
-    /// single values and a list is not one. <see cref="Entity.GrantedTags"/> is the one that would
-    /// tempt a panel of its own, since a talent's entire content is that list, and it stays out on
-    /// the test above: every entry is a gameplay tag, the build prints a word for none of them, and
-    /// a talent already draws its text and its tuning. The same holds for the tag a
-    /// <see cref="Entity.TalentGates"/> entry carries, which is why a gated group is drawn as
-    /// conditional rather than under the tag that gates it. They stay backend, where the
-    /// cross-references that need them read them.
-    ///
-    /// Separate from <see cref="Drawn"/> because the reason differs and the fix does too: a drawn
-    /// field moves if the page is relaid out, and one of these can only ever be left out.
+    /// Fields whose value is a shipped spelling or a ladder's filed word rather than the word a page
+    /// prints. <see cref="GemType.Attribute"/> is the root's own name run together with Power on all
+    /// 6 gem roots, Amethyst holding AmethystPower; <see cref="Item.Rarity"/> and
+    /// <see cref="GemTier.Rarity"/> are enum members named for the rung's filed word, which the
+    /// ladder joins by ordinal to two different printed words rather than stating one itself.
     /// </summary>
-    private static readonly HashSet<string> Internal = new(StringComparer.Ordinal)
+    private static bool Hidden(EntityDocument document, string property) => document switch
     {
-        nameof(Entity.Name), nameof(Entity.RuleSet), nameof(Entity.TalentSlot),
-        nameof(Entity.TraitCategoryTag), nameof(Entity.GemAttribute),
+        GemType => property == nameof(GemType.Attribute),
+        Item => property == nameof(Item.Rarity),
+        GemTier => property == nameof(GemTier.Rarity),
+        _ => false,
     };
 
     /// <summary>
-    /// The table a talent's mechanics and text live in. An item's or a trait's augmentation number
-    /// is an id into it and carries nothing saying so, so the table is what turns the number into
-    /// an address and the heading below into a word.
+    /// What a fact is headed with: the type a pointer leads to, for the four fields <see cref="Points"/>
+    /// addresses, and the field's own name spaced out for the rest.
     /// </summary>
-    private const string TalentAsset = "CRCharacterAugmentationAsset";
-
-    /// <summary>
-    /// What a fact is headed with. The export names a field after the thing it reads, which for the
-    /// augmentation pointer is the asset class this app publishes as a talent, so the pointer is
-    /// headed with the same word its destination is headed with.
-    /// </summary>
-    private static string Heading(string property) => property switch
+    private static string Heading(EntityDocument document, string property) => document switch
     {
-        nameof(Entity.Augmentation) => PublicTypes.Label(TalentAsset),
+        Trait when property == nameof(Trait.PowerId) => PublicTypes.Label(EntityType.TraitPower),
+        SetBonus when property == nameof(SetBonus.PowerId) => PublicTypes.Label(EntityType.SetBonusPower),
+        TalentSlot when property == nameof(TalentSlot.TalentId) => PublicTypes.Label(EntityType.Talent),
+        GemTrait when property == nameof(GemTrait.ReplacesId) => PublicTypes.Label(EntityType.GemTrait),
         _ => Codex.Spaced(property),
     };
 
     private static string? Unit(string property) => property switch
     {
-        nameof(Entity.CastTime) or nameof(Entity.ChannelTime) or nameof(Entity.ChannelTick)
-            or nameof(Entity.Cooldown) or nameof(Entity.Duration) or nameof(Entity.Period) => "s",
+        nameof(Ability.CastTime) or nameof(Ability.ChannelTime) or nameof(Ability.ChannelTick)
+            or nameof(Ability.Cooldown) or nameof(Ability.Duration) or nameof(Ability.Period) => "s",
         _ => null,
     };
 
     /// <summary>
+    /// The word a rarity rung prints for one row: the item column of the ladder for an
+    /// <see cref="Item"/>, the gem column for a <see cref="GemTier"/>, joined on the tier ordinal the
+    /// <see cref="Rarity"/> enum's own members carry as their value. Null on every other document type
+    /// and on the rows of either type that carry no rarity at all.
+    /// </summary>
+    public string? Rarity(EntityDocument document)
+    {
+        Rarity? rung = document switch
+        {
+            Item { Rarity: { } value } => value,
+            GemTier tier => tier.Rarity,
+            _ => null,
+        };
+
+        if (rung is not { } tier2) return null;
+
+        var entry = store.Vocabulary.Rarities.FirstOrDefault(r => r.Tier == (int)tier2);
+
+        return entry is null ? tier2.ToString() : document is GemTier ? entry.GemDisplayName : entry.DisplayName;
+    }
+
+    /// <summary>
     /// Every tuning number a dictionary of shipped rows holds, under the words it tunes.
     ///
-    /// Three fields carry this shape and all three come through here: an entity's own
-    /// <see cref="Entity.Constants"/>, the rows a <see cref="Placeholder"/> works its number out
-    /// from, and each group of <see cref="Entity.Talents"/>. Measured over the rows of the export
-    /// that is 4,399 dictionaries holding 9,844 keys, 5,249 of them distinct, and the granted
-    /// abilities and legendary stat lines nested inside those rows bring more again, because each
-    /// of them draws a panel of its own.
+    /// One field carries this shape today: the rows a <see cref="Placeholder"/> works its number out
+    /// from.
     ///
     /// A number reached by two paths is listed once. 72 keys are the fully qualified spelling of a
     /// row already listed under a shorter tail at the same value, which is a second way in to one
@@ -371,8 +440,8 @@ public sealed class CodexView(
 
     /// <summary>
     /// A tuning key as a reader reads it, for the callers holding a key rather than a dictionary:
-    /// the group names of <see cref="Entity.Talents"/> are keys of the same kind and are drawn as
-    /// headings over the rows they hold.
+    /// the group names of a talent's tuning are keys of the same kind and are drawn as headings over
+    /// the rows they hold.
     /// </summary>
     public string TuningName(string key) => Spaced(Knob(key));
 
@@ -391,19 +460,18 @@ public sealed class CodexView(
     /// A key is a dotted path whose leading segments are the owning asset's own spelling, so
     /// SG_EchoingSpiritGhost.Explode.Radius is one asset's explosion radius and what a reader came
     /// for is the rest of it. The asset's name is the one part that cannot be drawn, and it is the
-    /// one part written with punctuation: 260 of the 264 underscored segments in the export are an
-    /// upper case class prefix and its asset, PR_Shark and UB_BossArchbishop and the like. The four
-    /// that are not are Fire_Major, Fire_Minor and Knockback_Immune, which are two words joined by
-    /// an underscore rather than an asset and which sit past the owner, and
-    /// Shared_PolymorphChickenSmall, which is an owner and is dropped for leading its key. So an
+    /// one part written with punctuation: an upper case class prefix and its asset, PR_Shark and
+    /// UB_BossArchbishop and the like. Fire_Major, Fire_Minor and Knockback_Immune are two words
+    /// joined by an underscore rather than an asset and sit past the owner, and
+    /// Shared_PolymorphChickenSmall is an owner and is dropped for leading its key. So an
     /// asset-shaped segment is dropped wherever it sits and the first segment is dropped for
-    /// carrying an underscore at all, which between them leave every one of the 5,249 keys with
-    /// something to say and leave no asset name drawn.
+    /// carrying an underscore at all, which between them leave every keyed row with something to say
+    /// and leave no asset name drawn.
     ///
-    /// 818 of those keys are one segment and no dots at all, AbilityAddedCritChance and
-    /// ActivationDelay and AbsorbIntellectCoefficient, each of them a row named outright with no
-    /// owner in front of it. Nothing is taken off them, because the rule takes an owner off rather
-    /// than a first segment: a key with nothing but a knob in it is already the knob.
+    /// A key with one segment and no dots at all - AbilityAddedCritChance, ActivationDelay,
+    /// AbsorbIntellectCoefficient - is a row named outright with no owner in front of it. Nothing is
+    /// taken off them, because the rule takes an owner off rather than a first segment: a key with
+    /// nothing but a knob in it is already the knob.
     ///
     /// A hero is renamed rather than dropped. Which hero a row is for is data a reader wants and the
     /// codename is merely how the build spells it, so Firemage reads Ardeos. Dropping a leading one
@@ -435,8 +503,8 @@ public sealed class CodexView(
 
     /// <summary>
     /// Whether a key segment is the build's spelling of an asset rather than words. Two or more
-    /// capitals and then an underscore is how every one of the 260 asset segments in the export is
-    /// written, and is how none of the four other underscored segments is.
+    /// capitals and then an underscore is how every asset segment the export carries is written, and
+    /// is how none of the underscored segments that are not one is written.
     /// </summary>
     private static bool NamesAnAsset(string segment)
     {
@@ -457,10 +525,9 @@ public sealed class CodexView(
     ///
     /// Whole words are matched, split at the capital that starts each one, because a codename is as
     /// often part of a compound as it is a segment of its own: Perk.MaxHealthBasedAbsorb.VigorMosse
-    /// reads Vigour Sylvie and MaxDistanceFromMosse reads Max Distance From Sylvie. Of the 3,443
-    /// distinct segments the keys and the talent group names are built from, 16 carry a codename as
-    /// a word and every one of them means the hero, so the corpus holds no word that merely looks
-    /// like one.
+    /// reads Vigour Sylvie and MaxDistanceFromMosse reads Max Distance From Sylvie. Every segment
+    /// carrying a codename as a whole word means the hero, so the corpus holds no word that merely
+    /// looks like one.
     ///
     /// One occurrence is not a word. JS_NPCRime glues the codename to the capital before it, so the
     /// split never offers Rime to the roster and the internal spelling would stand: that segment
@@ -550,21 +617,6 @@ public sealed class CodexView(
     /// HealthRegenRateMultiplier would print "Health Regen Rate Rate Multiplier". The remaining 17
     /// rows print the key's own words, so they read the same either way. A key with no row at all is
     /// left to <see cref="Codex.Spaced"/>, as every other tuning word is.
-    ///
-    /// Measured over the export that restates 79 of the 5,547 distinct keys and talent group names,
-    /// reached 294 times: 76 of them name crit chance and 3 are the bare HealthRegen segment. Not one
-    /// of the 9,771 tuning rows the corpus draws prints "Crit Chance" now, and 217 print Critical
-    /// Strike.
-    ///
-    /// No row is lost to it. A label is what <see cref="Tuning"/> drops a duplicate on, so restating
-    /// one key in another's spelling could collapse two rows into one, and the corpus was counted for
-    /// it: all 4,792 tuning dictionaries in the export, the ones nested inside a granted ability or a
-    /// legendary stat line included, list exactly as many rows after this as before.
-    ///
-    /// What is not reached is the build's own prose. CriticalChanceHasteExpertiseAndSpiritBonus,
-    /// CritRatingIncrease and AddedCritStrikeChance are designers writing the stat their own way
-    /// rather than naming the key, and they already read as words; matching them would need a list of
-    /// spellings written here, which is the one thing this file derives instead.
     /// </summary>
     private readonly IReadOnlyDictionary<string, string> stats = store.Vocabulary.StatCalculation.Attributes
         .Where(row => row.Value.DisplayName is { Length: > 0 } printed &&
@@ -593,18 +645,15 @@ public sealed class CodexView(
 
     /// <summary>
     /// Every substitution an entity's text spends, resolved as far as the export states and numbered
-    /// in the order the sentence spends them.
-    ///
-    /// 207 rows carry substitutions, 373 in all. The number is what a reader can use: a token's own
-    /// key is a spelling rather than a label, so entry 1 is simply the first number the description
-    /// works out. A token the text never spends sorts last, under its key, which is where the 9 of
-    /// the 373 the export carries without spending belong.
+    /// in the order the document's own <see cref="Placeholders"/> list already gives them - the order
+    /// the sentence spends them, worked out once at extraction rather than derived again here.
     /// </summary>
-    public IReadOnlyList<TokenReading> Substitutions(Entity entity)
+    public IReadOnlyList<TokenReading> Substitutions(EntityDocument document)
     {
-        var read = new List<TokenReading>();
+        var tokens = PlaceholdersOf(document);
+        var read = new List<TokenReading>(tokens.Count);
 
-        foreach (var token in Spent(Spends(entity), entity.Placeholders))
+        foreach (var token in tokens)
         {
             var (reading, resolved) = Reads(token);
 
@@ -612,43 +661,6 @@ public sealed class CodexView(
         }
 
         return read;
-    }
-
-    /// <summary>
-    /// A row's substitutions in the order its text spends them, which is the order every surface
-    /// numbering them numbers by.
-    ///
-    /// Derived here rather than at each caller because the ordinal is the whole of a token's public
-    /// identity: the key it is filed under is a spelling, so an entry is tied to the number in the
-    /// sentence by its position and nothing else, and the entry page's panel and the record a caller
-    /// fetches have to be counting the same way for the tie to hold.
-    /// </summary>
-    public IEnumerable<Placeholder> Spent(string text, IReadOnlyDictionary<string, Placeholder>? tokens) =>
-        tokens is not { Count: > 0 }
-            ? []
-            : tokens
-                .OrderBy(spent => Spends(text, spent.Key))
-                .ThenBy(spent => spent.Key, StringComparer.Ordinal)
-                .Select(spent => spent.Value);
-
-    /// <summary>
-    /// Everything of a row a substitution can be spent in, as one string. A detail line spends
-    /// tokens as readily as the description does, and a token spent only there sorts by where it
-    /// falls rather than after everything.
-    /// </summary>
-    public static string Spends(Entity entity) =>
-        string.Join('\n', new[] { entity.Description }.Concat(entity.Detail ?? []).OfType<string>());
-
-    /// <summary>
-    /// Where a description first spends a token, or past the end of it where the text never does.
-    /// Matched on the same terms the renderer substitutes on, so the order a reader is given is the
-    /// order the numbers actually appear in.
-    /// </summary>
-    private static int Spends(string text, string name)
-    {
-        var at = text.IndexOf($"{{{name}}}", StringComparison.Ordinal);
-
-        return at < 0 ? int.MaxValue : at;
     }
 
     /// <summary>
@@ -752,7 +764,7 @@ public sealed class CodexView(
 
     /// <summary>
     /// What a token's print format does to its number, in words. The three the export carries are
-    /// all the build names: number on 52 tokens, percent on 33 and delta on 25.
+    /// all the build names: number, percent and delta.
     /// </summary>
     private static string Printed(string format) => format switch
     {
@@ -786,10 +798,10 @@ public sealed record TuningRow(string Label, string Value, bool Absent);
 /// <summary>
 /// One substitution of a description as a reader meets it, numbered rather than named.
 ///
-/// The token's own key is not carried. 221 of the 237 distinct keys in the export fail the test
+/// The token's own key is not carried. Most of the distinct keys the export carries fail the test
 /// <see cref="PublicTypes.DisplayNameOf"/> puts a shipped name to, and read as StrCoeff50 and
-/// HemoStrikeTickDmg; the 16 that pass are CDR, amount, movespeed, percentage and twelve more. So
-/// the key is a spelling and the ordinal is what ties an entry to the sentence it is spent in.
+/// HemoStrikeTickDmg; a few pass, such as CDR, amount, movespeed and percentage. So the key is a
+/// spelling and the ordinal is what ties an entry to the sentence it is spent in.
 /// </summary>
 public sealed record TokenReading(
     int Ordinal, string Reading, bool Resolved, string Working, IReadOnlyList<TuningRow> Tuning);

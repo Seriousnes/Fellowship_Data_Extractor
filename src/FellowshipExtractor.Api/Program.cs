@@ -1,3 +1,4 @@
+using Fellowship.SDK.Documents;
 using FellowshipExtractor.Api;
 using FellowshipExtractor.Api.Components;
 
@@ -50,19 +51,21 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.MapGet("/api/ability/{abilityId:int}", (int abilityId, HttpContext http, Tooltips tooltips) =>
-        tooltips.Get("ability", abilityId, http.Request.Query))
+        tooltips.Get(EntityType.Ability, abilityId, http.Request.Query))
     .WithName("GetAbilityTooltip")
     .WithSummary("One ability's tooltip as a self-contained HTML fragment.")
     .Produces<string>(StatusCodes.Status200OK, "text/html");
 
 app.MapGet("/api/item/{itemId:int}", (int itemId, HttpContext http, Tooltips tooltips) =>
-        tooltips.Get("items", itemId, http.Request.Query))
+        tooltips.Get(EntityType.Item, itemId, http.Request.Query))
     .WithName("GetItemTooltip")
     .WithSummary("One item's tooltip as a self-contained HTML fragment.")
     .Produces<string>(StatusCodes.Status200OK, "text/html");
 
-app.MapGet("/api/tooltip/{slug}/{netId:int}", (string slug, int netId, HttpContext http, Tooltips tooltips) =>
-        tooltips.Get(slug, netId, http.Request.Query))
+app.MapGet("/api/tooltip/{slug}/{id:int}", async (string slug, int id, HttpContext http, Tooltips tooltips) =>
+        EntityTypes.TryParse(slug, out var type)
+            ? await tooltips.Get(type, id, http.Request.Query)
+            : PublicRoutes.NoSuchType(slug, StatusCodes.Status404NotFound))
     .WithName("GetTooltip")
     .WithSummary("Any entity's tooltip as a self-contained HTML fragment, addressed by type and id.")
     .Produces<string>(StatusCodes.Status200OK, "text/html");
@@ -77,14 +80,14 @@ app.MapGet("/api/search", (HttpContext http, Suggestions suggestions) =>
     var asked = http.Request.Query["type"].ToString();
     var narrowed = string.IsNullOrWhiteSpace(asked) ? null : asked;
 
-    if (narrowed is not null && PublicTypes.TableOf(narrowed) is null)
+    if (narrowed is not null && !EntityTypes.TryParse(narrowed, out _))
     {
         return PublicRoutes.NoSuchType(narrowed, StatusCodes.Status400BadRequest);
     }
 
-    // The slug is handed on as the slug. Resolving it here and passing the table would type-check
-    // and answer nothing at all: the narrowing resolves its own argument, so a table name arriving
-    // there names no type and empties every result.
+    // The slug is handed on as the slug, not the type it resolves to: Suggestions.For resolves its
+    // own argument, and it is the one place that resolution has to happen for the empty-type case
+    // above and the narrowing below to read the same slug the same way.
     return Results.Ok(suggestions.For(http.Request.Query["q"].ToString(), narrowed, limit));
 })
     .WithName("Search")
@@ -111,22 +114,22 @@ app.MapGet("/api/entities", (HttpContext http, Codex codex, CodexSearch search, 
     .WithName("GetEntities")
     .WithSummary("Every entity a filter leaves, paged.");
 
-app.MapGet("/api/entity/{slug}/{netId:int}", (string slug, int netId, EntityStore store, CodexView view) =>
+app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, EntityStore store, CodexView view) =>
 {
-    if (PublicTypes.TableOf(slug) is not { } table)
+    if (!EntityTypes.TryParse(slug, out var type))
     {
         return PublicRoutes.NoSuchType(slug, StatusCodes.Status404NotFound);
     }
 
-    var readings = store.All(table, netId);
+    var readings = store.All(type, id);
 
     // Projected, never handed over as it was read. The exported record is the extractor's reading of
-    // the row and carries the build's own name for it, the tuning rows behind its numbers and the
-    // tags it is filed under; this endpoint is a page a reader can open, so it answers with the
-    // reader's reading of the same row.
+    // the row and carries the build's own name for it, and the typed document beside it still carries
+    // the build's own spellings this endpoint has to translate; this endpoint is a page a reader can
+    // open, so it answers with the reader's reading of the same row rather than the document's.
     return readings.Count == 0
         ? Results.Problem(
-            title: "No such id.", detail: $"The build has no {PublicTypes.Noun(table)} {netId}.",
+            title: "No such id.", detail: $"The build has no {PublicTypes.Noun(type)} {id}.",
             statusCode: StatusCodes.Status404NotFound)
         : Results.Ok(readings.Select(reading => PublicEntity.From(reading, view)));
 })
@@ -135,22 +138,20 @@ app.MapGet("/api/entity/{slug}/{netId:int}", (string slug, int netId, EntityStor
 
 app.MapGet("/api/catalog", (Codex codex, EntityStore store) =>
 {
-    // Faceted over the public rows alone. A facet counted over the whole export offers every value
-    // the other 757 rows carry, so a menu built from it grows entries no type tab leads to and a
-    // reader meets an internal spelling through the filter panel rather than through a page.
-    var rows = store.Entities.Where(entity => PublicTypes.IsPublic(entity.Table)).ToArray();
+    // Faceted over the whole corpus. PublicTypes states every EntityType reaches a reader, so there
+    // is no narrower set of rows left to facet over: a facet counted here already agrees with the
+    // panel a filtered search draws beside its own results.
+    var rows = store.Entities;
 
     return Results.Ok(new
     {
         // The same number the footer of every page prints, read from the one place it is worked out,
         // so the corpus a reader is told about is the corpus they can reach whichever surface tells
-        // them. Two counts of the same thing is how the footer came to promise 757 rows nothing here
-        // answers with.
+        // them.
         entities = codex.Count,
 
-        // The types as a caller addresses them. EntityType carries the table so code can match a
-        // row against it, and a record serialises every member it has, so writing the list straight
-        // out published all 7 shipped table names on the one response a browser fetches first.
+        // The types as a caller addresses them: the route slug, never the document class name it
+        // resolves to internally.
         types = codex.Types.Select(type => new { type.Slug, type.Label, type.Group, type.Count }),
         menu = codex.Menu,
         facets = codex.Facets.Select(facet => codex.View(facet, rows)),
@@ -231,20 +232,14 @@ public sealed class Fragments(IServiceScopeFactory scopes, ILoggerFactory logger
 public sealed class Tooltips(EntityStore store, Fragments fragments)
 {
     /// <summary>
-    /// One tooltip, for the type a slug names and the id beside it.
+    /// One tooltip, for the type <paramref name="type"/> names and the id beside it.
     ///
-    /// The slug is resolved before anything else is read, because an address that names no type is
-    /// wrong in a way no parameter can fix. It is also the only spelling accepted: the table a row
-    /// lives in is an internal fact, so a caller who sends one is sending a type this app does not
-    /// have and is answered the same as any other misspelling.
+    /// The route handlers resolve a caller's slug before this is reached, because an address that
+    /// names no type is wrong in a way no parameter can fix, and this is called with a type already
+    /// in hand from <c>/api/ability</c> and <c>/api/item</c> besides.
     /// </summary>
-    public async Task<IResult> Get(string slug, int netId, IQueryCollection request)
+    public async Task<IResult> Get(EntityType type, int id, IQueryCollection request)
     {
-        if (PublicTypes.TableOf(slug) is not { } table)
-        {
-            return PublicRoutes.NoSuchType(slug, StatusCodes.Status404NotFound);
-        }
-
         var query = TooltipQuery.Parse(request, store.Stats, out var error);
 
         if (error is not null)
@@ -278,19 +273,19 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
-        var outcome = store.Resolve(table, netId, query.Hero, out var entity, out var hero);
+        var outcome = store.Resolve(type, id, query.Hero, out var document, out var hero);
 
         // What the caller asked for, in the words they asked in: the type they addressed and the id
-        // they wrote, never the table the row turned out to live in. The readings are read once here
-        // rather than twice inside the sentence that needs them.
-        var noun = PublicTypes.Noun(table);
-        var readings = store.All(table, netId);
+        // they wrote. The readings are read once here rather than twice inside the sentence that
+        // needs them.
+        var noun = PublicTypes.Noun(type);
+        var readings = store.All(type, id);
 
         if (outcome == Lookup.Found)
         {
             var fragment = await fragments.Render<FellowshipExtractor.Api.Components.Tooltip.Tooltip>(new()
             {
-                ["Entity"] = entity!,
+                ["Entity"] = document!,
                 ["Query"] = query,
                 ["Hero"] = hero,
             });
@@ -302,7 +297,7 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
         {
             Lookup.NoSuchId => Results.Problem(
                 title: "No such id.",
-                detail: $"The build has no {noun} {netId}.",
+                detail: $"The build has no {noun} {id}.",
                 statusCode: StatusCodes.Status404NotFound),
 
             // The sentence is built around the count rather than opening on the thing, because the
@@ -310,7 +305,7 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
             // internal one.
             Lookup.NeedsHero => Results.Problem(
                 title: "This id reads differently per hero.",
-                detail: $"The build has {readings.Count} readings of {noun} {netId} and no hero was given. " +
+                detail: $"The build has {readings.Count} readings of {noun} {id} and no hero was given. " +
                     "Add hero=<name> to pick one. The readings are " +
                     string.Join("; ", readings.Select(Describe)) + ".",
                 statusCode: StatusCodes.Status400BadRequest),
@@ -321,7 +316,7 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
             // above, so this outcome only arises for a hero the roster has.
             Lookup.NotForThatHero => Results.Problem(
                 title: "Not for that hero.",
-                detail: $"The build has no reading of {noun} {netId} for {hero!.Name}.",
+                detail: $"The build has no reading of {noun} {id} for {hero!.Name}.",
                 statusCode: StatusCodes.Status404NotFound),
 
             _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
@@ -331,8 +326,15 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
     /// <summary>
     /// One reading of an ambiguous id, as the sentence offering a choice between them writes it. The
     /// name is the reader's name for the row and never its gameplay tag, and the pair beside it is
-    /// the two things the readings of an id differ by.
+    /// the two things the readings of an id differ by: an item's armour type and primary stat for the
+    /// 188 item ids that split, and a talent slot's hero for the 19 that do, which is the one thing a
+    /// talent slot's own readings ever differ on.
     /// </summary>
-    private static string Describe(Fellowship.SDK.Entity entity) =>
-        $"{PublicTypes.NameOf(entity)} [{entity.ArmorType ?? "any"}/{entity.PrimaryStat ?? "any"}]";
+    private static string Describe(EntityDocument document) => document switch
+    {
+        Item item => $"{PublicTypes.NameOf(item)} " +
+            $"[{item.ArmorType?.ToString() ?? "any"}/{item.PrimaryStat?.ToString() ?? "any"}]",
+        TalentSlot slot => $"{PublicTypes.NameOf(slot)} [{slot.Hero}]",
+        _ => PublicTypes.NameOf(document),
+    };
 }

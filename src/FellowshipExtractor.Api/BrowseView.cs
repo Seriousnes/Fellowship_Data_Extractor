@@ -103,7 +103,7 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
     ///
     /// A chip is the one place a value the reader chose is drawn back at them, so both halves of it
     /// go through the public spelling: the type reads as its heading and the href carries its slug,
-    /// which <see cref="CodexQuery.ToQueryString"/> writes from the table held here.
+    /// which <see cref="EntityTypes.Slug"/> writes from the type held here.
     /// </summary>
     public IReadOnlyList<(string Label, string Href)> Chosen
     {
@@ -111,9 +111,10 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
         {
             var chips = new List<(string, string)>();
 
-            foreach (var table in query.Tables)
+            foreach (var type in query.Types)
             {
-                chips.Add((Codex.Label(table), "/browse" + query.ToQueryString(toggle: ("type", table))));
+                var slug = EntityTypes.Slug(type);
+                chips.Add((Codex.Label(type), "/browse" + query.ToQueryString(toggle: ("type", slug))));
             }
 
             foreach (var (key, values) in query.Selections)
