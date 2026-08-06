@@ -104,9 +104,9 @@ public sealed class StatParameters
 /// The other 19 are talent slots, not items: <see cref="TalentSlot"/> numbers a position in a
 /// hero's own grid, and every hero's grid reuses that same small pool of numbers for its own
 /// eighteen slots, so the id collides across all twelve heroes rather than naming one slot twice.
-/// A hero does not settle these - <see cref="Reads"/> answers true for every hero on a document
-/// that is not an <see cref="Item"/> - so a caller narrows a talent slot by hero and position
-/// rather than by this id.
+/// A hero settles these too: <see cref="Reads"/> tests <see cref="TalentSlot.Hero"/> directly, the
+/// single hero every row names, so a caller narrows a talent slot by hero exactly as it narrows an
+/// item.
 /// </summary>
 public sealed class EntityStore
 {
@@ -389,10 +389,12 @@ public sealed class EntityStore
     /// <summary>
     /// The one reading of an id a caller means. A hero narrows on the two things an
     /// <see cref="Item"/> entry is split by and on the hero list it names, which between them leave
-    /// at most one entry on every one of the 188 item ids that split. <see cref="Reads"/> answers
-    /// true for every hero on anything that is not an <see cref="Item"/>, so on the 19 talent-slot
-    /// ids that split nothing narrows and the first reading answers regardless of which hero, if
-    /// any, the caller named.
+    /// at most one entry on every one of the 188 item ids that split, and narrows a
+    /// <see cref="TalentSlot"/> entry on the single hero <see cref="TalentSlot.Hero"/> names, which
+    /// leaves at most one entry on every one of the 19 talent-slot ids that split. On any other
+    /// document type, <see cref="Reads"/> answers true for every hero, so on those ids the first
+    /// reading answers regardless of which hero, if any, the caller named - moot today, since no id
+    /// of any other type carries more than one reading.
     /// </summary>
     public Lookup Resolve(
         Fellowship.SDK.EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero)
@@ -424,9 +426,10 @@ public sealed class EntityStore
     /// Whether one reading of an id is the one a hero sees, and the only place that question is
     /// answered.
     ///
-    /// Only <see cref="Item"/> carries the three fields this tests; a document of any other type
-    /// reads for every hero, because nothing else in the corpus reads differently by armour type,
-    /// primary stat or wearer.
+    /// <see cref="Item"/> and <see cref="TalentSlot"/> are the two document types this tests; a
+    /// document of any other type reads for every hero, because measured over the export no id of
+    /// any other type carries more than one row (188 item ids and 19 talent-slot ids do; nothing
+    /// else does), so there is nothing else for a hero to disambiguate.
     ///
     /// A line that names its heroes has already answered it, so nothing else is asked.
     /// <see cref="Item.Heroes"/> is the field tested, not <see cref="Item.Hero"/>:
@@ -447,6 +450,13 @@ public sealed class EntityStore
     /// enums the document carries, so a vocabulary spelling that no longer names a member fails
     /// loudly rather than comparing two strings that have quietly drifted apart.
     ///
+    /// <see cref="TalentSlot.Hero"/> is the single hero every row names - unlike an item, a talent
+    /// slot never names a roster, so there is no armour/stat-style fallback to fall through to.
+    /// Slot id 1 alone is twelve rows, one per hero, at different grid coordinates (Aeona at row 1
+    /// column 1, Vigour at row 3 column 3, and so on); without this clause every one of those twelve
+    /// answered true for every hero and <see cref="Resolve"/> picked whichever the export happened
+    /// to write first, regardless of which hero was asked for.
+    ///
     /// Public because the page and the endpoint both ask it and disagreeing is what they did. The
     /// browser carried its own copy without the first clause, so items 5127 to 5144 - eighteen
     /// Back-slot cloaks whose twelve readings are every one of them Cloth - matched no hero at all:
@@ -455,11 +465,15 @@ public sealed class EntityStore
     /// declined to name.
     /// </summary>
     public static bool Reads(EntityDocument document, HeroEntry hero) =>
-        document is not Item item ||
-        (item.Heroes is { } heroes
-            ? heroes.Contains(ParseHero(hero.Name))
-            : (item.ArmorType is null || item.ArmorType == ParseArmorType(hero.ArmorType)) &&
-              (item.PrimaryStat is null || item.PrimaryStat == ParsePrimaryStat(hero.PrimaryStat)));
+        document switch
+        {
+            Item item => item.Heroes is { } heroes
+                ? heroes.Contains(ParseHero(hero.Name))
+                : (item.ArmorType is null || item.ArmorType == ParseArmorType(hero.ArmorType)) &&
+                  (item.PrimaryStat is null || item.PrimaryStat == ParsePrimaryStat(hero.PrimaryStat)),
+            TalentSlot slot => slot.Hero == ParseHero(hero.Name),
+            _ => true,
+        };
 
     private static Hero ParseHero(string name) =>
         Enum.TryParse<Hero>(name, out var hero) ? hero : throw new FormatException($"'{name}' names no {nameof(Hero)}.");
@@ -480,12 +494,15 @@ public sealed class EntityStore
     ///
     /// Every one of the 2,143 readings behind the 188 split item ids names exactly one hero, so on
     /// those ids the answer is that hero rather than a choice between several. A reading naming
-    /// none falls to the armour and stat pair, which is why this can still answer for the 42
+    /// none falls to the armour and stat pair, which is why this can still answer for the 541
     /// single-reading items that name a roster without splitting by it.
     ///
-    /// Meaningful for items only. On a document that is not an <see cref="Item"/>,
-    /// <see cref="Reads"/> answers true for every hero, so this answers with whichever hero the
-    /// roster lists first rather than the one the row is actually for.
+    /// A talent slot names exactly one hero, so on a talent slot this answers that hero.
+    /// On an item this answers the first hero of the roster the reading reads for: that hero alone
+    /// on the 2,143 readings behind the 188 split item ids, and the first of the several the reading
+    /// names on the 541 single-reading items that name a roster without splitting by it. On any
+    /// other document type <see cref="Reads"/> answers true for every hero, so this answers with
+    /// whichever hero the roster lists first rather than the one the row is actually for.
     /// </summary>
     public HeroEntry? Wearer(EntityDocument document) =>
         Vocabulary.Heroes.FirstOrDefault(hero => Reads(document, hero));
