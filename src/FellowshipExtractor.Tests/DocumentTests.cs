@@ -99,6 +99,71 @@ public sealed class DocumentTests
         Assert.Equal(["Bravo", "Alpha"], ability.Placeholders?.Select(token => token.Key));
     }
 
+    /// <summary>
+    /// A shipped name that is a build label projects no <see cref="EntityDocument.Name"/>. The
+    /// eighteen spellings here are exactly the build labels the current export carries: three
+    /// characters and one join, each failing <c>DocumentProjection</c>'s words test a different way.
+    /// </summary>
+    [Theory]
+    [InlineData("UB_CadavrianBannerman.WarHorn")]
+    [InlineData("AutoAttack")]
+    [InlineData("CastProjectile")]
+    [InlineData("CastAndImpact")]
+    [InlineData("AimedShot")]
+    [InlineData("EarthStomp")]
+    [InlineData("EarthBreaker")]
+    [InlineData("KillShot")]
+    [InlineData("MeleeAutoAttack")]
+    [InlineData("ChannelProjectile")]
+    [InlineData("AoE Heal")]
+    [InlineData("AOE Pools (RuinsLasher)")]
+    [InlineData("ArcaneBlast (Elf Warden)")]
+    [InlineData("EarthStomp (EarthElemental)")]
+    [InlineData("[PH - StarMap Token]")]
+    [InlineData("Playtest GearToken")]
+    [InlineData("Playtest GemToken")]
+    [InlineData("Playtest ResourceToken")]
+    public void ABuildLabelProjectsNoName(string label)
+    {
+        var entity = new Entity { Type = EntityType.Ability, NetId = 1, DisplayName = label };
+
+        var ability = (Ability)DocumentProjection.From(entity, (_, _) => null);
+
+        Assert.Null(ability.Name);
+    }
+
+    /// <summary>A name written as words is kept, so the test above is not simply dropping every name.</summary>
+    [Fact]
+    public void ANameWrittenAsWordsIsKept()
+    {
+        var entity = new Entity { Type = EntityType.Ability, NetId = 1, DisplayName = "Searing Blaze" };
+
+        var ability = (Ability)DocumentProjection.From(entity, (_, _) => null);
+
+        Assert.Equal("Searing Blaze", ability.Name);
+    }
+
+    /// <summary>
+    /// The talent a slot-borne row implies goes through the same test, because it is a full document
+    /// in its own right and not a field nested inside another: <c>ExportAllCommand</c> writes it as
+    /// its own line, addressed by the slot's own id.
+    /// </summary>
+    [Fact]
+    public void ASlotBorneTalentsNameGoesThroughTheSameTest()
+    {
+        var entity = new Entity
+        {
+            Type = EntityType.TalentSlot,
+            NetId = 8,
+            SlotBorneTalent = true,
+            DisplayName = "AutoAttack",
+        };
+
+        var talent = (Fellowship.SDK.Documents.Talent)DocumentProjection.Implied(entity)!;
+
+        Assert.Null(talent.Name);
+    }
+
     private static bool IsRequired(System.Reflection.PropertyInfo property) =>
         property.GetCustomAttributes(typeof(System.Runtime.CompilerServices.RequiredMemberAttribute), false).Length > 0;
 }

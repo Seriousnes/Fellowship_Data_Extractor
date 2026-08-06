@@ -31,7 +31,7 @@ public static class DocumentProjection
         EntityType.Ability => new Ability
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Detail = entity.Detail,
             Icon = entity.Icon,
@@ -55,7 +55,7 @@ public static class DocumentProjection
         EntityType.Item => new Item
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             ArmorType = entity.ArmorType is { } armor ? Enum.Parse<ArmorType>(armor) : null,
             PrimaryStat = entity.PrimaryStat is { } stat ? Enum.Parse<PrimaryStat>(stat) : null,
             Hero = entity.Heroes is { Count: 1 } only ? Enum.Parse<Hero>(only[0]) : null,
@@ -81,7 +81,7 @@ public static class DocumentProjection
         EntityType.GemTier => new GemTier
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Gem = Enum.Parse<GemTypeName>(entity.GemType!),
             Tier = entity.GemTier!.Value,
             Power = entity.GemPower!.Value,
@@ -97,7 +97,7 @@ public static class DocumentProjection
         EntityType.TalentSlot => new TalentSlot
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Hero = Enum.Parse<Hero>(entity.Heroes!.Single()),
             Row = entity.TalentRow!.Value,
             Column = entity.TalentColumn!.Value,
@@ -111,7 +111,7 @@ public static class DocumentProjection
         EntityType.Effect => new Effect
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
             Duration = entity.Duration,
@@ -131,7 +131,7 @@ public static class DocumentProjection
         EntityType.Creature => new Creature
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Icon = entity.Icon,
             ScalesOff = entity.ScalesOff,
         },
@@ -139,7 +139,7 @@ public static class DocumentProjection
         EntityType.Mount => new Mount
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
         },
@@ -147,7 +147,7 @@ public static class DocumentProjection
         EntityType.Currency => new Currency
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
         },
@@ -155,7 +155,7 @@ public static class DocumentProjection
         EntityType.CompanionPet => new CompanionPet
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
         },
@@ -163,7 +163,7 @@ public static class DocumentProjection
         EntityType.MountPower => new MountPower
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
         },
@@ -171,7 +171,7 @@ public static class DocumentProjection
         EntityType.SetBonus => new Fellowship.SDK.Documents.SetBonus
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Pieces = entity.SetCount,
             Description = entity.Description,
             Icon = entity.Icon,
@@ -183,7 +183,7 @@ public static class DocumentProjection
         EntityType.GemType => new Fellowship.SDK.Documents.GemType
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Gem = Enum.Parse<GemTypeName>(entity.GemType!),
             Attribute = entity.GemAttribute!,
             Icon = entity.GemOverflow?.Icon,
@@ -194,7 +194,7 @@ public static class DocumentProjection
         EntityType.GemTrait => new GemTrait
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Gem = Enum.Parse<GemTypeName>(entity.GemType!),
             Node = entity.GemNode!.Value,
             RequiredPower = entity.RequiredGemPower!.Value,
@@ -208,7 +208,7 @@ public static class DocumentProjection
         EntityType.Talent => new Fellowship.SDK.Documents.Talent
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
@@ -223,7 +223,7 @@ public static class DocumentProjection
         EntityType.Finesse => new Finesse
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
@@ -233,7 +233,7 @@ public static class DocumentProjection
         EntityType.Trait => new Trait
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Category = entity.TraitCategory,
             MaxRank = entity.MaxRank,
             RandomChance = entity.RandomChance,
@@ -246,7 +246,7 @@ public static class DocumentProjection
         EntityType.TraitPower => new TraitPower
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
@@ -258,7 +258,7 @@ public static class DocumentProjection
         EntityType.SetBonusPower => new SetBonusPower
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
@@ -268,7 +268,7 @@ public static class DocumentProjection
         EntityType.RelicPower => new RelicPower
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
             CastTime = entity.CastTime,
@@ -283,7 +283,7 @@ public static class DocumentProjection
         EntityType.WeaponPower => new WeaponPower
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
             CastTime = entity.CastTime,
@@ -303,7 +303,7 @@ public static class DocumentProjection
         EntityType.LegendaryStat => new LegendaryStat
         {
             Id = entity.NetId!.Value,
-            Name = entity.DisplayName,
+            Name = Name(entity),
             Description = entity.Description,
             ScalesOff = entity.ScalesOff,
         },
@@ -349,11 +349,45 @@ public static class DocumentProjection
             ? new Fellowship.SDK.Documents.Talent
             {
                 Id = entity.NetId!.Value,
-                Name = entity.DisplayName,
+                Name = Name(entity),
                 Description = entity.Description,
                 Icon = entity.Icon,
             }
             : null;
+
+    /// <summary>
+    /// The value <see cref="EntityDocument.Name"/> takes: the shipped display name where it is
+    /// written as words, and null where it is a build label.
+    /// </summary>
+    private static string? Name(Entity entity) =>
+        entity.DisplayName is { } name && WrittenAsWords(name) ? name : null;
+
+    /// <summary>
+    /// Whether a shipped name is spelled the way a name a player reads is spelled.
+    ///
+    /// Three characters and one join fail it. A dot or an underscore is a path's punctuation, and,
+    /// measured over the documents this projection writes, the 2,503 distinct names that pass carry
+    /// neither. A square bracket is how this build marks a row that was never meant to ship. And a
+    /// capital straight after a lower case letter or a digit is the join in a run-together compound,
+    /// which is the shape of every label the designers left in the field: it catches GearToken and
+    /// StarMap inside the names that do carry spaces, so the two shapes are one test rather than a
+    /// bracket rule with a compound rule beside it.
+    /// </summary>
+    private static bool WrittenAsWords(string name)
+    {
+        for (var at = 0; at < name.Length; at++)
+        {
+            if (name[at] is '.' or '_' or '[' or ']') return false;
+
+            if (at > 0 && char.IsUpper(name[at]) &&
+                (char.IsLower(name[at - 1]) || char.IsDigit(name[at - 1])))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// The damage schools a row is, out of its tag list. The schools are the one family of these

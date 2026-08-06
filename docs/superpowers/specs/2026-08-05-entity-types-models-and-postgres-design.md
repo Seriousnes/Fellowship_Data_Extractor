@@ -399,8 +399,8 @@ prints and by nothing else, and `Reads` keeps the first clause that answers for 
 Back-slot cloaks.
 
 `PublicTypes` keys on type. The types the augmentation table used to hide are addressable, and a slug
-is its type's name hyphenated: `talent`, `gem-traits`, `trait-powers`, `set-bonus-powers`,
-`weapon-powers`, `relic-powers`, `legendary-stats`, `mount-powers`, `finesses`.
+is its type's name hyphenated: `talent`, `gem-trait`, `trait-power`, `set-bonus-power`,
+`weapon-power`, `relic-power`, `legendary-stat`, `mount-power`, `finesse`.
 
 `PublicEntity` is the model serialised. The fields it strips are absent from the model, and its
 `Type` carries the type's slug.
