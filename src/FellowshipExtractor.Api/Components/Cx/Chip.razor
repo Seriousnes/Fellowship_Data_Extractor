@@ -1,13 +1,8 @@
 <span class="cx-chip" style="@Tone">@ChildContent</span>
 
 @code {
-    /// <summary>The ink colour. Null omits the style attribute.</summary>
     [Parameter] public string? Colour { get; set; }
 
-    /// <summary>
-    /// The chip's label. The chip's border, padding and size come from table.cx-rows .cx-chip
-    /// alone, so it is drawn inside the browse results table and nowhere else.
-    /// </summary>
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
     private string? Tone => Colour is null ? null : $"color:{Colour}";

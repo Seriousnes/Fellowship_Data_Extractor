@@ -4,9 +4,6 @@
   display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); gap: 18px; align-items: start;
 }
 
-/* One column below the rail's width, and the results first: a filter panel a reader has to scroll
-   past to reach what they asked for is a filter panel in the way. The rail's half of this rule is
-   in Panel.razor.scss, which owns the <aside> the cx-rail class lands on. */
 @media (max-width: 1080px) {
   .cx-browse { grid-template-columns: minmax(0, 1fr); }
   .cx-browse > section { order: 1; }
@@ -84,9 +81,6 @@
 table.cx-rows {
   width: 100%; border-collapse: collapse; font-size: 13px;
 
-  /* Not sticky. The scroll container round the table is what a sticky header would resolve against,
-     and an offset inside it pushes the header down over the first row instead of holding it under
-     the masthead, which is what it did. */
   thead th {
     text-align: left; font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
     color: var(--faint); padding: 7px 10px; border-bottom: 1px solid var(--line);

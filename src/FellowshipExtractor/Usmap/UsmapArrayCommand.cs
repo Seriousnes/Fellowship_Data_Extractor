@@ -1,9 +1,5 @@
 namespace FellowshipExtractor.Usmap;
 
-/// <summary>
-/// Walks one class's PropPointers[] array slot by slot, annotating why the run ends. Used to
-/// diagnose truncated class property lists.
-/// </summary>
 public static class UsmapArrayCommand
 {
     public static Task RunAsync(ExtractorOptions options, string className)
@@ -18,7 +14,6 @@ public static class UsmapArrayCommand
         var claimed = structs.Where(s => s.Properties.Count > 0).Select(s => s.Properties[0].Va).ToHashSet();
         var classes = scanner.ScanClasses(registrations, claimed);
 
-        // FClassParams stores the property array at its own address; FStructParams at +0x20.
         var owners = classes
             .Where(c => c.Name == className)
             .Select(c => (Kind: "class", c.Va, c.Properties))
@@ -56,7 +51,6 @@ public static class UsmapArrayCommand
                         : image.InSection(target, ".data") ? ".data" : "-";
                     Console.WriteLine($"    [{i,2}] slot=0x{slotVa:X} -> NOT A RECORD  0x{target:X} {where} {(text is null ? "" : $"\"{text}\"")}");
 
-                    // Show why the scanner rejected it.
                     var recOffset = image.Offset(target);
                     if (recOffset < 0) continue;
                     var name = image.ReadUtf8(image.ReadPointer(recOffset));
@@ -70,7 +64,6 @@ public static class UsmapArrayCommand
         return Task.CompletedTask;
     }
 
-    /// <summary>How many qwords in the image point at this slot. A run start has at least one.</summary>
     private static int CountReferrers(PeImage image, ulong slotVa)
     {
         var count = 0;

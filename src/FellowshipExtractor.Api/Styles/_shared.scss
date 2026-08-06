@@ -1,38 +1,29 @@
-/// The page gutter: the masthead bar, the mega-menu columns, <main> and the footer all use it.
 $gutter: clamp(12px, 2.4vw, 28px);
 
-/// The ink a gold slab is printed in. A literal rather than a token, because the shipped palette
-/// carries no colour for text on gold.
 $on-gold: #0b141d;
 
-/// The client's own nine-sliced texture, the same one the tooltip draws itself on: a 2px warm gold
-/// border round a #121D28 interior. Worn by a panel and by a card.
 @mixin plated {
   border: 2px solid transparent;
   border-image: var(--chrome-panel) 2 fill stretch;
   padding: 14px 16px;
 }
 
-/// A field sunk into the ground: the omnibox, the range inputs, the knobs, a roster entry.
 @mixin sunken {
   background: var(--sunken);
   border: 1px solid var(--line);
   color: var(--ink);
 }
 
-/// What a sunken field does when it takes focus.
 @mixin edged {
   border-color: var(--gold-deep);
   outline: none;
 }
 
-/// A gold slab: the apply button, the omnibox's view-all row, a pressed chip, the current page.
 @mixin gold-slab {
   background: var(--gold-deep);
   color: $on-gold;
 }
 
-/// The small uppercase caption over a list, worn by a sub-head and by a mega-menu section head.
 @mixin eyebrow {
   margin: 0 0 3px;
   font-size: 10px;

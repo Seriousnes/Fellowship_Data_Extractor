@@ -1,27 +1,5 @@
 <title>Fellowship Codex</title>
 
-<!--
-  FELLOWSHIP CODEX - page shell.
-
-  This file is the template the `webdb` command fills in. It is an embedded resource of
-  FellowshipExtractor; WebDbCommand substitutes the "__PAYLOAD__" string below for the real
-  payload and writes the result to output/export/tooltips.html. Opened straight from the repo
-  it shows its own no-data state, which is what makes it editable in isolation.
-
-  Page content only: no doctype, html, head, body or meta element appears here or in what the
-  command writes. The publishing wrapper supplies the document. A second document nested inside
-  that one is not additive - the parser drops the tags and reparents this file's head content
-  into the body, where a charset declaration is invalid and ignored.
-
-  Data contract: a single global `const DATA = { entities: [...], icons: {...}, meta: {...} }`.
-  Everything else on this page is generic and never needs editing to accept a new payload.
-
-  Render strategy: chunked append driven by an IntersectionObserver sentinel (48 cards per chunk).
-  Filtering runs over a precomputed lowercase haystack index and never touches the DOM.
-
-  No external request is ever made: icons arrive as data: URIs and there are no webfonts.
--->
-
 <style>
   :root {
     --ground:#eceef1; --surface:#ffffff; --sunken:#f4f6f8;
@@ -77,8 +55,6 @@
 
   .app { max-width: 1320px; margin: 0 auto; padding: 0 clamp(14px, 3vw, 32px) 96px; }
 
-  /* ---- masthead -------------------------------------------------------- */
-
   .masthead { padding: clamp(22px, 4vw, 44px) 0 18px; }
   .cmd { font-family: var(--mono); font-size: 12px; color: var(--faint); letter-spacing: .04em; }
   .cmd b { color: var(--accent); font-weight: 600; }
@@ -91,8 +67,6 @@
     margin: 8px 0 0;
   }
   .lede { color: var(--muted); margin: 8px 0 0; max-width: 68ch; font-size: 14px; }
-
-  /* ---- sticky chrome --------------------------------------------------- */
 
   .chrome {
     position: sticky; top: 0; z-index: 20;
@@ -111,9 +85,6 @@
   .tabs::-webkit-scrollbar { height: 5px; }
   .tabs::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
 
-  /* position:relative keeps the .sr label's containing block inside .tabs, so the
-     tab strip's overflow clip contains it. Without it the sr span anchors to the
-     sticky .chrome, escapes the clip and widens the whole page. */
   .tab {
     position: relative;
     appearance: none; background: transparent; border: 0;
@@ -187,8 +158,6 @@
   .readout b { color: var(--ink); font-weight: 600; }
   .readout .scope-word { color: var(--accent); }
 
-  /* ---- grid ------------------------------------------------------------ */
-
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
@@ -212,7 +181,6 @@
     border-radius: 3px; border: 1px solid var(--line); background: var(--sunken);
     display: grid; place-items: center; overflow: hidden;
   }
-  /* contain, not cover: 35 of the thumbnails are 66x96 hero portraits and cover crops them. */
   .ico img { width: 100%; height: 100%; display: block; object-fit: contain; }
   .ico-none {
     font-family: var(--mono); font-size: 15px; font-weight: 600;
@@ -267,9 +235,6 @@
     mask-image: linear-gradient(to bottom, #000 74%, transparent 100%);
   }
 
-  /* The fade only ever accompanies this control: 119 of the 639 descriptions are longer than the
-     clip and 12 resolved percentages sit below the mask, so the hidden text has to be reachable.
-     align-self keeps it to its own width inside the column flex of .card and .nested. */
   .expand {
     appearance: none; align-self: flex-start;
     background: transparent; border: 0; padding: 0;
@@ -340,8 +305,6 @@
     border-top: 1px solid var(--line); padding-top: 9px; margin-top: auto;
     font-variant-numeric: tabular-nums;
   }
-
-  /* ---- empty / end ----------------------------------------------------- */
 
   .empty {
     grid-column: 1 / -1;
@@ -429,34 +392,12 @@
 </div>
 
 <script id="fellowship-data">
-/* ==========================================================================
-   BEGIN DATA
-
-   The generator swaps the "__PAYLOAD__" string below for one JSON object:
-
-   DATA.entities : flat array. One object per entity, the JSON line from
-                   entities.jsonl verbatim, filtered to rows that HAVE a
-                   displayName, plus a derived `placeholderText` map wherever
-                   the row resolves {Token} substitutions.
-   DATA.icons    : { "<icon filename>": "<data: URI>" }. Keyed by the entity's
-                   `icon` field verbatim, so the key ends in .png while the
-                   value is a WebP thumbnail. Nothing but data: URIs is allowed.
-   DATA.meta     : { generated, source } - shown in the masthead command line.
-
-   Left as a bare string here so this file is a valid page on its own: the shell
-   finds no entities and shows its own no-data state.
-   ========================================================================== */
-
 const DATA = "__PAYLOAD__";
-
-/* ============================== END DATA ================================= */
 </script>
 
 <script>
 (function () {
   "use strict";
-
-  /* ---- configuration ---------------------------------------------------- */
 
   var TABLE_LABELS = {
     GameplayAbility: "Abilities",
@@ -467,12 +408,10 @@ const DATA = "__PAYLOAD__";
   };
   var TABLE_ORDER = Object.keys(TABLE_LABELS);
 
-  var CHUNK = 48;          // cards appended per pass
-  var FILL_MARGIN = 900;   // px of runway kept rendered below the fold
-  var CLIP_CHARS = 300;    // plain-text length past which a description gets faded
-  var uid = 0;             // ids for the aria-controls pairing of a fade and its toggle
-
-  /* ---- rich text -------------------------------------------------------- */
+  var CHUNK = 48;
+  var FILL_MARGIN = 900;
+  var CLIP_CHARS = 300;
+  var uid = 0;
 
   var ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return ESC[c]; }); }
@@ -488,17 +427,12 @@ const DATA = "__PAYLOAD__";
 
   function fmtNum(n) { return typeof n === "number" ? String(Number(n.toPrecision(10))) : String(n); }
 
-  // Substituted text is computed by the generator in decimal, never here: 8.767 * 100 is
-  // 876.6999999999999 in binary floating point and 48 of the coefficients land like that.
-  // Operates on ALREADY-ESCAPED text so the spans we inject survive.
   function subTokens(escaped, owner) {
     var text = (owner && owner.placeholderText) || {};
     var ph = (owner && owner.placeholders) || {};
     return escaped.replace(/\{([A-Za-z0-9_.]+)\}/g, function (whole, key) {
       if (typeof text[key] === "string") {
         var p = ph[key] || {};
-        // The card shows the band; the hover shows the mean it is centred on and how wide the
-        // roll around it is, which is the only place those two numbers are still visible.
         var band = p.spread != null ? ", rolled over a band " + p.spread * 100 + "% wide" : "";
         var formula = p.coefficient != null && p.attribute
           ? "{" + key + "} = " + p.coefficient + " x " + p.attribute + band
@@ -509,9 +443,6 @@ const DATA = "__PAYLOAD__";
     });
   }
 
-  // The game's closing tag is "</>", which no HTML parser accepts. Tokenise by hand.
-  // `owner` is the entity the text belongs to, which for a granted ability is the nested
-  // entity and not its parent: an item's tokens live on the ability it grants.
   function richText(text, owner) {
     var src = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
     var re = /<\/>|<([A-Za-z][A-Za-z0-9._-]*)>/g;
@@ -535,19 +466,10 @@ const DATA = "__PAYLOAD__";
     return String(text).replace(/<\/>|<[A-Za-z][A-Za-z0-9._-]*>/g, "").length;
   }
 
-  /* ---- data ------------------------------------------------------------- */
-
   var raw = (typeof DATA !== "undefined" && DATA) ? DATA : {};
   var ENTITIES = Array.isArray(raw.entities) ? raw.entities : [];
   var ICONS = raw.icons || {};
 
-  // Search index: one lowercase haystack per entity, built once. Nested display names are not
-  // optional: an item's own displayName is an internal identifier like
-  // Relic_A_Crit_Expertise_Portal and the name a player would type, "Conjure Portal", exists
-  // only on the ability it grants. 82 entities are findable no other way.
-  // The overflow sentence is the one description text in the index, and only because on the six
-  // gem type cards it is the whole card: nothing else on those lines says "gem essence". It goes in
-  // resolved rather than raw, so the tag names and the brace tokens do not become search terms.
   function haystack(e) {
     var parts = [e.displayName, e.name, e.table, label(e.table), e.slot,
       e.armorType, e.primaryStat, e.traitCategory, e.gemType, e.gemAttribute, e.rarity];
@@ -587,8 +509,6 @@ const DATA = "__PAYLOAD__";
 
   function label(t) { return TABLE_LABELS[t] || t || "Unknown"; }
 
-  /* ---- elements --------------------------------------------------------- */
-
   var elChrome = document.getElementById("chrome");
   var elTablist = document.getElementById("tablist");
   var elQ = document.getElementById("q");
@@ -605,13 +525,9 @@ const DATA = "__PAYLOAD__";
     if (cmd) cmd.innerHTML = "<b>fellowship</b> &rsaquo; " + esc(raw.meta.source);
   }
 
-  /* ---- state ------------------------------------------------------------ */
-
   var state = { table: tables[0] || "", q: "", all: false };
   var view = [];
   var rendered = 0;
-
-  /* ---- tabs ------------------------------------------------------------- */
 
   var tabEls = tables.map(function (t) {
     var b = document.createElement("button");
@@ -658,8 +574,6 @@ const DATA = "__PAYLOAD__";
     }
   }
 
-  /* ---- card ------------------------------------------------------------- */
-
   function chip(lbl, val, unit) {
     return '<div><dt>' + esc(lbl) + '</dt><dd>' + esc(fmtNum(val)) +
       (unit ? '<small>' + esc(unit) + '</small>' : "") + '</dd></div>';
@@ -684,8 +598,6 @@ const DATA = "__PAYLOAD__";
     return ((w[0] || "?").charAt(0) + (w.length > 1 ? w[w.length - 1].charAt(0) : "")).toUpperCase();
   }
 
-  // A description block, plus the control that unfades it when it is long enough to be clipped.
-  // The toggle is emitted only for clipped text, so a short description ships no dead button.
   function descHTML(text, owner) {
     var body = richText(text, owner);
     if (plainLength(text) <= CLIP_CHARS) return '<div class="desc">' + body + "</div>";
@@ -698,7 +610,6 @@ const DATA = "__PAYLOAD__";
   function cardHTML(e) {
     var h = "";
 
-    // --- head: icon box is always 52px, present or not ---
     var uri = e.icon ? ICONS[e.icon] : null;
     var box;
     if (uri) {
@@ -719,12 +630,6 @@ const DATA = "__PAYLOAD__";
         (e.name ? "<code>" + esc(e.name) + "</code>" : "") +
       "</div></div></div>";
 
-    // --- slot + tags ---
-    // One item id is several cards, so the armour type and the hero that tell them apart go
-    // beside the slot: without them eight cards read as the same item under the same number. A
-    // card naming exactly one hero is that hero's reading of the item and nobody else's, which is
-    // the only thing separating Xavian's and Helena's legendaries: same plate, same strength,
-    // different names.
     var tagsHtml = "";
     if (e.slot) tagsHtml += '<span class="type">' + esc(e.slot) + "</span>";
     if (e.armorType) tagsHtml += '<span class="type">' + esc(e.armorType) + "</span>";
@@ -733,8 +638,6 @@ const DATA = "__PAYLOAD__";
       tagsHtml += '<span class="type">' + esc(s + " set") + "</span>";
     });
     if (e.setCount != null) tagsHtml += '<span class="type">' + esc(e.setCount + " pieces") + "</span>";
-    // A set bonus offered to some roles rather than all of them ships as one row per role, so the
-    // gate is what tells three cards called Sin Warding apart.
     (e.allowedRoles || []).concat(e.allowedAttributes || []).forEach(function (g) {
       tagsHtml += '<span class="type">' + esc(g) + "</span>";
     });
@@ -747,14 +650,12 @@ const DATA = "__PAYLOAD__";
     if (e.gemSlot) tagsHtml += '<span class="type">gem socket</span>';
     if (e.uniqueEquipped) tagsHtml += '<span class="type">unique</span>';
     if (e.tags && e.tags.length) {
-      // `slot` is frequently repeated verbatim in `tags`; show it once, as the slot chip.
       var t = String(e.slot || "").toLowerCase();
       var rest = e.tags.filter(function (x) { return String(x).toLowerCase() !== t; });
       tagsHtml += tagList(rest, "", 8);
     }
     if (tagsHtml) h += '<div class="tags">' + tagsHtml + "</div>";
 
-    // --- stat chips ---
     var chips = "";
     for (var i = 0; i < STAT_FIELDS.length; i++) {
       var f = STAT_FIELDS[i];
@@ -764,25 +665,19 @@ const DATA = "__PAYLOAD__";
     else if (e.resource) chips += chip("Resource", e.resource, "");
     if (chips) h += '<dl class="chips">' + chips + "</dl>";
 
-    // --- description ---
     if (e.description) h += descHTML(e.description, e);
 
-    // --- detail notes ---
     if (e.detail && e.detail.length) {
       h += '<div class="note">' + e.detail.map(function (d) {
         return richText(d, e);
       }).join("\n") + "</div>";
     }
 
-    // --- what the type keeps paying once its ladder is exhausted ---
-    // The owner is the overflow struct, not the entity: a gem type line carries no placeholders of
-    // its own, so handing this descHTML `e` renders four raw {Token} chips instead of the numbers.
     if (e.gemOverflow && e.gemOverflow.description) {
       h += '<div class="nested"><span class="lbl">past max power</span>' +
         descHTML(e.gemOverflow.description, e.gemOverflow) + "</div>";
     }
 
-    // --- granted ability (nested entity) ---
     if (e.grants && (e.grants.displayName || e.grants.description)) {
       h += '<div class="nested"><span class="lbl">grants</span>';
       if (e.grants.displayName) h += '<span class="nm">' + esc(e.grants.displayName) + "</span>";
@@ -790,10 +685,7 @@ const DATA = "__PAYLOAD__";
       h += "</div>";
     }
 
-    // --- item stats / legendary rolls / who wears it ---
     if (e.stats && e.stats.length) {
-      // A stat carries the share of the item's budget its slot is worth, which is what turns an
-      // item level into the number a player reads, so the share is shown beside the name.
       h += '<div class="sect"><span class="lbl">stats</span><div class="list">' +
         tagList(e.stats.map(function (s) { return s.stat + " " + s.weight + "%"; }), "", 8) +
         "</div></div>";
@@ -812,7 +704,6 @@ const DATA = "__PAYLOAD__";
         ')</span><div class="list">' + tagList(e.heroes, "", 12) + "</div></div>";
     }
 
-    // --- footer ---
     var foot = [];
     if (e.scalesOff && e.scalesOff.length) foot.push("scales off " + e.scalesOff.join(", "));
     var nT = e.talents ? Object.keys(e.talents).length : 0;
@@ -827,9 +718,6 @@ const DATA = "__PAYLOAD__";
     return '<article class="card">' + h + "</article>";
   }
 
-  // Hover text for the rolls that are listed by name only. It substitutes as well,
-  // because those nested descriptions carry tokens of their own and a raw {Token} in a tooltip
-  // is the same defect on screen as one in a card.
   function plainText(s, owner) {
     var text = (owner && owner.placeholderText) || {};
     return String(s)
@@ -839,8 +727,6 @@ const DATA = "__PAYLOAD__";
       })
       .replace(/\r\n/g, " ").trim();
   }
-
-  /* ---- filtering + chunked render --------------------------------------- */
 
   function pool() { return state.all ? ALL : (byTable[state.table] || []); }
 
@@ -865,7 +751,6 @@ const DATA = "__PAYLOAD__";
     elSentinel.hidden = done;
     elEndcap.hidden = !done || view.length <= CHUNK;
     if (done) elEndcap.textContent = view.length.toLocaleString() + " shown";
-    // The observer will not re-fire while the sentinel stays intersecting, so top up by hand.
     if (!done) requestAnimationFrame(topUp);
   }
 
@@ -949,8 +834,6 @@ const DATA = "__PAYLOAD__";
     elClear.hidden = !state.q;
   }
 
-  /* ---- url hash --------------------------------------------------------- */
-
   function stateToHash(s) {
     var p = [];
     if (s.table && s.table !== tables[0]) p.push("tab=" + encodeURIComponent(s.table));
@@ -967,7 +850,7 @@ const DATA = "__PAYLOAD__";
       var i = kv.indexOf("=");
       var k = i < 0 ? kv : kv.slice(0, i);
       var v = i < 0 ? "" : kv.slice(i + 1);
-      try { v = decodeURIComponent(v.replace(/\+/g, " ")); } catch (err) { /* keep raw */ }
+      try { v = decodeURIComponent(v.replace(/\+/g, " ")); } catch (err) { }
       if (k === "tab" && tables.indexOf(v) >= 0) out.table = v;
       else if (k === "q") out.q = v;
       else if (k === "scope") out.all = v === "all";
@@ -981,12 +864,10 @@ const DATA = "__PAYLOAD__";
     try {
       history[push ? "pushState" : "replaceState"](null, "", h);
     } catch (err) {
-      location.hash = h; // sandboxed history: fall back, syncFromHash stays idempotent
+      location.hash = h;
     }
   }
 
-  // Idempotent: if the hash already describes current state this is a no-op,
-  // which is what stops write -> event -> write loops.
   function syncFromHash() {
     var next = parseHash();
     if (next.table === state.table && next.q === state.q && next.all === state.all) return;
@@ -1000,9 +881,6 @@ const DATA = "__PAYLOAD__";
   window.addEventListener("hashchange", syncFromHash);
   window.addEventListener("popstate", syncFromHash);
 
-  /* ---- input ------------------------------------------------------------ */
-
-  // Clicking a tab is also how you leave all-tabs scope: it means "narrow to this one".
   function setTab(t, push) {
     if (t === state.table && !state.all) return;
     state.table = t;
@@ -1044,8 +922,6 @@ const DATA = "__PAYLOAD__";
     elQ.focus();
     elQ.select();
   });
-
-  /* ---- boot ------------------------------------------------------------- */
 
   if (!tables.length) {
     elGrid.innerHTML = '<div class="empty"><h2>No data</h2><p>' +

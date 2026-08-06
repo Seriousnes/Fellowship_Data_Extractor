@@ -304,9 +304,6 @@ else
     private bool ShowWorn =>
         Results.Rows.Any(r => r.ArmorType is not null || r.PrimaryStat is not null || r.Heroes is { Count: > 0 });
 
-    // The schools a row carries, never the rest of its tags. A tag list is the build's own filing
-    // and reads as Skill.Secondary and TrackCooldown; the schools are the part of it the game prints
-    // in a damage sentence, and they are the only part drawn.
     private bool ShowSchools => Results.Rows.Any(r => Codex.Schools(r).Any());
 
     protected override void OnParametersSet()

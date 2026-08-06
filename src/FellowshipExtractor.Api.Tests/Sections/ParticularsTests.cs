@@ -131,10 +131,6 @@ public class ParticularsTests : BunitContext
         Assert.Equal("Set", cut.Find("p.cx-sub-head").TextContent);
     }
 
-    /// <summary>
-    /// Detail resolves the scaling list through the catalogue and hands it over already spaced, so
-    /// what this section is asked to do is draw it and give it no destination.
-    /// </summary>
     [Fact]
     public void Draws_the_stats_it_scales_off_and_gives_them_no_destination()
     {

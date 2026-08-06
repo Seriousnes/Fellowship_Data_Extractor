@@ -4,11 +4,6 @@ using System.Text.Json.Serialization;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// Every named entity in the game as one JSONL file with every icon beside it, in a single flat
-/// folder. One line per tag, holding the same record the tooltip command writes for one entity,
-/// so anything that reads one reads all of them.
-/// </summary>
 public static class ExportAllCommand
 {
     private const string FolderName = "export";
@@ -21,39 +16,19 @@ public static class ExportAllCommand
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    /// <summary>
-    /// The leaf a gameplay tag enumeration gives its null member. Five tags in the build end in one
-    /// of these two words - ItemID.GemType.Invalid, and the None of CompanionPet, Avatar, Banner
-    /// and Title - and no other tag in the 13,088 does.
-    /// </summary>
     private static readonly string[] NullMembers = ["Invalid", "None"];
 
-    /// <summary>
-    /// Everything an entity can say beyond which tag it is, read off the record so a field added
-    /// later counts towards <see cref="Bare"/> without anyone remembering to list it.
-    /// </summary>
     private static readonly PropertyInfo[] Content =
     [
         .. typeof(Entity).GetProperties()
             .Where(p => p.Name is not (nameof(Entity.Table) or nameof(Entity.NetId) or nameof(Entity.Name))),
     ];
 
-    /// <summary>
-    /// Whether an entry is an enumeration's null member and nothing else. It is the absence of an
-    /// item rather than an item, so a line for it is a row a reader has to learn to skip.
-    ///
-    /// Both halves are required. The name alone would drop a real thing that happens to be called
-    /// None, and emptiness alone would drop the 7,454 tags that resolve to an id because their
-    /// content lives somewhere this build does not read yet. Together they only catch a tag that
-    /// says it is the null member and that the whole build gives nothing to, so a patch that starts
-    /// shipping a name or an icon for one puts the line back rather than silently swallowing it.
-    /// </summary>
     private static bool NullMember(Entity record) =>
         record.Name is { } name &&
         NullMembers.Any(leaf => name.EndsWith('.' + leaf, StringComparison.OrdinalIgnoreCase)) &&
         Array.TrueForAll(Content, property => property.GetValue(record) is null);
 
-    /// <summary>Exports every table, or only the named ones.</summary>
     public static async Task RunAsync(ExtractorOptions options, string[] tables)
     {
         var provider = await ProviderFactory.CreateAsync(options);
@@ -94,8 +69,6 @@ public static class ExportAllCommand
         var folder = Path.Combine(options.ResolvedOutputDir, FolderName);
         Directory.CreateDirectory(folder);
 
-        // Icons land beside the JSONL under their own texture name, so an icon shared by many
-        // entities is decoded and written once and every entity referencing it agrees on the file.
         var icons = TooltipCommand.IconWriterInto(provider, folder, reportFailures: false);
 
         var target = Path.Combine(folder, FileName);
@@ -103,19 +76,9 @@ public static class ExportAllCommand
 
         int written = 0, withIcon = 0, withText = 0, resolved = 0;
 
-        // One line per entry, and an entry is identified by its id and by whichever of the
-        // dimensions an item spreads over actually applies to it. A duplicate key would mean two
-        // lines nothing downstream could tell apart, so it stops the export rather than shipping.
-        //
-        // The hero is the one that names the line, which is a line covering exactly one hero. Every
-        // such line names them, so the shipped name discriminates as well as the codename it
-        // replaced and is what a reader sees.
         var keys = new HashSet<string>(StringComparer.Ordinal);
         var dropped = new List<string>();
 
-        // What a later mapping pass has left to do, counted as it is written rather than worked out
-        // again afterwards. An entry with a name and no art is one the game shows and this export
-        // cannot illustrate, and which table it is in is what says where its art would come from.
         var iconless = new SortedDictionary<string, int>(StringComparer.Ordinal);
 
         foreach (var tag in selected)
@@ -155,8 +118,6 @@ public static class ExportAllCommand
 
         await output.FlushAsync();
 
-        // The shared lookup tables, written only once the whole stream has, so the two files beside
-        // each other always describe the same run.
         var sidecar = await resolver.Vocabulary.WriteAsync(folder);
 
         var images = Directory.EnumerateFiles(folder, "*.png").Count();

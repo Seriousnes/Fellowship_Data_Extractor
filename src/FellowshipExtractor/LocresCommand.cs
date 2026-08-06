@@ -4,10 +4,6 @@ using CUE4Parse.UE4.Readers;
 
 namespace FellowshipExtractor;
 
-/// <summary>
-/// Localization tables hold every display name, description and tooltip. They are plain
-/// string data, so they parse with no mappings and give the searchable half of the database.
-/// </summary>
 public static class LocresCommand
 {
     public static async Task RunAsync(ExtractorOptions options, string culture)

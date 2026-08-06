@@ -1,5 +1,1 @@
-/* The results table's name cell is an EntityLink carrying Class="cx-nm", so the anchor the weight
-   is set on is this component's element and the rule follows it here. Read off the stylesheet this
-   replaces the rule looks like part of the results table, and the element it styles is rendered
-   three files away. */
 table.cx-rows .cx-nm { font-weight: 600; }

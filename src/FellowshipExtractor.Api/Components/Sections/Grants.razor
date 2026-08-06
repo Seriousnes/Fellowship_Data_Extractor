@@ -6,9 +6,5 @@
 }
 
 @code {
-    /// <summary>
-    /// The record this panel draws, re-supplied by every Detail. The nested Detail re-supplies the
-    /// cascade with the granted ability, so everything below this panel draws that and not this.
-    /// </summary>
     [CascadingParameter] private Entity Entity { get; set; } = new();
 }

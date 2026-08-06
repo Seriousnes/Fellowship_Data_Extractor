@@ -40,9 +40,5 @@
 }
 
 @code {
-    /// <summary>
-    /// The substitutions the text above spends, numbered in the order it spends them, resolved by
-    /// Detail because reading them needs the view. A row with none has nothing here to explain.
-    /// </summary>
     [Parameter] public IReadOnlyList<TokenReading> Tokens { get; set; } = [];
 }

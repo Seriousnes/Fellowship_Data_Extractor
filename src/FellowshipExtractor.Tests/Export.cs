@@ -5,16 +5,6 @@ using FellowshipExtractor.Tooltip;
 
 namespace FellowshipExtractor.Tests;
 
-/// <summary>
-/// The export the tests read, loaded once for the whole run.
-///
-/// These tests exist to notice when the game's own numbers move, so they read what the extractor
-/// actually produced rather than a fixture checked in beside them. A fixture would keep passing
-/// through the patch it was meant to catch.
-///
-/// An export that is not there is a failure and not a skip. A skipped test reports green, which is
-/// the one outcome that would let a drifted build through unremarked.
-/// </summary>
 public sealed class Export
 {
     private const string Variable = "FELLOWSHIP_EXPORT";
@@ -52,10 +42,6 @@ public sealed class Export
         return new Export { Vocabulary = vocabulary, Entities = entities, Folder = folder };
     }
 
-    /// <summary>
-    /// Where the export is. The environment names it when a caller has one somewhere of their own;
-    /// otherwise the repository's own output folder is found by walking up from the test binary.
-    /// </summary>
     private static string Folder_()
     {
         if (Environment.GetEnvironmentVariable(Variable) is { Length: > 0 } named)
@@ -76,14 +62,12 @@ public sealed class Export
             $"or point {Variable} at a folder holding entities.jsonl and vocabulary.json.");
     }
 
-    /// <summary>One entity by the table and id the game knows it by.</summary>
     public Entity Entity(string table, int netId) =>
         Entities.FirstOrDefault(e =>
             string.Equals(e.Table, table, StringComparison.OrdinalIgnoreCase) && e.NetId == netId)
         ?? throw new InvalidOperationException(
             $"{table} {netId} is not in the export. Either the id moved or the entity is gone.");
 
-    /// <summary>Every entity in the export and every one nested inside it.</summary>
     public IEnumerable<Entity> All()
     {
         foreach (var entity in Entities)
@@ -108,8 +92,6 @@ public sealed class Export
 
         foreach (var stat in entity.LegendaryStats ?? []) yield return stat;
 
-        // A variant is one hero's reading of an item rather than an entity of its own, and the
-        // ability it grants is where the tokens live.
         foreach (var variant in entity.Variants ?? [])
         {
             if (variant.Grants is { } granted_) yield return granted_;

@@ -8,70 +8,28 @@ using CUE4Parse.UE4.Objects.UObject;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// The primary stat pool an item level is worth, as the coefficients of the curve the build draws
-/// it with: <c>multiplier x growthBase^(itemLevel / levelDivisor) x sqrt(itemLevel)</c>, and zero
-/// below <see cref="MinimumItemLevel"/>.
-/// </summary>
 public sealed record PrimaryStatPool(int MinimumItemLevel, double LevelDivisor, double GrowthBase, double Multiplier);
 
-/// <summary>
-/// The secondary stat pool an item level is worth: <c>multiplier x sqrt(itemLevel x
-/// levelMultiplier)</c>, and zero below <see cref="MinimumItemLevel"/>.
-/// </summary>
 public sealed record SecondaryStatPool(int MinimumItemLevel, double LevelMultiplier, double Multiplier);
 
-/// <summary>
-/// What one kind of slot does to the share of the pool it draws, under the names the shipped
-/// settings give them.
-///
-/// All three kinds are the same struct and a cooked package writes only the properties that differ
-/// from the class default, so a field absent here is one the designers left alone rather than one
-/// the struct lacks. What the default is is C++ and not readable, which is why an absent multiplier
-/// is left null for the consumer to decide rather than published as a number this cannot see.
-/// </summary>
 public sealed record SlotStatSettings
 {
     public double? PrimaryMultiplier { get; init; }
     public double? SecondaryMultiplier { get; init; }
     public double? StaminaMultiplierAtThreshold { get; init; }
 
-    /// <summary>The share of the pool a slot with no weight of its own is worth.</summary>
     public double? WeightMultiplier { get; init; }
 
     public double? StaminaWeight { get; init; }
     public double? SecondaryWeight { get; init; }
 }
 
-/// <summary>What a slot in an equipment position is worth, and how much armour it carries.</summary>
 public sealed record SlotWeight(double StatWeight, double ArmorWeight);
 
-/// <summary>What an armour type multiplies a slot's armour by, and the flat armour it adds.</summary>
 public sealed record ArmorTypeWeight(double ArmorWeight, double FlatArmor);
 
-/// <summary>
-/// One band of a rating's diminishing returns: the share of the raw percentage kept up to
-/// <see cref="MaxBracketValue"/>. The bands are cumulative, so a raw percentage past a band's top
-/// keeps that band's share of the part inside it and moves on to the next.
-/// </summary>
 public sealed record RatingBracket(double MaxBracketValue, double PenaltyPercentage);
 
-/// <summary>
-/// How the game writes one attribute, and how a rating on an item becomes the attribute it feeds.
-///
-/// A gear slot holds a rating and the attribute behind it is a percentage: 50 haste rating is 8%,
-/// through BaseStatMultiplier of 0.16. Past that the brackets take their cut, keeping the whole of
-/// the first 10 percent, 98% of the next five, 96% of the five after and 94% of the five after
-/// that, with FinalPenaltyPercentage on everything above the last band.
-///
-/// The four rated stats say so themselves by naming a different attribute from the one their row is
-/// keyed by: the Haste row's attribute is HasteRating on CRHeroAttributeSet, while the Haste that
-/// gameplay effects capture is on CRBasicAttributeSet. They are two quantities and this row is the
-/// conversion between them.
-///
-/// A stat with no brackets and a multiplier of one is not a rating at all - Strength, Intellect and
-/// Stamina are the number they say - and converting one is the identity.
-/// </summary>
 public sealed record AttributeDisplay(
     string DisplayName,
     int RoundToDecimals,
@@ -81,45 +39,17 @@ public sealed record AttributeDisplay(
     IReadOnlyList<RatingBracket>? Brackets = null,
     double FinalPenaltyPercentage = 1);
 
-/// <summary>
-/// The extra slots a rarity grants an item on top of the ones the item itself declares. The
-/// guaranteed ones are every copy of the item at that rarity; the rolled ones are a count drawn
-/// from a pool and differ per drop, so they are carried as the count and the pool rather than as
-/// an answer.
-/// </summary>
 public sealed record RaritySlots(
     int Tier,
     IReadOnlyList<string> GuaranteedSlots,
     int RandomRolls,
     IReadOnlyList<string> RandomizedSlots)
 {
-    /// <summary>
-    /// Slots the rarity grants only where a condition holds. One shipped row uses it: a legendary
-    /// gains a gem socket under a condition of its own, which is why a legendary reads as having no
-    /// socket if only the guaranteed list is consulted. The condition is carried as the build
-    /// spells it rather than evaluated, because nothing here knows what its arguments stand for.
-    /// </summary>
     public IReadOnlyList<SpecialSlot> SpecialSlots { get; init; } = [];
 }
 
-/// <summary>A slot a rarity grants subject to a condition, as the shipped row states it.</summary>
 public sealed record SpecialSlot(string SlotName, string? Condition);
 
-/// <summary>
-/// Everything the build states about turning an item level into stat magnitudes.
-///
-/// The magnitudes themselves are not in the build: an item declares which stats it has and the
-/// share of the budget each slot is worth, and the number a player reads is worked out from the
-/// item's level when the item is rolled. Every input to that arithmetic is shipped, so it is read
-/// here and published rather than restated by whoever draws the tooltip.
-///
-/// The two pool curves are the exception to the project's usual "read the data table" shape,
-/// because they are not a data table: they are the compiled bodies of
-/// HeroItemStatCalculation's two Calc*PoolFromItemLevel functions. The coefficients are read out
-/// of the Kismet bytecode and the shape of the expression is asserted, so a build that changes
-/// the numbers is picked up and a build that changes the formula fails loudly instead of
-/// publishing coefficients that no longer mean what they are named.
-/// </summary>
 public sealed class StatCalculation
 {
     private const string SettingsClass = "CRDynamicItemStatSettings";
@@ -136,39 +66,23 @@ public sealed class StatCalculation
     public PrimaryStatPool Primary { get; }
     public SecondaryStatPool Secondary { get; }
 
-    /// <summary>
-    /// The three settings blocks, keyed by the slot kind ECRDynamicItemSlotType names: the base
-    /// slot every item's primary attribute sits in, the slots an item spells out, and the ones a
-    /// rarity adds.
-    /// </summary>
     public SlotStatSettings BaseSlot { get; }
     public SlotStatSettings FixedSlot { get; }
     public SlotStatSettings DynamicSlot { get; }
 
-    /// <summary>The growth base, primary-and-stamina multiplier and rarity base, as shipped.</summary>
     public double PrimaryPowerBase { get; }
     public double PrimaryAndStaminaMultiplier { get; }
 
-    /// <summary>
-    /// One, in this build, which is the build stating that a rarity does not scale a stat's
-    /// magnitude. A rarity's effect on an item's stats is entirely the slots it adds.
-    /// </summary>
     public double StatRarityBase { get; }
 
-    /// <summary>The weight rows an item names, by the row name: "40.17.27" holds 40, 17 and 27.</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<int>> Weights { get; }
 
-    /// <summary>What each equipment position is worth, keyed by the slot name the game prints.</summary>
     public IReadOnlyDictionary<string, SlotWeight> SlotWeights { get; }
 
     public IReadOnlyDictionary<string, ArmorTypeWeight> ArmorWeights { get; }
 
     public IReadOnlyDictionary<string, AttributeDisplay> Attributes { get; }
 
-    /// <summary>
-    /// The slots each rarity adds, keyed by the rule set an item names and then by the tier. A
-    /// rule set is spelled without its tag prefix, as the item's own exported rule set is.
-    /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyDictionary<int, RaritySlots>> RarityAdditions { get; }
 
     public StatCalculation(
@@ -245,14 +159,6 @@ public sealed class StatCalculation
     private static double? Optional(IPropertyHolder holder, string field) =>
         PropertyWalk.AsNumber(PropertyWalk.Get(holder, field)?.GenericValue);
 
-    /// <summary>
-    /// The two pool curves, read out of the blueprint that computes them.
-    ///
-    /// Each function compiles to a straight run of assignments with no branching past the
-    /// minimum-level guard, so the calls it makes in order are the formula written out. The
-    /// sequence is checked against the shape the coefficients are named for; the numbers are
-    /// whatever the build holds.
-    /// </summary>
     private static (PrimaryStatPool, SecondaryStatPool) Pools(AbstractFileProvider provider)
     {
         var file = provider.Files.Values.FirstOrDefault(f =>
@@ -288,7 +194,6 @@ public sealed class StatCalculation
                 Multiplier: Constant(secondary, 4, SecondaryFunction)));
     }
 
-    /// <summary>One math call the compiled body makes, and the literal it was handed.</summary>
     private readonly record struct MathCall(string Function, double? Constant);
 
     private static IEnumerable<MathCall> Calls(KismetExpression[] bytecode)
@@ -367,9 +272,6 @@ public sealed class StatCalculation
 
         foreach (var (_, row) in Rows(provider, assets, ItemSlotNames.SlotWeightRowStructure))
         {
-            // Keyed by the ordinal rather than by the row label, because the labels are a
-            // designer's - the table calls ordinal 6 Gloves and ordinal 1 Necklace - and the
-            // export spells slots the way the game prints them.
             if (PropertyWalk.AsOrdinal(PropertyWalk.Get(row, "ItemType")?.GenericValue) is not { } ordinal) continue;
             if (slots.ByOrdinal(ordinal) is not { } slot) continue;
 
@@ -425,11 +327,6 @@ public sealed class StatCalculation
         return found;
     }
 
-    /// <summary>
-    /// A rating's diminishing-return bands, in the order the row states them. Kept in that order
-    /// rather than sorted: the bands are read as a run from the bottom up, and the shipped
-    /// CooldownReduction row states three of them at the same ceiling, which sorting would hide.
-    /// </summary>
     private static IReadOnlyList<RatingBracket>? Brackets(IPropertyHolder row)
     {
         if (PropertyWalk.Get(row, "Brackets")?.GenericValue is not UScriptArray array) return null;
@@ -469,7 +366,6 @@ public sealed class StatCalculation
                 SpecialSlots = Special(row),
             };
 
-            // An array of tags rather than a tag container, so each entry is read on its own.
             foreach (var ruleSet in Names(row, "RuleSets"))
             {
                 var name = ruleSet.StartsWith(RuleSetPrefix, StringComparison.OrdinalIgnoreCase)
@@ -491,7 +387,6 @@ public sealed class StatCalculation
             StringComparer.OrdinalIgnoreCase);
     }
 
-    /// <summary>The conditional slots a row grants, each under the name and condition it states.</summary>
     private static List<SpecialSlot> Special(IPropertyHolder row)
     {
         if (PropertyWalk.Get(row, "SpecialRandomizedSlots")?.GenericValue is not UScriptArray array) return [];

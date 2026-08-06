@@ -16,8 +16,5 @@
 }
 
 @code {
-    /// <summary>
-    /// The record this panel draws, re-supplied by every Detail so a nested row draws its own text.
-    /// </summary>
     [CascadingParameter] private Entity Entity { get; set; } = new();
 }

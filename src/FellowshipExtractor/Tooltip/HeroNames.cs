@@ -5,33 +5,14 @@ using CUE4Parse.UE4.Assets.Exports.Engine;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// What a hero is, for the three things an item needs to know. The shipped name is what a tooltip
-/// prints; the armour type decides which of an item's names the hero sees; the primary stat
-/// decides what the item's HeroRelativePrimaryStat slot actually holds.
-/// </summary>
 public sealed record HeroProfile(string Codename, string ShippedName)
 {
     public string? ArmorType { get; init; }
     public required string PrimaryStat { get; init; }
 
-    /// <summary>
-    /// The design system colour row the hero's metadata points at. Followed rather than the
-    /// ClassColor literal sitting beside it, because the two disagree: Aeona's asset says BC00FF
-    /// while the row it names is FC9FEC, and Mara's says 6F2EF1 against the row's 4519A3. The
-    /// pointer is the asset deferring to the shared palette, so the palette is the answer.
-    /// </summary>
     public string? ColorRow { get; init; }
 }
 
-/// <summary>
-/// Maps a hero's internal codename to the name the game shows. Assets refer to heroes only by
-/// codename - "CharacterID.Hero.Mosse" - while the metadata asset holds the shipped name and the
-/// armour type.
-///
-/// The link is the hero's named colour row, "game.game.hero-mosse", which is a data field rather
-/// than a path convention and holds even for the hero whose content lives in its own plugin root.
-/// </summary>
 public sealed class HeroNames
 {
     public const string CharacterInfoRowStructure = "/Script/fellowship.CRCharacterInfoDataRow";
@@ -46,13 +27,10 @@ public sealed class HeroNames
 
     public int Count => _byCodename.Count;
 
-    /// <summary>Every hero the build ships a metadata asset for, spelled as assets refer to them.</summary>
     public IReadOnlyCollection<string> Codenames => _byCodename.Keys;
 
-    /// <summary>The whole roster, in codename order.</summary>
     public IEnumerable<HeroProfile> Profiles => _byCodename.Values.OrderBy(p => p.Codename, StringComparer.Ordinal);
 
-    /// <summary>Metadata assets whose codename could not be derived, reported rather than dropped.</summary>
     public List<string> Unresolved { get; } = [];
 
     public HeroNames(
@@ -61,14 +39,12 @@ public sealed class HeroNames
         ArmorTypes armor,
         IReadOnlyDictionary<string, string> primaryStatByHero)
     {
-        // The colour row spells the codename in lower case; the gameplay tag table is where its
-        // canonical spelling lives, and that is what every other asset refers to a hero by.
         var canonical = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var tag in CsvExportCommands.ReadTags(provider))
         {
             if (!tag.Name.StartsWith(HeroVariants.HeroTagPrefix, StringComparison.OrdinalIgnoreCase)) continue;
             var segment = tag.Name[HeroVariants.HeroTagPrefix.Length..];
-            if (segment.Contains('.')) continue;   // "Mara.Cat" and the tutorial variants
+            if (segment.Contains('.')) continue;
             canonical.TryAdd(segment, segment);
         }
 
@@ -110,16 +86,6 @@ public sealed class HeroNames
         }
     }
 
-    /// <summary>
-    /// The primary stat DT_CharacterInfoTable declares per hero. MainStat is an enum the usmap
-    /// does not carry, so the table holds a bare ordinal and says nothing about what it means. The
-    /// decode is not guessed: each ordinal is matched against the stat that hero's own gear names
-    /// through its weight templates, and an ordinal two heroes read as two different stats throws
-    /// rather than picking one.
-    ///
-    /// The table answers for eleven of the twelve live heroes and has no row for Gunde at all, so
-    /// the templates are what covers them.
-    /// </summary>
     private static Dictionary<string, string> MainStats(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -137,7 +103,6 @@ public sealed class HeroNames
                 if (PropertyWalk.GetString(row, HeroIdField) is not { } tag) continue;
                 if (!tag.StartsWith(HeroVariants.HeroTagPrefix, StringComparison.OrdinalIgnoreCase)) continue;
 
-                // "CharacterID.Hero.Rime.Tutorial" is the tutorial's stand-in, not a hero.
                 var codename = tag[HeroVariants.HeroTagPrefix.Length..];
                 if (codename.Contains('.')) continue;
 
@@ -185,10 +150,8 @@ public sealed class HeroNames
         return marker < 0 ? null : colourRow![(marker + RowPrefix.Length)..];
     }
 
-    /// <summary>The shipped name for a codename or a "CharacterID.Hero.X" tag.</summary>
     public string? Shipped(string codenameOrTag) => Profile(codenameOrTag)?.ShippedName;
 
-    /// <summary>What is known about a hero, or null when the codename names no shipped hero.</summary>
     public HeroProfile? Profile(string codenameOrTag) =>
         _byCodename.GetValueOrDefault(LastSegment(codenameOrTag));
 

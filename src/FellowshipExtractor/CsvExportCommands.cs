@@ -7,17 +7,8 @@ using CUE4Parse.FileProvider.Objects;
 
 namespace FellowshipExtractor;
 
-/// <summary>
-/// The build ships two families of plain-text CSV that need no property mappings: the
-/// Content/guid tag tables (every item, ability, effect and talent name with its network id)
-/// and the RawDataTables tuning constants. Both become JSONL here.
-/// </summary>
 public readonly record struct TagRecord(string Table, string Name, int NetId, int Flag);
 
-/// <summary>
-/// One tuning-constant row. Multi-value rows are per-tier, with <see cref="Columns"/> naming the
-/// tiers; a value that would not parse as a number is kept verbatim in <see cref="Raws"/>.
-/// </summary>
 public readonly record struct ConstantRecord(
     string Table,
     string Key,
@@ -47,10 +38,6 @@ public static partial class CsvExportCommands
         Console.WriteLine($"Wrote {records} tag records to {target}");
     }
 
-    /// <summary>
-    /// Every gameplay tag the build registers for replication, across the 18 Content/guid tables.
-    /// This is the complete name list for items, abilities, effects, talents and traits.
-    /// </summary>
     public static IEnumerable<TagRecord> ReadTags(AbstractFileProvider provider)
     {
         foreach (var file in CsvFiles(provider).Where(f => f.Path.Contains(GuidTableDir, StringComparison.OrdinalIgnoreCase)))
@@ -58,8 +45,6 @@ public static partial class CsvExportCommands
             var table = Path.GetFileNameWithoutExtension(file.Path);
             foreach (var line in Lines(file))
             {
-                // The first line is a table version number, and one shipped row is missing its
-                // newline, so scan for id triples rather than splitting the line.
                 foreach (Match match in TagRow().Matches(line))
                 {
                     yield return new TagRecord(
@@ -108,10 +93,6 @@ public static partial class CsvExportCommands
             $"Wrote {records} constants to {target} ({tiered} multi-column, {nonNumeric} with non-numeric value(s))");
     }
 
-    /// <summary>
-    /// Every tuning constant the build ships. These are the values ability assets reach through
-    /// an FScalableFloat curve-table row name.
-    /// </summary>
     public static IEnumerable<ConstantRecord> ReadConstants(AbstractFileProvider provider)
     {
         foreach (var file in CsvFiles(provider).Where(f => !f.Path.Contains(GuidTableDir, StringComparison.OrdinalIgnoreCase)))
@@ -124,7 +105,6 @@ public static partial class CsvExportCommands
                 var (fields, comment) = SplitRow(line);
                 var key = fields[0];
 
-                // The header row names the tier columns: "---,1,2,3,4".
                 if (key.Length > 0 && key.All(c => c == '-'))
                 {
                     columns = fields[1..];
@@ -149,10 +129,6 @@ public static partial class CsvExportCommands
             ? columns
             : [.. Enumerable.Range(1, count).Select(i => i.ToString())];
 
-    /// <summary>
-    /// Splits a row into comma-separated fields. Designer notes trail a ';' or follow whitespace
-    /// after the last value, and belong to the row rather than to any one field.
-    /// </summary>
     private static (string[] Fields, string? Comment) SplitRow(string line)
     {
         var semicolon = line.IndexOf(';');

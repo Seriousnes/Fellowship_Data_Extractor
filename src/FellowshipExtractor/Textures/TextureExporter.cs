@@ -4,16 +4,11 @@ using CUE4Parse_Conversion.Textures;
 
 namespace FellowshipExtractor.Textures;
 
-/// <summary>An exported image, or the reason the texture could not be written.</summary>
 public readonly record struct TextureExport(string? File, int Width, int Height, string? PixelFormat, string? Error)
 {
     public bool Written => File is not null;
 }
 
-/// <summary>
-/// Decodes cooked textures to real image files. Cooked textures are block-compressed GPU data,
-/// so a path to one is not an image until it has been through here.
-/// </summary>
 public static class TextureExporter
 {
     public static ETextureFormat ParseFormat(string? value) => value?.ToLowerInvariant() switch
@@ -25,10 +20,6 @@ public static class TextureExporter
         _ => throw new ArgumentException($"Unknown image format '{value}'. Use png, jpeg, tga or dds."),
     };
 
-    /// <summary>
-    /// Writes one texture beside the given path, choosing the extension from the format. The
-    /// caller supplies the path without an extension because the encoder decides it.
-    /// </summary>
     public static TextureExport Export(UTexture texture, string targetWithoutExtension, ETextureFormat format)
     {
         var pixelFormat = texture.Format.ToString();
@@ -59,10 +50,6 @@ public static class TextureExporter
         }
     }
 
-    /// <summary>
-    /// Loads the texture an asset path points at. Object paths carry the object name after a dot,
-    /// which the package loader does not want.
-    /// </summary>
     public static UTexture2D? Load(AbstractFileProvider provider, string objectPath)
     {
         var dot = objectPath.LastIndexOf('.');

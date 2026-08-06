@@ -1,5 +1,3 @@
-@* The scalars the row states - cast, cooldown, range, cost - two to a row in the order the game
-   prints them, with an odd one left alone on the last row. *@
 <div class="grp">
     @for (var at = 0; at < Items.Count; at += 2)
     {
@@ -14,9 +12,5 @@
 </div>
 
 @code {
-    /// <summary>
-    /// The scalars, already formatted and already carrying the arithmetic behind any number this
-    /// app worked out rather than read.
-    /// </summary>
     [Parameter] public IReadOnlyList<TooltipView.Fact> Items { get; set; } = [];
 }

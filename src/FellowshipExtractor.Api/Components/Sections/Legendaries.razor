@@ -14,13 +14,5 @@
 }
 
 @code {
-    /// <summary>
-    /// The record this panel draws, re-supplied by every Detail.
-    ///
-    /// The loop is a for rather than a foreach so the key has a value. The key is the index and
-    /// never the roll: Entity is a record, two structurally equal rolls compare equal, and
-    /// duplicate sibling keys throw out of the render tree diff. The rolls are drawn in export
-    /// order and never sorted.
-    /// </summary>
     [CascadingParameter] private Entity Entity { get; set; } = new();
 }

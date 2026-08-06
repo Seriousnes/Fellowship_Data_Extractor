@@ -1,7 +1,3 @@
-@* The heading cell and the value cell open on one line. Razor keeps a whitespace-only text node
-   that sits between two static elements and only drops one adjacent to C# code, so a newline here
-   would reach the browser as source indentation and the assertion pinning it would then turn on
-   whether git had checked the file out with CRLF. *@
 <tr>
     <th>@Label</th><td>
         @ChildContent
@@ -13,13 +9,8 @@
 </tr>
 
 @code {
-    /// <summary>The row's heading cell.</summary>
     [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
 
-    /// <summary>
-    /// The unit trailing the value, drawn with no space before it: a duration reads 2.5s. Null
-    /// renders no span at all.
-    /// </summary>
     [Parameter] public string? Unit { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }

@@ -2,14 +2,6 @@ using CUE4Parse.MappingsProvider.Usmap;
 
 namespace FellowshipExtractor.Usmap;
 
-/// <summary>
-/// Locates the property-count field in FClassParams.
-///
-/// The record has no name and no obviously placed count, so instead of guessing the layout we use
-/// another UE5 game's usmap as an oracle: for engine classes present in both, the true own-property
-/// count is known. Whichever field offset reproduces that count across the most classes is the
-/// count field. Engine-version drift adds noise, so the winner is taken by vote.
-/// </summary>
 public static class UsmapCountProbeCommand
 {
     public static Task RunAsync(ExtractorOptions options, string referencePath)
@@ -26,7 +18,6 @@ public static class UsmapCountProbeCommand
             ?? throw new InvalidDataException($"No mappings in {referencePath}.");
         Console.WriteLine($"classes {classes.Count}, reference schemas {reference.Types.Count}");
 
-        // Candidate field offsets relative to the PropertyArray field.
         var votes16 = new Dictionary<int, int>();
         var votes32 = new Dictionary<int, int>();
         var tested = 0;
@@ -37,7 +28,6 @@ public static class UsmapCountProbeCommand
             var expected = truth.PropertyCount;
             if (expected == 0) continue;
 
-            // The params record's PropertyArray field is what ClassParams.Va points at.
             var arrayOffset = image.Offset(c.Va);
             if (arrayOffset < 0) continue;
             tested++;

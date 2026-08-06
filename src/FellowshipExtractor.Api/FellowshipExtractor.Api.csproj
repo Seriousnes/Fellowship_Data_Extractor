@@ -8,30 +8,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FellowshipExtractor.ServiceDefaults\FellowshipExtractor.ServiceDefaults.csproj" />
-
-    <!--
-      The extractor owns Entity, Placeholder and the vocabulary rows, and the API reads the export
-      it writes. Referencing it keeps one definition of those shapes rather than a second copy here
-      that drifts the next time a field is added.
-    -->
     <ProjectReference Include="..\FellowshipExtractor\FellowshipExtractor.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.4.6" />
-
-    <!--
-      Carries its own dart-sass binaries per RID, so there is no npm, no node and no PATH
-      dependency. Its targets run before ResolveScopedCssInputs, which is what lets a
-      Foo.razor.scss become the Foo.razor.css the Razor SDK scopes and bundles.
-    -->
     <PackageReference Include="AspNetCore.SassCompiler" Version="1.102.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
-
-    <!--
-      Microsoft.AspNetCore.OpenApi 10.0.10 still resolves Microsoft.OpenApi 2.0.0, which carries
-      GHSA-v5pm-xwqc-g5wc. Patched in 2.7.5, so the direct reference lifts the transitive one.
-    -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" />
   </ItemGroup>
 

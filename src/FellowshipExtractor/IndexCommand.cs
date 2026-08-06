@@ -3,11 +3,6 @@ using CUE4Parse.UE4.AssetRegistry.Objects;
 
 namespace FellowshipExtractor;
 
-/// <summary>
-/// Joins the gameplay tag tables to the asset registry to produce one searchable record per
-/// named entity. Cooked assets advertise their tag as PrimaryAssetName, which is the reliable
-/// join; GameplayAbility blueprints instead carry the tag as their asset name.
-/// </summary>
 public static class IndexCommand
 {
     public static async Task RunAsync(ExtractorOptions options)
@@ -25,7 +20,6 @@ public static class IndexCommand
                 byPrimaryAssetName.TryAdd(primary, asset);
             }
 
-            // Null marks an ambiguous name, so the join skips it rather than guessing.
             var name = asset.AssetName.Text;
             byAssetName[name] = byAssetName.ContainsKey(name) ? null : asset;
         }

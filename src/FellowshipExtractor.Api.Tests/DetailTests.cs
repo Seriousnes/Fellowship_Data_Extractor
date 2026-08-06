@@ -1,20 +1,10 @@
 namespace FellowshipExtractor.Api.Tests;
 
-/// <summary>
-/// The four hazards the cascade carries. Each of them compiles cleanly when broken and shows only
-/// as the wrong record on screen, which is the reason this project exists.
-/// </summary>
 [Collection(Corpus.Name)]
 public class DetailTests : BunitContext
 {
     public DetailTests(Export export) => Services.AddSingleton(export.View);
 
-    /// <summary>
-    /// A single cascade declared on the page would flow past the nested Detail unchanged, so the
-    /// granted ability's panels would draw the outer item's text and stats. The outer Grants guard
-    /// would also still be truthy inside, and the recursion would only stop when the renderer said
-    /// so - which is what the "exactly once" assertions catch.
-    /// </summary>
     [Fact]
     public void A_nested_detail_draws_the_granted_ability_and_not_the_record_that_grants_it()
     {
@@ -46,10 +36,6 @@ public class DetailTests : BunitContext
         Assert.Equal(1, Occurrences(markup, "Grants an ability"));
     }
 
-    /// <summary>
-    /// This is what holds IsFixed off the cascade. With IsFixed="true" a re-rendered Detail keeps
-    /// drawing the first entity, measured, and nothing else in the suite notices.
-    /// </summary>
     [Fact]
     public void A_detail_re_rendered_with_a_different_entity_draws_the_new_one()
     {
@@ -85,11 +71,6 @@ public class DetailTests : BunitContext
         Assert.Contains("the second roll", cut.Markup, StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// The key is the loop index and never the roll. Entity is a record, so two structurally equal
-    /// rolls compare equal, and duplicate sibling keys throw out of the render tree diff on any
-    /// keyed re-render. This is that case.
-    /// </summary>
     [Fact]
     public void Two_structurally_equal_legendary_rolls_survive_a_re_render()
     {
@@ -109,11 +90,6 @@ public class DetailTests : BunitContext
         Assert.Equal(2, cut.FindAll("p.cx-sub-head").Count);
     }
 
-    /// <summary>
-    /// CascadingValue emits no element, so the panels are siblings at the component root and
-    /// .cx-panel + .cx-panel is what supplies the gap between them. A wrapper element here would
-    /// leave every panel on the page flush against the next.
-    /// </summary>
     [Fact]
     public void The_panels_are_siblings_with_no_wrapper_around_them()
     {
@@ -134,8 +110,6 @@ public class DetailTests : BunitContext
     [Fact]
     public void A_nested_row_builds_its_school_filter_without_a_type()
     {
-        // A granted ability carries no table of its own, so the type half of the query is left off
-        // rather than sent empty. The school facet reads a Magic or Physical tag.
         var granted = new Entity { Tags = ["MagicFire"] };
         var outer = new Entity { Table = "GameplayAbility", Tags = ["MagicFire"], Grants = granted };
 

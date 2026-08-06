@@ -4,17 +4,8 @@ using CUE4Parse.UE4.Assets.Exports;
 
 namespace FellowshipExtractor;
 
-/// <summary>
-/// Loads a cooked package and serializes its exports. This is the first thing that needs
-/// property mappings, so it doubles as the probe for whether a .usmap is required.
-/// </summary>
 public static class DumpCommand
 {
-    /// <summary>
-    /// One asset by default, because a filter is usually a name and mounting the build again per
-    /// asset is what makes a sweep expensive. Raise <paramref name="limit"/> to dump a whole folder
-    /// in one mount.
-    /// </summary>
     public static async Task RunAsync(ExtractorOptions options, string filter, int limit = 1)
     {
         var provider = await ProviderFactory.CreateAsync(options);

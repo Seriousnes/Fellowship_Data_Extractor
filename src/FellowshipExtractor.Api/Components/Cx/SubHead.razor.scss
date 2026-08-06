@@ -1,6 +1,3 @@
 @use "../../Styles/shared" as *;
 
-/* The stylesheet this replaces writes the rule as ".cx-mega-sec-head, .cx-sub-head", a selector list
-   whose two halves belong to different components. The mixin is what keeps them one rule after the
-   split: MegaMenu.razor.scss includes it too. */
 .cx-sub-head { @include eyebrow; }

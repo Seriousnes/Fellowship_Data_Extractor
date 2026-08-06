@@ -1,9 +1,5 @@
 namespace FellowshipExtractor.Api.Tests;
 
-/// <summary>
-/// The three panels that draw tuning: the flat list, the per-talent groups and the substitutions
-/// a description spends. Only TalentTuning injects, because its rows are per group.
-/// </summary>
 [Collection(Corpus.Name)]
 public class TuningTests : BunitContext
 {
@@ -115,7 +111,6 @@ public class TuningTests : BunitContext
             "nothing in the build settles this",
             cards[1].QuerySelector("div.cx-token-read span.cx-miss")!.TextContent);
 
-        // A token with no working line renders no third div at all.
         Assert.Null(cards[1].QuerySelector("div.cx-token-work"));
     }
 

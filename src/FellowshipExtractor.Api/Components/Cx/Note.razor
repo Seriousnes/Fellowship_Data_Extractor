@@ -1,9 +1,5 @@
 <p class="cx-note">@ChildContent</p>
 
 @code {
-    /// <summary>
-    /// The note's prose. Child content rather than a string because the borrowed-name and
-    /// borrowed-art notes each carry an inline anchor.
-    /// </summary>
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

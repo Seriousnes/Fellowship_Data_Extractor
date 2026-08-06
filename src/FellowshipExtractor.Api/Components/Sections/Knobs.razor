@@ -7,18 +7,12 @@
         @if (PicksHero)
         {
             <Knob Caption="Hero">
-                @* A plain HTML onchange carrying JavaScript, not a Blazor directive: the page is
-                   statically rendered, and a full navigation is the only way the hero can change,
-                   because the server has to re-resolve the shown reading, the name, its colour,
-                   the detail and the related list. *@
                 <select data-knob="hero"
                         onchange="location.search = '?hero=' + encodeURIComponent(this.value)">
                     @if (Here.Readings.Count == 1)
                     {
                         <option value="">Any</option>
                     }
-                    @* Offered only where a reading answers for them, on the store's own reading of
-                       that, so every name in the list opens a tooltip rather than a 404. *@
                     @foreach (var who in Store.Vocabulary.Heroes
                         .Where(who => Here.Readings.Any(reading => EntityStore.Reads(reading, who)))
                         .OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase))
@@ -63,7 +57,6 @@
 }
 
 @code {
-    /// <summary>The page's own facts.</summary>
     [CascadingParameter] private Bearings Here { get; set; } = new();
 
     private bool IsGem => Here.Shown.GemTier is not null;

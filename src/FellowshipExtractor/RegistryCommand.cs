@@ -6,10 +6,6 @@ using CUE4Parse.UE4.Readers;
 
 namespace FellowshipExtractor;
 
-/// <summary>
-/// AssetRegistry.bin lists every cooked asset with its class and cooked tags, and it parses
-/// without mappings. This is how we find where items, spells and abilities actually live.
-/// </summary>
 public static class RegistryCommand
 {
     public const string RegistryPath = "fellowship/AssetRegistry.bin";

@@ -49,10 +49,6 @@ public class RanksTests : BunitContext
             "</ul></div>");
     }
 
-    /// <summary>
-    /// The sharpest whitespace case in the app: this span is a pre-line context, so a newline the
-    /// source indentation contributed would be a rendered blank line on screen.
-    /// </summary>
     [Fact]
     public void Separates_the_printed_values_with_a_slash_and_no_newline()
     {

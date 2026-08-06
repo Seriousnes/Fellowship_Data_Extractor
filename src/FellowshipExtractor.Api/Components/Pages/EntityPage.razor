@@ -14,10 +14,6 @@
     <CascadingValue Value="Here">
         <div class="cx-entity">
             <div class="cx-entity-top">
-                @* The tooltip is drawn here rather than fetched: the page already knows the reading
-                   and the knobs it is read at, so the first paint needs no request at all. The
-                   attribute stays because a knob a reader turns is answered by the API, which
-                   renders this same component, and the client replaces this element's contents. *@
                 <div class="cx-entity-tip" data-stage="@Address" aria-live="polite">
                     <Tooltip Entity="Shown" Query="Asking" Hero="Wearer" />
                 </div>
@@ -37,51 +33,24 @@
 }
 
 @code {
-    /// <summary>
-    /// The type's public slug, which is the only spelling this route answers to. A slug naming
-    /// nothing public leaves <see cref="table"/> null and the page answers 404, so a shipped table
-    /// name in the address opens no page rather than opening the page under a second name.
-    /// </summary>
     [Parameter] public string Slug { get; set; } = string.Empty;
 
     [Parameter] public int NetId { get; set; }
 
     [SupplyParameterFromQuery(Name = "hero")] public string? Asked { get; set; }
 
-    /// <summary>The shipped table the slug names, resolved once and never drawn.</summary>
     private string? table;
 
     private IReadOnlyList<Entity> Readings = [];
 
     private Entity Shown = new();
 
-    /// <summary>
-    /// Everything the page's own sections draw, built in one place so that no section has to work
-    /// out an address for itself.
-    /// </summary>
     private Bearings Here = new();
 
     private string Name => Ui.Name(Shown);
 
-    /// <summary>
-    /// The browser, narrowed to this row's type. Built from the slug the type is filed under rather
-    /// than from the route's own spelling, so the crumb and the type row agree with the menu whatever
-    /// case a reader typed.
-    /// </summary>
     private string Under => $"/browse?type={PublicTypes.SlugOf(table)}";
 
-    /// <summary>
-    /// The address that draws exactly what is on the stage, which is what a reader calling the API
-    /// with it gets back.
-    ///
-    /// The view carries a hero on the addresses that cannot answer without one, which is every id
-    /// with several readings. The 42 single-reading items that still name more than one hero are the
-    /// gap it leaves: their tooltip does change with the hero, the knob sends one, and the address
-    /// built for them says nothing about it. The hero on the stage is appended here so the printed
-    /// address and the drawn tooltip stay the same request. The client merges the knobs over the
-    /// carried query rather than under it, so an address that now spells the hero the knob already
-    /// holds changes nothing about what is fetched.
-    /// </summary>
     private string Address
     {
         get
@@ -96,28 +65,10 @@
 
     private bool PicksHero => Readings.Count > 1 || Shown.Heroes is { Count: > 1 };
 
-    /// <summary>
-    /// What the tooltip above is read at before a reader has turned anything. Only the hero, which
-    /// the address carries and the server resolves; every other knob starts at its own default and
-    /// the tooltip works those out for itself, so the first paint needs no request.
-    /// </summary>
     private TooltipQuery Asking => new() { Hero = Drawn };
 
-    /// <summary>The hero on the stage as the roster knows them, for the numbers the text substitutes.</summary>
     private HeroEntry? Wearer => Drawn is null ? null : Store.Hero(Drawn);
 
-    /// <summary>
-    /// The hero whose reading is on the stage, or null when the tooltip above is nobody's in
-    /// particular.
-    ///
-    /// Two things put a hero there. An id with several readings is always being read as one of them,
-    /// and each of those names a hero by construction. And 42 single-reading items name more than one
-    /// hero, where the tooltip is the hero's the moment one is picked and nobody's until then. An id
-    /// with one reading and no hero to pick has nobody's on screen, which is why the line naming one
-    /// is absent rather than reading "any": a hero the reader never chose is not who the tooltip is
-    /// for. A hero asked for who cannot read this id is not one either, so the answer is the hero of
-    /// the reading actually drawn.
-    /// </summary>
     private string? Drawn
     {
         get
@@ -143,10 +94,6 @@
             return;
         }
 
-        // Through the store's own reading of which hero sees which line, so the row on the stage is
-        // the row the tooltip endpoint resolves the same hero to. The page used to ask its own
-        // narrower question and answer Readings[0] whenever that found nothing, which put a hero's
-        // name in the address bar over somebody else's version of the item.
         Shown = Asked is not null && Store.Hero(Asked) is { } named
             ? Readings.FirstOrDefault(reading => EntityStore.Reads(reading, named)) ?? Readings[0]
             : Readings[0];
@@ -180,18 +127,12 @@
 
             if (count < 2) return;
 
-            // Through the catalogue's own printer, which is what every other surface drawing a facet
-            // value already reads: the panel, the chips and the menus all come through it, so a
-            // facet that ever needs a different printed word says so once and this line follows.
             nearby.Add((
                 $"{definition.Label}: {Catalog.Printed(definition, value)}",
                 $"{Under}&{facet}={Uri.EscapeDataString(value)}",
                 count));
         }
 
-        // Every axis a reader can be sent along is one the game itself prints: a slot, a set, a gem
-        // type, a trait category, a hero, a school of magic. The loot rule set an item rolls under
-        // is the one shared field that is a shipped spelling throughout, so it offers no way in.
         Add("slot", Shown.Slot);
         Add("set", Shown.SetBonus?.FirstOrDefault());
         Add("gem", Shown.GemType);

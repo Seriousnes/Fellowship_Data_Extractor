@@ -2,10 +2,6 @@ using CUE4Parse.UE4.Exceptions;
 
 namespace FellowshipExtractor;
 
-/// <summary>
-/// Measures how much of the build is readable with the mappings currently configured.
-/// Answers "do we need a .usmap, and for what fraction of the content" with numbers.
-/// </summary>
 public static class ProbeCommand
 {
     public static async Task RunAsync(ExtractorOptions options, int sampleSize)

@@ -1,9 +1,5 @@
 namespace FellowshipExtractor;
 
-/// <summary>
-/// Dumps the container file listing. The .utoc/.pak directory indexes are readable with no
-/// mappings and no AES key, so this is the map every later question gets answered against.
-/// </summary>
 public static class ListCommand
 {
     public static async Task RunAsync(ExtractorOptions options)
@@ -32,10 +28,6 @@ public static class ListCommand
         ProveDecompression(provider);
     }
 
-    /// <summary>
-    /// Reads a file big enough to be Oodle-compressed and checks the bytes are the text we
-    /// expect. A tiny file would be stored raw and would pass even with Oodle broken.
-    /// </summary>
     private static void ProveDecompression(CUE4Parse.FileProvider.DefaultFileProvider provider)
     {
         const string probePath = "fellowship/Content/guid/ItemID.csv";

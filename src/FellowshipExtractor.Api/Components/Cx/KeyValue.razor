@@ -1,19 +1,10 @@
-@* One line, carrying no literal text: the rank-progression caller renders this inside a
-   white-space: pre-line scope, where any newline the component contributed becomes a blank line
-   on screen. *@
 <li><span class="cx-k">@Key</span><span class="@Classes">@ChildContent</span></li>
 
 @code {
-    /// <summary>The key span's text.</summary>
     [Parameter, EditorRequired] public string Key { get; set; } = string.Empty;
 
-    /// <summary>Marks the value as absent or disputed rather than present.</summary>
     [Parameter] public bool Missing { get; set; }
 
-    /// <summary>
-    /// Extra classes on the value span. The rank-progression "Printed" row passes cx-prose, which
-    /// is the generated style scope the game's rich text is written under.
-    /// </summary>
     [Parameter] public string? Class { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }

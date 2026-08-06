@@ -13,10 +13,6 @@
         {
             <Rule />
             <KeyValues>
-                @* <span> / </span> is a literal text node carrying a non-whitespace character, so
-                   the spaces around the slash survive and are the rendered separator. Every other
-                   text node in this loop is whitespace containing a newline, which the compiler
-                   removes, so the source indentation never reaches a pre-line context. *@
                 <KeyValue Key="Printed" Class="cx-prose">
                     @for (var rank = 0; rank < run.Printed.Count; rank++)
                     {
@@ -45,6 +41,5 @@
 }
 
 @code {
-    /// <summary>The record this panel draws, re-supplied by every Detail.</summary>
     [CascadingParameter] private Entity Entity { get; set; } = new();
 }

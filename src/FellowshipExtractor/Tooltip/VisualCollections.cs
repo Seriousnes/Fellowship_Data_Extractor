@@ -4,16 +4,6 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// The armour art a CRVisualCollection holds. A collection is a hero's set in every rung it exists
-/// at: Skins[n] is one rung, carrying the meshes the hero wears and, beside each, the icon a bag
-/// square shows for that slot. Gunde's progression set has three, whose meshes are the T0, T1 and
-/// T2 folders and whose icons are the R0, R1 and R2 files, so the R in an icon's name is the rung
-/// and not a variation the icons have on their own.
-///
-/// Reading is cached per collection, because one collection answers for every slot of every item
-/// that dresses a hero in it.
-/// </summary>
 public sealed class VisualCollections
 {
     private const string SkinsField = "Skins";
@@ -26,14 +16,8 @@ public sealed class VisualCollections
 
     public VisualCollections(AbstractFileProvider provider) => _provider = provider;
 
-    /// <summary>How many rungs a collection ships, or zero when it is not a collection at all.</summary>
     public int RungCount(string collectionPath) => Skins(collectionPath)?.Properties.Count ?? 0;
 
-    /// <summary>
-    /// The icon one rung of a collection shows for one slot, or null where it has none. The slot
-    /// arrives under its ECRHeroItemType name rather than the word a player reads, because the
-    /// field is named for the enum: IconWaist and not IconLegs.
-    /// </summary>
     public string? Icon(string collectionPath, int rung, string slotType)
     {
         var key = $"{collectionPath}#{rung}#{slotType}";

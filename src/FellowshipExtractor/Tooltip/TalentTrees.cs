@@ -5,33 +5,15 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// One live talent: where it sits in its hero's grid, what the tree says it is, and the
-/// augmentation that carries its mechanics.
-/// </summary>
 public sealed record Talent(string HeroName, string Slot, int Row, int Column, int Cost)
 {
     public string? DisplayName { get; init; }
     public string? Description { get; init; }
     public string? IconPath { get; init; }
 
-    /// <summary>The augmentation's netId, or null for the one talent that names no augmentation.</summary>
     public int? Augmentation { get; init; }
 }
 
-/// <summary>
-/// Every hero's talent grid, read from the twelve CRTalentData assets that define them.
-///
-/// Membership in one of those assets' Talents arrays is the only definition of a talent. Asset
-/// naming is not: 373 augmentations carry "Talent" in the name against 179 that are live, and 36
-/// live talents are named CAA_&lt;Hero&gt;_TraitN instead.
-///
-/// A row is live when two things hold and neither alone is enough. DisabledInGame alone leaves five
-/// retired stragglers behind; the slot filter alone keeps Warmaster's "Commander's Advance
-/// (disabled)". The slot filter is derived rather than listed: a Talent.ID tag is a live slot when
-/// its own numeric suffix equals its netId, which the shipped table satisfies for TalentN 1 to 21
-/// and for none of the retired Talent50, Talent84 and Talent90-99.
-/// </summary>
 public sealed class TalentTrees
 {
     public const string SlotTable = "Talent.ID";
@@ -45,10 +27,8 @@ public sealed class TalentTrees
     private readonly Dictionary<string, Talent> _byAugmentation = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, List<Talent>> _bySlot = [];
 
-    /// <summary>How many live talents the twelve trees hold between them.</summary>
     public int Count { get; }
 
-    /// <summary>How many heroes ship a tree.</summary>
     public int HeroCount { get; }
 
     public TalentTrees(
@@ -101,21 +81,11 @@ public sealed class TalentTrees
         }
     }
 
-    /// <summary>The talent an augmentation asset carries, or null when it carries none.</summary>
     public Talent? ForAugmentation(string assetName) => _byAugmentation.GetValueOrDefault(assetName);
 
-    /// <summary>Every hero's talent in one slot. A slot is a coordinate and holds a different talent per hero.</summary>
     public IReadOnlyList<Talent> InSlot(int netId) =>
         _bySlot.TryGetValue(netId, out var talents) ? talents : [];
 
-    /// <summary>
-    /// One Talent.ID slot spread into the talents that occupy it, one line per hero. The slot tag
-    /// says nothing on its own: Talent8 is Ardeos's "Rolling Flames" at row 5 column 1 and Mara's
-    /// "Macabre Stratagem" at row 4 column 1, and all 19 live slots differ this way.
-    ///
-    /// A line points at the augmentation holding its name, text and art rather than repeating them.
-    /// The one talent that names no augmentation has nowhere to point and carries its own record.
-    /// </summary>
     public static List<Entity> Expand(Entity slot, IReadOnlyList<Talent> talents, IconWriter? icons) =>
     [
         .. talents
@@ -135,11 +105,6 @@ public sealed class TalentTrees
             }),
     ];
 
-    /// <summary>
-    /// The slots a tree can still place a talent in, by netId. The shipped table numbers its live
-    /// tags in sequence and renumbers a retired one away from its netId, so the two agreeing is the
-    /// table's own record of which slots are still in use.
-    /// </summary>
     private static Dictionary<string, int> LiveSlots(IReadOnlyList<TagRecord> tags)
     {
         var live = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -188,11 +153,6 @@ public sealed class TalentTrees
                 $"{objectPath} holds no {TalentsField} array, so {hero.ShippedName} has no grid to read.");
         }
 
-        // Column is the ordinal within TalentRow taken from array order. There is no TalentColumn
-        // field and TalentID is a slot rather than a position, so array order is the only record of
-        // where in its row a talent sits. What licenses reading it that way is that the live rows
-        // of every hero are the front of the array in row-major order, and Placement stops the
-        // export rather than guessing a grid if a patch breaks that.
         var live = new List<(int Index, IPropertyHolder Fields, string Slot, int GridRow)>();
 
         for (var index = 0; index < rows.Properties.Count; index++)
@@ -234,8 +194,6 @@ public sealed class TalentTrees
                 Augmentation = netId,
             };
 
-            // Five augmentations are named by both a live row and a retired one. Only live rows
-            // reach here, so Gunde's real "Murder of Crows" cannot lose to the retired draft of it.
             if (augmentation is not null && netId is not null) _byAugmentation[augmentation] = talent;
 
             if (!_bySlot.TryGetValue(slots[slot], out var sharing)) _bySlot[slots[slot]] = sharing = [];
@@ -245,23 +203,12 @@ public sealed class TalentTrees
         return live.Count;
     }
 
-    /// <summary>
-    /// The point cost the row declares. Read rather than computed from the row number: the live
-    /// talents happen to cost 2/1/2/1/3/1 by row in all twelve trees, and the retired rows already
-    /// break that pattern, so a rule inferred from the live half would be wrong the moment one of
-    /// them came back.
-    /// </summary>
     private static int Cost(IPropertyHolder row, HeroProfile hero, string slot) =>
         PropertyWalk.AsOrdinal(PropertyWalk.Get(row, "TalentPointCost")?.GenericValue)
         ?? throw new InvalidOperationException(
             $"{hero.ShippedName}'s talent in {slot} declares no TalentPointCost, and nothing else in the build " +
             "says what a talent costs.");
 
-    /// <summary>
-    /// That a hero's live talents really do form a grid. They must be the front of the array with
-    /// nothing retired interleaved, and their rows must not go backwards, because otherwise the
-    /// ordinal within a row is not a column and the whole placement is a guess.
-    /// </summary>
     private static void Placement(
         HeroProfile hero, IReadOnlyList<(int Index, IPropertyHolder Fields, string Slot, int GridRow)> live)
     {

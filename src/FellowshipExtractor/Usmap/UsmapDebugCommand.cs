@@ -2,10 +2,6 @@ using System.Buffers.Binary;
 
 namespace FellowshipExtractor.Usmap;
 
-/// <summary>
-/// Traces one property record from its .rdata slot back to whatever references it, dumping raw
-/// qwords. Used to establish the params layouts empirically instead of assuming them.
-/// </summary>
 public static class UsmapDebugCommand
 {
     public static Task RunAsync(ExtractorOptions options, string propertyName)
@@ -57,7 +53,6 @@ public static class UsmapDebugCommand
         return "?";
     }
 
-    /// <summary>Dump qwords with both uint32 halves, labelled by offset within the params record.</summary>
     private static void DumpFields(PeImage image, int start, int count, int anchor)
     {
         for (var i = 0; i < count; i++)

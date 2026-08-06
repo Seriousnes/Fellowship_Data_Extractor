@@ -7,9 +7,6 @@
 }
 .cx-mega-bar::-webkit-scrollbar { display: none; }
 
-/* Static, so the panel below resolves its full width against the sticky masthead rather than
-   against the group. codex.js reads this class and writes data-open on it, which is why both stay
-   plain attributes on plain elements. */
 .cx-mega-group { position: static; }
 
 .cx-mega-open {
@@ -47,8 +44,6 @@
 .cx-mega-head + .cx-mega-sec { break-before: avoid; }
 .cx-mega-sec { margin: 0 0 14px; break-inside: avoid; }
 
-/* The other half of the shipped ".cx-mega-sec-head, .cx-sub-head" selector list, whose two halves
-   belong to different components. The mixin is what keeps them one rule after the split. */
 .cx-mega-sec-head { @include eyebrow; }
 
 .cx-mega-sec ul { list-style: none; margin: 0; padding: 0; }

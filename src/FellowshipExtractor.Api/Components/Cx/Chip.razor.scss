@@ -1,6 +1,3 @@
-/* The chip's whole appearance is this one rule, and it selects only inside the results table.
-   The ancestor is Browse's element and is matched on its class; the span is this component's and
-   is what the scope attribute lands on. */
 table.cx-rows .cx-chip {
   display: inline-block; padding: 0 6px; border: 1px solid var(--line); border-radius: 2px;
   font-size: 11px; color: var(--muted); margin: 1px 3px 1px 0; white-space: nowrap;

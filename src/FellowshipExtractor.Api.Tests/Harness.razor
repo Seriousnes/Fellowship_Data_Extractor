@@ -1,9 +1,5 @@
 <p class="cx-probe">@Text</p>
 
 @code {
-    /// <summary>
-    /// What the canary draws. The fixture exists so that a build which stops compiling the test
-    /// project's own razor files fails a test rather than passing silently.
-    /// </summary>
     [Parameter] public string Text { get; set; } = string.Empty;
 }

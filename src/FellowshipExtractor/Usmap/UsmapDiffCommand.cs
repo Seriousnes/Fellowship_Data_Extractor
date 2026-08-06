@@ -2,11 +2,6 @@ using CUE4Parse.MappingsProvider.Usmap;
 
 namespace FellowshipExtractor.Usmap;
 
-/// <summary>
-/// Grades the recovered schemas against a real usmap from another UE5 title. Engine and plugin
-/// structs are identical across games, so a foreign usmap is ground truth for everything outside
-/// the fellowship modules, and gives a per-struct pass/fail instead of spot checks.
-/// </summary>
 public static class UsmapDiffCommand
 {
     public static Task RunAsync(ExtractorOptions options, string referencePath)

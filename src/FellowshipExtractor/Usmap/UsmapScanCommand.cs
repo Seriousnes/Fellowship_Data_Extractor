@@ -1,6 +1,5 @@
 namespace FellowshipExtractor.Usmap;
 
-/// <summary>Reports what the static reflection scanner recovers, so progress is measurable.</summary>
 public static class UsmapScanCommand
 {
     public static string ShippingExe(ExtractorOptions options) =>

@@ -143,10 +143,6 @@ async function stage() {
 
     const answer = await fragment(where);
 
-    // Into the light DOM, not a shadow root. The server already drew this tooltip into the page, so
-    // attaching a root here would hide what is on screen rather than replace it; and the fragment
-    // is styled by the sheet it carries, which the page's own @scope (body) to (.fx-tip) keeps out
-    // of. The hover layer still uses a root, because nothing server-rendered it.
     if (answer?.ok) box.innerHTML = answer.body;
 
     box.removeAttribute('aria-busy');
@@ -233,9 +229,6 @@ document.addEventListener('keydown', event => {
 window.addEventListener('scroll', () => { if (anchored) place(anchored); }, { passive: true });
 window.addEventListener('resize', hide);
 
-// No stage() here. The server draws the tooltip into the page, on first load and again after every
-// enhanced navigation, so asking the API for the one already on screen would only cost a request
-// and a flash. The stage is refetched when a reader turns a knob, and not before.
 function arrived() {
     hide();
 }

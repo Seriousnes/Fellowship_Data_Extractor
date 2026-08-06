@@ -1,16 +1,5 @@
 namespace FellowshipExtractor.Api;
 
-/// <summary>
-/// The results page as the component draws it: the links off every facet value, sort heading and
-/// page number, and the few things worth deciding once rather than inside a loop.
-///
-/// The whole page is a function of the query string, so a reader's filter is a URL they can send
-/// somebody and every link the page draws - a facet value, a sort column, the next page - is that
-/// same query string with one thing changed. Nothing is held in the session and nothing is posted.
-///
-/// It is a plain object rather than anything the framework knows about because none of this needs a
-/// request: given a query and its results it can be built, tested and reasoned about on its own.
-/// </summary>
 public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults results)
 {
     public Codex Codex => codex;
@@ -19,7 +8,6 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
 
     public CodexResults Results => results;
 
-    /// <summary>This query with one facet value turned on or off, as a link.</summary>
     public string Toggle(string facet, string value) =>
         "/browse" + query.ToQueryString(toggle: (facet, value));
 
@@ -28,9 +16,6 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
 
     public string PageLink(int page) => "/browse" + query.ToQueryString(page: page);
 
-    /// <summary>
-    /// The link a column heading carries: sort by it, or reverse it when it is already the sort.
-    /// </summary>
     public string SortLink(string column) =>
         query.Sort == column && !query.Descending
             ? "/browse" + query.ToQueryString(replace: ("dir", "desc"))
@@ -39,30 +24,20 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
     public string? SortState(string column) =>
         query.Sort != column ? null : query.Descending ? "descending" : "ascending";
 
-    /// <summary>Everything but the filters, for the "clear all" link.</summary>
     public string Bare =>
         query.Text is null ? "/browse" : "/browse?q=" + Uri.EscapeDataString(query.Text);
 
-    /// <summary>
-    /// The measure columns worth drawing for what is on screen: a column every row leaves empty is
-    /// noise, so cooldown appears when abilities are listed and disappears when items are.
-    /// </summary>
     public IReadOnlyList<Measure> Columns =>
     [
         .. codex.Measures.Where(m =>
             m.Column && (m.Key == "id" || results.Rows.Any(row => m.Value(row) is not null))),
     ];
 
-    /// <summary>The facets that still have something to say about the rows on screen.</summary>
     public IReadOnlyList<FacetView> Rail =>
     [
         .. results.Facets.Where(facet => facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Key)),
     ];
 
-    /// <summary>
-    /// The measures worth offering a range for: the ones something on screen actually carries. A
-    /// cooldown box over a page of items is a box that can only empty the page.
-    /// </summary>
     public IReadOnlyList<Measure> Ranges =>
     [
         .. codex.Measures.Where(measure =>
@@ -70,17 +45,8 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
             results.Measured.Contains(measure.Key, StringComparer.OrdinalIgnoreCase)),
     ];
 
-    /// <summary>
-    /// The class a chosen facet value carries, or nothing.
-    ///
-    /// Written as a method rather than inline, because Razor mis-parses an empty string literal
-    /// inside a quoted attribute: <c>class="@(chosen ? "" : null)"</c> ends the attribute at the
-    /// first quote of the literal and emits the attribute on every row, checking every value in the
-    /// filter panel at once. Measured, not guessed - that is what the panel did.
-    /// </summary>
     public static string? On(bool chosen) => chosen ? "on" : null;
 
-    /// <summary>The page numbers worth offering: both ends, and a window round where the reader is.</summary>
     public static IEnumerable<int> Window(int current, int last)
     {
         var wanted = new SortedSet<int> { 1, last };
@@ -98,13 +64,6 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
         }
     }
 
-    /// <summary>
-    /// Every narrowing currently in force, as removable chips.
-    ///
-    /// A chip is the one place a value the reader chose is drawn back at them, so both halves of it
-    /// go through the public spelling: the type reads as its heading and the href carries its slug,
-    /// which <see cref="CodexQuery.ToQueryString"/> writes from the table held here.
-    /// </summary>
     public IReadOnlyList<(string Label, string Href)> Chosen
     {
         get

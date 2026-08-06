@@ -9,19 +9,10 @@ using CUE4Parse.UE4.Objects.UObject;
 
 namespace FellowshipExtractor;
 
-/// <summary>
-/// Writes CUE4Parse's UObject property model straight to Utf8JsonWriter. CUE4Parse only ships
-/// Newtonsoft converters, so the shape of our exports is defined here instead.
-/// </summary>
 public static class UeJson
 {
     public static readonly JsonWriterOptions WriterOptions = new() { Indented = true };
 
-    /// <summary>
-    /// Types that fell through to ToString(). This serializer has never run against a real
-    /// package (every cooked package needs mappings), so callers report this to show which
-    /// native structs - FGameplayTag, FScalableFloat and friends - still need real handling.
-    /// </summary>
     public static readonly Dictionary<string, int> StringifiedTypes = [];
 
     private static void RecordStringified(object value)
@@ -30,10 +21,6 @@ public static class UeJson
         StringifiedTypes[key] = StringifiedTypes.GetValueOrDefault(key) + 1;
     }
 
-    /// <summary>
-    /// An object's full property set as a JsonElement, so an export can embed everything the asset
-    /// declares beside the fields it interprets. Nothing is dropped for want of a curated field.
-    /// </summary>
     public static JsonElement ToElement(IPropertyHolder holder)
     {
         var buffer = new System.IO.MemoryStream();
@@ -59,8 +46,6 @@ public static class UeJson
             WriteValue(writer, property.Tag);
         }
 
-        // Table rows are held outside Properties, so a table serialized from Properties alone
-        // yields its config flags and none of its content.
         var rows = RowsOf(holder);
         if (rows is not null)
         {
@@ -78,7 +63,6 @@ public static class UeJson
         writer.WriteEndObject();
     }
 
-    /// <summary>Data and curve tables both keep their rows in a map beside their properties.</summary>
     public static IReadOnlyDictionary<FName, FStructFallback>? RowsOf(IPropertyHolder holder) => holder switch
     {
         UDataTable table => table.RowMap,
@@ -200,12 +184,6 @@ public static class UeJson
             return;
         }
 
-        // A curve's keys are the curve. CUE4Parse models them as native value types rather than
-        // property holders, so without these two a curve table reads as a row of type names.
-        //
-        // A rich key carries its tangents as well, and they decide the shape between keys. Writing
-        // only its time and value would read as a well-formed curve that is silently piecewise
-        // linear, so every field goes out.
         switch (structType)
         {
             case FSimpleCurveKey simple:
@@ -230,8 +208,6 @@ public static class UeJson
                 return;
         }
 
-        // Native structs (FVector, FGameplayTag, ...) carry their own layout. Stringify for now
-        // and widen the ones that matter once StringifiedTypes shows which actually appear.
         RecordStringified(structType);
         writer.WriteStringValue(structType.ToString());
     }

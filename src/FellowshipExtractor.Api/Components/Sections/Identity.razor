@@ -7,9 +7,5 @@
 </Panel>
 
 @code {
-    /// <summary>
-    /// The page's own facts. Every address here is built once by the page, because a nested row
-    /// carries no table and no id of its own to build one from.
-    /// </summary>
     [CascadingParameter] private Bearings Here { get; set; } = new();
 }

@@ -93,7 +93,6 @@
     private string typed = string.Empty;
     private string? applied;
 
-    /// <summary>The type chip in force, held as its slug because that is all a chip carries.</summary>
     private string? scope;
     private SearchResponse? answer;
     private int active = -1;
@@ -107,11 +106,6 @@
 
     private IReadOnlyList<string> Words => Suggestions.Words(answer?.Query);
 
-    /// <summary>
-    /// The whole result set, under the chip the reader has narrowed to. The chip already carries the
-    /// public slug rather than the table behind it, so the narrowing survives the hop to the browser
-    /// as the same spelling the browser's own type tabs post back.
-    /// </summary>
     private string All =>
         "/browse?q=" + Uri.EscapeDataString(typed.Trim()) +
         (scope is null ? string.Empty : "&type=" + Uri.EscapeDataString(scope));

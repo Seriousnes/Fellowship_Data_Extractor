@@ -1,7 +1,5 @@
 @use "../../Styles/shared" as *;
 
-/* The select, the two inputs and every rung button are this section's own elements even though a
-   Knob wraps them, so the shipped rules keep their .cx-knob ancestor and need no ::deep. */
 .cx-knob select, .cx-knob input {
   width: 100%; appearance: none;
   @include sunken;
@@ -12,14 +10,10 @@
 .cx-rungs {
   display: flex; flex-wrap: wrap; gap: 4px;
 
-  /* A rung takes the muted ink rather than the ink a sunken field takes, so it spells its ground
-     and border out instead of including the mixin. */
   button {
     appearance: none; cursor: pointer; background: var(--sunken); border: 1px solid var(--line);
     border-radius: 2px; padding: 5px 9px; font: 600 12px/1 var(--sans); color: var(--muted);
 
-    /* The only visual state a pressed rung has. codex.js writes the attribute; the server renders
-       it false on every rung. */
     &[aria-pressed="true"] { border-color: currentColor; background: var(--raised); }
   }
 }

@@ -1,7 +1,5 @@
 @inject TooltipView Ui
 
-@* What the item is: its kind, the slot it fills, the power it is read at, the rung it rolled and
-   how far it has been tempered. Two to a row, left and right. *@
 <div class="grp">
     @if ((Entity.ArmorType ?? Entity.GemType) is { } kind)
     {
@@ -51,15 +49,11 @@
 @code {
     [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
 
-    /// <summary>Read for the socket line, which says whether the caller filled the socket.</summary>
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
-    /// <summary>The rung this reading is drawn at, which a gem spells under its own ladder.</summary>
     [Parameter] public RarityEntry? Rung { get; set; }
 
-    /// <summary>The item power on the line, resolved by the tooltip before this is placed.</summary>
     [Parameter] public int? Level { get; set; }
 
-    /// <summary>How far the caller has tempered it, in the words the line prints.</summary>
     [Parameter] public string? Temper { get; set; }
 }

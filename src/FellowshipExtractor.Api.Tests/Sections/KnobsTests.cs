@@ -1,10 +1,5 @@
 namespace FellowshipExtractor.Api.Tests;
 
-/// <summary>
-/// Every attribute this section emits is a plain HTML attribute the client reads by selector, and
-/// each of them compiles cleanly if turned into a Blazor directive and then does nothing at all,
-/// because the page is statically rendered. So these assert on the rendered DOM.
-/// </summary>
 [Collection(Corpus.Name)]
 public class KnobsTests : BunitContext
 {
@@ -77,10 +72,6 @@ public class KnobsTests : BunitContext
             cut.Find("input[data-knob=itemLevel]").GetAttribute("value"));
     }
 
-    /// <summary>
-    /// Clearing the hero is meaningful only where the shown reading itself lists more than one.
-    /// Offering it always would let a reader pick a hero-less reading of a per-hero item.
-    /// </summary>
     [Fact]
     public void Offers_an_any_option_only_where_the_id_has_one_reading()
     {

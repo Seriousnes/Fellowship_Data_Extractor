@@ -4,7 +4,6 @@ using CUE4Parse.FileProvider.Objects;
 
 namespace FellowshipExtractor;
 
-/// <summary>Verbatim access to container files. No mappings involved, so this always works.</summary>
 public static class RawCommands
 {
     public static async Task CatAsync(ExtractorOptions options, string filter, int maxLines)

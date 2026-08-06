@@ -38,39 +38,15 @@
 }
 
 @code {
-    /// <summary>The page's own facts.</summary>
     [CascadingParameter] private Bearings Here { get; set; } = new();
 
     private IReadOnlyList<Version> Named = [];
 
-    /// <summary>
-    /// One named version of an id: what the game calls it, the armour type and primary stat that
-    /// tell it from its siblings, the heroes handed it, and whether it is the one on the stage.
-    ///
-    /// The heroes are the point rather than a note on it. Every one of the 2,143 readings behind the
-    /// 188 split ids names exactly one hero, because a dynamic item draws the wearer's own armour set
-    /// and no two heroes share one, so a version's hero list is never empty and the names under it
-    /// are the whole of who ever sees it.
-    ///
-    /// Nested rather than declared at namespace scope, which would put a second Version in scope
-    /// beside System.Version for every file in this assembly.
-    /// </summary>
     private sealed record Version(
         string Name, string? Discriminator, IReadOnlyList<string> Heroes, bool OnScreen);
 
     protected override void OnParametersSet() => Named = Split();
 
-    /// <summary>
-    /// The readings gathered into the versions a reader can tell apart, in the order the export
-    /// carries them.
-    ///
-    /// The key is exactly what a version prints, its name and the two discriminators under it, so no
-    /// two entries can ever draw as the same line. Nothing else joins it: readings sharing all three
-    /// still differ in the art they show and 64 of them in the set they count towards, and folding
-    /// those in would split "Butcher's Apron / Cloth / Agility" into three entries reading alike.
-    /// Nothing is lost by leaving them out either, because a hero's name opens that hero's own
-    /// reading and the tooltip there is theirs down to the armour set.
-    /// </summary>
     private IReadOnlyList<Version> Split() =>
         Here.Readings.Count < 2
             ? []
@@ -85,15 +61,6 @@
                         .OrderBy(hero => hero, StringComparer.OrdinalIgnoreCase)],
                     version.Any(reading => reading == Here.Shown)))];
 
-    /// <summary>
-    /// What tells one version of an id from another, in the words the game prints for both halves.
-    /// The stat goes through the shipped attribute table like every other stat this app draws, even
-    /// though the three a hero can carry are spelled the same either way, because the one place a
-    /// stat key is printed raw is the place the next key with a different display name leaks through.
-    ///
-    /// 456 of the 2,143 readings carry neither half, being split by hero alone, and those versions
-    /// get no second line at all rather than the pair of "any"s the list used to print.
-    /// </summary>
     private string? Discriminator(string? armour, string? stat)
     {
         string?[] halves = [armour, stat is { Length: > 0 } key ? Store.StatName(key) : null];

@@ -3,37 +3,10 @@ using FellowshipExtractor.Tooltip;
 
 namespace FellowshipExtractor.Api;
 
-/// <summary>
-/// Turns a description's {Token} placeholders into the text they print for one caller.
-///
-/// The export keeps a token in the form that is true for every caller: a coefficient, the attribute
-/// it multiplies, and the width of the band the roll lands in. Whether that can become a number
-/// depends on what the caller knows, so it is resolved here rather than there.
-///
-/// The attribute resolves in two stages. An item's primary stat slot is filled by whoever wears it,
-/// so 361 tokens name PrimaryAttribute rather than a stat. Naming a hero, or naming a stat outright,
-/// settles which of Strength, Intellect and Agility that is. Supplying a value for it then turns the
-/// coefficient into a number. A token already naming a concrete attribute skips the first stage.
-///
-/// PrimaryAttribute is a placeholder and "Main Stat" is a phrase a designer typed. They do not
-/// overlap: 13 descriptions contain the literal words and 76 records carry the placeholder, and no
-/// record does both. Nothing here substitutes one for the other.
-/// </summary>
 public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
 {
-    /// <summary>The attribute name that stands in for whichever stat the wearer's hero uses.</summary>
     private const string Relative = "PrimaryAttribute";
 
-    /// <summary>
-    /// Every token of a description, resolved as far as the caller's parameters allow. A token that
-    /// cannot become a number becomes the coefficient sentence instead, which is the honest reading
-    /// and is what the export already says.
-    ///
-    /// Every token gets an answer, including the 47 the build settles nowhere. Leaving one out left
-    /// the renderer nothing to write but the token's own key, so a sentence reading "smash the target
-    /// for {HeavyStrikeDmg} physical damage" put the build's spelling of a number in the one place a
-    /// tooltip is certain to be read. <see cref="Unresolved"/> is what stands there now.
-    /// </summary>
     public Dictionary<string, Substitution> Resolve(
         IReadOnlyDictionary<string, Placeholder> placeholders,
         TooltipQuery query,
@@ -43,12 +16,6 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
         var resolved = new Dictionary<string, Substitution>(StringComparer.Ordinal);
         var school = School(tags);
 
-        // A tickrate is haste's to change, and the ability's ScaleTimeWithHaste is not consulted for
-        // it. The two are separate axes: that flag governs the ability's own cast and channel, while
-        // an effect's period follows the tickrate default and the only thing that overrides it is
-        // the effect opting out. Gating one on the other withheld haste from 22 of the 42 tickrates
-        // in the build, most of them on items and augmentations, which carry no such flag to begin
-        // with because they are not abilities.
         var haste = query.Haste;
 
         foreach (var (name, placeholder) in placeholders)
@@ -59,24 +26,10 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
         return resolved;
     }
 
-    /// <summary>
-    /// One token on its own, for the callers holding a substitution rather than a description: a
-    /// record listing what each number in its text is says the same reading beside the entry that
-    /// the text itself spends.
-    /// </summary>
     public Substitution Reading(
         Placeholder placeholder, TooltipQuery query, HeroEntry? hero, IReadOnlyList<string>? tags = null) =>
         One(placeholder, query, hero, School(tags), query.Haste);
 
-    /// <summary>
-    /// What a token the build settles nowhere reads as, in the two states the export leaves one in.
-    ///
-    /// 40 of the 47 say outright that the number comes from the entity's own tuning by way of native
-    /// code, which the extractor reads bytecode rather than data to reach; the other 7 say nothing at
-    /// all. The distinction is kept because it is the difference between a number the game has and a
-    /// number the build does not, and the same two sentences are what the entry page's substitutions
-    /// panel writes under the reading.
-    /// </summary>
     public static Substitution Unresolved(Placeholder placeholder) =>
         placeholder.FromOwnConstants == true
             ? new Substitution(
@@ -85,17 +38,6 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
                 Resolved: false)
             : Substitution.Missing;
 
-    /// <summary>
-    /// Which damage school the owner's tags declare, or none where they declare neither. The
-    /// shipped print formats come in a plain form and one per school, and the school is a fact
-    /// about the ability rather than about the token: a token only says whether it wants the school
-    /// spoken at all.
-    ///
-    /// Every one of the ten tokens in the build that asks is on a physical ability. Seven are tagged
-    /// Physical or Physical.Bleed and Warbound is tagged with no school, which takes the plain form.
-    /// Nothing here has ever selected a magic variant, so a default of magic would have been wrong
-    /// in every shipped case.
-    /// </summary>
     private static string? School(IReadOnlyList<string>? tags)
     {
         if (tags is null) return null;
@@ -112,7 +54,6 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
     private Substitution One(
         Placeholder placeholder, TooltipQuery query, HeroEntry? hero, string? school, decimal? haste)
     {
-        // A token standing in for a name has no arithmetic at all.
         if (placeholder.Text is { } text) return new Substitution(text);
 
         if (placeholder.Coefficient is { } coefficient)
@@ -130,10 +71,6 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
         return Unresolved(placeholder);
     }
 
-    /// <summary>
-    /// Which stat a token's coefficient multiplies. A token naming the relative attribute takes the
-    /// hero's, or the one the caller named outright when they gave a stat rather than a hero.
-    /// </summary>
     private string? Attribute(string? attribute, TooltipQuery query, HeroEntry? hero)
     {
         if (attribute is null) return null;
@@ -141,18 +78,12 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
 
         if (hero is not null) return hero.PrimaryStat;
 
-        // No hero, but a caller who sent exactly one of the three primary stats has named it.
         var named = Primary.Where(query.Stats.ContainsKey).ToArray();
         return named.Length == 1 ? named[0] : null;
     }
 
     private static readonly string[] Primary = ["Strength", "Intellect", "Agility"];
 
-    /// <summary>
-    /// The number, or the band around it. Spread is the total width rather than a plus or minus, so
-    /// a spread of 0.2 is 90 to 110 percent of the mean and not 80 to 120. A spread the build does
-    /// not state is not a band: the number is printed as it stands.
-    /// </summary>
     private Substitution Banded(
         Placeholder placeholder, double coefficient, decimal stat, string attribute, string? school)
     {
@@ -174,11 +105,6 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
             Format(placeholder, school, low, high));
     }
 
-    /// <summary>
-    /// What a coefficient reads as with no stat behind it. This is the export's own form and is a
-    /// real answer rather than a failure: "584.82% of Intellect" is what the game's own tooltip
-    /// shows before a character is attached to it.
-    /// </summary>
     private Substitution Unscaled(Placeholder placeholder, double coefficient, string? attribute)
     {
         var share = Percent(coefficient) + "%";
@@ -189,10 +115,6 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
             : null);
     }
 
-    /// <summary>
-    /// A token that prints a number outright. Seconds is the only unit the build ever asks for, and
-    /// it asks through the shipped print formats rather than by spelling the word.
-    /// </summary>
     private Substitution Number(Placeholder placeholder, double value, decimal? haste)
     {
         if (placeholder.Percent == true || placeholder.Format == "percent")
@@ -202,17 +124,10 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
 
         var (quickened, title) = Quickened(placeholder, (decimal)value, haste);
 
-        // A quickened tickrate keeps a second place. One is enough for a damage number and loses
-        // too much here: Incinerate's 0.5s interval at 30% haste is 0.3846, and rounding it to 0.4
-        // is the difference between six ticks in the channel and five.
         var number = title is null ? Round(quickened) : Round(quickened, 2);
 
         if (placeholder.Unit is null) return new Substitution(number, title);
 
-        // The unit is spoken only where the sentence leaves the word out, and the shipped format
-        // that speaks it carries the game's own emphasis. Rendered rather than stripped, so
-        // "every 3 seconds" keeps the weight the game gives it, with the plain reading kept beside
-        // it for the title and for anywhere the markup is not wanted.
         var name = quickened == 1m ? "UnitSecondSingular" : "UnitSeconds";
         var printed = Print(name, number);
 
@@ -222,50 +137,22 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
             printed is null ? null : renderer.Render(printed));
     }
 
-    /// <summary>
-    /// A period shortened by the caller's haste, with the sentence that explains it.
-    ///
-    /// Haste raises the rate an effect ticks at rather than shortening the window it ticks in: a
-    /// channelled ability runs for the time it states and lands more ticks inside it. So this
-    /// applies to a period and to nothing else - not to the channel, not to the cast, not to a
-    /// duration, which are lengths rather than rates.
-    ///
-    /// The build declares which abilities haste reaches and never the arithmetic. The cooldown
-    /// magnitude that reads Haste, GEC_CooldownReductionAndHasteMagnitude, computes in Blueprint
-    /// bytecode this project does not recover. Treating haste as a rate, so an interval divides by
-    /// 1 + haste, is this reader's reading and not the build's, which is why the title always states
-    /// the number before it and the haste applied: a figure nobody can derive from the export is
-    /// never presented as one that came out of it.
-    /// </summary>
     private static (decimal Value, string? Title) Quickened(
         Placeholder placeholder, decimal value, decimal? haste)
     {
-        // An effect that declares its tickrate out of haste keeps its period whatever the wearer
-        // holds, which is the one case the build states outright rather than by default.
         if (placeholder.Tickrate is not true || placeholder.IgnoresHaste is true) return (value, null);
         if (haste is not { } fraction || fraction <= 0) return (value, null);
 
-        // The divisor keeps enough places to be checkable: 8% haste divides by 1.08, and rounding
-        // that to 1.1 states arithmetic the number beside it did not come from.
         return (
             value / (1m + fraction),
             $"{Round(value)}s at no haste, divided by {Round(1m + fraction, 4)} for {Share(fraction)}% haste");
     }
 
-    /// <summary>A fraction as the percentage a reader recognises, kept in decimal throughout.</summary>
     private static string Share(decimal fraction) =>
         (fraction * 100m).Normalize().ToString(CultureInfo.InvariantCulture);
 
-    /// <summary>
-    /// The number wrapped in the sentence the game writes it in. The shipped formats carry the
-    /// game's own markup, so the result is rendered rather than escaped, and a token that names no
-    /// damage school takes the plain form so a sentence already saying "fire" does not read "fire
-    /// damage magic damage".
-    /// </summary>
     private string? Format(Placeholder placeholder, string? school, string low, string? high = null)
     {
-        // A school variant applies only where the token asks for the school and there is a
-        // coefficient behind it. Two of the ten that ask are a radius rather than damage.
         var spoken = placeholder.ShowDamageType == true && placeholder.Coefficient is not null
             ? school
             : null;
@@ -274,16 +161,10 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
 
         if (!store.Vocabulary.PrintFormats.TryGetValue(name, out var format)) return null;
 
-        // The numbers go in before the format is rendered rather than through the substitution
-        // path, because the whole formatted run is already one substitution. Passing them as
-        // substitutions of their own wraps each number in a second marker inside the first, which
-        // draws the dotted underline twice and nests one help cursor in another.
         var filled = format
             .Replace("{0}", low, StringComparison.Ordinal)
             .Replace("{1}", high ?? string.Empty, StringComparison.Ordinal);
 
-        // Rendered rather than pre-escaped: the renderer escapes the text between tags itself, and
-        // encoding here as well would escape the escapes.
         return renderer.Render(filled);
     }
 
@@ -292,7 +173,6 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
             ? text.Replace("{0}", value, StringComparison.Ordinal)
             : null;
 
-    /// <summary>The shipped formats carry markup that a plain-text reading has no use for.</summary>
     private static string? Strip(string? text)
     {
         if (text is null) return null;
@@ -305,25 +185,14 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
         return text;
     }
 
-    /// <summary>
-    /// A coefficient as a percentage. Read through decimal because 48 of the shipped coefficients
-    /// are values a double cannot hold exactly, and multiplying those by 100 as a double prints
-    /// digits the build never contained.
-    /// </summary>
     private static string Percent(double value) =>
         ((decimal)value * 100m).Normalize().ToString(CultureInfo.InvariantCulture);
 
-    /// <summary>Whole numbers print whole, and the rest keep one place unless asked for more.</summary>
     private static string Round(decimal value, int places = 1) =>
         Math.Round(value, places).Normalize().ToString(CultureInfo.InvariantCulture);
 }
 
 internal static class DecimalExtensions
 {
-    /// <summary>
-    /// Drops the trailing zeroes a decimal carries as scale, so 5.80 prints as 5.8 and 12.00 as 12.
-    /// A decimal remembers how many places it was written to and prints them all, which turns a
-    /// tidy coefficient into a number with a tail nobody typed.
-    /// </summary>
     public static decimal Normalize(this decimal value) => value == 0m ? 0m : value / 1.000000000000000000000000000m;
 }

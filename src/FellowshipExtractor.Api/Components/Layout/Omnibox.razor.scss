@@ -47,7 +47,6 @@
 .cx-omnibox-hit[data-active] { background: var(--raised); text-decoration: none; }
 .cx-omnibox-hit .cx-t { flex: 1 1 auto; min-width: 0; }
 
-/* A different element from the .cx-nm in the results table, which is an EntityLink. */
 .cx-omnibox-hit .cx-nm {
   display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -57,8 +56,6 @@
 }
 .cx-omnibox-hit .cx-ty { flex: 0 0 auto; font-size: 11px; color: var(--muted); }
 
-/* The <mark> runs are emitted by this component element by element rather than as one
-   MarkupString, so they carry its attribute and need no ::deep. */
 .cx-omnibox-hit mark { background: transparent; color: var(--gold-bright); text-decoration: underline; }
 
 .cx-omnibox-all {

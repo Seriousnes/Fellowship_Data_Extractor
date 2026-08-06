@@ -1,22 +1,5 @@
 @inject TooltipView Ui
 
-@* One entity as the game draws it: a self-contained, self-styled fragment.
-
-   The same component answers both readers. The entity page places it directly, where it lands in
-   the page's own DOM and the global stylesheet's @@scope (body) to (.fx-tip) stops page rules at
-   its root. The API renders it to a string for callers who have no page at all, and the client
-   paints that into a shadow root no stylesheet of this app enters. The <style> below is what makes
-   both work, so it travels inside the fragment and this component owns no .razor.scss.
-
-   The blocks are placed here rather than left to guard themselves, because the separator between
-   two of them is markup and a component cannot be asked whether it rendered anything. TooltipView
-   answers which blocks this reading has anything to say in, in order; a rule goes above every one
-   but the first.
-
-   Each block is prefixed Tip. Razor resolves a component tag only against the @@using directives in
-   scope - a sibling in the same namespace does not win, and does not even tie - so blocks named
-   Identity, Facts, Prose, Overflow and Legendaries would bind silently to the design system's
-   components of those names instead of to these. *@
 <div class="@TooltipView.Root" style="@Ui.Variables(Rung)">
     <style>@Sheet</style>
     @if (Art is { } art)
@@ -25,14 +8,12 @@
     }
     <div class="card">
         <header class="head">
-            @* The row's public name, which for more than half of them is "Effect 2018" rather than
-               a display name. Falling back to the gameplay tag put the build's own spelling in the
-               one place a tooltip is certain to be read. *@
-            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
             @if (Ui.Ornament(Rung) is { } ornament)
             {
                 <img class="orn" alt="" src="@ornament">
             }
+
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
         </header>
         @if (shown.Count > 0)
         {
@@ -41,9 +22,6 @@
                 {
                     @if (block != shown[0]) { <hr class="rule"> }
 
-                    @* Every string-typed parameter is passed as @@Expression. A bare Temper="Temper"
-                       is the literal word, because razor reads an unprefixed attribute value on a
-                       string parameter as text rather than as code. *@
                     switch (block)
                     {
                         case TooltipView.Block.Identity:
@@ -85,13 +63,10 @@
 </div>
 
 @code {
-    /// <summary>The reading being drawn, already resolved to one hero's version where it has one.</summary>
     [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
 
-    /// <summary>What the caller holds: their rung, item level, temperings, stats and hero.</summary>
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
-    /// <summary>The hero whose numbers the text is substituted with, or null for nobody's.</summary>
     [Parameter] public HeroEntry? Hero { get; set; }
 
     private RarityEntry? Rung;
@@ -104,11 +79,6 @@
 
     private string? Named;
 
-    /// <summary>
-    /// The fragment's stylesheet, as markup rather than as text. A string here is HTML-encoded on
-    /// the way out, which turns every font-family quote into &amp;quot; and every newline into a
-    /// character reference: the sheet still loads, still parses and styles nothing it should.
-    /// </summary>
     private MarkupString Sheet;
 
     private IReadOnlyList<TooltipView.Fact> facts = [];

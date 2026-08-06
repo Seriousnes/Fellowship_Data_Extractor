@@ -1,9 +1,5 @@
 namespace FellowshipExtractor.Api.Tests;
 
-/// <summary>
-/// BorrowedArt and BorrowedName are the same shape and are tested together: both take three
-/// strings, both disappear on a null Href, and both carry the whole of their prose in a note.
-/// </summary>
 public class BorrowedTests : BunitContext
 {
     [Fact]

@@ -31,10 +31,5 @@
 }
 
 @code {
-    /// <summary>
-    /// The record this panel draws, re-supplied by every Detail. This section resolves its own rows
-    /// rather than taking them as a parameter, because they are per talent group and a single
-    /// flattened list could not say which group a row belongs to.
-    /// </summary>
     [CascadingParameter] private Entity Entity { get; set; } = new();
 }

@@ -1,13 +1,5 @@
 @inject CodexView Ui
 
-@* The cascade is re-supplied here rather than once on the page, because Detail renders itself
-   again for Entity.Grants and once per legendary roll. A single cascade declared on the page would
-   flow past the nested Detail unchanged, and every section below it would draw the outer record
-   while its guard was evaluated on the inner one - including the Grants guard, which would then
-   recurse until the renderer stopped it. IsFixed is deliberately off: with it on, a Detail
-   re-rendered with a different entity keeps drawing the first. CascadingValue emits no element, so
-   the twelve panels stay siblings at the component root and .cx-panel + .cx-panel still spaces
-   them. *@
 <CascadingValue Value="Entity">
     <Wording />
     <Particulars Facts="Facts" Schools="Schools" Scaling="Scaling" />
@@ -28,48 +20,16 @@
 
     private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts = [];
 
-    /// <summary>
-    /// The damage schools this entry is, each with the filter it links into. The schools are the one
-    /// part of an ability's tag list a player meets; the rest of the list is the build's own
-    /// classification and is drawn nowhere.
-    /// </summary>
     private IReadOnlyList<(string Label, string Href)> Schools = [];
 
-    /// <summary>
-    /// The attributes this entry's numbers grow with, under the words the game prints for them.
-    ///
-    /// The export names 82 attributes across its scaling lists and the shipped table has a word for
-    /// 15, so two pills in three carry a tuning knob rather than a stat anybody wears and Damage
-    /// Scale stands beside Critical Strike. They are drawn rather than held back because a
-    /// coefficient and the knob it turns are what a reader opens a catalogue for; what has to stay
-    /// hidden is the run-together spelling, which the catalogue's own reading takes off.
-    /// </summary>
     private IReadOnlyList<string> Scaling = [];
 
-    /// <summary>
-    /// The shipped tuning numbers this entry reaches, under the words each one tunes. 3,239 rows of
-    /// the export carry them and they were reachable nowhere in the browser: they are the whole of
-    /// what a coefficient, a radius or a tick period is set to.
-    /// </summary>
     private IReadOnlyList<TuningRow> Rows = [];
 
-    /// <summary>
-    /// The substitutions the text above spends, numbered in the order it spends them. 207 rows carry
-    /// them; the count is small because a token is a number a sentence works out rather than a
-    /// number a row states, and a row with none has nothing to explain.
-    /// </summary>
     private IReadOnlyList<TokenReading> Tokens = [];
 
-    /// <summary>
-    /// The row this entry's name belongs to, resolved here because a section is given a record and
-    /// never an address. Null when the record ships its own name, and null when the naming row is
-    /// filed under a table no reader can open.
-    /// </summary>
     private (string Href, string? Tip, string Name)? Namer;
 
-    /// <summary>
-    /// The row this entry's art belongs to, on the same terms as <see cref="Namer"/>.
-    /// </summary>
     private (string Href, string? Tip, string Name)? Lender;
 
     private const string SchoolFacet = "school";
@@ -81,9 +41,6 @@
         Rows = Ui.Tuning(Entity.Constants);
         Tokens = Ui.Substitutions(Entity);
 
-        // Read through the school facet's own selector rather than repeating the rule for what a
-        // school is, because these pills link into that facet: a second copy could offer a value
-        // the filter behind the link does not recognise.
         IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
 
         Schools = [.. schools.Select(school => (school, Filter(school)))];
@@ -92,21 +49,11 @@
         Lender = Borrowed(Entity.IconInheritedFrom);
     }
 
-    /// <summary>
-    /// A lending row's address, tip and name, and null where the row is filed under a table no
-    /// reader can open, which is what makes the borrowed-name and borrowed-art panels disappear
-    /// rather than link nowhere.
-    /// </summary>
     private (string Href, string? Tip, string Name)? Borrowed(IconSource? source) =>
         source is not null && Ui.Addresses(source.Table, source.NetId) is { } found
             ? (found.Href, found.Tip, Ui.Name(source.Table, source.NetId))
             : null;
 
-    /// <summary>
-    /// A school pill's destination. A nested row - a granted ability, a legendary stat line -
-    /// carries no table of its own, so the type half of the query is left off rather than sent
-    /// empty, and a row of a non-public table can name no type at all.
-    /// </summary>
     private string Filter(string school) =>
         (PublicTypes.SlugOf(Entity.Table) is { } slug ? $"/browse?type={slug}&" : "/browse?") +
         $"{SchoolFacet}={Uri.EscapeDataString(school)}";

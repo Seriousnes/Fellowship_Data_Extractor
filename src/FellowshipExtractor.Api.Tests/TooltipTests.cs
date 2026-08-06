@@ -1,9 +1,5 @@
 namespace FellowshipExtractor.Api.Tests;
 
-/// <summary>
-/// The one component both readers of a tooltip go through: the entity page places it, and the API
-/// renders it to a string for callers who have no page.
-/// </summary>
 [Collection(Corpus.Name)]
 public class TooltipTests : BunitContext
 {
@@ -18,12 +14,6 @@ public class TooltipTests : BunitContext
     private IRenderedComponent<Components.Tooltip.Tooltip> Draw(Entity entity) =>
         Render<Components.Tooltip.Tooltip>(p => p.Add(x => x.Entity, entity));
 
-    /// <summary>
-    /// The fragment is painted into a shadow root that no stylesheet of this app enters, and is
-    /// served to callers who have no page at all, so it carries its whole stylesheet inside it and
-    /// owns no scoped sheet. A .razor.scss beside this component would bake scope attributes into
-    /// markup whose rules never load, and every hover tooltip would draw unstyled.
-    /// </summary>
     [Fact]
     public void Carries_its_own_stylesheet_and_no_scope_attribute()
     {
@@ -36,14 +26,6 @@ public class TooltipTests : BunitContext
         Assert.Contains(".fx-tip .desc{white-space:pre-line}", style, StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// The stylesheet reaches the page as CSS, not as encoded text.
-    ///
-    /// A string interpolated into markup is HTML-encoded, which turns every font-family quote into
-    /// &amp;quot; and every newline into &amp;#xA;. The sheet still loads and still parses, and the
-    /// declarations carrying a quoted family silently stop applying, so the tooltip draws in the
-    /// wrong face with a green build and every other assertion here still passing.
-    /// </summary>
     [Fact]
     public void Writes_the_stylesheet_as_css_rather_than_as_encoded_text()
     {
@@ -64,10 +46,6 @@ public class TooltipTests : BunitContext
         Assert.Equal("Frosted Cloak", cut.Find("header.head h3.title").TextContent);
     }
 
-    /// <summary>
-    /// A row with nothing to say past its name draws no body at all, which is what the string
-    /// renderer did by returning early when every block came back empty.
-    /// </summary>
     [Fact]
     public void Draws_no_body_when_the_row_states_nothing()
     {
@@ -76,15 +54,9 @@ public class TooltipTests : BunitContext
         Assert.Empty(cut.FindAll("div.lines"));
     }
 
-    /// <summary>
-    /// The separator goes between neighbours and never above the first block. Razor cannot ask
-    /// whether a child rendered anything, so a naive port emits a leading rule or doubles them
-    /// wherever a block is empty; this is the assertion that catches it.
-    /// </summary>
     [Fact]
     public void Rules_between_blocks_and_never_above_the_first()
     {
-        // Identity, prose and a set bonus: three blocks, so two rules, none of them leading.
         var entity = new Entity
         {
             Slot = "Back",
@@ -111,10 +83,6 @@ public class TooltipTests : BunitContext
         Assert.Empty(cut.FindAll("hr.rule"));
     }
 
-    /// <summary>
-    /// .desc is white-space: pre-line, so a newline the source indentation contributed would be a
-    /// rendered blank line. The paragraph holds the text and nothing else.
-    /// </summary>
     [Fact]
     public void Renders_a_description_with_no_whitespace_of_its_own()
     {
@@ -193,10 +161,6 @@ public class TooltipTests : BunitContext
         Assert.Equal("Ironhide, Emberweave", cut.Find("div.grp p.desc").TextContent);
     }
 
-    /// <summary>
-    /// Gems and items print the same tier under different words, and which ladder a row reads is
-    /// what its gem tier settles. That is domain vocabulary, not a formatting choice.
-    /// </summary>
     [Fact]
     public void Prints_a_gem_rung_under_the_gem_ladders_word()
     {
@@ -214,8 +178,6 @@ public class TooltipTests : BunitContext
         Assert.Equal(rung.DisplayName, asItem.Find("span.rar").TextContent);
     }
 
-    /// <summary>The item power the line prints, which the caller can set and a stat-rolling row
-    /// defaults to the top of the ladder.</summary>
     [Fact]
     public void Prints_the_item_level_the_caller_asked_for()
     {

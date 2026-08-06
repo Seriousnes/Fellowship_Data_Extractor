@@ -5,28 +5,6 @@ using CUE4Parse.UE4.Assets.Exports;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// The charge counts that only a named legendary supplies.
-///
-/// An ability's charge count is often kept in a row named for a talent, and a row named for a
-/// talent is usually unconditional - the talent was folded into the ability and left its name in
-/// the row. Five of them are not: a named augmentation, worn as a legendary, is the only thing that
-/// adds the charge, so the ability's baseline is one cast and the second charge belongs to the item.
-///
-/// Two tests find those five and neither finds them alone.
-///
-/// The first joins on the tag. A talent row is X.Y.Talent.Z.Field and the tag for that talent is
-/// Talents.X.Y.Z, so a named augmentation granting that exact tag is the granter. This is the only
-/// test that catches The Motherload, which grants Talents.Ink.BouncyProjectile.Charged and writes
-/// no prose at all, and it catches Iron Sentinel, Bleeding Hearts and Mass Entropy as well.
-///
-/// The second reads the prose. Unrelenting Thicket says "Your Ironleaf Ward has 2 charges" and
-/// Explosivo says "Your Apocalypse has 2 Charges", and neither joins on a tag: Unrelenting Thicket
-/// grants Talents.Mosse.CastedSingleTargetDamageReduction.AddCharges while the tuning rows sit
-/// under Mosse.SingleTargetCastedDamageReduction, and Explosivo's charge is not among the two tags
-/// it grants at all. The ability the count belongs to is the one named closest in front of it:
-/// Explosivo's sentence goes on to name Fire Ball, whose two charges are its own and must survive.
-/// </summary>
 public sealed class GrantedCharges
 {
     private const string AugmentationClass = "CRCharacterAugmentationAsset";
@@ -34,7 +12,6 @@ public sealed class GrantedCharges
     private const string TalentTagPrefix = "Talents.";
     private static readonly string[] TalentSegments = ["Talent", "Talents"];
 
-    /// <summary>A count of charges written out, as "2 charges" or "1 charge".</summary>
     private static readonly Regex ChargeCount = new(
         @"\b\d+\s+charges?\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -55,9 +32,6 @@ public sealed class GrantedCharges
             if (!asset.AssetClass.Text.Equals(AugmentationClass, StringComparison.OrdinalIgnoreCase)) continue;
             if (Load(provider, asset.ObjectPath) is not { } cdo) continue;
 
-            // Explosivo carries no text of its own and Loop of the Thundering Vortex carries no
-            // name; a wrapper asset's presentation is on the ability it grants, which is where the
-            // rest of the export reads it from too.
             var own = Display.From(null, cdo);
             var granted = own is { Name: not null, Description: not null } ? null : Granted(presentation, cdo);
 
@@ -76,15 +50,10 @@ public sealed class GrantedCharges
         }
     }
 
-    /// <summary>Whether a named augmentation is what supplies this talent row's charge count.</summary>
     public bool Supplies(string rowName, string? abilityName) =>
         (TalentTag(rowName) is { } tag && _tags.Contains(tag)) ||
         (abilityName is not null && _abilities.Contains(abilityName));
 
-    /// <summary>
-    /// The gameplay tag of the talent a tuning row is named for.
-    /// Gunde.HeavyMeleeDotBased.Talent.Charges.NumOfCharges is Talents.Gunde.HeavyMeleeDotBased.Charges.
-    /// </summary>
     private static string? TalentTag(string rowName)
     {
         var segments = rowName.Split('.');
@@ -94,11 +63,6 @@ public sealed class GrantedCharges
         return $"{TalentTagPrefix}{string.Join('.', segments[..at])}.{segments[at + 1]}";
     }
 
-    /// <summary>
-    /// The ability named closest in front of each charge count in a description. Every other name in
-    /// the text belongs to a different clause: Explosivo names Apocalypse before its count and Fire
-    /// Ball after it, and only the first is the ability the count is about.
-    /// </summary>
     private void Sweep(string description, IReadOnlyCollection<string> names)
     {
         var text = Markup.Replace(description, " ");
@@ -122,7 +86,6 @@ public sealed class GrantedCharges
         }
     }
 
-    /// <summary>Where a name last appears as a whole word before a position, or -1.</summary>
     private static int LastMention(string text, string name, int before)
     {
         var at = -1;
@@ -142,7 +105,6 @@ public sealed class GrantedCharges
     private static bool Inside(string text, int index) =>
         index >= 0 && index < text.Length && (char.IsLetterOrDigit(text[index]) || text[index] == '\'');
 
-    /// <summary>The presentation of the first ability an augmentation grants that has any.</summary>
     private static Display? Granted(AbilityPresentationIndex presentation, UObject augmentation)
     {
         foreach (var property in PropertyWalk.Walk(augmentation))

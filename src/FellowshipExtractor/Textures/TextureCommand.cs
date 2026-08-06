@@ -3,10 +3,6 @@ using CUE4Parse_Conversion.Textures;
 
 namespace FellowshipExtractor.Textures;
 
-/// <summary>
-/// Bulk-exports every texture whose container path matches a filter, mirroring the container
-/// layout under output/textures so an icon keeps the path the assets refer to it by.
-/// </summary>
 public static class TextureCommand
 {
     public static async Task RunAsync(ExtractorOptions options, string filter, string? formatName)
@@ -45,7 +41,6 @@ public static class TextureCommand
 
             foreach (var texture in textures)
             {
-                // One package can hold several textures, so the object name disambiguates.
                 var stem = Path.ChangeExtension(file.Path.Replace('/', Path.DirectorySeparatorChar), null)!;
                 var target = textures.Count == 1
                     ? Path.Combine(root, stem)

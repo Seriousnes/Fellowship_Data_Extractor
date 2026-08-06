@@ -6,12 +6,6 @@ using CUE4Parse_Conversion.Textures;
 using FellowshipExtractor.Textures;
 
 namespace FellowshipExtractor.Tooltip;
-
-/// <summary>
-/// Reconstructs what the game shows for one named entity and writes it out with the icon decoded
-/// to a real image. The resolution itself lives in <see cref="TooltipResolver"/> so the bulk
-/// export runs the same code over every tag and produces the same record.
-/// </summary>
 public static class TooltipCommand
 {
     public static async Task RunAsync(ExtractorOptions options, string table, string id)
@@ -60,8 +54,6 @@ public static class TooltipCommand
 
         var iconDir = Path.Combine(options.ResolvedOutputDir, "textures", "tooltip");
 
-        // The same call the bulk export makes, so what is checked here is what ships. An item that
-        // spreads into several named entries answers with all of them.
         var records = resolver.Resolve(tag.Value, IconWriterInto(provider, iconDir, reportFailures: true));
 
         var target = Path.Combine(options.ResolvedOutputDir, $"tooltip-{tag.Value.Table}-{tag.Value.NetId}.json");
@@ -81,12 +73,6 @@ public static class TooltipCommand
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    /// <summary>
-    /// Writes icons under one directory, decoding each texture once, and answers with the file
-    /// name. A cooked texture is block-compressed GPU data, so the path a presentation row carries
-    /// is not usable as an image until it has been through the decoder. Files are named after the
-    /// texture, so an icon several entities share is written once and they all agree on it.
-    /// </summary>
     public static IconWriter IconWriterInto(AbstractFileProvider provider, string directory, bool reportFailures)
     {
         var written = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
