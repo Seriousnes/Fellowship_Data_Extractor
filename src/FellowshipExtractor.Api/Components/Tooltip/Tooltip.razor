@@ -25,9 +25,8 @@
     }
     <div class="card">
         <header class="head">
-            @* The row's public name, which for more than half of them is "Effect 2018" rather than
-               a display name. Falling back to the gameplay tag put the build's own spelling in the
-               one place a tooltip is certain to be read. *@
+            @* The row's public name, which for nearly half of them is "Effect 2018" rather than a
+               display name - 5,997 of the 12,437 rows in the export carry none. *@
             <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
             @if (Ui.Ornament(Rung) is { } ornament)
             {
@@ -86,7 +85,7 @@
 
 @code {
     /// <summary>The reading being drawn, already resolved to one hero's version where it has one.</summary>
-    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
     /// <summary>What the caller holds: their rung, item level, temperings, stats and hero.</summary>
     [Parameter] public TooltipQuery Query { get; set; } = new();
@@ -126,7 +125,7 @@
         Sheet = new MarkupString(Ui.Style());
         facts = Ui.Facts(Entity, Query);
         rolls = Ui.Rolls(Entity, Query, Rung);
-        Named = Entity.Grants is null ? null : PublicTypes.DisplayNameOf(Entity.Grants);
+        Named = Ui.Granted(Entity) is { } grants ? PublicTypes.DisplayNameOf(grants) : null;
 
         shown = Ui.Blocks(Entity, Query, Rung, facts, rolls);
     }

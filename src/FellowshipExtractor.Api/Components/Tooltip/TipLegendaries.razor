@@ -1,7 +1,7 @@
 @inject TooltipView Ui
 
 @* The legendary rolls the item carries, counted beside their badge and drawn in export order. *@
-@if (Entity.LegendaryStats is { Count: > 0 } rolls)
+@if (Ui.LegendaryStats(Entity) is { Count: > 0 } rolls)
 {
     <div class="grp">
         <div class="sec legendary"><img class="gi" alt="" src="@Ui.Chrome.LegendaryBadge.Url"><span>Legendary Stats</span><span class="n">(@rolls.Count)</span></div>
@@ -11,16 +11,16 @@
             {
                 <p class="nm">@name</p>
             }
-            @if (roll.Description is { } text)
+            @if (DocumentFields.Text(roll, nameof(LegendaryStat.Description)) is { } text)
             {
-                <p class="desc">@Ui.Text(text, roll.Placeholders, Query, Hero, roll.Tags ?? Entity.Tags)</p>
+                <p class="desc">@Ui.Text(text, CodexView.PlaceholdersOf(roll), Query, Hero, [])</p>
             }
         }
     </div>
 }
 
 @code {
-    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
     [Parameter] public TooltipQuery Query { get; set; } = new();
 

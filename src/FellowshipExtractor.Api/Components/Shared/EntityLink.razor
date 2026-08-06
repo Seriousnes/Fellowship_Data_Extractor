@@ -12,7 +12,7 @@
 </a>
 
 @code {
-    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
     [Parameter] public string? Class { get; set; }
 

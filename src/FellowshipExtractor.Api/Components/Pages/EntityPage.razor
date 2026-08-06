@@ -1,4 +1,4 @@
-@page "/entity/{slug}/{netId:int}"
+@page "/entity/{slug}/{id:int}"
 @inject CodexView Ui
 @inject Codex Catalog
 @inject EntityStore Store
@@ -7,7 +7,7 @@
 @if (Readings.Count > 0)
 {
     <PageTitle>@Name - Fellowship Codex</PageTitle>
-    <Crumbs Trail="@(new List<(string, string?)> { (PublicTypes.Label(table), Under), (Name, null) })" />
+    <Crumbs Trail="@(new List<(string, string?)> { (PublicTypes.Label(type), Under), (Name, null) })" />
 
     <h1 style="color:@Ui.NameColour(Shown)">@Name</h1>
 
@@ -38,22 +38,22 @@
 
 @code {
     /// <summary>
-    /// The type's public slug, which is the only spelling this route answers to. A slug naming
-    /// nothing public leaves <see cref="table"/> null and the page answers 404, so a shipped table
-    /// name in the address opens no page rather than opening the page under a second name.
+    /// The type's public slug, which is the only spelling this route answers to. A slug naming no
+    /// <see cref="EntityType"/> leaves <see cref="type"/> null and the page answers 404, so a shipped
+    /// class name in the address opens no page rather than opening the page under a second name.
     /// </summary>
     [Parameter] public string Slug { get; set; } = string.Empty;
 
-    [Parameter] public int NetId { get; set; }
+    [Parameter] public int Id { get; set; }
 
     [SupplyParameterFromQuery(Name = "hero")] public string? Asked { get; set; }
 
-    /// <summary>The shipped table the slug names, resolved once and never drawn.</summary>
-    private string? table;
+    /// <summary>The type the slug names, resolved once and never drawn.</summary>
+    private EntityType type;
 
-    private IReadOnlyList<Entity> Readings = [];
+    private IReadOnlyList<EntityDocument> Readings = [];
 
-    private Entity Shown = new();
+    private EntityDocument Shown = default!;
 
     /// <summary>
     /// Everything the page's own sections draw, built in one place so that no section has to work
@@ -64,11 +64,11 @@
     private string Name => Ui.Name(Shown);
 
     /// <summary>
-    /// The browser, narrowed to this row's type. Built from the slug the type is filed under rather
-    /// than from the route's own spelling, so the crumb and the type row agree with the menu whatever
-    /// case a reader typed.
+    /// The browser, narrowed to this row's type. Built from the type the slug resolved to rather than
+    /// from the route's own spelling, so the crumb and the type row agree with the menu whatever case
+    /// a reader typed.
     /// </summary>
-    private string Under => $"/browse?type={PublicTypes.SlugOf(table)}";
+    private string Under => $"/browse?type={EntityTypes.Slug(type)}";
 
     /// <summary>
     /// The address that draws exactly what is on the stage, which is what a reader calling the API
@@ -94,7 +94,7 @@
         }
     }
 
-    private bool PicksHero => Readings.Count > 1 || Shown.Heroes is { Count: > 1 };
+    private bool PicksHero => Readings.Count > 1 || (Shown as Item)?.Heroes is { Count: > 1 };
 
     /// <summary>
     /// What the tooltip above is read at before a reader has turned anything. Only the hero, which
@@ -132,12 +132,13 @@
 
     protected override void OnParametersSet()
     {
-        table = PublicTypes.TableOf(Slug);
-        Readings = table is null ? [] : Store.All(table, NetId);
+        var resolved = EntityTypes.TryParse(Slug, out var named) ? named : (EntityType?)null;
+        type = resolved ?? default;
+        Readings = resolved is { } t ? Store.All(t, Id) : [];
 
         if (Readings.Count == 0)
         {
-            Shown = new Entity();
+            Shown = default!;
             Here = new Bearings();
             Nav.NotFound();
             return;
@@ -147,8 +148,8 @@
         // the row the tooltip endpoint resolves the same hero to. The page used to ask its own
         // narrower question and answer Readings[0] whenever that found nothing, which put a hero's
         // name in the address bar over somebody else's version of the item.
-        Shown = Asked is not null && Store.Hero(Asked) is { } named
-            ? Readings.FirstOrDefault(reading => EntityStore.Reads(reading, named)) ?? Readings[0]
+        Shown = Asked is not null && Store.Hero(Asked) is { } wearer
+            ? Readings.FirstOrDefault(reading => EntityStore.Reads(reading, wearer)) ?? Readings[0]
             : Readings[0];
 
         Here = new Bearings
@@ -157,11 +158,11 @@
             Readings = Readings,
             Reading = Drawn,
             Address = Address,
-            Page = Ui.Href(table, NetId),
+            Page = Ui.Href(type, Id),
             Under = Under,
-            Label = PublicTypes.Label(table),
-            Noun = PublicTypes.Noun(table),
-            NetId = NetId,
+            Label = PublicTypes.Label(type),
+            Noun = PublicTypes.Noun(type),
+            Id = Id,
             Related = Nearby(),
         };
     }
@@ -176,7 +177,7 @@
             if (Catalog.Facet(facet) is not { } definition) return;
 
             var count = Store.Entities.Count(row =>
-                row.Table == Shown.Table && definition.Matches(row, [value]));
+                EntityTypes.TypeOf(row) == type && definition.Matches(row, [value]));
 
             if (count < 2) return;
 
@@ -190,14 +191,23 @@
         }
 
         // Every axis a reader can be sent along is one the game itself prints: a slot, a set, a gem
-        // type, a trait category, a hero, a school of magic. The loot rule set an item rolls under
-        // is the one shared field that is a shipped spelling throughout, so it offers no way in.
-        Add("slot", Shown.Slot);
-        Add("set", Shown.SetBonus?.FirstOrDefault());
-        Add("gem", Shown.GemType);
-        Add("trait", Shown.TraitCategory);
-        Add("hero", Shown.Heroes?.Count == 1 ? Shown.Heroes[0] : null);
-        Add("school", Catalog.Facet("school")?.Values(Shown).FirstOrDefault());
+        // type, a trait category, a hero, a school of magic. Read through the catalogue's own facet
+        // selectors, the same ones the browse panel and its counts already read, so this offers no
+        // axis the panel itself would disagree about.
+        string? First(string key) => Catalog.Facet(key)?.Values(Shown).FirstOrDefault();
+
+        Add("slot", First("slot"));
+        Add("set", First("set"));
+        Add("gem", First("gem"));
+        Add("trait", First("trait"));
+
+        // Only where exactly one hero reads this row: a row naming several is not "more like this
+        // hero's", it is more like every hero's, and offering the link would send a reader looking
+        // for what several heroes already share.
+        var heroes = Catalog.Facet("hero")?.Values(Shown).ToArray() ?? [];
+        Add("hero", heroes.Length == 1 ? heroes[0] : null);
+
+        Add("school", First("school"));
 
         return nearby;
     }

@@ -1,7 +1,8 @@
 @inject CodexView Ui
 
 @* The cascade is re-supplied here rather than once on the page, because Detail renders itself
-   again for Entity.Grants and once per legendary roll. A single cascade declared on the page would
+   again for the ability an item grants and once per legendary roll. A single cascade declared on
+   the page would
    flow past the nested Detail unchanged, and every section below it would draw the outer record
    while its guard was evaluated on the inner one - including the Grants guard, which would then
    recurse until the renderer stopped it. IsFixed is deliberately off: with it on, a Detail
@@ -13,8 +14,6 @@
     <Particulars Facts="Facts" Schools="Schools" Scaling="Scaling" />
     <StatSlots />
     <Substitutions Tokens="Tokens" />
-    <Tuning Rows="Rows" />
-    <TalentTuning />
     <Ranks />
     <Overflow />
     <BorrowedName Href="@(Namer?.Href)" Tip="@(Namer?.Tip)" Name="@(Namer?.Name)" />
@@ -24,7 +23,7 @@
 </CascadingValue>
 
 @code {
-    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
     private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts = [];
 
@@ -47,23 +46,16 @@
     private IReadOnlyList<string> Scaling = [];
 
     /// <summary>
-    /// The shipped tuning numbers this entry reaches, under the words each one tunes. 3,239 rows of
-    /// the export carry them and they were reachable nowhere in the browser: they are the whole of
-    /// what a coefficient, a radius or a tick period is set to.
-    /// </summary>
-    private IReadOnlyList<TuningRow> Rows = [];
-
-    /// <summary>
-    /// The substitutions the text above spends, numbered in the order it spends them. 207 rows carry
-    /// them; the count is small because a token is a number a sentence works out rather than a
-    /// number a row states, and a row with none has nothing to explain.
+    /// The substitutions the text above spends, numbered in the order it spends them. 206 documents
+    /// of the export carry a non-empty placeholder list; the count is small because a token is a
+    /// number a sentence works out rather than a number a row states, and a row with none has nothing
+    /// to explain.
     /// </summary>
     private IReadOnlyList<TokenReading> Tokens = [];
 
     /// <summary>
     /// The row this entry's name belongs to, resolved here because a section is given a record and
-    /// never an address. Null when the record ships its own name, and null when the naming row is
-    /// filed under a table no reader can open.
+    /// never an address. Null when the record ships its own name.
     /// </summary>
     private (string Href, string? Tip, string Name)? Namer;
 
@@ -77,8 +69,7 @@
     protected override void OnParametersSet()
     {
         Facts = Ui.Facts(Entity);
-        Scaling = [.. Ui.Codex.Scaling(Entity.ScalesOff)];
-        Rows = Ui.Tuning(Entity.Constants);
+        Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(Ability.ScalesOff)))];
         Tokens = Ui.Substitutions(Entity);
 
         // Read through the school facet's own selector rather than repeating the rule for what a
@@ -88,26 +79,21 @@
 
         Schools = [.. schools.Select(school => (school, Filter(school)))];
 
-        Namer = Borrowed(Entity.NameInheritedFrom);
-        Lender = Borrowed(Entity.IconInheritedFrom);
+        Namer = Borrowed((Entity as Effect)?.NameBorrowedFrom);
+        Lender = Borrowed((Entity as Effect)?.ArtBorrowedFrom);
     }
 
     /// <summary>
-    /// A lending row's address, tip and name, and null where the row is filed under a table no
-    /// reader can open, which is what makes the borrowed-name and borrowed-art panels disappear
-    /// rather than link nowhere.
+    /// A lending row's address, tip and name. Every one of the corpus's borrowed-name and
+    /// borrowed-art references resolves to a real row, so this is never turned away for want of an
+    /// address the way it once could be for a non-public table.
     /// </summary>
-    private (string Href, string? Tip, string Name)? Borrowed(IconSource? source) =>
-        source is not null && Ui.Addresses(source.Table, source.NetId) is { } found
-            ? (found.Href, found.Tip, Ui.Name(source.Table, source.NetId))
+    private (string Href, string? Tip, string Name)? Borrowed(EntityReference? source) =>
+        source is not null && Ui.Addresses(source.Type, source.Id) is { } found
+            ? (found.Href, found.Tip, Ui.Name(source.Type, source.Id))
             : null;
 
-    /// <summary>
-    /// A school pill's destination. A nested row - a granted ability, a legendary stat line -
-    /// carries no table of its own, so the type half of the query is left off rather than sent
-    /// empty, and a row of a non-public table can name no type at all.
-    /// </summary>
+    /// <summary>A school pill's destination, narrowed to this entry's own type.</summary>
     private string Filter(string school) =>
-        (PublicTypes.SlugOf(Entity.Table) is { } slug ? $"/browse?type={slug}&" : "/browse?") +
-        $"{SchoolFacet}={Uri.EscapeDataString(school)}";
+        $"/browse?type={EntityTypes.Slug(EntityTypes.TypeOf(Entity))}&{SchoolFacet}={Uri.EscapeDataString(school)}";
 }

@@ -1,3 +1,5 @@
+using Fellowship.SDK.Documents;
+
 namespace FellowshipExtractor.Api;
 
 /// <summary>
@@ -8,11 +10,14 @@ namespace FellowshipExtractor.Api;
 /// </summary>
 public sealed record Bearings
 {
-    /// <summary>The reading on screen, which is the asked-for hero's or the first one read.</summary>
-    public Entity Shown { get; init; } = new();
+    /// <summary>
+    /// The reading on screen, which is the asked-for hero's or the first one read. Null only on the
+    /// default instance a not-found page never draws sections from.
+    /// </summary>
+    public EntityDocument? Shown { get; init; }
 
     /// <summary>Every reading of this id, in the order the export was written.</summary>
-    public IReadOnlyList<Entity> Readings { get; init; } = [];
+    public IReadOnlyList<EntityDocument> Readings { get; init; } = [];
 
     /// <summary>
     /// The hero whose reading is shown, or null when the tooltip is nobody's in particular. A hero
@@ -35,7 +40,7 @@ public sealed record Bearings
     /// <summary>What one row of this type is called, for a sentence that counts them.</summary>
     public string Noun { get; init; } = string.Empty;
 
-    public int NetId { get; init; }
+    public int Id { get; init; }
 
     /// <summary>Where else a reader can be sent from here, already labelled and counted.</summary>
     public IReadOnlyList<(string Label, string Href, int Count)> Related { get; init; } = [];

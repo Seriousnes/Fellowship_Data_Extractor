@@ -1,6 +1,6 @@
 @inject CodexView Ui
 
-@if (Entity.Stats is { Count: > 0 } slots)
+@if ((Entity as Item)?.Stats is { Count: > 0 } slots)
 {
     var badge = slots.Count.ToString();
     <Panel Head="Stat slots" Badge="@badge">
@@ -23,7 +23,7 @@
 
 @code {
     /// <summary>The record this panel draws, re-supplied by every Detail.</summary>
-    [CascadingParameter] private Entity Entity { get; set; } = new();
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 
     /// <summary>
     /// Whether a slot draws on the primary pool, which is what the game draws its line in the

@@ -23,15 +23,15 @@ else
             var across = Results.AcrossTypes.ToString("N0");
         }
         <a class="cx-tab" href="@View.Replace("type", null)"
-           aria-current="@(Query.Tables.Count == 0 ? "page" : null)">
+           aria-current="@(Query.Types.Count == 0 ? "page" : null)">
             All <CountBadge Text="@across" />
         </a>
-        @foreach (var type in Catalog.Types.Where(t => Results.Types.ContainsKey(t.Table) || Query.ChosenType(t.Table)))
+        @foreach (var type in Catalog.Types.Where(t => Results.Types.ContainsKey(t.Type) || Query.ChosenType(t.Type)))
         {
-            var counted = Results.Types.GetValueOrDefault(type.Table).ToString("N0");
+            var counted = Results.Types.GetValueOrDefault(type.Type).ToString("N0");
 
-            <a class="cx-tab" href="@View.Replace("type", type.Table)"
-               aria-current="@(Query.ChosenType(type.Table) ? "page" : null)">
+            <a class="cx-tab" href="@View.Replace("type", type.Slug)"
+               aria-current="@(Query.ChosenType(type.Type) ? "page" : null)">
                 @type.Label <CountBadge Text="@counted" />
             </a>
         }
@@ -190,31 +190,32 @@ else
                                 }
 
                                 <tr>
-                                    <td class="cx-art"><Icon Src="@Ui.Icon(row.Icon)" /></td>
+                                    @{ var item = row as Item; }
+                                    <td class="cx-art"><Icon Src="@Ui.Icon(DocumentFields.Text(row, nameof(Item.Icon)))" /></td>
                                     <td><EntityLink Entity="row" Class="cx-nm" /></td>
-                                    <td>@Codex.Label(row.Table!)</td>
+                                    <td>@Codex.Label(EntityTypes.TypeOf(row))</td>
                                     @if (ShowSlot)
                                     {
-                                        <td>@row.Slot</td>
+                                        <td>@item?.Slot</td>
                                     }
                                     @if (ShowWorn)
                                     {
                                         <td>
-                                            @if (row.ArmorType is not null)
+                                            @if (item?.ArmorType is { } armor)
                                             {
-                                                <Chip>@row.ArmorType</Chip>
+                                                <Chip>@armor</Chip>
                                             }
-                                            @if (row.PrimaryStat is not null)
+                                            @if (item?.PrimaryStat is { } stat)
                                             {
-                                                <Chip>@Ui.Store.StatName(row.PrimaryStat)</Chip>
+                                                <Chip>@stat</Chip>
                                             }
-                                            @foreach (var hero in (row.Heroes ?? []).Take(3))
+                                            @foreach (var hero in (item?.Heroes ?? []).Take(3))
                                             {
-                                                <Chip Colour="@Ui.HeroColour(hero)">@hero</Chip>
+                                                <Chip Colour="@Ui.HeroColour(hero.ToString())">@hero</Chip>
                                             }
-                                            @if (row.Heroes is { Count: > 3 })
+                                            @if (item?.Heroes is { Count: > 3 } heroes)
                                             {
-                                                <Chip>+@(row.Heroes.Count - 3)</Chip>
+                                                <Chip>+@(heroes.Count - 3)</Chip>
                                             }
                                         </td>
                                     }
@@ -282,7 +283,7 @@ else
 
     private CodexQuery Query = new();
 
-    private CodexResults Results = new(0, 1, 1, [], [], new Dictionary<string, int>(), 0, []);
+    private CodexResults Results = new(0, 1, 1, [], [], new Dictionary<EntityType, int>(), 0, []);
 
     private BrowseView View = default!;
 
@@ -291,18 +292,19 @@ else
     private string Heading =>
         Query.Text is { } typed
             ? $"Search results for “{typed}”"
-            : Query.Tables.Count == 1
-                ? Codex.Label(Query.Tables[0])
+            : Query.Types.Count == 1
+                ? Codex.Label(Query.Types[0])
                 : "Browse the codex";
 
     private Facet? Grouping => Query.Group is null ? null : Catalog.Facet(Query.Group);
 
     private IReadOnlyList<Measure> Columns => View.Columns;
 
-    private bool ShowSlot => Results.Rows.Any(r => r.Slot is not null);
+    private bool ShowSlot => Results.Rows.Any(r => (r as Item)?.Slot is not null);
 
     private bool ShowWorn =>
-        Results.Rows.Any(r => r.ArmorType is not null || r.PrimaryStat is not null || r.Heroes is { Count: > 0 });
+        Results.Rows.Any(r => r is Item { ArmorType: not null } or Item { PrimaryStat: not null } or
+            Item { Heroes: { Count: > 0 } });
 
     // The schools a row carries, never the rest of its tags. A tag list is the build's own filing
     // and reads as Skill.Secondary and TrackCooldown; the schools are the part of it the game prints

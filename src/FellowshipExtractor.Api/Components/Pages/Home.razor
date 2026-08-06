@@ -17,7 +17,7 @@
     <div class="cx-roster">
         @foreach (var hero in Store.Vocabulary.Heroes.OrderBy(h => h.Name, StringComparer.OrdinalIgnoreCase))
         {
-            <a href="/browse?type=items&hero=@Uri.EscapeDataString(hero.Name)"
+            <a href="/browse?type=@ItemSlug&hero=@Uri.EscapeDataString(hero.Name)"
                style="color:@(Ui.HeroColour(hero.Name) ?? "var(--muted)")">
                 <span class="cx-pip" style="background:@(Ui.HeroSwatch(hero.Name) ?? "var(--muted)")"></span>
                 <span class="cx-who">@hero.Name</span>
@@ -59,10 +59,10 @@
             {
                 <EntityLink Entity="entity" Class="cx-card" Tint="false">
                     <span class="cx-linked">
-                        <Icon Src="@Ui.Icon(entity.Icon)" />
+                        <Icon Src="@Ui.Icon(DocumentFields.Text(entity, nameof(Item.Icon)))" />
                         <span>
                             <span class="cx-card-name" style="color:@Ui.NameColour(entity)">@PublicTypes.NameOf(entity)</span><br />
-                            <span class="cx-card-count">@Codex.Label(entity.Table!)</span>
+                            <span class="cx-card-count">@Codex.Label(EntityTypes.TypeOf(entity))</span>
                         </span>
                     </span>
                 </EntityLink>
@@ -77,16 +77,27 @@
     /// <summary>The roster's badge, which counts heroes rather than entries.</summary>
     private string Roster => $"{Store.Vocabulary.Heroes.Count} heroes";
 
-    private IReadOnlyList<Entity> Showcase =>
+    private static readonly string ItemSlug = EntityTypes.Slug(EntityType.Item);
+
+    /// <summary>
+    /// A sample row of each type, richest first. Every row the extractor writes is one a reader can
+    /// meet - the drop rules already keep the rest out of the export - so there is no narrower
+    /// "public" test left to run, unlike the flat model's own table check.
+    ///
+    /// "Richest" is a description's length alone: the flat model's own scoring also weighted a row's
+    /// shipped tuning-knob count, which no document class carries any more.
+    /// </summary>
+    private IReadOnlyList<EntityDocument> Showcase =>
     [
         .. Store.Entities
-            .Where(e => PublicTypes.IsPublic(e.Table))
-            .Where(e => PublicTypes.DisplayNameOf(e) is not null && e.Icon is not null && e.Description is not null)
-            .GroupBy(e => e.Table!, StringComparer.Ordinal)
+            .Where(e => PublicTypes.DisplayNameOf(e) is not null &&
+                DocumentFields.Text(e, nameof(Item.Icon)) is not null &&
+                DocumentFields.Text(e, nameof(Ability.Description)) is not null)
+            .GroupBy(EntityTypes.TypeOf)
             .SelectMany(group => group
-                .OrderByDescending(e => (e.Description?.Length ?? 0) + (e.Constants?.Count ?? 0) * 20)
+                .OrderByDescending(e => DocumentFields.Text(e, nameof(Ability.Description))?.Length ?? 0)
                 .Take(2))
-            .OrderBy(e => Codex.Label(e.Table), StringComparer.OrdinalIgnoreCase)
+            .OrderBy(e => Codex.Label(EntityTypes.TypeOf(e)), StringComparer.OrdinalIgnoreCase)
             .ThenBy(e => PublicTypes.NameOf(e), StringComparer.OrdinalIgnoreCase)
             .Take(8),
     ];

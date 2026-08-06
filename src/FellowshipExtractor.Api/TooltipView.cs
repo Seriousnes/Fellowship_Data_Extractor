@@ -233,16 +233,38 @@ public sealed class TooltipView(
 
     /// <summary>
     /// One passage of game text with the caller's own numbers substituted in, as rendered rich text.
+    ///
+    /// Takes the document's own ordered <see cref="Placeholder"/> list rather than a map, matching
+    /// what a document's own token-bearing field now is; <see cref="Placeholders.Resolve"/> still
+    /// wants a key-keyed map, because the renderer finds a substitution by the name between a
+    /// sentence's own <c>{Token}</c> braces, so the map is built here rather than kept.
     /// </summary>
     public MarkupString Text(
         string source,
-        IReadOnlyDictionary<string, Placeholder>? substitutions,
+        IReadOnlyList<Placeholder>? substitutions,
         TooltipQuery query,
         HeroEntry? hero,
         IReadOnlyList<string>? tags) =>
         new(renderer.Render(
             source,
-            substitutions is null ? null : placeholders.Resolve(substitutions, query, hero, tags)));
+            substitutions is not { Count: > 0 } ? null : placeholders.Resolve(Keyed(substitutions), query, hero, tags)));
+
+    /// <summary>
+    /// A row's tokens keyed by their own name, for <see cref="Placeholders.Resolve"/>. Built with a
+    /// loop rather than <c>ToDictionary</c> so a key one row spent twice cannot throw, the same
+    /// safeguard <see cref="CodexView.PlaceholdersOf"/>'s own caller takes - measured over the export,
+    /// 0 duplicates found today, but nothing here depends on that staying true.
+    /// </summary>
+    private static IReadOnlyDictionary<string, Placeholder> Keyed(IReadOnlyList<Placeholder> tokens)
+    {
+        var keyed = new Dictionary<string, Placeholder>(tokens.Count, StringComparer.Ordinal);
+        foreach (var token in tokens)
+        {
+            if (token.Key is { } key) keyed[key] = token;
+        }
+
+        return keyed;
+    }
 
     /// <summary>
     /// The fragment's whole stylesheet, carried inside it.
@@ -400,4 +422,14 @@ public sealed class TooltipView(
         store.All(EntityType.RelicPower, id).Count > 0 ? (EntityType.RelicPower, id)
         : store.All(EntityType.WeaponPower, id).Count > 0 ? (EntityType.WeaponPower, id)
         : null;
+
+    /// <summary>
+    /// A legendary item's bonus stat lines, resolved to their own documents and drawn as nested
+    /// tooltips, in the order <see cref="Item.LegendaryStatIds"/> lists them. Empty on anything that
+    /// is not an item or names none.
+    /// </summary>
+    public IReadOnlyList<EntityDocument> LegendaryStats(EntityDocument document) =>
+        document is Item { LegendaryStatIds: { Count: > 0 } ids }
+            ? [.. ids.SelectMany(id => store.All(EntityType.LegendaryStat, id))]
+            : [];
 }

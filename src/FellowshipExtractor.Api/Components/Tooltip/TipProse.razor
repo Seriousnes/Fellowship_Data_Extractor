@@ -5,20 +5,24 @@
    .desc and .note are white-space: pre-line, so each paragraph is written on one line and carries
    no literal text: a newline from source indentation would be a rendered blank line. *@
 <div class="grp">
-    @if (Entity.Description is { } description)
+    @if (DocumentFields.Text(Entity, nameof(Ability.Description)) is { } description)
     {
-        <p class="desc">@Ui.Text(description, Entity.Placeholders, Query, Hero, Entity.Tags)</p>
+        <p class="desc">@Ui.Text(description, Tokens, Query, Hero, Schools)</p>
     }
-    @foreach (var detail in Entity.Detail ?? [])
+    @foreach (var detail in DocumentFields.Words(Entity, nameof(Ability.Detail)))
     {
-        <p class="note">@Ui.Text(detail, Entity.Placeholders, Query, Hero, Entity.Tags)</p>
+        <p class="note">@Ui.Text(detail, Tokens, Query, Hero, Schools)</p>
     }
 </div>
 
 @code {
-    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
     [Parameter] public HeroEntry? Hero { get; set; }
+
+    private IReadOnlyList<Placeholder> Tokens => CodexView.PlaceholdersOf(Entity);
+
+    private IReadOnlyList<string> Schools => Codex.Schools(Entity);
 }
