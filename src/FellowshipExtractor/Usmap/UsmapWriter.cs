@@ -6,12 +6,6 @@ public sealed record UsmapSchema(string Name, string? SuperName, IReadOnlyList<S
 
 public sealed record UsmapEnum(string Name, IReadOnlyList<string> Values);
 
-/// <summary>
-/// Writes the .usmap container, version 0 (Initial), uncompressed.
-///
-/// Uncompressed on purpose: CUE4Parse reads it either way, and a plain file can be inspected
-/// byte by byte when a schema comes out wrong.
-/// </summary>
 public sealed class UsmapWriter
 {
     private const ushort Magic = 0x30C4;
@@ -32,7 +26,6 @@ public sealed class UsmapWriter
 
     public void Write(string path, IReadOnlyList<UsmapSchema> schemas, IReadOnlyList<UsmapEnum> enums)
     {
-        // The name table is built while serialising, so the body is staged first.
         using var bodyStream = new MemoryStream();
         using var body = new BinaryWriter(bodyStream, Encoding.ASCII, leaveOpen: true);
 
@@ -100,7 +93,6 @@ public sealed class UsmapWriter
         writer.Write(bytes2);
     }
 
-    /// <summary>Schema entries carry their index, which is the position in the declared order.</summary>
     private static List<(SchemaProperty Property, int Index)> Flatten(IReadOnlyList<SchemaProperty> properties)
     {
         var result = new List<(SchemaProperty, int)>(properties.Count);
@@ -121,7 +113,6 @@ public sealed class UsmapWriter
         switch (type)
         {
             case UsmapPropertyType.EnumProperty:
-                // The underlying integer property, then the enum's name.
                 if (property.Inners.Count > 0) WriteType(writer, property.Inners[0]);
                 else writer.Write((byte)UsmapPropertyType.ByteProperty);
                 writer.Write(property.StructOrEnumName is { } enumName ? Name(enumName) : -1);

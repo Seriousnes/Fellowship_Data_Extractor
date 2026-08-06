@@ -16,16 +16,7 @@
 }
 
 @code {
-    /// <summary>The record this panel draws, re-supplied by every Detail.</summary>
     [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 
-    /// <summary>
-    /// Resolved through <see cref="TooltipView.LegendaryStats"/> rather than cascaded, because a
-    /// document carries its own bonus stats by id, resolved against the store, rather than nesting
-    /// the rolls' full records.
-    ///
-    /// The loop below is a for rather than a foreach so the key has a value, the index into the
-    /// list. The rolls are drawn in export order and never sorted.
-    /// </summary>
     private IReadOnlyList<EntityDocument> Rolls => Tips.LegendaryStats(Entity);
 }

@@ -1,5 +1,3 @@
-using Fellowship.SDK.Documents;
-
 namespace FellowshipExtractor.Api.Tests;
 
 [Collection(Corpus.Name)]
@@ -10,7 +8,7 @@ public class StatSlotsTests : BunitContext
     [Fact]
     public void Renders_nothing_without_stats()
     {
-        var cut = Render<StatSlots>(p => p.AddCascadingValue(new Item { Id = 1 }));
+        var cut = Render<StatSlots>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }));
 
         Assert.Empty(cut.Markup);
     }
@@ -18,7 +16,7 @@ public class StatSlotsTests : BunitContext
     [Fact]
     public void Renders_the_panel_its_badge_its_note_and_its_lines()
     {
-        var entity = new Item
+        var entity = new ItemDocument
         {
             Id = 1,
             Stats =
@@ -47,7 +45,7 @@ public class StatSlotsTests : BunitContext
     [Fact]
     public void Marks_a_primary_attribute_as_primary()
     {
-        var entity = new Item { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
+        var entity = new ItemDocument { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
 
         var cut = Render<StatSlots>(p => p.AddCascadingValue(entity));
 
@@ -57,7 +55,7 @@ public class StatSlotsTests : BunitContext
     [Fact]
     public void Draws_the_slots_in_export_order()
     {
-        var entity = new Item
+        var entity = new ItemDocument
         {
             Id = 1,
             Stats =

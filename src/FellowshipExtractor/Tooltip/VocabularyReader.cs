@@ -3,7 +3,6 @@ using System.Text.Json.Serialization;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>Reads a vocabulary sidecar back. The extractor writes one and cannot otherwise read one.</summary>
 public static class VocabularyReader
 {
     private static readonly JsonSerializerOptions Options = new()

@@ -1,9 +1,6 @@
 @inject TooltipView Ui
 
-@* The sets this piece counts towards. How many pieces each bonus asks for is stated on the set
-   bonus's own row rather than the item's - the typed model carries Pieces on SetBonus, not on
-   Item - so this reads only the names an item states, with no piece count beside them. *@
-@if ((Entity as Item)?.SetBonus is { Count: > 0 } sets)
+@if ((Entity as ItemDocument)?.SetBonus is { Count: > 0 } sets)
 {
     <div class="grp">
         <div class="sec setbonus"><img class="gi" alt="" src="@Ui.Chrome.SetBonusBadge.Url"><span>Set Bonus</span></div>

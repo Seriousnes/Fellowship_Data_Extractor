@@ -2,10 +2,6 @@ using CUE4Parse.MappingsProvider.Usmap;
 
 namespace FellowshipExtractor.Usmap;
 
-/// <summary>
-/// Builds a .usmap from the shipping binary's generated reflection tables, then reads it back
-/// with CUE4Parse so a malformed container fails here rather than during extraction.
-/// </summary>
 public static class UsmapGenerateCommand
 {
     public static Task RunAsync(ExtractorOptions options)
@@ -19,14 +15,6 @@ public static class UsmapGenerateCommand
         var claimed = structs.Where(s => s.Properties.Count > 0).Select(s => s.Properties[0].Va).ToHashSet();
         var classes = classScanner.ScanClasses(registrations, claimed);
 
-        // Struct and enum constructors are not in the class registration table, so decode the
-        // functions the properties actually reference and read the name off their params record.
-        //
-        // A super has to be decoded the same way, and it is not enough to decode only what
-        // properties point at: a base struct nothing is ever declared as - FRealCurve behind
-        // FSimpleCurve, for one - is referenced solely by its subclass's SuperFunc. Leaving it out
-        // wrote those structs with no super, which truncates their schema to the properties they
-        // declare themselves and makes every asset holding one unreadable.
         var paramsByVa = structs.ToDictionary(s => s.Va, s => s.Name);
         var decoded = TypeFuncResolver.Resolve(
             image,
@@ -56,9 +44,6 @@ public static class UsmapGenerateCommand
             Keep(schemas, new UsmapSchema(c.Name, super == c.Name ? null : super, built.Properties));
         }
 
-        // A base class that declares no properties of its own never gets an FClassParams property
-        // array, so it is absent here. Emit it as an empty schema, otherwise every derived class's
-        // super chain dangles and CUE4Parse cannot resolve inherited property indices.
         foreach (var super in schemas.Values.Select(s => s.SuperName).Where(n => n is not null).Distinct().ToArray())
         {
             if (!schemas.ContainsKey(super!)) schemas[super!] = new UsmapSchema(super!, null, []);
@@ -99,7 +84,6 @@ public static class UsmapGenerateCommand
         return Task.CompletedTask;
     }
 
-    /// <summary>The same type is emitted per translation unit; keep the richest copy.</summary>
     private static void Keep(Dictionary<string, UsmapSchema> schemas, UsmapSchema candidate)
     {
         if (!schemas.TryGetValue(candidate.Name, out var existing)

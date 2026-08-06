@@ -5,20 +5,6 @@ using CUE4Parse.UE4.Assets.Exports.Engine;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// The lookup tables a reader of entities.jsonl needs and no entity line can carry, written beside
-/// it as one small file.
-///
-/// Three of them, and each closes a question the entity stream leaves open. An item expands into
-/// rows keyed by armour type and primary stat and carries no hero at all, so hero=Ardeos picks a
-/// row only through an index that says Ardeos is Cloth and Intellect. A rarity arrives as a request
-/// parameter spelled the way the build files it rather than the way the game prints it. And a
-/// coefficient plus a spread is a band of numbers with no sentence around it until the shipped
-/// print formats say how a band is written.
-///
-/// These are tables rather than entities, which is why they are not lines in the entity stream: a
-/// reader asking for every hero should not have to filter twelve rows out of fourteen thousand.
-/// </summary>
 public sealed class Vocabulary
 {
     public const string FileName = "vocabulary.json";
@@ -31,45 +17,21 @@ public sealed class Vocabulary
     public IReadOnlyList<HeroEntry> Heroes { get; }
     public IReadOnlyList<RarityEntry> Rarities { get; }
 
-    /// <summary>
-    /// How the game writes a substituted number, keyed by the row name the UI asks for. A banded
-    /// number is DamageRange and its two damage-school variants; the sentence around it decides
-    /// which, and a token says whether it wants the school spoken at all through
-    /// <see cref="Placeholder.ShowDamageType"/>.
-    /// </summary>
     public IReadOnlyDictionary<string, string> PrintFormats { get; }
 
-    /// <summary>
-    /// The game's named colours, under the names the design system files them by. Every colour a
-    /// renderer needs is in here: the rarity ladder, the six gem types, the twelve heroes, the
-    /// three roles and the core text and surface palette.
-    ///
-    /// A rarity colour is keyed by the name the build files the rung under rather than the word it
-    /// prints, and those diverge at the top of the ladder. The gold under rarity-champion belongs
-    /// to the rung that prints as "Heroic", and the red under rarity-heroic to the one that prints
-    /// as "Regal", so a reader joining a printed word straight to a colour name gets the wrong one.
-    /// Go through <see cref="RarityEntry.Name"/>.
-    /// </summary>
     public IReadOnlyDictionary<string, string> Colors { get; }
 
-    /// <summary>
-    /// The styles a description's own markup names, so a renderer draws a tagged run in the colour
-    /// and weight the build states rather than one it picked.
-    /// </summary>
     public IReadOnlyDictionary<string, TextStyleEntry> TextStyles { get; }
 
-    /// <summary>
-    /// Everything the build states about turning an item level into stat magnitudes: the two pool
-    /// curves, the multipliers each kind of slot applies, what each equipment position is worth,
-    /// and the slots a rarity adds on top of the ones an item declares.
-    /// </summary>
     public StatCalculation StatCalculation { get; }
 
-    /// <summary>The stats a slot rolled at random can land on.</summary>
     public IReadOnlyList<string> RandomStatPool { get; }
 
-    /// <summary>The gem types the build ships, under the words it prints for them.</summary>
     public IReadOnlyList<string> GemTypes { get; }
+
+    public IReadOnlyDictionary<string, string> SlotIcons { get; }
+
+    public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; }
 
     public Vocabulary(
         AbstractFileProvider provider,
@@ -78,11 +40,15 @@ public sealed class Vocabulary
         RarityNames rarities,
         StatCalculation statCalculation,
         IReadOnlyList<string> randomStatPool,
-        IReadOnlyList<string> gemTypes)
+        IReadOnlyList<string> gemTypes,
+        SlotIcons slotIcons,
+        TemperCeilings tempers)
     {
         StatCalculation = statCalculation;
         RandomStatPool = randomStatPool;
         GemTypes = gemTypes;
+        SlotIcons = slotIcons.BySlot;
+        MaxTempers = tempers.ByRarity;
 
         var colours = Colours(provider, assets);
 
@@ -119,7 +85,6 @@ public sealed class Vocabulary
         }
     }
 
-    /// <summary>Writes the file beside the entity stream and answers with its size in bytes.</summary>
     public async Task<long> WriteAsync(string folder)
     {
         var target = Path.Combine(folder, FileName);
@@ -130,6 +95,8 @@ public sealed class Vocabulary
                 heroes = Heroes,
                 rarities = Rarities,
                 gemTypes = GemTypes,
+                maxTempers = MaxTempers,
+                slotIcons = SlotIcons,
                 printFormats = PrintFormats,
                 colors = Colors,
                 textStyles = TextStyles,
@@ -155,11 +122,6 @@ public sealed class Vocabulary
         return new FileInfo(target).Length;
     }
 
-    /// <summary>
-    /// The design system palette, every table of it. The rows are split across five tables by
-    /// purpose and a hero's asset names one row without saying which table it is in, so they are
-    /// read as one set.
-    /// </summary>
     private static Dictionary<string, string> Colours(
         AbstractFileProvider provider, IReadOnlyList<FAssetData> assets) =>
         Rows(provider, assets, ColorRowStructure, ColorField);

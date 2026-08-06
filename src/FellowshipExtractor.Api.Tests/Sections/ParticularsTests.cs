@@ -1,5 +1,3 @@
-using Fellowship.SDK.Documents;
-
 namespace FellowshipExtractor.Api.Tests;
 
 [Collection(Corpus.Name)]
@@ -10,7 +8,7 @@ public class ParticularsTests : BunitContext
     [Fact]
     public void Renders_nothing_when_the_entity_carries_none_of_it()
     {
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new Item { Id = 1 }));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }));
 
         Assert.Empty(cut.Markup);
     }
@@ -25,7 +23,7 @@ public class ParticularsTests : BunitContext
             ("Cost", "40", null, null, null),
         ];
 
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new Item { Id = 1 }).Add(x => x.Facts, facts));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }).Add(x => x.Facts, facts));
 
         var tables = cut.FindAll("table.cx-facts");
 
@@ -42,7 +40,7 @@ public class ParticularsTests : BunitContext
             ("Cooldown", "2.5", "s", null, null),
         ];
 
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new Item { Id = 1 }).Add(x => x.Facts, facts));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }).Add(x => x.Facts, facts));
 
         var tables = cut.FindAll("table.cx-facts");
 
@@ -58,7 +56,7 @@ public class ParticularsTests : BunitContext
             ("Resource", "Mana", null, "/browse?resource=Mana", "/api/tooltip/effect/9"),
         ];
 
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new Item { Id = 1 }).Add(x => x.Facts, facts));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }).Add(x => x.Facts, facts));
 
         var link = cut.Find("table.cx-facts a");
 
@@ -72,7 +70,7 @@ public class ParticularsTests : BunitContext
     {
         IReadOnlyList<(string Label, string Href)> schools = [("Fire", "/browse?type=ability&school=Fire")];
 
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new Item { Id = 1 }).Add(x => x.Schools, schools));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }).Add(x => x.Schools, schools));
 
         var head = cut.Find("div.cx-panel-head");
 
@@ -85,7 +83,7 @@ public class ParticularsTests : BunitContext
     {
         IReadOnlyList<(string Label, string Href)> schools = [("Fire", "/browse?type=ability&school=Fire")];
 
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new Item { Id = 1 }).Add(x => x.Schools, schools));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }).Add(x => x.Schools, schools));
 
         Assert.Equal("School", cut.Find("p.cx-sub-head").TextContent);
         Assert.Equal("/browse?type=ability&school=Fire", cut.Find("ul.cx-pills a").GetAttribute("href"));
@@ -100,21 +98,15 @@ public class ParticularsTests : BunitContext
             ("Frost", "/browse?type=ability&school=Frost"),
         ];
 
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new Item { Id = 1 }).Add(x => x.Schools, schools));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }).Add(x => x.Schools, schools));
 
         Assert.Equal("Schools", cut.Find("p.cx-sub-head").TextContent);
     }
 
-    /// <summary>
-    /// The hero facet reads a real roster name off <see cref="Item.Heroes"/> now, rather than the
-    /// flat model's free-text field, so the name this exercises can no longer be a fictional one
-    /// with a space in it. What is still under test is the same code path: the href is built through
-    /// <c>Uri.EscapeDataString</c> whether or not the particular name needs it.
-    /// </summary>
     [Fact]
     public void Links_each_hero_into_the_browser_with_an_escaped_name()
     {
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new Item { Id = 1, Heroes = [Hero.Aeona] }));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1, Heroes = [Hero.Aeona] }));
 
         Assert.Equal("Heroes", cut.Find("p.cx-sub-head").TextContent);
         Assert.Equal(
@@ -122,40 +114,30 @@ public class ParticularsTests : BunitContext
             cut.Find("ul.cx-pills a").GetAttribute("href"));
     }
 
-    /// <summary>
-    /// How many pieces a set bonus asks for is stated on the set bonus's own row in the typed model,
-    /// not the item's, so an item's own Details panel prints the set names with no piece count either
-    /// way - there is no longer a piece-count variant of this line to test apart from this one.
-    /// </summary>
     [Fact]
     public void Names_the_sets_an_item_counts_towards_with_no_piece_count()
     {
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new Item { Id = 1, SetBonus = ["Ironhide"] }));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1, SetBonus = ["Ironhide"] }));
 
         Assert.Equal("Set", cut.Find("p.cx-sub-head").TextContent);
         Assert.Equal("/browse?set=Ironhide", cut.Find("ul.cx-pills a").GetAttribute("href"));
     }
 
-    /// <summary>
-    /// Detail resolves the scaling list through the catalogue and hands it over already spaced, so
-    /// what this section is asked to do is draw it and give it no destination.
-    /// </summary>
     [Fact]
     public void Draws_the_stats_it_scales_off_and_gives_them_no_destination()
     {
         IReadOnlyList<string> scaling = ["Stat Crit"];
 
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new Item { Id = 1 }).Add(x => x.Scaling, scaling));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }).Add(x => x.Scaling, scaling));
 
         Assert.Equal("Scales off", cut.Find("p.cx-sub-head").TextContent);
         Assert.Equal("Stat Crit", cut.Find("ul.cx-pills li > span").TextContent);
     }
 
-    /// <summary>AllowedRoles and AllowedAttributes are the set bonus's own fields.</summary>
     [Fact]
     public void Offers_roles_then_attributes_in_one_list()
     {
-        var entity = new SetBonus
+        var entity = new SetBonusDocument
         {
             Id = 1,
             AllowedRoles = ["Tank", "Healer"],
@@ -182,7 +164,7 @@ public class ParticularsTests : BunitContext
     [Fact]
     public void Opens_the_panel_and_draws_only_its_head_for_attributes_alone()
     {
-        var entity = new SetBonus { Id = 1, AllowedAttributes = [PrimaryStat.Strength] };
+        var entity = new SetBonusDocument { Id = 1, AllowedAttributes = [PrimaryStat.Strength] };
 
         var cut = Render<Particulars>(p => p.AddCascadingValue(entity));
 

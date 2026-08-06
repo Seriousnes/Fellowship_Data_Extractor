@@ -8,21 +8,6 @@ using CUE4Parse.UE4.Objects.UObject;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// Everything the build states about turning an item level into stat magnitudes.
-///
-/// The magnitudes themselves are not in the build: an item declares which stats it has and the
-/// share of the budget each slot is worth, and the number a player reads is worked out from the
-/// item's level when the item is rolled. Every input to that arithmetic is shipped, so it is read
-/// here and published rather than restated by whoever draws the tooltip.
-///
-/// The two pool curves are the exception to the project's usual "read the data table" shape,
-/// because they are not a data table: they are the compiled bodies of
-/// HeroItemStatCalculation's two Calc*PoolFromItemLevel functions. The coefficients are read out
-/// of the Kismet bytecode and the shape of the expression is asserted, so a build that changes
-/// the numbers is picked up and a build that changes the formula fails loudly instead of
-/// publishing coefficients that no longer mean what they are named.
-/// </summary>
 public sealed class StatCalculation
 {
     private const string SettingsClass = "CRDynamicItemStatSettings";
@@ -39,39 +24,23 @@ public sealed class StatCalculation
     public PrimaryStatPool Primary { get; }
     public SecondaryStatPool Secondary { get; }
 
-    /// <summary>
-    /// The three settings blocks, keyed by the slot kind ECRDynamicItemSlotType names: the base
-    /// slot every item's primary attribute sits in, the slots an item spells out, and the ones a
-    /// rarity adds.
-    /// </summary>
     public SlotStatSettings BaseSlot { get; }
     public SlotStatSettings FixedSlot { get; }
     public SlotStatSettings DynamicSlot { get; }
 
-    /// <summary>The growth base, primary-and-stamina multiplier and rarity base, as shipped.</summary>
     public double PrimaryPowerBase { get; }
     public double PrimaryAndStaminaMultiplier { get; }
 
-    /// <summary>
-    /// One, in this build, which is the build stating that a rarity does not scale a stat's
-    /// magnitude. A rarity's effect on an item's stats is entirely the slots it adds.
-    /// </summary>
     public double StatRarityBase { get; }
 
-    /// <summary>The weight rows an item names, by the row name: "40.17.27" holds 40, 17 and 27.</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<int>> Weights { get; }
 
-    /// <summary>What each equipment position is worth, keyed by the slot name the game prints.</summary>
     public IReadOnlyDictionary<string, SlotWeight> SlotWeights { get; }
 
     public IReadOnlyDictionary<string, ArmorTypeWeight> ArmorWeights { get; }
 
     public IReadOnlyDictionary<string, AttributeDisplay> Attributes { get; }
 
-    /// <summary>
-    /// The slots each rarity adds, keyed by the rule set an item names and then by the tier. A
-    /// rule set is spelled without its tag prefix, as the item's own exported rule set is.
-    /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyDictionary<int, RaritySlots>> RarityAdditions { get; }
 
     public StatCalculation(
@@ -148,14 +117,6 @@ public sealed class StatCalculation
     private static double? Optional(IPropertyHolder holder, string field) =>
         PropertyWalk.AsNumber(PropertyWalk.Get(holder, field)?.GenericValue);
 
-    /// <summary>
-    /// The two pool curves, read out of the blueprint that computes them.
-    ///
-    /// Each function compiles to a straight run of assignments with no branching past the
-    /// minimum-level guard, so the calls it makes in order are the formula written out. The
-    /// sequence is checked against the shape the coefficients are named for; the numbers are
-    /// whatever the build holds.
-    /// </summary>
     private static (PrimaryStatPool, SecondaryStatPool) Pools(AbstractFileProvider provider)
     {
         var file = provider.Files.Values.FirstOrDefault(f =>
@@ -191,7 +152,6 @@ public sealed class StatCalculation
                 Multiplier: Constant(secondary, 4, SecondaryFunction)));
     }
 
-    /// <summary>One math call the compiled body makes, and the literal it was handed.</summary>
     private readonly record struct MathCall(string Function, double? Constant);
 
     private static IEnumerable<MathCall> Calls(KismetExpression[] bytecode)
@@ -270,9 +230,6 @@ public sealed class StatCalculation
 
         foreach (var (_, row) in Rows(provider, assets, ItemSlotNames.SlotWeightRowStructure))
         {
-            // Keyed by the ordinal rather than by the row label, because the labels are a
-            // designer's - the table calls ordinal 6 Gloves and ordinal 1 Necklace - and the
-            // export spells slots the way the game prints them.
             if (PropertyWalk.AsOrdinal(PropertyWalk.Get(row, "ItemType")?.GenericValue) is not { } ordinal) continue;
             if (slots.ByOrdinal(ordinal) is not { } slot) continue;
 
@@ -328,11 +285,6 @@ public sealed class StatCalculation
         return found;
     }
 
-    /// <summary>
-    /// A rating's diminishing-return bands, in the order the row states them. Kept in that order
-    /// rather than sorted: the bands are read as a run from the bottom up, and the shipped
-    /// CooldownReduction row states three of them at the same ceiling, which sorting would hide.
-    /// </summary>
     private static IReadOnlyList<RatingBracket>? Brackets(IPropertyHolder row)
     {
         if (PropertyWalk.Get(row, "Brackets")?.GenericValue is not UScriptArray array) return null;
@@ -372,7 +324,6 @@ public sealed class StatCalculation
                 SpecialSlots = Special(row),
             };
 
-            // An array of tags rather than a tag container, so each entry is read on its own.
             foreach (var ruleSet in Names(row, "RuleSets"))
             {
                 var name = ruleSet.StartsWith(RuleSetPrefix, StringComparison.OrdinalIgnoreCase)
@@ -394,7 +345,6 @@ public sealed class StatCalculation
             StringComparer.OrdinalIgnoreCase);
     }
 
-    /// <summary>The conditional slots a row grants, each under the name and condition it states.</summary>
     private static List<SpecialSlot> Special(IPropertyHolder row)
     {
         if (PropertyWalk.Get(row, "SpecialRandomizedSlots")?.GenericValue is not UScriptArray array) return [];

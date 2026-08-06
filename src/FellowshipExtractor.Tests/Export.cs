@@ -5,16 +5,6 @@ using FellowshipExtractor.Tooltip;
 
 namespace FellowshipExtractor.Tests;
 
-/// <summary>
-/// The export the tests read, loaded once for the whole run.
-///
-/// These tests exist to notice when the game's own numbers move, so they read what the extractor
-/// actually produced rather than a fixture checked in beside them. A fixture would keep passing
-/// through the patch it was meant to catch.
-///
-/// An export that is not there is a failure and not a skip. A skipped test reports green, which is
-/// the one outcome that would let a drifted build through unremarked.
-/// </summary>
 public sealed class Export
 {
     private const string Variable = "FELLOWSHIP_EXPORT";
@@ -26,17 +16,8 @@ public sealed class Export
 
     private static readonly Lazy<TooltipResolver> ResolverInstance = new(Build, isThreadSafe: true);
 
-    /// <summary>
-    /// A resolver over the cooked build, built once for the whole run. Mounting the containers is
-    /// the expensive part of every one of these tests and the state it produces is read only.
-    /// </summary>
     public static TooltipResolver Resolver => ResolverInstance.Value;
 
-    /// <summary>
-    /// The resolver, with the mappings it needs named before it is built. Without them the build
-    /// reads as a build that ships none of the tables these tests are about, so every test touching
-    /// the resolver would report the game having moved when the environment is what is missing.
-    /// </summary>
     private static TooltipResolver Build()
     {
         if (Environment.GetEnvironmentVariable(Mappings) is not { Length: > 0 } mappings)
@@ -70,10 +51,6 @@ public sealed class Export
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    /// <summary>
-    /// The route back from the slug a line carries to the type it names, built from
-    /// <see cref="EntityTypes.Slug"/> itself rather than a second table that could drift from it.
-    /// </summary>
     private static readonly IReadOnlyDictionary<string, EntityType> TypeBySlug =
         Enum.GetValues<EntityType>().ToDictionary(EntityTypes.Slug, type => type, StringComparer.Ordinal);
 
@@ -104,10 +81,6 @@ public sealed class Export
         return new Export { Vocabulary = vocabulary, Documents = documents, Folder = folder };
     }
 
-    /// <summary>
-    /// Where the export is. The environment names it when a caller has one somewhere of their own;
-    /// otherwise the repository's own output folder is found by walking up from the test binary.
-    /// </summary>
     private static string Folder_()
     {
         if (Environment.GetEnvironmentVariable(Variable) is { Length: > 0 } named)

@@ -1,12 +1,5 @@
-using Fellowship.SDK.Documents;
-
 namespace FellowshipExtractor.Api.Tests;
 
-/// <summary>
-/// Every attribute this section emits is a plain HTML attribute the client reads by selector, and
-/// each of them compiles cleanly if turned into a Blazor directive and then does nothing at all,
-/// because the page is statically rendered. So these assert on the rendered DOM.
-/// </summary>
 [Collection(Corpus.Name)]
 public class KnobsTests : BunitContext
 {
@@ -19,15 +12,15 @@ public class KnobsTests : BunitContext
         Services.AddSingleton(export.Store);
     }
 
-    private Item AnyHero() => export.Store.Vocabulary.Heroes[0] is { } who
-        ? new Item
+    private ItemDocument AnyHero() => export.Store.Vocabulary.Heroes[0] is { } who
+        ? new ItemDocument
         {
             Id = 1,
             Heroes = [Enum.Parse<Hero>(who.Name)],
             ArmorType = who.ArmorType is { } armor ? Enum.Parse<ArmorType>(armor) : null,
             PrimaryStat = Enum.Parse<PrimaryStat>(who.PrimaryStat),
         }
-        : new Item { Id = 1 };
+        : new ItemDocument { Id = 1 };
 
     [Fact]
     public void Renders_nothing_for_a_record_with_no_knob_to_turn()
@@ -54,7 +47,7 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Renders_every_rarity_rung_as_an_unpressed_button()
     {
-        var wearable = new Item { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
+        var wearable = new ItemDocument { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
         var here = new Bearings { Shown = wearable, Readings = [wearable] };
 
         var cut = Render<Knobs>(p => p.AddCascadingValue(here));
@@ -73,7 +66,7 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Renders_both_number_inputs_under_the_names_the_tooltip_api_reads()
     {
-        var wearable = new Item { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
+        var wearable = new ItemDocument { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
         var here = new Bearings { Shown = wearable, Readings = [wearable] };
 
         var cut = Render<Knobs>(p => p.AddCascadingValue(here));
@@ -85,15 +78,11 @@ public class KnobsTests : BunitContext
             cut.Find("input[data-knob=itemLevel]").GetAttribute("value"));
     }
 
-    /// <summary>
-    /// Clearing the hero is meaningful only where the shown reading itself lists more than one.
-    /// Offering it always would let a reader pick a hero-less reading of a per-hero item.
-    /// </summary>
     [Fact]
     public void Offers_an_any_option_only_where_the_id_has_one_reading()
     {
         var heroes = export.Store.Vocabulary.Heroes.Take(2).Select(h => Enum.Parse<Hero>(h.Name)).ToList();
-        var shared = new Item { Id = 1, Heroes = heroes };
+        var shared = new ItemDocument { Id = 1, Heroes = heroes };
 
         var one = Render<Knobs>(p => p.AddCascadingValue(
             new Bearings { Shown = shared, Readings = [shared] }));
@@ -110,7 +99,7 @@ public class KnobsTests : BunitContext
     public void Selects_the_hero_whose_reading_is_on_the_stage()
     {
         var who = export.Store.Vocabulary.Heroes[0];
-        var reading = new Item
+        var reading = new ItemDocument
         {
             Id = 1,
             Heroes = [Enum.Parse<Hero>(who.Name)],
@@ -130,8 +119,8 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Names_the_gem_ladder_for_a_gem_and_the_item_ladder_otherwise()
     {
-        var gem = new GemTier { Id = 1, Gem = GemTypeName.Amethyst, Tier = 3, Power = 1, Rarity = Rarity.Champion };
-        var wearable = new Item { Id = 2, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
+        var gem = new GemTierDocument { Id = 1, Gem = GemTypeName.Amethyst, Tier = 3, Power = 1, Rarity = Rarity.Champion };
+        var wearable = new ItemDocument { Id = 2, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
 
         var asGem = Render<Knobs>(p => p.AddCascadingValue(
             new Bearings { Shown = gem, Readings = [gem] }));

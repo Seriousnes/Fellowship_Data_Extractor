@@ -1,6 +1,7 @@
 using Fellowship.SDK.Documents;
-using FellowshipExtractor.Api;
+
 using FellowshipExtractor.Api.Components;
+using FellowshipExtractor.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,9 +9,6 @@ builder.AddServiceDefaults();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 
-// A field the row does not carry is left out rather than written as null, which is how the export
-// itself reads. Entities differ field by field - an item has stats, an ability has a cast time - so
-// a row written in full would be mostly nulls, and a reader could not see what it does say.
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.DefaultIgnoreCondition =
         System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);
@@ -74,9 +72,6 @@ app.MapGet("/api/search", (HttpContext http, Suggestions suggestions) =>
 {
     var limit = int.TryParse(http.Request.Query["limit"], out var wanted) ? Math.Clamp(wanted, 1, 100) : 10;
 
-    // A type that names nothing is answered rather than ignored. Narrowing to it silently would
-    // return no matches, which reads as "the build has none of those" instead of "there is no such
-    // type", and a caller cannot tell those two apart from an empty list.
     var asked = http.Request.Query["type"].ToString();
     var narrowed = string.IsNullOrWhiteSpace(asked) ? null : asked;
 
@@ -85,9 +80,6 @@ app.MapGet("/api/search", (HttpContext http, Suggestions suggestions) =>
         return PublicRoutes.NoSuchType(narrowed, StatusCodes.Status400BadRequest);
     }
 
-    // The slug is handed on as the slug, not the type it resolves to: Suggestions.For resolves its
-    // own argument, and it is the one place that resolution has to happen for the empty-type case
-    // above and the narrowing below to read the same slug the same way.
     return Results.Ok(suggestions.For(http.Request.Query["q"].ToString(), narrowed, limit));
 })
     .WithName("Search")
@@ -123,10 +115,6 @@ app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, EntityStore stor
 
     var readings = store.All(type, id);
 
-    // Projected, never handed over as it was read. The exported record is the extractor's reading of
-    // the row and carries the build's own name for it, and the typed document beside it still carries
-    // the build's own spellings this endpoint has to translate; this endpoint is a page a reader can
-    // open, so it answers with the reader's reading of the same row rather than the document's.
     return readings.Count == 0
         ? Results.Problem(
             title: "No such id.", detail: $"The build has no {PublicTypes.Noun(type)} {id}.",
@@ -138,30 +126,18 @@ app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, EntityStore stor
 
 app.MapGet("/api/catalog", (Codex codex, EntityStore store) =>
 {
-    // Faceted over the whole corpus. PublicTypes states every EntityType reaches a reader, so there
-    // is no narrower set of rows left to facet over: a facet counted here already agrees with the
-    // panel a filtered search draws beside its own results.
     var rows = store.Entities;
 
     return Results.Ok(new
     {
-        // The same number the footer of every page prints, read from the one place it is worked out,
-        // so the corpus a reader is told about is the corpus they can reach whichever surface tells
-        // them.
         entities = codex.Count,
 
-        // The types as a caller addresses them: the route slug, never the document class name it
-        // resolves to internally.
         types = codex.Types.Select(type => new { type.Slug, type.Label, type.Group, type.Count }),
         menu = codex.Menu,
         facets = codex.Facets.Select(facet => codex.View(facet, rows)),
         flags = codex.Flags.Select(flag => new { flag.Key, flag.Label }),
         measures = codex.Measures.Select(measure => new { measure.Key, measure.Label, measure.Unit }),
 
-        // The roster and the ladder as the game prints them. Both records carry a column the game
-        // never shows: a hero's codename is the asset spelling their files are named by, and a
-        // rarity's filed name is the word tier 4 is stored under while an item calls it Heroic and a
-        // gem calls it Flawless. This response is a page a reader can open, so neither is written.
         heroes = store.Vocabulary.Heroes.Select(hero => new
         {
             hero.Name,
@@ -182,21 +158,8 @@ app.MapGet("/api/catalog", (Codex codex, EntityStore store) =>
 
 app.Run();
 
-/// <summary>
-/// The type the top-level statements above compile into, made public so
-/// <c>WebApplicationFactory&lt;Program&gt;</c> can host this app from a test project. Otherwise
-/// unused: nothing in this file or any other references it by name.
-/// </summary>
 public partial class Program;
 
-/// <summary>
-/// The answer an address gives when the type it names is not one a reader can be addressed to.
-///
-/// The sentence itself is <see cref="PublicTypes.NoSuchType"/>, which the not-found page says too;
-/// this wraps it as a problem response. Only the status is decided here, and it differs by where
-/// the caller wrote the type: a path that names nothing is a page that does not exist, and a query
-/// value that names nothing is a request that cannot be answered.
-/// </summary>
 public static class PublicRoutes
 {
     public static IResult NoSuchType(string? asked, int status) => Results.Problem(
@@ -205,27 +168,16 @@ public static class PublicRoutes
         statusCode: status);
 }
 
-/// <summary>
-/// A component rendered to a string, for the callers who ask for markup rather than for a page.
-///
-/// The same component the pages place, so a tooltip a caller fetches and a tooltip the entity page
-/// draws cannot come to disagree: there is one definition of what a tooltip is, and this is the
-/// path to it for readers who have no browser.
-/// </summary>
 public sealed class Fragments(IServiceScopeFactory scopes, ILoggerFactory loggers)
 {
     public async Task<string> Render<T>(Dictionary<string, object?> parameters)
         where T : Microsoft.AspNetCore.Components.IComponent
     {
-        // A scope of its own, because the renderer resolves scoped services of the component model's
-        // and the root provider refuses to hand those out.
         await using var scope = scopes.CreateAsyncScope();
 
         await using var renderer = new Microsoft.AspNetCore.Components.Web.HtmlRenderer(
             scope.ServiceProvider, loggers);
 
-        // The renderer has a dispatcher of its own and every render has to run on it, the same way a
-        // component's lifecycle does anywhere else.
         return await renderer.Dispatcher.InvokeAsync(async () =>
         {
             var rendered = await renderer.RenderComponentAsync<T>(
@@ -238,22 +190,12 @@ public sealed class Fragments(IServiceScopeFactory scopes, ILoggerFactory logger
 
 public sealed class Tooltips(EntityStore store, Fragments fragments)
 {
-    /// <summary>
-    /// One tooltip, for the type <paramref name="type"/> names and the id beside it.
-    ///
-    /// The route handlers resolve a caller's slug before this is reached, because an address that
-    /// names no type is wrong in a way no parameter can fix, and this is called with a type already
-    /// in hand from <c>/api/ability</c> and <c>/api/item</c> besides.
-    /// </summary>
     public async Task<IResult> Get(EntityType type, int id, IQueryCollection request)
     {
         var query = TooltipQuery.Parse(request, store.Stats, out var error);
 
         if (error is not null)
         {
-            // The stats by the names the game prints for them, which are also the only names this
-            // accepts. The sentence is where a caller who mistyped one finds the right spelling, so
-            // listing the build's own would teach them an address that no longer resolves.
             return Results.Problem(
                 title: "The request parameters could not be read.",
                 detail: $"{error} Stat parameters are {string.Join(", ", store.Stats.Names)}.",
@@ -280,11 +222,18 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
+        foreach (var imbued in query.Traits)
+        {
+            if (store.All(TooltipView.TraitType, imbued.Id).Count > 0) continue;
+
+            return Results.Problem(
+                title: "No such item trait.",
+                detail: $"The build has no item trait {imbued.Id}.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
         var outcome = store.Resolve(type, id, query.Hero, out var document, out var hero);
 
-        // What the caller asked for, in the words they asked in: the type they addressed and the id
-        // they wrote. The readings are read once here rather than twice inside the sentence that
-        // needs them.
         var noun = PublicTypes.Noun(type);
         var readings = store.All(type, id);
 
@@ -307,9 +256,6 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
                 detail: $"The build has no {noun} {id}.",
                 statusCode: StatusCodes.Status404NotFound),
 
-            // The sentence is built around the count rather than opening on the thing, because the
-            // noun is lower case and the type it names has no capitalised spelling that is not the
-            // internal one.
             Lookup.NeedsHero => Results.Problem(
                 title: "This id reads differently per hero.",
                 detail: $"The build has {readings.Count} readings of {noun} {id} and no hero was given. " +
@@ -317,10 +263,6 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
                     string.Join("; ", readings.Select(Describe)) + ".",
                 statusCode: StatusCodes.Status400BadRequest),
 
-            // The hero is named back by the name the game prints rather than by whatever the caller
-            // typed, because a codename resolves as readily as a name and echoing one would put an
-            // asset spelling in the reply. The hero is known here: an unknown one was turned away
-            // above, so this outcome only arises for a hero the roster has.
             Lookup.NotForThatHero => Results.Problem(
                 title: "Not for that hero.",
                 detail: $"The build has no reading of {noun} {id} for {hero!.Name}.",
@@ -330,18 +272,11 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
         };
     }
 
-    /// <summary>
-    /// One reading of an ambiguous id, as the sentence offering a choice between them writes it. The
-    /// name is the reader's name for the row and never its gameplay tag, and the pair beside it is
-    /// the two things the readings of an id differ by: an item's armour type and primary stat for the
-    /// 188 item ids that split, and a talent slot's hero for the 19 that do, which is the one thing a
-    /// talent slot's own readings ever differ on.
-    /// </summary>
     private static string Describe(EntityDocument document) => document switch
     {
-        Item item => $"{PublicTypes.NameOf(item)} " +
+        ItemDocument item => $"{PublicTypes.NameOf(item)} " +
             $"[{item.ArmorType?.ToString() ?? "any"}/{item.PrimaryStat?.ToString() ?? "any"}]",
-        TalentSlot slot => $"{PublicTypes.NameOf(slot)} [{slot.Hero}]",
+        TalentSlotDocument slot => $"{PublicTypes.NameOf(slot)} [{slot.Hero}]",
         _ => PublicTypes.NameOf(document),
     };
 }

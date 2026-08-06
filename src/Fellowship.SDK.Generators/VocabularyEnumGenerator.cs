@@ -4,18 +4,13 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Fellowship.SDK.Generators;
 
-/// <summary>
-/// Declares the enumerated fields from the vocabulary the SDK commits, so the words the build states
-/// and the members C# offers cannot part company. The vocabulary is committed because a clone that
-/// cannot run the extractor still has to compile; the enums are not, because this reads them at
-/// every build.
-/// </summary>
 [Generator]
 public sealed class VocabularyEnumGenerator : IIncrementalGenerator
 {
@@ -72,10 +67,6 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
         return string.Equals(name, VocabularyName, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// Always declares all five fields, so a vocabulary this cannot read fails the build on the
-    /// diagnostic that says why rather than on every use of a type that then does not exist.
-    /// </summary>
     private static void Emit(SourceProductionContext context, ImmutableArray<string?> vocabularies)
     {
         var json = vocabularies.FirstOrDefault(static text => text is not null);
@@ -86,12 +77,12 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
             return;
         }
 
-        JsonValue root;
+        JsonDocument document;
         try
         {
-            root = JsonReader.Parse(json);
+            document = JsonDocument.Parse(json);
         }
-        catch (FormatException failure)
+        catch (JsonException failure)
         {
             context.ReportDiagnostic(
                 Diagnostic.Create(UnreadableVocabulary, Location.None, VocabularyName, failure.Message));
@@ -99,34 +90,31 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
             return;
         }
 
-        context.AddSource(HintName, SourceText.From(Declare(Checked(Fields(root, context), context)), Encoding.UTF8));
+        List<(string Name, List<(string Member, int? Value)> Members)> fields;
+        using (document)
+        {
+            fields = Checked(Fields(document.RootElement, context), context);
+        }
+
+        context.AddSource(HintName, SourceText.From(Declare(fields), Encoding.UTF8));
     }
 
-    /// <summary>
-    /// The five fields and the members the vocabulary states for each, in the order the declaration
-    /// carries them. A null root yields the fields with no members, which is what a vocabulary this
-    /// could not read leaves behind.
-    /// </summary>
     private static List<(string Name, List<(string Member, int? Value)> Members)> Fields(
-        JsonValue? root,
+        JsonElement? root,
         SourceProductionContext? context)
     {
-        var heroes = Items(root?["heroes"]);
+        var heroes = Items(Member(root, "heroes"));
 
         return
         [
-            ("ArmorType", Bare(Names(root?["statCalculation"]?["armorWeights"]))),
-            ("PrimaryStat", Bare(heroes.Select(hero => Text(hero["primaryStat"])))),
-            ("Hero", Bare(heroes.Select(hero => Text(hero["name"])))),
-            ("GemTypeName", Bare(Items(root?["gemTypes"]).Select(Text))),
-            ("Rarity", Ladder(Items(root?["rarities"]), context)),
+            ("ArmorType", Bare(Names(Member(Member(root, "statCalculation"), "armorWeights")))),
+            ("PrimaryStat", Bare(heroes.Select(hero => Text(Member(hero, "primaryStat"))))),
+            ("Hero", Bare(heroes.Select(hero => Text(Member(hero, "name"))))),
+            ("GemTypeName", Bare(Items(Member(root, "gemTypes")).Select(gemType => Text(gemType)))),
+            ("Rarity", Ladder(Items(Member(root, "rarities")), context)),
         ];
     }
 
-    /// <summary>
-    /// Sorted ordinal, because the vocabulary lists heroes in the build's own order and a member's
-    /// position is a value a reader could come to depend on.
-    /// </summary>
     private static List<(string Member, int? Value)> Bare(IEnumerable<string> members) =>
         [.. members
             .Where(member => member.Length > 0)
@@ -134,21 +122,15 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
             .OrderBy(member => member, StringComparer.Ordinal)
             .Select(member => (member, (int?)null))];
 
-    /// <summary>
-    /// The rarity ladder, the one field whose members carry a value. A rung is filed under one word,
-    /// prints another on an item and a third on a gem, so the ordinal is the only thing that names a
-    /// rung once. The member is the filed word and the value is the shipped ordinal.
-    /// </summary>
     private static List<(string Member, int? Value)> Ladder(
-        IReadOnlyList<JsonValue> rarities,
+        IReadOnlyList<JsonElement> rarities,
         SourceProductionContext? context)
     {
         var ladder = new List<(string Member, int? Value)>();
         foreach (var rarity in rarities)
         {
-            var name = Text(rarity["name"]);
-            if (rarity["tier"] is { Kind: JsonKind.Number } tier
-                && int.TryParse(tier.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+            var name = Text(Member(rarity, "name"));
+            if (Member(rarity, "tier") is { ValueKind: JsonValueKind.Number } tier && tier.TryGetInt32(out var value))
             {
                 ladder.Add((name, value));
                 continue;
@@ -215,12 +197,19 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
         return source.ToString();
     }
 
-    private static IReadOnlyList<JsonValue> Items(JsonValue? value) =>
-        value is { Kind: JsonKind.Array } array ? array.Items : [];
+    private static JsonElement? Member(JsonElement? value, string name) =>
+        value is { ValueKind: JsonValueKind.Object } keyed && keyed.TryGetProperty(name, out var member)
+            ? member
+            : null;
 
-    private static IEnumerable<string> Names(JsonValue? value) =>
-        value is { Kind: JsonKind.Object } keyed ? keyed.Members.Select(member => member.Key) : [];
+    private static IReadOnlyList<JsonElement> Items(JsonElement? value) =>
+        value is { ValueKind: JsonValueKind.Array } array ? [.. array.EnumerateArray()] : [];
 
-    private static string Text(JsonValue? value) =>
-        value is { Kind: JsonKind.String } text ? text.Text : string.Empty;
+    private static IEnumerable<string> Names(JsonElement? value) =>
+        value is { ValueKind: JsonValueKind.Object } keyed
+            ? keyed.EnumerateObject().Select(member => member.Name)
+            : [];
+
+    private static string Text(JsonElement? value) =>
+        value is { ValueKind: JsonValueKind.String } text ? text.GetString() ?? string.Empty : string.Empty;
 }

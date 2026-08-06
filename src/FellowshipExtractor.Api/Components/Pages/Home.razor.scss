@@ -4,9 +4,6 @@
 
 .cx-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
 
-/* The card's own frame is global: this page draws one card itself and hands the class to
-   EntityLink for the other. The name inside a card is always this page's element, so the hover
-   rule that tints it lives here, matching the card ancestor on its class. */
 .cx-card:hover .cx-card-name { color: var(--gold-bright); }
 .cx-card-name {
   font-family: var(--display); font-size: 17px; letter-spacing: .05em; text-transform: uppercase;
@@ -17,10 +14,6 @@
 }
 .cx-card-links li { break-inside: avoid; }
 
-/* .cx-roster, .cx-pip and .cx-who are not here. The entity page draws a roster under each named
-   version of a split id, so each of those classes has two owners and is styled in Styles/codex.scss
-   where no scope attribute narrows it to one of them. The hero's own codename line is this page's
-   alone and stays. */
 .cx-code { color: var(--faint); font-family: var(--mono); font-size: 11px; }
 
 .cx-linked { display: flex; align-items: center; gap: 9px; }

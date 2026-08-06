@@ -32,11 +32,8 @@
 }
 .cx-brand-name b { color: var(--gold-bright); font-weight: 600; }
 
-/* This layout's own element, so the bare selector reaches only the one <main> it renders. */
 main { max-width: var(--wide); margin: 0 auto; padding: 14px $gutter 90px; }
 
-/* Where the fragment a hovered link fetches is drawn. Only the layer is styled: what goes inside it
-   is the API's own markup under .fx-tip, in a shadow root no stylesheet here enters. */
 .cx-tip-layer {
   position: fixed; left: 0; top: 0; z-index: 90;
   pointer-events: none;

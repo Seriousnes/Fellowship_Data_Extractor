@@ -24,16 +24,10 @@ else
 }
 
 @code {
-    /// <summary>Where the pill leads. Null renders a span rather than an anchor.</summary>
     [Parameter] public string? Href { get; set; }
 
-    /// <summary>
-    /// The ink colour. Null omits the style attribute entirely, which is how the hero pills fall
-    /// back to the stylesheet; a caller wanting the panel's own ink passes "inherit".
-    /// </summary>
     [Parameter] public string? Colour { get; set; }
 
-    /// <summary>The count badge trailing the label.</summary>
     [Parameter] public string? Badge { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }

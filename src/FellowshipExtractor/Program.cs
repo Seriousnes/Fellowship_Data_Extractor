@@ -1,5 +1,6 @@
 using CUE4Parse.UE4.Exceptions;
 using FellowshipExtractor;
+using FellowshipExtractor.Commands;
 using FellowshipExtractor.Output;
 using FellowshipExtractor.Textures;
 using FellowshipExtractor.Usmap;
@@ -115,8 +116,6 @@ switch (command)
 
         await using IOutputFormat output = new JsonlOutputFormat(folder);
 
-        // A table name never starts with '-'; the value that follows a recognised flag does not
-        // start with '-' either, so it is dropped by position, not by content.
         var rest = args[1..];
         var tables = rest.Where((a, i) =>
             !a.StartsWith('-') &&

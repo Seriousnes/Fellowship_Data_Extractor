@@ -1,14 +1,11 @@
-using Fellowship.SDK.Documents;
-
 namespace FellowshipExtractor.Api.Tests;
 
-/// <summary>Only <see cref="Trait"/> ever carries a rank progression.</summary>
 [Collection(Corpus.Name)]
 public class RanksTests : BunitContext
 {
     public RanksTests(Export export) => Services.AddSingleton(export.View);
 
-    private static Trait WithOneRun() => new()
+    private static TraitDocument WithOneRun() => new()
     {
         Id = 1,
         RankRuns =
@@ -26,7 +23,7 @@ public class RanksTests : BunitContext
     [Fact]
     public void Renders_nothing_without_runs()
     {
-        var cut = Render<Ranks>(p => p.AddCascadingValue(new Trait { Id = 1 }));
+        var cut = Render<Ranks>(p => p.AddCascadingValue(new TraitDocument { Id = 1 }));
 
         Assert.Empty(cut.Markup);
     }
@@ -53,10 +50,6 @@ public class RanksTests : BunitContext
             "</ul></div>");
     }
 
-    /// <summary>
-    /// The sharpest whitespace case in the app: this span is a pre-line context, so a newline the
-    /// source indentation contributed would be a rendered blank line on screen.
-    /// </summary>
     [Fact]
     public void Separates_the_printed_values_with_a_slash_and_no_newline()
     {
@@ -73,7 +66,7 @@ public class RanksTests : BunitContext
     [Fact]
     public void Renders_only_the_printed_row_when_a_run_carries_nothing_else()
     {
-        var entity = new Trait { Id = 1, RankRuns = [new RankRun("10", ["10"])] };
+        var entity = new TraitDocument { Id = 1, RankRuns = [new RankRun("10", ["10"])] };
 
         var cut = Render<Ranks>(p => p.AddCascadingValue(entity));
 
@@ -84,7 +77,7 @@ public class RanksTests : BunitContext
     [Fact]
     public void Draws_a_missing_value_as_a_dash()
     {
-        var entity = new Trait
+        var entity = new TraitDocument
         {
             Id = 1,
             RankRuns = [new RankRun("10/20", ["10", "20"]) { Values = [1d, null] }],
@@ -98,7 +91,7 @@ public class RanksTests : BunitContext
     [Fact]
     public void Renders_a_rule_before_every_run()
     {
-        var entity = new Trait
+        var entity = new TraitDocument
         {
             Id = 1,
             RankRuns = [new RankRun("10", ["10"]), new RankRun("20", ["20"])],

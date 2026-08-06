@@ -8,12 +8,10 @@ public sealed class TypeResolverTests
 
     private static readonly IReadOnlySet<string> Branches = ExportAllCommand.Branches(Resolver.Tags);
 
-    /// <summary>The tag the build ships under this name, so a rule is asked about a real row.</summary>
     private static TagRecord Tag(string table, string name) =>
         Resolver.FindTag(table, name)
         ?? throw new InvalidOperationException($"{name} is no longer a tag in {table}.");
 
-    /// <summary>Why the export leaves this tag's row out, or null where it writes it.</summary>
     private static string? NotWritten(TagRecord tag) =>
         ExportAllCommand.NotWritten(Resolver.Resolve(tag, icons: null).Single(), Branches);
 
@@ -80,13 +78,6 @@ public sealed class TypeResolverTests
         Assert.Equal(expected, Resolver.Types.Of(tag, new Entity(), null));
     }
 
-    /// <summary>
-    /// A Talent.ID id is a talent slot where a hero's tree filled it. The row's own coordinates
-    /// cannot answer this: TalentRow is null on the entity the resolver is handed, so occupancy is
-    /// read from the trees, which is the question Resolve asks for the expansion that follows. 19
-    /// of the 40 shipped ids are filled and expand to one slot row per tree that filled them, 216
-    /// in all; the 21 the build places no talent at are not slots.
-    /// </summary>
     [Fact]
     public void ATalentSlotIsARowCarryingCoordinates()
     {
@@ -105,11 +96,6 @@ public sealed class TypeResolverTests
         Assert.All(unfilled, tag => Assert.Null(Resolver.Types.Of(tag, new Entity(), null)));
     }
 
-    /// <summary>
-    /// A branch of the tag tree is only a non-entity where it also says nothing. ItemID.GemType.Ruby
-    /// is a branch, its four tiers hanging off it, and a gem type in its own right, so it is written;
-    /// ItemID.HeroItem is a branch that carries nothing, so it is not.
-    /// </summary>
     [Fact]
     public void AnEmptyBranchIsDroppedAndAFullOneIsNot()
     {
@@ -126,11 +112,6 @@ public sealed class TypeResolverTests
         Assert.DoesNotContain(Export.Loaded.Documents, d => d.Type == EntityType.Item && d.Id == heroItem.NetId);
     }
 
-    /// <summary>
-    /// A creature carrying nothing beyond the tag naming it is not written. The table is the game's
-    /// whole cast and most of it is never shown to a reader: 106 of the 338 CRAICharacter tags
-    /// resolve to a row stating nothing at all, and the rest are the creatures the store holds.
-    /// </summary>
     [Fact]
     public void ACreatureCarryingNothingIsNotWritten()
     {
@@ -152,12 +133,6 @@ public sealed class TypeResolverTests
             creatures.Count(row => ExportAllCommand.NotWritten(row, Branches) is null));
     }
 
-    /// <summary>
-    /// A mount tag is a mount where the build ships the CA_Mount augmentation its name pairs with,
-    /// which is where a mount's mechanics live. ItemID.Mount.CatPanther pairs with
-    /// CA_Mount_CatPanther and is written; ItemID.Mount.DefaultHorse pairs with no augmentation the
-    /// build ships, and it is one of the 43 mount tags that name no mount for that reason.
-    /// </summary>
     [Fact]
     public void AMountPairingWithNoAugmentationIsNotWritten()
     {
@@ -175,12 +150,6 @@ public sealed class TypeResolverTests
         Assert.Equal(Export.Loaded.Documents.Count(d => d.Type == EntityType.Mount), written.Length);
     }
 
-    /// <summary>
-    /// A tag whose leaf segment is None or Invalid names a shipped enumeration's null member rather
-    /// than an entity, and five tags in the build end that way. ItemID.CompanionPet.None is the one
-    /// this rule alone keeps out: its second segment types it a companion pet, so every other rule
-    /// writes it.
-    /// </summary>
     [Fact]
     public void ATagNamingAnEnumerationsNullMemberIsNotWritten()
     {
@@ -208,10 +177,6 @@ public sealed class TypeResolverTests
             Export.Loaded.Documents, d => d.Type == EntityType.CompanionPet && d.Id == pet.NetId);
     }
 
-    /// <summary>
-    /// The count for every type, against the spec's section 3.4. These move when the game moves,
-    /// which is the point: a number changing here is the build changing rather than this code.
-    /// </summary>
     [Theory]
     [InlineData(EntityType.Item, 5744)]
     [InlineData(EntityType.Effect, 3261)]
@@ -258,10 +223,6 @@ public sealed class TypeResolverTests
         Assert.All(traits.GroupBy(t => t.Body["gem"]!.GetValue<string>()), type => Assert.Equal(10, type.Count()));
     }
 
-    /// <summary>
-    /// Every slot names a talent. 215 point at an augmentation; Talent8 carries Macabre Stratagem
-    /// itself, so the talent for that slot is the slot row read as one.
-    /// </summary>
     [Fact]
     public void TheSlotBorneTalentIsTheTwoHundredAndSixteenth()
     {
@@ -271,10 +232,6 @@ public sealed class TypeResolverTests
         Assert.Equal(8, talent.Id);
     }
 
-    /// <summary>
-    /// A grant and a legendary stat line are augmentation rows already in the corpus, so an item
-    /// points at them by their own id and nothing is minted.
-    /// </summary>
     [Fact]
     public void AnItemPointsAtAugmentationsThatExist()
     {
@@ -289,9 +246,6 @@ public sealed class TypeResolverTests
             item.Body["legendaryStatIds"]!.AsArray(),
             stat => Assert.Contains(stat!.GetValue<int>(), ids)));
 
-        // legendaryStatIds is built by mapping tag names through a lookup that returns null where
-        // no tag names the asset, then dropping the nulls, so a silently dropped id would still
-        // pass the assertions above while coming out shorter than the three the item actually has.
         Assert.All(legendary, item => Assert.Equal(3, item.Body["legendaryStatIds"]!.AsArray().Count));
     }
 

@@ -5,10 +5,6 @@ namespace FellowshipExtractor.Usmap;
 
 public readonly record struct PeSection(string Name, uint Rva, uint VirtualSize, uint RawOffset, uint RawSize);
 
-/// <summary>
-/// Minimal PE32+ reader: section table, virtual-address translation, and the .pdata function
-/// ranges. Enough to walk the generated reflection tables in .rdata.
-/// </summary>
 public sealed class PeImage
 {
     public byte[] Data { get; }
@@ -54,7 +50,6 @@ public sealed class PeImage
         throw new InvalidDataException($"No {name} section.");
     }
 
-    /// <summary>File offset for a virtual address, or -1 if it is not backed by raw data.</summary>
     public int Offset(ulong va)
     {
         if (va <= ImageBase) return -1;
@@ -98,7 +93,6 @@ public sealed class PeImage
 
     public ulong ReadUInt64(int offset) => ReadPointer(offset);
 
-    /// <summary>Null-terminated ASCII at a virtual address, or null if it is not clean text.</summary>
     public string? ReadUtf8(ulong va, int maxLength = 256)
     {
         var start = Offset(va);
@@ -116,7 +110,6 @@ public sealed class PeImage
             : null;
     }
 
-    /// <summary>Null-terminated UTF-16 at a virtual address. UE stores registration names as TCHAR.</summary>
     public string? ReadUtf16(ulong va, int maxLength = 256)
     {
         var start = Offset(va);
@@ -133,10 +126,6 @@ public sealed class PeImage
         return null;
     }
 
-    /// <summary>
-    /// Function ranges from the exception directory. Generated Z_Construct_* bodies are tiny and
-    /// this gives their exact bounds without disassembling.
-    /// </summary>
     public IReadOnlyList<(ulong Start, ulong End)> FunctionRanges()
     {
         var pdata = Section(".pdata");

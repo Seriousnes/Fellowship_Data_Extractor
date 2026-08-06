@@ -1,11 +1,5 @@
 namespace FellowshipExtractor.Api.Tests;
 
-/// <summary>
-/// The panel naming where each number in a row's text comes from. Split out of what was
-/// TuningTests.cs: that file's other two panels, Tuning and TalentTuning, drew from the flat
-/// model's Constants, Talents and TalentGates, which no document class carries, and were deleted
-/// with the components they drew.
-/// </summary>
 public class SubstitutionsTests : BunitContext
 {
     [Fact]
@@ -38,7 +32,6 @@ public class SubstitutionsTests : BunitContext
             "nothing in the build settles this",
             cards[1].QuerySelector("div.cx-token-read span.cx-miss")!.TextContent);
 
-        // A token with no working line renders no third div at all.
         Assert.Null(cards[1].QuerySelector("div.cx-token-work"));
     }
 

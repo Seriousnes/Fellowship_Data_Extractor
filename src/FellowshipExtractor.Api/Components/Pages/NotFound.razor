@@ -22,9 +22,6 @@
     {
         var path = Nav.ToAbsoluteUri(Nav.Uri).AbsolutePath.Trim('/').Split('/');
 
-        // Matched on the slug, because the slug is what the address carries: an entity page answers
-        // /entity/talent/124 and nothing else, so comparing the segment against the table behind it
-        // would miss every type and send every missing row to the bare wording below.
         if (path is ["entity", var slug, var id] &&
             Catalog.Types.FirstOrDefault(t =>
                 string.Equals(t.Slug, Uri.UnescapeDataString(slug), StringComparison.OrdinalIgnoreCase)) is { } kind)
@@ -36,8 +33,6 @@
             return;
         }
 
-        // The same sentence the API gives a caller who names no type, so the page and the endpoints
-        // cannot come to disagree about which types there are.
         Said = path is ["entity", var unknown, _]
             ? PublicTypes.NoSuchType(Uri.UnescapeDataString(unknown))
             : "That address does not name anything in the build.";

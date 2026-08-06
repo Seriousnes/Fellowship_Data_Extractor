@@ -1,17 +1,11 @@
-using Fellowship.SDK.Documents;
-
 namespace FellowshipExtractor.Api.Tests;
 
-/// <summary>
-/// Only <see cref="GemType"/> ever carries an overflow sentence, replacing the flat model's nested
-/// <c>Entity.GemOverflow</c> record.
-/// </summary>
 [Collection(Corpus.Name)]
 public class OverflowTests : BunitContext
 {
     public OverflowTests(Export export) => Services.AddSingleton(export.View);
 
-    private static GemType WithOverflow(string? description) =>
+    private static GemTypeDocument WithOverflow(string? description) =>
         new() { Id = 1, Gem = GemTypeName.Amethyst, Attribute = "Strength", OverflowDescription = description };
 
     [Fact]

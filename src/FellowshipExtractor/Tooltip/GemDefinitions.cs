@@ -6,23 +6,15 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>One of the six gem types, as the thing a player accumulates rather than an item.</summary>
 public sealed record GemKind(string DisplayName)
 {
-    /// <summary>The CRGemAttributeSet attribute this type's socketed power adds up in.</summary>
     public string? Attribute { get; init; }
 
     public GemOverflow? Overflow { get; init; }
 }
 
-/// <summary>One gem a player can hold: a type and a size, worth a flat amount of power.</summary>
 public sealed record GemSize(string TypeName, int Tier, string DisplayName, int Power)
 {
-    /// <summary>
-    /// The rung of the rarity ladder this size drops at, by the ordinal the row states.
-    /// <see cref="Rarity"/> is the word a gem prints for that rung, which the item ladder spells
-    /// differently, so the ordinal is what names the rung once.
-    /// </summary>
     public int? RarityTier { get; init; }
 
     public string? Rarity { get; init; }
@@ -30,7 +22,6 @@ public sealed record GemSize(string TypeName, int Tier, string DisplayName, int 
     public string? IconPath { get; init; }
 }
 
-/// <summary>One rung of a gem type's unlock ladder.</summary>
 public sealed record GemLadderNode(string TypeName, int Node, int RequiredPower)
 {
     public string? DisplayName { get; init; }
@@ -41,24 +32,9 @@ public sealed record GemLadderNode(string TypeName, int Node, int RequiredPower)
 
     public string? IconPath { get; init; }
 
-    /// <summary>The netId of the lower node this one supersedes, where the row says it does.</summary>
     public int? Replaces { get; init; }
 }
 
-/// <summary>
-/// Everything gems are, from the one table that defines them.
-///
-/// The model is not "a gem has traits". A gem is a type and a size; its size is worth a flat
-/// GemPower; equipping gems sums that power into a per-type attribute such as RubyPower; and the
-/// type's own ten-node ladder unlocks a node each time the running total passes its threshold. So
-/// the bonuses hang off the type, not off any gem, and a gem's whole content is which type it feeds
-/// and by how much.
-///
-/// Three shipped facts about the ladder that the export states rather than infers: every type's
-/// thresholds are 80 to 1500 in the same ten steps, every node grants a CRCharacterAugmentationAsset
-/// that already exports as a line of its own, and the upper five nodes of each type replace the
-/// lower five rather than stacking with them.
-/// </summary>
 public sealed class GemDefinitions
 {
     public const string RowStructure = "/Script/fellowship.CRGemsDefinitionRow";
@@ -95,11 +71,9 @@ public sealed class GemDefinitions
     public int SizeCount => _byTierTag.Count;
     public int NodeCount => _byAugmentation.Count;
 
-    /// <summary>The gem types the build ships, under the words it prints for them.</summary>
     public IReadOnlyList<string> Types =>
         [.. _byType.Values.Select(kind => kind.DisplayName).Order(StringComparer.Ordinal)];
 
-    /// <summary>How many ladder nodes state which lower node they take the place of.</summary>
     public int ReplacementCount { get; private set; }
 
     public GemDefinitions(
@@ -139,13 +113,10 @@ public sealed class GemDefinitions
         }
     }
 
-    /// <summary>The gem type an ItemID.GemType.X tag names, or null when it names none.</summary>
     public GemKind? ForType(string tagName) => _byType.GetValueOrDefault(tagName);
 
-    /// <summary>The gem an ItemID.GemType.X.TierN tag names, or null when it names none.</summary>
     public GemSize? ForSize(string tagName) => _byTierTag.GetValueOrDefault(tagName);
 
-    /// <summary>The ladder node an augmentation asset grants, or null when it grants none.</summary>
     public GemLadderNode? ForAugmentation(string assetName) => _byAugmentation.GetValueOrDefault(assetName);
 
     private static GemOverflow? Overflow(IPropertyHolder row, ConstantsTable constants)
@@ -169,14 +140,9 @@ public sealed class GemDefinitions
             if (PropertyWalk.GetString(tier, DisplayNameField) is not { } name) continue;
             if (PropertyWalk.AsOrdinal(PropertyWalk.Get(tier, PowerField)?.GenericValue) is not { } power) continue;
 
-            // The struct carries a Tier ordinal beside the tag and the two say the same thing, so
-            // the tag is read and the ordinal ignored. The tag is the join to the exported line
-            // anyway, and reading one field rather than two cannot have them disagree.
             var separator = tag.LastIndexOf(TierSegment, StringComparison.OrdinalIgnoreCase);
             if (separator < 0 || !int.TryParse(tag[(separator + TierSegment.Length)..], out var ordinal)) continue;
 
-            // The rung's number and the word a gem prints for it come from one reading, so the two
-            // can never name different rungs, and a rarity off the ladder leaves both unset.
             var rung = rarities.Tier(PropertyWalk.Get(tier, RarityField)?.GenericValue);
 
             _byTierTag[tag] = new GemSize(typeName, ordinal, name, power)
@@ -219,17 +185,6 @@ public sealed class GemDefinitions
         }
     }
 
-    /// <summary>
-    /// The node a node takes the place of. Nothing in the row structure says so, and three separate
-    /// conventions each say it independently: the upper node's RankName is the lower one's plus
-    /// " - II", their augmentation names differ only by Medium against Small, and the upper node's
-    /// format string ends by naming the lower one outright. All three are required to agree, over
-    /// all 30 pairs they do, and a patch that breaks one of them drops the link rather than
-    /// inventing a supersession that is no longer stated.
-    ///
-    /// The offset is half the ladder rather than a fixed five, because that is what makes the
-    /// second half of the ladder the second half rather than a coincidence about its length.
-    /// </summary>
     private int? Replaced(IReadOnlyList<IPropertyHolder> nodes, int index, AugmentationIds augmentations)
     {
         var offset = nodes.Count / 2;
@@ -258,11 +213,6 @@ public sealed class GemDefinitions
         return augmentations.For(lowerAsset);
     }
 
-    /// <summary>
-    /// An augmentation's name with the size word that distinguishes the pair taken off, so the two
-    /// halves of one bonus reduce to the same string. Sapphire and Diamond separate the word with
-    /// an underscore and the other four types do not.
-    /// </summary>
     private static string? Family(string assetPath, string suffix)
     {
         var name = AbilityPresentationIndex.AssetName(assetPath);
@@ -282,20 +232,6 @@ public sealed class GemDefinitions
             : [];
 }
 
-/// <summary>
-/// The rarity ladder, from the only shipped table that names it.
-///
-/// The usmap carries no enum tables, so a Rarity field arrives as a bare ordinal. The loot rule sets
-/// are the decode: every row repeats its own RarityTier and its row key begins with the name of that
-/// tier, and all 43 rows of the seven tiers agree on the name. That gives Common 0 through Legendary
-/// 6, and the four gem sizes at 1 to 4 read Uncommon, Rare, Epic and Champion.
-///
-/// These are the names the build files the ladder under, which are not always the names it prints:
-/// the locres ships Generic_Rarity_Tier_Regal and _Heroic and no _Champion at all. A join on the
-/// name would map internal Heroic to "Heroic" and internal Champion to nothing, which is the wrong
-/// answer in both directions, so the two spellings are carried side by side and <see cref="Label"/>
-/// stays the internal one every other field in the export speaks.
-/// </summary>
 public sealed class RarityNames
 {
     public const string RowStructure = "/Script/DynamicLootSystemRuntime.CRDynamicHeroItemLootRarityRuleSet";
@@ -307,50 +243,11 @@ public sealed class RarityNames
 
     public int Count => _byOrdinal.Count;
 
-    /// <summary>The ladder in ascending order, from the ordinal each rule set row declares.</summary>
     public IEnumerable<int> Tiers => _byOrdinal.Keys.Order();
 
-    /// <summary>
-    /// What each tier prints as, where that is not the name the build files it under. Two of the
-    /// seven are renamed and the rename is off by one across the top of the ladder, so a reader
-    /// joining on the name gets both of them wrong.
-    ///
-    /// Three shipped things establish it. The backend stat
-    /// STAT_Seasonal_Account_TimesFullyTemperedRegalItemsOfItemLevel315 filters ItemRarity against
-    /// the string "heroic" while its own Description reads "Times fully tempered regal items of item
-    /// level 315", which binds internal Heroic to printed Regal outright. The locres ships
-    /// Generic_Rarity_Tier_Regal and _Heroic and no _Champion, so Heroic is a printed name with
-    /// nowhere else to go once tier 5 is spoken for. And the design system spells the ladder
-    /// internally - game.game.rarity-champion and game.game.rarity-heroic beside game.rarity-common
-    /// and the rest - so the colour rows corroborate the internal names rather than the printed
-    /// ones. That leaves internal Champion at tier 4 as the only home for printed Heroic.
-    ///
-    /// Keyed by the internal name rather than by the ordinal, so a patch that renumbers the ladder
-    /// carries the rename with it and one that renames a tier is caught by <see cref="Printed"/>
-    /// throwing rather than quietly printing the internal word.
-    ///
-    /// This is the ladder an item is on. A gem at the same ordinal prints a different word again,
-    /// which is <see cref="GemRenamed"/>, and the two are separate tables because they are separate
-    /// vocabularies rather than two guesses at one.
-    /// </summary>
     private static readonly Dictionary<string, string> Renamed =
         new(StringComparer.OrdinalIgnoreCase) { ["Champion"] = "Heroic", ["Heroic"] = "Regal" };
 
-    /// <summary>
-    /// What a tier prints as on a gem, which is not what the same tier prints as on an item. Both
-    /// renames are user-confirmed and they are distinct: internal Champion is "Heroic" on an item
-    /// and "Flawless" on a gem, so one table cannot serve both and neither is a correction of the
-    /// other.
-    ///
-    /// The gem side is corroborated by the gem rows themselves. Every tier 4 gem's own DisplayName
-    /// reads "Flawless Ruby", "Flawless Topaz" and so on, and the locres ships a bare "Flawless"
-    /// beside a bare "Splendid" with no rarity key of their own, so Flawless is a word the gem
-    /// screens print while no shipped string prints Champion at a gem anywhere.
-    ///
-    /// Only the tier the user ruled on is renamed. The other three gem tiers keep the internal
-    /// names Uncommon, Rare and Epic, which say which loot table a gem drops from and are a
-    /// different fact from the size word its DisplayName already carries.
-    /// </summary>
     private static readonly Dictionary<string, string> GemRenamed =
         new(StringComparer.OrdinalIgnoreCase) { ["Champion"] = "Flawless" };
 
@@ -363,8 +260,6 @@ public sealed class RarityNames
 
             foreach (var (rowName, row) in table.RowMap)
             {
-                // An unversioned property left at its default is not serialized, so a row with no
-                // RarityTier is tier 0. Common is the only tier that reaches here that way.
                 var ordinal = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, TierField)?.GenericValue) ?? 0;
 
                 var separator = rowName.Text.IndexOf('_');
@@ -391,14 +286,8 @@ public sealed class RarityNames
         }
     }
 
-    /// <summary>The name of a rarity ordinal, or null when the ladder has no such tier.</summary>
     public string? Label(int? ordinal) => ordinal is { } tier ? _byOrdinal.GetValueOrDefault(tier) : null;
 
-    /// <summary>
-    /// The tier a stored ECRItemRarity value names, or null when it names none. A dynamic item
-    /// lists the rarities it drops at as enum entries rather than as ordinals, and the same enum
-    /// reaches other properties as a bare number, so both readings answer here.
-    /// </summary>
     public int? Tier(object? value)
     {
         if (PropertyWalk.AsOrdinal(value) is { } ordinal) return _byOrdinal.ContainsKey(ordinal) ? ordinal : null;
@@ -417,18 +306,9 @@ public sealed class RarityNames
         return null;
     }
 
-    /// <summary>
-    /// The name of a rarity ordinal on a gem. A tier the gem vocabulary does not rename answers
-    /// with the internal name, exactly as <see cref="Label"/> does.
-    /// </summary>
     public string? GemLabel(int? ordinal) =>
         Label(ordinal) is { } name ? GemRenamed.GetValueOrDefault(name) ?? name : null;
 
-    /// <summary>
-    /// What a tier prints as. A tier the rename table does not mention prints as itself, and a
-    /// renamed one that has vanished from the ladder throws, because a silent fall through to the
-    /// internal word is the failure this table exists to prevent.
-    /// </summary>
     public string Printed(int ordinal)
     {
         if (Label(ordinal) is not { } name)
@@ -440,7 +320,6 @@ public sealed class RarityNames
         return Renamed.GetValueOrDefault(name) ?? name;
     }
 
-    /// <summary>Whether both renamed tiers are still on the ladder the rule sets describe.</summary>
     public IEnumerable<string> MissingRenames =>
         Renamed.Keys.Where(name => !_byOrdinal.ContainsValue(name));
 }

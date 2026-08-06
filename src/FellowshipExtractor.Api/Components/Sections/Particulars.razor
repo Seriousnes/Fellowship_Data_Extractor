@@ -102,44 +102,23 @@
 }
 
 @code {
-    /// <summary>The record this panel draws, re-supplied by every Detail.</summary>
     [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 
-    /// <summary>
-    /// The scalar facts, already formatted and already carrying any address they link to, because
-    /// a nested row carries no table and no id of its own to build one from.
-    /// </summary>
     [Parameter]
     public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts { get; set; } = [];
 
-    /// <summary>
-    /// The damage schools this entry is, each with the filter it links into, built by Detail
-    /// through the school facet's own selector.
-    /// </summary>
     [Parameter] public IReadOnlyList<(string Label, string Href)> Schools { get; set; } = [];
 
-    /// <summary>
-    /// The attributes this entry's numbers grow with, under the words the game prints for them.
-    /// Resolved by Detail through the catalogue, which is what takes the run-together spelling off,
-    /// so a pill reads Damage Scale and never DamageScale.
-    /// </summary>
     [Parameter] public IReadOnlyList<string> Scaling { get; set; } = [];
 
-    /// <summary>
-    /// Every hero a row is for, read through the catalogue's own "hero" facet rather than a second
-    /// copy of the same switch: an item's own list, or the single hero a talent slot names.
-    /// </summary>
     private IReadOnlyList<string> Heroes => [.. Ui.Codex.Facet("hero")?.Values(Entity) ?? []];
 
-    private IReadOnlyList<string> SetBonus => (Entity as Item)?.SetBonus ?? [];
+    private IReadOnlyList<string> SetBonus => (Entity as ItemDocument)?.SetBonus ?? [];
 
-    private IReadOnlyList<string> AllowedRoles => (Entity as Fellowship.SDK.Documents.SetBonus)?.AllowedRoles ?? [];
+    private IReadOnlyList<string> AllowedRoles => (Entity as Fellowship.SDK.Documents.SetBonusDocument)?.AllowedRoles ?? [];
 
-    // PrimaryStat's own members are Agility, Intellect and Strength, already the word the game
-    // prints for each - the same reading Codex.cs's own "stat" facet takes - so this needs no pass
-    // through the shipped attribute table.
     private IReadOnlyList<string> AllowedAttributes =>
-        (Entity as Fellowship.SDK.Documents.SetBonus)?.AllowedAttributes is { } attributes
+        (Entity as Fellowship.SDK.Documents.SetBonusDocument)?.AllowedAttributes is { } attributes
             ? [.. attributes.Select(stat => stat.ToString())]
             : [];
 }

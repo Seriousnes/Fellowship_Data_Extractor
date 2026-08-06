@@ -1,7 +1,5 @@
 @inject TooltipView Ui
 
-@* What the item is: its kind, the slot it fills, the power it is read at, the rung it rolled and
-   how far it has been tempered. Two to a row, left and right. *@
 <div class="grp">
     @if (Kind is { } kind)
     {
@@ -12,7 +10,7 @@
         <div class="row">
             @if (Slot is { } slot)
             {
-                <span><img class="gi" alt="" src="@Ui.Chrome.SlotGlyph">@slot</span>
+                <span><img class="gi" alt="" src="@Ui.Chrome.SlotGlyph(slot)">@slot</span>
             }
             @if (Level is { } power)
             {
@@ -29,7 +27,7 @@
             }
             @if (Temper is { } tempered)
             {
-                <span>@tempered</span>
+                <span><span class="temper">Tempered</span>@tempered</span>
             }
         </div>
     }
@@ -51,35 +49,26 @@
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
-    /// <summary>Read for the socket line, which says whether the caller filled the socket.</summary>
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
-    /// <summary>The rung this reading is drawn at, which a gem spells under its own ladder.</summary>
     [Parameter] public RarityEntry? Rung { get; set; }
 
-    /// <summary>The item power on the line, resolved by the tooltip before this is placed.</summary>
     [Parameter] public int? Level { get; set; }
 
-    /// <summary>How far the caller has tempered it, in the words the line prints.</summary>
     [Parameter] public string? Temper { get; set; }
 
-    /// <summary>
-    /// The item's armour type, or the type a gem tier, a gem ladder node or a gem type's own row
-    /// names outright - the same three-gem-plus-item population <see cref="TooltipView.HasKind"/>
-    /// tests for whether this row has a kind at all.
-    /// </summary>
     private string? Kind => Entity switch
     {
-        Item { ArmorType: { } armor } => armor.ToString(),
-        GemTier tier => tier.Gem.ToString(),
-        GemTrait trait => trait.Gem.ToString(),
-        GemType type => type.Gem.ToString(),
+        ItemDocument { ArmorType: { } armor } => armor.ToString(),
+        GemTierDocument tier => tier.Gem.ToString(),
+        GemTraitDocument trait => trait.Gem.ToString(),
+        GemTypeDocument type => type.Gem.ToString(),
         _ => null,
     };
 
-    private string? Slot => (Entity as Item)?.Slot;
+    private string? Slot => (Entity as ItemDocument)?.Slot;
 
-    private bool? GemSlot => (Entity as Item)?.GemSlot;
+    private bool? GemSlot => (Entity as ItemDocument)?.GemSlot;
 
-    private bool? UniqueEquipped => (Entity as Item)?.UniqueEquipped;
+    private bool? UniqueEquipped => (Entity as ItemDocument)?.UniqueEquipped;
 }

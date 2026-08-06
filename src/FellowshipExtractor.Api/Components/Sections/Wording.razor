@@ -16,14 +16,11 @@
 }
 
 @code {
-    /// <summary>
-    /// The record this panel draws, re-supplied by every Detail so a nested row draws its own text.
-    /// </summary>
     [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 
-    private string? Description => DocumentFields.Text(Entity, nameof(Ability.Description));
+    private string? Description => DocumentFields.Text(Entity, nameof(AbilityDocument.Description));
 
-    private IReadOnlyList<string> Detail => DocumentFields.Words(Entity, nameof(Ability.Detail));
+    private IReadOnlyList<string> Detail => DocumentFields.Words(Entity, nameof(AbilityDocument.Detail));
 
     private IReadOnlyList<Placeholder> Tokens => CodexView.PlaceholdersOf(Entity);
 

@@ -5,7 +5,6 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>One shipped item trait, as its own tooltip shows it.</summary>
 public sealed record ItemTrait(string DisplayName)
 {
     public string? Description { get; init; }
@@ -25,18 +24,6 @@ public sealed record ItemTrait(string DisplayName)
     public IReadOnlyList<RankRun>? Runs { get; init; }
 }
 
-/// <summary>
-/// The traits a weapon or a necklace can carry.
-///
-/// The table is joined on TraidID, the game's own misspelling of the field holding the tag, and
-/// never on the row key: two rows have a key that is not their tag, and one of those two is also
-/// the row whose augmentation name is the only route to its tuning.
-///
-/// The forty rows are two populations. Twenty-nine are weapon traits with four ranks, split between
-/// three categories a tree row rolls from, and eleven are necklace traits with one rank and no
-/// progression at all. Six of the eleven ship no description whatsoever, which is why a row is kept
-/// on its display name rather than on having anything to say.
-/// </summary>
 public sealed class ItemTraits
 {
     public const string RowStructure = "/Script/fellowship.CRItemTraitsDefinitionRow";
@@ -56,7 +43,6 @@ public sealed class ItemTraits
 
     public int Count => _byTag.Count;
 
-    /// <summary>How many of the printed progressions bound to the curve row behind them.</summary>
     public int BoundRuns { get; private set; }
 
     public int TotalRuns { get; private set; }
@@ -110,9 +96,6 @@ public sealed class ItemTraits
             };
         }
 
-        // Built from the rows _byTag actually kept, rather than added to inline as each row is
-        // seen: a duplicate tag overwrites its earlier row here, so an augmentation id only earns a
-        // place once the last write for its tag has happened.
         foreach (var trait in _byTag.Values)
         {
             if (trait.Augmentation is not null) _augmentations.Add(trait.Augmentation.Value);
@@ -126,27 +109,10 @@ public sealed class ItemTraits
         }
     }
 
-    /// <summary>The trait an ItemTrait.ID tag names, or null when no row defines it.</summary>
     public ItemTrait? ForTag(string tagName) => _byTag.GetValueOrDefault(tagName);
 
-    /// <summary>Whether an augmentation id is the mechanics behind one of these rows.</summary>
     public bool PointsAt(int netId) => _augmentations.Contains(netId);
 
-    /// <summary>
-    /// The tuning rows each trait's progressions may be drawn from.
-    ///
-    /// A trait's rows sit under Trait.&lt;Name&gt;, and the augmentation asset is what names it: the
-    /// existing TuningNamespace rule guesses from the asset name and keeps the guess only where the
-    /// shipped tables confirm rows really are under it. That answers 30 of the 31 traits with
-    /// tuning, including the two whose row key is not their name.
-    ///
-    /// The one it does not answer is CAA_Trait_GemWhirlwindProc, whose rows sit under
-    /// Trait.GemWhirlwind. So a trailing word is dropped from the name and the tables asked again,
-    /// and a namespace another trait already claimed outright is not offered to anyone else. That
-    /// only narrows the search: a run still binds to a row only when the row's four values
-    /// reproduce all four printed ones, so a scope guessed wrongly yields no binding rather than a
-    /// wrong one.
-    /// </summary>
     private static Dictionary<string, IReadOnlyList<ConstantRecord>> Scopes(
         IReadOnlyList<(string Tag, FStructFallback Row, string? Augmentation)> rows, ConstantsTable constants)
     {
@@ -180,11 +146,6 @@ public sealed class ItemTraits
         return scopes;
     }
 
-    /// <summary>
-    /// A namespace reached by dropping trailing words off an asset name's last segment. Words are
-    /// the capitals: GemWhirlwindProc gives GemWhirlwind and then GemWhirl and then Gem, and the
-    /// first one the tables confirm and nobody else has claimed wins.
-    /// </summary>
     private static string? Trimmed(string assetName, ConstantsTable constants, HashSet<string> claimed)
     {
         var segments = assetName.Split('_', StringSplitOptions.RemoveEmptyEntries);
@@ -220,19 +181,6 @@ public sealed class ItemTraits
     }
 }
 
-/// <summary>
-/// What the game calls each trait category.
-///
-/// The tag says Major and the game says Master. The one shipped table that states the rename is the
-/// crafting recipes: the recipe whose id is Crafting.Recipes.TraitTrees.RerollMajorTraits is named
-/// "Master Attunement", and its three siblings name Defensive, Heroic and Necklace the same way.
-/// The tutorial text corroborates it independently, enumerating the weapon rows as "Heroic,
-/// Defensive, or Master".
-///
-/// A second recipe family, Crafting.Recipes.HeroItems.Slots.RerollMajorTraitsValues, keeps the
-/// internal word and is named "Randomize Major traits". It is about an item's modifier slots rather
-/// than the trait tree, so the join is on the TraitTrees branch alone and not on a substring.
-/// </summary>
 public sealed class TraitCategoryNames
 {
     public const string RowStructure = "/Script/fellowship.CRCraftingRecipe";
@@ -269,10 +217,6 @@ public sealed class TraitCategoryNames
         }
     }
 
-    /// <summary>
-    /// The printed name of a category tag. A category no recipe rerolls keeps the tag's own last
-    /// segment, because the tag is then the only name the build gives it.
-    /// </summary>
     public string? Label(string? categoryTag)
     {
         if (categoryTag is null || !categoryTag.StartsWith(CategoryPrefix, StringComparison.OrdinalIgnoreCase))

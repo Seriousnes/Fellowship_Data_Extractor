@@ -6,28 +6,8 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>One rarity an item exists at and the art it shows there.</summary>
 public readonly record struct RarityIcon(string Rarity, string IconPath);
 
-/// <summary>
-/// Which art a dynamic hero item shows. A dynamic definition carries no icon of its own for the
-/// eight slots a collection dresses; it names a visual collection mapping key, and the twelve
-/// shipped mapping tables turn that key and the wearer's hero into one CRVisualCollection. The
-/// collection then holds one rung per art tier and the item picks a rung.
-///
-/// The rung is the item's rarity, banded. The shipped client is the only statement of the banding:
-/// UCRHeroItem::GetIcon reads the item instance's ItemRarity, passes it through a jump table that
-/// answers 0 for Common and Uncommon, 1 for Rare and Epic and 2 for Champion, Heroic and Legendary,
-/// then clamps the answer to the last rung the collection actually ships. Nothing cooked states it,
-/// so <see cref="Rung"/> is the one fact here that is written down rather than read; it was
-/// measured at 0x145300FC0 with the band table at 0x14530281C in
-/// fellowship-Win64-Shipping.exe 0.4.2.0, and the clamp is what makes the eleven legendary
-/// definitions - whose collections ship a single rung - resolve at all.
-///
-/// The same function answers for the fixed hero items, which reach it through the same class:
-/// CRDynamicHeroItemDefinition derives from CRHeroItem and inherits the icon getter unchanged,
-/// overriding only how the collection is found.
-/// </summary>
 public sealed class DynamicItemVisuals
 {
     public const string RowStructure = "/Script/fellowship.CRDynamicItemVisualCollectionMapping";
@@ -38,17 +18,12 @@ public sealed class DynamicItemVisuals
     private const string AllRaritiesField = "DropsInAllRarities";
     private const string SpecificRaritiesField = "DropsInSpecificRarities";
 
-    /// <summary>
-    /// The rung each rarity tier shows, lowest tier first. Read out of the shipping client rather
-    /// than out of the build's data, which says nothing about it anywhere.
-    /// </summary>
     private static readonly int[] RungByTier = [0, 0, 1, 1, 2, 2, 2];
 
     private readonly Dictionary<string, string> _collections = new(StringComparer.OrdinalIgnoreCase);
     private readonly VisualCollections _visuals;
     private readonly RarityNames _rarities;
 
-    /// <summary>How many hero-and-key pairs the mapping tables answer for.</summary>
     public int Count => _collections.Count;
 
     public DynamicItemVisuals(
@@ -76,11 +51,6 @@ public sealed class DynamicItemVisuals
         }
     }
 
-    /// <summary>
-    /// The art one hero sees an item as, one entry per rarity the item drops at, in ladder order.
-    /// Empty where the item's slot has no icon on a collection at all - neck, wrists, ring and
-    /// relic have none - which is exactly where the definition carries a DefaultIcon instead.
-    /// </summary>
     public IReadOnlyList<RarityIcon> Icons(
         string? mappingKey, string heroCodename, string? slotType, IReadOnlyList<int> tiers)
     {
@@ -104,11 +74,6 @@ public sealed class DynamicItemVisuals
         return icons;
     }
 
-    /// <summary>
-    /// The rarities an item exists at, in ladder order. Every definition states them: 226 of the
-    /// 237 list Uncommon through Heroic and the eleven legendaries list Legendary alone, so the
-    /// icons an item can show are bounded by what it drops as rather than by the whole ladder.
-    /// </summary>
     public IReadOnlyList<int> Tiers(IPropertyHolder definition)
     {
         if (PropertyWalk.Get(definition, AllRaritiesField)?.GenericValue is true) return [.. _rarities.Tiers];
@@ -125,11 +90,6 @@ public sealed class DynamicItemVisuals
         ];
     }
 
-    /// <summary>
-    /// The rung a rarity tier shows in a collection that ships this many, or null for a tier off
-    /// the end of the banding. The clamp is the client's: a collection with one rung shows it at
-    /// every rarity.
-    /// </summary>
     private static int? Rung(int tier, int rungs) =>
         tier < 0 || tier >= RungByTier.Length ? null : Math.Min(RungByTier[tier], rungs - 1);
 

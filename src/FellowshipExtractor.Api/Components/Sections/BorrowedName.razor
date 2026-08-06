@@ -11,15 +11,9 @@
 }
 
 @code {
-    /// <summary>
-    /// The naming row's page. Null renders nothing at all, on the rows that ship their own name.
-    /// Detail resolves the address because a section is given a record and never an address.
-    /// </summary>
     [Parameter] public string? Href { get; set; }
 
-    /// <summary>The naming row's tooltip address, for the hover card.</summary>
     [Parameter] public string? Tip { get; set; }
 
-    /// <summary>What the naming row is called.</summary>
     [Parameter] public string? Name { get; set; }
 }

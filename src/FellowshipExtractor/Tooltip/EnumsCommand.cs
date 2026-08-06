@@ -2,24 +2,10 @@ using System.Text;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// Refreshes the vocabulary the SDK commits and writes the Postgres types from one reading of it, so
-/// the words the build states and the types a database declares can never part company.
-///
-/// No C# is written here. The vocabulary is what is committed, because it is itself something a run
-/// produces and a build that cannot run the extractor still has to compile; Fellowship.SDK.Generators
-/// declares the enums from that committed copy at every build. <see cref="Members"/> is what the
-/// drift test compares those generated enums against.
-/// </summary>
 public static class EnumsCommand
 {
     private const string SqlName = "enums.sql";
 
-    /// <summary>
-    /// Every bare enum and the members the vocabulary states for it. Sorted, because the vocabulary
-    /// lists heroes in the build's own order and a member's position is a value a reader could come
-    /// to depend on.
-    /// </summary>
     public static IReadOnlyDictionary<string, IReadOnlyList<string>> Members(VocabularyFile vocabulary) =>
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {
@@ -29,11 +15,6 @@ public static class EnumsCommand
             ["GemTypeName"] = Sorted(vocabulary.GemTypes),
         };
 
-    /// <summary>
-    /// The rarity ladder, the one enum whose members carry a value. A rung is filed under one word,
-    /// prints another on an item and a third on a gem, so the ordinal is the only thing that names a
-    /// rung once. The member is the filed word and the value is the shipped ordinal.
-    /// </summary>
     public static IReadOnlyList<(string Name, int Tier)> Rarities(VocabularyFile vocabulary) =>
         [.. vocabulary.Rarities.OrderBy(rarity => rarity.Tier).Select(rarity => (rarity.Name, rarity.Tier))];
 
@@ -60,8 +41,6 @@ public static class EnumsCommand
         sql.AppendLine(
             $"CREATE TYPE rarity AS ENUM ({string.Join(", ", rarities.Select(r => $"'{r.Name}'"))});");
 
-        // Copied rather than re-serialised, so the committed input is byte for byte what the export
-        // wrote and the two can be diffed.
         var committed = Path.Combine(RepositoryRoot(), "src", "Fellowship.SDK", Vocabulary.FileName);
         File.Copy(exported, committed, overwrite: true);
 
@@ -74,10 +53,6 @@ public static class EnumsCommand
         Console.WriteLine($"  Rarity: {rarities.Count} members");
     }
 
-    /// <summary>
-    /// Walks up from the running binary to the directory holding the solution, so the refreshed
-    /// vocabulary lands beside the source tree regardless of where the process was started from.
-    /// </summary>
     private static string RepositoryRoot()
     {
         for (var at = new DirectoryInfo(AppContext.BaseDirectory); at is not null; at = at.Parent)

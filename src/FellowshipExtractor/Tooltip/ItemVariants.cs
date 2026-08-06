@@ -1,27 +1,9 @@
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>One rarity an item exists at and the image file it shows there.</summary>
 public readonly record struct RarityImage(string Rarity, string Image);
 
-/// <summary>
-/// The art one hero sees an item as, one written image per rarity the item drops at, in ladder
-/// order. Supplied by the caller because reading and writing it needs the asset provider, which
-/// the spread itself does not.
-/// </summary>
 public delegate IReadOnlyList<RarityImage> HeroArt(string heroCodename);
 
-/// <summary>
-/// One item id, spread into the entries a player would recognise as separate items.
-///
-/// A dynamic item is a template rather than a thing. The same helm is a different named item per
-/// armour type, its primary stat slot holds whatever the wearer's primary stat is, and the art it
-/// shows is the wearer's own armour set, so one id covers one entry per hero and there is no
-/// collapsing left that keeps the art right: Sune and Warmaster are both plate and both strength
-/// and wear different sets.
-///
-/// The spread happens here rather than in the page that draws it, so the export stays the single
-/// record of what the game holds and nothing downstream can disagree with it.
-/// </summary>
 public static class ItemVariants
 {
     public static List<Entity> Expand(
@@ -32,13 +14,9 @@ public static class ItemVariants
         string? setBonusMappingKey,
         HeroArt art)
     {
-        // An item that names the heroes it is for is only ever those heroes. One that names none
-        // is for all of them, and the metadata assets are the roll of who those are.
         var declared = item.Variants is { Count: > 0 } variants ? variants : null;
         var eligible = declared?.Select(variant => variant.Hero) ?? heroes.Codenames;
 
-        // The one slot whose stat the hero supplies. Matched on the slot kind rather than on the
-        // slot name, so no other slot the build leaves unresolved can be taken for it.
         var relative = item.Stats?.FirstOrDefault(slot => slot.Kind == SlotKinds.Primary);
         var cards = new List<Card>();
 
@@ -91,19 +69,9 @@ public static class ItemVariants
         ];
     }
 
-    /// <summary>
-    /// The art the item shows at the best rarity it drops at, which is the picture a reader who
-    /// wants one picture wants. Null where the item's slot has no collection art, leaving whatever
-    /// icon the item already carries in place - the four slots with no art on a collection are
-    /// exactly the ones whose definitions carry a DefaultIcon instead.
-    /// </summary>
     private static string? Best(IReadOnlyList<RarityImage> art) =>
         art.Count == 0 ? null : art[^1].Image;
 
-    /// <summary>
-    /// The art per rarity, given only where the rarities do not all look the same. A collection
-    /// with one rung answers with one picture at every rarity and says nothing a reader needs.
-    /// </summary>
     private static IReadOnlyDictionary<string, string>? Spread(IReadOnlyList<RarityImage> art)
     {
         if (art.Select(entry => entry.Image).Distinct(StringComparer.Ordinal).Count() < 2) return null;
@@ -113,11 +81,6 @@ public static class ItemVariants
         return spread;
     }
 
-    /// <summary>
-    /// What one hero sees this item as. The armour type is the item's, not the hero's: a cloak is
-    /// cloth for every hero who wears one, and its map says so by holding a cloth name and nothing
-    /// else. Only an item that really does hold several names picks by the hero's own armour type.
-    /// </summary>
     private static (string? Name, string? ArmorType) Naming(
         ItemNaming naming, HeroProfile hero, Variant? variant, Entity item)
     {
@@ -139,11 +102,6 @@ public static class ItemVariants
         return (variant?.DisplayName ?? naming.Scalar ?? item.DisplayName, null);
     }
 
-    /// <summary>
-    /// A card while it is being built. The codename is what the set bonus tables and the visual
-    /// collection mappings are keyed by; it is not exported, because the shipped name in
-    /// <see cref="Hero"/> says the same thing to a reader.
-    /// </summary>
     private sealed record Card
     {
         public string? DisplayName { get; init; }

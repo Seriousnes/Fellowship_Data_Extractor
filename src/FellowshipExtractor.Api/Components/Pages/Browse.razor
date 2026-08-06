@@ -190,8 +190,8 @@ else
                                 }
 
                                 <tr>
-                                    @{ var item = row as Item; }
-                                    <td class="cx-art"><Icon Src="@Ui.Icon(DocumentFields.Text(row, nameof(Item.Icon)))" /></td>
+                                    @{ var item = row as ItemDocument; }
+                                    <td class="cx-art"><Icon Src="@Ui.Icon(DocumentFields.Text(row, nameof(ItemDocument.Icon)))" /></td>
                                     <td><EntityLink Entity="row" Class="cx-nm" /></td>
                                     <td>@Codex.Label(EntityTypes.TypeOf(row))</td>
                                     @if (ShowSlot)
@@ -300,15 +300,12 @@ else
 
     private IReadOnlyList<Measure> Columns => View.Columns;
 
-    private bool ShowSlot => Results.Rows.Any(r => (r as Item)?.Slot is not null);
+    private bool ShowSlot => Results.Rows.Any(r => (r as ItemDocument)?.Slot is not null);
 
     private bool ShowWorn =>
-        Results.Rows.Any(r => r is Item { ArmorType: not null } or Item { PrimaryStat: not null } or
-            Item { Heroes: { Count: > 0 } });
+        Results.Rows.Any(r => r is ItemDocument { ArmorType: not null } or ItemDocument { PrimaryStat: not null } or
+            ItemDocument { Heroes: { Count: > 0 } });
 
-    // The schools a row carries, never the rest of its tags. A tag list is the build's own filing
-    // and reads as Skill.Secondary and TrackCooldown; the schools are the part of it the game prints
-    // in a damage sentence, and they are the only part drawn.
     private bool ShowSchools => Results.Rows.Any(r => Codex.Schools(r).Any());
 
     protected override void OnParametersSet()

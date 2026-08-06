@@ -5,32 +5,12 @@ using CUE4Parse.UE4.Assets.Exports.Engine;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// One rich text style the game draws a tagged run in: its colour, the typeface weight, and the
-/// size. Weight arrives as the name of the face inside the font asset, which is a number for the
-/// upright faces and a number with an Italic suffix for the slanted ones.
-/// </summary>
 public sealed record TextStyleEntry(string Color, string Weight, double Size);
 
-/// <summary>
-/// The style set a description's own markup names.
-///
-/// Description text tags its runs the way the game's rich text widget expects, writing
-/// "&lt;rt.warning&gt;+3%&lt;/&gt;", and every one of those tags is the name of a row in the
-/// shipped style set. So the colours a tooltip draws with are stated by the build rather than
-/// chosen by whoever renders it, and a renderer that picks its own drifts the moment an artist
-/// changes one.
-///
-/// The rows named as tags are what a description can reach. Several tables in the build share the
-/// row structure - the chat log and the EULA have their own - and all of them define Default and
-/// Bold, which a description never names. Reading only the rows whose name is a tag takes the ones
-/// that can appear in text and leaves the per-widget defaults where they belong.
-/// </summary>
 public sealed class RichTextStyles
 {
     private const string RowStructure = "/Script/UMG.RichTextStyleRow";
 
-    /// <summary>The prefix every style a description names is filed under.</summary>
     private const string TagPrefix = "rt.";
 
     private const string StyleField = "TextStyle";

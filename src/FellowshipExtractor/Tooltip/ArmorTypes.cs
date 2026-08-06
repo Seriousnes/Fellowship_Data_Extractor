@@ -4,16 +4,6 @@ using CUE4Parse.UE4.Assets.Exports.Engine;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// What an armour type value means. The usmap carries no enum tables, so ECRItemArmorType reaches
-/// an asset property as a bare ordinal; the same enum used as a map key survives as its full name.
-/// Both readings are answered here.
-///
-/// DT_ArmorTypeWeights is the shipped decode for the ordinal: it names each row after the armour
-/// type and repeats the ordinal inside the row. Its zero row carries no armour at all - zero
-/// weight, zero flat armour - so it is not an armour type anything can be, and a value naming it
-/// answers null rather than a label nothing wears.
-/// </summary>
 public sealed class ArmorTypes
 {
     public const string RowStructure = "/Script/fellowship.CRArmorTypeWeightRow";
@@ -45,7 +35,6 @@ public sealed class ArmorTypes
         }
     }
 
-    /// <summary>The armour type a stored value names, or null when it names none.</summary>
     public string? Label(object? value)
     {
         if (PropertyWalk.AsOrdinal(value) is { } ordinal) return _byOrdinal.GetValueOrDefault(ordinal);

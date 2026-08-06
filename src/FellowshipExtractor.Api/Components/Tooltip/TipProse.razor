@@ -1,15 +1,11 @@
 @inject TooltipView Ui
 
-@* The row's own words, with the caller's numbers substituted in.
-
-   .desc and .note are white-space: pre-line, so each paragraph is written on one line and carries
-   no literal text: a newline from source indentation would be a rendered blank line. *@
 <div class="grp">
-    @if (DocumentFields.Text(Entity, nameof(Ability.Description)) is { } description)
+    @if (DocumentFields.Text(Entity, nameof(AbilityDocument.Description)) is { } description)
     {
         <p class="desc">@Ui.Text(description, Tokens, Query, Hero, Schools)</p>
     }
-    @foreach (var detail in DocumentFields.Words(Entity, nameof(Ability.Detail)))
+    @foreach (var detail in DocumentFields.Words(Entity, nameof(AbilityDocument.Detail)))
     {
         <p class="note">@Ui.Text(detail, Tokens, Query, Hero, Schools)</p>
     }

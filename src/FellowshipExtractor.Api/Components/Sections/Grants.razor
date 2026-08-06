@@ -8,11 +8,5 @@
 }
 
 @code {
-    /// <summary>
-    /// The record this panel draws, re-supplied by every Detail. The nested Detail re-supplies the
-    /// cascade with the granted ability, so everything below this panel draws that and not this.
-    /// Resolved through <see cref="TooltipView.Granted"/>, which reads the same population the flat
-    /// model's own <c>Entity.Grants</c> ever answered for: an item's own <c>GrantsId</c>.
-    /// </summary>
     [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 }

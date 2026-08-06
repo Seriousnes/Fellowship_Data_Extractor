@@ -1,5 +1,3 @@
-using Fellowship.SDK.Documents;
-
 namespace FellowshipExtractor.Api.Tests;
 
 public class IdentityTests : BunitContext
@@ -71,11 +69,10 @@ public class VersionsTests : BunitContext
         Services.AddSingleton(export.Store);
     }
 
-    /// <summary>An id with one reading has no versions to tell apart, so the panel is absent.</summary>
     [Fact]
     public void Renders_nothing_for_an_id_with_one_reading()
     {
-        var only = new Item { Id = 1 };
+        var only = new ItemDocument { Id = 1 };
         var here = new Bearings { Shown = only, Readings = [only], Noun = "item" };
 
         var cut = Render<Versions>(p => p.AddCascadingValue(here));
@@ -86,12 +83,12 @@ public class VersionsTests : BunitContext
     [Fact]
     public void Groups_the_readings_into_named_versions_and_lists_who_wears_each()
     {
-        var cloth = new Item
+        var cloth = new ItemDocument
         {
             Id = 1, Name = "Scholar's Headscarf",
             ArmorType = ArmorType.Cloth, PrimaryStat = PrimaryStat.Intellect, Heroes = [Hero.Aeona],
         };
-        var leather = new Item
+        var leather = new ItemDocument
         {
             Id = 1, Name = "Scribe's Headband",
             ArmorType = ArmorType.Leather, PrimaryStat = PrimaryStat.Agility, Heroes = [Hero.Mara],
@@ -116,7 +113,6 @@ public class VersionsTests : BunitContext
         Assert.Equal(2, heads.Count);
         Assert.Equal("Cloth / Intellect", heads[0].QuerySelector("span.cx-num")!.TextContent);
 
-        // The version on the stage is the lit one; the other carries no style at all.
         Assert.Equal("color:var(--gold-bright)", heads[0].GetAttribute("style"));
         Assert.False(heads[1].HasAttribute("style"));
 
@@ -130,7 +126,7 @@ public class VersionsTests : BunitContext
     [Fact]
     public void Names_one_version_in_the_singular()
     {
-        var reading = new Item
+        var reading = new ItemDocument
         {
             Id = 1, Name = "Twin Cowl",
             ArmorType = ArmorType.Cloth, PrimaryStat = PrimaryStat.Intellect, Heroes = [Hero.Aeona],
@@ -147,15 +143,11 @@ public class VersionsTests : BunitContext
         Assert.Equal("1 version", cut.Find("div.cx-panel-head span.cx-num").TextContent);
     }
 
-    /// <summary>
-    /// 456 of the 2,143 readings carry neither half and are split by hero alone. Those versions get
-    /// no second line at all rather than a pair of "any"s.
-    /// </summary>
     [Fact]
     public void Gives_a_version_split_by_hero_alone_no_discriminator()
     {
-        var first = new Item { Id = 1, Name = "Plain Band", Heroes = [Hero.Aeona] };
-        var second = new Item { Id = 1, Name = "Plain Band", Heroes = [Hero.Mara] };
+        var first = new ItemDocument { Id = 1, Name = "Plain Band", Heroes = [Hero.Aeona] };
+        var second = new ItemDocument { Id = 1, Name = "Plain Band", Heroes = [Hero.Mara] };
 
         var here = new Bearings
         {

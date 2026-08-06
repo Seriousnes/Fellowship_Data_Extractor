@@ -59,7 +59,7 @@
             {
                 <EntityLink Entity="entity" Class="cx-card" Tint="false">
                     <span class="cx-linked">
-                        <Icon Src="@Ui.Icon(DocumentFields.Text(entity, nameof(Item.Icon)))" />
+                        <Icon Src="@Ui.Icon(DocumentFields.Text(entity, nameof(ItemDocument.Icon)))" />
                         <span>
                             <span class="cx-card-name" style="color:@Ui.NameColour(entity)">@PublicTypes.NameOf(entity)</span><br />
                             <span class="cx-card-count">@Codex.Label(EntityTypes.TypeOf(entity))</span>
@@ -74,28 +74,19 @@
 @code {
     private int Entries => Ui.Codex.Count;
 
-    /// <summary>The roster's badge, which counts heroes rather than entries.</summary>
     private string Roster => $"{Store.Vocabulary.Heroes.Count} heroes";
 
     private static readonly string ItemSlug = EntityTypes.Slug(EntityType.Item);
 
-    /// <summary>
-    /// A sample row of each type, richest first. Every row the extractor writes is one a reader can
-    /// meet - the drop rules already keep the rest out of the export - so there is no narrower
-    /// "public" test left to run, unlike the flat model's own table check.
-    ///
-    /// "Richest" is a description's length alone: the flat model's own scoring also weighted a row's
-    /// shipped tuning-knob count, which no document class carries any more.
-    /// </summary>
     private IReadOnlyList<EntityDocument> Showcase =>
     [
         .. Store.Entities
             .Where(e => PublicTypes.DisplayNameOf(e) is not null &&
-                DocumentFields.Text(e, nameof(Item.Icon)) is not null &&
-                DocumentFields.Text(e, nameof(Ability.Description)) is not null)
+                DocumentFields.Text(e, nameof(ItemDocument.Icon)) is not null &&
+                DocumentFields.Text(e, nameof(AbilityDocument.Description)) is not null)
             .GroupBy(EntityTypes.TypeOf)
             .SelectMany(group => group
-                .OrderByDescending(e => DocumentFields.Text(e, nameof(Ability.Description))?.Length ?? 0)
+                .OrderByDescending(e => DocumentFields.Text(e, nameof(AbilityDocument.Description))?.Length ?? 0)
                 .Take(2))
             .OrderBy(e => Codex.Label(EntityTypes.TypeOf(e)), StringComparer.OrdinalIgnoreCase)
             .ThenBy(e => PublicTypes.NameOf(e), StringComparer.OrdinalIgnoreCase)

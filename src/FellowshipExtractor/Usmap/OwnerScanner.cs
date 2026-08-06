@@ -1,6 +1,5 @@
 namespace FellowshipExtractor.Usmap;
 
-/// <summary>A generated FStructParams record: one native struct and its property list.</summary>
 public sealed record StructParams(
     ulong Va,
     string Name,
@@ -11,16 +10,6 @@ public sealed record StructParams(
     public ushort SizeOf { get; init; }
 }
 
-/// <summary>
-/// Recovers FStructParams records. These sit in .data rather than .rdata, and the layout was
-/// established by tracing FGameplayTag's TagName property back to its owner:
-///
-///   +0x00 OuterFunc  +0x08 SuperFunc  +0x10 StructOpsFunc  +0x18 NameUTF8
-///   +0x20 PropertyArray  +0x30 ObjectFlags(0x45)  +0x34 NumProperties
-///
-/// The property count is cross-checked against the pointer run it describes, so a record only
-/// survives if its declared length really is that many property records.
-/// </summary>
 public sealed class OwnerScanner(PeImage image, IReadOnlyList<PropertyRecord> records)
 {
     private const int OuterFuncOffset = 0x00;
@@ -54,10 +43,6 @@ public sealed class OwnerScanner(PeImage image, IReadOnlyList<PropertyRecord> re
 
                 var array = image.ReadPointer(offset + PropertyArrayOffset);
 
-                // A struct that adds no properties of its own still has a params record, and it
-                // is the only place its name is written. Recovering it is what keeps the type
-                // resolver from mistaking such a struct for its neighbour. With no property run
-                // to check against, require the null array UHT emits in that case.
                 if (count == 0 && array != 0) continue;
 
                 var name = image.ReadUtf8(image.ReadPointer(offset + NameOffset), 128);
@@ -79,7 +64,6 @@ public sealed class OwnerScanner(PeImage image, IReadOnlyList<PropertyRecord> re
         return found;
     }
 
-    /// <summary>The declared property run, or null if any entry is not a property record.</summary>
     private IReadOnlyList<PropertyRecord>? ReadRun(ulong arrayVa, int count)
     {
         var start = image.Offset(arrayVa);

@@ -1,7 +1,5 @@
 .cx-note {
   color: var(--muted); font-size: 12px; margin: 0 0 8px;
 
-  /* The note's body is child content, so a <code> in it carries the caller's scope attribute.
-     Written without ::deep this compiles, bundles and matches nothing. */
   ::deep code { font: 12px/1.5 var(--mono); color: var(--core-secondary-100); }
 }

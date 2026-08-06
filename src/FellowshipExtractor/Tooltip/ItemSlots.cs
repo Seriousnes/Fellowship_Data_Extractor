@@ -6,15 +6,6 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Tooltip;
 
-/// <summary>
-/// What an item's FixedSlots entries actually are. The item names slots only - "StatCrit",
-/// "HeroRelativePrimaryStat" - and the slot definition table says which stat each one carries and
-/// which kind of slot it is.
-///
-/// The magnitude is not here and is not in the build: a dynamic item rolls it from its level at
-/// drop time, so an item declares which stats it has, the share of the budget each is worth, and
-/// never how much of them. <see cref="StatCalculation"/> holds the rest of that arithmetic.
-/// </summary>
 public sealed class ItemSlots
 {
     public const string RowStructure = "/Script/DynamicLootSystemRuntime.CRDynamicHeroItemSlotDefinition";
@@ -25,7 +16,6 @@ public sealed class ItemSlots
     private const string TypeField = "SlotType";
     private const string PoolField = "StatPool";
 
-    /// <summary>ECRDynamicItemSlotType's first three values, which are the stat-bearing ones.</summary>
     private const int PrimarySlotType = 0;
     private const int FixedSlotType = 1;
     private const int RandomSlotType = 2;
@@ -35,7 +25,6 @@ public sealed class ItemSlots
 
     public int Count => _statBySlot.Count;
 
-    /// <summary>The stats a slot rolled at random can land on, which every random slot shares.</summary>
     public IReadOnlyList<string> RandomStatPool { get; private set; } = [];
 
     public ItemSlots(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
@@ -58,13 +47,6 @@ public sealed class ItemSlots
         }
     }
 
-    /// <summary>
-    /// The stats an item's slots carry, in the order the item declares them, each with the share
-    /// of the budget its slot is worth.
-    ///
-    /// There is one shipped weight per stat-bearing slot, so a slot that carries no stat - a gem
-    /// socket, a set bonus, a granted ability - is dropped before the two are lined up.
-    /// </summary>
     public List<StatSlot> For(UObject asset, StatCalculation calculation)
     {
         var declared = PropertyWalk.Walk(asset)
@@ -103,7 +85,6 @@ public sealed class ItemSlots
         return slots;
     }
 
-    /// <summary>The stats a slot's pool names, with the enum prefix taken off.</summary>
     private static string[] Pool(IPropertyHolder row)
     {
         if (PropertyWalk.Get(row, PoolField)?.GenericValue is not UScriptArray pool) return [];
@@ -116,10 +97,6 @@ public sealed class ItemSlots
     }
 }
 
-/// <summary>
-/// Data tables are found by the row struct they declare rather than by path, so a table that moves
-/// or a second table sharing the struct is still picked up.
-/// </summary>
 public static class TableFinder
 {
     public static IEnumerable<string> ByRowStructure(IReadOnlyList<FAssetData> assets, string rowStructure) =>
