@@ -83,7 +83,7 @@ public sealed class Codex
 
     public IReadOnlyList<TypeView> Types { get; }
 
-    public int Count => store.Count;
+    public int Count => store.Ids;
 
     public IReadOnlyList<MenuGroup> Menu { get; }
 
@@ -193,7 +193,7 @@ public sealed class Codex
 
         var counts = store.Entities
             .GroupBy(EntityTypes.TypeOf)
-            .ToDictionary(g => g.Key, g => g.Count());
+            .ToDictionary(group => group.Key, group => group.Select(row => row.Id).Distinct().Count());
 
         Types =
         [

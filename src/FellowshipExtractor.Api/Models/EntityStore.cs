@@ -93,6 +93,8 @@ public sealed class EntityStore
 
     public int Count { get; }
 
+    public int Ids { get; }
+
     public EntityStore(ExportPaths paths, ILogger<EntityStore> logger)
     {
         var file = JsonSerializer.Deserialize<VocabularyFile>(File.ReadAllText(paths.Vocabulary), Options)
@@ -153,6 +155,8 @@ public sealed class EntityStore
 
         foreach (var (key, list) in groups) byId[key] = [.. list];
 
+        Ids = byId.Count;
+
         Entities = entities;
         Stats = new StatParameters(stats, Vocabulary.StatCalculation.Attributes);
 
@@ -171,7 +175,7 @@ public sealed class EntityStore
         logger.LogInformation(
             "Export loaded from {Path}: {Entities} entities under {Ids} ids, {Ambiguous} of which read differently per hero. " +
             "{Heroes} heroes, {Rarities} rarity rungs, {Formats} print formats, {Colors} colours, {Styles} text styles, {Stats} stat names",
-            paths.Export, Count, byId.Count, byId.Count(e => e.Value.Length > 1), Vocabulary.Heroes.Count,
+            paths.Export, Count, Ids, byId.Count(e => e.Value.Length > 1), Vocabulary.Heroes.Count,
             Vocabulary.Rarities.Count, Vocabulary.PrintFormats.Count, Vocabulary.Colors.Count,
             Vocabulary.TextStyles.Count, Stats.Names.Count);
 
