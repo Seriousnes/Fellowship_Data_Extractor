@@ -19,6 +19,7 @@ public sealed class ChromeAssets(
     private const string OrnamentFamily = "T_Backgrounds_TooltipItemHeader_TopDecor_Clean_";
 
     private const string PanelTexture = "T_Borders_WindowBackground_TooltipSimple";
+    private const string WindowTexture = "T_Borders_BGPatterns_SmallIndentAlt";
     private const string NeutralHeaderTexture = "T_Backgrounds_TooltipHeader_Subheader";
     private const string SlotTexture = "T_Icons_Generic_TooltipSlot";
     private const string ItemPowerTexture = "T_Icons_Progression_ItemLevel";
@@ -27,6 +28,8 @@ public sealed class ChromeAssets(
     private const string LegendaryTexture = "T_Icons_StatTooltip_Legendary";
     private const string SetBonusTexture = "T_Icons_StatTooltip_Set_Bonus";
     private const string SlotPlateTexture = "T_Borders_EmptySlot";
+    private const string TraitTexture = "T_Icons_StatTooltip_TraitSlot";
+    private const string ExpandTexture = "T_Icons_Generic_TooltipExpand";
 
     private static readonly string[] Badges = [AbilityTexture, LegendaryTexture, SetBonusTexture];
 
@@ -58,11 +61,20 @@ public sealed class ChromeAssets(
 
     public string Panel => Url(Name(PanelTexture));
 
-    public string SlotGlyph => Url(Name(SlotTexture));
+    public string Window => Url(Name(WindowTexture));
+
+    public string SlotGlyph(string? slot) =>
+        Url(Name(slot is not null && store.Vocabulary.SlotIcons.TryGetValue(slot, out var gear)
+            ? gear
+            : SlotTexture));
 
     public string ItemPowerGlyph => Url(Name(ItemPowerTexture));
 
     public string Rule => Url(Name(RuleTexture));
+
+    public string TraitGlyph => Url(Name(TraitTexture));
+
+    public string ExpandGlyph => Url(Name(ExpandTexture));
 
     public Badge AbilityBadge => Section(AbilityTexture);
 

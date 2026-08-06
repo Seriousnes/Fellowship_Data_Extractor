@@ -17,11 +17,9 @@ public partial class IsolationTests
             "Components/Cx/KeyValue.razor.css",
         ];
 
-        var project = Project();
-
         foreach (var sheet in sheets)
         {
-            var path = Path.Combine(project, sheet);
+            var path = Path.Combine(Project.Folder, sheet);
 
             Assert.True(File.Exists(path), $"{path} was not generated. Sass compiles it on build.");
             Assert.DoesNotMatch(ScopedCode(), File.ReadAllText(path));
@@ -31,13 +29,11 @@ public partial class IsolationTests
     [Fact]
     public void The_bundle_puts_the_attribute_on_the_ancestor_of_a_caller_written_code_element()
     {
-        var bundle = Path.Combine(
-            Project(), "obj", "Debug", "net10.0", "scopedcss", "bundle",
-            "FellowshipExtractor.Api.styles.css");
+        Assert.True(
+            File.Exists(Project.Bundle),
+            $"{Project.Bundle} was not bundled. The Razor SDK writes it on build.");
 
-        Assert.True(File.Exists(bundle), $"{bundle} was not bundled. The Razor SDK writes it on build.");
-
-        var css = File.ReadAllText(bundle);
+        var css = File.ReadAllText(Project.Bundle);
 
         Assert.DoesNotMatch(ScopedCode(), css);
 
@@ -46,17 +42,14 @@ public partial class IsolationTests
         Assert.Matches(@"li\[b-[a-z0-9]{10}\]\s+code", css);
     }
 
-    private static string Project()
+    [Fact]
+    public void Nothing_the_tooltip_draws_with_reaches_the_page_bundle()
     {
-        for (var here = new DirectoryInfo(AppContext.BaseDirectory); here is not null; here = here.Parent)
-        {
-            var project = Path.Combine(here.FullName, "src", "FellowshipExtractor.Api");
+        Assert.True(
+            File.Exists(Project.Bundle),
+            $"{Project.Bundle} was not bundled. The Razor SDK writes it on build.");
 
-            if (File.Exists(Path.Combine(project, "FellowshipExtractor.Api.csproj"))) return project;
-        }
-
-        throw new InvalidOperationException(
-            "No src/FellowshipExtractor.Api above the test binary. The generated .razor.css files sit " +
-            "beside their .razor.scss sources in that folder.");
+        Assert.DoesNotContain(
+            TooltipView.Root, File.ReadAllText(Project.Bundle), StringComparison.Ordinal);
     }
 }

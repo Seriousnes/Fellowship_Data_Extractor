@@ -44,6 +44,9 @@ public sealed class TooltipResolver
     public ItemSlots Slots { get; }
     public StatCalculation StatCalculation { get; }
     public ItemSlotNames SlotNames { get; }
+    public SlotIcons SlotGlyphs { get; }
+
+    public TemperCeilings Tempers { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public DynamicItemVisuals DynamicVisuals { get; }
@@ -96,6 +99,8 @@ public sealed class TooltipResolver
         Mappings = new GrantedAbilityMappings(provider, _assets);
         Slots = new ItemSlots(provider, _assets);
         SlotNames = new ItemSlotNames(provider, _assets);
+        SlotGlyphs = new SlotIcons(provider, SlotNames);
+        Tempers = new TemperCeilings(provider, rarities);
         Armor = new ArmorTypes(provider, _assets);
         SetBonuses = new ItemSetBonuses(provider, _assets, augmentations);
         TableNames = new ItemTableNames(provider, _assets);
@@ -116,7 +121,8 @@ public sealed class TooltipResolver
 
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
-        Vocabulary = new Vocabulary(provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool);
+        Vocabulary = new Vocabulary(
+            provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, SlotGlyphs, Tempers);
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));

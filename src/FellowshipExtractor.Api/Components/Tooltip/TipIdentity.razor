@@ -10,7 +10,7 @@
         <div class="row">
             @if (Entity.Slot is { } slot)
             {
-                <span><img class="gi" alt="" src="@Ui.Chrome.SlotGlyph">@slot</span>
+                <span><img class="gi" alt="" src="@Ui.Chrome.SlotGlyph(slot)">@slot</span>
             }
             @if (Level is { } power)
             {
@@ -27,7 +27,7 @@
             }
             @if (Temper is { } tempered)
             {
-                <span>@tempered</span>
+                <span><span class="temper">Tempered</span>@tempered</span>
             }
         </div>
     }

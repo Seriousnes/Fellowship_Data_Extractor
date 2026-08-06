@@ -11,11 +11,16 @@ public sealed class TooltipView(
     RichTextRenderer renderer,
     Placeholders placeholders,
     ChromeAssets chrome,
-    BlobContainerClient icons)
+    BlobContainerClient icons,
+    IWebHostEnvironment environment)
 {
     public const string Root = "fx-tip";
 
-    private const string Tempered = "Tempered";
+    public const string TraitSlug = "traits";
+
+    private const string Sheet = "css/tooltip.css";
+
+    private readonly string sheet = Compose(environment, chrome, renderer);
 
     public ChromeAssets Chrome => chrome;
 
@@ -55,12 +60,17 @@ public sealed class TooltipView(
             ? query.ItemLevel ?? StatMagnitudes.MaximumItemLevel
             : query.ItemLevel;
 
-    public string? Temper(TooltipQuery query) =>
-        query.Upgrades is not { } upgrades
-            ? null
-            : query.MaxUpgrades is { } max
-                ? $"{Tempered} {upgrades} / {max}"
-                : $"{Tempered} {upgrades}";
+    public string? Temper(TooltipQuery query, RarityEntry? rarity, int? level)
+    {
+        if (query.Upgrades is not { } upgrades) return null;
+
+        var ceiling = query.MaxUpgrades
+            ?? Tempering.Ceiling(store.Vocabulary.MaxTempers, rarity?.Name, level);
+
+        return ceiling is { } max
+            ? $"{upgrades.ToString(CultureInfo.InvariantCulture)} / {max.ToString(CultureInfo.InvariantCulture)}"
+            : upgrades.ToString(CultureInfo.InvariantCulture);
+    }
 
     public IReadOnlyList<Fact> Facts(Entity entity, TooltipQuery query)
     {
@@ -113,6 +123,21 @@ public sealed class TooltipView(
             ? power.Normalize().ToString(CultureInfo.InvariantCulture)
             : null;
 
+    public IReadOnlyList<TraitLine> Traits(TooltipQuery query)
+    {
+        if (query.Traits.Count == 0) return [];
+
+        var table = PublicTypes.TableOf(TraitSlug)!;
+
+        return
+        [
+            .. query.Traits.Select(imbued => new TraitLine(
+                store.All(table, imbued.NetId).Select(PublicTypes.NameOf).FirstOrDefault()
+                    ?? imbued.NetId.ToString(CultureInfo.InvariantCulture),
+                imbued.Rank)),
+        ];
+    }
+
     public IReadOnlyList<StatLine> Rolls(Entity entity, TooltipQuery query, RarityEntry? rarity) =>
         StatMagnitudes.For(
             entity,
@@ -136,86 +161,63 @@ public sealed class TooltipView(
             source,
             substitutions is null ? null : placeholders.Resolve(substitutions, query, hero, tags)));
 
-    public string Style() =>
-        $$"""
-        .{{Root}}{display:flex;align-items:flex-start;gap:7px;box-sizing:border-box;
-        width:max-content;max-width:100%;text-align:left;
-        color:var(--core-text-primary);font:400 12px/1.42 "Noto Sans",system-ui,-apple-system,
-        "Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;
-        letter-spacing:normal;word-spacing:normal;text-transform:none;text-indent:0;
-        white-space:normal;text-shadow:none}
-        .{{Root}} *{box-sizing:border-box;margin:0}
-        .{{Root}} .slot{position:relative;flex:0 0 auto;width:48px;height:48px;padding:3px;
-        background:url({{chrome.SlotPlate}}) 0 0/100% 100% no-repeat}
-        .{{Root}} .slot::after{content:"";position:absolute;inset:0;pointer-events:none;
-        background:var(--fx-slot) 0 0/100% 100% no-repeat}
-        .{{Root}} .art{display:block;width:100%;height:100%;object-fit:contain}
-        .{{Root}} .card{position:relative;flex:0 1 274px;width:274px;min-width:0;
-        background:var(--core-secondary-900);
-        box-shadow:inset 0 0 0 1px var(--core-secondary-600)}
-        .{{Root}} .card::before{content:"";position:absolute;top:0;left:0;right:0;
-        height:106px;max-height:100%;pointer-events:none;
-        background:var(--fx-frame) 0 0/100% 106px no-repeat}
-        .{{Root}} .head{position:relative;padding:9px 0 7px;background:var(--fx-header) 0 0/100% 100% no-repeat}
-        .{{Root}} .title{margin:0 18px;font-family:ArnoPro,"Arno Pro","Iowan Old Style",
-        "Palatino Linotype",Palatino,"Book Antiqua","Times New Roman",serif;font-size:15px;
-        font-weight:600;line-height:1.22;letter-spacing:.13em;text-transform:uppercase;
-        text-align:center;text-wrap:balance;color:var(--fx-title)}
-        .{{Root}} .orn{position:absolute;top:-7px;left:50%;transform:translateX(-50%);
-        width:calc(100% * 254 / 280);height:14px;pointer-events:none}
-        .{{Root}} .lines{display:flex;flex-direction:column;gap:6px;padding:8px 11px 10px}
-        .{{Root}} .grp{display:flex;flex-direction:column;gap:3px}
-        .{{Root}} .rule{height:8px;border:0;margin:1px 0;
-        background:url({{chrome.Rule}}) 0 0/100% 100% no-repeat}
-        .{{Root}} .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-        .{{Root}} .row>span{display:flex;align-items:center;gap:5px;min-width:0}
-        .{{Root}} .gi{flex:0 0 auto;width:13px;height:13px;object-fit:contain}
-        .{{Root}} .kind{color:var(--core-text-secondary)}
-        .{{Root}} .k{color:var(--core-text-secondary)}
-        .{{Root}} .power{color:var(--core-secondary-000)}
-        .{{Root}} .rar{color:var(--fx-title)}
-        .{{Root}} .pot{color:var(--core-primary-200)}
-        .{{Root}} .stats{display:flex;flex-direction:column;gap:2px;list-style:none;padding:0}
-        .{{Root}} .stats li{display:flex;gap:5px}
-        .{{Root}} .stats .v{font-weight:600}
-        .{{Root}} .stats .guaranteed{color:var(--game-stat-primary)}
-        .{{Root}} .stats .random{color:var(--game-stat-secondary)}
-        .{{Root}} .stats .unresolved span:last-child{font-style:italic}
-        .{{Root}} .sec{display:flex;align-items:center;gap:6px;font-weight:600}
-        .{{Root}} .sec .n{font-weight:400;color:var(--core-text-secondary)}
-        .{{Root}} .ability{color:{{chrome.AbilityBadge.Colour}};}
-        .{{Root}} .legendary{color:{{chrome.LegendaryBadge.Colour}};}
-        .{{Root}} .setbonus{color:{{chrome.SetBonusBadge.Colour}};}
-        .{{Root}} .nm{font-weight:600;color:var(--core-primary-200)}
-        .{{Root}} .note{color:var(--core-text-secondary)}
-        .{{Root}} .desc{white-space:pre-line}
-        .{{Root}} .sub{font-weight:600;border-bottom:1px dotted currentColor;cursor:help}
-        .{{Root}} .tok{color:var(--core-text-disabled);font-style:italic;
-        border-bottom:1px dotted currentColor;cursor:help}
-        .{{Root}} .rt-unstyled{color:inherit}
-        {{renderer.Css(Root)}}
-        """;
+    public string Style() => sheet;
+
+    private static string Compose(
+        IWebHostEnvironment environment, ChromeAssets chrome, RichTextRenderer renderer)
+    {
+        var file = environment.WebRootFileProvider.GetFileInfo(Sheet);
+
+        if (!file.Exists || file.Length == 0)
+        {
+            throw new InvalidOperationException(
+                $"{Sheet} is missing from the web root, so the tooltip has no rules to carry. " +
+                "Sass writes it from Styles/tooltip.scss on build, which pulls in " +
+                "Components/Tooltip/_Tooltip.razor.scss.");
+        }
+
+        using var reading = new StreamReader(file.CreateReadStream());
+
+        return
+            $$"""
+            .{{Root}}{--fx-slot-plate:url({{chrome.SlotPlate}});--fx-window:url({{chrome.Window}});
+            --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};
+            --fx-setbonus:{{chrome.SetBonusBadge.Colour}}}
+
+            """ +
+            reading.ReadToEnd() +
+            renderer.Css(Root);
+    }
 
     public sealed record Fact(string Label, string Value, string? Title);
 
-    public enum Block { Identity, Facts, Rolls, Prose, Overflow, Granted, Legendaries, Sets }
+    public sealed record TraitLine(string Name, int Rank);
+
+    public enum Block { Identity, Facts, Rolls, Traits, Prose, Overflow, Granted, Legendaries, Sets }
 
     public IReadOnlyList<Block> Blocks(
         Entity entity,
         TooltipQuery query,
         RarityEntry? rarity,
         IReadOnlyList<Fact> facts,
-        IReadOnlyList<StatLine> rolls)
+        IReadOnlyList<StatLine> rolls,
+        IReadOnlyList<TraitLine> traits)
     {
-        var shown = new List<Block>(8);
+        var shown = new List<Block>(9);
 
         if ((entity.ArmorType ?? entity.GemType) is not null || entity.Slot is not null ||
-            Level(entity, query) is not null || rarity is not null || Temper(query) is not null ||
+            Level(entity, query) is not null || rarity is not null ||
+            Temper(query, rarity, Level(entity, query)) is not null ||
             entity.GemSlot == true || entity.UniqueEquipped == true) shown.Add(Block.Identity);
 
         if (facts.Count > 0) shown.Add(Block.Facts);
 
         if (Potential(query) is not null || rolls.Count > 0) shown.Add(Block.Rolls);
+
+        if (traits.Count > 0 || query.AllocatedTraits is not null || query.MaxTraits is not null)
+        {
+            shown.Add(Block.Traits);
+        }
 
         if (entity.Description is not null || entity.Detail is { Count: > 0 }) shown.Add(Block.Prose);
 

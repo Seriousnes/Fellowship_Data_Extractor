@@ -36,6 +36,10 @@
                             <TipRolls Potential="@Ui.Potential(Query)" Lines="rolls" />
                             break;
 
+                        case TooltipView.Block.Traits:
+                            <TipTraits Lines="traits" Allocated="Query.AllocatedTraits" Total="Query.MaxTraits" />
+                            break;
+
                         case TooltipView.Block.Prose:
                             <TipProse Entity="Entity" Query="Query" Hero="Hero" />
                             break;
@@ -85,6 +89,8 @@
 
     private IReadOnlyList<StatLine> rolls = [];
 
+    private IReadOnlyList<TooltipView.TraitLine> traits = [];
+
     private IReadOnlyList<TooltipView.Block> shown = [];
 
     protected override void OnParametersSet()
@@ -92,12 +98,13 @@
         Rung = Ui.Rarity(Entity, Query);
         Art = Ui.Art(Entity, Rung);
         Level = Ui.Level(Entity, Query);
-        Temper = Ui.Temper(Query);
+        Temper = Ui.Temper(Query, Rung, Level);
         Sheet = new MarkupString(Ui.Style());
         facts = Ui.Facts(Entity, Query);
         rolls = Ui.Rolls(Entity, Query, Rung);
+        traits = Ui.Traits(Query);
         Named = Entity.Grants is null ? null : PublicTypes.DisplayNameOf(Entity.Grants);
 
-        shown = Ui.Blocks(Entity, Query, Rung, facts, rolls);
+        shown = Ui.Blocks(Entity, Query, Rung, facts, rolls, traits);
     }
 }

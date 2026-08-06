@@ -1,8 +1,33 @@
 using Azure.Storage.Blobs;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FellowshipExtractor.Api.Tests;
+
+public sealed class ApiWebRoot : IWebHostEnvironment
+{
+    public ApiWebRoot()
+    {
+        WebRootPath = Path.Combine(Project.Folder, "wwwroot");
+        WebRootFileProvider = new PhysicalFileProvider(WebRootPath);
+        ContentRootPath = Project.Folder;
+        ContentRootFileProvider = new PhysicalFileProvider(ContentRootPath);
+    }
+
+    public string ApplicationName { get; set; } = typeof(TooltipView).Assembly.GetName().Name!;
+
+    public string EnvironmentName { get; set; } = "Test";
+
+    public string WebRootPath { get; set; }
+
+    public IFileProvider WebRootFileProvider { get; set; }
+
+    public string ContentRootPath { get; set; }
+
+    public IFileProvider ContentRootFileProvider { get; set; }
+}
 
 public sealed class Export
 {
@@ -35,7 +60,8 @@ public sealed class Export
         var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
 
         Tooltip = new TooltipView(
-            Store, tokens, richText, substitutions, new ChromeAssets(icons, paths, Store, tokens), icons);
+            Store, tokens, richText, substitutions, new ChromeAssets(icons, paths, Store, tokens), icons,
+            new ApiWebRoot());
     }
 
     private static string Found()

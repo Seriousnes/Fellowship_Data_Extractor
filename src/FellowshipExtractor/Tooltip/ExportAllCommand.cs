@@ -52,7 +52,9 @@ public static class ExportAllCommand
         Console.WriteLine(
             $"vocabulary:         {resolver.Vocabulary.Heroes.Count} heroes, {resolver.Vocabulary.Rarities.Count} " +
             $"rarities, {resolver.Vocabulary.PrintFormats.Count} print formats, " +
-            $"{resolver.Vocabulary.Colors.Count} colours, {resolver.Vocabulary.TextStyles.Count} text styles");
+            $"{resolver.Vocabulary.Colors.Count} colours, {resolver.Vocabulary.TextStyles.Count} text styles, " +
+            $"{resolver.Vocabulary.SlotIcons.Count} slot glyphs, " +
+            $"{resolver.Vocabulary.MaxTempers.Count} tempering ladders");
 
         var wanted = new HashSet<string>(tables, StringComparer.OrdinalIgnoreCase);
         var selected = resolver.Tags

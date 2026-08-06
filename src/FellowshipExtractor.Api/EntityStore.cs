@@ -43,6 +43,12 @@ public sealed record VocabularyFile
     public IReadOnlyDictionary<string, TextStyle> TextStyles { get; init; } =
         new Dictionary<string, TextStyle>(StringComparer.OrdinalIgnoreCase);
 
+    public IReadOnlyDictionary<string, string> SlotIcons { get; init; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; init; } =
+        new Dictionary<string, IReadOnlyList<TemperCeiling>>(StringComparer.OrdinalIgnoreCase);
+
     public StatCalculationFile StatCalculation { get; init; } = new();
 }
 
@@ -131,6 +137,9 @@ public sealed class EntityStore
         {
             TextStyles = new Dictionary<string, TextStyle>(file.TextStyles, StringComparer.OrdinalIgnoreCase),
             Colors = new Dictionary<string, string>(file.Colors, StringComparer.OrdinalIgnoreCase),
+            SlotIcons = new Dictionary<string, string>(file.SlotIcons, StringComparer.OrdinalIgnoreCase),
+            MaxTempers = new Dictionary<string, IReadOnlyList<TemperCeiling>>(
+                file.MaxTempers, StringComparer.OrdinalIgnoreCase),
             StatCalculation = file.StatCalculation with
             {
                 SlotWeights = new Dictionary<string, SlotWeight>(

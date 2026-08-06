@@ -221,6 +221,18 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
+        var traits = PublicTypes.TableOf(TooltipView.TraitSlug)!;
+
+        foreach (var imbued in query.Traits)
+        {
+            if (store.All(traits, imbued.NetId).Count > 0) continue;
+
+            return Results.Problem(
+                title: "No such item trait.",
+                detail: $"The build has no item trait {imbued.NetId}.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
         var outcome = store.Resolve(table, netId, query.Hero, out var entity, out var hero);
 
         var noun = PublicTypes.Noun(table);

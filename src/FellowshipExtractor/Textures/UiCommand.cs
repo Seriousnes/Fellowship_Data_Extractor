@@ -1,4 +1,5 @@
 using CUE4Parse_Conversion.Textures;
+using FellowshipExtractor.Tooltip;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -52,6 +53,10 @@ public static class UiCommand
     {
         var provider = await ProviderFactory.CreateAsync(options);
 
+        var slotIcons = SlotIcons.Textures(provider);
+
+        string[] textures = [.. Chrome, .. slotIcons.Values.Order(StringComparer.Ordinal)];
+
         var byName = provider.Files.Values
             .Where(f => f.Path.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
             .ToLookup(f => Path.GetFileNameWithoutExtension(f.Path), StringComparer.OrdinalIgnoreCase);
@@ -59,11 +64,13 @@ public static class UiCommand
         var folder = Path.Combine(options.ResolvedOutputDir, "export", "ui");
         Directory.CreateDirectory(folder);
 
-        Console.WriteLine($"writing {Chrome.Length} tooltip chrome texture(s) to {folder}\n");
+        Console.WriteLine(
+            $"writing {textures.Length} tooltip chrome texture(s) to {folder}, " +
+            $"{slotIcons.Count} of them the slot glyphs {SlotIcons.Widget} names\n");
 
         int written = 0, missing = 0;
 
-        foreach (var name in Chrome)
+        foreach (var name in textures)
         {
             var packages = byName[name].ToArray();
             if (packages.Length != 1)
@@ -97,7 +104,7 @@ public static class UiCommand
                 $"{Describe(export.File!),-28} {new FileInfo(export.File!).Length,8} bytes");
         }
 
-        Console.WriteLine($"\nwrote {written} of {Chrome.Length} texture(s) to {folder}");
+        Console.WriteLine($"\nwrote {written} of {textures.Length} texture(s) to {folder}");
         if (missing > 0) Console.WriteLine($"  {missing} not written, see above");
         Console.WriteLine("no font is exported: the header face is ArnoPro and is not ours to redistribute");
     }

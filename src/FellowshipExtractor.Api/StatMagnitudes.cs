@@ -15,6 +15,8 @@ public static class StatMagnitudes
 
     private const string StaminaStat = "Stamina";
 
+    private const string ArmorStat = "Armor";
+
     private const string RandomStatSlot = "RandomStat";
 
     private const string RandomStatLabel = "[Random Stat]";
@@ -27,8 +29,12 @@ public static class StatMagnitudes
         int itemLevel,
         TooltipQuery query)
     {
+        var armor = query.Armor is { } worn
+            ? new StatLine(ArmorStat, Label(calculation, ArmorStat), worn, SlotKinds.Fixed, Rolled: false)
+            : null;
+
         var rolledSlots = RandomSlots(entity, calculation, rarity);
-        if (entity.Stats is not { Count: > 0 } && rolledSlots == 0) return [];
+        if (entity.Stats is not { Count: > 0 } && rolledSlots == 0 && armor is null) return [];
 
         var slotWeight = entity.Slot is { } slot && calculation.SlotWeights.TryGetValue(slot, out var weights)
             ? (decimal)weights.StatWeight
@@ -39,6 +45,8 @@ public static class StatMagnitudes
 
         var lines = new List<StatLine>();
         var taken = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        if (armor is { } worth) lines.Add(worth);
 
         foreach (var declared in (entity.Stats ?? []).OrderBy(slot => slot.Kind == SlotKinds.Primary ? 0 : 1))
         {

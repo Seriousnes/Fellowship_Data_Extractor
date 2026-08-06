@@ -34,16 +34,24 @@ public sealed class Vocabulary
 
     public IReadOnlyList<string> RandomStatPool { get; }
 
+    public IReadOnlyDictionary<string, string> SlotIcons { get; }
+
+    public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; }
+
     public Vocabulary(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
         HeroNames heroes,
         RarityNames rarities,
         StatCalculation statCalculation,
-        IReadOnlyList<string> randomStatPool)
+        IReadOnlyList<string> randomStatPool,
+        SlotIcons slotIcons,
+        TemperCeilings tempers)
     {
         StatCalculation = statCalculation;
         RandomStatPool = randomStatPool;
+        SlotIcons = slotIcons.BySlot;
+        MaxTempers = tempers.ByRarity;
 
         var colours = Colours(provider, assets);
 
@@ -89,6 +97,8 @@ public sealed class Vocabulary
             {
                 heroes = Heroes,
                 rarities = Rarities,
+                maxTempers = MaxTempers,
+                slotIcons = SlotIcons,
                 printFormats = PrintFormats,
                 colors = Colors,
                 textStyles = TextStyles,

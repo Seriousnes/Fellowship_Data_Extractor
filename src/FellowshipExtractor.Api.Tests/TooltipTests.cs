@@ -23,7 +23,8 @@ public class TooltipTests : BunitContext
 
         var style = cut.Find("div.fx-tip > style").TextContent;
 
-        Assert.Contains(".fx-tip .desc{white-space:pre-line}", style, StringComparison.Ordinal);
+        Assert.Contains($".{TooltipView.Root} .desc {{", style, StringComparison.Ordinal);
+        Assert.Contains("white-space: pre-line", style, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -186,5 +187,150 @@ public class TooltipTests : BunitContext
             .Add(x => x.Query, new TooltipQuery { ItemLevel = 400 }));
 
         Assert.Equal("400", cut.Find("span.power").TextContent);
+    }
+
+    [Fact]
+    public void Prints_the_tempering_a_reading_can_take_beside_the_tempering_it_has()
+    {
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new Entity { Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] })
+            .Add(x => x.Query, new TooltipQuery { Rarity = "Rare", ItemLevel = 315, Upgrades = 0 }));
+
+        var line = cut.FindAll("div.row")[^1].QuerySelectorAll(":scope > span")[^1];
+
+        Assert.Equal("Tempered", line.QuerySelector("span.temper")!.TextContent);
+        Assert.Equal("Tempered0 / 5", line.TextContent);
+    }
+
+    [Fact]
+    public void Prints_the_ceiling_the_caller_named_over_the_one_the_ladder_states()
+    {
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new Entity { Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] })
+            .Add(x => x.Query, new TooltipQuery
+            {
+                Rarity = "Rare", ItemLevel = 315, Upgrades = 2, MaxUpgrades = 9,
+            }));
+
+        Assert.Equal("Tempered2 / 9", cut.FindAll("div.row")[^1].QuerySelectorAll(":scope > span")[^1].TextContent);
+    }
+
+    [Fact]
+    public void Prints_the_power_potential_the_caller_asked_for()
+    {
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new Entity { DisplayName = "Darkfrost Arms" })
+            .Add(x => x.Query, new TooltipQuery { PotentialPower = 885 }));
+
+        Assert.Equal("Power Potential", cut.Find("div.grp span.k").TextContent);
+        Assert.Equal("885", cut.Find("span.pot").TextContent);
+    }
+
+    [Fact]
+    public void Carries_the_armor_the_caller_gave_above_the_stats_it_works_out()
+    {
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new Entity
+            {
+                Slot = "Weapon",
+                Stats = [new StatSlot("Stamina", 40) { Kind = SlotKinds.Fixed }],
+            })
+            .Add(x => x.Query, new TooltipQuery { Armor = 303, ItemLevel = 315 }));
+
+        var lines = cut.FindAll("ul.stats li");
+
+        Assert.Equal(2, lines.Count);
+        Assert.Equal("+303", lines[0].QuerySelector("span.v")!.TextContent);
+        Assert.Equal("Armor", lines[0].QuerySelectorAll("span")[^1].TextContent);
+        Assert.Contains("guaranteed", lines[0].ClassList);
+        Assert.Equal("Stamina", lines[1].QuerySelectorAll("span")[^1].TextContent);
+    }
+
+    [Fact]
+    public void States_the_armor_of_an_item_that_declares_no_stat_slots()
+    {
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new Entity { Slot = "Chest" })
+            .Add(x => x.Query, new TooltipQuery { Armor = 1052 }));
+
+        Assert.Equal("+1052", cut.Find("ul.stats li span.v").TextContent);
+    }
+
+    [Fact]
+    public void Names_every_imbued_trait_beside_the_rank_it_sits_at()
+    {
+        var trait = Store.Entities.First(e => e.Table == "ItemTrait.ID" && e.DisplayName is not null);
+
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new Entity { DisplayName = "Darkfrost Arms" })
+            .Add(x => x.Query, new TooltipQuery
+            {
+                Traits = [new ImbuedTrait(trait.NetId!.Value, 1), new ImbuedTrait(trait.NetId.Value, 3)],
+                AllocatedTraits = 5,
+                MaxTraits = 5,
+            }));
+
+        var rows = cut.FindAll("span.trait");
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal($"Trait: {trait.DisplayName} +1", rows[0].TextContent);
+        Assert.Equal($"Trait: {trait.DisplayName} +3", rows[1].TextContent);
+    }
+
+    [Fact]
+    public void Counts_the_traits_imbued_against_the_traits_the_item_can_hold()
+    {
+        var counted = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new Entity { DisplayName = "Darkfrost Arms" })
+            .Add(x => x.Query, new TooltipQuery { AllocatedTraits = 5, MaxTraits = 5 }));
+
+        var uncapped = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new Entity { DisplayName = "Darkfrost Arms" })
+            .Add(x => x.Query, new TooltipQuery { AllocatedTraits = 2 }));
+
+        Assert.Equal("Imbued Traits", counted.Find("div.sec span").TextContent);
+        Assert.Equal("(5/5)", counted.Find("div.sec span.n").TextContent);
+        Assert.Equal("5", counted.Find("div.sec span.alloc").TextContent);
+        Assert.Equal("(2)", uncapped.Find("div.sec span.n").TextContent);
+    }
+
+    [Fact]
+    public void Counts_nothing_imbued_on_an_item_that_can_still_hold_traits()
+    {
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new Entity { DisplayName = "Darkfrost Arms" })
+            .Add(x => x.Query, new TooltipQuery { MaxTraits = 5 }));
+
+        Assert.Equal("(0/5)", cut.Find("div.sec span.n").TextContent);
+        Assert.Empty(cut.FindAll("span.trait"));
+    }
+
+    [Fact]
+    public void Draws_the_traits_between_the_stats_and_the_prose()
+    {
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new Entity { Description = "burns" })
+            .Add(x => x.Query, new TooltipQuery { Armor = 12, AllocatedTraits = 1 }));
+
+        var groups = cut.Find("div.lines").QuerySelectorAll(":scope > div.grp");
+
+        Assert.Equal(3, groups.Length);
+        Assert.NotNull(groups[0].QuerySelector("ul.stats"));
+        Assert.Equal("Imbued Traits", groups[1].QuerySelector("div.sec span")!.TextContent);
+        Assert.Equal("burns", groups[2].QuerySelector("p.desc")!.TextContent);
+    }
+
+    [Fact]
+    public void Draws_the_glyph_the_game_gives_that_slot()
+    {
+        foreach (var (slot, texture) in Store.Vocabulary.SlotIcons)
+        {
+            var cut = Draw(new Entity { Slot = slot });
+
+            Assert.EndsWith(
+                $"/{ChromeAssets.Prefix}/{texture}.png",
+                cut.Find("div.row img.gi").GetAttribute("src"),
+                StringComparison.Ordinal);
+        }
     }
 }
