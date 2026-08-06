@@ -103,10 +103,14 @@ public sealed class StatParameters
 ///
 /// The other 19 are talent slots, not items: <see cref="TalentSlot"/> numbers a position in a
 /// hero's own grid, and every hero's grid reuses that same small pool of numbers for its own
-/// eighteen slots, so the id collides across all twelve heroes rather than naming one slot twice.
-/// A hero settles these too: <see cref="Reads"/> tests <see cref="TalentSlot.Hero"/> directly, the
-/// single hero every row names, so a caller narrows a talent slot by hero exactly as it narrows an
-/// item.
+/// eighteen slots - but the reuse is not uniform. Measured over the export: 16 of the 19 ids
+/// collide across all twelve heroes, and two collide across only eleven, because the one hero
+/// missing from each numbers that same grid position 19 instead - which is why 19 itself collides
+/// across only those two heroes. In full: 16 ids of twelve rows, two of eleven and one of two, 216
+/// talent-slot rows in all. What <see cref="Reads"/> depends on is not that every id collides the
+/// same number of times but that (Id, Hero) is unique regardless, so it tests
+/// <see cref="TalentSlot.Hero"/> directly, the single hero every row names, and a caller narrows a
+/// talent slot by hero exactly as it narrows an item.
 /// </summary>
 public sealed class EntityStore
 {
@@ -117,6 +121,21 @@ public sealed class EntityStore
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverter(), new EntityDocumentConverter() },
     };
+
+    /// <summary>
+    /// Cached by document runtime type and property name, so the reflection <see cref="Field{T}"/>
+    /// runs only once per document class per field rather than once per row.
+    /// </summary>
+    private static readonly ConcurrentDictionary<(Type Document, string Property), PropertyInfo?> Fields = new();
+
+    /// <summary>
+    /// One list-valued field, read off a document by its own runtime type rather than by a
+    /// hand-kept list of which document classes carry it. A document class with no property of that
+    /// name, or one of a different shape, contributes nothing rather than throwing.
+    /// </summary>
+    private static IReadOnlyList<T> Field<T>(EntityDocument document, string name) =>
+        Fields.GetOrAdd((document.GetType(), name), key => key.Document.GetProperty(key.Property))
+            ?.GetValue(document) as IReadOnlyList<T> ?? [];
 
     private readonly Dictionary<(Fellowship.SDK.EntityType Type, int Id), EntityDocument[]> byId = new();
 
@@ -261,24 +280,16 @@ public sealed class EntityStore
     }
 
     /// <summary>
-    /// Cached by document runtime type and property name, so the reflection <see cref="Field{T}"/>
-    /// runs only once per document class per field rather than once per row.
-    /// </summary>
-    private static readonly ConcurrentDictionary<(Type Document, string Property), PropertyInfo?> Fields = new();
-
-    /// <summary>
-    /// One list-valued field, read off a document by its own runtime type rather than by a
-    /// hand-kept list of which document classes carry it. A document class with no property of that
-    /// name, or one of a different shape, contributes nothing rather than throwing.
-    /// </summary>
-    private static IReadOnlyList<T> Field<T>(EntityDocument document, string name) =>
-        Fields.GetOrAdd((document.GetType(), name), key => key.Document.GetProperty(key.Property))
-            ?.GetValue(document) as IReadOnlyList<T> ?? [];
-
-    /// <summary>
-    /// Every attribute name one row spells, over the three fields that carry one: the stat slots an
-    /// item rolls, the scaling list a description's numbers grow with, and the tuning row behind each
-    /// {Token}. The census is what the startup log counts the build's naming against.
+    /// Two censuses taken in the same pass over the export, one into each set this fills.
+    ///
+    /// <paramref name="stats"/> collects the stat keys an item's own <see cref="Item.Stats"/> slots
+    /// carry - the population <see cref="StatParameters"/> is built from, so a caller's query
+    /// parameter can only ever name a stat some item slot actually rolls.
+    ///
+    /// <paramref name="spelled"/> collects every attribute name one row spells, over the three
+    /// fields that carry one: the stat slots an item rolls (the same ones <paramref name="stats"/>
+    /// takes), the scaling list a description's numbers grow with, and the tuning row behind each
+    /// {Token}. This is what the startup log counts the build's naming against.
     ///
     /// Read off each document's own runtime type rather than off one shape. Only <see cref="Item"/>
     /// carries <see cref="Item.Stats"/>; a smaller family of document types carries a
@@ -294,7 +305,8 @@ public sealed class EntityStore
     /// token-bearing field this does not walk, matching this store's predecessor, which never
     /// counted a gem type's overflow sentence either.
     ///
-    /// Measured over the current export: 82 attribute names.
+    /// Measured over the current export: 82 attribute names spelled, 8 of them the stat keys an item
+    /// slot can hold.
     /// </summary>
     private static void Census(EntityDocument document, HashSet<string> stats, HashSet<string> spelled)
     {
@@ -468,25 +480,18 @@ public sealed class EntityStore
         document switch
         {
             Item item => item.Heroes is { } heroes
-                ? heroes.Contains(ParseHero(hero.Name))
-                : (item.ArmorType is null || item.ArmorType == ParseArmorType(hero.ArmorType)) &&
-                  (item.PrimaryStat is null || item.PrimaryStat == ParsePrimaryStat(hero.PrimaryStat)),
-            TalentSlot slot => slot.Hero == ParseHero(hero.Name),
+                ? heroes.Contains(ParseEnum<Hero>(hero.Name))
+                : (item.ArmorType is null || item.ArmorType == ParseEnumOrNull<ArmorType>(hero.ArmorType)) &&
+                  (item.PrimaryStat is null || item.PrimaryStat == ParseEnum<PrimaryStat>(hero.PrimaryStat)),
+            TalentSlot slot => slot.Hero == ParseEnum<Hero>(hero.Name),
             _ => true,
         };
 
-    private static Hero ParseHero(string name) =>
-        Enum.TryParse<Hero>(name, out var hero) ? hero : throw new FormatException($"'{name}' names no {nameof(Hero)}.");
+    private static T ParseEnum<T>(string name) where T : struct, Enum =>
+        Enum.TryParse<T>(name, out var value) ? value : throw new FormatException($"'{name}' names no {typeof(T).Name}.");
 
-    private static ArmorType? ParseArmorType(string? name) =>
-        name is null ? null
-            : Enum.TryParse<ArmorType>(name, out var armorType) ? armorType
-            : throw new FormatException($"'{name}' names no {nameof(ArmorType)}.");
-
-    private static PrimaryStat ParsePrimaryStat(string name) =>
-        Enum.TryParse<PrimaryStat>(name, out var primaryStat)
-            ? primaryStat
-            : throw new FormatException($"'{name}' names no {nameof(PrimaryStat)}.");
+    private static T? ParseEnumOrNull<T>(string? name) where T : struct, Enum =>
+        name is null ? null : ParseEnum<T>(name);
 
     /// <summary>
     /// The hero a reading is drawn for when the caller named none: the first of the roster who sees
@@ -498,11 +503,14 @@ public sealed class EntityStore
     /// single-reading items that name a roster without splitting by it.
     ///
     /// A talent slot names exactly one hero, so on a talent slot this answers that hero.
-    /// On an item this answers the first hero of the roster the reading reads for: that hero alone
-    /// on the 2,143 readings behind the 188 split item ids, and the first of the several the reading
-    /// names on the 541 single-reading items that name a roster without splitting by it. On any
-    /// other document type <see cref="Reads"/> answers true for every hero, so this answers with
-    /// whichever hero the roster lists first rather than the one the row is actually for.
+    /// On an item this answers the first hero in <see cref="Vocabulary"/>'s own order for whom
+    /// <see cref="Reads"/> is true - not the first hero <see cref="Item.Heroes"/> itself lists. The
+    /// two orders agree on the 2,143 readings behind the 188 split item ids, since only one hero
+    /// reads each, but differ on the 541 single-reading items that name a roster without splitting
+    /// by it: item 2057 lists Helena, Xavian, Gunde and Tariq, and this answers Gunde, the first of
+    /// the four in <see cref="Vocabulary"/>'s order. On any other document type <see cref="Reads"/>
+    /// answers true for every hero, so this answers with whichever hero <see cref="Vocabulary"/>
+    /// lists first rather than the one the row is actually for.
     /// </summary>
     public HeroEntry? Wearer(EntityDocument document) =>
         Vocabulary.Heroes.FirstOrDefault(hero => Reads(document, hero));
