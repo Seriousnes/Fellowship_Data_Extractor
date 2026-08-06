@@ -122,10 +122,7 @@ public static class PublicTypes
     {
         if (DisplayNameOf(document) is { } name) return name;
 
-        // Every document class is named exactly its EntityType member, so the type is read straight
-        // off the runtime type rather than through a second table. `EntityDocumentConverter.Write`,
-        // copied.
-        var type = Enum.Parse<Fellowship.SDK.EntityType>(document.GetType().Name);
+        var type = EntityTypes.TypeOf(document);
         return $"{Titled(Find(type).Noun)} {document.Id}";
     }
 
@@ -133,7 +130,7 @@ public static class PublicTypes
 
     /// <summary>
     /// The noun as a name begins, which is the whole of it: every noun in <see cref="Table"/> is one
-    /// or two words, and only the first is capitalised, so a name reads "Set bonus power 4012" and
+    /// to three words, and only the first is capitalised, so a name reads "Set bonus power 4012" and
     /// not "Set Bonus Power 4012": that is the sentence a reader gets, and capitalising every word
     /// would read as a title the build never gave the row.
     /// </summary>

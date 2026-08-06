@@ -61,9 +61,17 @@ public static class EntityTypes
     /// The route back from a slug to the member it names. The one map either direction reads, so what
     /// <see cref="Slug"/> writes always reads back and there is no second table of names to drift from
     /// the first.
+    ///
+    /// Case insensitive, because a slug arrives typed by hand as often as it arrives clicked, and a
+    /// route or a query value spelled with the wrong case should resolve rather than answer 404. The
+    /// comparer only forgives case, not punctuation: a single-word member's own name is its slug bar
+    /// case, so <c>Talent</c> resolves the same as <c>talent</c>, but a multi-word member's name
+    /// carries no hyphen and still resolves to nothing, so <c>SetBonusPower</c> does not stand in for
+    /// <c>set-bonus-power</c>. No two slugs differ only by case, so nothing here becomes ambiguous by
+    /// forgiving it.
     /// </summary>
     private static readonly IReadOnlyDictionary<string, EntityType> BySlug =
-        Enum.GetValues<EntityType>().ToDictionary(Slug, type => type, StringComparer.Ordinal);
+        Enum.GetValues<EntityType>().ToDictionary(Slug, type => type, StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The member a slug names, or the failure stating which slug named none.</summary>
     public static EntityType Parse(string slug) =>
@@ -89,6 +97,18 @@ public static class EntityTypes
         typeof(EntityDocument).Assembly.GetType($"{typeof(EntityDocument).Namespace}.{type}")
         ?? throw new InvalidOperationException(
             $"{type} names no document class in {typeof(EntityDocument).Assembly.GetName().Name}.");
+
+    /// <summary>
+    /// The type a document is, read the same way <see cref="Document"/> reads it in reverse: every
+    /// document class is named exactly its <see cref="EntityType"/> member, so the type is read
+    /// straight off the runtime type rather than through a second table that could disagree with it.
+    /// The one answer, so a line the SDK writes, a line it reads back, and the name a document falls
+    /// back to when it prints none of its own all agree on what a document is.
+    /// </summary>
+    public static EntityType TypeOf(EntityDocument document) =>
+        Enum.TryParse<EntityType>(document.GetType().Name, out var type)
+            ? type
+            : throw new InvalidOperationException($"{document.GetType().Name} names no {nameof(EntityType)}.");
 }
 
 /// <summary>

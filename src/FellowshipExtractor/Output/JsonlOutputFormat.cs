@@ -39,7 +39,7 @@ public sealed class JsonlOutputFormat(string folder) : IOutputFormat
 
     public async Task WriteAsync(EntityDocument entity, CancellationToken cancellationToken)
     {
-        var type = EntityTypes.Slug(DocumentProjection.TypeOf(entity));
+        var type = EntityTypes.Slug(EntityTypes.TypeOf(entity));
         var body = JsonSerializer.SerializeToNode(entity, entity.GetType(), Options)!.AsObject();
 
         // The type leads the line, because it is what tells a reader which of the twenty-one shapes

@@ -46,9 +46,7 @@ public sealed class EntityDocumentConverter : JsonConverter<EntityDocument>
 
     public override void Write(Utf8JsonWriter writer, EntityDocument value, JsonSerializerOptions options)
     {
-        // Every document class is named exactly its EntityType member, so the type this line carries
-        // is read straight off the runtime type rather than through a second table.
-        var type = Enum.Parse<EntityType>(value.GetType().Name);
+        var type = EntityTypes.TypeOf(value);
         var body = JsonSerializer.SerializeToNode(value, value.GetType(), options)!.AsObject();
 
         // The type leads the line, matching the shape JsonlOutputFormat writes, so a line the

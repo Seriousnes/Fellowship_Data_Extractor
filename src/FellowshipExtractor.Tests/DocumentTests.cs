@@ -24,6 +24,11 @@ public sealed class DocumentTests
         // One document class per type, so a test finding none would pass by finding nothing.
         Assert.Equal(Enum.GetValues<EntityType>().Length, documents.Length);
 
+        // EntityTypes.TypeOf reads a document's type off this same name, with no switch beside it
+        // to catch a rename at compile time, so a class renamed out of step with its EntityType
+        // member fails here rather than at the first document of that class that reaches TypeOf.
+        Assert.All(documents, document => Assert.True(Enum.TryParse<EntityType>(document.Name, out _)));
+
         Assert.All(documents, document => Assert.DoesNotContain(
             document.GetProperties(),
             property => property.Name is "Type" or "Kind"));
@@ -64,13 +69,33 @@ public sealed class DocumentTests
         Assert.Equal(slugs.Length, slugs.Distinct(StringComparer.Ordinal).Count());
     }
 
+    /// <summary>
+    /// A slug arrives typed by hand as often as it arrives clicked, so <see cref="EntityTypes.TryParse"/>
+    /// forgives case. It forgives no more than that: a multi-word member's own name carries no hyphen,
+    /// so it still names nothing.
+    /// </summary>
+    [Fact]
+    public void ASlugParsesRegardlessOfCase()
+    {
+        Assert.True(EntityTypes.TryParse("Talent", out var single));
+        Assert.Equal(EntityType.Talent, single);
+
+        Assert.True(EntityTypes.TryParse("SET-BONUS-POWER", out var shouted));
+        Assert.Equal(EntityType.SetBonusPower, shouted);
+
+        Assert.True(EntityTypes.TryParse("set-bonus-power", out var exact));
+        Assert.Equal(EntityType.SetBonusPower, exact);
+
+        Assert.False(EntityTypes.TryParse("SetBonusPower", out _));
+    }
+
     [Fact]
     public void ADocumentsRuntimeClassIsItsType()
     {
-        Assert.Equal(EntityType.Ability, DocumentProjection.TypeOf(new Ability { Id = 1 }));
-        Assert.Equal(EntityType.GemType, DocumentProjection.TypeOf(
+        Assert.Equal(EntityType.Ability, EntityTypes.TypeOf(new Ability { Id = 1 }));
+        Assert.Equal(EntityType.GemType, EntityTypes.TypeOf(
             new GemType { Id = 1, Gem = GemTypeName.Ruby, Attribute = "RubyPower" }));
-        Assert.Equal(EntityType.TalentSlot, DocumentProjection.TypeOf(
+        Assert.Equal(EntityType.TalentSlot, EntityTypes.TypeOf(
             new TalentSlot { Id = 8, Hero = Hero.Mara, Row = 4, Column = 1, Cost = 1, TalentId = 8 }));
     }
 

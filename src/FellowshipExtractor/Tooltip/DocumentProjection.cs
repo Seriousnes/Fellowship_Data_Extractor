@@ -312,33 +312,6 @@ public static class DocumentProjection
     };
 #pragma warning restore CS8524
 
-    /// <summary>The type a document is, which is its runtime class.</summary>
-    public static EntityType TypeOf(EntityDocument document) => document switch
-    {
-        Ability => EntityType.Ability,
-        CompanionPet => EntityType.CompanionPet,
-        Creature => EntityType.Creature,
-        Currency => EntityType.Currency,
-        Effect => EntityType.Effect,
-        Finesse => EntityType.Finesse,
-        GemTier => EntityType.GemTier,
-        GemTrait => EntityType.GemTrait,
-        Fellowship.SDK.Documents.GemType => EntityType.GemType,
-        Item => EntityType.Item,
-        LegendaryStat => EntityType.LegendaryStat,
-        Mount => EntityType.Mount,
-        MountPower => EntityType.MountPower,
-        RelicPower => EntityType.RelicPower,
-        Fellowship.SDK.Documents.SetBonus => EntityType.SetBonus,
-        SetBonusPower => EntityType.SetBonusPower,
-        Fellowship.SDK.Documents.Talent => EntityType.Talent,
-        TalentSlot => EntityType.TalentSlot,
-        Trait => EntityType.Trait,
-        TraitPower => EntityType.TraitPower,
-        WeaponPower => EntityType.WeaponPower,
-        _ => throw new ArgumentOutOfRangeException(nameof(document), document.GetType().Name),
-    };
-
     /// <summary>
     /// The extra document a row implies. One talent slot carries its talent's text rather than
     /// pointing at an augmentation, so that row is a slot and a talent both, and the talent takes
