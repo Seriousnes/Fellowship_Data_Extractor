@@ -39,6 +39,7 @@ public sealed class ItemTraits
     private const string AugmentationField = "Augmentation";
 
     private readonly Dictionary<string, ItemTrait> _byTag = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<int> _augmentations = [];
 
     public int Count => _byTag.Count;
 
@@ -80,6 +81,8 @@ public sealed class ItemTraits
             TotalRuns += runs?.Count ?? 0;
             BoundRuns += runs?.Count(run => run.Key is not null) ?? 0;
 
+            var augmentationId = augmentations.For(augmentation);
+
             _byTag[tag] = new ItemTrait(PropertyWalk.GetString(row, DisplayNameField)!)
             {
                 Description = description,
@@ -87,10 +90,15 @@ public sealed class ItemTraits
                 Category = categories.Label(categoryTag),
                 MaxRank = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, MaxRankField)?.GenericValue),
                 RandomChance = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, RandomChanceField)?.GenericValue),
-                Augmentation = augmentations.For(augmentation),
+                Augmentation = augmentationId,
                 IconPath = PropertyWalk.GetString(row, IconField),
                 Runs = runs,
             };
+        }
+
+        foreach (var trait in _byTag.Values)
+        {
+            if (trait.Augmentation is not null) _augmentations.Add(trait.Augmentation.Value);
         }
 
         if (_byTag.Count == 0)
@@ -102,6 +110,8 @@ public sealed class ItemTraits
     }
 
     public ItemTrait? ForTag(string tagName) => _byTag.GetValueOrDefault(tagName);
+
+    public bool PointsAt(int netId) => _augmentations.Contains(netId);
 
     private static Dictionary<string, IReadOnlyList<ConstantRecord>> Scopes(
         IReadOnlyList<(string Tag, FStructFallback Row, string? Augmentation)> rows, ConstantsTable constants)

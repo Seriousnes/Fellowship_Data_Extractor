@@ -1,15 +1,15 @@
 @inject TooltipView Ui
 
-@if (Entity.GemOverflow is { } overflow)
+@if (Entity is GemTypeDocument { OverflowDescription: { } description } overflow)
 {
     <div class="grp">
         <div class="sec"><span>Past Max Power</span></div>
-        <p class="desc">@Ui.Text(overflow.Description, overflow.Placeholders, Query, Hero, Entity.Tags)</p>
+        <p class="desc">@Ui.Text(description, overflow.OverflowPlaceholders, Query, Hero, [])</p>
     </div>
 }
 
 @code {
-    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
     [Parameter] public TooltipQuery Query { get; set; } = new();
 

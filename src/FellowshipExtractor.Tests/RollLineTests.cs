@@ -1,4 +1,7 @@
-using FellowshipExtractor.Api;
+using System.Text.Json;
+
+using FellowshipExtractor.Api.Models;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 
@@ -7,6 +10,29 @@ namespace FellowshipExtractor.Tests;
 public sealed class RollLineTests
 {
     private const int FrostedCloak = 2665;
+
+    private static readonly JsonSerializerOptions Reading = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
+
+    private static Fellowship.SDK.Documents.ItemDocument Cloak()
+    {
+        var body = Export.Loaded.Documents
+            .Where(document => document.Type == EntityType.Item && document.Id == FrostedCloak)
+            .Select(document => document.Body)
+            .FirstOrDefault()
+            ?? throw new InvalidOperationException(
+                $"Item {FrostedCloak} is not in the export. Either the id moved or the entity is gone.");
+
+        return new Fellowship.SDK.Documents.ItemDocument
+        {
+            Id = FrostedCloak,
+            Slot = body["slot"]?.GetValue<string>(),
+            Stats = body["stats"].Deserialize<IReadOnlyList<StatSlot>>(Reading),
+        };
+    }
 
     private static StatParameters Parameters() =>
         new(["Stamina", "Agility", "Expertise", "Spirit"], Export.Loaded.Vocabulary.StatCalculation.Attributes);
@@ -23,7 +49,7 @@ public sealed class RollLineTests
         Assert.Null(error);
 
         return StatMagnitudes.For(
-            Export.Loaded.Entity("ItemID", FrostedCloak),
+            Cloak(),
             Export.Loaded.Vocabulary.StatCalculation,
             new HashSet<string>(["Strength", "Intellect", "Agility"], StringComparer.OrdinalIgnoreCase),
             rarity: null,

@@ -97,6 +97,7 @@ public sealed class TalentTrees
                 Icon = talent.Augmentation is null && talent.IconPath is { } path
                     ? icons?.Invoke(path)
                     : slot.Icon,
+                SlotBorneTalent = talent.Augmentation is null ? true : null,
                 Heroes = [talent.HeroName],
                 TalentRow = talent.Row,
                 TalentColumn = talent.Column,

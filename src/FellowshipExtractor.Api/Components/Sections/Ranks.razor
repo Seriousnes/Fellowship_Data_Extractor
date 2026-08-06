@@ -1,6 +1,6 @@
 @inject CodexView Ui
 
-@if (Entity.RankRuns is { Count: > 0 } runs)
+@if ((Entity as TraitDocument)?.RankRuns is { Count: > 0 } runs)
 {
     var badge = runs.Count.ToString();
     <Panel Head="Rank progression" Badge="@badge">
@@ -20,7 +20,7 @@
                         {
                             <span> / </span>
                         }
-                        @Ui.Text(run.Printed[rank], null, Entity.Tags)
+                        @Ui.Text(run.Printed[rank], null, Codex.Schools(Entity))
                     }
                 </KeyValue>
                 @if (run.Values is { Count: > 0 })
@@ -41,5 +41,5 @@
 }
 
 @code {
-    [CascadingParameter] private Entity Entity { get; set; } = new();
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 }

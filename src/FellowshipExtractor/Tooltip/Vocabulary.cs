@@ -5,13 +5,6 @@ using CUE4Parse.UE4.Assets.Exports.Engine;
 
 namespace FellowshipExtractor.Tooltip;
 
-public sealed record HeroEntry(string Codename, string Name, string? ArmorType, string PrimaryStat)
-{
-    public string? Color { get; init; }
-}
-
-public sealed record RarityEntry(int Tier, string Name, string DisplayName, string GemDisplayName);
-
 public sealed class Vocabulary
 {
     public const string FileName = "vocabulary.json";
@@ -34,6 +27,8 @@ public sealed class Vocabulary
 
     public IReadOnlyList<string> RandomStatPool { get; }
 
+    public IReadOnlyList<string> GemTypes { get; }
+
     public IReadOnlyDictionary<string, string> SlotIcons { get; }
 
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; }
@@ -45,11 +40,13 @@ public sealed class Vocabulary
         RarityNames rarities,
         StatCalculation statCalculation,
         IReadOnlyList<string> randomStatPool,
+        IReadOnlyList<string> gemTypes,
         SlotIcons slotIcons,
         TemperCeilings tempers)
     {
         StatCalculation = statCalculation;
         RandomStatPool = randomStatPool;
+        GemTypes = gemTypes;
         SlotIcons = slotIcons.BySlot;
         MaxTempers = tempers.ByRarity;
 
@@ -97,6 +94,7 @@ public sealed class Vocabulary
             {
                 heroes = Heroes,
                 rarities = Rarities,
+                gemTypes = GemTypes,
                 maxTempers = MaxTempers,
                 slotIcons = SlotIcons,
                 printFormats = PrintFormats,

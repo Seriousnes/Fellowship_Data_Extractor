@@ -1,14 +1,13 @@
 @inject TooltipView Ui
 
-@if (Entity.SetBonus is { Count: > 0 } sets)
+@if ((Entity as ItemDocument)?.SetBonus is { Count: > 0 } sets)
 {
     <div class="grp">
-        <div class="sec setbonus"><img class="gi" alt="" src="@Ui.Chrome.SetBonusBadge.Url"><span>Set Bonus</span>@if (Entity.SetCount is { } pieces)
-            {<span class="n">(@pieces pieces)</span>}</div>
+        <div class="sec setbonus"><img class="gi" alt="" src="@Ui.Chrome.SetBonusBadge.Url"><span>Set Bonus</span></div>
         <p class="desc">@string.Join(", ", sets)</p>
     </div>
 }
 
 @code {
-    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 }

@@ -1,35 +1,60 @@
 using System.Reflection;
-using System.Text.Json;
 using System.Text.Json.Serialization;
+using FellowshipExtractor.Output;
 
 namespace FellowshipExtractor.Tooltip;
 
 public static class ExportAllCommand
 {
     private const string FolderName = "export";
-    private const string FileName = "entities.jsonl";
 
-    private static readonly JsonSerializerOptions LineOptions = new()
+    public static IReadOnlySet<string> Branches(IEnumerable<TagRecord> tags)
     {
-        WriteIndented = false,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
+        var branches = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-    private static readonly string[] NullMembers = ["Invalid", "None"];
+        foreach (var tag in tags)
+        {
+            var segments = tag.Name.Split('.');
+            for (var at = 1; at < segments.Length; at++)
+            {
+                branches.Add(string.Join('.', segments[..at]));
+            }
+        }
+
+        return branches;
+    }
 
     private static readonly PropertyInfo[] Content =
     [
         .. typeof(Entity).GetProperties()
-            .Where(p => p.Name is not (nameof(Entity.Table) or nameof(Entity.NetId) or nameof(Entity.Name))),
+            .Where(p => p.Name is not (nameof(Entity.Table) or nameof(Entity.NetId) or nameof(Entity.Name)
+                or nameof(Entity.Type)))
+            .Where(p => p.GetCustomAttribute<JsonIgnoreAttribute>() is null),
     ];
 
-    private static bool NullMember(Entity record) =>
-        record.Name is { } name &&
-        NullMembers.Any(leaf => name.EndsWith('.' + leaf, StringComparison.OrdinalIgnoreCase)) &&
-        Array.TrueForAll(Content, property => property.GetValue(record) is null);
+    private static bool Says(Entity entity) => Array.Exists(Content, p => p.GetValue(entity) is not null);
 
-    public static async Task RunAsync(ExtractorOptions options, string[] tables)
+    private static readonly string[] NullMembers = ["Invalid", "None"];
+
+    private static bool NullMember(Entity entity) =>
+        entity.Name is { } name &&
+        Array.Exists(NullMembers, leaf => name.EndsWith($".{leaf}", StringComparison.OrdinalIgnoreCase)) &&
+        !Says(entity);
+
+    public static string? NotWritten(Entity entity, IReadOnlySet<string> branches)
+    {
+        if (NullMember(entity)) return "a null enum member";
+
+        if (entity.Type is null) return "no type";
+
+        if (entity.Name is { } name && branches.Contains(name) && !Says(entity)) return "empty branch";
+
+        if (entity.Type is EntityType.Creature && !Says(entity)) return "a creature carrying nothing";
+
+        return null;
+    }
+
+    public static async Task RunAsync(ExtractorOptions options, string[] tables, IOutputFormat output)
     {
         var provider = await ProviderFactory.CreateAsync(options);
         var resolver = new TooltipResolver(provider);
@@ -73,28 +98,35 @@ public static class ExportAllCommand
 
         var icons = TooltipCommand.IconWriterInto(provider, folder, reportFailures: false);
 
-        var target = Path.Combine(folder, FileName);
-        await using var output = new StreamWriter(target, append: false);
-
-        int written = 0, withIcon = 0, withText = 0, resolved = 0;
+        int written = 0, withIcon = 0, withText = 0, scanned = 0;
 
         var keys = new HashSet<string>(StringComparer.Ordinal);
-        var dropped = new List<string>();
+        var dropped = new SortedDictionary<string, int>(StringComparer.Ordinal);
 
         var iconless = new SortedDictionary<string, int>(StringComparer.Ordinal);
+
+        var branches = Branches(resolver.Tags);
+        var resolved = new List<Entity>();
 
         foreach (var tag in selected)
         {
             foreach (var record in resolver.Resolve(tag, icons))
             {
-                if (NullMember(record))
+                if (NotWritten(record, branches) is { } reason)
                 {
-                    dropped.Add(record.Name!);
+                    dropped[reason] = dropped.GetValueOrDefault(reason) + 1;
                     continue;
                 }
 
+                if (record is not { Table: not null, NetId: not null })
+                {
+                    throw new InvalidOperationException(
+                        $"{record.Name} reached the export without a table or a net id. Every row " +
+                        "resolved from a tag carries both.");
+                }
+
                 var hero = record.Heroes is { Count: 1 } only ? only[0] : null;
-                var key = $"{record.Table}/{record.NetId}/{record.ArmorType}/{record.PrimaryStat}/{hero}";
+                var key = $"{record.Type}/{record.NetId}/{record.ArmorType}/{record.PrimaryStat}/{hero}";
                 if (!keys.Add(key))
                 {
                     throw new InvalidOperationException(
@@ -102,9 +134,8 @@ public static class ExportAllCommand
                         "something other than armour type, primary stat and hero.");
                 }
 
-                await output.WriteLineAsync(JsonSerializer.Serialize(record, LineOptions));
+                resolved.Add(record);
 
-                written++;
                 if (record.Icon is not null) withIcon++;
                 if (record.DisplayName is not null) withText++;
 
@@ -114,20 +145,38 @@ public static class ExportAllCommand
                 }
             }
 
-            resolved++;
-            if (resolved % 500 == 0) Console.WriteLine($"  {resolved} of {selected.Length}...");
+            scanned++;
+            if (scanned % 500 == 0) Console.WriteLine($"  {scanned} of {selected.Length}...");
         }
 
-        await output.FlushAsync();
+        var types = resolved
+            .GroupBy(row => (Table: row.Table!, NetId: row.NetId!.Value))
+            .ToDictionary(group => group.Key, group => group.First().Type);
 
-        var sidecar = await resolver.Vocabulary.WriteAsync(folder);
+        DocumentProjection.TypeLookup lookup = (table, netId) => types.GetValueOrDefault((table, netId));
+
+        foreach (var record in resolved)
+        {
+            await output.WriteAsync(DocumentProjection.From(record, lookup), default);
+            written++;
+
+            if (DocumentProjection.Implied(record) is { } implied)
+            {
+                await output.WriteAsync(implied, default);
+                written++;
+            }
+        }
+
+        await output.WriteVocabularyAsync(resolver.Vocabulary, default);
 
         var images = Directory.EnumerateFiles(folder, "*.png").Count();
-        Console.WriteLine($"\nwrote {target}");
-        Console.WriteLine($"  {written} entries from {resolved} tags, {withText} with a display name, {withIcon} with an icon");
+        Console.WriteLine($"\nwrote {written} documents from {resolved.Count} entities across {scanned} tags");
+        Console.WriteLine($"  {withText} entities with a display name, {withIcon} with an icon");
         if (dropped.Count > 0)
         {
-            Console.WriteLine($"  {dropped.Count} enum null members dropped: {string.Join(", ", dropped)}");
+            Console.WriteLine(
+                $"  {dropped.Values.Sum()} entries dropped: " +
+                string.Join(", ", dropped.Select(entry => $"{entry.Key} {entry.Value}")));
         }
         Console.WriteLine($"  {images} images in {folder}");
         Console.WriteLine(
@@ -148,6 +197,6 @@ public static class ExportAllCommand
         {
             Console.WriteLine($"  no band for {row}: two effects bind it under different presets");
         }
-        Console.WriteLine($"wrote {Path.Combine(folder, Vocabulary.FileName)} ({sidecar} bytes)");
+        Console.WriteLine("wrote the vocabulary the documents are read against");
     }
 }

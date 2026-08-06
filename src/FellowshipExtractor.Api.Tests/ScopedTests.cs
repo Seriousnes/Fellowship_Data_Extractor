@@ -25,9 +25,10 @@ public class ScopedTests : BunitContext
     [Fact]
     public void Leaves_a_data_attribute_a_class_and_the_text_between_two_elements_alone()
     {
-        const string markup =
+        var slug = EntityTypes.Slug(EntityType.Item);
+        var markup =
             "<p class=\"cx-note\">belongs to " +
-            "<a href=\"/entity/items/12\" data-tip=\"/api/tooltip/items/12\">Old Boots</a>" +
+            $"<a href=\"/entity/{slug}/12\" data-tip=\"/api/tooltip/{slug}/12\">Old Boots</a>" +
             ", which is where it was taken from.</p>";
 
         Assert.Equal(markup, markup.Bare());

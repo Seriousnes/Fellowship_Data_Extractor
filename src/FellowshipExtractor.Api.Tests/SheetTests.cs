@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
+
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FellowshipExtractor.Api.Tests;
@@ -32,7 +32,7 @@ public partial class SheetTests(Export export)
             var rendered = await renderer.RenderComponentAsync<Components.Tooltip.Tooltip>(
                 ParameterView.FromDictionary(new Dictionary<string, object?>
                 {
-                    ["Entity"] = new Entity { Description = "burns" },
+                    ["Entity"] = new AbilityDocument { Id = 1, Description = "burns" },
                 }));
 
             return rendered.ToHtmlString();

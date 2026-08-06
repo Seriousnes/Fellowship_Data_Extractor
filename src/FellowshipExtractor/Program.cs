@@ -1,5 +1,7 @@
 using CUE4Parse.UE4.Exceptions;
 using FellowshipExtractor;
+using FellowshipExtractor.Commands;
+using FellowshipExtractor.Output;
 using FellowshipExtractor.Textures;
 using FellowshipExtractor.Usmap;
 
@@ -102,7 +104,28 @@ switch (command)
         await FellowshipExtractor.Tooltip.TooltipCommand.RunAsync(options, args[1], args[2]);
         break;
     case "export-all":
-        await FellowshipExtractor.Tooltip.ExportAllCommand.RunAsync(options, args[1..]);
+    {
+        var format = Argument(args, "--output-format") ?? "jsonl";
+        var folder = Path.Combine(options.ResolvedOutputDir, "export");
+
+        if (format != "jsonl")
+        {
+            Console.Error.WriteLine($"Unknown output format '{format}'. Formats: jsonl.");
+            return 1;
+        }
+
+        await using IOutputFormat output = new JsonlOutputFormat(folder);
+
+        var rest = args[1..];
+        var tables = rest.Where((a, i) =>
+            !a.StartsWith('-') &&
+            (i == 0 || !rest[i - 1].Equals("--output-format", StringComparison.OrdinalIgnoreCase)));
+
+        await FellowshipExtractor.Tooltip.ExportAllCommand.RunAsync(options, [.. tables], output);
+        break;
+    }
+    case "enums":
+        await FellowshipExtractor.Tooltip.EnumsCommand.RunAsync(options);
         break;
     case "webdb":
         await FellowshipExtractor.Tooltip.WebDbCommand.RunAsync(options);
@@ -123,7 +146,8 @@ switch (command)
                textures <filter> [f] decode matching textures to png (or jpeg, tga, dds)
                ui                    write the item tooltip's chrome textures to output/export/ui
                tooltip <table> <id>  reconstruct one entity's tooltip from name, text and constants
-               export-all [table...]  every entity as one JSONL file with every icon beside it
+               export-all [table...] [--output-format jsonl]  every entity as its type's document
+               enums                 regenerate the enumerated types from the exported vocabulary
                webdb                 that export as one self-contained, searchable HTML page
                probe [sample]        report how many packages parse with current mappings
              """);
@@ -131,4 +155,10 @@ switch (command)
 }
 
 return 0;
+}
+
+static string? Argument(string[] args, string name)
+{
+    var at = Array.FindIndex(args, a => a.Equals(name, StringComparison.OrdinalIgnoreCase));
+    return at >= 0 && at + 1 < args.Length ? args[at + 1] : null;
 }

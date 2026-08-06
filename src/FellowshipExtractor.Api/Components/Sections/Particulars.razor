@@ -1,8 +1,8 @@
 @inject CodexView Ui
 
-@if (Facts.Count > 0 || Schools.Count > 0 || Entity.Heroes is { Count: > 0 } ||
-     Entity.SetBonus is { Count: > 0 } || Scaling.Count > 0 ||
-     Entity.AllowedRoles is { Count: > 0 } || Entity.AllowedAttributes is { Count: > 0 })
+@if (Facts.Count > 0 || Schools.Count > 0 || Heroes.Count > 0 ||
+     SetBonus.Count > 0 || Scaling.Count > 0 ||
+     AllowedRoles.Count > 0 || AllowedAttributes.Count > 0)
 {
     <Panel Head="Details">
         @if (Facts.Count > 0)
@@ -44,12 +44,12 @@
             </Pills>
         }
 
-        @if (Entity.Heroes is { Count: > 0 } heroes)
+        @if (Heroes.Count > 0)
         {
             <Rule />
             <SubHead>Heroes</SubHead>
             <Pills>
-                @foreach (var hero in heroes)
+                @foreach (var hero in Heroes)
                 {
                     var where = $"/browse?hero={Uri.EscapeDataString(hero)}";
                     <Pill Href="@where" Colour="@Ui.HeroColour(hero)">@hero</Pill>
@@ -57,12 +57,12 @@
             </Pills>
         }
 
-        @if (Entity.SetBonus is { Count: > 0 } sets)
+        @if (SetBonus.Count > 0)
         {
             <Rule />
-            <SubHead>Set@(Entity.SetCount is { } pieces ? $" ({pieces} pieces)" : "")</SubHead>
+            <SubHead>Set</SubHead>
             <Pills>
-                @foreach (var set in sets)
+                @foreach (var set in SetBonus)
                 {
                     var where = $"/browse?set={Uri.EscapeDataString(set)}";
                     <Pill Href="@where">@set</Pill>
@@ -82,19 +82,19 @@
             </Pills>
         }
 
-        @if (Entity.AllowedRoles is { Count: > 0 } roles)
+        @if (AllowedRoles.Count > 0)
         {
             <Rule />
             <SubHead>Offered to</SubHead>
             <Pills>
-                @foreach (var role in roles)
+                @foreach (var role in AllowedRoles)
                 {
                     var tone = Ui.Tokens.Role(role) ?? "inherit";
                     <Pill Colour="@tone">@role</Pill>
                 }
-                @foreach (var stat in Entity.AllowedAttributes ?? [])
+                @foreach (var stat in AllowedAttributes)
                 {
-                    <Pill>@Ui.Store.StatName(stat)</Pill>
+                    <Pill>@stat</Pill>
                 }
             </Pills>
         }
@@ -102,7 +102,7 @@
 }
 
 @code {
-    [CascadingParameter] private Entity Entity { get; set; } = new();
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 
     [Parameter]
     public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts { get; set; } = [];
@@ -110,4 +110,15 @@
     [Parameter] public IReadOnlyList<(string Label, string Href)> Schools { get; set; } = [];
 
     [Parameter] public IReadOnlyList<string> Scaling { get; set; } = [];
+
+    private IReadOnlyList<string> Heroes => [.. Ui.Codex.Facet("hero")?.Values(Entity) ?? []];
+
+    private IReadOnlyList<string> SetBonus => (Entity as ItemDocument)?.SetBonus ?? [];
+
+    private IReadOnlyList<string> AllowedRoles => (Entity as Fellowship.SDK.Documents.SetBonusDocument)?.AllowedRoles ?? [];
+
+    private IReadOnlyList<string> AllowedAttributes =>
+        (Entity as Fellowship.SDK.Documents.SetBonusDocument)?.AllowedAttributes is { } attributes
+            ? [.. attributes.Select(stat => stat.ToString())]
+            : [];
 }

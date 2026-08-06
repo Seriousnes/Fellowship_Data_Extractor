@@ -1,11 +1,10 @@
 global using AngleSharp.Dom;
 global using Bunit;
-global using FellowshipExtractor.Api;
+global using Fellowship.SDK.Documents;
 global using FellowshipExtractor.Api.Components.Cx;
 global using FellowshipExtractor.Api.Components.Sections;
 global using FellowshipExtractor.Api.Components.Shared;
-global using FellowshipExtractor.Tooltip;
+global using FellowshipExtractor.Api.Models;
 global using Microsoft.Extensions.DependencyInjection;
 global using Xunit;
-
-global using Entity = FellowshipExtractor.Tooltip.Entity;
+global using Entity = Fellowship.SDK.Entity;

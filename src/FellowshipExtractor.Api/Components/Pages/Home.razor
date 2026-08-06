@@ -17,7 +17,7 @@
     <div class="cx-roster">
         @foreach (var hero in Store.Vocabulary.Heroes.OrderBy(h => h.Name, StringComparer.OrdinalIgnoreCase))
         {
-            <a href="/browse?type=items&hero=@Uri.EscapeDataString(hero.Name)"
+            <a href="/browse?type=@ItemSlug&hero=@Uri.EscapeDataString(hero.Name)"
                style="color:@(Ui.HeroColour(hero.Name) ?? "var(--muted)")">
                 <span class="cx-pip" style="background:@(Ui.HeroSwatch(hero.Name) ?? "var(--muted)")"></span>
                 <span class="cx-who">@hero.Name</span>
@@ -59,10 +59,10 @@
             {
                 <EntityLink Entity="entity" Class="cx-card" Tint="false">
                     <span class="cx-linked">
-                        <Icon Src="@Ui.Icon(entity.Icon)" />
+                        <Icon Src="@Ui.Icon(DocumentFields.Text(entity, nameof(ItemDocument.Icon)))" />
                         <span>
                             <span class="cx-card-name" style="color:@Ui.NameColour(entity)">@PublicTypes.NameOf(entity)</span><br />
-                            <span class="cx-card-count">@Codex.Label(entity.Table!)</span>
+                            <span class="cx-card-count">@Codex.Label(EntityTypes.TypeOf(entity))</span>
                         </span>
                     </span>
                 </EntityLink>
@@ -76,16 +76,19 @@
 
     private string Roster => $"{Store.Vocabulary.Heroes.Count} heroes";
 
-    private IReadOnlyList<Entity> Showcase =>
+    private static readonly string ItemSlug = EntityTypes.Slug(EntityType.Item);
+
+    private IReadOnlyList<EntityDocument> Showcase =>
     [
         .. Store.Entities
-            .Where(e => PublicTypes.IsPublic(e.Table))
-            .Where(e => PublicTypes.DisplayNameOf(e) is not null && e.Icon is not null && e.Description is not null)
-            .GroupBy(e => e.Table!, StringComparer.Ordinal)
+            .Where(e => PublicTypes.DisplayNameOf(e) is not null &&
+                DocumentFields.Text(e, nameof(ItemDocument.Icon)) is not null &&
+                DocumentFields.Text(e, nameof(AbilityDocument.Description)) is not null)
+            .GroupBy(EntityTypes.TypeOf)
             .SelectMany(group => group
-                .OrderByDescending(e => (e.Description?.Length ?? 0) + (e.Constants?.Count ?? 0) * 20)
+                .OrderByDescending(e => DocumentFields.Text(e, nameof(AbilityDocument.Description))?.Length ?? 0)
                 .Take(2))
-            .OrderBy(e => Codex.Label(e.Table), StringComparer.OrdinalIgnoreCase)
+            .OrderBy(e => Codex.Label(EntityTypes.TypeOf(e)), StringComparer.OrdinalIgnoreCase)
             .ThenBy(e => PublicTypes.NameOf(e), StringComparer.OrdinalIgnoreCase)
             .Take(8),
     ];

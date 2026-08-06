@@ -1,14 +1,14 @@
 @inject TooltipView Ui
 
 <div class="grp">
-    @if ((Entity.ArmorType ?? Entity.GemType) is { } kind)
+    @if (Kind is { } kind)
     {
         <p class="kind">@kind</p>
     }
-    @if (Entity.Slot is not null || Level is not null)
+    @if (Slot is not null || Level is not null)
     {
         <div class="row">
-            @if (Entity.Slot is { } slot)
+            @if (Slot is { } slot)
             {
                 <span><img class="gi" alt="" src="@Ui.Chrome.SlotGlyph(slot)">@slot</span>
             }
@@ -31,14 +31,14 @@
             }
         </div>
     }
-    @if (Entity.GemSlot == true || Entity.UniqueEquipped == true)
+    @if (GemSlot == true || UniqueEquipped == true)
     {
         <div class="row">
-            @if (Entity.GemSlot == true)
+            @if (GemSlot == true)
             {
                 <span><span class="k">@(Query.NoSocket ? "No gem socket" : "Gem socket")</span></span>
             }
-            @if (Entity.UniqueEquipped == true)
+            @if (UniqueEquipped == true)
             {
                 <span><span class="k">Unique Equipped</span></span>
             }
@@ -47,7 +47,7 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
@@ -56,4 +56,19 @@
     [Parameter] public int? Level { get; set; }
 
     [Parameter] public string? Temper { get; set; }
+
+    private string? Kind => Entity switch
+    {
+        ItemDocument { ArmorType: { } armor } => armor.ToString(),
+        GemTierDocument tier => tier.Gem.ToString(),
+        GemTraitDocument trait => trait.Gem.ToString(),
+        GemTypeDocument type => type.Gem.ToString(),
+        _ => null,
+    };
+
+    private string? Slot => (Entity as ItemDocument)?.Slot;
+
+    private bool? GemSlot => (Entity as ItemDocument)?.GemSlot;
+
+    private bool? UniqueEquipped => (Entity as ItemDocument)?.UniqueEquipped;
 }

@@ -727,12 +727,12 @@ in the repository, so a fresh clone or a fresh worktree has to produce it before
 | --- | --- |
 | `/` | The front page: the roster, every entity type counted, a sample of what is in there |
 | `/browse` | Type tabs, the filter rail, the results table. The whole page is the query string |
-| `/entity/{table}/{netId}` | One entity in full, with its live tooltip at the top |
+| `/entity/{slug}/{id}` | One entity in full, with its live tooltip at the top |
 | `/not-found` | What answers an address that names nothing. A 404 set while a component is rendering discards the markup that set it, so the message is worked back out of the address here |
 | `/api/search?q=` | Ranked name matches across every type, grouped by type with counts |
 | `/api/entities?...` | Every entity a filter leaves, paged |
-| `/api/entity/{table}/{netId}` | One entity's exported record, every per-hero reading of it |
-| `/api/tooltip/{table}/{netId}` | Any entity's tooltip as a self-contained HTML fragment |
+| `/api/entity/{slug}/{id}` | One entity's exported record, every per-hero reading of it |
+| `/api/tooltip/{slug}/{id}` | Any entity's tooltip as a self-contained HTML fragment |
 | `/api/catalog` | The menus, types and facets the browser is built from |
 | `/openapi/v1.json` | The OpenAPI 3.1 description of every route above |
 | `/swagger` | Swagger UI, reading that description |
@@ -756,6 +756,9 @@ named in the operation's description from the shipped attribute table.
 
 A test asserts that giving any parameter the document offers changes the reading it produces, so a
 parameter that is declared and then ignored fails rather than sitting in the published document.
+
+`{slug}` is a type's name hyphenated and singular - `item`, `trait`, `creature`, `set-bonus-power` -
+never the plural a menu label reads, so `/api/tooltip/item/5146` and not `/api/tooltip/items/5146`.
 
 ### Static HTML, one island
 
@@ -829,14 +832,17 @@ passes the filter, so a facet can never offer a value that then matches nothing.
 each facet over the rows *every other* filter leaves, which is what keeps a second slot clickable
 after the first one is chosen.
 
-The one curated thing is which tag tables a reader may meet at all, and which column of the menu
-each is filed under, because nothing in the build groups `ItemTrait.ID` with `ItemID` and nothing in
-it says which tables hold rows the game itself names. `PublicTypes` is where both are written, and
-a table nobody has filed is not shown: 6 tables and 14,478 of the 15,235 rows are public, and the
-other 12 tables reach no tab, no menu, no facet and no search.
+The extractor's own drop rules already keep a row a reader cannot meet out of `entities.jsonl`, so
+every one of the 21 types the corpus holds reaches a tab, a menu, a facet and search: there is no
+second, narrower list of which types a reader may meet. What `PublicTypes` still curates is only how
+a type is spelled and filed - its label, its noun and which column of the menu it sits under, because
+nothing in the build groups a trait with an item and nothing in it says which column a reader would
+look under.
 
-The details table on an entity page is read off the `Entity` record by reflection, and a field the
-page has no section for is drawn as a fact under the words its name spells out. A field added
+The details table on an entity page is read off the row's own typed document class by reflection,
+matching on the concrete type - `Item`, `Ability`, `SetBonus` and the rest - for the fields only one
+of them carries, and a field the page has no section for is drawn as a fact under the words its name
+spells out. A field added
 upstream therefore shows up rather than disappearing. What is never drawn is a value that is a
 shipped spelling - the row's own gameplay tag, its loot rule set, its talent slot - because those
 say nothing a printed form says better; the internal *numbers* beside them are drawn in full, which

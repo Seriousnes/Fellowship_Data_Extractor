@@ -2,6 +2,8 @@ using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
 
+using FellowshipExtractor.Commands;
+
 namespace FellowshipExtractor.Tooltip;
 
 public delegate string? IconWriter(string iconObjectPath);
@@ -32,6 +34,7 @@ public sealed class TooltipResolver
     private readonly HashSet<string> _contestedBands = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly List<TagRecord> _tags;
+    private readonly AugmentationIds _augmentationIds;
     private readonly Dictionary<string, FAssetData> _byPrimaryAssetName = new(StringComparer.Ordinal);
     private readonly Dictionary<string, FAssetData> _byAssetName = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
@@ -58,6 +61,7 @@ public sealed class TooltipResolver
     public GemDefinitions Gems { get; }
     public ItemTraits Traits { get; }
     public Vocabulary Vocabulary { get; }
+    public TypeResolver Types { get; }
 
     public int NamespaceSupplied { get; private set; }
 
@@ -92,7 +96,7 @@ public sealed class TooltipResolver
             if (tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) _effectNames.Add(tag.Name);
         }
 
-        var augmentations = new AugmentationIds(_tags);
+        _augmentationIds = new AugmentationIds(_tags);
         var rarities = new RarityNames(provider, _assets);
 
         Presentation = new AbilityPresentationIndex(provider, _assets);
@@ -102,12 +106,12 @@ public sealed class TooltipResolver
         SlotGlyphs = new SlotIcons(provider, SlotNames);
         Tempers = new TemperCeilings(provider, rarities);
         Armor = new ArmorTypes(provider, _assets);
-        SetBonuses = new ItemSetBonuses(provider, _assets, augmentations);
+        SetBonuses = new ItemSetBonuses(provider, _assets, _augmentationIds);
         TableNames = new ItemTableNames(provider, _assets);
         RuleSets = new DynamicItemRuleSets(provider, _assets);
-        Gems = new GemDefinitions(provider, _assets, _constants, augmentations, rarities);
+        Gems = new GemDefinitions(provider, _assets, _constants, _augmentationIds, rarities);
         Traits = new ItemTraits(
-            provider, _assets, _constants, augmentations, new TraitCategoryNames(provider, _assets));
+            provider, _assets, _constants, _augmentationIds, new TraitCategoryNames(provider, _assets));
 
         StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor);
 
@@ -122,13 +126,16 @@ public sealed class TooltipResolver
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
         Vocabulary = new Vocabulary(
-            provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, SlotGlyphs, Tempers);
+            provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types,
+            SlotGlyphs, Tempers);
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
 
         EffectNames = new EffectNameSources(
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
+
+        Types = new TypeResolver(_tags, Talents, Gems, Traits, SetBonuses);
     }
 
     private string? PrintedName(TagRecord tag, UObject cdo)
@@ -190,7 +197,7 @@ public sealed class TooltipResolver
         var body = Body(cdo, asset?.AssetName.Text ?? tag.Name, display, presentation, icons);
         if (cdo is not null) body = FillFrom(body, GrantedAbilities(cdo, icons));
 
-        var granted = ResolveGranted(cdo, variants, restricted, icons);
+        var (granted, grantedPath) = ResolveGranted(cdo, variants, restricted, icons);
 
         var ruleSet = cdo is null ? null : PropertyWalk.GetString(cdo, RuleSetField);
 
@@ -204,7 +211,9 @@ public sealed class TooltipResolver
             RuleSet = ruleSet is null ? null : ShortRuleSet(ruleSet),
             Stats = cdo is null ? null : Empty(Slots.For(cdo, StatCalculation)),
             Grants = granted,
+            GrantsId = _augmentationIds.For(grantedPath),
             LegendaryStats = cdo is null ? null : Empty(LegendaryStats(cdo, icons)),
+            LegendaryStatIds = cdo is null ? null : Empty(LegendaryStatIds(cdo)),
             Variants = Empty(variants),
         };
 
@@ -217,6 +226,9 @@ public sealed class TooltipResolver
             if (Talents.ForAugmentation(tag.Name) is { } talent) entity = WithTalent(entity, talent, icons);
             if (Gems.ForAugmentation(tag.Name) is { } node) entity = WithGemNode(entity, node, icons);
         }
+
+        entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
+
 
         if (entity.DisplayName is null)
         {
@@ -310,6 +322,7 @@ public sealed class TooltipResolver
             return entity with
             {
                 DisplayName = entity.DisplayName ?? gem.DisplayName,
+                GemType = gem.DisplayName,
                 GemAttribute = gem.Attribute,
                 GemOverflow = WithOverflow(gem.Overflow, icons),
             };
@@ -324,6 +337,7 @@ public sealed class TooltipResolver
                 GemTier = size.Tier,
                 GemPower = size.Power,
                 Rarity = size.Rarity,
+                RarityTier = size.RarityTier,
                 Icon = entity.Icon ?? Written(size.IconPath, icons),
             };
         }
@@ -718,16 +732,17 @@ public sealed class TooltipResolver
         return merged;
     }
 
-    private Entity? ResolveGranted(UObject? cdo, List<Variant> variants, bool restricted, IconWriter? icons)
+    private (Entity? Entity, string? Path) ResolveGranted(
+        UObject? cdo, List<Variant> variants, bool restricted, IconWriter? icons)
     {
-        if (cdo is null) return null;
-        if (PropertyWalk.GetString(cdo, MappingKeyField) is not { } key) return null;
+        if (cdo is null) return (null, null);
+        if (PropertyWalk.GetString(cdo, MappingKeyField) is not { } key) return (null, null);
 
         var matches = Mappings.FindAll(key);
-        if (matches.Count == 0) return null;
+        if (matches.Count == 0) return (null, null);
 
         var distinct = matches.Select(m => m.Asset).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        if (distinct.Length == 1) return LoadAugmentation(distinct[0], icons);
+        if (distinct.Length == 1) return (LoadAugmentation(distinct[0], icons), distinct[0]);
 
         foreach (var (hero, assetPath) in matches)
         {
@@ -743,7 +758,7 @@ public sealed class TooltipResolver
         }
 
         variants.Sort((a, b) => string.Compare(a.HeroName ?? a.Hero, b.HeroName ?? b.Hero, StringComparison.OrdinalIgnoreCase));
-        return null;
+        return (null, null);
     }
 
     private List<EffectRef> Effects(UObject asset) =>
@@ -769,6 +784,14 @@ public sealed class TooltipResolver
             .Select(p => PropertyWalk.AsString(p.Value))
             .OfType<string>()
             .Select(path => LoadAugmentation(path, icons))];
+
+    private List<int> LegendaryStatIds(UObject cdo) =>
+        [.. PropertyWalk.Walk(cdo)
+            .Where(p => p.Path.StartsWith("LegendaryStats[", StringComparison.Ordinal))
+            .Select(p => PropertyWalk.AsString(p.Value))
+            .OfType<string>()
+            .Select(_augmentationIds.For)
+            .OfType<int>()];
 
     public Entity LoadAugmentation(string assetPath, IconWriter? icons)
     {

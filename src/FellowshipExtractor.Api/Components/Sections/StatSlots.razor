@@ -1,6 +1,6 @@
 @inject CodexView Ui
 
-@if (Entity.Stats is { Count: > 0 } slots)
+@if ((Entity as ItemDocument)?.Stats is { Count: > 0 } slots)
 {
     var badge = slots.Count.ToString();
     <Panel Head="Stat slots" Badge="@badge">
@@ -22,7 +22,7 @@
 }
 
 @code {
-    [CascadingParameter] private Entity Entity { get; set; } = new();
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 
     private bool Major(StatSlot slot) =>
         Ui.Store.PrimaryAttributes.Contains(slot.Stat) || slot.Stat == "Stamina";

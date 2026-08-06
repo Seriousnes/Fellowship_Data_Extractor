@@ -1,4 +1,6 @@
-using FellowshipExtractor.Api;
+using System.Text.Json.Nodes;
+
+using FellowshipExtractor.Api.Models;
 
 namespace FellowshipExtractor.Tests;
 
@@ -70,10 +72,13 @@ public sealed class AttributeTableTests
     {
         var attributes = Export.Loaded.Vocabulary.StatCalculation.Attributes;
 
-        var multiplied = Export.Loaded.All()
-            .SelectMany(e => e.Placeholders?.Values ?? [])
-            .Where(p => p.Coefficient is not null)
-            .Select(p => p.Attribute)
+        var multiplied = Export.Loaded.Documents
+            .Select(document => document.Body["placeholders"])
+            .OfType<JsonArray>()
+            .SelectMany(tokens => tokens)
+            .OfType<JsonObject>()
+            .Where(token => token["coefficient"] is not null)
+            .Select(token => token["attribute"]?.GetValue<string>())
             .OfType<string>()
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
@@ -124,5 +129,5 @@ public sealed class AttributeTableTests
             "never applied before now do. The numbers that stat converts to have changed.");
     }
 
-    private readonly record struct AttributeDisplayView(Tooltip.AttributeDisplay Value);
+    private readonly record struct AttributeDisplayView(Fellowship.SDK.AttributeDisplay Value);
 }

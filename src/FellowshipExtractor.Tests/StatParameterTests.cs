@@ -1,4 +1,5 @@
-using FellowshipExtractor.Api;
+using FellowshipExtractor.Api.Models;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 

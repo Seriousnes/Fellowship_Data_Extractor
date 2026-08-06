@@ -1,4 +1,4 @@
-@page "/entity/{slug}/{netId:int}"
+@page "/entity/{slug}/{id:int}"
 @inject CodexView Ui
 @inject Codex Catalog
 @inject EntityStore Store
@@ -7,7 +7,7 @@
 @if (Readings.Count > 0)
 {
     <PageTitle>@Name - Fellowship Codex</PageTitle>
-    <Crumbs Trail="@(new List<(string, string?)> { (PublicTypes.Label(table), Under), (Name, null) })" />
+    <Crumbs Trail="@(new List<(string, string?)> { (PublicTypes.Label(type), Under), (Name, null) })" />
 
     <h1 style="color:@Ui.NameColour(Shown)">@Name</h1>
 
@@ -35,21 +35,21 @@
 @code {
     [Parameter] public string Slug { get; set; } = string.Empty;
 
-    [Parameter] public int NetId { get; set; }
+    [Parameter] public int Id { get; set; }
 
     [SupplyParameterFromQuery(Name = "hero")] public string? Asked { get; set; }
 
-    private string? table;
+    private EntityType type;
 
-    private IReadOnlyList<Entity> Readings = [];
+    private IReadOnlyList<EntityDocument> Readings = [];
 
-    private Entity Shown = new();
+    private EntityDocument Shown = default!;
 
     private Bearings Here = new();
 
     private string Name => Ui.Name(Shown);
 
-    private string Under => $"/browse?type={PublicTypes.SlugOf(table)}";
+    private string Under => $"/browse?type={EntityTypes.Slug(type)}";
 
     private string Address
     {
@@ -63,7 +63,7 @@
         }
     }
 
-    private bool PicksHero => Readings.Count > 1 || Shown.Heroes is { Count: > 1 };
+    private bool PicksHero => Readings.Count > 1 || (Shown as ItemDocument)?.Heroes is { Count: > 1 };
 
     private TooltipQuery Asking => new() { Hero = Drawn };
 
@@ -83,19 +83,20 @@
 
     protected override void OnParametersSet()
     {
-        table = PublicTypes.TableOf(Slug);
-        Readings = table is null ? [] : Store.All(table, NetId);
+        var resolved = EntityTypes.TryParse(Slug, out var named) ? named : (EntityType?)null;
+        type = resolved ?? default;
+        Readings = resolved is { } t ? Store.All(t, Id) : [];
 
         if (Readings.Count == 0)
         {
-            Shown = new Entity();
+            Shown = default!;
             Here = new Bearings();
             Nav.NotFound();
             return;
         }
 
-        Shown = Asked is not null && Store.Hero(Asked) is { } named
-            ? Readings.FirstOrDefault(reading => EntityStore.Reads(reading, named)) ?? Readings[0]
+        Shown = Asked is not null && Store.Hero(Asked) is { } wearer
+            ? Readings.FirstOrDefault(reading => EntityStore.Reads(reading, wearer)) ?? Readings[0]
             : Readings[0];
 
         Here = new Bearings
@@ -104,11 +105,11 @@
             Readings = Readings,
             Reading = Drawn,
             Address = Address,
-            Page = Ui.Href(table, NetId),
+            Page = Ui.Href(type, Id),
             Under = Under,
-            Label = PublicTypes.Label(table),
-            Noun = PublicTypes.Noun(table),
-            NetId = NetId,
+            Label = PublicTypes.Label(type),
+            Noun = PublicTypes.Noun(type),
+            Id = Id,
             Related = Nearby(),
         };
     }
@@ -123,7 +124,7 @@
             if (Catalog.Facet(facet) is not { } definition) return;
 
             var count = Store.Entities.Count(row =>
-                row.Table == Shown.Table && definition.Matches(row, [value]));
+                EntityTypes.TypeOf(row) == type && definition.Matches(row, [value]));
 
             if (count < 2) return;
 
@@ -133,12 +134,17 @@
                 count));
         }
 
-        Add("slot", Shown.Slot);
-        Add("set", Shown.SetBonus?.FirstOrDefault());
-        Add("gem", Shown.GemType);
-        Add("trait", Shown.TraitCategory);
-        Add("hero", Shown.Heroes?.Count == 1 ? Shown.Heroes[0] : null);
-        Add("school", Catalog.Facet("school")?.Values(Shown).FirstOrDefault());
+        string? First(string key) => Catalog.Facet(key)?.Values(Shown).FirstOrDefault();
+
+        Add("slot", First("slot"));
+        Add("set", First("set"));
+        Add("gem", First("gem"));
+        Add("trait", First("trait"));
+
+        var heroes = Catalog.Facet("hero")?.Values(Shown).ToArray() ?? [];
+        Add("hero", heroes.Length == 1 ? heroes[0] : null);
+
+        Add("school", First("school"));
 
         return nearby;
     }

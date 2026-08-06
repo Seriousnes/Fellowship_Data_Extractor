@@ -6,20 +6,6 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Tooltip;
 
-public static class SlotKinds
-{
-    public const string Primary = "primary";
-
-    public const string Fixed = "fixed";
-
-    public const string Random = "random";
-}
-
-public sealed record StatSlot(string Stat, int Weight)
-{
-    public required string Kind { get; init; }
-}
-
 public sealed class ItemSlots
 {
     public const string RowStructure = "/Script/DynamicLootSystemRuntime.CRDynamicHeroItemSlotDefinition";

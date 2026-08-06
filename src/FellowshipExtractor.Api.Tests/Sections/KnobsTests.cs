@@ -12,9 +12,15 @@ public class KnobsTests : BunitContext
         Services.AddSingleton(export.Store);
     }
 
-    private Entity AnyHero() => export.Store.Vocabulary.Heroes[0] is { } who
-        ? new Entity { Heroes = [who.Name], ArmorType = who.ArmorType, PrimaryStat = who.PrimaryStat }
-        : new Entity();
+    private ItemDocument AnyHero() => export.Store.Vocabulary.Heroes[0] is { } who
+        ? new ItemDocument
+        {
+            Id = 1,
+            Heroes = [Enum.Parse<Hero>(who.Name)],
+            ArmorType = who.ArmorType is { } armor ? Enum.Parse<ArmorType>(armor) : null,
+            PrimaryStat = Enum.Parse<PrimaryStat>(who.PrimaryStat),
+        }
+        : new ItemDocument { Id = 1 };
 
     [Fact]
     public void Renders_nothing_for_a_record_with_no_knob_to_turn()
@@ -41,7 +47,7 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Renders_every_rarity_rung_as_an_unpressed_button()
     {
-        var wearable = new Entity { Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
+        var wearable = new ItemDocument { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
         var here = new Bearings { Shown = wearable, Readings = [wearable] };
 
         var cut = Render<Knobs>(p => p.AddCascadingValue(here));
@@ -60,7 +66,7 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Renders_both_number_inputs_under_the_names_the_tooltip_api_reads()
     {
-        var wearable = new Entity { Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
+        var wearable = new ItemDocument { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
         var here = new Bearings { Shown = wearable, Readings = [wearable] };
 
         var cut = Render<Knobs>(p => p.AddCascadingValue(here));
@@ -75,8 +81,8 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Offers_an_any_option_only_where_the_id_has_one_reading()
     {
-        var heroes = export.Store.Vocabulary.Heroes.Take(2).Select(h => h.Name).ToList();
-        var shared = new Entity { Heroes = heroes };
+        var heroes = export.Store.Vocabulary.Heroes.Take(2).Select(h => Enum.Parse<Hero>(h.Name)).ToList();
+        var shared = new ItemDocument { Id = 1, Heroes = heroes };
 
         var one = Render<Knobs>(p => p.AddCascadingValue(
             new Bearings { Shown = shared, Readings = [shared] }));
@@ -93,11 +99,12 @@ public class KnobsTests : BunitContext
     public void Selects_the_hero_whose_reading_is_on_the_stage()
     {
         var who = export.Store.Vocabulary.Heroes[0];
-        var reading = new Entity
+        var reading = new ItemDocument
         {
-            Heroes = [who.Name],
-            ArmorType = who.ArmorType,
-            PrimaryStat = who.PrimaryStat,
+            Id = 1,
+            Heroes = [Enum.Parse<Hero>(who.Name)],
+            ArmorType = who.ArmorType is { } armor ? Enum.Parse<ArmorType>(armor) : null,
+            PrimaryStat = Enum.Parse<PrimaryStat>(who.PrimaryStat),
         };
 
         var here = new Bearings { Shown = reading, Readings = [reading, reading], Reading = who.Name };
@@ -112,8 +119,8 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Names_the_gem_ladder_for_a_gem_and_the_item_ladder_otherwise()
     {
-        var gem = new Entity { GemTier = 3 };
-        var wearable = new Entity { Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
+        var gem = new GemTierDocument { Id = 1, Gem = GemTypeName.Amethyst, Tier = 3, Power = 1, Rarity = Rarity.Champion };
+        var wearable = new ItemDocument { Id = 2, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
 
         var asGem = Render<Knobs>(p => p.AddCascadingValue(
             new Bearings { Shown = gem, Readings = [gem] }));

@@ -101,7 +101,7 @@ so the talent written for that slot is built from the slot row.
 
 ### 3.3 What is not written
 
-Three rules, each derived from the corpus:
+Four rules, each derived from the corpus:
 
 - **An empty branch of the tag tree.** A tag another tag hangs beneath, carrying nothing itself, is a
   branch rather than an entity: `ItemID.HeroItem`, `ItemID.VisualCollection`, `Modifiers.Ascension`.
@@ -110,6 +110,12 @@ Three rules, each derived from the corpus:
 - **A row no rule in 3.1 reaches.**
 - **A type decided against**: visual collections, player and community customization, a creature
   carrying nothing, and a mount whose name pairs with no `CA_Mount` augmentation.
+- **A shipped enumeration's null member.** A tag whose leaf segment is `None` or `Invalid` names the
+  member an enumeration reserves for the absence of a thing rather than a thing:
+  `ItemID.GemType.Invalid`, `ItemID.CompanionPet.None`, `ItemID.PlayerCustomization.Avatar.None`,
+  `ItemID.PlayerCustomization.Banner.None` and `ItemID.PlayerCustomization.Title.None` are the five
+  tags in the build that end that way. Emptiness is required here as well, so a row carrying
+  something under a name ending in one of those two words is written.
 
 A row of a type that is written but carrying nothing yet is written. `ItemID.HeroItem.BowGuy_CC_Back`
 is an item whose name, stats and art the extractor does not read yet, and it is a row of the `item`
@@ -126,27 +132,32 @@ columns and moves no row.
 | creature | 232 | | finesse | 14 |
 | talent | 216 | | weapon power | 12 |
 | talent slot | 216 | | relic power | 11 |
-| mount | 78 | | companion pet | 9 |
+| mount | 96 | | companion pet | 9 |
 | trait | 62 | | gem type | 6 |
 | gem trait | 60 | | legendary stat | 3 |
 | mount power | 54 | | | |
 | trait power | 40 | | | |
 | currency | 32 | | | |
 
-12,419 rows over 21 types, from the 12,418 export rows that are written: `Talent.ID.Talent8` is one
+12,437 rows over 21 types, from the 12,436 export rows that are written: `Talent.ID.Talent8` is one
 export row and two entities, its slot and the talent the slot carries.
 
-2,817 export rows are not written, under the three rules in 3.3:
+2,804 export rows are not written, under the four rules in 3.3:
 
 | Not written | Rows |
 |---|---:|
-| **a type decided against** | **1,115** |
+| **a type decided against** | **1,097** |
 | &nbsp;&nbsp;visual collections | 733 |
 | &nbsp;&nbsp;player and community customization | 215 |
 | &nbsp;&nbsp;creatures carrying nothing | 106 |
-| &nbsp;&nbsp;mounts pairing with no augmentation | 61 |
+| &nbsp;&nbsp;mounts pairing with no augmentation | 43 |
 | **reached by no rule** | **895** |
 | **an empty branch of the tag tree** | **807** |
+| **a shipped enumeration's null member** | **5** |
+
+The mount row and the mounts pairing with no augmentation row are counted over the tags the pairing
+rule in 3.3 pairs and drops directly. The earlier figures counted the unpaired mounts across the whole
+mount tag tree, branches included, rather than the paired ones the rule writes.
 
 The 895 are two populations. 547 are every row of a segment or a table no rule in 3.1 names: hero
 skins, hero abilities, cosmetic swatches, progression, visual trims, SDT entries, the 21 `Talent.ID`
@@ -388,8 +399,8 @@ prints and by nothing else, and `Reads` keeps the first clause that answers for 
 Back-slot cloaks.
 
 `PublicTypes` keys on type. The types the augmentation table used to hide are addressable, and a slug
-is its type's name hyphenated: `talent`, `gem-traits`, `trait-powers`, `set-bonus-powers`,
-`weapon-powers`, `relic-powers`, `legendary-stats`, `mount-powers`, `finesses`.
+is its type's name hyphenated: `talent`, `gem-trait`, `trait-power`, `set-bonus-power`,
+`weapon-power`, `relic-power`, `legendary-stat`, `mount-power`, `finesse`.
 
 `PublicEntity` is the model serialised. The fields it strips are absent from the model, and its
 `Type` carries the type's slug.
@@ -422,7 +433,7 @@ would reach 3 further `CA_Mount` tags, which is the whole of the difference it m
 **Grants.** 200 granted abilities and 111 legendary stat lines resolve to augmentation rows already
 in the corpus, so promoting them mints no id.
 
-**Rows written.** 12,418 of the 15,235 export rows are written, producing 12,419 entity rows.
+**Rows written.** 12,436 of the 15,240 export rows are written, producing 12,437 entity rows.
 
 ---
 

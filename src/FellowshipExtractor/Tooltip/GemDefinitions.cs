@@ -15,6 +15,8 @@ public sealed record GemKind(string DisplayName)
 
 public sealed record GemSize(string TypeName, int Tier, string DisplayName, int Power)
 {
+    public int? RarityTier { get; init; }
+
     public string? Rarity { get; init; }
 
     public string? IconPath { get; init; }
@@ -68,6 +70,9 @@ public sealed class GemDefinitions
     public int TypeCount => _byType.Count;
     public int SizeCount => _byTierTag.Count;
     public int NodeCount => _byAugmentation.Count;
+
+    public IReadOnlyList<string> Types =>
+        [.. _byType.Values.Select(kind => kind.DisplayName).Order(StringComparer.Ordinal)];
 
     public int ReplacementCount { get; private set; }
 
@@ -138,9 +143,12 @@ public sealed class GemDefinitions
             var separator = tag.LastIndexOf(TierSegment, StringComparison.OrdinalIgnoreCase);
             if (separator < 0 || !int.TryParse(tag[(separator + TierSegment.Length)..], out var ordinal)) continue;
 
+            var rung = rarities.Tier(PropertyWalk.Get(tier, RarityField)?.GenericValue);
+
             _byTierTag[tag] = new GemSize(typeName, ordinal, name, power)
             {
-                Rarity = rarities.GemLabel(PropertyWalk.AsOrdinal(PropertyWalk.Get(tier, RarityField)?.GenericValue)),
+                RarityTier = rung,
+                Rarity = rarities.GemLabel(rung),
                 IconPath = PropertyWalk.GetString(tier, TierIconField),
             };
         }

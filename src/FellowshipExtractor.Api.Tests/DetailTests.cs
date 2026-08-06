@@ -3,24 +3,16 @@ namespace FellowshipExtractor.Api.Tests;
 [Collection(Corpus.Name)]
 public class DetailTests : BunitContext
 {
-    public DetailTests(Export export) => Services.AddSingleton(export.View);
+    public DetailTests(Export export)
+    {
+        Services.AddSingleton(export.View);
+        Services.AddSingleton(export.Tooltip);
+    }
 
     [Fact]
-    public void A_nested_detail_draws_the_granted_ability_and_not_the_record_that_grants_it()
+    public void A_nested_detail_draws_the_granted_power_and_not_the_record_that_grants_it()
     {
-        var granted = new Entity
-        {
-            Description = "the granted sentence",
-            Stats = [new StatSlot("StatHaste", 15) { Kind = "Secondary" }],
-            RankRuns = [new RankRun("7", ["7"])],
-        };
-
-        var outer = new Entity
-        {
-            Description = "the outer sentence",
-            Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }],
-            Grants = granted,
-        };
+        var outer = new ItemDocument { Id = 5246, GrantsId = 432 };
 
         var cut = Render<Detail>(p => p.Add(x => x.Entity, outer));
         var markup = cut.Markup;
@@ -28,19 +20,18 @@ public class DetailTests : BunitContext
         var panel = cut.FindAll("div.cx-panel")
             .Single(e => e.QuerySelector("div.cx-panel-head")?.TextContent.StartsWith("Grants an ability") == true);
 
-        Assert.Contains("the granted sentence", panel.TextContent, StringComparison.Ordinal);
-        Assert.DoesNotContain("the outer sentence", panel.TextContent, StringComparison.Ordinal);
-        Assert.DoesNotContain("Stamina", panel.TextContent, StringComparison.Ordinal);
+        Assert.Contains("Conjures two interactable", panel.TextContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("Agility", panel.TextContent, StringComparison.Ordinal);
+        Assert.Empty(panel.QuerySelectorAll("ul.cx-stat-lines"));
 
-        Assert.Equal(1, Occurrences(markup, "the outer sentence"));
         Assert.Equal(1, Occurrences(markup, "Grants an ability"));
     }
 
     [Fact]
     public void A_detail_re_rendered_with_a_different_entity_draws_the_new_one()
     {
-        var first = new Entity { Description = "the first sentence" };
-        var second = new Entity { Description = "the second sentence" };
+        var first = new AbilityDocument { Id = 1, Description = "the first sentence" };
+        var second = new AbilityDocument { Id = 2, Description = "the second sentence" };
 
         var cut = Render<Detail>(p => p.Add(x => x.Entity, first));
 
@@ -53,48 +44,40 @@ public class DetailTests : BunitContext
     }
 
     [Fact]
-    public void Each_legendary_roll_draws_its_own_text_under_its_own_sub_head()
+    public void Each_legendary_roll_draws_its_own_text_under_its_own_sub_head_and_survives_a_re_render()
     {
-        var entity = new Entity
-        {
-            LegendaryStats =
-            [
-                new Entity { Description = "the first roll" },
-                new Entity { Description = "the second roll" },
-            ],
-        };
+        var entity = new ItemDocument { Id = 5216, LegendaryStatIds = [696, 695, 694] };
 
         var cut = Render<Detail>(p => p.Add(x => x.Entity, entity));
 
-        Assert.Equal(2, cut.FindAll("p.cx-sub-head").Count);
-        Assert.Contains("the first roll", cut.Markup, StringComparison.Ordinal);
-        Assert.Contains("the second roll", cut.Markup, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Two_structurally_equal_legendary_rolls_survive_a_re_render()
-    {
-        var entity = new Entity
+        IElement[] RollHeads()
         {
-            LegendaryStats =
-            [
-                new Entity { Description = "the same words" },
-                new Entity { Description = "the same words" },
-            ],
-        };
+            var panel = cut.FindAll("div.cx-panel")
+                .Single(e => e.QuerySelector(":scope > div.cx-panel-head")?.TextContent.StartsWith("Legendary stats") == true);
 
-        var cut = Render<Detail>(p => p.Add(x => x.Entity, entity));
+            return [.. panel.Children.Where(c => c.TagName == "P" && c.ClassList.Contains("cx-sub-head"))];
+        }
 
-        cut.Render(p => p.Add(x => x.Entity, entity with { }));
+        var heads = RollHeads();
 
-        Assert.Equal(2, cut.FindAll("p.cx-sub-head").Count);
+        Assert.Equal(3, heads.Length);
+        Assert.Equal(["Strand of Eternity", "Blood of the Undying", "Mote of Creation"],
+            heads.Select(head => head.TextContent));
+        Assert.Contains("+10% Cooldown Acceleration", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("+10 Damage Reduction", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("+10% Primary Stat", cut.Markup, StringComparison.Ordinal);
+
+        cut.Render(p => p.Add(x => x.Entity, entity));
+
+        Assert.Equal(3, RollHeads().Length);
     }
 
     [Fact]
     public void The_panels_are_siblings_with_no_wrapper_around_them()
     {
-        var entity = new Entity
+        var entity = new ItemDocument
         {
+            Id = 1,
             Description = "some words",
             Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }],
         };
@@ -108,20 +91,20 @@ public class DetailTests : BunitContext
     }
 
     [Fact]
-    public void A_nested_row_builds_its_school_filter_without_a_type()
+    public void A_rows_school_filter_carries_its_own_type()
     {
-        var granted = new Entity { Tags = ["MagicFire"] };
-        var outer = new Entity { Table = "GameplayAbility", Tags = ["MagicFire"], Grants = granted };
+        var entity = new AbilityDocument { Id = 1, Schools = ["Magic / Fire"] };
 
-        var cut = Render<Detail>(p => p.Add(x => x.Entity, outer));
+        var cut = Render<Detail>(p => p.Add(x => x.Entity, entity));
 
         var hrefs = cut.FindAll("ul.cx-pills a")
             .Select(a => a.GetAttribute("href"))
             .Where(href => href?.Contains("school=") == true)
             .ToList();
 
-        Assert.Contains(hrefs, href => href!.StartsWith("/browse?type=", StringComparison.Ordinal));
-        Assert.Contains(hrefs, href => href!.StartsWith("/browse?school=", StringComparison.Ordinal));
+        var expected = $"/browse?type={EntityTypes.Slug(EntityType.Ability)}&school={Uri.EscapeDataString("Magic / Fire")}";
+
+        Assert.Contains(hrefs, href => href == expected);
     }
 
     private static int Occurrences(string haystack, string needle)

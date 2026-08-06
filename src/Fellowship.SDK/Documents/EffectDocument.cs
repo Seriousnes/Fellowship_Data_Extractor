@@ -1,0 +1,25 @@
+using Fellowship.SDK.Models;
+
+namespace Fellowship.SDK.Documents;
+
+public sealed class EffectDocument : EntityDocument
+{
+    public string? Description { get; init; }
+    public string? Icon { get; init; }
+
+    public double? Duration { get; init; }
+    public double? Period { get; init; }
+    public double? Cooldown { get; init; }
+    public double? Range { get; init; }
+    public double? Radius { get; init; }
+    public double? Cost { get; init; }
+
+    public bool? TickrateIgnoresHaste { get; init; }
+
+    public IReadOnlyList<string>? ScalesOff { get; init; }
+    public IReadOnlyList<Placeholder>? Placeholders { get; init; }
+    public IReadOnlyList<string>? Schools { get; init; }
+
+    public EntityReference? NameBorrowedFrom { get; init; }
+    public EntityReference? ArtBorrowedFrom { get; init; }
+}

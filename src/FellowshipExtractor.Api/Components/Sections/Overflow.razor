@@ -1,12 +1,12 @@
 @inject CodexView Ui
 
-@if (Entity.GemOverflow is { } overflow)
+@if (Entity is GemTypeDocument { OverflowDescription: { } description } overflow)
 {
     <Panel Head="Past max power">
-        <Prose>@Ui.Text(overflow.Description, overflow.Placeholders, Entity.Tags)</Prose>
+        <Prose>@Ui.Text(description, overflow.OverflowPlaceholders, [])</Prose>
     </Panel>
 }
 
 @code {
-    [CascadingParameter] private Entity Entity { get; set; } = new();
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 }

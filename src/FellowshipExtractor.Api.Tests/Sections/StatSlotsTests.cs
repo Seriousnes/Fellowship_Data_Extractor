@@ -8,7 +8,7 @@ public class StatSlotsTests : BunitContext
     [Fact]
     public void Renders_nothing_without_stats()
     {
-        var cut = Render<StatSlots>(p => p.AddCascadingValue(new Entity()));
+        var cut = Render<StatSlots>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }));
 
         Assert.Empty(cut.Markup);
     }
@@ -16,8 +16,9 @@ public class StatSlotsTests : BunitContext
     [Fact]
     public void Renders_the_panel_its_badge_its_note_and_its_lines()
     {
-        var entity = new Entity
+        var entity = new ItemDocument
         {
+            Id = 1,
             Stats =
             [
                 new StatSlot("Stamina", 40) { Kind = "Primary" },
@@ -44,7 +45,7 @@ public class StatSlotsTests : BunitContext
     [Fact]
     public void Marks_a_primary_attribute_as_primary()
     {
-        var entity = new Entity { Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
+        var entity = new ItemDocument { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
 
         var cut = Render<StatSlots>(p => p.AddCascadingValue(entity));
 
@@ -54,8 +55,9 @@ public class StatSlotsTests : BunitContext
     [Fact]
     public void Draws_the_slots_in_export_order()
     {
-        var entity = new Entity
+        var entity = new ItemDocument
         {
+            Id = 1,
             Stats =
             [
                 new StatSlot("StatCrit", 20) { Kind = "Secondary" },

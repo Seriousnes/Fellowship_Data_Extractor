@@ -1,3 +1,4 @@
+@using Fellowship.SDK.Models
 @inject CodexView Ui
 
 <CascadingValue Value="Entity">
@@ -5,8 +6,6 @@
     <Particulars Facts="Facts" Schools="Schools" Scaling="Scaling" />
     <StatSlots />
     <Substitutions Tokens="Tokens" />
-    <Tuning Rows="Rows" />
-    <TalentTuning />
     <Ranks />
     <Overflow />
     <BorrowedName Href="@(Namer?.Href)" Tip="@(Namer?.Tip)" Name="@(Namer?.Name)" />
@@ -16,15 +15,13 @@
 </CascadingValue>
 
 @code {
-    [Parameter, EditorRequired] public Entity Entity { get; set; } = new();
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
     private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts = [];
 
     private IReadOnlyList<(string Label, string Href)> Schools = [];
 
     private IReadOnlyList<string> Scaling = [];
-
-    private IReadOnlyList<TuningRow> Rows = [];
 
     private IReadOnlyList<TokenReading> Tokens = [];
 
@@ -37,24 +34,22 @@
     protected override void OnParametersSet()
     {
         Facts = Ui.Facts(Entity);
-        Scaling = [.. Ui.Codex.Scaling(Entity.ScalesOff)];
-        Rows = Ui.Tuning(Entity.Constants);
+        Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(AbilityDocument.ScalesOff)))];
         Tokens = Ui.Substitutions(Entity);
 
         IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
 
         Schools = [.. schools.Select(school => (school, Filter(school)))];
 
-        Namer = Borrowed(Entity.NameInheritedFrom);
-        Lender = Borrowed(Entity.IconInheritedFrom);
+        Namer = Borrowed((Entity as EffectDocument)?.NameBorrowedFrom);
+        Lender = Borrowed((Entity as EffectDocument)?.ArtBorrowedFrom);
     }
 
-    private (string Href, string? Tip, string Name)? Borrowed(IconSource? source) =>
-        source is not null && Ui.Addresses(source.Table, source.NetId) is { } found
-            ? (found.Href, found.Tip, Ui.Name(source.Table, source.NetId))
+    private (string Href, string? Tip, string Name)? Borrowed(EntityReference? source) =>
+        source is not null && Ui.Addresses(source.Type, source.Id) is { } found
+            ? (found.Href, found.Tip, Ui.Name(source.Type, source.Id))
             : null;
 
     private string Filter(string school) =>
-        (PublicTypes.SlugOf(Entity.Table) is { } slug ? $"/browse?type={slug}&" : "/browse?") +
-        $"{SchoolFacet}={Uri.EscapeDataString(school)}";
+        $"/browse?type={EntityTypes.Slug(EntityTypes.TypeOf(Entity))}&{SchoolFacet}={Uri.EscapeDataString(school)}";
 }

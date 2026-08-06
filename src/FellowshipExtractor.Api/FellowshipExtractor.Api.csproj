@@ -8,15 +8,22 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FellowshipExtractor.ServiceDefaults\FellowshipExtractor.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\FellowshipExtractor\FellowshipExtractor.csproj" />
+    <ProjectReference Include="..\Fellowship.SDK\Fellowship.SDK.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Fellowship.SDK" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.4.6" />
+
     <PackageReference Include="AspNetCore.SassCompiler" Version="1.102.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+
     <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.2.3" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,4 @@
-using FellowshipExtractor.Api;
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Api.Models;
 
 namespace FellowshipExtractor.Tests;
 

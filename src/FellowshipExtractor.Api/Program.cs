@@ -1,5 +1,8 @@
+using Fellowship.SDK.Documents;
+
 using FellowshipExtractor.Api;
 using FellowshipExtractor.Api.Components;
+using FellowshipExtractor.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,7 +62,7 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.MapGet("/api/ability/{abilityId:int}", (int abilityId, HttpContext http, Tooltips tooltips) =>
-        tooltips.Get("ability", abilityId, http.Request.Query))
+        tooltips.Get(EntityType.Ability, abilityId, http.Request.Query))
     .WithName("GetAbilityTooltip")
     .WithTags(ApiDocument.Tooltips)
     .WithSummary("One ability's tooltip as a self-contained HTML fragment.")
@@ -69,7 +72,7 @@ app.MapGet("/api/ability/{abilityId:int}", (int abilityId, HttpContext http, Too
     .ProducesProblem(StatusCodes.Status404NotFound);
 
 app.MapGet("/api/item/{itemId:int}", (int itemId, HttpContext http, Tooltips tooltips) =>
-        tooltips.Get("items", itemId, http.Request.Query))
+        tooltips.Get(EntityType.Item, itemId, http.Request.Query))
     .WithName("GetItemTooltip")
     .WithTags(ApiDocument.Tooltips)
     .WithSummary("One item's tooltip as a self-contained HTML fragment.")
@@ -78,8 +81,10 @@ app.MapGet("/api/item/{itemId:int}", (int itemId, HttpContext http, Tooltips too
     .ProducesProblem(StatusCodes.Status400BadRequest)
     .ProducesProblem(StatusCodes.Status404NotFound);
 
-app.MapGet("/api/tooltip/{slug}/{netId:int}", (string slug, int netId, HttpContext http, Tooltips tooltips) =>
-        tooltips.Get(slug, netId, http.Request.Query))
+app.MapGet("/api/tooltip/{slug}/{id:int}", async (string slug, int id, HttpContext http, Tooltips tooltips) =>
+        EntityTypes.TryParse(slug, out var type)
+            ? await tooltips.Get(type, id, http.Request.Query)
+            : PublicRoutes.NoSuchType(slug, StatusCodes.Status404NotFound))
     .WithName("GetTooltip")
     .WithTags(ApiDocument.Tooltips)
     .WithSummary("Any entity's tooltip as a self-contained HTML fragment, addressed by type and id.")
@@ -95,7 +100,7 @@ app.MapGet("/api/search", (HttpContext http, Suggestions suggestions) =>
     var asked = http.Request.Query["type"].ToString();
     var narrowed = string.IsNullOrWhiteSpace(asked) ? null : asked;
 
-    if (narrowed is not null && PublicTypes.TableOf(narrowed) is null)
+    if (narrowed is not null && !EntityTypes.TryParse(narrowed, out _))
     {
         return PublicRoutes.NoSuchType(narrowed, StatusCodes.Status400BadRequest);
     }
@@ -134,18 +139,18 @@ app.MapGet("/api/entities", (HttpContext http, Codex codex, CodexSearch search, 
     .Produces<EntitiesResponse>()
     .ProducesProblem(StatusCodes.Status400BadRequest);
 
-app.MapGet("/api/entity/{slug}/{netId:int}", (string slug, int netId, EntityStore store, CodexView view) =>
+app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, EntityStore store, CodexView view) =>
 {
-    if (PublicTypes.TableOf(slug) is not { } table)
+    if (!EntityTypes.TryParse(slug, out var type))
     {
         return PublicRoutes.NoSuchType(slug, StatusCodes.Status404NotFound);
     }
 
-    var readings = store.All(table, netId);
+    var readings = store.All(type, id);
 
     return readings.Count == 0
         ? Results.Problem(
-            title: "No such id.", detail: $"The build has no {PublicTypes.Noun(table)} {netId}.",
+            title: "No such id.", detail: $"The build has no {PublicTypes.Noun(type)} {id}.",
             statusCode: StatusCodes.Status404NotFound)
         : Results.Ok(readings.Select(reading => PublicEntity.From(reading, view)));
 })
@@ -157,7 +162,7 @@ app.MapGet("/api/entity/{slug}/{netId:int}", (string slug, int netId, EntityStor
 
 app.MapGet("/api/catalog", (Codex codex, EntityStore store) =>
 {
-    var rows = store.Entities.Where(entity => PublicTypes.IsPublic(entity.Table)).ToArray();
+    var rows = store.Entities;
 
     return Results.Ok(new
     {
@@ -190,6 +195,8 @@ app.MapGet("/api/catalog", (Codex codex, EntityStore store) =>
 
 app.Run();
 
+public partial class Program;
+
 public static class PublicRoutes
 {
     public static IResult NoSuchType(string? asked, int status) => Results.Problem(
@@ -220,13 +227,8 @@ public sealed class Fragments(IServiceScopeFactory scopes, ILoggerFactory logger
 
 public sealed class Tooltips(EntityStore store, Fragments fragments)
 {
-    public async Task<IResult> Get(string slug, int netId, IQueryCollection request)
+    public async Task<IResult> Get(EntityType type, int id, IQueryCollection request)
     {
-        if (PublicTypes.TableOf(slug) is not { } table)
-        {
-            return PublicRoutes.NoSuchType(slug, StatusCodes.Status404NotFound);
-        }
-
         var query = TooltipQuery.Parse(request, store.Stats, out var error);
 
         if (error is not null)
@@ -257,28 +259,26 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
-        var traits = PublicTypes.TableOf(TooltipView.TraitSlug)!;
-
         foreach (var imbued in query.Traits)
         {
-            if (store.All(traits, imbued.NetId).Count > 0) continue;
+            if (store.All(TooltipView.TraitType, imbued.Id).Count > 0) continue;
 
             return Results.Problem(
                 title: "No such item trait.",
-                detail: $"The build has no item trait {imbued.NetId}.",
+                detail: $"The build has no item trait {imbued.Id}.",
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
-        var outcome = store.Resolve(table, netId, query.Hero, out var entity, out var hero);
+        var outcome = store.Resolve(type, id, query.Hero, out var document, out var hero);
 
-        var noun = PublicTypes.Noun(table);
-        var readings = store.All(table, netId);
+        var noun = PublicTypes.Noun(type);
+        var readings = store.All(type, id);
 
         if (outcome == Lookup.Found)
         {
             var fragment = await fragments.Render<FellowshipExtractor.Api.Components.Tooltip.Tooltip>(new()
             {
-                ["Entity"] = entity!,
+                ["Entity"] = document!,
                 ["Query"] = query,
                 ["Hero"] = hero,
             });
@@ -290,25 +290,30 @@ public sealed class Tooltips(EntityStore store, Fragments fragments)
         {
             Lookup.NoSuchId => Results.Problem(
                 title: "No such id.",
-                detail: $"The build has no {noun} {netId}.",
+                detail: $"The build has no {noun} {id}.",
                 statusCode: StatusCodes.Status404NotFound),
 
             Lookup.NeedsHero => Results.Problem(
                 title: "This id reads differently per hero.",
-                detail: $"The build has {readings.Count} readings of {noun} {netId} and no hero was given. " +
+                detail: $"The build has {readings.Count} readings of {noun} {id} and no hero was given. " +
                     "Add hero=<name> to pick one. The readings are " +
                     string.Join("; ", readings.Select(Describe)) + ".",
                 statusCode: StatusCodes.Status400BadRequest),
 
             Lookup.NotForThatHero => Results.Problem(
                 title: "Not for that hero.",
-                detail: $"The build has no reading of {noun} {netId} for {hero!.Name}.",
+                detail: $"The build has no reading of {noun} {id} for {hero!.Name}.",
                 statusCode: StatusCodes.Status404NotFound),
 
             _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
         };
     }
 
-    private static string Describe(FellowshipExtractor.Tooltip.Entity entity) =>
-        $"{PublicTypes.NameOf(entity)} [{entity.ArmorType ?? "any"}/{entity.PrimaryStat ?? "any"}]";
+    private static string Describe(EntityDocument document) => document switch
+    {
+        ItemDocument item => $"{PublicTypes.NameOf(item)} " +
+            $"[{item.ArmorType?.ToString() ?? "any"}/{item.PrimaryStat?.ToString() ?? "any"}]",
+        TalentSlotDocument slot => $"{PublicTypes.NameOf(slot)} [{slot.Hero}]",
+        _ => PublicTypes.NameOf(document),
+    };
 }

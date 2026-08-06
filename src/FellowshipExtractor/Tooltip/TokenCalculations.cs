@@ -1,16 +1,5 @@
 namespace FellowshipExtractor.Tooltip;
 
-public enum TokenQuantity
-{
-    Unsettled,
-
-    Period,
-
-    Duration,
-
-    ExecutionMagnitude,
-}
-
 public static class TokenCalculations
 {
     private const string PeriodPath = "Period";

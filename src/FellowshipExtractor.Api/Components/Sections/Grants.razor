@@ -1,4 +1,6 @@
-@if (Entity.Grants is { } grants)
+@inject TooltipView Tips
+
+@if (Tips.Granted(Entity) is { } grants)
 {
     <Panel Head="Grants an ability" Badge="@PublicTypes.DisplayNameOf(grants)">
         <Detail Entity="grants" />
@@ -6,5 +8,5 @@
 }
 
 @code {
-    [CascadingParameter] private Entity Entity { get; set; } = new();
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 }

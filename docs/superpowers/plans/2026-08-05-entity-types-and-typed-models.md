@@ -799,6 +799,10 @@ public sealed class Item : EntityDocument
     public string? Slot { get; init; }
     public bool? GemSlot { get; init; }
     public bool? UniqueEquipped { get; init; }
+
+    /// <summary>The rung every copy of this item is, and none where the drop decides it.</summary>
+    public Rarity? Rarity { get; init; }
+
     public IReadOnlyList<string>? SetBonus { get; init; }
     public IReadOnlyList<StatSlot>? Stats { get; init; }
 
@@ -848,6 +852,13 @@ public sealed class CompanionPet : EntityDocument
     public string? Icon { get; init; }
 }
 ```
+
+`Item.Rarity` is not the `RuleSet` the design strips. A rule set is an internal spelling and goes;
+the rung a reader is shown stays, and for 37 item rows the build fixes it. Those 37 are the rows
+whose rule set is `Legendary`, they are exactly the rows carrying `legendaryStats`, and every other
+item leaves its rarity to the drop. `StatMagnitudes` answers a request naming no item level at 315,
+and at 360 for an item fixed at Legendary, so this field is what that answer reads. The design for it
+is `docs/superpowers/specs/2026-08-05-item-level-rarity-and-tempering-design.md`.
 
 Build: `dotnet build src/FellowshipExtractor.slnx`
 
@@ -1329,6 +1340,12 @@ Add `From` to the same class. Four arms are written out; the rest follow the tab
             Slot = entity.Slot,
             GemSlot = entity.GemSlot,
             UniqueEquipped = entity.UniqueEquipped,
+
+            // A rule set naming a rung is the build fixing the item at it. Parsing through the
+            // generated enum is what keeps that rung's name out of this file: Relic, Weapon and the
+            // Default and SetBonus rule sets name no rung and parse to none.
+            Rarity = Enum.TryParse<Rarity>(entity.RuleSet, out var fixedRarity) ? fixedRarity : null,
+
             SetBonus = entity.SetBonus,
             Stats = entity.Stats,
             Description = entity.Description,
@@ -1795,6 +1812,17 @@ public sealed class TypeResolverTests
         Assert.All(legendary, item => Assert.All(
             item.Body["legendaryStatIds"]!.AsArray(),
             stat => Assert.Contains(stat!.GetValue<int>(), ids)));
+    }
+
+    [Fact]
+    public void AnItemStatesARarityOnlyWhereTheBuildFixesIt()
+    {
+        var items = Export.Loaded.Documents.Where(d => d.Type == EntityType.Item).ToArray();
+        var stated = items.Where(d => d.Body["rarity"] is not null).ToArray();
+
+        Assert.Equal(37, stated.Length);
+        Assert.All(stated, item => Assert.Equal("Legendary", item.Body["rarity"]!.GetValue<string>()));
+        Assert.All(stated, item => Assert.NotNull(item.Body["legendaryStatIds"]));
     }
 }
 ```

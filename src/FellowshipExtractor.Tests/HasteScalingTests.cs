@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+
 namespace FellowshipExtractor.Tests;
 
 public sealed class HasteScalingTests
@@ -6,25 +8,41 @@ public sealed class HasteScalingTests
     private const int FireBall = 1260;
     private const string ChannelInterval = "IncinerateChannelInterval";
 
+    private static JsonObject Document(EntityType type, int id) =>
+        Export.Loaded.Documents
+            .Where(document => document.Type == type && document.Id == id)
+            .Select(document => document.Body)
+            .FirstOrDefault()
+        ?? throw new InvalidOperationException(
+            $"{type} {id} is not in the export. Either the id moved or the entity is gone.");
+
+    private static Entity Resolved(string table, int netId)
+    {
+        var tag = Export.Resolver.FindTag(table, netId.ToString())
+            ?? throw new InvalidOperationException($"{table} {netId} is no longer a tag in the build.");
+
+        return Export.Resolver.Resolve(tag, icons: null)[0];
+    }
+
     [Fact]
     public void IncinerateDeclaresHasteScaling() =>
-        Assert.True(Export.Loaded.Entity("GameplayAbility", Incinerate).ScalesWithHaste);
+        Assert.True(Document(EntityType.Ability, Incinerate)["scalesWithHaste"]?.GetValue<bool>());
 
     [Fact]
     public void IncinerateTicksEveryHalfSecond()
     {
-        var entity = Export.Loaded.Entity("GameplayAbility", Incinerate);
+        var ability = Document(EntityType.Ability, Incinerate);
 
-        Assert.Equal(0.5, entity.ChannelTick);
-        Assert.Equal(0.5, entity.Period);
-        Assert.Equal(2.5, entity.ChannelTime);
-        Assert.Equal(1.5, entity.CastTime);
+        Assert.Equal(0.5, ability["channelTick"]?.GetValue<double>());
+        Assert.Equal(0.5, ability["period"]?.GetValue<double>());
+        Assert.Equal(2.5, ability["channelTime"]?.GetValue<double>());
+        Assert.Equal(1.5, ability["castTime"]?.GetValue<double>());
     }
 
     [Fact]
     public void ChannelIntervalTokenResolves()
     {
-        var placeholders = Export.Loaded.Entity("GameplayAbility", Incinerate).Placeholders;
+        var placeholders = Resolved("GameplayAbility", Incinerate).Placeholders;
 
         Assert.NotNull(placeholders);
         Assert.True(placeholders!.ContainsKey(ChannelInterval), $"{ChannelInterval} is no longer a token.");
@@ -41,7 +59,7 @@ public sealed class HasteScalingTests
     {
         var orphans = new List<string>();
 
-        foreach (var entity in Export.Loaded.All())
+        foreach (var entity in Corpus())
         {
             if (entity.Description is not { } description) continue;
 
@@ -58,36 +76,79 @@ public sealed class HasteScalingTests
     [Fact]
     public void ResolvedTickratesAreMarkedAsSuch()
     {
-        var tickrates = Export.Loaded.All()
-            .Where(e => e.Placeholders is not null)
-            .SelectMany(e => e.Placeholders!)
-            .Where(p => p.Value.Tickrate == true)
+        var tickrates = Tokens()
+            .Where(token => token["tickrate"]?.GetValue<bool>() == true)
             .ToArray();
 
         Assert.NotEmpty(tickrates);
-        Assert.All(tickrates, p => Assert.NotNull(p.Value.Value));
+        Assert.All(tickrates, token => Assert.NotNull(token["value"]));
     }
 
     [Fact]
     public void TheHasteOptOutIsStillShipped()
     {
-        var exempt = Export.Loaded.All().Where(e => e.TickrateIgnoresHaste == true).ToArray();
+        var exempt = Export.Loaded.Documents
+            .Where(document => document.Body["tickrateIgnoresHaste"]?.GetValue<bool>() == true)
+            .ToArray();
 
         Assert.True(
             exempt.Length > 0,
             "No effect declares EffectLogic.TickrateNotAffectedByHasteExclusively any more. Either the " +
             "tag is gone from the build or it stopped being read, and the tickrate default rests on it.");
 
-        Assert.Contains(exempt, e => e.Name == "GE_Firemage_PlacedProjectileAoe_DirectDamageBased_Dot");
+        var dot = Export.Resolver
+            .FindTag("GameplayEffect", "GE_Firemage_PlacedProjectileAoe_DirectDamageBased_Dot")?.NetId;
+
+        Assert.Contains(exempt, e => e.Type == EntityType.Effect && e.Id == dot);
     }
 
     [Fact]
     public void FireBallKeepsItsCoefficient()
     {
-        var direct = Export.Loaded.Entity("GameplayAbility", FireBall).Placeholders?["FireBallDirect"];
+        var direct = Resolved("GameplayAbility", FireBall).Placeholders?["FireBallDirect"];
 
         Assert.NotNull(direct);
         Assert.Equal(5.8482, direct!.Coefficient);
         Assert.Equal("Intellect", direct.Attribute);
+    }
+
+    private static IEnumerable<JsonObject> Tokens() =>
+        Export.Loaded.Documents
+            .Select(document => document.Body["placeholders"])
+            .OfType<JsonArray>()
+            .SelectMany(tokens => tokens)
+            .OfType<JsonObject>();
+
+    private static IEnumerable<Entity> Corpus()
+    {
+        foreach (var tag in Export.Resolver.Tags)
+        {
+            foreach (var row in Export.Resolver.Resolve(tag, icons: null))
+            {
+                foreach (var reached in Reachable(row)) yield return reached;
+            }
+        }
+    }
+
+    private static IEnumerable<Entity> Reachable(Entity entity)
+    {
+        yield return entity;
+
+        foreach (var nested in Nested(entity))
+        {
+            foreach (var reached in Reachable(nested)) yield return reached;
+        }
+    }
+
+    private static IEnumerable<Entity> Nested(Entity entity)
+    {
+        if (entity.Grants is { } granted) yield return granted;
+
+        foreach (var stat in entity.LegendaryStats ?? []) yield return stat;
+
+        foreach (var variant in entity.Variants ?? [])
+        {
+            if (variant.Grants is { } grantedToVariant) yield return grantedToVariant;
+        }
     }
 }

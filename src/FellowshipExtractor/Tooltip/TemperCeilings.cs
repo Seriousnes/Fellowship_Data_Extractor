@@ -6,8 +6,6 @@ using CUE4Parse.UE4.Objects.Engine.Curves;
 
 namespace FellowshipExtractor.Tooltip;
 
-public sealed record TemperCeiling(int ItemLevel, int MaxTempers);
-
 public sealed class TemperCeilings
 {
     public const string Table = "CT_ItemRarityAndLevelToMaxTempers";

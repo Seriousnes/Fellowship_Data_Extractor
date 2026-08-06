@@ -5,12 +5,13 @@ public class IdentityTests : BunitContext
     [Fact]
     public void Names_the_type_the_id_and_the_tooltip_address()
     {
+        var slug = EntityTypes.Slug(EntityType.Item);
         var here = new Bearings
         {
-            Under = "/browse?type=items",
+            Under = $"/browse?type={slug}",
             Label = "Items",
-            NetId = 5208,
-            Address = "/api/tooltip/items/5208",
+            Id = 5208,
+            Address = $"/api/tooltip/{slug}/5208",
         };
 
         var cut = Render<Identity>(p => p.AddCascadingValue(here));
@@ -20,10 +21,10 @@ public class IdentityTests : BunitContext
         var rows = cut.FindAll("table.cx-facts tr");
 
         Assert.Equal(3, rows.Count);
-        Assert.Equal("/browse?type=items", rows[0].QuerySelector("a")!.GetAttribute("href"));
+        Assert.Equal($"/browse?type={slug}", rows[0].QuerySelector("a")!.GetAttribute("href"));
         Assert.Equal("Items", rows[0].QuerySelector("a")!.TextContent);
         Assert.Equal("5208", rows[1].QuerySelector("td")!.TextContent);
-        Assert.Equal("/api/tooltip/items/5208", rows[2].QuerySelector("a")!.GetAttribute("href"));
+        Assert.Equal($"/api/tooltip/{slug}/5208", rows[2].QuerySelector("a")!.GetAttribute("href"));
     }
 }
 
@@ -42,7 +43,7 @@ public class NearbyTests : BunitContext
     {
         var here = new Bearings
         {
-            Related = [("Slot: Head", "/browse?type=items&slot=Head", 1271)],
+            Related = [("Slot: Head", $"/browse?type={EntityTypes.Slug(EntityType.Item)}&slot=Head", 1271)],
         };
 
         var cut = Render<Nearby>(p => p.AddCascadingValue(here));
@@ -51,7 +52,7 @@ public class NearbyTests : BunitContext
 
         var pill = cut.Find("ul.cx-pills a");
 
-        Assert.Equal("/browse?type=items&slot=Head", pill.GetAttribute("href"));
+        Assert.Equal($"/browse?type={EntityTypes.Slug(EntityType.Item)}&slot=Head", pill.GetAttribute("href"));
         Assert.Equal("1,271", pill.QuerySelector("span.cx-num")!.TextContent);
     }
 }
@@ -71,7 +72,7 @@ public class VersionsTests : BunitContext
     [Fact]
     public void Renders_nothing_for_an_id_with_one_reading()
     {
-        var only = new Entity { Table = "ItemID", NetId = 1 };
+        var only = new ItemDocument { Id = 1 };
         var here = new Bearings { Shown = only, Readings = [only], Noun = "item" };
 
         var cut = Render<Versions>(p => p.AddCascadingValue(here));
@@ -82,15 +83,15 @@ public class VersionsTests : BunitContext
     [Fact]
     public void Groups_the_readings_into_named_versions_and_lists_who_wears_each()
     {
-        var cloth = new Entity
+        var cloth = new ItemDocument
         {
-            Table = "ItemID", NetId = 1, DisplayName = "Scholar's Headscarf",
-            ArmorType = "Cloth", PrimaryStat = "Intellect", Heroes = ["Aeona"],
+            Id = 1, Name = "Scholar's Headscarf",
+            ArmorType = ArmorType.Cloth, PrimaryStat = PrimaryStat.Intellect, Heroes = [Hero.Aeona],
         };
-        var leather = new Entity
+        var leather = new ItemDocument
         {
-            Table = "ItemID", NetId = 1, DisplayName = "Scribe's Headband",
-            ArmorType = "Leather", PrimaryStat = "Agility", Heroes = ["Mara"],
+            Id = 1, Name = "Scribe's Headband",
+            ArmorType = ArmorType.Leather, PrimaryStat = PrimaryStat.Agility, Heroes = [Hero.Mara],
         };
 
         var here = new Bearings
@@ -98,7 +99,7 @@ public class VersionsTests : BunitContext
             Shown = cloth,
             Readings = [cloth, leather],
             Reading = "Aeona",
-            Page = "/entity/items/1",
+            Page = $"/entity/{EntityTypes.Slug(EntityType.Item)}/1",
             Noun = "item",
         };
 
@@ -117,7 +118,7 @@ public class VersionsTests : BunitContext
 
         var wearer = cut.Find("div.cx-roster a");
 
-        Assert.Equal("/entity/items/1?hero=Aeona", wearer.GetAttribute("href"));
+        Assert.Equal($"/entity/{EntityTypes.Slug(EntityType.Item)}/1?hero=Aeona", wearer.GetAttribute("href"));
         Assert.Equal("page", wearer.GetAttribute("aria-current"));
         Assert.Equal("Aeona", wearer.QuerySelector("span.cx-who")!.TextContent);
     }
@@ -125,15 +126,16 @@ public class VersionsTests : BunitContext
     [Fact]
     public void Names_one_version_in_the_singular()
     {
-        var reading = new Entity
+        var reading = new ItemDocument
         {
-            Table = "ItemID", NetId = 1, DisplayName = "Twin Cowl",
-            ArmorType = "Cloth", PrimaryStat = "Intellect", Heroes = ["Aeona"],
+            Id = 1, Name = "Twin Cowl",
+            ArmorType = ArmorType.Cloth, PrimaryStat = PrimaryStat.Intellect, Heroes = [Hero.Aeona],
         };
 
         var here = new Bearings
         {
-            Shown = reading, Readings = [reading, reading], Page = "/entity/items/1", Noun = "item",
+            Shown = reading, Readings = [reading, reading],
+            Page = $"/entity/{EntityTypes.Slug(EntityType.Item)}/1", Noun = "item",
         };
 
         var cut = Render<Versions>(p => p.AddCascadingValue(here));
@@ -144,12 +146,13 @@ public class VersionsTests : BunitContext
     [Fact]
     public void Gives_a_version_split_by_hero_alone_no_discriminator()
     {
-        var first = new Entity { Table = "ItemID", NetId = 1, DisplayName = "Plain Band", Heroes = ["Aeona"] };
-        var second = new Entity { Table = "ItemID", NetId = 1, DisplayName = "Plain Band", Heroes = ["Mara"] };
+        var first = new ItemDocument { Id = 1, Name = "Plain Band", Heroes = [Hero.Aeona] };
+        var second = new ItemDocument { Id = 1, Name = "Plain Band", Heroes = [Hero.Mara] };
 
         var here = new Bearings
         {
-            Shown = first, Readings = [first, second], Page = "/entity/items/1", Noun = "item",
+            Shown = first, Readings = [first, second],
+            Page = $"/entity/{EntityTypes.Slug(EntityType.Item)}/1", Noun = "item",
         };
 
         var cut = Render<Versions>(p => p.AddCascadingValue(here));
