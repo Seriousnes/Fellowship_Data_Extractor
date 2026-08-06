@@ -59,6 +59,10 @@ public sealed class StatParameters
 
 public sealed class EntityStore
 {
+    private const string DefaultDropRow = "Default";
+
+    private const string LegendaryDropRow = "Legendary";
+
     private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -283,6 +287,18 @@ public sealed class EntityStore
 
     public HeroEntry? Wearer(EntityDocument document) =>
         Vocabulary.Heroes.FirstOrDefault(hero => Reads(document, hero));
+
+    public int DropItemLevel(EntityDocument document) =>
+        Plateau(document is ItemDocument { Rarity: Fellowship.SDK.Rarity.Legendary }
+            ? LegendaryDropRow
+            : DefaultDropRow);
+
+    private int Plateau(string row) =>
+        Vocabulary.DropItemLevels.FirstOrDefault(
+            plateau => plateau.Row.Equals(row, StringComparison.OrdinalIgnoreCase))?.ItemLevel
+        ?? throw new InvalidOperationException(
+            $"The vocabulary states no {row} drop plateau, so there is no item level to answer a request that " +
+            "names none. Write it again with 'dotnet run --project src/FellowshipExtractor -- export-all'.");
 
     public RarityEntry? Rarity(string? word, bool gem)
     {

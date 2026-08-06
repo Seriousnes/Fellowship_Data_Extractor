@@ -171,6 +171,74 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
+    public void Answers_an_item_at_the_highest_rung_it_comes_in_when_the_caller_names_none()
+    {
+        var cut = Draw(new ItemDocument
+        {
+            Id = 1,
+            Rarities = [Rarity.Uncommon, Rarity.Rare, Rarity.Epic, Rarity.Champion, Rarity.Heroic],
+        });
+
+        Assert.Equal("Regal", cut.Find("span.rar").TextContent);
+    }
+
+    [Fact]
+    public void Answers_an_item_fixed_at_a_rung_at_that_rung()
+    {
+        var legendary = Draw(new ItemDocument { Id = 1, Rarity = Rarity.Legendary, Rarities = [Rarity.Legendary] });
+        var heroItem = Draw(new ItemDocument { Id = 2, Rarities = [Rarity.Common] });
+
+        Assert.Equal("Legendary", legendary.Find("span.rar").TextContent);
+        Assert.Equal("Common", heroItem.Find("span.rar").TextContent);
+    }
+
+    [Fact]
+    public void Takes_the_rung_the_caller_names_over_the_one_the_item_comes_in()
+    {
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, new ItemDocument { Id = 1, Rarities = [Rarity.Uncommon, Rarity.Heroic] })
+            .Add(x => x.Query, new TooltipQuery { Rarity = "Uncommon" }));
+
+        Assert.Equal("Uncommon", cut.Find("span.rar").TextContent);
+    }
+
+    [Fact]
+    public void Colours_the_header_of_an_item_that_states_no_rung_of_its_own()
+    {
+        var coloured = Draw(new ItemDocument
+        {
+            Id = 1,
+            Rarities = [Rarity.Uncommon, Rarity.Rare, Rarity.Epic, Rarity.Champion, Rarity.Heroic],
+        });
+
+        var style = coloured.Find("div.fx-tip").GetAttribute("style")!;
+
+        var shade = new DesignTokens(Store.Vocabulary).Rarity(Rarity.Heroic.ToString());
+
+        Assert.Contains($"--fx-title:{shade}", style, StringComparison.Ordinal);
+        Assert.DoesNotContain("--fx-title:var(--core-text-primary)", style, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Answers_a_currency_at_the_rung_its_row_states()
+    {
+        var cut = Draw(new CurrencyDocument { Id = 1, Name = "Divine Mithril", Rarity = Rarity.Legendary });
+
+        Assert.Equal("Legendary", cut.Find("span.rar").TextContent);
+    }
+
+    [Fact]
+    public void Leaves_a_row_with_no_rarity_of_any_kind_unstyled()
+    {
+        var cut = Draw(new AbilityDocument { Id = 1, Name = "Fire Ball", Description = "burns" });
+
+        var style = cut.Find("div.fx-tip").GetAttribute("style")!;
+
+        Assert.Empty(cut.FindAll("span.rar"));
+        Assert.Contains("--fx-title:var(--core-text-primary)", style, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Prints_the_item_level_the_caller_asked_for()
     {
         var cut = Render<Components.Tooltip.Tooltip>(p => p

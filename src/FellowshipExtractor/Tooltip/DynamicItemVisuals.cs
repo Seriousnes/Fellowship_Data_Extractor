@@ -74,6 +74,9 @@ public sealed class DynamicItemVisuals
         return icons;
     }
 
+    public IReadOnlyList<string> Rarities(IPropertyHolder definition) =>
+        [.. Tiers(definition).Select(tier => _rarities.Label(tier)).OfType<string>()];
+
     public IReadOnlyList<int> Tiers(IPropertyHolder definition)
     {
         if (PropertyWalk.Get(definition, AllRaritiesField)?.GenericValue is true) return [.. _rarities.Tiers];

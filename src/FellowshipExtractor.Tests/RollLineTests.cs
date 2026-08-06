@@ -53,7 +53,8 @@ public sealed class RollLineTests
             Export.Loaded.Vocabulary.StatCalculation,
             new HashSet<string>(["Strength", "Intellect", "Agility"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
-            StatMagnitudes.MaximumItemLevel,
+            Export.Loaded.Vocabulary.DropItemLevels
+                .Single(plateau => plateau.Row == FellowshipExtractor.Tooltip.DropItemLevels.DefaultRow).ItemLevel,
             query);
     }
 

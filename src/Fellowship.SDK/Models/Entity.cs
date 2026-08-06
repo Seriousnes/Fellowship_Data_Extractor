@@ -35,6 +35,8 @@ public sealed record Entity
 
     public string? RuleSet { get; init; }
 
+    public IReadOnlyList<string>? Rarities { get; init; }
+
     public string? Description { get; init; }
 
     public IReadOnlyList<string>? Detail { get; init; }

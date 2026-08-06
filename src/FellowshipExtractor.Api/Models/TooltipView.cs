@@ -32,6 +32,8 @@ public sealed class TooltipView(
         var tier = document switch
         {
             ItemDocument { Rarity: { } rung } => (int?)rung,
+            ItemDocument { Rarities: { Count: > 0 } rungs } => (int)rungs.Max(),
+            CurrencyDocument { Rarity: { } coin } => (int)coin,
             GemTierDocument gemTier => (int)gemTier.Rarity,
             _ => null,
         };
@@ -71,7 +73,7 @@ public sealed class TooltipView(
 
     public int? Level(EntityDocument document, TooltipQuery query) =>
         document is ItemDocument { Stats: { Count: > 0 } }
-            ? query.ItemLevel ?? StatMagnitudes.MaximumItemLevel
+            ? query.ItemLevel ?? store.DropItemLevel(document)
             : query.ItemLevel;
 
     public string? Temper(TooltipQuery query, RarityEntry? rarity, int? level)
@@ -166,7 +168,7 @@ public sealed class TooltipView(
                 store.Vocabulary.StatCalculation,
                 store.PrimaryAttributes,
                 rarity,
-                query.ItemLevel ?? StatMagnitudes.MaximumItemLevel,
+                query.ItemLevel ?? store.DropItemLevel(item),
                 query)
             : [];
 

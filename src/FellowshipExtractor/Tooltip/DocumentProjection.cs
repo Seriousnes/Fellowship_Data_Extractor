@@ -49,6 +49,8 @@ public static class DocumentProjection
 
             Rarity = Enum.TryParse<Rarity>(entity.RuleSet, out var fixedRarity) ? fixedRarity : null,
 
+            Rarities = entity.Rarities?.Select(Enum.Parse<Rarity>).Order().ToArray(),
+
             RuleSet = entity.RuleSet,
             SetBonus = entity.SetBonus,
             Stats = entity.Stats,
@@ -124,6 +126,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            Rarity = entity.RarityTier is { } currencyTier ? (Rarity)currencyTier : null,
             Description = entity.Description,
             Icon = entity.Icon,
         },

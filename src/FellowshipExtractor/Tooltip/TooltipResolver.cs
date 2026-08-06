@@ -50,6 +50,7 @@ public sealed class TooltipResolver
     public SlotIcons SlotGlyphs { get; }
 
     public TemperCeilings Tempers { get; }
+    public DropItemLevels Drops { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public DynamicItemVisuals DynamicVisuals { get; }
@@ -105,9 +106,10 @@ public sealed class TooltipResolver
         SlotNames = new ItemSlotNames(provider, _assets);
         SlotGlyphs = new SlotIcons(provider, SlotNames);
         Tempers = new TemperCeilings(provider, rarities);
+        Drops = new DropItemLevels(provider, _assets);
         Armor = new ArmorTypes(provider, _assets);
         SetBonuses = new ItemSetBonuses(provider, _assets, _augmentationIds);
-        TableNames = new ItemTableNames(provider, _assets);
+        TableNames = new ItemTableNames(provider, _assets, rarities);
         RuleSets = new DynamicItemRuleSets(provider, _assets);
         Gems = new GemDefinitions(provider, _assets, _constants, _augmentationIds, rarities);
         Traits = new ItemTraits(
@@ -116,7 +118,7 @@ public sealed class TooltipResolver
         StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor);
 
         var collections = new VisualCollections(provider);
-        HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, collections);
+        HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, collections, rarities);
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
 
         DynamicVisuals = new DynamicItemVisuals(provider, _assets, collections, rarities);
@@ -127,7 +129,7 @@ public sealed class TooltipResolver
 
         Vocabulary = new Vocabulary(
             provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types,
-            SlotGlyphs, Tempers);
+            SlotGlyphs, Tempers, Drops);
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -209,6 +211,7 @@ public sealed class TooltipResolver
             Slot = SlotNames.FromTag(tag.Name)?.Shipped,
             GemSlot = RuleSets.HasGemSocket(ruleSet) ? true : null,
             RuleSet = ruleSet is null ? null : ShortRuleSet(ruleSet),
+            Rarities = cdo is null ? null : Empty(DynamicVisuals.Rarities(cdo)),
             Stats = cdo is null ? null : Empty(Slots.For(cdo, StatCalculation)),
             Grants = granted,
             GrantsId = _augmentationIds.For(grantedPath),
@@ -348,6 +351,8 @@ public sealed class TooltipResolver
             {
                 DisplayName = entity.DisplayName ?? row.DisplayName,
                 Description = entity.Description ?? row.Description,
+                Rarity = entity.Rarity ?? row.Rarity,
+                RarityTier = entity.RarityTier ?? row.RarityTier,
                 Icon = entity.Icon ?? Written(row.IconPath, icons),
             };
         }
@@ -381,6 +386,7 @@ public sealed class TooltipResolver
         Stats = entity.Stats ?? Empty(item.Stats),
         SetBonus = SetBonuses.ForRow(item.SetBonus),
         UniqueEquipped = item.UniqueEquipped ? true : null,
+        Rarities = entity.Rarities ?? (item.Rarity is { } rung ? [rung] : null),
         Heroes = Empty([.. item.Heroes.Select(hero => Heroes.Shipped(hero) ?? hero)]),
         Icon = entity.Icon ?? (item.IconPath is { } path ? icons?.Invoke(path) : null),
     };

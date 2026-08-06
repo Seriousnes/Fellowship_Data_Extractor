@@ -33,6 +33,8 @@ public sealed class Vocabulary
 
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; }
 
+    public IReadOnlyList<DropPlateau> DropItemLevels { get; }
+
     public Vocabulary(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -42,13 +44,15 @@ public sealed class Vocabulary
         IReadOnlyList<string> randomStatPool,
         IReadOnlyList<string> gemTypes,
         SlotIcons slotIcons,
-        TemperCeilings tempers)
+        TemperCeilings tempers,
+        DropItemLevels drops)
     {
         StatCalculation = statCalculation;
         RandomStatPool = randomStatPool;
         GemTypes = gemTypes;
         SlotIcons = slotIcons.BySlot;
         MaxTempers = tempers.ByRarity;
+        DropItemLevels = drops.Plateaus;
 
         var colours = Colours(provider, assets);
 
@@ -96,6 +100,7 @@ public sealed class Vocabulary
                 rarities = Rarities,
                 gemTypes = GemTypes,
                 maxTempers = MaxTempers,
+                dropItemLevels = DropItemLevels,
                 slotIcons = SlotIcons,
                 printFormats = PrintFormats,
                 colors = Colors,

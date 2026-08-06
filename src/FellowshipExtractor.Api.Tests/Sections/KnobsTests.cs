@@ -74,7 +74,7 @@ public class KnobsTests : BunitContext
         Assert.NotNull(cut.Find("input[data-knob=itemLevel]"));
         Assert.NotNull(cut.Find("input[data-knob=upgrades]"));
         Assert.Equal(
-            StatMagnitudes.MaximumItemLevel.ToString(),
+            export.Store.DropItemLevel(wearable).ToString(),
             cut.Find("input[data-knob=itemLevel]").GetAttribute("value"));
     }
 

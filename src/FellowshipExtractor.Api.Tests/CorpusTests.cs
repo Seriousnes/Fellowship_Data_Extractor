@@ -5,10 +5,69 @@ public class CorpusTests : BunitContext
 {
     private readonly EntityStore Store;
 
+    private readonly TooltipView Tooltip;
+
     public CorpusTests(Export export)
     {
         Store = export.Store;
+        Tooltip = export.Tooltip;
         Services.AddSingleton(export.Tooltip);
+    }
+
+    [Fact]
+    public void Every_item_that_states_the_rungs_it_comes_in_answers_at_one_unasked()
+    {
+        var items = Store.Entities
+            .OfType<ItemDocument>()
+            .Where(item => item.Rarities is { Count: > 0 })
+            .ToArray();
+
+        Assert.NotEmpty(items);
+
+        foreach (var item in items)
+        {
+            var rung = Tooltip.Rarity(item, new TooltipQuery());
+
+            Assert.NotNull(rung);
+            Assert.Equal(item.Rarities!.Max().ToString(), rung.Name);
+        }
+    }
+
+    [Fact]
+    public void Item_5309_reads_Regal_without_being_asked_for_a_rarity()
+    {
+        var pants = Store.All(EntityType.Item, 5309)[0];
+
+        var cut = Render<Components.Tooltip.Tooltip>(p => p.Add(x => x.Entity, pants));
+
+        Assert.Equal("Regal", cut.Find("span.rar").TextContent);
+        Assert.Equal("315", cut.Find("span.power").TextContent);
+
+        Assert.Equal(3, cut.FindAll("ul.stats li.guaranteed").Count);
+        Assert.Equal(2, cut.FindAll("ul.stats li.random").Count);
+    }
+
+    [Fact]
+    public void A_legendary_is_answered_at_the_level_a_legendary_drop_pays()
+    {
+        var legendary = Store.All(EntityType.Item, 5224)[0];
+
+        var cut = Render<Components.Tooltip.Tooltip>(p => p.Add(x => x.Entity, legendary));
+
+        Assert.Equal("Legendary", cut.Find("span.rar").TextContent);
+        Assert.Equal("360", cut.Find("span.power").TextContent);
+    }
+
+    [Fact]
+    public void Item_5309_tempers_eight_times_without_being_asked_for_a_rarity()
+    {
+        var pants = Store.All(EntityType.Item, 5309)[0];
+
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, pants)
+            .Add(x => x.Query, new TooltipQuery { Upgrades = 8 }));
+
+        Assert.Equal("Tempered8 / 8", cut.FindAll("div.row")[^1].QuerySelectorAll(":scope > span")[^1].TextContent);
     }
 
     [Fact]

@@ -138,6 +138,7 @@ public sealed class Codex
             new Facet("rarity", "Rarity", document => One(document switch
             {
                 ItemDocument { Rarity: { } rarity } => RarityWord(store, rarity, gem: false),
+                CurrencyDocument { Rarity: { } coin } => RarityWord(store, coin, gem: false),
                 GemTierDocument tier => RarityWord(store, tier.Rarity, gem: true),
                 _ => null,
             }))

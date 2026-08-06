@@ -15,6 +15,8 @@ public sealed class ItemDocument : EntityDocument
 
     public Rarity? Rarity { get; init; }
 
+    public IReadOnlyList<Rarity>? Rarities { get; init; }
+
     public IReadOnlyList<string>? SetBonus { get; init; }
     public IReadOnlyList<StatSlot>? Stats { get; init; }
 

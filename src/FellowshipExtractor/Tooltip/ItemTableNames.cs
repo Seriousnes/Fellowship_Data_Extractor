@@ -7,6 +7,10 @@ namespace FellowshipExtractor.Tooltip;
 public sealed record NamedRow(string? DisplayName, string? Description)
 {
     public string? IconPath { get; init; }
+
+    public string? Rarity { get; init; }
+
+    public int? RarityTier { get; init; }
 }
 
 public sealed class ItemTableNames
@@ -17,12 +21,13 @@ public sealed class ItemTableNames
     private const string DisplayNameField = "DisplayName";
     private const string DescriptionField = "Description";
     private const string IconField = "IconTexture";
+    private const string RarityField = "Rarity";
 
     private readonly Dictionary<string, NamedRow> _byTag = new(StringComparer.OrdinalIgnoreCase);
 
     public int Count => _byTag.Count;
 
-    public ItemTableNames(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+    public ItemTableNames(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, RarityNames rarities)
     {
         foreach (var objectPath in TableFinder.ByRowStructure(assets, CurrencyRowStructure))
         {
@@ -33,11 +38,15 @@ public sealed class ItemTableNames
             {
                 if (PropertyWalk.GetString(row, DisplayNameField) is not { } name) continue;
 
+                var tier = rarities.Tier(PropertyWalk.Get(row, RarityField)?.GenericValue);
+
                 _byTag.TryAdd(
                     CurrencyTagPrefix + rowName.Text,
                     new NamedRow(name, PropertyWalk.GetText(row, DescriptionField))
                     {
                         IconPath = PropertyWalk.GetString(row, IconField),
+                        Rarity = rarities.Label(tier),
+                        RarityTier = tier,
                     });
             }
         }

@@ -49,5 +49,7 @@ public sealed record VocabularyFile
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; init; } =
         new Dictionary<string, IReadOnlyList<TemperCeiling>>(StringComparer.OrdinalIgnoreCase);
 
+    public IReadOnlyList<DropPlateau> DropItemLevels { get; init; } = [];
+
     public StatCalculationFile StatCalculation { get; init; } = new();
 }

@@ -22,6 +22,8 @@ public sealed record HeroItem
 
     public bool UniqueEquipped { get; init; }
 
+    public string? Rarity { get; init; }
+
     public string? IconPath { get; init; }
 }
 
@@ -33,6 +35,8 @@ public sealed class HeroItemTable
     private const string StatEnumPrefix = "ECRItemStat::";
     private const string StaminaStat = "Stamina";
     private const string NoneValue = "None";
+    private const string OverrideFlagField = "OverrideRarity";
+    private const string OverrideRarityField = "ItemRarityOverride";
 
     private readonly Dictionary<string, HeroItem> _byTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _primaryStatByHero = new(StringComparer.OrdinalIgnoreCase);
@@ -42,6 +46,7 @@ public sealed class HeroItemTable
     private readonly ArmorTypes _armor;
     private readonly ItemSlotNames _slots;
     private readonly VisualCollections _visuals;
+    private readonly RarityNames _rarities;
 
     public int Count => _byTag.Count;
 
@@ -52,12 +57,14 @@ public sealed class HeroItemTable
         IReadOnlyList<FAssetData> assets,
         ArmorTypes armor,
         ItemSlotNames slots,
-        VisualCollections visuals)
+        VisualCollections visuals,
+        RarityNames rarities)
     {
         _provider = provider;
         _armor = armor;
         _slots = slots;
         _visuals = visuals;
+        _rarities = rarities;
 
         var statsByHero = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
@@ -103,8 +110,18 @@ public sealed class HeroItemTable
             SetBonus = Named(PropertyWalk.GetString(row, "SetBonusA")),
             Heroes = heroes,
             UniqueEquipped = PropertyWalk.Get(row, "IsUniqueEquippable")?.GenericValue is true,
+            Rarity = Rarity(row),
             IconPath = Icon(row, slot?.Type),
         };
+    }
+
+    private string? Rarity(FStructFallback row)
+    {
+        var declared = PropertyWalk.Get(row, OverrideFlagField)?.GenericValue is true
+            ? PropertyWalk.AsOrdinal(PropertyWalk.Get(row, OverrideRarityField)?.GenericValue)
+            : null;
+
+        return _rarities.Label(declared ?? _rarities.Tiers.First());
     }
 
     private static List<string> HeroesOf(FStructFallback row)

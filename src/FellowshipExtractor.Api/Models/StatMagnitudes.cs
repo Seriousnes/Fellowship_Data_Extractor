@@ -11,8 +11,6 @@ public sealed record StatLine(string? Stat, string DisplayName, decimal Value, s
 
 public static class StatMagnitudes
 {
-    public const int MaximumItemLevel = 315;
-
     private const string StaminaStat = "Stamina";
 
     private const string ArmorStat = "Armor";

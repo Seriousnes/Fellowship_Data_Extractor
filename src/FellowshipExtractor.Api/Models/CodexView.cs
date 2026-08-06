@@ -36,6 +36,7 @@ public sealed class CodexView(
         Rarity? rarity = document switch
         {
             ItemDocument { Rarity: { } value } => value,
+            CurrencyDocument { Rarity: { } coin } => coin,
             GemTierDocument tier => tier.Rarity,
             _ => null,
         };
@@ -247,7 +248,9 @@ public sealed class CodexView(
     private static bool Hidden(EntityDocument document, string property) => document switch
     {
         GemTypeDocument => property == nameof(GemTypeDocument.Attribute),
-        ItemDocument => property is nameof(ItemDocument.Rarity) or nameof(ItemDocument.RuleSet),
+        ItemDocument => property is nameof(ItemDocument.Rarity) or nameof(ItemDocument.Rarities)
+            or nameof(ItemDocument.RuleSet),
+        CurrencyDocument => property == nameof(CurrencyDocument.Rarity),
         GemTierDocument => property == nameof(GemTierDocument.Rarity),
         _ => false,
     };
@@ -273,6 +276,7 @@ public sealed class CodexView(
         Rarity? rung = document switch
         {
             ItemDocument { Rarity: { } value } => value,
+            CurrencyDocument { Rarity: { } coin } => coin,
             GemTierDocument tier => tier.Rarity,
             _ => null,
         };
