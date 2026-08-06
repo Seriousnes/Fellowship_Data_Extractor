@@ -47,7 +47,7 @@ its report so the next task's implementer has the list.
 | File | What happens |
 |---|---|
 | `src/Fellowship.SDK/Entity.cs` | `Placeholder` gains `Key`. |
-| `src/FellowshipExtractor/Tooltip/DocumentProjection.cs` | `Spent` orders by where the text spends each token, and carries the key. |
+| `src/FellowshipExtractor/Tooltip/DocumentProjection.cs` | `Spent` orders by where the text spends each token, and carries the key. `Name` is filled through the words test. |
 | `src/Fellowship.SDK/Documents/EntityDocument.cs` | Gains the polymorphic read. |
 | `src/Fellowship.SDK/EntityType.cs` | Gains slug parsing and the document class per member. |
 | `src/FellowshipExtractor.Api/PublicTypes.cs` | Keys on `EntityType`. All 21 types are addressable. |
@@ -149,11 +149,31 @@ are the same line.
 
 ---
 
-### Task 3: The types a reader meets
+### Task 3: The name a reader is shown, and the types a reader meets
 
 Spec section 7: `PublicTypes` keys on type, and the types the augmentation table used to hide are
 addressable. The drop rules in section 3.3 already keep a row a reader cannot meet out of the export,
 so the corpus is the reader's corpus and every type in it is public.
+
+**First, the name.** Spec section 2 moves "whether a shipped name is a name or a build label" into
+the extractor, as the absence of `Name`. That has not landed: `DocumentProjection` fills
+`Name = entity.DisplayName` at all 22 of its call sites, and the test lives only in
+`PublicTypes.WrittenAsWords`. Measured over the current export, 6,488 documents carry a name and 48
+of them carry a build label instead, spelling 18 distinct ones: `UB_CadavrianBannerman.WarHorn` on 3
+effects, `AutoAttack` on 12 rows, `CastProjectile`, `CastAndImpact`, `AimedShot`, `EarthStomp`,
+`EarthBreaker`, `KillShot`, `MeleeAutoAttack`, `ChannelProjectile`, `AoE Heal`,
+`AOE Pools (RuinsLasher)`, `ArcaneBlast (Elf Warden)`, `EarthStomp (EarthElemental)`,
+`[PH - StarMap Token]`, `Playtest GearToken`, `Playtest GemToken`, `Playtest ResourceToken`. They
+fall on 27 abilities, 17 effects and 4 currencies.
+
+Move `WrittenAsWords` into `src/FellowshipExtractor/Tooltip/DocumentProjection.cs` and fill `Name`
+through it, so a row whose shipped name is a build label carries no `Name` at all. Take the method
+and its doc comment as they stand; the reasoning it records is what the test is for. The API's copy
+goes in the same task, below.
+
+After this task the export is regenerated, and 48 rows lose their `name`. Nothing else about the
+corpus moves: the row is still written, still counted, and still printed by its type's noun and its
+id.
 
 **`src/FellowshipExtractor.Api/PublicTypes.cs`.**
 
@@ -165,11 +185,10 @@ so the corpus is the reader's corpus and every type in it is public.
 - `IsPublic`, `TableOf` and `SlugOf` go. `Find(EntityType)` replaces `Find(string?)`, and the
   fallbacks it carried for a non-public table go with them: every type has a label, a noun and a
   group.
-- `NameOf` and `DisplayNameOf` take an `EntityDocument`. `EntityDocument.Name` is already the name a
-  reader is shown, and is already null where the build prints none a reader would read, because
-  `DocumentProjection` applied the `WrittenAsWords` test when it filled it. So `DisplayNameOf` is the
-  document's `Name`, `WrittenAsWords` moves out, and `NameOf` is that name or the type's noun and the
-  document's id.
+- `NameOf` and `DisplayNameOf` take an `EntityDocument`. With the move above, `EntityDocument.Name`
+  is the name a reader is shown and is null where the build prints none they would read, so
+  `DisplayNameOf` is the document's `Name`, `WrittenAsWords` leaves the API, and `NameOf` is that
+  name or the type's noun and the document's id.
 
 The label, the noun and the menu column resist derivation, because a type's name says what it holds
 and not what a reader would look under. The column order is the order the groups first appear.
@@ -202,11 +221,14 @@ and not what a reader would look under. The column order is the order the groups
 name reads "Set bonus power 4012". That is the sentence a reader gets; capitalising every word would
 read as a title the build never gave the row.
 
-**Verification.** `dotnet build src/Fellowship.SDK` is green. `FellowshipExtractor.Api` does not
-build; list in your report every call site the change breaks, by file and line, from the compiler's
-own output.
+**Verification.** `dotnet build src/FellowshipExtractor` and `dotnet build src/Fellowship.SDK` are
+green, and `dotnet test src/FellowshipExtractor.Tests` is green, since the extractor half of this
+task stands on its own. Add a test asserting that a row whose shipped name is a build label projects
+no `Name`, and that one written as words keeps it; the 18 spellings above are the fixture material.
+`FellowshipExtractor.Api` does not build; list in your report every call site the change breaks, by
+file and line, from the compiler's own output.
 
-**Commit** the file and the report.
+**Commit** the files and the report.
 
 ---
 
