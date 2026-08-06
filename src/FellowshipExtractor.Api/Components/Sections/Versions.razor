@@ -46,10 +46,12 @@
     /// One named version of an id: what the game calls it, the armour type and primary stat that
     /// tell it from its siblings, the heroes handed it, and whether it is the one on the stage.
     ///
-    /// The heroes are the point rather than a note on it. Every one of the 2,143 readings behind the
-    /// 188 split ids names exactly one hero, because a dynamic item draws the wearer's own armour set
-    /// and no two heroes share one, so a version's hero list is never empty and the names under it
-    /// are the whole of who ever sees it.
+    /// The heroes are the point rather than a note on it. Every reading behind a split id names
+    /// exactly one hero, and this component draws both populations that are ever split: the 2,143
+    /// readings behind the 188 split item ids, because a dynamic item draws the wearer's own armour
+    /// set and no two heroes share one, and the 216 readings behind the 19 split talent-slot ids,
+    /// because a hero's grid never shares a slot position with another hero's. Either way a version's
+    /// hero list is never empty and the names under it are the whole of who ever sees it.
     ///
     /// Nested rather than declared at namespace scope, which would put a second Version in scope
     /// beside System.Version for every file in this assembly.

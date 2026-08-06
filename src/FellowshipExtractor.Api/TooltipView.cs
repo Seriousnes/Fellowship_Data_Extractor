@@ -384,7 +384,10 @@ public sealed class TooltipView(
             shown.Add(Block.Granted);
         }
 
-        if (item?.LegendaryStatIds is { Count: > 0 }) shown.Add(Block.Legendaries);
+        // Resolved rather than merely present, on the same terms Granted above is: TipLegendaries
+        // draws LegendaryStats too, and a list naming only ids nothing in the store answers to would
+        // add the block, place a rule above the next one and draw nothing under it.
+        if (LegendaryStats(document).Count > 0) shown.Add(Block.Legendaries);
 
         if (item?.SetBonus is { Count: > 0 }) shown.Add(Block.Sets);
 

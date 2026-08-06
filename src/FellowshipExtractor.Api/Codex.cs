@@ -28,19 +28,6 @@ public sealed record Facet(
     /// </summary>
     public Func<DesignTokens, string, string?>? Colour { get; init; }
 
-    /// <summary>
-    /// The word the browser prints for a value, where the shipped spelling is not it.
-    ///
-    /// No facet needs one today. A value is both what the panel prints and what its links, its
-    /// chips and the list of values a caller may ask for all carry, so a facet whose rows spell
-    /// their value the build's way spells it at the selector instead, where every one of those
-    /// readings picks it up: that is what the school facet's own selector and the primary stat
-    /// facet do, both reading a word the document already carries printed. Printing alone would
-    /// leave the build's own spelling in the address bar, which is the half of the fix a reader
-    /// can hand on to somebody else.
-    /// </summary>
-    public Func<EntityStore, string, string>? Display { get; init; }
-
     public bool Matches(EntityDocument document, IReadOnlyCollection<string> wanted) =>
         Values(document).Any(value => wanted.Contains(value, StringComparer.OrdinalIgnoreCase));
 }
@@ -100,10 +87,12 @@ public sealed record MenuGroup(string Label, IReadOnlyList<MenuEntry> Entries);
 ///
 /// A document class with no property of that name answers null or empty rather than throwing, which
 /// is what lets a measure like cooldown span seven document types with no list of them written here,
-/// and pick up an eighth the day a document class gains the field. Restricted to <c>double?</c>,
-/// <c>string?</c> and a list of strings: an <c>int</c> or a <c>bool</c> field boxes as its own type
-/// and does not unbox through <c>as double?</c>, so those are read by pattern matching instead, each
-/// living on exactly one document type today.
+/// and pick up an eighth the day a document class gains the field. <see cref="Number"/> unboxes a
+/// <c>double</c> or an <c>int</c> field alike, and either's nullable form the same way: a boxed value
+/// carries only its own runtime type, whatever the property's declared type says, which is why
+/// <c>Cost</c> answered null on every <see cref="TalentSlot"/> until this read both rather than only
+/// the first. A <c>bool</c> field still needs pattern matching, because a flag reads it as a
+/// predicate rather than a magnitude and has no use for a boxed reading here.
 /// </summary>
 internal static class DocumentFields
 {
@@ -113,7 +102,14 @@ internal static class DocumentFields
         Cache.GetOrAdd((document.GetType(), name), key => key.Document.GetProperty(key.Property));
 
     public static double? Number(EntityDocument document, string name) =>
-        Property(document, name)?.GetValue(document) as double?;
+        Property(document, name)?.GetValue(document) switch
+        {
+            null => null,
+            double number => number,
+            int number => number,
+            var boxed => throw new InvalidOperationException(
+                $"{document.GetType().Name}.{name} is {boxed.GetType().Name}, which DocumentFields.Number does not unbox."),
+        };
 
     public static string? Text(EntityDocument document, string name) =>
         Property(document, name)?.GetValue(document) as string;
@@ -134,8 +130,10 @@ internal static class DocumentFields
 /// What a facet may offer is decided the same way a type's label is: by whether its values are words
 /// the game itself prints. A slot is Chest and a school is Magic / Fire, both read off the game's own
 /// screens; a loot rule set is Default_NoGemSlot_Necklace and a gameplay tag is Skill.Secondary,
-/// neither of which a document carries at all any more. So the corpus carries axes this offers no way
-/// to browse by, and that is the point rather than an omission.
+/// neither a word a player ever reads. 2,204 items carry a rule set today, nine spellings between
+/// them, and no document carries a tag field at all - so whether or not a document states one, the
+/// corpus carries axes this offers no way to browse by, and that is the point rather than an
+/// omission.
 ///
 /// The values a facet offers are also the whole of what it may be asked for, which
 /// <see cref="Offered"/> answers and <see cref="CodexQuery.Parse"/> enforces. A filter is a URL a
@@ -295,8 +293,8 @@ public sealed class Codex
             },
             new Measure("cost", "Cost", document => DocumentFields.Number(document, nameof(Ability.Cost))),
             new Measure("charges", "Charges", document => DocumentFields.Number(document, nameof(Ability.Charges))),
-            new Measure("tier", "Gem tier", document => document is GemTier tier ? (double?)tier.Tier : null),
-            new Measure("rank", "Max rank", document => document is Trait { MaxRank: { } rank } ? (double?)rank : null),
+            new Measure("tier", "Gem tier", document => DocumentFields.Number(document, nameof(GemTier.Tier))),
+            new Measure("rank", "Max rank", document => DocumentFields.Number(document, nameof(Trait.MaxRank))),
 
             // Addressable on its own: /api/tooltip/talent/124 is how the game's own talent is asked
             // for. Every document carries one, so this is the one measure with no row ever missing.
@@ -391,8 +389,7 @@ public sealed class Codex
     /// the 15 resources, and every one of the 91 is already the word a page prints, so this is the
     /// value itself on all of them.
     /// </summary>
-    public string Printed(Facet facet, string value) =>
-        facet.Display?.Invoke(store, value) ?? Spaced(value);
+    public string Printed(Facet facet, string value) => Spaced(value);
 
     /// <summary>
     /// Every value a facet's rows carry, in the order the panel offers them, which is the whole of
@@ -475,9 +472,9 @@ public sealed class Codex
     /// <summary>
     /// The damage schools a row is, read straight off the document rather than out of a tag list:
     /// the extractor already lifts them out and spells each one the way a tooltip's damage sentence
-    /// does, Magic / Fire and Physical / Bleed. Measured over the export, 4 document types carry the
-    /// field - Ability, Effect, RelicPower and WeaponPower - and between them print 14 distinct
-    /// schools.
+    /// does, Magic / Fire and Physical / Bleed. Four document types can state the field - Ability,
+    /// Effect, RelicPower and WeaponPower - and measured over the export only two of them carry any:
+    /// 704 abilities and 8 weapon powers, printing 14 distinct schools between them.
     ///
     /// Public because the facet is not the only reader: a caller holding an arbitrary
     /// <see cref="EntityDocument"/> - a results row, a nested grant - has no narrower type to switch
@@ -501,7 +498,7 @@ public sealed class Codex
     /// between them name 82 attributes, of which 15 sit in the shipped attribute table: Strength on
     /// 1,145 rows, Intellect on 486, Critical Strike, Move Speed and eleven more. The other 67 are
     /// DamageScale, IncomingDamageMultiplier, MaxHealth and the like, the tuning knobs behind a
-    /// number rather than a stat anybody wears, and 893 of the 3,045 rows name none of the 15: a
+    /// number rather than a stat anybody wears, and 891 of the 3,045 rows name none of the 15: a
     /// reader filtering by one of those knobs would meet an empty panel if this dropped them.
     ///
     /// They are read out instead. A coefficient and the knob it turns are the data a database like

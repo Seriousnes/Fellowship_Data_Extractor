@@ -7,7 +7,7 @@
    while its guard was evaluated on the inner one - including the Grants guard, which would then
    recurse until the renderer stopped it. IsFixed is deliberately off: with it on, a Detail
    re-rendered with a different entity keeps drawing the first. CascadingValue emits no element, so
-   the twelve panels stay siblings at the component root and .cx-panel + .cx-panel still spaces
+   the ten panels stay siblings at the component root and .cx-panel + .cx-panel still spaces
    them. *@
 <CascadingValue Value="Entity">
     <Wording />

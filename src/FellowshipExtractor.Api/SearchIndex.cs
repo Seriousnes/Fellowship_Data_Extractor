@@ -13,7 +13,7 @@ namespace FellowshipExtractor.Api;
 /// never met.
 ///
 /// Measured over the export: 6,440 of the 12,437 documents carry a name and contribute a term, for
-/// 2,285 terms and 16,278 postings between them. 1,288 of the named ones are effects named by the
+/// 2,282 terms and 16,271 postings between them. 1,288 of the named ones are effects named by the
 /// ability that applies them, and 123 of those share the single word "Attack" with the ability they
 /// took it from - typing "attack" reaches both, and a reader who types a name means the thing that
 /// owns it, which is what <see cref="Score"/>'s one deduction settles.
@@ -43,10 +43,6 @@ public sealed class SearchIndex
 
     /// <summary>Which documents each term appears in, aligned with <see cref="terms"/>.</summary>
     private readonly int[][] postings;
-
-    public int Documents => docs.Length;
-
-    public int Terms => terms.Length;
 
     public SearchIndex(EntityStore store, ILogger<SearchIndex> logger)
     {

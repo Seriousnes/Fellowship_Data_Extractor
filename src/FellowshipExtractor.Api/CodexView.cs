@@ -28,8 +28,6 @@ public sealed class CodexView(
 
     public string Icon(string? icon) => icon is null ? chrome.SlotPlate : $"{icons.Uri}/{icon}";
 
-    public bool HasIcon(string? icon) => icon is not null;
-
     /// <summary>
     /// The colour a row's name is drawn in: a gem tier's or an item's rarity, failing that a gem
     /// type's own colour, failing that the hero it is for where it is for exactly one, and failing
@@ -275,9 +273,9 @@ public sealed class CodexView(
     }
 
     /// <summary>
-    /// Where a numeric fact leads, on the four fields whose number is another row's id rather than a
-    /// quantity: a trait's or a set bonus's power, a talent slot's talent, and the weaker gem node a
-    /// ladder's upper half replaces.
+    /// Where a numeric fact leads, on the five fields whose number is another row's id rather than a
+    /// quantity: a trait's or a set bonus's power, a talent slot's talent, the weaker gem node a
+    /// ladder's upper half replaces, and the power an item grants.
     /// </summary>
     private (string Href, string? Tip)? Points(EntityDocument document, string property, object value) =>
         document switch
@@ -289,12 +287,28 @@ public sealed class CodexView(
                 Addresses(EntityType.Talent, id),
             GemTrait when property == nameof(GemTrait.ReplacesId) && value is int id =>
                 Addresses(EntityType.GemTrait, id),
+            Item when property == nameof(Item.GrantsId) && value is int id && Power(id) is { } found =>
+                Addresses(found.Type, found.Id),
             _ => null,
         };
 
-    /// <summary>Where a pointer to another row leads, and that row's own tooltip address beside it.</summary>
+    /// <summary>
+    /// Which power an item's <see cref="Item.GrantsId"/> names. The id is per type rather than global,
+    /// so it is tried against both the relic and the weapon powers the corpus carries, the same lookup
+    /// <see cref="TooltipView.Granted"/> makes to draw the granted power as its own nested tooltip.
+    /// </summary>
+    private (EntityType Type, int Id)? Power(int id) =>
+        store.All(EntityType.RelicPower, id).Count > 0 ? (EntityType.RelicPower, id)
+        : store.All(EntityType.WeaponPower, id).Count > 0 ? (EntityType.WeaponPower, id)
+        : null;
+
+    /// <summary>
+    /// Where a pointer to another row leads, and that row's own tooltip address beside it. Null where
+    /// the id resolves to nothing, so a caller's own null-check is what stands between a broken
+    /// pointer and <see cref="Name(EntityType, int)"/>'s unguarded lookup.
+    /// </summary>
     public (string Href, string? Tip)? Addresses(EntityType type, int id) =>
-        (Href(type, id), store.All(type, id) is { Count: > 0 } readings ? Tip(readings[0]) : null);
+        store.All(type, id) is { Count: > 0 } readings ? (Href(type, id), Tip(readings[0])) : null;
 
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> ScalarsByType = new();
 
@@ -336,11 +350,17 @@ public sealed class CodexView(
     /// 6 gem roots, Amethyst holding AmethystPower; <see cref="Item.Rarity"/> and
     /// <see cref="GemTier.Rarity"/> are enum members named for the rung's filed word, which the
     /// ladder joins by ordinal to two different printed words rather than stating one itself.
+    ///
+    /// <see cref="Item.RuleSet"/> is the same shape again: Default_NoGemSlot_Necklace is the build's
+    /// own asset spelling, not a word a player reads. It stays on <see cref="Item"/> because
+    /// <see cref="StatMagnitudes"/> joins on it to work out a rarity's stat addition, a fact this
+    /// panel does not draw; the field exists for that join and is hidden from the one surface that
+    /// would otherwise print it verbatim.
     /// </summary>
     private static bool Hidden(EntityDocument document, string property) => document switch
     {
         GemType => property == nameof(GemType.Attribute),
-        Item => property == nameof(Item.Rarity),
+        Item => property is nameof(Item.Rarity) or nameof(Item.RuleSet),
         GemTier => property == nameof(GemTier.Rarity),
         _ => false,
     };
@@ -437,13 +457,6 @@ public sealed class CodexView(
 
         return listed;
     }
-
-    /// <summary>
-    /// A tuning key as a reader reads it, for the callers holding a key rather than a dictionary:
-    /// the group names of a talent's tuning are keys of the same kind and are drawn as headings over
-    /// the rows they hold.
-    /// </summary>
-    public string TuningName(string key) => Spaced(Knob(key));
 
     /// <summary>
     /// A knob as it is drawn: dotted segments read as a path and the underscore that joins two words
