@@ -52,6 +52,8 @@ public sealed record TooltipQuery
 
     public string? Rarity { get; init; }
 
+    public string? State { get; init; }
+
     public int? ItemLevel { get; init; }
     public int? Upgrades { get; init; }
     public int? MaxUpgrades { get; init; }
@@ -91,6 +93,8 @@ public sealed record TooltipQuery
     [
         new("hero", ApiValue.Text, "The hero whose reading of the id to draw, where one id reads differently per hero."),
         new("rarity", ApiValue.Text, "The rung to read at, by the name the game prints or by tier."),
+        new("state", ApiValue.Text,
+            "The state to draw the row at: a hero trait selected, available or unavailable; a blessing allocated or unallocated."),
         new("itemLevel", ApiValue.Whole, $"The item level to compute stat magnitudes at, 0 to {LevelCeiling:N0}."),
         new("upgrades", ApiValue.Whole, "How many times the item has been tempered."),
         new("maxUpgrades", ApiValue.Whole,
@@ -241,6 +245,7 @@ public sealed record TooltipQuery
         {
             Hero = Given(text("hero")),
             Rarity = Given(text("rarity")),
+            State = Given(text("state")),
             ItemLevel = itemLevel,
             Upgrades = upgrades,
             MaxUpgrades = maxUpgrades,

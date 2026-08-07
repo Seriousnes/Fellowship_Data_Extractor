@@ -9,6 +9,8 @@ $rounded-window-slice: 32;
 $rounded-window-corner: 16px;
 $divider-height: 3px;
 $node-size: 72px;
+$node-art-size: 56px;
+$node-lock-size: 16px;
 
 .fx-tip {
   display: flex;
@@ -138,11 +140,28 @@ $node-size: 72px;
     justify-content: center;
     padding: 12px 0 4px;
 
-    img {
-      display: block;
+    &::before {
+      content: "";
+      position: absolute;
+      top: 12px;
       width: $node-size;
       height: $node-size;
+      background: var(--fx-crest, none) 0 0/100% 100% no-repeat;
+      pointer-events: none;
+    }
+
+    img {
+      display: block;
+      width: $node-art-size;
+      height: $node-art-size;
       object-fit: contain;
+    }
+
+    .lock {
+      position: absolute;
+      top: 8px;
+      width: $node-lock-size;
+      height: $node-lock-size;
     }
   }
 

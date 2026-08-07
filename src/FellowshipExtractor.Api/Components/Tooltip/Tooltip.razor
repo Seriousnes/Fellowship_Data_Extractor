@@ -17,7 +17,13 @@
         </header>
         @if (Art is { } crest && TooltipView.DrawsItsOwnArt(Entity))
         {
-            <figure class="crest"><img alt="" src="@crest"></figure>
+            <figure class="crest" style="@(Ui.StateFrame(Entity, Query) is { } frame ? $"--fx-crest:url({frame})" : null)">
+                <img alt="" src="@(Ui.StateArt(Entity, Query) ?? crest)">
+                @if (Ui.Locked(Entity, Query))
+                {
+                    <img class="lock" alt="" src="@Ui.LockGlyph">
+                }
+            </figure>
         }
         @if (shown.Count > 0)
         {
