@@ -21,15 +21,9 @@ else
 
                 <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
             </header>
-            @if (Art is { } crest && TooltipView.DrawsItsOwnArt(Entity))
+            @if (Entity is TraitDocument { Icon: not null } trait)
             {
-                <figure class="crest node" style="@(Ui.StateFrame(Entity, Query) is { } frame ? $"--fx-crest:url({frame})" : null)">
-                    <img alt="" src="@crest">
-                    @if (Ui.Locked(Entity, Query))
-                    {
-                        <img class="lock" alt="" src="@Ui.LockGlyph">
-                    }
-                </figure>
+                <TraitCrest Entity="trait" State="@Query.State" />
             }
             @if (shown.Count > 0)
             {

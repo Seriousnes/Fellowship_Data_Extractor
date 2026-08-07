@@ -1,20 +1,21 @@
 @use "sass:math";
 @use "Card" as *;
+@use "Crest" as *;
 
 $tooltip-window-width: 280;
 $header-decor-brush-width: 254;
 $rarity-frame-height: 106px;
 $header-decor-height: 14px;
-$state-frame-width: 72px;
-$state-art-size: 56px;
 $crest-top-gap: 12px;
 $crest-bottom-gap: 4px;
-$node-brush-width: 208;
-$node-brush-height: 240;
-$node-frame-height: $state-frame-width * math.div($node-brush-height, $node-brush-width);
-$node-lock-size: 16px;
 
 .fx-tip {
+  @include trait-crest;
+
+  .fx-trait-crest {
+    margin: $crest-top-gap auto $crest-bottom-gap;
+  }
+
   .slot {
     position: relative;
     flex: 0 0 auto;
@@ -65,44 +66,6 @@ $node-lock-size: 16px;
     width: math.percentage(math.div($header-decor-brush-width, $tooltip-window-width));
     height: $header-decor-height;
     pointer-events: none;
-  }
-
-  .crest {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: $crest-top-gap 0 $crest-bottom-gap;
-
-    &::before {
-      content: "";
-      position: absolute;
-      top: $crest-top-gap;
-      width: $state-frame-width;
-      background: var(--fx-crest, none) 0 0/100% 100% no-repeat;
-      pointer-events: none;
-    }
-
-    &.node {
-      min-height: $crest-top-gap + $node-frame-height + $crest-bottom-gap;
-
-      &::before { height: $node-frame-height; }
-    }
-
-    img {
-      position: relative;
-      display: block;
-      width: $state-art-size;
-      height: $state-art-size;
-      object-fit: contain;
-    }
-
-    .lock {
-      position: absolute;
-      top: 8px;
-      width: $node-lock-size;
-      height: $node-lock-size;
-    }
   }
 
   .lines {

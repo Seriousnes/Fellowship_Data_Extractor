@@ -42,6 +42,7 @@ public sealed class ChromeAssets(
     private const string BlessingArtFamily = "T_Icons_BlessingRuneIcon_";
     private const string Allocated = "Allocated";
     private const string Unallocated = "Unallocated";
+    private const string Unavailable = "Unavailable";
     private const string LockTexture = "T_Icons_Locked";
     private const string DividerTexture = "T_GoldDivider";
 
@@ -84,6 +85,9 @@ public sealed class ChromeAssets(
 
     public string TraitNode(string? state) =>
         Url(Name(NodeFamily + Chosen(NodeStates, state) + NodeSuffix));
+
+    public static bool Padlocked(string? state) =>
+        string.Equals(Chosen(NodeStates, state), Unavailable, StringComparison.Ordinal);
 
     public string BlessingPlate(string? state) =>
         Url(Name(BlessingFamily + Chosen(BlessingStates, state)));

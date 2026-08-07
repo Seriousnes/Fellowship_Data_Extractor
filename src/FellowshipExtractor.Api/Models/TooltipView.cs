@@ -71,17 +71,6 @@ public sealed class TooltipView(
 
     public static bool DrawsItsOwnArt(EntityDocument document) => document is TraitDocument;
 
-    public string? StateFrame(EntityDocument document, TooltipQuery query) =>
-        document is TraitDocument ? chrome.TraitNode(query.State) : null;
-
-    public bool Locked(EntityDocument document, TooltipQuery query) =>
-        document is TraitDocument &&
-        string.Equals(query.State, Unavailable, StringComparison.OrdinalIgnoreCase);
-
-    private const string Unavailable = "unavailable";
-
-    public string LockGlyph => chrome.LockGlyph;
-
     public string? Ornament(RarityEntry? rarity) => rarity is null ? null : chrome.Ornament(rarity.Name);
 
     public string Rung(EntityDocument document, RarityEntry rarity) =>

@@ -4,6 +4,23 @@ $plate-brush-width: 148;
 $plate-brush-height: 188;
 $plate-art-share: 45%;
 
+$node-brush-width: 208;
+$node-brush-height: 240;
+$node-well-width: 154;
+$node-well-height: 180;
+$node-lock-size: 16px;
+$node-lock-rise: 4px;
+$node-locked-desaturation: 1;
+
+$node-well-left: math.percentage(math.div($node-brush-width - $node-well-width, 2 * $node-brush-width));
+$node-well-right: 100% - $node-well-left;
+$node-well-top: math.percentage(math.div($node-brush-height - $node-well-height, 2 * $node-brush-height));
+$node-well-bottom: 100% - $node-well-top;
+$node-well-shoulder: math.percentage(math.div($node-well-height, 4 * $node-brush-height));
+$node-well-upper: $node-well-top + $node-well-shoulder;
+$node-well-lower: $node-well-bottom - $node-well-shoulder;
+$node-art-share: math.percentage(math.div($node-well-height, $node-brush-width));
+
 @mixin blessing-crest {
   .fx-blessing-crest {
     position: relative;
@@ -21,6 +38,51 @@ $plate-art-share: 45%;
       width: $plate-art-share;
       aspect-ratio: 1;
       object-fit: contain;
+    }
+  }
+}
+
+@mixin trait-crest {
+  .fx-trait-crest {
+    position: relative;
+    display: block;
+    margin: 0;
+    width: var(--fx-node-width);
+    aspect-ratio: math.div($node-brush-width, $node-brush-height);
+    background: var(--fx-node) 0 0/100% 100% no-repeat;
+
+    .well {
+      position: absolute;
+      inset: 0;
+      clip-path: polygon(
+        50% $node-well-top,
+        $node-well-right $node-well-upper,
+        $node-well-right $node-well-lower,
+        50% $node-well-bottom,
+        $node-well-left $node-well-lower,
+        $node-well-left $node-well-upper
+      );
+    }
+
+    .well img {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: $node-art-share;
+      aspect-ratio: 1;
+      object-fit: contain;
+    }
+
+    &.locked .well img { filter: grayscale($node-locked-desaturation); }
+
+    .lock {
+      position: absolute;
+      top: -$node-lock-rise;
+      left: 50%;
+      transform: translateX(-50%);
+      width: $node-lock-size;
+      height: $node-lock-size;
     }
   }
 }

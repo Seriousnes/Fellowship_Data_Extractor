@@ -25,6 +25,60 @@ public class StateChromeTests(Export export)
         return false;
     }
 
+    private static Rectangle Well(string file)
+    {
+        using var plate = Image.Load<Rgba32>(file);
+
+        var fill = plate[plate.Width / 2, plate.Height / 2];
+
+        var reached = new bool[plate.Width, plate.Height];
+        var walking = new Stack<Point>();
+        walking.Push(new Point(plate.Width / 2, plate.Height / 2));
+        reached[plate.Width / 2, plate.Height / 2] = true;
+
+        int left = plate.Width, right = -1, top = plate.Height, bottom = -1;
+
+        while (walking.Count > 0)
+        {
+            var at = walking.Pop();
+
+            left = Math.Min(left, at.X);
+            right = Math.Max(right, at.X);
+            top = Math.Min(top, at.Y);
+            bottom = Math.Max(bottom, at.Y);
+
+            foreach (var step in new[] { new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1) })
+            {
+                var next = new Point(at.X + step.X, at.Y + step.Y);
+
+                if (next.X < 0 || next.Y < 0 || next.X >= plate.Width || next.Y >= plate.Height) continue;
+                if (reached[next.X, next.Y] || !plate[next.X, next.Y].Equals(fill)) continue;
+
+                reached[next.X, next.Y] = true;
+                walking.Push(next);
+            }
+        }
+
+        return new Rectangle(left, top, right - left + 1, bottom - top + 1);
+    }
+
+    [Fact]
+    public void The_well_the_stylesheet_cuts_the_art_to_is_the_hole_in_every_plate()
+    {
+        var wells = ChromeAssets.NodeStates
+            .Select(state => Well(Texture(export.Chrome.TraitNode(state))))
+            .ToArray();
+
+        Assert.All(wells, well =>
+        {
+            Assert.Equal(new Size(154, 180), well.Size);
+            Assert.Equal(208 - well.Right, well.Left);
+            Assert.Equal(240 - well.Bottom, well.Top);
+        });
+
+        Assert.Single(wells.Distinct());
+    }
+
     [Fact]
     public void Every_state_frame_is_the_shape_the_stylesheet_derives_its_height_from()
     {

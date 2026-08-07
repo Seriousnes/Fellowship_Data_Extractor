@@ -24,7 +24,7 @@ public class InsetArtTests : BunitContext
     {
         var drawn = Draw(Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null));
 
-        Assert.NotNull(drawn.Find(".card .crest img"));
+        Assert.NotNull(drawn.Find(".card .fx-trait-crest img"));
         Assert.Empty(drawn.FindAll("figure.slot"));
     }
 
@@ -53,7 +53,8 @@ public class InsetArtTests : BunitContext
         {
             var drawn = Draw(document);
 
-            Assert.Empty(drawn.FindAll(".card .crest"));
+            Assert.Empty(drawn.FindAll(".card .fx-trait-crest"));
+            Assert.NotEmpty(drawn.FindAll("figure.slot"));
         });
     }
 
