@@ -7,6 +7,14 @@ $header-decor-height: 14px;
 $window-corner: 7;
 $rounded-window-slice: 32;
 $rounded-window-corner: 16px;
+$window-brush-margin: .125;
+$window-brush-scale: .5;
+$thin-window-brush-width: 128;
+$thin-window-brush-height: 32;
+$thin-window-side-slice: $thin-window-brush-width * $window-brush-margin;
+$thin-window-top-slice: $thin-window-brush-height * $window-brush-margin;
+$thin-window-side-corner: $thin-window-side-slice * $window-brush-scale * 1px;
+$thin-window-top-corner: $thin-window-top-slice * $window-brush-scale * 1px;
 $divider-height: 3px;
 $node-size: 72px;
 $node-art-size: 56px;
@@ -97,6 +105,20 @@ $node-lock-size: 16px;
   }
 
   &.plain {
+    .card {
+      background: var(--fx-fill) 0 0/100% 100% no-repeat, var(--core-secondary-900);
+    }
+
+    .card::before {
+      bottom: 0;
+      height: auto;
+      background: none;
+      border-style: solid;
+      border-color: transparent;
+      border-width: $thin-window-top-corner $thin-window-side-corner;
+      border-image: var(--fx-thin) $thin-window-top-slice $thin-window-side-slice stretch;
+    }
+
     .card::after {
       border-width: $rounded-window-corner;
       border-image: var(--fx-window) $rounded-window-slice stretch;

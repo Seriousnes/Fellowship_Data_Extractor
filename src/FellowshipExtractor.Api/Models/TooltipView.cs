@@ -239,6 +239,7 @@ public sealed class TooltipView(
         return
             $$"""
             .{{Root}}{--fx-slot-plate:url({{chrome.SlotPlate}});--fx-window:url({{chrome.Window}});
+            --fx-thin:url({{chrome.ThinWindow}});--fx-fill:url({{chrome.WindowFill}});
             --fx-divider:url({{chrome.GoldDivider}});
             --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};
             --fx-setbonus:{{chrome.SetBonusBadge.Colour}}}
