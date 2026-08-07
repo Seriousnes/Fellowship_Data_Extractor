@@ -133,6 +133,16 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
+    public void States_the_interval_Chronoshift_pulses_on()
+    {
+        var power = Store.Entities.OfType<WeaponPowerDocument>().Single(row => row.Id == 355);
+
+        var cut = Draw(power);
+
+        Assert.Contains("every 1.5 seconds", cut.Find("p.desc").TextContent, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Counts_the_legendary_rolls_it_draws()
     {
         var entity = new ItemDocument { Id = 5216, LegendaryStatIds = [696, 695, 694] };

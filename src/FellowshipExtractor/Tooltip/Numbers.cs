@@ -42,6 +42,21 @@ public static class Numbers
     public const string Charges = "charges";
     public const string Period = "period";
     public const string Duration = "duration";
+    public const string ChannelTick = "channelTick";
+
+    public static double? Own(SplitNumbers split, string field)
+    {
+        var readings = Spellings(field)
+            .Select(name => split.Named.TryGetValue(name, out var value) ? value : (double?)null)
+            .OfType<double>()
+            .Distinct()
+            .ToArray();
+
+        return readings.Length == 1 ? readings[0] : null;
+    }
+
+    private static string[] Spellings(string field) =>
+        field == Period ? [Period, ChannelTick] : [field];
 
     public static SplitNumbers Split(
         IEnumerable<CurveBinding> bindings,

@@ -6,7 +6,13 @@ public sealed class HasteScalingTests
 {
     private const int Incinerate = 1270;
     private const int FireBall = 1260;
+    private const int Chronoshift = 355;
+    private const int StoneShield = 1122;
+    private const int PricklyVine = 1057;
     private const string ChannelInterval = "IncinerateChannelInterval";
+    private const string PulseInterval = "AshaTickPeriod";
+    private const string ShieldStrength = "StoneShieldHealth";
+    private const string VineInterval = "PricklyVinePeriod";
 
     private static JsonObject Document(EntityType type, int id) =>
         Export.Loaded.Documents
@@ -52,6 +58,42 @@ public sealed class HasteScalingTests
         Assert.Equal(0.5, token.Value);
         Assert.True(token.Tickrate, "The token no longer reports itself as a tickrate, so haste will not reach it.");
         Assert.NotEqual(true, token.IgnoresHaste);
+    }
+
+    [Fact]
+    public void ChronoshiftPulsesEveryChannelTick()
+    {
+        var power = Document(EntityType.WeaponPower, Chronoshift);
+
+        Assert.Equal(1.5, power["channelTick"]?.GetValue<double>());
+    }
+
+    [Fact]
+    public void ChronoshiftPulseIntervalTokenResolves()
+    {
+        var placeholders = Resolved("CRCharacterAugmentationAsset", Chronoshift).Placeholders;
+
+        Assert.NotNull(placeholders);
+        Assert.True(placeholders!.ContainsKey(PulseInterval), $"{PulseInterval} is no longer a token.");
+
+        var token = placeholders[PulseInterval];
+
+        Assert.Equal(1.5, token.Value);
+        Assert.True(token.Tickrate, "The token no longer reports itself as a tickrate, so haste will not reach it.");
+        Assert.NotEqual(true, token.IgnoresHaste);
+    }
+
+    [Fact]
+    public void SelfNamingTokensWithNoNumberBehindThemStayBare()
+    {
+        var strength = Resolved("GameplayAbility", StoneShield).Placeholders?[ShieldStrength];
+        var interval = Resolved("GameplayAbility", PricklyVine).Placeholders?[VineInterval];
+
+        Assert.NotNull(strength);
+        Assert.NotNull(interval);
+
+        Assert.Null(strength!.Value);
+        Assert.Null(interval!.Value);
     }
 
     [Fact]

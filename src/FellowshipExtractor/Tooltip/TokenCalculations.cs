@@ -25,6 +25,17 @@ public static class TokenCalculations
             ? quantity
             : TokenQuantity.Unsettled;
 
+    public static TokenQuantity Named(string tokenName)
+    {
+        foreach (var quantity in Enum.GetValues<TokenQuantity>())
+        {
+            if (quantity == TokenQuantity.Unsettled) continue;
+            if (tokenName.EndsWith(quantity.ToString(), StringComparison.OrdinalIgnoreCase)) return quantity;
+        }
+
+        return TokenQuantity.Unsettled;
+    }
+
     public static IReadOnlyList<CurveBinding> Select(
         IReadOnlyList<CurveBinding> bindings, TokenQuantity quantity)
     {

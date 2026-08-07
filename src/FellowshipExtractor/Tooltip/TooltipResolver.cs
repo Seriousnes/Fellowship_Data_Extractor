@@ -503,6 +503,11 @@ public sealed class TooltipResolver
                 placeholders[name] = placeholder with { Value = row.Value, Tickrate = tickrate };
                 continue;
             }
+            else if (placeholder.FromOwnConstants is true && Numbers.Own(split, wanted) is { } reading)
+            {
+                placeholders[name] = placeholder with { Value = reading, Tickrate = tickrate };
+                continue;
+            }
 
             if (placeholder.Constants is { } selected && Sole(selected) is { } value)
             {

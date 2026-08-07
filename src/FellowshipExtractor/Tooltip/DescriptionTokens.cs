@@ -27,7 +27,7 @@ public static class DescriptionTokens
             if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder token }) continue;
             if (PropertyWalk.GetString(token, "TokenName") is not { } name) continue;
 
-            resolved[name] = ResolveOne(token, provider, constants, presets, tuning, ownAsset);
+            resolved[name] = ResolveOne(name, token, provider, constants, presets, tuning, ownAsset);
         }
 
         return resolved;
@@ -78,6 +78,7 @@ public static class DescriptionTokens
     }
 
     private static Placeholder ResolveOne(
+        string name,
         IPropertyHolder token,
         AbstractFileProvider provider,
         ConstantsTable constants,
@@ -89,7 +90,11 @@ public static class DescriptionTokens
             ? PropertyWalk.GetString(attribute, "AttributeName")
             : null;
 
+        var objectPath = PropertyWalk.GetString(token, "Object");
+        var self = objectPath is not null && IsSelf(objectPath, ownAsset);
+
         var quantity = TokenCalculations.Of(PropertyWalk.GetString(token, "Calculation"));
+        if (self && quantity == TokenQuantity.Unsettled) quantity = TokenCalculations.Named(name);
 
         var declared = new Placeholder
         {
@@ -109,9 +114,9 @@ public static class DescriptionTokens
             return Made(declared, direct, null, [own], tuning);
         }
 
-        if (PropertyWalk.GetString(token, "Object") is not { } objectPath) return bare;
+        if (objectPath is null) return bare;
 
-        if (IsSelf(objectPath, ownAsset)) return bare with { FromOwnConstants = true };
+        if (self) return bare with { FromOwnConstants = true };
 
         var effect = GameplayEffects.Resolve(provider, constants, presets, objectPath);
         declared = declared with
