@@ -28,7 +28,7 @@ public class ColourTests(Export export)
     [Fact]
     public void A_gem_tier_is_drawn_at_the_rung_it_states()
     {
-        var tier = export.Store.Entities.OfType<GemTierDocument>().First();
+        var tier = export.Store.Entities.OfType<GemDocument>().First();
 
         Assert.Equal(Shipped((int)tier.Rarity), export.View.NameColour(tier));
     }
@@ -37,8 +37,8 @@ public class ColourTests(Export export)
     public void A_gem_type_and_its_traits_are_drawn_in_the_stones_colour()
     {
         var type = export.Store.Entities.OfType<GemTypeDocument>().First();
-        var trait = export.Store.Entities.OfType<GemTraitDocument>().First(t => t.Gem == type.Gem);
-        var stone = CodexView.Readable(export.View.Tokens.Gem(type.Gem.ToString()));
+        var trait = export.Store.Entities.OfType<GemTraitDocument>().First(t => t.Gem == type.Type);
+        var stone = CodexView.Readable(export.View.Tokens.Gem(type.Type.ToString()));
 
         Assert.Equal(stone, export.View.NameColour(type));
         Assert.Equal(stone, export.View.NameColour(trait));

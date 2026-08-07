@@ -12,7 +12,7 @@ public sealed class EnumDriftTests
         Assert.Equal(expected["ArmorType"], Enum.GetNames<ArmorType>());
         Assert.Equal(expected["PrimaryStat"], Enum.GetNames<PrimaryStat>());
         Assert.Equal(expected["Hero"], Enum.GetNames<Hero>());
-        Assert.Equal(expected["GemTypeName"], Enum.GetNames<GemTypeName>());
+        Assert.Equal(expected["GemType"], Enum.GetNames<GemType>());
     }
 
     [Fact]

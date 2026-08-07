@@ -23,7 +23,7 @@ public static class UeJson
 
     public static JsonElement ToElement(IPropertyHolder holder)
     {
-        var buffer = new System.IO.MemoryStream();
+        var buffer = new MemoryStream();
         using (var writer = new Utf8JsonWriter(buffer))
         {
             WriteObject(writer, holder);

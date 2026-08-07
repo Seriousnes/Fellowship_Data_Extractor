@@ -1,8 +1,8 @@
 namespace Fellowship.SDK.Documents;
 
-public sealed class GemTierDocument : EntityDocument
+public sealed class GemDocument : EntityDocument
 {
-    public required GemTypeName Gem { get; init; }
+    public required GemType Type { get; init; }
 
     public required int Tier { get; init; }
 

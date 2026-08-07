@@ -110,7 +110,7 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
             ("ArmorType", Bare(Names(Member(Member(root, "statCalculation"), "armorWeights")))),
             ("PrimaryStat", Bare(heroes.Select(hero => Text(Member(hero, "primaryStat"))))),
             ("Hero", Bare(heroes.Select(hero => Text(Member(hero, "name"))))),
-            ("GemTypeName", Bare(Items(Member(root, "gemTypes")).Select(gemType => Text(gemType)))),
+            ("GemType", Bare(Items(Member(root, "gemTypes")).Select(gemType => Text(gemType)))),
             ("Rarity", Ladder(Items(Member(root, "rarities")), context)),
         ];
     }

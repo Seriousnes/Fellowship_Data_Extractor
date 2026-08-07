@@ -34,11 +34,11 @@ public sealed class TooltipView(
             ItemDocument { Rarity: { } rung } => (int?)rung,
             ItemDocument { Rarities: { Count: > 0 } rungs } => (int)rungs.Max(),
             CurrencyDocument { Rarity: { } coin } => (int)coin,
-            GemTierDocument gemTier => (int)gemTier.Rarity,
+            GemDocument gemTier => (int)gemTier.Rarity,
             _ => null,
         };
 
-        return store.Rarity(query.Rarity, document is GemTierDocument)
+        return store.Rarity(query.Rarity, document is GemDocument)
             ?? (tier is { } t ? store.Vocabulary.Rarities.FirstOrDefault(r => r.Tier == t) : null);
     }
 
@@ -98,7 +98,7 @@ public sealed class TooltipView(
     public string? Ornament(RarityEntry? rarity) => rarity is null ? null : chrome.Ornament(rarity.Name);
 
     public string Rung(EntityDocument document, RarityEntry rarity) =>
-        document is GemTierDocument ? rarity.GemDisplayName : rarity.DisplayName;
+        document is GemDocument ? rarity.GemDisplayName : rarity.DisplayName;
 
     public int? Level(EntityDocument document, TooltipQuery query) =>
         document is ItemDocument { Stats: { Count: > 0 } }
@@ -306,7 +306,7 @@ public sealed class TooltipView(
     }
 
     private static bool HasKind(EntityDocument document) =>
-        document is ItemDocument { ArmorType: not null } or GemTierDocument or GemTraitDocument or GemTypeDocument;
+        document is ItemDocument { ArmorType: not null } or GemDocument or GemTraitDocument or GemTypeDocument;
 
     public EntityDocument? Granted(EntityDocument document) =>
         document is ItemDocument { GrantsId: { } id } && Power(id) is { } found &&

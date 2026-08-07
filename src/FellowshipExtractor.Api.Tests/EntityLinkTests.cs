@@ -21,7 +21,7 @@ public class EntityLinkTests : BunitContext
         [
             Store.Entities.OfType<ItemDocument>().First(item => item.Rarities is { Count: > 0 }),
             Store.Entities.OfType<GemTypeDocument>().First(),
-            Store.Entities.OfType<GemTierDocument>().First(),
+            Store.Entities.OfType<GemDocument>().First(),
             Store.Entities.OfType<GemTraitDocument>().First(),
         ];
 

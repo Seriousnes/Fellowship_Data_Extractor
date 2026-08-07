@@ -123,10 +123,10 @@ public sealed record PublicEntity
             TalentRow = (document as TalentSlotDocument)?.Row,
             TalentColumn = (document as TalentSlotDocument)?.Column,
             TalentCost = (document as TalentSlotDocument)?.Cost,
-            GemOverflow = document is Fellowship.SDK.Documents.GemTypeDocument gem ? PublicGemOverflow.From(gem, view) : null,
+            GemOverflow = document is GemTypeDocument gem ? PublicGemOverflow.From(gem, view) : null,
             GemType = GemTypeName(document),
-            GemTier = (document as GemTierDocument)?.Tier,
-            GemPower = (document as GemTierDocument)?.Power,
+            GemTier = (document as GemDocument)?.Tier,
+            GemPower = (document as GemDocument)?.Power,
             Rarity = view.Rarity(document),
             GemNode = (document as GemTraitDocument)?.Node,
             RequiredGemPower = (document as GemTraitDocument)?.RequiredPower,
@@ -176,9 +176,9 @@ public sealed record PublicEntity
 
     private static string? GemTypeName(EntityDocument document) => document switch
     {
-        GemTierDocument tier => tier.Gem.ToString(),
+        GemDocument tier => tier.Type.ToString(),
         GemTraitDocument trait => trait.Gem.ToString(),
-        Fellowship.SDK.Documents.GemTypeDocument type => type.Gem.ToString(),
+        GemTypeDocument type => type.Type.ToString(),
         _ => null,
     };
 
@@ -282,7 +282,7 @@ public sealed record PublicGemOverflow(string Description)
 
     public string? IconUrl { get; init; }
 
-    public static PublicGemOverflow? From(Fellowship.SDK.Documents.GemTypeDocument gem, CodexView view)
+    public static PublicGemOverflow? From(GemTypeDocument gem, CodexView view)
     {
         if (gem.OverflowDescription is not { } description) return null;
 

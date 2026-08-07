@@ -12,7 +12,7 @@ public static class EnumsCommand
             ["ArmorType"] = Sorted(vocabulary.StatCalculation.ArmorWeights.Keys),
             ["PrimaryStat"] = Sorted(vocabulary.Heroes.Select(hero => hero.PrimaryStat)),
             ["Hero"] = Sorted(vocabulary.Heroes.Select(hero => hero.Name)),
-            ["GemTypeName"] = Sorted(vocabulary.GemTypes),
+            ["GemType"] = Sorted(vocabulary.GemTypes),
         };
 
     public static IReadOnlyList<(string Name, int Tier)> Rarities(VocabularyFile vocabulary) =>

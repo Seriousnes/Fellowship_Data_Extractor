@@ -36,7 +36,7 @@ public static class PublicTypes
 
     private static IReadOnlyList<PublicType> Verified(IReadOnlyList<PublicType> table)
     {
-        var missing = Enum.GetValues<Fellowship.SDK.EntityType>().Except(table.Select(type => type.Type)).ToArray();
+        var missing = Enum.GetValues<EntityType>().Except(table.Select(type => type.Type)).ToArray();
 
         return missing.Length == 0
             ? table
@@ -45,7 +45,7 @@ public static class PublicTypes
                 $"{nameof(PublicTypes)}.{nameof(Table)}.");
     }
 
-    private static readonly IReadOnlyDictionary<Fellowship.SDK.EntityType, PublicType> ByType =
+    private static readonly IReadOnlyDictionary<EntityType, PublicType> ByType =
         All.ToDictionary(type => type.Type);
 
     public static string NoSuchType(string? asked) =>

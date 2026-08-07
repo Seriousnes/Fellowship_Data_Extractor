@@ -32,7 +32,7 @@ public class CodexTests
         Assert.NotNull(tier);
         Assert.NotNull(rank);
 
-        var gemTier = Store.Entities.OfType<GemTierDocument>().First();
+        var gemTier = Store.Entities.OfType<GemDocument>().First();
         Assert.Equal((double)gemTier.Tier, tier!.Value(gemTier));
 
         var trait = Store.Entities.OfType<TraitDocument>().First(t => t.MaxRank is not null);

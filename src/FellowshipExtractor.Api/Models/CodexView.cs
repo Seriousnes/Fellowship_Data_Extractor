@@ -37,16 +37,16 @@ public sealed class CodexView(
         {
             ItemDocument { Rarities: { Count: > 0 } rungs } => rungs[^1],
             ItemDocument { Rarity: { } stated } => stated,
-            GemTierDocument tier => tier.Rarity,
+            GemDocument tier => tier.Rarity,
             _ => null,
         };
 
         if (rung is { } found && Rung(found) is { } shade) return shade;
 
-        GemTypeName? gem = document switch
+        GemType? gem = document switch
         {
-            GemTypeDocument type => type.Gem,
-            GemTierDocument tier => tier.Gem,
+            GemTypeDocument type => type.Type,
+            GemDocument tier => tier.Type,
             GemTraitDocument trait => trait.Gem,
             _ => null,
         };
@@ -246,7 +246,7 @@ public sealed class CodexView(
         ItemDocument => property is nameof(ItemDocument.Rarity) or nameof(ItemDocument.Rarities)
             or nameof(ItemDocument.RuleSet),
         CurrencyDocument => property == nameof(CurrencyDocument.Rarity),
-        GemTierDocument => property == nameof(GemTierDocument.Rarity),
+        GemDocument => property == nameof(GemDocument.Rarity),
         _ => false,
     };
 
@@ -272,7 +272,7 @@ public sealed class CodexView(
         {
             ItemDocument { Rarity: { } value } => value,
             CurrencyDocument { Rarity: { } coin } => coin,
-            GemTierDocument tier => tier.Rarity,
+            GemDocument tier => tier.Rarity,
             _ => null,
         };
 
@@ -280,7 +280,7 @@ public sealed class CodexView(
 
         var entry = store.Vocabulary.Rarities.FirstOrDefault(r => r.Tier == (int)tier2);
 
-        return entry is null ? tier2.ToString() : document is GemTierDocument ? entry.GemDisplayName : entry.DisplayName;
+        return entry is null ? tier2.ToString() : document is GemDocument ? entry.GemDisplayName : entry.DisplayName;
     }
 
     public IReadOnlyList<TuningRow> Tuning(IReadOnlyDictionary<string, object?>? rows)

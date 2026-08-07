@@ -129,5 +129,5 @@ public sealed class AttributeTableTests
             "never applied before now do. The numbers that stat converts to have changed.");
     }
 
-    private readonly record struct AttributeDisplayView(Fellowship.SDK.AttributeDisplay Value);
+    private readonly record struct AttributeDisplayView(AttributeDisplay Value);
 }

@@ -6,7 +6,7 @@ public class OverflowTests : BunitContext
     public OverflowTests(Export export) => Services.AddSingleton(export.View);
 
     private static GemTypeDocument WithOverflow(string? description) =>
-        new() { Id = 1, Gem = GemTypeName.Amethyst, Attribute = "Strength", OverflowDescription = description };
+        new() { Id = 1, Type = GemType.Amethyst, Attribute = "Strength", OverflowDescription = description };
 
     [Fact]
     public void Renders_nothing_without_an_overflow()

@@ -29,7 +29,7 @@ public sealed class DocumentTests
     {
         Assert.All(
             new[] { "Gem", "Tier", "Power", "Rarity" },
-            name => Assert.True(IsRequired(typeof(GemTierDocument).GetProperty(name)!)));
+            name => Assert.True(IsRequired(typeof(GemDocument).GetProperty(name)!)));
 
         Assert.All(
             new[] { "Hero", "Row", "Column", "Cost", "TalentId" },
@@ -71,7 +71,7 @@ public sealed class DocumentTests
     {
         Assert.Equal(EntityType.Ability, EntityTypes.TypeOf(new AbilityDocument { Id = 1 }));
         Assert.Equal(EntityType.GemType, EntityTypes.TypeOf(
-            new GemTypeDocument { Id = 1, Gem = GemTypeName.Ruby, Attribute = "RubyPower" }));
+            new GemTypeDocument { Id = 1, Type = GemType.Ruby, Attribute = "RubyPower" }));
         Assert.Equal(EntityType.TalentSlot, EntityTypes.TypeOf(
             new TalentSlotDocument { Id = 8, Hero = Hero.Mara, Row = 4, Column = 1, Cost = 1, TalentId = 8 }));
     }
@@ -145,7 +145,7 @@ public sealed class DocumentTests
             DisplayName = "AutoAttack",
         };
 
-        var talent = (Fellowship.SDK.Documents.TalentDocument)DocumentProjection.Implied(entity)!;
+        var talent = (TalentDocument)DocumentProjection.Implied(entity)!;
 
         Assert.Null(talent.Name);
     }

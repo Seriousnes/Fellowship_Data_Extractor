@@ -2,7 +2,7 @@ namespace Fellowship.SDK.Documents;
 
 public sealed class GemTypeDocument : EntityDocument
 {
-    public required GemTypeName Gem { get; init; }
+    public required GemType Type { get; init; }
 
     public required string Attribute { get; init; }
 

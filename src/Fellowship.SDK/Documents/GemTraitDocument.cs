@@ -2,7 +2,7 @@ namespace Fellowship.SDK.Documents;
 
 public sealed class GemTraitDocument : EntityDocument
 {
-    public required GemTypeName Gem { get; init; }
+    public required GemType Gem { get; init; }
 
     public required int Node { get; init; }
 

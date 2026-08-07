@@ -61,11 +61,11 @@ public static class DocumentProjection
             LegendaryStatIds = entity.LegendaryStatIds,
         },
 
-        EntityType.GemTier => new GemTierDocument
+        EntityType.GemTier => new GemDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
-            Gem = Enum.Parse<GemTypeName>(entity.GemType!),
+            Type = Enum.Parse<GemType>(entity.GemType!),
             Tier = entity.GemTier!.Value,
             Power = entity.GemPower!.Value,
 
@@ -147,7 +147,7 @@ public static class DocumentProjection
             Icon = entity.Icon,
         },
 
-        EntityType.SetBonus => new Fellowship.SDK.Documents.SetBonusDocument
+        EntityType.SetBonus => new SetBonusDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
@@ -159,11 +159,11 @@ public static class DocumentProjection
             AllowedAttributes = entity.AllowedAttributes?.Select(Enum.Parse<PrimaryStat>).ToArray(),
         },
 
-        EntityType.GemType => new Fellowship.SDK.Documents.GemTypeDocument
+        EntityType.GemType => new GemTypeDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
-            Gem = Enum.Parse<GemTypeName>(entity.GemType!),
+            Type = Enum.Parse<GemType>(entity.GemType!),
             Attribute = entity.GemAttribute!,
             Icon = entity.GemOverflow?.Icon,
             OverflowDescription = entity.GemOverflow?.Description,
@@ -174,7 +174,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
-            Gem = Enum.Parse<GemTypeName>(entity.GemType!),
+            Gem = Enum.Parse<GemType>(entity.GemType!),
             Node = entity.GemNode!.Value,
             RequiredPower = entity.RequiredGemPower!.Value,
             ReplacesId = entity.Replaces,
@@ -184,7 +184,7 @@ public static class DocumentProjection
             ScalesOff = entity.ScalesOff,
         },
 
-        EntityType.Talent => new Fellowship.SDK.Documents.TalentDocument
+        EntityType.Talent => new TalentDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
@@ -293,7 +293,7 @@ public static class DocumentProjection
 
     public static EntityDocument? Implied(Entity entity) =>
         entity is { Type: EntityType.TalentSlot, SlotBorneTalent: true }
-            ? new Fellowship.SDK.Documents.TalentDocument
+            ? new TalentDocument
             {
                 Id = entity.NetId!.Value,
                 Name = Name(entity),

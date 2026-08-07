@@ -77,7 +77,7 @@ public sealed class EntityStore
         Fields.GetOrAdd((document.GetType(), name), key => key.Document.GetProperty(key.Property))
             ?.GetValue(document) as IReadOnlyList<T> ?? [];
 
-    private readonly Dictionary<(Fellowship.SDK.EntityType Type, int Id), EntityDocument[]> byId = new();
+    private readonly Dictionary<(EntityType Type, int Id), EntityDocument[]> byId = new();
 
     private readonly Dictionary<string, HeroEntry> heroesByName = new(StringComparer.OrdinalIgnoreCase);
 
@@ -85,7 +85,7 @@ public sealed class EntityStore
 
     public IReadOnlyList<EntityDocument> Entities { get; }
 
-    public IReadOnlyList<Fellowship.SDK.EntityType> Types { get; }
+    public IReadOnlyList<EntityType> Types { get; }
 
     public StatParameters Stats { get; }
 
@@ -128,7 +128,7 @@ public sealed class EntityStore
 
         PrimaryAttributes = attributes;
 
-        var groups = new Dictionary<(Fellowship.SDK.EntityType, int), List<EntityDocument>>();
+        var groups = new Dictionary<(EntityType, int), List<EntityDocument>>();
         var stats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var spelled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var entities = new List<EntityDocument>();
@@ -243,11 +243,11 @@ public sealed class EntityStore
     public HeroEntry? Hero(string? name) =>
         name is not null && heroesByName.TryGetValue(name, out var hero) ? hero : null;
 
-    public IReadOnlyList<EntityDocument> All(Fellowship.SDK.EntityType type, int id) =>
+    public IReadOnlyList<EntityDocument> All(EntityType type, int id) =>
         byId.TryGetValue((type, id), out var found) ? found : [];
 
     public Lookup Resolve(
-        Fellowship.SDK.EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero)
+        EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero)
     {
         document = null;
         hero = Hero(heroName);
