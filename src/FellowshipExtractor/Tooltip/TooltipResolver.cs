@@ -413,10 +413,12 @@ public sealed class TooltipResolver
         var tuning = TuningNamespace.For(assetName, _constants);
         var bindings = cdo is null ? [] : CurveBindings.Collect(cdo, _constants);
 
-        var placeholders = presentation is null
+        var tokenHolder = (IPropertyHolder?)presentation?.Row ?? cdo;
+
+        var placeholders = tokenHolder is null
             ? []
             : DescriptionTokens.Align(
-                DescriptionTokens.Resolve(presentation.Row, _provider, _constants, _presets, tuning, assetName),
+                DescriptionTokens.Resolve(tokenHolder, _provider, _constants, _presets, tuning, assetName),
                 display.Description);
 
         var split = Numbers.Split(

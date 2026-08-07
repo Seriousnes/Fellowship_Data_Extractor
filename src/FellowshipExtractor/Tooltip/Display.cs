@@ -17,7 +17,7 @@ public sealed record Display(
         if (asset is not null)
         {
             name ??= FirstText(asset, "DisplayName", "Name", "Title");
-            description ??= FirstText(asset, "Description", "Tooltip", "FlavorText");
+            description ??= FirstText(asset, "Description", "Tooltip", "FlavorText") ?? DynamicText(asset);
             icon ??= FirstIcon(asset);
 
             if (ItemNames.Read(asset) is { } naming)
@@ -29,16 +29,13 @@ public sealed record Display(
         return new Display(name, description, icon, detail, resource);
     }
 
-    private static string? DescriptionOf(IPropertyHolder row)
-    {
-        if (PropertyWalk.GetStruct(row, "DynamicDescription") is { } dynamic &&
-            PropertyWalk.GetString(dynamic, "Text") is { } text)
-        {
-            return text;
-        }
+    private static string? DescriptionOf(IPropertyHolder row) =>
+        DynamicText(row) ?? PropertyWalk.GetString(row, "DetailedDescription");
 
-        return PropertyWalk.GetString(row, "DetailedDescription");
-    }
+    private static string? DynamicText(IPropertyHolder holder) =>
+        PropertyWalk.GetStruct(holder, "DynamicDescription") is { } dynamic
+            ? PropertyWalk.GetString(dynamic, "Text")
+            : null;
 
     private static List<string> DetailOf(IPropertyHolder row)
     {
