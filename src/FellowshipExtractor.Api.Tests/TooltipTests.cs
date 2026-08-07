@@ -142,8 +142,8 @@ public class TooltipTests : BunitContext
 
         var card = Card(ability, "strength=100").Find("div.lines").TextContent;
 
-        Assert.Contains("1044 - 1276", card, StringComparison.Ordinal);
-        Assert.Matches(@"365(\.\d)? - 446(\.\d)?", card);
+        Assert.Contains("1,044 - 1,276", card, StringComparison.Ordinal);
+        Assert.Contains("365 - 446", card, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -97,12 +97,12 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
 
         if (placeholder.Spread is not { } spread || spread == 0)
         {
-            return new Substitution(Round(mean), title, Format(placeholder, school, Round(mean)));
+            return new Substitution(Magnitude(mean), title, Format(placeholder, school, Magnitude(mean)));
         }
 
         var half = (decimal)spread / 2m;
-        var low = Round(mean * (1m - half));
-        var high = Round(mean * (1m + half));
+        var low = Magnitude(mean * (1m - half));
+        var high = Magnitude(mean * (1m + half));
 
         return new Substitution(
             $"{low} - {high}",
@@ -201,6 +201,9 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
 
     private static string Percent(double value) =>
         ((decimal)value * 100m).Normalize().ToString(CultureInfo.InvariantCulture);
+
+    private static string Magnitude(decimal value) =>
+        Math.Truncate(value).ToString("N0", CultureInfo.InvariantCulture);
 
     private static string Round(decimal value, int places = 1) =>
         Math.Round(value, places).Normalize().ToString(CultureInfo.InvariantCulture);
