@@ -14,6 +14,7 @@ public static class Spread
         string? tuning,
         ConstantsTable constants,
         EffectSpreads effects,
+        EffectCalculationPresets presets,
         double? entityPreset,
         double? tokenPreset,
         out bool overridden)
@@ -21,14 +22,14 @@ public static class Spread
         var row = Absolute(coefficientKey, tuning, constants);
         overridden = false;
 
-        var separator = row.LastIndexOf('.');
-        if (separator > 0 && constants.Lookup(row[..separator] + Leaf).Record?.Value is { } declared)
-        {
-            overridden = true;
-            return declared;
-        }
+        if ((effects.For(row) ?? tokenPreset ?? entityPreset) is { } known) return known;
 
-        return effects.For(row) ?? tokenPreset ?? entityPreset;
+        var separator = row.LastIndexOf('.');
+        if (separator < 0) return null;
+        if (constants.Lookup(row[..separator] + Leaf).Record?.Value is not { } declared) return null;
+
+        overridden = true;
+        return declared == 0 ? null : presets.Band;
     }
 
     private static string Absolute(string key, string? tuning, ConstantsTable constants)
@@ -96,6 +97,20 @@ public sealed class EffectCalculationPresets
             throw new InvalidOperationException(
                 $"No table declares {RowStructure}, so no gameplay effect can say what band it rolls in and every " +
                 "coefficient would export without one.");
+        }
+    }
+
+    public double Band
+    {
+        get
+        {
+            var banded = _byRow.Values.Where(spread => spread != 0).Distinct().ToArray();
+
+            if (banded.Length == 1) return banded[0];
+
+            throw new InvalidOperationException(
+                $"{RowStructure} declares {banded.Length} distinct bands ({string.Join(", ", banded)}), so there " +
+                "is no single band a coefficient rolls in and one has to be chosen per effect instead.");
         }
     }
 

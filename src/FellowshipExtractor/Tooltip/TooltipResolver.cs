@@ -611,7 +611,7 @@ public sealed class TooltipResolver
         string coefficientKey, string? tuning, EffectSpreads bands, double? ownBand, double? tokenBand)
     {
         var spread = Spread.For(
-            coefficientKey, tuning, _constants, bands, ownBand, tokenBand, out var overridden);
+            coefficientKey, tuning, _constants, bands, _presets, ownBand, tokenBand, out var overridden);
 
         if (spread is not null) _spreadSources.TryAdd(coefficientKey, overridden);
         return spread;

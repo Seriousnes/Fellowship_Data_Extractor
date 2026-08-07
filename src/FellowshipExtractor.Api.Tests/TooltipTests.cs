@@ -136,6 +136,17 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
+    public void Bands_Skull_Crusher_the_way_the_game_prints_it_at_100_Strength()
+    {
+        var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1229);
+
+        var card = Card(ability, "strength=100").Find("div.lines").TextContent;
+
+        Assert.Contains("1044 - 1276", card, StringComparison.Ordinal);
+        Assert.Matches(@"365(\.\d)? - 446(\.\d)?", card);
+    }
+
+    [Fact]
     public void Raises_a_damage_number_by_the_Expertise_that_was_supplied()
     {
         var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1260);
@@ -166,7 +177,10 @@ public class TooltipTests : BunitContext
         return decimal.Parse(number.Value.Replace(",", ""));
     }
 
-    private string Written(EntityDocument entity, string query)
+    private string Written(EntityDocument entity, string query) =>
+        Card(entity, query).Find("p.desc").TextContent;
+
+    private IRenderedComponent<Components.Tooltip.Tooltip> Card(EntityDocument entity, string query)
     {
         var parsed = TooltipQuery.Parse(
             new QueryCollection(query
@@ -176,14 +190,9 @@ public class TooltipTests : BunitContext
             Store.Stats,
             out _);
 
-        var cut = Render<Components.Tooltip.Tooltip>(p => p
+        return Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, entity)
             .Add(x => x.Query, parsed));
-
-        var written = cut.Find("p.desc").TextContent;
-
-
-        return written;
     }
 
     [Fact]
