@@ -7,6 +7,8 @@ $header-decor-height: 14px;
 $window-corner: 7;
 $rounded-window-slice: 32;
 $rounded-window-corner: 16px;
+$divider-height: 3px;
+$node-size: 72px;
 
 .fx-tip {
   display: flex;
@@ -100,7 +102,8 @@ $rounded-window-corner: 16px;
 
     .head {
       margin: 0 14px;
-      border-bottom: 1px solid var(--core-secondary-600);
+      border-bottom: 0;
+      background: var(--fx-divider) bottom center/100% $divider-height no-repeat;
     }
   }
 
@@ -126,6 +129,21 @@ $rounded-window-corner: 16px;
     width: math.percentage(math.div($header-decor-brush-width, $tooltip-window-width));
     height: $header-decor-height;
     pointer-events: none;
+  }
+
+  .crest {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0 4px;
+
+    img {
+      display: block;
+      width: $node-size;
+      height: $node-size;
+      object-fit: contain;
+    }
   }
 
   .lines {

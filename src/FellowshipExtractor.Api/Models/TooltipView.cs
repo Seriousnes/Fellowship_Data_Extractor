@@ -67,6 +67,9 @@ public sealed class TooltipView(
         return icon is null ? null : $"{icons.Uri}/{icon}";
     }
 
+    public static bool DrawsItsOwnArt(EntityDocument document) =>
+        document is BlessingDocument or TraitDocument;
+
     public string? Ornament(RarityEntry? rarity) => rarity is null ? null : chrome.Ornament(rarity.Name);
 
     public string Rung(EntityDocument document, RarityEntry rarity) =>
@@ -218,6 +221,7 @@ public sealed class TooltipView(
         return
             $$"""
             .{{Root}}{--fx-slot-plate:url({{chrome.SlotPlate}});--fx-window:url({{chrome.Window}});
+            --fx-divider:url({{chrome.GoldDivider}});
             --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};
             --fx-setbonus:{{chrome.SetBonusBadge.Colour}}}
 

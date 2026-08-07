@@ -2,7 +2,7 @@
 
 <div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
     <style>@Sheet</style>
-    @if (Art is { } art)
+    @if (Art is { } art && !TooltipView.DrawsItsOwnArt(Entity))
     {
         <figure class="slot"><img class="art" alt="" src="@art"></figure>
     }
@@ -15,6 +15,10 @@
 
             <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
         </header>
+        @if (Art is { } crest && TooltipView.DrawsItsOwnArt(Entity))
+        {
+            <figure class="crest"><img alt="" src="@crest"></figure>
+        }
         @if (shown.Count > 0)
         {
             <div class="lines">
