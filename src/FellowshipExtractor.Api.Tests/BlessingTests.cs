@@ -31,6 +31,7 @@ public class BlessingTests(Export export)
     {
         var blessings = export.Store.Entities.OfType<BlessingDocument>().ToArray();
 
+        Assert.NotEmpty(blessings);
         Assert.All(blessings, blessing => Assert.Contains(
             "BlessingRuneIcon", blessing.Icon ?? string.Empty, StringComparison.Ordinal));
     }

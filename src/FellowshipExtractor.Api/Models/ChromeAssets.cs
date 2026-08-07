@@ -55,6 +55,10 @@ public sealed class ChromeAssets(
 
     private static readonly string[] RarityTinted = [FrameMask, HeaderMask, IconFrameMask];
 
+    public static readonly IReadOnlyList<string> NodeStates = ["selected", "available", "unavailable"];
+
+    public static readonly IReadOnlyList<string> BlessingStates = ["allocated", "unallocated"];
+
     private static readonly PngEncoder Encoder = new()
     {
         ColorType = PngColorType.RgbWithAlpha,
@@ -79,10 +83,6 @@ public sealed class ChromeAssets(
 
     public string SlotPlate => Url(Name(SlotPlateTexture));
 
-    public static readonly IReadOnlyList<string> NodeStates = ["selected", "available", "unavailable"];
-
-    public static readonly IReadOnlyList<string> BlessingStates = ["allocated", "unallocated"];
-
     public string TraitNode(string? state) =>
         Url(Name(NodeFamily + Chosen(NodeStates, state) + NodeSuffix));
 
@@ -102,12 +102,6 @@ public sealed class ChromeAssets(
     public string LockGlyph => Url(Name(LockTexture));
 
     public string GoldDivider => Url(Name(DividerTexture));
-
-    private static string Chosen(IReadOnlyList<string> states, string? state) =>
-        states.FirstOrDefault(known => string.Equals(known, state, StringComparison.OrdinalIgnoreCase))
-            is { } found
-            ? char.ToUpperInvariant(found[0]) + found[1..]
-            : char.ToUpperInvariant(states[0][0]) + states[0][1..];
 
     public string Panel => Url(Name(PanelTexture));
 
@@ -174,6 +168,12 @@ public sealed class ChromeAssets(
         $"{Prefix}/{texture}-{rarity.ToLowerInvariant()}.png";
 
     private string Url(string blob) => $"{container.Uri}/{blob}";
+
+    private static string Chosen(IReadOnlyList<string> states, string? state) =>
+        states.FirstOrDefault(known => string.Equals(known, state, StringComparison.OrdinalIgnoreCase))
+            is { } found
+            ? char.ToUpperInvariant(found[0]) + found[1..]
+            : char.ToUpperInvariant(states[0][0]) + states[0][1..];
 
     private static byte[] Band(string file)
     {

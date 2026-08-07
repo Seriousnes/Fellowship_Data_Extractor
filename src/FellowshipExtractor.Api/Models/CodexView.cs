@@ -153,8 +153,8 @@ public sealed class CodexView(
     public static IReadOnlyList<Placeholder> PlaceholdersOf(EntityDocument document) => document switch
     {
         AbilityDocument ability => ability.Placeholders ?? [],
-        EffectDocument effect => effect.Placeholders ?? [],
         BlessingDocument blessing => blessing.Placeholders ?? [],
+        EffectDocument effect => effect.Placeholders ?? [],
         GemTraitDocument trait => trait.Placeholders ?? [],
         TalentDocument talent => talent.Placeholders ?? [],
         TraitPowerDocument power => power.Placeholders ?? [],

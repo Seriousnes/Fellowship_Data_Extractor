@@ -1,8 +1,13 @@
+using System.Text.RegularExpressions;
+
 namespace FellowshipExtractor.Api.Tests;
 
 [Collection(Corpus.Name)]
-public class WindowChromeTests(Export export)
+public partial class WindowChromeTests(Export export)
 {
+    [GeneratedRegex(@"(?:^|[{}])\s*([^@{}/][^{}]*?)\s*\{")]
+    private static partial Regex Selector();
+
     private static readonly string[] Windowed =
     [
         "T_Borders_Rounded_16", "T_Borders_Thin", "T_Borders_WindowBackground_Windowed",
@@ -25,18 +30,19 @@ public class WindowChromeTests(Export export)
 
     private static IEnumerable<(string Selector, string Body)> Rules(string sheet)
     {
-        var at = 0;
-
-        while (true)
+        foreach (Match rule in Selector().Matches(sheet))
         {
-            var opens = sheet.IndexOf('{', at);
-            var closes = opens < 0 ? -1 : sheet.IndexOf('}', opens);
+            var opens = rule.Index + rule.Length - 1;
+            var closes = sheet.IndexOf('}', opens);
 
             if (closes < 0) yield break;
 
-            yield return (sheet[at..opens].Trim(), sheet[(opens + 1)..closes]);
+            var body = sheet[(opens + 1)..closes];
 
-            at = closes + 1;
+            foreach (var selector in rule.Groups[1].Value.Split(','))
+            {
+                yield return (selector.Trim(), body);
+            }
         }
     }
 
@@ -103,7 +109,21 @@ public class WindowChromeTests(Export export)
     }
 
     [Fact]
-    public void A_row_that_states_a_rung_keeps_the_window_it_already_had()
+    public void The_prelude_hands_the_header_rule_the_gold_band_it_is_drawn_from()
+    {
+        var declared = Rules(export.Tooltip.Style())
+            .Where(rule => string.Equals(rule.Selector, Rows, StringComparison.Ordinal))
+            .Select(rule => rule.Body)
+            .ToArray();
+
+        Assert.NotEmpty(declared);
+
+        Assert.Contains(declared, body =>
+            body.Contains($"--fx-divider:url({export.Chrome.GoldDivider})", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_base_window_rules_are_the_ones_a_row_that_states_a_rung_inherits()
     {
         var sheet = export.Tooltip.Style();
 
