@@ -1,8 +1,8 @@
-# Trait crest design
+# Trait tooltip design
 
-**Goal:** A hero trait's node is drawn by a component of its own, and the trait's art is cut to the
-hexagon the node plate leaves open, so the gold edge bounds the art on all six sides and the square
-corners the art would otherwise push over the frame are gone.
+**Goal:** A hero trait is drawn by a card of its own, and its node is drawn by a component of its
+own, with the trait's art cut to the hexagon the node plate leaves open, so the gold edge bounds the
+art on all six sides and the square corners the art would otherwise push over the frame are gone.
 
 ## Measurements
 
@@ -22,7 +22,41 @@ Read off `T_Buttons_TraitNode_SelectedDefault`, `_AvailableDefault` and `_Unavai
 At the drawn node width of 72px the rect is 83.08px tall, the well is 53.31x62.31px, and a centred
 square of side 62.31px reaches the hexagon corner to corner, with 4.5px cut off each flank.
 
-## The component
+## The card
+
+`src/FellowshipExtractor.Api/Components/Tooltip/Trait.razor` draws a hero trait's whole card, beside
+`Blessing.razor` and built the same way. `Tooltip.razor` renders it for a `TraitDocument`, so
+`EntityPage.razor` and the `/api/tooltip/{type}/{id}` endpoint reach it unchanged, and every trait
+branch leaves the base.
+
+The card is a `fx-tip plain fx-trait` window carrying the composed sheet and one `.card`:
+
+```
++-- 274px ------------------------------------------+
+|                    HIDDEN POWER                   |  15px ArnoPro, core.text-primary
+| ------------------------------------------------- |  1px T_GoldDivider, inset 14px
+|                                                   |
+|                      (node)                       |  node 72 x 83.08, art 62.31, centred
+|                                                   |
+|  Your abilities have a chance to grant you 1      |  12px, core.text-primary,
+|  stack of Hidden Power for 60 seconds.            |  11px side padding
++---------------------------------------------------+
+```
+
+- the head holds the trait's name alone, so `.plain .head` draws `T_GoldDivider` under it
+- the crest is drawn for a trait that carries an icon, 12px under the head and 4px above the prose
+- `TipProse` draws the description for a trait that carries one, inside the `.lines` column the
+  window already styles
+- the card asks for no rarity, so a trait always draws the plain rounded window
+
+`Components/Tooltip/_Trait.razor.scss` holds the card's rules, reached from `Styles/tooltip.scss` by
+a third `@use` beside the two already there. It carries the `trait-crest` mixin and the 12px above
+and 4px below that the crest sits at.
+
+`TooltipView` keeps `Variables`, `Style` and `Text` for the card, and answers the questions the
+window asks for every other row.
+
+## The crest
 
 `src/FellowshipExtractor.Api/Components/Tooltip/TraitCrest.razor`, beside `BlessingCrest.razor` and
 built the same way: it injects `CodexView`, takes `Entity` (a `TraitDocument`), `State` and a
@@ -30,27 +64,32 @@ built the same way: it injects `CodexView`, takes `Entity` (a `TraitDocument`), 
 art. It carries the plate URL and its width as inline `--fx-node` and `--fx-node-width`.
 
 Its markup is a `figure.fx-trait-crest` holding a `div.well` wrapping the art, and, when the state
-is `unavailable`, the padlock as a sibling of that wrapper.
+is `unavailable`, the padlock as a sibling of that wrapper and a `locked` class on the figure.
 
-`Tooltip.razor` draws `<TraitCrest Entity="trait" State="@Query.State" />` for a `TraitDocument`
-that carries an icon. `TooltipView.DrawsItsOwnArt` stays where it is and keeps `figure.slot`
-suppressed for a trait.
+A padlocked node draws its art desaturated, the way `UW_WeaponTrait` draws the icon it is not
+allocated: that widget's `Image_TraitIconNotAllocated` carries `M_DesaturateTexture` as its brush
+where `Image_TraitIconAllocated` carries the icon itself. The material's graph is editor-only and
+stripped from the cooked build, and its name qualifies the desaturation by no amount, so the crest
+takes it to the full `grayscale(1)`.
+
+`Trait.razor` draws `<TraitCrest Entity="Entity" State="@Query.State" />` for a trait that carries
+an icon.
 
 `Browse.razor` is untouched, so a trait's codex row keeps the square icon it draws today.
 
 ## The rules that move
 
 `ChromeAssets` gains `Padlocked(string? state)`, which reads true only for `unavailable`, beside the
-`NodeStates` list it already owns. `TooltipView` loses `StateFrame`, `Locked` and `LockGlyph`; the
-crest reaches `ChromeAssets.TraitNode` and `ChromeAssets.LockGlyph` itself.
+`NodeStates` list it already owns. The crest reaches `ChromeAssets.TraitNode` and
+`ChromeAssets.LockGlyph` itself.
 
 ## The styling
 
 A `trait-crest` mixin in `_Crest.scss` beside `blessing-crest`, included from
-`_Tooltip.razor.scss`, which adds `@use "Crest" as *` and keeps the 12px above and 4px below that
-the crest sits at today.
+`_Trait.razor.scss`, which adds `@use "Crest" as *` and keeps the 12px above and 4px below that the
+crest sits at.
 
-`_Tooltip.razor.scss` gains `$node-well-width: 154` and `$node-well-height: 180` beside the existing
+`_Crest.scss` holds `$node-well-width: 154` and `$node-well-height: 180` beside
 `$node-brush-width: 208` and `$node-brush-height: 240`, and the mixin derives every number from
 those four:
 
@@ -66,6 +105,7 @@ those four:
   `object-fit: contain`
 - the padlock keeps the 16px size and the position it has today, 4px above the node rect and
   horizontally centred, as a sibling of `.well` so the hexagon's top vertex does not cut it
+- `.locked .well img` carries `filter: grayscale(1)`
 
 ## Tests
 
@@ -74,14 +114,23 @@ those four:
   texture.
 - `StateChromeTests` asserts `ChromeAssets.Padlocked` reads true for `unavailable` and false for
   `available`, `selected`, null and a word the family does not name.
-- `StateTests` and `InsetArtTests` move from the `.crest` and `.crest.node` selectors to
-  `.fx-trait-crest`, and from `TooltipView.StateFrame` and `TooltipView.Locked` to
-  `ChromeAssets.TraitNode` and `ChromeAssets.Padlocked`.
+- `StateTests` asserts only the padlocked node carries the `locked` class and that the sheet cuts
+  its art to grayscale.
+- `StateTests` and `InsetArtTests` read the crest through `.fx-trait-crest`, and the node's state
+  through `ChromeAssets.TraitNode` and `ChromeAssets.Padlocked`.
 - `InsetArtTests` keeps asserting that a trait carries its art inside the card and that every other
   row keeps its art beside the card.
+- `TraitCardTests` asserts the card is the trait's own component, that the type and not the art
+  chooses it, that the crest sits in the card at 72px, that the prose carries the styles the build
+  ships, that a trait the build writes nothing about draws no prose, and that the card asks for none
+  of the rarity chrome.
+- `SheetTests` keeps every selector in the composed sheet under `.fx-tip`, which `_Trait.razor.scss`
+  answers by nesting its rules in `.fx-tip.fx-trait`.
 
 ## Verification
 
 Markup assertions are blind to compositing, so the evidence that this is right is a screenshot of
 the trait tooltip in the running app, at the zoom of the reference the user pasted on 2026-08-07,
-showing the art cut on the hexagon's six edges with no square corner over the gold.
+showing the art cut on the hexagon's six edges with no square corner over the gold, a trait that
+carries no icon drawing its name over its prose, and the padlocked node drawing its art
+desaturated.

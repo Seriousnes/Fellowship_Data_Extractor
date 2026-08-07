@@ -4,11 +4,15 @@
 {
     <Blessing Entity="blessing" Query="Query" Hero="Hero" />
 }
+else if (Entity is TraitDocument trait)
+{
+    <Trait Entity="trait" Query="Query" Hero="Hero" />
+}
 else
 {
     <div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
         <style>@Sheet</style>
-        @if (Art is { } art && !TooltipView.DrawsItsOwnArt(Entity))
+        @if (Art is { } art)
         {
             <figure class="slot"><img class="art" alt="" src="@art"></figure>
         }
@@ -21,10 +25,6 @@ else
 
                 <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
             </header>
-            @if (Entity is TraitDocument { Icon: not null } trait)
-            {
-                <TraitCrest Entity="trait" State="@Query.State" />
-            }
             @if (shown.Count > 0)
             {
                 <div class="lines">
@@ -106,7 +106,7 @@ else
 
     protected override void OnParametersSet()
     {
-        if (Entity is BlessingDocument) return;
+        if (Entity is BlessingDocument or TraitDocument) return;
 
         Rung = Ui.Rarity(Entity, Query);
         Art = Ui.Art(Entity, Rung);

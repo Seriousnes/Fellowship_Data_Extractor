@@ -69,8 +69,6 @@ public sealed class TooltipView(
         return icon is null ? null : $"{icons.Uri}/{icon}";
     }
 
-    public static bool DrawsItsOwnArt(EntityDocument document) => document is TraitDocument;
-
     public string? Ornament(RarityEntry? rarity) => rarity is null ? null : chrome.Ornament(rarity.Name);
 
     public string Rung(EntityDocument document, RarityEntry rarity) =>

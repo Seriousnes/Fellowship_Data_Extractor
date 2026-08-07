@@ -57,14 +57,4 @@ public class InsetArtTests : BunitContext
             Assert.NotEmpty(drawn.FindAll("figure.slot"));
         });
     }
-
-    [Fact]
-    public void The_question_is_asked_of_the_document_and_not_of_its_art()
-    {
-        Assert.True(TooltipView.DrawsItsOwnArt(
-            Store.Entities.OfType<TraitDocument>().First()));
-
-        Assert.False(TooltipView.DrawsItsOwnArt(
-            Store.Entities.OfType<ItemDocument>().First()));
-    }
 }

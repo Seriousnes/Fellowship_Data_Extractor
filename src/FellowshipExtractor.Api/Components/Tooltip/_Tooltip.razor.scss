@@ -1,21 +1,12 @@
 @use "sass:math";
 @use "Card" as *;
-@use "Crest" as *;
 
 $tooltip-window-width: 280;
 $header-decor-brush-width: 254;
 $rarity-frame-height: 106px;
 $header-decor-height: 14px;
-$crest-top-gap: 12px;
-$crest-bottom-gap: 4px;
 
 .fx-tip {
-  @include trait-crest;
-
-  .fx-trait-crest {
-    margin: $crest-top-gap auto $crest-bottom-gap;
-  }
-
   .slot {
     position: relative;
     flex: 0 0 auto;
