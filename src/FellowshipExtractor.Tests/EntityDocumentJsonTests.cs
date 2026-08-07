@@ -1,20 +1,14 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
 
 namespace FellowshipExtractor.Tests;
 
-public sealed class EntityDocumentConverterTests
+public sealed class EntityDocumentJsonTests
 {
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter(), new EntityDocumentConverter() },
-    };
+    private static readonly JsonSerializerOptions Options = EntityDocuments.Options;
 
     private static readonly Lazy<IReadOnlyList<(EntityType Type, string Line, EntityDocument Document)>> Loaded =
         new(() =>
@@ -22,7 +16,7 @@ public sealed class EntityDocumentConverterTests
             .. File.ReadLines(Path.Combine(Export.Loaded.Folder, "entities.jsonl"))
                 .Where(line => line.Length > 0)
                 .Select(line => (
-                    Type: EntityTypes.Parse(JsonNode.Parse(line)!["type"]!.GetValue<string>()),
+                    Type: EntityTypes.Parse(JsonNode.Parse(line)![EntityDocuments.Discriminator]!.GetValue<string>()),
                     Line: line,
                     Document: JsonSerializer.Deserialize<EntityDocument>(line, Options)
                         ?? throw new InvalidOperationException($"A line deserialised to nothing: {line}"))),
@@ -69,7 +63,7 @@ public sealed class EntityDocumentConverterTests
     }
 
     [Fact]
-    public void ANestedReferenceRoundTripsThroughTheConverter()
+    public void ANestedReferenceRoundTripsThroughTheDiscriminator()
     {
         var effect = new EffectDocument
         {
@@ -86,21 +80,26 @@ public sealed class EntityDocumentConverterTests
     }
 
     [Fact]
-    public void ADifferentlyCasedTypePropertyResolvesWhenCaseInsensitive()
+    public void ADocumentKeepsATypePropertyOfItsOwnBesideTheDiscriminator()
     {
-        var caseInsensitive = new JsonSerializerOptions(Options) { PropertyNameCaseInsensitive = true };
+        var gem = new GemTypeDocument { Id = 1, Type = GemType.Ruby, Attribute = "RubyPower" };
 
-        var read = JsonSerializer.Deserialize<EntityDocument>("""{"Type":"ability","id":1}""", caseInsensitive);
+        var line = JsonSerializer.Serialize<EntityDocument>(gem, Options);
+        var body = JsonNode.Parse(line)!.AsObject();
 
-        Assert.IsType<AbilityDocument>(read);
+        Assert.Equal("gem-type", body[EntityDocuments.Discriminator]!.GetValue<string>());
+        Assert.Equal("Ruby", body["type"]!.GetValue<string>());
+
+        Assert.Equal(GemType.Ruby, Assert.IsType<GemTypeDocument>(
+            JsonSerializer.Deserialize<EntityDocument>(line, Options)).Type);
     }
 
     [Fact]
-    public void ADifferentlyCasedTypePropertyFailsWhenCaseSensitive()
+    public void ADiscriminatorAfterThePropertiesStillNamesTheClass()
     {
-        var caseSensitive = new JsonSerializerOptions(Options) { PropertyNameCaseInsensitive = false };
+        var read = JsonSerializer.Deserialize<EntityDocument>(
+            $$"""{"id":1,"name":"Searing Blaze","{{EntityDocuments.Discriminator}}":"ability"}""", Options);
 
-        Assert.Throws<JsonException>(
-            () => JsonSerializer.Deserialize<EntityDocument>("""{"Type":"ability","id":1}""", caseSensitive));
+        Assert.Equal("Searing Blaze", Assert.IsType<AbilityDocument>(read).Name);
     }
 }

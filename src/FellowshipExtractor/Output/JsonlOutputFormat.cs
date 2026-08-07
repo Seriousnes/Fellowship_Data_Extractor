@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 using FellowshipExtractor.Tooltip;
 
@@ -10,14 +9,6 @@ namespace FellowshipExtractor.Output;
 public sealed class JsonlOutputFormat(string folder) : IOutputFormat
 {
     public const string FileName = "entities.jsonl";
-
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        WriteIndented = false,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter() },
-    };
 
     private StreamWriter? _writer;
 
@@ -30,15 +21,8 @@ public sealed class JsonlOutputFormat(string folder) : IOutputFormat
         return folder;
     }
 
-    public async Task WriteAsync(EntityDocument entity, CancellationToken cancellationToken)
-    {
-        var type = EntityTypes.Slug(EntityTypes.TypeOf(entity));
-        var body = JsonSerializer.SerializeToNode(entity, entity.GetType(), Options)!.AsObject();
-
-        body.Insert(0, "type", type);
-
-        await Writer().WriteLineAsync(body.ToJsonString(Options));
-    }
+    public async Task WriteAsync(EntityDocument entity, CancellationToken cancellationToken) =>
+        await Writer().WriteLineAsync(JsonSerializer.Serialize<EntityDocument>(entity, EntityDocuments.Options));
 
     public async Task WriteVocabularyAsync(Vocabulary vocabulary, CancellationToken cancellationToken) =>
         await vocabulary.WriteAsync(Folder());

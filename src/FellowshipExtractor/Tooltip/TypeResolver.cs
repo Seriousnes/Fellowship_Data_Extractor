@@ -80,7 +80,7 @@ public sealed class TypeResolver(
 
         if (segments[1].Equals("GemType", StringComparison.OrdinalIgnoreCase))
         {
-            return entity.GemTier is not null ? EntityType.GemTier : EntityType.GemType;
+            return entity.GemTier is not null ? EntityType.Gem : EntityType.GemType;
         }
 
         if (!ItemSegments.TryGetValue(segments[1], out var type)) return null;

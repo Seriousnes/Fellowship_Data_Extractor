@@ -37,21 +37,21 @@ public sealed class CodexView(
         {
             ItemDocument { Rarities: { Count: > 0 } rungs } => rungs[^1],
             ItemDocument { Rarity: { } stated } => stated,
-            GemDocument tier => tier.Rarity,
+            GemDocument gem => gem.Rarity,
             _ => null,
         };
 
         if (rung is { } found && Rung(found) is { } shade) return shade;
 
-        GemType? gem = document switch
+        GemType? stone = document switch
         {
             GemTypeDocument type => type.Type,
-            GemDocument tier => tier.Type,
+            GemDocument gem => gem.Type,
             GemTraitDocument trait => trait.Gem,
             _ => null,
         };
 
-        return gem is { } stone ? Readable(tokens.Gem(stone.ToString())) : null;
+        return stone is { } named ? Readable(tokens.Gem(named.ToString())) : null;
     }
 
     private string? Rung(Rarity rarity) =>
@@ -272,7 +272,7 @@ public sealed class CodexView(
         {
             ItemDocument { Rarity: { } value } => value,
             CurrencyDocument { Rarity: { } coin } => coin,
-            GemDocument tier => tier.Rarity,
+            GemDocument gem => gem.Rarity,
             _ => null,
         };
 

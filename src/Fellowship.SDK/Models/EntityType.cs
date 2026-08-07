@@ -14,7 +14,7 @@ public enum EntityType
     Creature,
     Currency,
     Effect,
-    GemTier,
+    Gem,
     GemTrait,
     GemType,
     Item,

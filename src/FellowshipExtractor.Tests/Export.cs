@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using FellowshipExtractor.Tooltip;
+using Fellowship.SDK.Documents;
 
 namespace FellowshipExtractor.Tests;
 
@@ -64,7 +65,7 @@ public sealed class Export
             if (line.Length == 0) continue;
 
             var body = JsonNode.Parse(line)!.AsObject();
-            var slug = body["type"]!.GetValue<string>();
+            var slug = body[EntityDocuments.Discriminator]!.GetValue<string>();
 
             if (!TypeBySlug.TryGetValue(slug, out var type))
             {

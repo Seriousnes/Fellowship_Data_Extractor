@@ -6,7 +6,7 @@ namespace FellowshipExtractor.Tests;
 public sealed class DocumentTests
 {
     [Fact]
-    public void ADocumentDoesNotRestateItsType()
+    public void ADocumentClassIsNamedForItsType()
     {
         var documents = typeof(EntityDocument).Assembly
             .GetTypes()
@@ -18,17 +18,13 @@ public sealed class DocumentTests
         Assert.All(documents, document => Assert.True(
             document.Name.EndsWith("Document", StringComparison.Ordinal) &&
             Enum.TryParse<EntityType>(document.Name[..^"Document".Length], out _)));
-
-        Assert.All(documents, document => Assert.DoesNotContain(
-            document.GetProperties(),
-            property => property.Name is "Type" or "Kind"));
     }
 
     [Fact]
     public void AFieldEveryRowStatesIsRequired()
     {
         Assert.All(
-            new[] { "Gem", "Tier", "Power", "Rarity" },
+            new[] { "Type", "Power", "Rarity" },
             name => Assert.True(IsRequired(typeof(GemDocument).GetProperty(name)!)));
 
         Assert.All(

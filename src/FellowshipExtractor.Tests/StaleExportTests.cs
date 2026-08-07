@@ -39,13 +39,13 @@ public sealed class StaleExportTests
         Assert.Contains("entities.jsonl", failure.Message, StringComparison.Ordinal);
         Assert.Contains("Line 1", failure.Message, StringComparison.Ordinal);
         Assert.Contains("export-all", failure.Message, StringComparison.Ordinal);
-        Assert.IsType<JsonException>(failure.InnerException);
+        Assert.IsType<NotSupportedException>(failure.InnerException);
     }
 
     [Fact]
     public void ALineThatNamesNoTypeCountsFromTheLineItIsOn()
     {
-        var document = """{"type":"item","id":1}""";
+        var document = """{"$type":"item","id":1}""";
 
         var failure = Assert.Throws<InvalidOperationException>(
             () => Read($"{document}\n{document}\n{{\"id\":3}}"));
@@ -56,7 +56,7 @@ public sealed class StaleExportTests
     [Fact]
     public void ADocumentStillReads()
     {
-        var store = Read("""{"type":"item","id":5224,"name":"Sunforged Greatsword"}""");
+        var store = Read("""{"$type":"item","id":5224,"name":"Sunforged Greatsword"}""");
 
         Assert.Equal(1, store.Count);
         Assert.Equal("Sunforged Greatsword", store.Entities[0].Name);

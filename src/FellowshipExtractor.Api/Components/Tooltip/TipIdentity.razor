@@ -60,7 +60,7 @@
     private string? Kind => Entity switch
     {
         ItemDocument { ArmorType: { } armor } => armor.ToString(),
-        GemDocument tier => tier.Type.ToString(),
+        GemDocument gem => gem.Type.ToString(),
         GemTraitDocument trait => trait.Gem.ToString(),
         GemTypeDocument type => type.Type.ToString(),
         _ => null,

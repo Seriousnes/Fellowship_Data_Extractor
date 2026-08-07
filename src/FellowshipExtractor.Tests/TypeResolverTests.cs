@@ -20,7 +20,7 @@ public sealed class TypeResolverTests
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
-    [InlineData(EntityType.GemTier, "gem-tier")]
+    [InlineData(EntityType.Gem, "gem")]
     [InlineData(EntityType.SetBonusPower, "set-bonus-power")]
     [InlineData(EntityType.TalentSlot, "talent-slot")]
     public void ASlugIsTheTypeNameHyphenated(EntityType type, string slug) =>
@@ -61,7 +61,7 @@ public sealed class TypeResolverTests
     {
         var tag = new TagRecord("ItemID", "ItemID.GemType.Ruby.Small", 999_999, 0);
 
-        Assert.Equal(EntityType.GemTier, Resolver.Types.Of(tag, new Entity { GemTier = 1 }, null));
+        Assert.Equal(EntityType.Gem, Resolver.Types.Of(tag, new Entity { GemTier = 1 }, null));
         Assert.Equal(EntityType.GemType, Resolver.Types.Of(tag, new Entity(), null));
     }
 
@@ -190,7 +190,7 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.MountPower, 54)]
     [InlineData(EntityType.TraitPower, 40)]
     [InlineData(EntityType.Currency, 32)]
-    [InlineData(EntityType.GemTier, 24)]
+    [InlineData(EntityType.Gem, 24)]
     [InlineData(EntityType.SetBonus, 23)]
     [InlineData(EntityType.SetBonusPower, 15)]
     [InlineData(EntityType.Blessing, 14)]

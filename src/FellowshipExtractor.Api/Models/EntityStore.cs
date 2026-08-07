@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 using Fellowship.SDK.Documents;
 
@@ -63,13 +62,7 @@ public sealed class EntityStore
 
     private const string LegendaryDropRow = "Legendary";
 
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter(), new EntityDocumentConverter() },
-    };
+    private static readonly JsonSerializerOptions Options = EntityDocuments.Options;
 
     private static readonly ConcurrentDictionary<(Type Document, string Property), PropertyInfo?> Fields = new();
 
@@ -192,12 +185,12 @@ public sealed class EntityStore
             return JsonSerializer.Deserialize<EntityDocument>(line, Options)
                 ?? throw new InvalidOperationException($"Line {number} of {path} deserialised to nothing.");
         }
-        catch (JsonException failure)
+        catch (Exception failure) when (failure is JsonException or NotSupportedException)
         {
             throw new InvalidOperationException(
                 $"Line {number} of {path} does not read as a document: {failure.Message} An export written " +
-                "before a document carried the type it is read back as reads this way. Write it again with " +
-                "'dotnet run --project src/FellowshipExtractor -- export-all'.",
+                $"before a document carried the '{EntityDocuments.Discriminator}' it is read back as reads this " +
+                "way. Write it again with 'dotnet run --project src/FellowshipExtractor -- export-all'.",
                 failure);
         }
     }

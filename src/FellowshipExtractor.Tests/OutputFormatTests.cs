@@ -20,7 +20,7 @@ public sealed class OutputFormatTests
         var line = (await File.ReadAllLinesAsync(Path.Combine(folder, "entities.jsonl")))[0];
         using var document = JsonDocument.Parse(line);
 
-        Assert.Equal("ability", document.RootElement.GetProperty("type").GetString());
+        Assert.Equal("ability", document.RootElement.GetProperty(EntityDocuments.Discriminator).GetString());
         Assert.Equal(1122, document.RootElement.GetProperty("id").GetInt32());
         Assert.Equal("Stone Shield", document.RootElement.GetProperty("name").GetString());
         Assert.False(document.RootElement.TryGetProperty("table", out _));
@@ -46,7 +46,7 @@ public sealed class OutputFormatTests
         var line = (await File.ReadAllLinesAsync(Path.Combine(folder, "entities.jsonl")))[0];
         using var document = JsonDocument.Parse(line);
 
-        Assert.Equal("effect", document.RootElement.GetProperty("type").GetString());
+        Assert.Equal("effect", document.RootElement.GetProperty(EntityDocuments.Discriminator).GetString());
 
         var reference = document.RootElement.GetProperty("nameBorrowedFrom");
 

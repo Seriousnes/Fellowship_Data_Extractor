@@ -119,7 +119,7 @@ public sealed class Codex
             new Facet("gem", "Gem type", document => One(document switch
             {
                 GemTypeDocument gem => gem.Type.ToString(),
-                GemDocument tier => tier.Type.ToString(),
+                GemDocument gem => gem.Type.ToString(),
                 GemTraitDocument trait => trait.Gem.ToString(),
                 _ => null,
             }))
@@ -139,7 +139,7 @@ public sealed class Codex
             {
                 ItemDocument { Rarity: { } rarity } => RarityWord(store, rarity, gem: false),
                 CurrencyDocument { Rarity: { } coin } => RarityWord(store, coin, gem: false),
-                GemDocument tier => RarityWord(store, tier.Rarity, gem: true),
+                GemDocument stone => RarityWord(store, stone.Rarity, gem: true),
                 _ => null,
             }))
             {
@@ -185,7 +185,6 @@ public sealed class Codex
             },
             new Measure("cost", "Cost", document => DocumentFields.Number(document, nameof(AbilityDocument.Cost))),
             new Measure("charges", "Charges", document => DocumentFields.Number(document, nameof(AbilityDocument.Charges))),
-            new Measure("tier", "Gem tier", document => DocumentFields.Number(document, nameof(GemDocument.Tier))),
             new Measure("rank", "Max rank", document => DocumentFields.Number(document, nameof(TraitDocument.MaxRank))),
 
             new Measure("id", "ID", document => (double?)document.Id) { Column = true },

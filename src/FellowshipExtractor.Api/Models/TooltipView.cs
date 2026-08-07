@@ -34,7 +34,7 @@ public sealed class TooltipView(
             ItemDocument { Rarity: { } rung } => (int?)rung,
             ItemDocument { Rarities: { Count: > 0 } rungs } => (int)rungs.Max(),
             CurrencyDocument { Rarity: { } coin } => (int)coin,
-            GemDocument gemTier => (int)gemTier.Rarity,
+            GemDocument gem => (int)gem.Rarity,
             _ => null,
         };
 

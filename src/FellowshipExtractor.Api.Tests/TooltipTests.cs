@@ -159,7 +159,7 @@ public class TooltipTests : BunitContext
         var rung = Store.Vocabulary.Rarities[^1];
 
         var asGem = Render<Components.Tooltip.Tooltip>(p => p
-            .Add(x => x.Entity, new GemDocument { Id = 1, Type = GemType.Amethyst, Tier = 3, Power = 10, Rarity = Rarity.Champion })
+            .Add(x => x.Entity, new GemDocument { Id = 1, Type = GemType.Amethyst, Power = 10, Rarity = Rarity.Champion })
             .Add(x => x.Query, new TooltipQuery { Rarity = rung.Name }));
 
         var asItem = Render<Components.Tooltip.Tooltip>(p => p

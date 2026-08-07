@@ -58,7 +58,6 @@ public sealed record PublicEntity
 
     public PublicGemOverflow? GemOverflow { get; init; }
     public string? GemType { get; init; }
-    public int? GemTier { get; init; }
     public int? GemPower { get; init; }
     public string? Rarity { get; init; }
     public int? GemNode { get; init; }
@@ -125,7 +124,6 @@ public sealed record PublicEntity
             TalentCost = (document as TalentSlotDocument)?.Cost,
             GemOverflow = document is GemTypeDocument gem ? PublicGemOverflow.From(gem, view) : null,
             GemType = GemTypeName(document),
-            GemTier = (document as GemDocument)?.Tier,
             GemPower = (document as GemDocument)?.Power,
             Rarity = view.Rarity(document),
             GemNode = (document as GemTraitDocument)?.Node,
@@ -176,7 +174,7 @@ public sealed record PublicEntity
 
     private static string? GemTypeName(EntityDocument document) => document switch
     {
-        GemDocument tier => tier.Type.ToString(),
+        GemDocument gem => gem.Type.ToString(),
         GemTraitDocument trait => trait.Gem.ToString(),
         GemTypeDocument type => type.Type.ToString(),
         _ => null,

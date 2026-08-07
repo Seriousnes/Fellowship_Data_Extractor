@@ -18,7 +18,7 @@ public static class PublicTypes
         (EntityType.LegendaryStat, "Legendary Stats", "legendary stat", "Items"),
         (EntityType.Currency, "Currencies", "currency", "Items"),
         (EntityType.GemType, "Gem Types", "gem type", "Gems"),
-        (EntityType.GemTier, "Gem Tiers", "gem tier", "Gems"),
+        (EntityType.Gem, "Gems", "gem", "Gems"),
         (EntityType.GemTrait, "Gem Traits", "gem trait", "Gems"),
         (EntityType.Ability, "Abilities", "ability", "Abilities"),
         (EntityType.Blessing, "Blessings", "blessing", "Abilities"),

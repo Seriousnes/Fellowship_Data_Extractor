@@ -119,7 +119,7 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Names_the_gem_ladder_for_a_gem_and_the_item_ladder_otherwise()
     {
-        var gem = new GemDocument { Id = 1, Type = GemType.Amethyst, Tier = 3, Power = 1, Rarity = Rarity.Champion };
+        var gem = new GemDocument { Id = 1, Type = GemType.Amethyst, Power = 1, Rarity = Rarity.Champion };
         var wearable = new ItemDocument { Id = 2, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
 
         var asGem = Render<Knobs>(p => p.AddCascadingValue(

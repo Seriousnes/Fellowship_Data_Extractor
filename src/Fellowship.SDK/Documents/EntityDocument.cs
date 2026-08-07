@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Fellowship.SDK.Documents;
 
@@ -10,46 +11,32 @@ public abstract class EntityDocument
     public string? Name { get; init; }
 }
 
-public sealed class EntityDocumentConverter : JsonConverter<EntityDocument>
+public static class EntityDocuments
 {
-    public override EntityDocument Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public const string Discriminator = "$type";
+
+    public static JsonSerializerOptions Options { get; } = new()
     {
-        using var document = JsonDocument.ParseValue(ref reader);
-        var root = document.RootElement;
+        WriteIndented = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        AllowOutOfOrderMetadataProperties = true,
+        Converters = { new JsonStringEnumConverter() },
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { Polymorphism } },
+    };
 
-        var slug = TypeProperty(root, options).GetString()
-            ?? throw new JsonException("A document's 'type' property is not a string.");
-
-        var documentType = EntityTypes.TryParse(slug, out var type)
-            ? EntityTypes.Document(type)
-            : throw new JsonException($"'{slug}' names no {nameof(EntityType)}.");
-
-        return (EntityDocument?)root.Deserialize(documentType, options)
-            ?? throw new JsonException($"A {documentType.Name} line deserialised to nothing.");
-    }
-
-    public override void Write(Utf8JsonWriter writer, EntityDocument value, JsonSerializerOptions options)
+    private static void Polymorphism(JsonTypeInfo info)
     {
-        var type = EntityTypes.TypeOf(value);
-        var body = JsonSerializer.SerializeToNode(value, value.GetType(), options)!.AsObject();
+        if (info.Type != typeof(EntityDocument)) return;
 
-        body.Insert(0, "type", EntityTypes.Slug(type));
+        var polymorphism = new JsonPolymorphismOptions { TypeDiscriminatorPropertyName = Discriminator };
 
-        body.WriteTo(writer, options);
-    }
-
-    private static JsonElement TypeProperty(JsonElement root, JsonSerializerOptions options)
-    {
-        if (root.TryGetProperty("type", out var exact)) return exact;
-
-        if (options.PropertyNameCaseInsensitive)
+        foreach (var type in Enum.GetValues<EntityType>())
         {
-            foreach (var property in root.EnumerateObject())
-            {
-                if (string.Equals(property.Name, "type", StringComparison.OrdinalIgnoreCase)) return property.Value;
-            }
+            polymorphism.DerivedTypes.Add(new JsonDerivedType(EntityTypes.Document(type), EntityTypes.Slug(type)));
         }
 
-        throw new JsonException("A document line carries no 'type' property.");
+        info.PolymorphismOptions = polymorphism;
     }
 }

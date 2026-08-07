@@ -61,12 +61,11 @@ public static class DocumentProjection
             LegendaryStatIds = entity.LegendaryStatIds,
         },
 
-        EntityType.GemTier => new GemDocument
+        EntityType.Gem => new GemDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Type = Enum.Parse<GemType>(entity.GemType!),
-            Tier = entity.GemTier!.Value,
             Power = entity.GemPower!.Value,
 
             Rarity = (Rarity)entity.RarityTier!.Value,

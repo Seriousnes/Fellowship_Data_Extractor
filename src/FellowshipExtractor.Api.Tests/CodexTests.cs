@@ -25,17 +25,22 @@ public class CodexTests
     }
 
     [Fact]
-    public void The_tier_and_rank_measures_still_read_their_own_int_fields()
+    public void The_rank_measure_still_reads_its_own_int_field()
     {
-        var tier = Codex.Measure("tier");
         var rank = Codex.Measure("rank");
-        Assert.NotNull(tier);
         Assert.NotNull(rank);
-
-        var gemTier = Store.Entities.OfType<GemDocument>().First();
-        Assert.Equal((double)gemTier.Tier, tier!.Value(gemTier));
 
         var trait = Store.Entities.OfType<TraitDocument>().First(t => t.MaxRank is not null);
         Assert.Equal((double)trait.MaxRank!.Value, rank!.Value(trait));
+    }
+
+    [Fact]
+    public void A_gem_is_measured_on_no_ladder_beside_its_rung()
+    {
+        Assert.Null(Codex.Measure("tier"));
+
+        Assert.DoesNotContain(
+            typeof(GemDocument).GetProperties(),
+            property => property.Name is "Tier");
     }
 }
