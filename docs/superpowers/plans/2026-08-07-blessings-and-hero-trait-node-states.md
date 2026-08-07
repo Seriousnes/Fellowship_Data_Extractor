@@ -28,9 +28,17 @@ recoverable from the session transcripts under
 - No polyfills for missing runtime functionality. Use the modern API directly.
 - No em dashes or en dashes anywhere: code, comments, XML, output, commit messages.
 - **Add no comments to any file.** Not explanatory ones, not section markers, not doc comments.
-- Never hardcode a list, id or data fact a canonical source already states. The node state words come
-  from the shipped texture names, `store.Vocabulary` is the canonical source for heroes, colours and
+- Never hardcode a list, id or data fact a canonical source already states. The state words come from
+  the shipped texture names, `store.Vocabulary` is the canonical source for heroes, colours and
   rungs, and `EntityTypes.Slug` is the only place a slug is spelled.
+- **`Rune` is the build's word and lives only inside an asset name.** The SDK and the API call these
+  blessings: no type, member, local, test name, CSS class, custom property, query parameter, slug or
+  printed word says rune. The only places it may appear are the literal strings
+  `"T_Icons_BlessingRuneIcon_"` and the file names built from it. `grep -rn "Rune" src/Fellowship.SDK
+  src/FellowshipExtractor.Api` must answer nothing but those literals.
+- **One family's word never describes another.** `node` is what the trait tree calls its own
+  hexagons, so `TraitNode` and `NodeStates` keep it, and nothing a blessing touches does. The shared
+  query parameter is `state`, and the shared members are `StateFrame` and `StateArt`.
 - Match the surrounding code's idiom: expression-bodied members, collection expressions, pattern
   matching, `StringComparer` named explicitly.
 - Test naming: snake_case sentences in `FellowshipExtractor.Api.Tests`, PascalCase sentences in
@@ -58,15 +66,15 @@ Measured on 2026-08-07 against `output/files.txt` and the extracted textures.
   `T_Icons_Locked` is that padlock and `T_Borders_Modifier_Frame_Hexagon` the hexagon.
 - **A blessing is drawn on a plate of its own, and its state moves two assets.** The shipped family
   is `T_Buttons_BlessingButton_Allocated` and `T_Buttons_BlessingButton_Unallocated`, each with a
-  `Hover`. Allocated is a gold stone plate and unallocated a slate one. The rune moves with it: every
+  `Hover`. Allocated is a gold stone plate and unallocated a slate one. The art moves with it: every
   blessing names `T_Icons_BlessingRuneIcon_Unallocated_NN` and the build ships
   `T_Icons_BlessingRuneIcon_Allocated_NN` beside it, fourteen of each. A hero trait differs here: its
   art is one plain asset such as `Berserker16.png` and only the frame around it changes.
-- **A blessing's rune is not its plate.** `T_Icons_BlessingRuneIcon_Unallocated_010.png`, which *The
+- **A blessing's art is not its plate.** `T_Icons_BlessingRuneIcon_Unallocated_010.png`, which *The
   Mystic* names, is the bare glyph on transparency. The hexagonal stone behind it in the shipped
   tooltip is the button texture, so a blessing drawn without one is drawn wrong.
 - **`export-all` writes the icon a document names and no other.** Blessing rows name only their
-  unallocated rune, so the allocated fourteen reach the app as chrome rather than as entity art.
+  unallocated art, so the allocated fourteen reach the app as chrome rather than as entity art.
 - **A row that states no rung already wears the right window.** Commit `36fbb73` gave it
   `T_Borders_Rounded_16`, gold at `#A38558` with its own 16px corner and no header plate.
   `UW_BlessingTooltip` names that same window, `T_Borders_Thin` and
@@ -85,9 +93,9 @@ Measured on 2026-08-07 against `output/files.txt` and the extracted textures.
 | `src/FellowshipExtractor.Api/Models/PublicTypes.cs` | The row reads Blessings, blessing. |
 | `src/FellowshipExtractor.Api/Models/CodexView.cs` | Reads a `BlessingDocument`'s placeholders. |
 | `src/FellowshipExtractor.Tests/TypeResolverTests.cs` | Asserts `EntityType.Blessing`. |
-| `src/FellowshipExtractor/Textures/UiCommand.cs` | Pulls both state families, the allocated runes, the hexagon, the padlock and the gold divider. |
-| `src/FellowshipExtractor.Api/Models/ChromeAssets.cs` | Answers each family's state texture, the allocated rune, the padlock and the divider. |
-| `src/FellowshipExtractor.Api/Models/TooltipQuery.cs` | Reads and documents `node`. |
+| `src/FellowshipExtractor/Textures/UiCommand.cs` | Pulls both state families, the allocated blessing art, the hexagon, the padlock and the gold divider. |
+| `src/FellowshipExtractor.Api/Models/ChromeAssets.cs` | Answers each family's state texture, a blessing's allocated art, the padlock and the divider. |
+| `src/FellowshipExtractor.Api/Models/TooltipQuery.cs` | Reads and documents `state`. |
 | `src/FellowshipExtractor.Api/Models/TooltipView.cs` | Answers which rows draw their own art, the state frame and the state's art. |
 | `src/FellowshipExtractor.Api/Components/Tooltip/Tooltip.razor` | Draws the art inside the card, on its state's frame. |
 | `src/FellowshipExtractor.Api/Components/Tooltip/_Tooltip.razor.scss` | Styles the inset art, its frame and the gold divider. |
@@ -154,7 +162,7 @@ public class BlessingTests(Export export)
     }
 
     [Fact]
-    public void Every_blessing_carries_the_art_the_build_names_a_blessing_rune()
+    public void Every_blessing_carries_the_art_the_build_gives_a_blessing()
     {
         var blessings = export.Store.Entities.OfType<BlessingDocument>().ToArray();
 
@@ -250,6 +258,15 @@ grep -rn "Finesse" src/FellowshipExtractor --include=*.cs | grep -v "/obj/\|/bin
 Expected: exactly two lines, `UiCommand.cs` naming `T_Icons_Generic_TooltipFinesse` and
 `TypeResolver.cs` naming `/Game/Abilities/Finesses/`.
 
+Then confirm the same of the build's other word for a blessing, which Task 2 is about to bring in:
+
+```bash
+grep -rn "Rune" src/Fellowship.SDK src/FellowshipExtractor.Api --include=*.cs --include=*.razor --include=*.scss | grep -v "/obj/\|/bin/"
+```
+
+Expected: no output. Run this again at the end of Task 2 and of Task 4, where the only lines it may
+answer are the literal `"T_Icons_BlessingRuneIcon_"` in `ChromeAssets` and the prefix in `UiCommand`.
+
 - [ ] **Step 6: Build**
 
 ```bash
@@ -301,7 +318,7 @@ git commit -m "Call a finesse what the game calls it, a blessing"
 **Files:**
 - Modify: `src/FellowshipExtractor/Textures/UiCommand.cs:10-50`
 - Modify: `src/FellowshipExtractor.Api/Models/ChromeAssets.cs`
-- Create: `src/FellowshipExtractor.Api.Tests/NodeChromeTests.cs`
+- Create: `src/FellowshipExtractor.Api.Tests/StateChromeTests.cs`
 
 **Interfaces:**
 - Consumes: `ChromeAssets.Url(string blob)` and `ChromeAssets.Name(string texture)`, both private,
@@ -309,7 +326,7 @@ git commit -m "Call a finesse what the game calls it, a blessing"
 - Produces, all on `ChromeAssets`: `public static readonly IReadOnlyList<string> NodeStates`, ordered
   `selected`, `available`, `unavailable`; `public static readonly IReadOnlyList<string>
   BlessingStates`, ordered `allocated`, `unallocated`; `public string TraitNode(string? state)`;
-  `public string BlessingPlate(string? state)`; `public string? AllocatedRune(string? icon)`;
+  `public string BlessingPlate(string? state)`; `public string? BlessingArt(string? icon, string? state)`;
   `public string LockGlyph`; `public string GoldDivider`. Both state members answer their first
   listed state for null or for a word they do not know. Task 3 calls `GoldDivider` and Task 4 calls
   the rest.
@@ -320,10 +337,12 @@ chosen. Each family's first state is what a tooltip shows when nothing is asked 
 tooltip is showing the row the reader is looking at rather than one they have yet to earn: a hero
 trait is `selected` and a blessing `allocated`.
 
-A blessing's state moves its rune as well as its plate, and the two runes are named alike, so
-`AllocatedRune` answers the allocated sibling of an unallocated rune's file name and null for any
-other art. The allocated runes are pulled as chrome and so are addressed under `ui/`, while the
-unallocated one a document names is entity art at the container root.
+A blessing's state moves its art as well as its plate, and the build files the two alike, so
+`BlessingArt` answers the allocated sibling of the file name a blessing states and null for anything
+else, including a blessing the reader has asked to see unallocated. The allocated art is pulled as
+chrome and so is addressed under `ui/`, while the unallocated art a document names is entity art at
+the container root. `Rune` is the build's word for these files and stays inside their asset names:
+nothing this app declares, prints or addresses says it.
 
 - [ ] **Step 1: Add the textures to the extractor's list**
 
@@ -353,7 +372,7 @@ that family composes from:
         "T_GoldDivider",
 ```
 
-The fourteen allocated runes are a family rather than a list, so pull them by their prefix rather
+The fourteen allocated blessing arts are a family rather than a list, so pull them by their prefix rather
 than by spelling each name. Add the field beside `Chrome`:
 
 ```csharp
@@ -391,17 +410,17 @@ ls output/export/ui | grep -cE "BlessingRuneIcon_Allocated"
 ls output/export/ui | grep -E "Frame_Hexagon|T_Icons_Locked|T_GoldDivider"
 ```
 
-Expected: 9 trait nodes, 4 blessing buttons, 14 allocated runes, and the three named files.
+Expected: 9 trait nodes, 4 blessing buttons, 14 allocated blessing arts, and the three named files.
 
 - [ ] **Step 3: Write the failing chrome test**
 
-`src/FellowshipExtractor.Api.Tests/NodeChromeTests.cs`.
+`src/FellowshipExtractor.Api.Tests/StateChromeTests.cs`.
 
 ```csharp
 namespace FellowshipExtractor.Api.Tests;
 
 [Collection(Corpus.Name)]
-public class NodeChromeTests(Export export)
+public class StateChromeTests(Export export)
 {
     [Fact]
     public void A_node_answers_the_frame_the_state_names()
@@ -452,7 +471,7 @@ public class NodeChromeTests(Export export)
     }
 
     [Fact]
-    public void Every_blessing_rune_has_the_allocated_twin_the_build_ships()
+    public void Every_blessing_has_the_allocated_art_the_build_ships()
     {
         var blessings = export.Store.Entities.OfType<BlessingDocument>().ToArray();
 
@@ -460,7 +479,7 @@ public class NodeChromeTests(Export export)
 
         Assert.All(blessings, blessing =>
         {
-            var allocated = export.Chrome.AllocatedRune(blessing.Icon);
+            var allocated = export.Chrome.BlessingArt(blessing.Icon, null);
 
             Assert.NotNull(allocated);
             Assert.EndsWith(
@@ -473,8 +492,8 @@ public class NodeChromeTests(Export export)
                 blessing.Icon.Replace("Unallocated", "Allocated", StringComparison.Ordinal))));
         });
 
-        Assert.Null(export.Chrome.AllocatedRune("Berserker16.png"));
-        Assert.Null(export.Chrome.AllocatedRune(null));
+        Assert.Null(export.Chrome.BlessingArt("Berserker16.png", null));
+        Assert.Null(export.Chrome.BlessingArt(null, null));
     }
 }
 ```
@@ -508,7 +527,7 @@ and set the chrome where the fixture already builds one, changing that line to:
 - [ ] **Step 5: Run it and watch it fail**
 
 ```bash
-dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj --filter "FullyQualifiedName~NodeChromeTests"
+dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj --filter "FullyQualifiedName~StateChromeTests"
 ```
 
 Expected: the build fails on `TraitNode`, `NodeStates` and `LockGlyph`.
@@ -521,9 +540,9 @@ In `src/FellowshipExtractor.Api/Models/ChromeAssets.cs`, add beside the other te
     private const string NodeFamily = "T_Buttons_TraitNode_";
     private const string NodeSuffix = "Default";
     private const string BlessingFamily = "T_Buttons_BlessingButton_";
-    private const string RuneUnallocated = "Unallocated";
-    private const string RuneAllocated = "Allocated";
-    private const string RuneFamily = "T_Icons_BlessingRuneIcon_";
+    private const string BlessingArtFamily = "T_Icons_BlessingRuneIcon_";
+    private const string Allocated = "Allocated";
+    private const string Unallocated = "Unallocated";
     private const string LockTexture = "T_Icons_Locked";
     private const string DividerTexture = "T_GoldDivider";
 ```
@@ -541,10 +560,11 @@ and the members, beside `SlotPlate`:
     public string BlessingPlate(string? state) =>
         Url(Name(BlessingFamily + Chosen(BlessingStates, state)));
 
-    public string? AllocatedRune(string? icon) =>
-        icon is not null &&
-        icon.StartsWith(RuneFamily + RuneUnallocated, StringComparison.Ordinal)
-            ? Url($"{Prefix}/{icon.Replace(RuneUnallocated, RuneAllocated, StringComparison.Ordinal)}")
+    public string? BlessingArt(string? icon, string? state) =>
+        icon is { } art &&
+        art.StartsWith(BlessingArtFamily + Unallocated, StringComparison.Ordinal) &&
+        string.Equals(Chosen(BlessingStates, state), Allocated, StringComparison.Ordinal)
+            ? Url($"{Prefix}/{art.Replace(Unallocated, Allocated, StringComparison.Ordinal)}")
             : null;
 
     public string LockGlyph => Url(Name(LockTexture));
@@ -558,13 +578,13 @@ and the members, beside `SlotPlate`:
             : char.ToUpperInvariant(states[0][0]) + states[0][1..];
 ```
 
-`AllocatedRune` builds its blob path from the icon's file name, which already ends `.png`, so it
+`BlessingArt` builds its blob path from the icon's file name, which already ends `.png`, so it
 calls `Url` directly rather than `Name`, which would append a second extension.
 
 - [ ] **Step 7: Run it and watch it pass**
 
 ```bash
-dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj --filter "FullyQualifiedName~NodeChromeTests"
+dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj --filter "FullyQualifiedName~StateChromeTests"
 ```
 
 Expected: PASS, all three.
@@ -574,7 +594,7 @@ Expected: PASS, all three.
 ```bash
 dotnet build src/FellowshipExtractor.slnx
 dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj
-git add src/FellowshipExtractor/Textures/UiCommand.cs src/FellowshipExtractor.Api/Models/ChromeAssets.cs src/FellowshipExtractor.Api.Tests/Export.cs src/FellowshipExtractor.Api.Tests/NodeChromeTests.cs
+git add src/FellowshipExtractor/Textures/UiCommand.cs src/FellowshipExtractor.Api/Models/ChromeAssets.cs src/FellowshipExtractor.Api.Tests/Export.cs src/FellowshipExtractor.Api.Tests/StateChromeTests.cs
 git commit -m "Read the three states the trait tree draws a node at"
 ```
 
@@ -823,34 +843,34 @@ git commit -m "Carry a blessing's and a hero trait's art inside the card"
 - Modify: `src/FellowshipExtractor.Api/Models/TooltipView.cs`
 - Modify: `src/FellowshipExtractor.Api/Components/Tooltip/Tooltip.razor`
 - Modify: `src/FellowshipExtractor.Api/Components/Tooltip/_Tooltip.razor.scss`
-- Create: `src/FellowshipExtractor.Api.Tests/NodeStateTests.cs`
+- Create: `src/FellowshipExtractor.Api.Tests/StateTests.cs`
 
 **Interfaces:**
 - Consumes: `ChromeAssets.TraitNode(string?)`, `ChromeAssets.BlessingPlate(string?)`,
-  `ChromeAssets.AllocatedRune(string?)`, `ChromeAssets.LockGlyph`, `ChromeAssets.NodeStates` and
+  `ChromeAssets.BlessingArt(string?, string?)`, `ChromeAssets.LockGlyph`, `ChromeAssets.NodeStates` and
   `ChromeAssets.BlessingStates` from Task 2; `TooltipView.DrawsItsOwnArt(EntityDocument)` and the
   `.crest` figure from Task 3.
-- Produces: `public string? Node { get; init; }` on `TooltipQuery`, read from the `node` query
-  parameter; `public string? NodeFrame(EntityDocument, TooltipQuery)`,
+- Produces: `public string? State { get; init; }` on `TooltipQuery`, read from the `state` query
+  parameter; `public string? StateFrame(EntityDocument, TooltipQuery)`,
   `public string? StateArt(EntityDocument, TooltipQuery)` and
   `public bool Locked(EntityDocument, TooltipQuery)` on `TooltipView`.
 
-A hero trait's art sits in the hexagonal node the tree draws it in and a blessing's rune sits on the
+A hero trait's art sits in the hexagonal node the tree draws it in and a blessing's art sits on the
 stone plate the hero page draws it on, and in both cases the tooltip is showing the row the reader is
 looking at, so each wears its family's first state unless the reader asks otherwise: a hero trait
 `selected` and a blessing `allocated`. One parameter serves both, because a row belongs to one family
 and so can only be asked for a state that family names; a word the row's family does not name leaves
 it at that family's first state rather than erroring, which is how `rarity` already behaves.
 
-A blessing's state moves its rune as well as its plate, so `StateArt` answers the allocated rune when
+A blessing's state moves its art as well as its plate, so `StateArt` answers the allocated art when
 a blessing is allocated and null everywhere else, and null means the tooltip draws the art the
 document itself names. A hero trait's art never moves, so `StateArt` is null for it and only its
 frame changes. The padlock is drawn over an unavailable hero trait exactly as the tree draws it, and
 over nothing else.
 
-- [ ] **Step 1: Write the failing node test**
+- [ ] **Step 1: Write the failing state test**
 
-`src/FellowshipExtractor.Api.Tests/NodeStateTests.cs`.
+`src/FellowshipExtractor.Api.Tests/StateTests.cs`.
 
 ```csharp
 using Microsoft.AspNetCore.Http;
@@ -858,11 +878,11 @@ using Microsoft.AspNetCore.Http;
 namespace FellowshipExtractor.Api.Tests;
 
 [Collection(Corpus.Name)]
-public class NodeStateTests : BunitContext
+public class StateTests : BunitContext
 {
     private readonly Export export;
 
-    public NodeStateTests(Export export)
+    public StateTests(Export export)
     {
         this.export = export;
         Services.AddSingleton(export.Tooltip);
@@ -873,7 +893,7 @@ public class NodeStateTests : BunitContext
     private BlessingDocument Blessing =>
         export.Store.Entities.OfType<BlessingDocument>().First(b => b.Icon is not null);
 
-    private static TooltipQuery Asked(string? node) => new() { Node = node };
+    private static TooltipQuery Asked(string? state) => new() { State = state };
 
     private IRenderedComponent<Tooltip> Draw(EntityDocument document, TooltipQuery query) =>
         Render<Tooltip>(p => p.Add(x => x.Entity, document).Add(x => x.Query, query));
@@ -881,15 +901,15 @@ public class NodeStateTests : BunitContext
     [Fact]
     public void A_hero_trait_nothing_asks_about_wears_the_selected_node()
     {
-        Assert.Equal(export.Chrome.TraitNode("selected"), export.Tooltip.NodeFrame(Trait, Asked(null)));
+        Assert.Equal(export.Chrome.TraitNode("selected"), export.Tooltip.StateFrame(Trait, Asked(null)));
     }
 
     [Fact]
     public void A_reader_can_ask_for_the_state_the_tree_would_draw()
     {
-        Assert.Equal(export.Chrome.TraitNode("available"), export.Tooltip.NodeFrame(Trait, Asked("available")));
+        Assert.Equal(export.Chrome.TraitNode("available"), export.Tooltip.StateFrame(Trait, Asked("available")));
         Assert.Equal(
-            export.Chrome.TraitNode("unavailable"), export.Tooltip.NodeFrame(Trait, Asked("unavailable")));
+            export.Chrome.TraitNode("unavailable"), export.Tooltip.StateFrame(Trait, Asked("unavailable")));
     }
 
     [Fact]
@@ -903,11 +923,11 @@ public class NodeStateTests : BunitContext
     [Fact]
     public void A_blessing_wears_its_own_plate_and_is_allocated_unless_asked()
     {
-        Assert.Equal(export.Chrome.BlessingPlate("allocated"), export.Tooltip.NodeFrame(Blessing, Asked(null)));
+        Assert.Equal(export.Chrome.BlessingPlate("allocated"), export.Tooltip.StateFrame(Blessing, Asked(null)));
 
         Assert.Equal(
             export.Chrome.BlessingPlate("unallocated"),
-            export.Tooltip.NodeFrame(Blessing, Asked("unallocated")));
+            export.Tooltip.StateFrame(Blessing, Asked("unallocated")));
 
         Assert.False(export.Tooltip.Locked(Blessing, Asked("unallocated")));
     }
@@ -915,16 +935,16 @@ public class NodeStateTests : BunitContext
     [Fact]
     public void A_word_the_rows_family_does_not_name_leaves_it_at_the_state_it_had()
     {
-        Assert.Equal(export.Chrome.BlessingPlate("allocated"), export.Tooltip.NodeFrame(Blessing, Asked("available")));
-        Assert.Equal(export.Chrome.TraitNode("selected"), export.Tooltip.NodeFrame(Trait, Asked("allocated")));
+        Assert.Equal(export.Chrome.BlessingPlate("allocated"), export.Tooltip.StateFrame(Blessing, Asked("available")));
+        Assert.Equal(export.Chrome.TraitNode("selected"), export.Tooltip.StateFrame(Trait, Asked("allocated")));
     }
 
     [Fact]
-    public void An_allocated_blessing_shows_the_allocated_rune_and_a_hero_traits_art_never_moves()
+    public void An_allocated_blessing_shows_the_allocated_art_and_a_hero_traits_art_never_moves()
     {
-        Assert.Equal(export.Chrome.AllocatedRune(Blessing.Icon), export.Tooltip.StateArt(Blessing, Asked(null)));
+        Assert.Equal(export.Chrome.BlessingArt(Blessing.Icon, null), export.Tooltip.StateArt(Blessing, Asked(null)));
         Assert.Equal(
-            export.Chrome.AllocatedRune(Blessing.Icon),
+            export.Chrome.BlessingArt(Blessing.Icon, null),
             export.Tooltip.StateArt(Blessing, Asked("allocated")));
 
         Assert.Null(export.Tooltip.StateArt(Blessing, Asked("unallocated")));
@@ -958,13 +978,13 @@ public class NodeStateTests : BunitContext
         var query = TooltipQuery.Parse(
             new QueryCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
             {
-                ["node"] = "available",
+                ["state"] = "available",
             }),
             export.Store.Stats,
             out var error);
 
         Assert.Null(error);
-        Assert.Equal("available", query.Node);
+        Assert.Equal("available", query.State);
     }
 }
 ```
@@ -972,24 +992,24 @@ public class NodeStateTests : BunitContext
 - [ ] **Step 2: Run it and watch it fail**
 
 ```bash
-dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj --filter "FullyQualifiedName~NodeStateTests"
+dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj --filter "FullyQualifiedName~StateTests"
 ```
 
-Expected: the build fails on `TooltipQuery.Node`, `TooltipView.NodeFrame` and `TooltipView.Locked`.
+Expected: the build fails on `TooltipQuery.State`, `TooltipView.StateFrame` and `TooltipView.Locked`.
 
-- [ ] **Step 3: Read the node off the query**
+- [ ] **Step 3: Read the state off the query**
 
 In `src/FellowshipExtractor.Api/Models/TooltipQuery.cs`, add the property beside `Rarity`:
 
 ```csharp
-    public string? Node { get; init; }
+    public string? State { get; init; }
 ```
 
 add its row to `Parameters`, after the `rarity` row, so the OpenAPI document describes it:
 
 ```csharp
-        new("node", ApiValue.Text,
-            "The state the trait tree draws this node at: selected, available or unavailable."),
+        new("state", ApiValue.Text,
+            "The state to draw the row at: a hero trait selected, available or unavailable; a blessing allocated or unallocated."),
 ```
 
 and read it where `Parse` reads the other named values. `Parse` ends by returning `result with { ... }`
@@ -998,57 +1018,50 @@ line 223 and passing the string ones through `Given`. Add one line to that initi
 `Rarity`:
 
 ```csharp
-            Node = Given(text("node")),
+            State = Given(text("state")),
 ```
 
-Nothing else in `Parse` changes. Adding `node` to `Parameters` in the previous edit puts it in
+Nothing else in `Parse` changes. Adding `state` to `Parameters` in the previous edit puts it in
 `Reserved`, so the loop over unreserved keys no longer tries to resolve it as a stat name, which is
-what would otherwise make `node=available` an unknown-stat error.
+what would otherwise make `state=available` an unknown-stat error.
 
-- [ ] **Step 4: Answer the node and the padlock**
+- [ ] **Step 4: Answer the frame and the padlock**
 
 In `src/FellowshipExtractor.Api/Models/TooltipView.cs`, beside `DrawsItsOwnArt`:
 
 ```csharp
-    public string? NodeFrame(EntityDocument document, TooltipQuery query) => document switch
+    public string? StateFrame(EntityDocument document, TooltipQuery query) => document switch
     {
-        TraitDocument => chrome.TraitNode(query.Node),
-        BlessingDocument => chrome.BlessingPlate(query.Node),
+        TraitDocument => chrome.TraitNode(query.State),
+        BlessingDocument => chrome.BlessingPlate(query.State),
         _ => null,
     };
 
     public string? StateArt(EntityDocument document, TooltipQuery query) =>
-        document is BlessingDocument blessing && Allocated(query)
-            ? chrome.AllocatedRune(blessing.Icon)
-            : null;
+        document is BlessingDocument blessing ? chrome.BlessingArt(blessing.Icon, query.State) : null;
 
     public bool Locked(EntityDocument document, TooltipQuery query) =>
         document is TraitDocument &&
-        string.Equals(query.Node, Unavailable, StringComparison.OrdinalIgnoreCase);
-
-    private static bool Allocated(TooltipQuery query) =>
-        !string.Equals(query.Node, Unallocated, StringComparison.OrdinalIgnoreCase);
+        string.Equals(query.State, Unavailable, StringComparison.OrdinalIgnoreCase);
 
     private const string Unavailable = "unavailable";
-
-    private const string Unallocated = "unallocated";
 
     public string LockGlyph => chrome.LockGlyph;
 ```
 
-`Allocated` asks whether the reader turned the blessing off rather than whether they turned it on,
-because allocated is what a blessing wears when nothing is asked and when a word its family does not
-name is asked, which is the same rule `ChromeAssets.BlessingPlate` follows for the plate.
+`StateArt` hands the state straight to `ChromeAssets`, which already settles what a word its family
+does not name means, so the rule that allocated is a blessing's default lives in one place and the
+plate and the art can never disagree about it.
 
-- [ ] **Step 5: Draw the node behind the art**
+- [ ] **Step 5: Draw the frame behind the art**
 
 `src/FellowshipExtractor.Api/Components/Tooltip/Tooltip.razor`. Replace the crest block Task 3 added
-with one that carries its node as a background and its padlock as a child:
+with one that carries its frame as a background and its padlock as a child:
 
 ```razor
         @if (Art is { } crest && TooltipView.DrawsItsOwnArt(Entity))
         {
-            <figure class="crest" style="@(Ui.NodeFrame(Entity, Query) is { } node ? $"--fx-node:url({node})" : null)">
+            <figure class="crest" style="@(Ui.StateFrame(Entity, Query) is { } frame ? $"--fx-crest:url({frame})" : null)">
                 <img alt="" src="@(Ui.StateArt(Entity, Query) ?? crest)">
                 @if (Ui.Locked(Entity, Query))
                 {
@@ -1081,7 +1094,7 @@ the way the tree draws it:
       top: 12px;
       width: $node-size;
       height: $node-size;
-      background: var(--fx-node, none) 0 0/100% 100% no-repeat;
+      background: var(--fx-crest, none) 0 0/100% 100% no-repeat;
       pointer-events: none;
     }
 
@@ -1123,23 +1136,23 @@ Start Azurite and the app as Task 3 Step 7 does, then open a hero trait at each 
 frame changes and only the last is padlocked:
 
 - `/entity/trait/1`
-- `/entity/trait/1?node=available`
-- `/entity/trait/1?node=unavailable`
+- `/entity/trait/1?state=available`
+- `/entity/trait/1?state=unavailable`
 
-Then open the blessing at both of its states and confirm the plate and the rune move together, gold
+Then open the blessing at both of its states and confirm the plate and the art move together, gold
 at the first and slate at the second:
 
 - `/entity/blessing/706`
-- `/entity/blessing/706?node=unallocated`
+- `/entity/blessing/706?state=unallocated`
 
-Confirm `/api/tooltip/trait/1?node=unavailable` answers the padlocked fragment. Stop the app and the
+Confirm `/api/tooltip/trait/1?state=unavailable` answers the padlocked fragment. Stop the app and the
 container, and record what you saw. Blessing 706 is *The Mystic*, which is the row the shipped
 screenshot this plan is measured against shows.
 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add src/FellowshipExtractor.Api/Models/TooltipQuery.cs src/FellowshipExtractor.Api/Models/TooltipView.cs src/FellowshipExtractor.Api/Components/Tooltip/Tooltip.razor src/FellowshipExtractor.Api/Components/Tooltip/_Tooltip.razor.scss src/FellowshipExtractor.Api.Tests/NodeStateTests.cs
+git add src/FellowshipExtractor.Api/Models/TooltipQuery.cs src/FellowshipExtractor.Api/Models/TooltipView.cs src/FellowshipExtractor.Api/Components/Tooltip/Tooltip.razor src/FellowshipExtractor.Api/Components/Tooltip/_Tooltip.razor.scss src/FellowshipExtractor.Api.Tests/StateTests.cs
 git commit -m "Wear the node the trait tree would draw, selected unless asked"
 ```
 
