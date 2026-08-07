@@ -164,6 +164,7 @@ public sealed record Variant(string Hero)
     public string? HeroName { get; init; }
     public string? DisplayName { get; set; }
     public Entity? Grants { get; set; }
+    public int? GrantsId { get; set; }
 }
 
 public sealed record Placeholder

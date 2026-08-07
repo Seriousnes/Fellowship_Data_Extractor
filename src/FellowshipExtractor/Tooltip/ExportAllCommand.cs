@@ -96,7 +96,8 @@ public static class ExportAllCommand
         var folder = Path.Combine(options.ResolvedOutputDir, FolderName);
         Directory.CreateDirectory(folder);
 
-        var icons = TooltipCommand.IconWriterInto(provider, folder, reportFailures: false);
+        var icons = TooltipCommand.IconWriterInto(
+            provider, folder, reportFailures: false, resolver.Collections.Renders);
 
         int written = 0, withIcon = 0, withText = 0, scanned = 0;
 

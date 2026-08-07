@@ -54,7 +54,7 @@ public static class TooltipCommand
 
         var iconDir = Path.Combine(options.ResolvedOutputDir, "textures", "tooltip");
 
-        var records = resolver.Resolve(tag.Value, IconWriterInto(provider, iconDir, reportFailures: true));
+        var records = resolver.Resolve(tag.Value, IconWriterInto(provider, iconDir, reportFailures: true, resolver.Collections.Renders));
 
         var target = Path.Combine(options.ResolvedOutputDir, $"tooltip-{tag.Value.Table}-{tag.Value.NetId}.json");
         await File.WriteAllTextAsync(target, JsonSerializer.Serialize(records, JsonOptions));
@@ -76,7 +76,8 @@ public static class TooltipCommand
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public static IconWriter IconWriterInto(AbstractFileProvider provider, string directory, bool reportFailures)
+    public static IconWriter IconWriterInto(
+        AbstractFileProvider provider, string directory, bool reportFailures, IReadOnlySet<string> renders)
     {
         var written = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         Directory.CreateDirectory(directory);
@@ -93,7 +94,8 @@ public static class TooltipCommand
             }
 
             var export = TextureExporter.Export(
-                texture, Path.Combine(directory, texture.Name), ETextureFormat.Png);
+                texture, Path.Combine(directory, texture.Name), ETextureFormat.Png,
+                discardAlpha: renders.Contains(iconPath));
 
             if (!export.Written)
             {

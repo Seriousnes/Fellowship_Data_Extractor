@@ -1,4 +1,5 @@
 using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 
@@ -6,6 +7,7 @@ namespace FellowshipExtractor.Tooltip;
 
 public sealed class VisualCollections
 {
+    private const string CollectionClass = "CRVisualCollection";
     private const string SkinsField = "Skins";
     private const string SkinMeshesField = "SkinMeshes";
     private const string IconFieldPrefix = "Icon";
@@ -13,8 +15,32 @@ public sealed class VisualCollections
     private readonly AbstractFileProvider _provider;
     private readonly Dictionary<string, UScriptArray?> _skins = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string?> _icons = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _renders = new(StringComparer.OrdinalIgnoreCase);
 
-    public VisualCollections(AbstractFileProvider provider) => _provider = provider;
+    public IReadOnlySet<string> Renders => _renders;
+
+    public VisualCollections(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+    {
+        _provider = provider;
+
+        foreach (var asset in assets)
+        {
+            if (!asset.AssetClass.Text.Equals(CollectionClass, StringComparison.OrdinalIgnoreCase)) continue;
+            if (Skins(asset.ObjectPath) is not { } skins) continue;
+
+            foreach (var skin in skins.Properties)
+            {
+                if (skin?.GenericValue is not FScriptStruct { StructType: IPropertyHolder holder }) continue;
+                if (PropertyWalk.GetStruct(holder, SkinMeshesField) is not { } meshes) continue;
+
+                foreach (var property in PropertyWalk.Walk(meshes))
+                {
+                    if (!property.Name.StartsWith(IconFieldPrefix, StringComparison.Ordinal)) continue;
+                    if (PropertyWalk.AsString(property.Value) is { Length: > 0 } path) _renders.Add(path);
+                }
+            }
+        }
+    }
 
     public int RungCount(string collectionPath) => Skins(collectionPath)?.Properties.Count ?? 0;
 

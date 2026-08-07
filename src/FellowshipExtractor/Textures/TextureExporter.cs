@@ -1,6 +1,8 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse_Conversion.Textures;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace FellowshipExtractor.Textures;
 
@@ -20,7 +22,8 @@ public static class TextureExporter
         _ => throw new ArgumentException($"Unknown image format '{value}'. Use png, jpeg, tga or dds."),
     };
 
-    public static TextureExport Export(UTexture texture, string targetWithoutExtension, ETextureFormat format)
+    public static TextureExport Export(
+        UTexture texture, string targetWithoutExtension, ETextureFormat format, bool discardAlpha = false)
     {
         var pixelFormat = texture.Format.ToString();
 
@@ -38,6 +41,8 @@ public static class TextureExporter
                 return new TextureExport(null, decoded.Width, decoded.Height, pixelFormat, "encoder produced no bytes");
             }
 
+            if (discardAlpha) bytes = Opaque(bytes);
+
             var target = $"{targetWithoutExtension}.{extension}";
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             File.WriteAllBytes(target, bytes);
@@ -48,6 +53,25 @@ public static class TextureExporter
         {
             return new TextureExport(null, 0, 0, pixelFormat, $"{ex.GetType().Name}: {ex.Message}");
         }
+    }
+
+    private static byte[] Opaque(byte[] encoded)
+    {
+        using var image = Image.Load<Rgba32>(encoded);
+
+        image.ProcessPixelRows(rows =>
+        {
+            for (var y = 0; y < rows.Height; y++)
+            {
+                var row = rows.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++) row[x].A = byte.MaxValue;
+            }
+        });
+
+        using var stream = new MemoryStream(encoded.Length);
+        image.Save(stream, image.Metadata.DecodedImageFormat!);
+
+        return stream.ToArray();
     }
 
     public static UTexture2D? Load(AbstractFileProvider provider, string objectPath)

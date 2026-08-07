@@ -41,6 +41,7 @@ public static class ItemVariants
                 Codename = codename,
                 Stats = stats,
                 Grants = variant?.Grants ?? item.Grants,
+                GrantsId = variant?.GrantsId ?? item.GrantsId,
                 Art = art(codename),
             });
         }
@@ -62,6 +63,7 @@ public static class ItemVariants
                     SetBonus = setBonuses.ForHeroes(setBonusMappingKey, [card.Codename]),
                     Stats = card.Stats,
                     Grants = card.Grants,
+                    GrantsId = card.GrantsId,
                     Icon = Best(card.Art) ?? item.Icon,
                     IconByRarity = Spread(card.Art),
                     Variants = null,
@@ -111,6 +113,7 @@ public static class ItemVariants
         public required string Codename { get; init; }
         public IReadOnlyList<StatSlot>? Stats { get; init; }
         public Entity? Grants { get; init; }
+        public int? GrantsId { get; init; }
         public required IReadOnlyList<RarityImage> Art { get; init; }
     }
 }

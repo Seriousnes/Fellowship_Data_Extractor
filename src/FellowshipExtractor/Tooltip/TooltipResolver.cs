@@ -53,6 +53,7 @@ public sealed class TooltipResolver
     public DropItemLevels Drops { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
+    public VisualCollections Collections { get; }
     public DynamicItemVisuals DynamicVisuals { get; }
     public GrantedCharges Charges { get; }
     public ItemSetBonuses SetBonuses { get; }
@@ -117,11 +118,11 @@ public sealed class TooltipResolver
 
         StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor);
 
-        var collections = new VisualCollections(provider);
-        HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, collections, rarities);
+        Collections = new VisualCollections(provider, _assets);
+        HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, Collections, rarities);
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
 
-        DynamicVisuals = new DynamicItemVisuals(provider, _assets, collections, rarities);
+        DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities);
 
         Charges = new GrantedCharges(provider, _assets, Presentation);
 
@@ -836,6 +837,7 @@ public sealed class TooltipResolver
             }
 
             variant.Grants = LoadAugmentation(assetPath, icons);
+            variant.GrantsId = _augmentationIds.For(assetPath);
         }
 
         variants.Sort((a, b) => string.Compare(a.HeroName ?? a.Hero, b.HeroName ?? b.Hero, StringComparison.OrdinalIgnoreCase));

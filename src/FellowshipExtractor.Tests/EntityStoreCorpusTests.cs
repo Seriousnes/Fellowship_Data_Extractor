@@ -1,5 +1,7 @@
 using System.Reflection;
 
+using Fellowship.SDK.Documents;
+
 using FellowshipExtractor.Api;
 using FellowshipExtractor.Api.Models;
 
@@ -35,4 +37,24 @@ public sealed class EntityStoreCorpusTests
 
     [Fact]
     public void TheStoreHolds12437Entities() => Assert.Equal(12437, Store.Count);
+
+    [Theory]
+    [InlineData(EntityType.WeaponPower)]
+    [InlineData(EntityType.RelicPower)]
+    public void EveryPowerAnItemCarriesIsReachedByAnItemsGrantsId(EntityType type)
+    {
+        var granted = Store.Entities
+            .OfType<ItemDocument>()
+            .Select(item => item.GrantsId)
+            .OfType<int>()
+            .ToHashSet();
+
+        var orphans = Store.Entities
+            .Where(document => EntityTypes.TypeOf(document) == type)
+            .Where(document => !granted.Contains(document.Id))
+            .Select(document => $"{document.Id} {document.Name}")
+            .ToArray();
+
+        Assert.Empty(orphans);
+    }
 }
