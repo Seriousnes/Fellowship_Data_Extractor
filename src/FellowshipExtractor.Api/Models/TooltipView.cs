@@ -77,6 +77,13 @@ public sealed class TooltipView(
         _ => null,
     };
 
+    public static string? StateFamily(EntityDocument document) => document switch
+    {
+        TraitDocument => "node",
+        BlessingDocument => "plate",
+        _ => null,
+    };
+
     public string? StateArt(EntityDocument document, TooltipQuery query) =>
         document is BlessingDocument blessing ? chrome.BlessingArt(blessing.Icon, query.State) : null;
 

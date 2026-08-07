@@ -17,7 +17,7 @@
         </header>
         @if (Art is { } crest && TooltipView.DrawsItsOwnArt(Entity))
         {
-            <figure class="crest" style="@(Ui.StateFrame(Entity, Query) is { } frame ? $"--fx-crest:url({frame})" : null)">
+            <figure class="crest @TooltipView.StateFamily(Entity)" style="@(Ui.StateFrame(Entity, Query) is { } frame ? $"--fx-crest:url({frame})" : null)">
                 <img alt="" src="@(Ui.StateArt(Entity, Query) ?? crest)">
                 @if (Ui.Locked(Entity, Query))
                 {

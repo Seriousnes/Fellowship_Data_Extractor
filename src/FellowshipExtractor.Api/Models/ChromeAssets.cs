@@ -3,6 +3,7 @@ using Azure.Storage.Blobs;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace FellowshipExtractor.Api.Models;
 
@@ -43,6 +44,11 @@ public sealed class ChromeAssets(
     private const string Unallocated = "Unallocated";
     private const string LockTexture = "T_Icons_Locked";
     private const string DividerTexture = "T_GoldDivider";
+
+    private const int DividerCanvasHeight = 56;
+    private const int DividerBandFirstRow = 24;
+    private const int DividerBandLastRow = 27;
+    private const int DividerBandRows = DividerBandLastRow - DividerBandFirstRow + 1;
 
     private static readonly string[] Badges = [AbilityTexture, LegendaryTexture, SetBonusTexture];
 
@@ -136,7 +142,13 @@ public sealed class ChromeAssets(
 
         foreach (var file in Directory.GetFiles(paths.Ui, "*.png").Order(StringComparer.Ordinal))
         {
-            payloads.Add((Name(Path.GetFileNameWithoutExtension(file)), File.ReadAllBytes(file)));
+            var texture = Path.GetFileNameWithoutExtension(file);
+
+            payloads.Add((
+                Name(texture),
+                string.Equals(texture, DividerTexture, StringComparison.Ordinal)
+                    ? Band(file)
+                    : File.ReadAllBytes(file)));
         }
 
         foreach (var texture in RarityTinted)
@@ -158,6 +170,26 @@ public sealed class ChromeAssets(
         $"{Prefix}/{texture}-{rarity.ToLowerInvariant()}.png";
 
     private string Url(string blob) => $"{container.Uri}/{blob}";
+
+    private static byte[] Band(string file)
+    {
+        using var canvas = Image.Load<Rgba32>(file);
+
+        if (canvas.Height != DividerCanvasHeight)
+        {
+            throw new InvalidOperationException(
+                $"{DividerTexture}.png is {canvas.Width}x{canvas.Height}, not {DividerCanvasHeight} rows tall, " +
+                $"so rows {DividerBandFirstRow} to {DividerBandLastRow} are no longer the gold band the " +
+                "header rule is drawn from.");
+        }
+
+        using var band = canvas.Clone(painting =>
+            painting.Crop(new Rectangle(0, DividerBandFirstRow, canvas.Width, DividerBandRows)));
+
+        using var png = new MemoryStream();
+        band.Save(png, Encoder);
+        return png.ToArray();
+    }
 
     private static byte[] Tint(Image<Rgba32> mask, Rgba32 colour)
     {

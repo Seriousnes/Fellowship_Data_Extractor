@@ -100,6 +100,39 @@ public class StateTests : BunitContext
     }
 
     [Fact]
+    public void The_crest_names_the_family_whose_frame_it_draws()
+    {
+        Assert.NotNull(Draw(Trait, Asked(null)).Find(".crest.node"));
+        Assert.NotNull(Draw(Trait, Asked("unavailable")).Find(".crest.node"));
+        Assert.NotNull(Draw(Blessing, Asked(null)).Find(".crest.plate"));
+        Assert.NotNull(Draw(Blessing, Asked("unallocated")).Find(".crest.plate"));
+
+        Assert.Empty(Draw(Trait, Asked(null)).FindAll(".crest.plate"));
+        Assert.Empty(Draw(Blessing, Asked(null)).FindAll(".crest.node"));
+    }
+
+    [Fact]
+    public void The_crest_draws_the_allocated_art_and_falls_back_to_the_rows_own_icon()
+    {
+        var allocated = Draw(Blessing, Asked(null)).Find(".crest img").GetAttribute("src");
+        var unallocated = Draw(Blessing, Asked("unallocated")).Find(".crest img").GetAttribute("src");
+
+        Assert.Equal(export.Chrome.BlessingArt(Blessing.Icon, null), allocated);
+        Assert.Equal(export.Tooltip.Art(Blessing, null), unallocated);
+        Assert.NotEqual(allocated, unallocated);
+
+        Assert.EndsWith(
+            Blessing.Icon!.Replace("Unallocated", "Allocated", StringComparison.Ordinal),
+            allocated!,
+            StringComparison.Ordinal);
+
+        Assert.EndsWith(Blessing.Icon!, unallocated!, StringComparison.Ordinal);
+
+        Assert.Equal(
+            export.Tooltip.Art(Trait, null), Draw(Trait, Asked(null)).Find(".crest img").GetAttribute("src"));
+    }
+
+    [Fact]
     public void The_node_a_query_string_names_reaches_the_query()
     {
         var query = TooltipQuery.Parse(

@@ -15,10 +15,21 @@ $thin-window-side-slice: $thin-window-brush-width * $window-brush-margin;
 $thin-window-top-slice: $thin-window-brush-height * $window-brush-margin;
 $thin-window-side-corner: $thin-window-side-slice * $window-brush-scale * 1px;
 $thin-window-top-corner: $thin-window-top-slice * $window-brush-scale * 1px;
-$divider-height: 3px;
-$node-size: 72px;
-$node-art-size: 56px;
+$divider-band-first-row: 24;
+$divider-band-last-row: 27;
+$divider-band-rows: $divider-band-last-row - $divider-band-first-row + 1;
+$divider-height: $divider-band-rows * 1px;
+$state-frame-width: 72px;
+$state-art-size: 56px;
+$crest-top-gap: 12px;
+$crest-bottom-gap: 4px;
+$node-brush-width: 208;
+$node-brush-height: 240;
+$node-frame-height: $state-frame-width * math.div($node-brush-height, $node-brush-width);
 $node-lock-size: 16px;
+$plate-brush-width: 148;
+$plate-brush-height: 188;
+$plate-frame-height: $state-frame-width * math.div($plate-brush-height, $plate-brush-width);
 
 .fx-tip {
   display: flex;
@@ -160,22 +171,34 @@ $node-lock-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 0 4px;
+    padding: $crest-top-gap 0 $crest-bottom-gap;
 
     &::before {
       content: "";
       position: absolute;
-      top: 12px;
-      width: $node-size;
-      height: $node-size;
+      top: $crest-top-gap;
+      width: $state-frame-width;
       background: var(--fx-crest, none) 0 0/100% 100% no-repeat;
       pointer-events: none;
     }
 
+    &.node {
+      min-height: $crest-top-gap + $node-frame-height + $crest-bottom-gap;
+
+      &::before { height: $node-frame-height; }
+    }
+
+    &.plate {
+      min-height: $crest-top-gap + $plate-frame-height + $crest-bottom-gap;
+
+      &::before { height: $plate-frame-height; }
+    }
+
     img {
+      position: relative;
       display: block;
-      width: $node-art-size;
-      height: $node-art-size;
+      width: $state-art-size;
+      height: $state-art-size;
       object-fit: contain;
     }
 
