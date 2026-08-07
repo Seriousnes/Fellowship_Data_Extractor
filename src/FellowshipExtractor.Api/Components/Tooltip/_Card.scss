@@ -1,0 +1,104 @@
+$card-width: 274px;
+$window-corner: 7;
+$rounded-window-slice: 32;
+$rounded-window-corner: 16px;
+$window-brush-margin: .125;
+$window-brush-scale: .5;
+$thin-window-brush-width: 128;
+$thin-window-brush-height: 32;
+$thin-window-side-slice: $thin-window-brush-width * $window-brush-margin;
+$thin-window-top-slice: $thin-window-brush-height * $window-brush-margin;
+$thin-window-side-corner: $thin-window-side-slice * $window-brush-scale * 1px;
+$thin-window-top-corner: $thin-window-top-slice * $window-brush-scale * 1px;
+$header-rule-height: 1px;
+$header-rule-inset: 14px;
+
+$display: ArnoPro, "Arno Pro", "Iowan Old Style", "Palatino Linotype", Palatino,
+          "Book Antiqua", "Times New Roman", serif;
+
+.fx-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 100%;
+  text-align: left;
+  color: var(--core-text-primary);
+  font: 400 12px/1.42 "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-transform: none;
+  text-indent: 0;
+  white-space: normal;
+  text-shadow: none;
+
+  & * {
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  .card {
+    position: relative;
+    z-index: 0;
+    flex: 0 1 $card-width;
+    width: $card-width;
+    min-width: 0;
+    background: var(--core-secondary-900);
+
+    &::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      pointer-events: none;
+      border: $window-corner * 1px solid transparent;
+      border-image: var(--fx-window) $window-corner stretch;
+    }
+  }
+
+  .title {
+    margin: 0 18px;
+    font-family: $display;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.22;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    text-align: center;
+    text-wrap: balance;
+    color: var(--fx-title);
+  }
+
+  &.plain {
+    .card {
+      background: var(--fx-fill) 0 0/100% 100% no-repeat, var(--core-secondary-900);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: none;
+      border-style: solid;
+      border-color: transparent;
+      border-width: $thin-window-top-corner $thin-window-side-corner;
+      border-image: var(--fx-thin) $thin-window-top-slice $thin-window-side-slice stretch;
+    }
+
+    .card::after {
+      border-width: $rounded-window-corner;
+      border-image: var(--fx-window) $rounded-window-slice stretch;
+    }
+
+    .head {
+      margin: 0 $header-rule-inset;
+      border-bottom: 0;
+      background: var(--fx-divider) bottom center/100% $header-rule-height no-repeat;
+    }
+  }
+
+  .rt-unstyled { color: inherit; }
+}

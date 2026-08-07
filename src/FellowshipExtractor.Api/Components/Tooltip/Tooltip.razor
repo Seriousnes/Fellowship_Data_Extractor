@@ -1,80 +1,87 @@
 @inject TooltipView Ui
 
-<div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
-    <style>@Sheet</style>
-    @if (Art is { } art && !TooltipView.DrawsItsOwnArt(Entity))
-    {
-        <figure class="slot"><img class="art" alt="" src="@art"></figure>
-    }
-    <div class="card">
-        <header class="head">
-            @if (Ui.Ornament(Rung) is { } ornament)
+@if (Entity is BlessingDocument blessing)
+{
+    <Blessing Entity="blessing" Query="Query" Hero="Hero" />
+}
+else
+{
+    <div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
+        <style>@Sheet</style>
+        @if (Art is { } art && !TooltipView.DrawsItsOwnArt(Entity))
+        {
+            <figure class="slot"><img class="art" alt="" src="@art"></figure>
+        }
+        <div class="card">
+            <header class="head">
+                @if (Ui.Ornament(Rung) is { } ornament)
+                {
+                    <img class="orn" alt="" src="@ornament">
+                }
+
+                <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+            </header>
+            @if (Art is { } crest && TooltipView.DrawsItsOwnArt(Entity))
             {
-                <img class="orn" alt="" src="@ornament">
-            }
-
-            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
-        </header>
-        @if (Art is { } crest && TooltipView.DrawsItsOwnArt(Entity))
-        {
-            <figure class="crest @TooltipView.StateFamily(Entity)" style="@(Ui.StateFrame(Entity, Query) is { } frame ? $"--fx-crest:url({frame})" : null)">
-                <img alt="" src="@(Ui.StateArt(Entity, Query) ?? crest)">
-                @if (Ui.Locked(Entity, Query))
-                {
-                    <img class="lock" alt="" src="@Ui.LockGlyph">
-                }
-            </figure>
-        }
-        @if (shown.Count > 0)
-        {
-            <div class="lines">
-                @foreach (var block in shown)
-                {
-                    @if (block != shown[0]) { <hr class="rule"> }
-
-                    switch (block)
+                <figure class="crest node" style="@(Ui.StateFrame(Entity, Query) is { } frame ? $"--fx-crest:url({frame})" : null)">
+                    <img alt="" src="@crest">
+                    @if (Ui.Locked(Entity, Query))
                     {
-                        case TooltipView.Block.Identity:
-                            <TipIdentity Entity="Entity" Query="Query" Rung="Rung" Level="Level" Temper="@Temper" />
-                            break;
-
-                        case TooltipView.Block.Facts:
-                            <TipFacts Items="facts" />
-                            break;
-
-                        case TooltipView.Block.Rolls:
-                            <TipRolls Potential="@Ui.Potential(Query)" Lines="rolls" />
-                            break;
-
-                        case TooltipView.Block.Traits:
-                            <TipTraits Lines="traits" Allocated="Query.AllocatedTraits" Total="Query.MaxTraits" />
-                            break;
-
-                        case TooltipView.Block.Prose:
-                            <TipProse Entity="Entity" Query="Query" Hero="Hero" />
-                            break;
-
-                        case TooltipView.Block.Overflow:
-                            <TipOverflow Entity="Entity" Query="Query" Hero="Hero" />
-                            break;
-
-                        case TooltipView.Block.Granted:
-                            <TipGranted Entity="Entity" Query="Query" Hero="Hero" Named="@Named" />
-                            break;
-
-                        case TooltipView.Block.Legendaries:
-                            <TipLegendaries Entity="Entity" Query="Query" Hero="Hero" />
-                            break;
-
-                        case TooltipView.Block.Sets:
-                            <TipSets Entity="Entity" />
-                            break;
+                        <img class="lock" alt="" src="@Ui.LockGlyph">
                     }
-                }
-            </div>
-        }
+                </figure>
+            }
+            @if (shown.Count > 0)
+            {
+                <div class="lines">
+                    @foreach (var block in shown)
+                    {
+                        @if (block != shown[0]) { <hr class="rule"> }
+
+                        switch (block)
+                        {
+                            case TooltipView.Block.Identity:
+                                <TipIdentity Entity="Entity" Query="Query" Rung="Rung" Level="Level" Temper="@Temper" />
+                                break;
+
+                            case TooltipView.Block.Facts:
+                                <TipFacts Items="facts" />
+                                break;
+
+                            case TooltipView.Block.Rolls:
+                                <TipRolls Potential="@Ui.Potential(Query)" Lines="rolls" />
+                                break;
+
+                            case TooltipView.Block.Traits:
+                                <TipTraits Lines="traits" Allocated="Query.AllocatedTraits" Total="Query.MaxTraits" />
+                                break;
+
+                            case TooltipView.Block.Prose:
+                                <TipProse Entity="Entity" Query="Query" Hero="Hero" />
+                                break;
+
+                            case TooltipView.Block.Overflow:
+                                <TipOverflow Entity="Entity" Query="Query" Hero="Hero" />
+                                break;
+
+                            case TooltipView.Block.Granted:
+                                <TipGranted Entity="Entity" Query="Query" Hero="Hero" Named="@Named" />
+                                break;
+
+                            case TooltipView.Block.Legendaries:
+                                <TipLegendaries Entity="Entity" Query="Query" Hero="Hero" />
+                                break;
+
+                            case TooltipView.Block.Sets:
+                                <TipSets Entity="Entity" />
+                                break;
+                        }
+                    }
+                </div>
+            }
+        </div>
     </div>
-</div>
+}
 
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
@@ -105,6 +112,8 @@
 
     protected override void OnParametersSet()
     {
+        if (Entity is BlessingDocument) return;
+
         Rung = Ui.Rarity(Entity, Query);
         Art = Ui.Art(Entity, Rung);
         Level = Ui.Level(Entity, Query);

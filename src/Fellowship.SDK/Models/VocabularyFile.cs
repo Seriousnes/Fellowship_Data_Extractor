@@ -51,5 +51,7 @@ public sealed record VocabularyFile
 
     public IReadOnlyList<DropPlateau> DropItemLevels { get; init; } = [];
 
+    public BlessingEntry Blessings { get; init; } = new(string.Empty, string.Empty, string.Empty, 0);
+
     public StatCalculationFile StatCalculation { get; init; } = new();
 }

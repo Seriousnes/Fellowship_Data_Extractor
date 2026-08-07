@@ -9,6 +9,7 @@ public class TooltipTests : BunitContext
     {
         Store = export.Store;
         Services.AddSingleton(export.Tooltip);
+        Services.AddSingleton(export.View);
     }
 
     private IRenderedComponent<Components.Tooltip.Tooltip> Draw(EntityDocument document) =>

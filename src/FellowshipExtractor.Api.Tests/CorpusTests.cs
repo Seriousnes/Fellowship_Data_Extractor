@@ -12,6 +12,7 @@ public class CorpusTests : BunitContext
         Store = export.Store;
         Tooltip = export.Tooltip;
         Services.AddSingleton(export.Tooltip);
+        Services.AddSingleton(export.View);
     }
 
     [Fact]

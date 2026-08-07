@@ -1,4 +1,5 @@
 @use "shared" as *;
+@use "../Components/Tooltip/Crest" as crest;
 
 :root {
   --ground: var(--core-secondary-1000);
@@ -37,6 +38,8 @@ body {
 }
 
 @scope (body) to (.fx-tip) {
+
+  @include crest.blessing-crest;
 
   *, *::before, *::after { box-sizing: border-box; }
 

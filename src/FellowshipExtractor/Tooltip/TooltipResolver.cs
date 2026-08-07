@@ -129,7 +129,7 @@ public sealed class TooltipResolver
 
         Vocabulary = new Vocabulary(
             provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types,
-            SlotGlyphs, Tempers, Drops);
+            SlotGlyphs, Tempers, Drops, new Blessings(provider, _constants));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -660,13 +660,21 @@ public sealed class TooltipResolver
 
         foreach (var value in constants.Values)
         {
-            if (value is not double number) continue;
+            if (Flat(value) is not { } number) continue;
             if (found is not null) return null;
             found = number;
         }
 
         return found;
     }
+
+    private static double? Flat(object? value) => value switch
+    {
+        double number => number,
+        double?[] { Length: > 0 } ladder when ladder[0] is { } first && Array.TrueForAll(ladder, step => step == first) =>
+            first,
+        _ => null,
+    };
 
     private static Entity FillFrom(Entity outer, IEnumerable<Entity> inner)
     {

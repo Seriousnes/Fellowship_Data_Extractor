@@ -193,7 +193,16 @@ else
 
                                 <tr>
                                     @{ var item = shown as ItemDocument; }
-                                    <td class="cx-art"><Icon Src="@Ui.Icon(DocumentFields.Text(shown, nameof(ItemDocument.Icon)))" /></td>
+                                    <td class="cx-art">
+                                        @if (shown is BlessingDocument blessing)
+                                        {
+                                            <BlessingCrest Entity="blessing" Width="RowPlateWidth" />
+                                        }
+                                        else
+                                        {
+                                            <Icon Src="@Ui.Icon(DocumentFields.Text(shown, nameof(ItemDocument.Icon)))" />
+                                        }
+                                    </td>
                                     <td>
                                         <EntityLink Entity="shown" Class="cx-nm" />
                                         @if (row.Variants.Count > 0)
@@ -311,6 +320,8 @@ else
             : Query.Types.Count == 1
                 ? Codex.Label(Query.Types[0])
                 : "Browse the codex";
+
+    private const int RowPlateWidth = 26;
 
     private Facet? Grouping => Query.Group is null ? null : Catalog.Facet(Query.Group);
 

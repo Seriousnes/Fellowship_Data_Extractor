@@ -13,6 +13,7 @@ public class StateTests : BunitContext
     {
         this.export = export;
         Services.AddSingleton(export.Tooltip);
+        Services.AddSingleton(export.View);
     }
 
     private TraitDocument Trait => export.Store.Entities.OfType<TraitDocument>().First(t => t.Icon is not null);
@@ -48,35 +49,10 @@ public class StateTests : BunitContext
     }
 
     [Fact]
-    public void A_blessing_wears_its_own_plate_and_is_allocated_unless_asked()
+    public void A_word_the_hero_traits_family_does_not_name_leaves_it_at_the_state_it_had()
     {
-        Assert.Equal(export.Chrome.BlessingPlate("allocated"), export.Tooltip.StateFrame(Blessing, Asked(null)));
-
-        Assert.Equal(
-            export.Chrome.BlessingPlate("unallocated"),
-            export.Tooltip.StateFrame(Blessing, Asked("unallocated")));
-
-        Assert.False(export.Tooltip.Locked(Blessing, Asked("unallocated")));
-    }
-
-    [Fact]
-    public void A_word_the_rows_family_does_not_name_leaves_it_at_the_state_it_had()
-    {
-        Assert.Equal(export.Chrome.BlessingPlate("allocated"), export.Tooltip.StateFrame(Blessing, Asked("available")));
         Assert.Equal(export.Chrome.TraitNode("selected"), export.Tooltip.StateFrame(Trait, Asked("allocated")));
-    }
-
-    [Fact]
-    public void An_allocated_blessing_shows_the_allocated_art_and_a_hero_traits_art_never_moves()
-    {
-        Assert.Equal(export.Chrome.BlessingArt(Blessing.Icon, null), export.Tooltip.StateArt(Blessing, Asked(null)));
-        Assert.Equal(
-            export.Chrome.BlessingArt(Blessing.Icon, null),
-            export.Tooltip.StateArt(Blessing, Asked("allocated")));
-
-        Assert.Null(export.Tooltip.StateArt(Blessing, Asked("unallocated")));
-        Assert.Null(export.Tooltip.StateArt(Trait, Asked(null)));
-        Assert.Null(export.Tooltip.StateArt(Trait, Asked("available")));
+        Assert.Null(export.Tooltip.StateFrame(Blessing, Asked(null)));
     }
 
     [Fact]
@@ -91,12 +67,6 @@ public class StateTests : BunitContext
 
         Assert.NotNull(padlocked.Find(".crest .lock"));
         Assert.Empty(Draw(Trait, Asked(null)).FindAll(".crest .lock"));
-        Assert.Empty(Draw(Blessing, Asked(null)).FindAll(".crest .lock"));
-
-        Assert.Contains(
-            "T_Buttons_BlessingButton_Allocated.png",
-            Draw(Blessing, Asked(null)).Find(".crest").GetAttribute("style") ?? string.Empty,
-            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -104,29 +74,6 @@ public class StateTests : BunitContext
     {
         Assert.NotNull(Draw(Trait, Asked(null)).Find(".crest.node"));
         Assert.NotNull(Draw(Trait, Asked("unavailable")).Find(".crest.node"));
-        Assert.NotNull(Draw(Blessing, Asked(null)).Find(".crest.plate"));
-        Assert.NotNull(Draw(Blessing, Asked("unallocated")).Find(".crest.plate"));
-
-        Assert.Empty(Draw(Trait, Asked(null)).FindAll(".crest.plate"));
-        Assert.Empty(Draw(Blessing, Asked(null)).FindAll(".crest.node"));
-    }
-
-    [Fact]
-    public void The_crest_draws_the_allocated_art_and_falls_back_to_the_rows_own_icon()
-    {
-        var allocated = Draw(Blessing, Asked(null)).Find(".crest img").GetAttribute("src");
-        var unallocated = Draw(Blessing, Asked("unallocated")).Find(".crest img").GetAttribute("src");
-
-        Assert.Equal(export.Chrome.BlessingArt(Blessing.Icon, null), allocated);
-        Assert.Equal(export.Tooltip.Art(Blessing, null), unallocated);
-        Assert.NotEqual(allocated, unallocated);
-
-        Assert.EndsWith(
-            Blessing.Icon!.Replace("Unallocated", "Allocated", StringComparison.Ordinal),
-            allocated!,
-            StringComparison.Ordinal);
-
-        Assert.EndsWith(Blessing.Icon!, unallocated!, StringComparison.Ordinal);
 
         Assert.Equal(
             export.Tooltip.Art(Trait, null), Draw(Trait, Asked(null)).Find(".crest img").GetAttribute("src"));

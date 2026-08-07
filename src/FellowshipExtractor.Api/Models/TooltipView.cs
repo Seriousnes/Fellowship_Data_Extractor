@@ -27,6 +27,8 @@ public sealed class TooltipView(
 
     public ChromeAssets Chrome => chrome;
 
+    public BlessingEntry Blessings => store.Vocabulary.Blessings;
+
     public RarityEntry? Rarity(EntityDocument document, TooltipQuery query)
     {
         var tier = document switch
@@ -67,25 +69,10 @@ public sealed class TooltipView(
         return icon is null ? null : $"{icons.Uri}/{icon}";
     }
 
-    public static bool DrawsItsOwnArt(EntityDocument document) =>
-        document is BlessingDocument or TraitDocument;
+    public static bool DrawsItsOwnArt(EntityDocument document) => document is TraitDocument;
 
-    public string? StateFrame(EntityDocument document, TooltipQuery query) => document switch
-    {
-        TraitDocument => chrome.TraitNode(query.State),
-        BlessingDocument => chrome.BlessingPlate(query.State),
-        _ => null,
-    };
-
-    public static string? StateFamily(EntityDocument document) => document switch
-    {
-        TraitDocument => "node",
-        BlessingDocument => "plate",
-        _ => null,
-    };
-
-    public string? StateArt(EntityDocument document, TooltipQuery query) =>
-        document is BlessingDocument blessing ? chrome.BlessingArt(blessing.Icon, query.State) : null;
+    public string? StateFrame(EntityDocument document, TooltipQuery query) =>
+        document is TraitDocument ? chrome.TraitNode(query.State) : null;
 
     public bool Locked(EntityDocument document, TooltipQuery query) =>
         document is TraitDocument &&
@@ -247,7 +234,7 @@ public sealed class TooltipView(
             $$"""
             .{{Root}}{--fx-slot-plate:url({{chrome.SlotPlate}});--fx-window:url({{chrome.Window}});
             --fx-thin:url({{chrome.ThinWindow}});--fx-fill:url({{chrome.WindowFill}});
-            --fx-divider:url({{chrome.GoldDivider}});
+            --fx-divider:url({{chrome.GoldDivider}});--fx-subheader:url({{chrome.Header(null)}});
             --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};
             --fx-setbonus:{{chrome.SetBonusBadge.Colour}}}
 

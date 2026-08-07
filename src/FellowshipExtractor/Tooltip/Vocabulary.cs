@@ -35,6 +35,8 @@ public sealed class Vocabulary
 
     public IReadOnlyList<DropPlateau> DropItemLevels { get; }
 
+    public BlessingEntry Blessings { get; }
+
     public Vocabulary(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -45,7 +47,8 @@ public sealed class Vocabulary
         IReadOnlyList<string> gemTypes,
         SlotIcons slotIcons,
         TemperCeilings tempers,
-        DropItemLevels drops)
+        DropItemLevels drops,
+        Blessings blessings)
     {
         StatCalculation = statCalculation;
         RandomStatPool = randomStatPool;
@@ -53,6 +56,7 @@ public sealed class Vocabulary
         SlotIcons = slotIcons.BySlot;
         MaxTempers = tempers.ByRarity;
         DropItemLevels = drops.Plateaus;
+        Blessings = blessings.Wording;
 
         var colours = Colours(provider, assets);
 
@@ -101,6 +105,7 @@ public sealed class Vocabulary
                 gemTypes = GemTypes,
                 maxTempers = MaxTempers,
                 dropItemLevels = DropItemLevels,
+                blessings = Blessings,
                 slotIcons = SlotIcons,
                 printFormats = PrintFormats,
                 colors = Colors,

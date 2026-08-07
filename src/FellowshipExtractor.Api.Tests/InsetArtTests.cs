@@ -11,6 +11,7 @@ public class InsetArtTests : BunitContext
     {
         Store = export.Store;
         Services.AddSingleton(export.Tooltip);
+        Services.AddSingleton(export.View);
     }
 
     private IRenderedComponent<Tooltip> Draw(EntityDocument document) =>
@@ -19,21 +20,21 @@ public class InsetArtTests : BunitContext
             .Add(x => x.Query, new TooltipQuery()));
 
     [Fact]
-    public void A_blessing_and_a_hero_trait_carry_their_art_inside_the_card()
+    public void A_hero_trait_carries_its_art_inside_the_card()
     {
-        EntityDocument[] carried =
-        [
-            Store.Entities.OfType<BlessingDocument>().First(row => row.Icon is not null),
-            Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null),
-        ];
+        var drawn = Draw(Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null));
 
-        Assert.All(carried, document =>
-        {
-            var drawn = Draw(document);
+        Assert.NotNull(drawn.Find(".card .crest img"));
+        Assert.Empty(drawn.FindAll("figure.slot"));
+    }
 
-            Assert.NotNull(drawn.Find(".card .crest img"));
-            Assert.Empty(drawn.FindAll("figure.slot"));
-        });
+    [Fact]
+    public void A_blessing_carries_its_art_inside_the_card()
+    {
+        var drawn = Draw(Store.Entities.OfType<BlessingDocument>().First(row => row.Icon is not null));
+
+        Assert.NotNull(drawn.Find(".card .fx-blessing-crest img"));
+        Assert.Empty(drawn.FindAll("figure.slot"));
     }
 
     [Fact]
@@ -59,9 +60,6 @@ public class InsetArtTests : BunitContext
     [Fact]
     public void The_question_is_asked_of_the_document_and_not_of_its_art()
     {
-        Assert.True(TooltipView.DrawsItsOwnArt(
-            Store.Entities.OfType<BlessingDocument>().First()));
-
         Assert.True(TooltipView.DrawsItsOwnArt(
             Store.Entities.OfType<TraitDocument>().First()));
 

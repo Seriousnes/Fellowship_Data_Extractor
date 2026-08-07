@@ -56,7 +56,8 @@ public class ApiDocumentTests(Export export)
 
     private static string Signature(TooltipQuery query) => string.Join(
         '|',
-        query.Hero, query.Rarity, query.State, query.ItemLevel, query.Upgrades, query.MaxUpgrades, query.NoSocket,
+        query.Hero, query.Rarity, query.State, query.EquippedTier,
+        query.ItemLevel, query.Upgrades, query.MaxUpgrades, query.NoSocket,
         query.PotentialPower, query.Armor, query.AllocatedTraits, query.MaxTraits,
         query.Traits.Count, query.GemPowers.Count, query.Stats.Count, query.Attributes.Count);
 

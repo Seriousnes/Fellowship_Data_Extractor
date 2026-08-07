@@ -1,0 +1,19 @@
+@inject CodexView Ui
+
+<figure class="fx-blessing-crest" style="--fx-plate:url(@Plate);--fx-plate-width:@Across">
+    <img alt="" src="@Art">
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public BlessingDocument Entity { get; set; } = default!;
+
+    [Parameter] public string? State { get; set; }
+
+    [Parameter] public int Width { get; set; } = 60;
+
+    private string Plate => Ui.Chrome.BlessingPlate(State);
+
+    private string Art => Ui.Chrome.BlessingArt(Entity.Icon, State) ?? Ui.Icon(Entity.Icon);
+
+    private string Across => Width.ToString(CultureInfo.InvariantCulture) + "px";
+}

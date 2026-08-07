@@ -1,0 +1,26 @@
+@use "sass:math";
+
+$plate-brush-width: 148;
+$plate-brush-height: 188;
+$plate-art-share: 45%;
+
+@mixin blessing-crest {
+  .fx-blessing-crest {
+    position: relative;
+    display: block;
+    margin: 0;
+    width: var(--fx-plate-width);
+    aspect-ratio: math.div($plate-brush-width, $plate-brush-height);
+    background: var(--fx-plate) 0 0/100% 100% no-repeat;
+
+    img {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: $plate-art-share;
+      aspect-ratio: 1;
+      object-fit: contain;
+    }
+  }
+}
