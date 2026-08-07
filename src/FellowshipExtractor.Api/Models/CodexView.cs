@@ -154,7 +154,7 @@ public sealed class CodexView(
     {
         AbilityDocument ability => ability.Placeholders ?? [],
         EffectDocument effect => effect.Placeholders ?? [],
-        FinesseDocument finesse => finesse.Placeholders ?? [],
+        BlessingDocument blessing => blessing.Placeholders ?? [],
         GemTraitDocument trait => trait.Placeholders ?? [],
         TalentDocument talent => talent.Placeholders ?? [],
         TraitPowerDocument power => power.Placeholders ?? [],

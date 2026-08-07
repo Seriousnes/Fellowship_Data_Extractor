@@ -18,7 +18,7 @@ public sealed class TypeResolver(
         ("/Game/Items/RelicAugmentations/", EntityType.RelicPower),
         ("/Game/Abilities/RelicPowers/", EntityType.RelicPower),
         ("/Game/Abilities/Weapons/", EntityType.WeaponPower),
-        ("/Game/Abilities/Finesses/", EntityType.Finesse),
+        ("/Game/Abilities/Finesses/", EntityType.Blessing),
         ("/Game/Abilities/LegendaryStats/", EntityType.LegendaryStat),
     ];
 

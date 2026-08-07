@@ -1,6 +1,6 @@
 namespace Fellowship.SDK.Documents;
 
-public sealed class FinesseDocument : EntityDocument
+public sealed class BlessingDocument : EntityDocument
 {
     public string? Description { get; init; }
     public string? Icon { get; init; }

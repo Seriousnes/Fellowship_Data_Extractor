@@ -199,7 +199,7 @@ public static class DocumentProjection
             Cost = entity.Cost,
         },
 
-        EntityType.Finesse => new FinesseDocument
+        EntityType.Blessing => new BlessingDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),

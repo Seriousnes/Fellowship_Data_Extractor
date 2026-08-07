@@ -9,11 +9,11 @@ namespace Fellowship.SDK;
 public enum EntityType
 {
     Ability,
+    Blessing,
     CompanionPet,
     Creature,
     Currency,
     Effect,
-    Finesse,
     GemTier,
     GemTrait,
     GemType,

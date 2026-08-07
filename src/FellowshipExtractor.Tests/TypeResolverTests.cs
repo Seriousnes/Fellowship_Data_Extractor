@@ -31,7 +31,7 @@ public sealed class TypeResolverTests
     [InlineData("/Game/Items/RelicAugmentations/CA_RelicPower_Sanctuary", EntityType.RelicPower)]
     [InlineData("/Game/Abilities/RelicPowers/Portal/CA_RelicPower_Portal", EntityType.RelicPower)]
     [InlineData("/Game/Abilities/Weapons/ChainHealDamage/CA_Weapon_ChainHealDamage", EntityType.WeaponPower)]
-    [InlineData("/Game/Abilities/Finesses/BasicToAoe/CAA_Finesse_BasicToAoe", EntityType.Finesse)]
+    [InlineData("/Game/Abilities/Finesses/BasicToAoe/CAA_Finesse_BasicToAoe", EntityType.Blessing)]
     [InlineData("/Game/Abilities/LegendaryStats/X/CAA_LegendaryStat_X", EntityType.LegendaryStat)]
     [InlineData("/Game/Abilities/Talents/Mosse/CAA_Talent_Mosse_Talent1", null)]
     public void AFolderNamesTheTypeNothingPointsAt(string package, EntityType? expected)
@@ -193,7 +193,7 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.GemTier, 24)]
     [InlineData(EntityType.SetBonus, 23)]
     [InlineData(EntityType.SetBonusPower, 15)]
-    [InlineData(EntityType.Finesse, 14)]
+    [InlineData(EntityType.Blessing, 14)]
     [InlineData(EntityType.WeaponPower, 12)]
     [InlineData(EntityType.RelicPower, 11)]
     [InlineData(EntityType.CompanionPet, 9)]
