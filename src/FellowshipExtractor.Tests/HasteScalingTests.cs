@@ -10,10 +10,11 @@ public sealed class HasteScalingTests
     private const int StoneShield = 1122;
     private const int HeavyStrike = 1929;
     private const int SweepingStrike = 981;
+    private const int TemporalBarrage = 1926;
     private const string ChannelInterval = "IncinerateChannelInterval";
     private const string PulseInterval = "AshaTickPeriod";
     private const string ShieldStrength = "StoneShieldHealth";
-    private const string StrikeDamage = "HeavyStrikeDmg";
+    private const string BarrageDamage = "TemporBarrDmg";
 
     private static JsonObject Document(EntityType type, int id) =>
         Export.Loaded.Documents
@@ -96,16 +97,46 @@ public sealed class HasteScalingTests
     }
 
     [Fact]
+    public void HeavyStrikeSeparatesItsThreeDamageTokens()
+    {
+        var placeholders = Resolved("GameplayAbility", HeavyStrike).Placeholders;
+
+        Assert.NotNull(placeholders);
+
+        Assert.Equal(5.66, placeholders!["HeavyStrikeDmg"].Coefficient);
+        Assert.Equal(1.698, placeholders["HeavyStrikeClvDmg"].Coefficient);
+        Assert.Equal(1.98, placeholders["HeavyStrikeLightnDmg"].Coefficient);
+
+        Assert.All(
+            new[] { "HeavyStrikeDmg", "HeavyStrikeClvDmg", "HeavyStrikeLightnDmg" },
+            key => Assert.Equal("Strength", placeholders[key].Attribute));
+    }
+
+    [Fact]
+    public void TheRangeFunctionAgreesWithTheEffectRouteOnFireBall()
+    {
+        var direct = Resolved("GameplayAbility", FireBall).Placeholders?["FireBallDirect"];
+
+        Assert.NotNull(direct);
+        Assert.Equal(5.8482, direct!.Coefficient);
+        Assert.Equal("Intellect", direct.Attribute);
+        Assert.Equal(0.2, direct.Spread);
+        Assert.True(direct.ScalesWithExpertise);
+    }
+
+    [Fact]
     public void SelfNamingTokensWithNoNumberBehindThemStayBare()
     {
         var strength = Resolved("GameplayAbility", StoneShield).Placeholders?[ShieldStrength];
-        var damage = Resolved("GameplayAbility", HeavyStrike).Placeholders?[StrikeDamage];
+        var damage = Resolved("GameplayAbility", TemporalBarrage).Placeholders?[BarrageDamage];
 
         Assert.NotNull(strength);
         Assert.NotNull(damage);
 
         Assert.Null(strength!.Value);
+        Assert.Null(strength.Coefficient);
         Assert.Null(damage!.Value);
+        Assert.Null(damage.Coefficient);
     }
 
     [Fact]

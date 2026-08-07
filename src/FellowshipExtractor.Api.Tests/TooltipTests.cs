@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
+
 namespace FellowshipExtractor.Api.Tests;
 
 [Collection(Corpus.Name)]
@@ -130,6 +133,57 @@ public class TooltipTests : BunitContext
 
         Assert.Equal("Ability: Conjure Portal", cut.Find("div.sec.ability span").TextContent);
         Assert.Contains("Conjures two interactable", cut.Find("p.desc").TextContent, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Raises_a_damage_number_by_the_Expertise_that_was_supplied()
+    {
+        var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1260);
+
+        var bare = Damage(ability, "intellect=1000");
+        var sharpened = Damage(ability, "intellect=1000&expertise=5000");
+
+        Assert.True(
+            sharpened > bare,
+            $"Expertise did not raise the number: {sharpened} against {bare}.");
+    }
+
+    [Fact]
+    public void Leaves_a_damage_number_alone_when_no_Expertise_is_supplied()
+    {
+        var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1260);
+
+        Assert.Equal(Damage(ability, "intellect=1000"), Damage(ability, "intellect=1000&haste=500"));
+    }
+
+    private decimal Damage(EntityDocument entity, string query)
+    {
+        var written = Written(entity, query);
+        var number = System.Text.RegularExpressions.Regex.Match(written, @"\d[\d,]*(\.\d+)?");
+
+        Assert.True(number.Success, $"No number in the rendered description:\n{written}");
+
+        return decimal.Parse(number.Value.Replace(",", ""));
+    }
+
+    private string Written(EntityDocument entity, string query)
+    {
+        var parsed = TooltipQuery.Parse(
+            new QueryCollection(query
+                .Split('&')
+                .Select(pair => pair.Split('='))
+                .ToDictionary(pair => pair[0], pair => new StringValues(pair[1]))),
+            Store.Stats,
+            out _);
+
+        var cut = Render<Components.Tooltip.Tooltip>(p => p
+            .Add(x => x.Entity, entity)
+            .Add(x => x.Query, parsed));
+
+        var written = cut.Find("p.desc").TextContent;
+
+
+        return written;
     }
 
     [Fact]

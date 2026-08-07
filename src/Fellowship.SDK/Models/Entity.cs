@@ -197,6 +197,8 @@ public sealed record Placeholder
 
     public bool? IgnoresHaste { get; init; }
 
+    public bool? ScalesWithExpertise { get; init; }
+
     [JsonIgnore]
     public TokenQuantity Quantity { get; init; }
 

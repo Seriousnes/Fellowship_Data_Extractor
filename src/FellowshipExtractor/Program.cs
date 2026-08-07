@@ -95,6 +95,9 @@ switch (command)
     case "ui":
         await UiCommand.RunAsync(options);
         break;
+    case "functions":
+        await FellowshipExtractor.Tooltip.FunctionsCommand.RunAsync(options);
+        break;
     case "tooltip":
         if (args.Length < 3)
         {

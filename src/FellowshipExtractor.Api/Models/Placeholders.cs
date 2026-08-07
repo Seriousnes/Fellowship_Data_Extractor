@@ -61,7 +61,7 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
             var value = attribute is null ? null : query.Total(attribute);
 
             return value is { } stat
-                ? Banded(placeholder, coefficient, stat, attribute!, school)
+                ? Banded(placeholder, coefficient, stat, attribute!, school, query.Expertise)
                 : Unscaled(placeholder, coefficient, attribute);
         }
 
@@ -84,10 +84,16 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
     private static readonly string[] Primary = ["Strength", "Intellect", "Agility"];
 
     private Substitution Banded(
-        Placeholder placeholder, double coefficient, decimal stat, string attribute, string? school)
+        Placeholder placeholder,
+        double coefficient,
+        decimal stat,
+        string attribute,
+        string? school,
+        decimal? expertise)
     {
-        var mean = (decimal)coefficient * stat;
-        var title = $"{Percent(coefficient)}% of {attribute}";
+        var (mean, sharpening) = Sharpened(placeholder, (decimal)coefficient * stat, expertise);
+
+        var title = $"{Percent(coefficient)}% of {attribute}{sharpening}";
 
         if (placeholder.Spread is not { } spread || spread == 0)
         {
@@ -134,6 +140,15 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
             Strip(printed) ?? $"{number} seconds",
             title,
             printed is null ? null : renderer.Render(printed));
+    }
+
+    private static (decimal Value, string Title) Sharpened(
+        Placeholder placeholder, decimal mean, decimal? expertise)
+    {
+        if (placeholder.ScalesWithExpertise is not true) return (mean, string.Empty);
+        if (expertise is not { } fraction || fraction <= 0) return (mean, string.Empty);
+
+        return (mean * (1m + fraction), $", raised by {Share(fraction)}% Expertise");
     }
 
     private static (decimal Value, string? Title) Quickened(

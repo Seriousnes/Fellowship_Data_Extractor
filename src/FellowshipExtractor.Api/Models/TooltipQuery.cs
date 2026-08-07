@@ -87,6 +87,8 @@ public sealed record TooltipQuery
 
     public decimal? Haste => Attribute("Haste");
 
+    public decimal? Expertise => Attribute("Expertise");
+
     private const int LevelCeiling = 10_000;
 
     private const decimal StatCeiling = 1_000_000_000_000m;

@@ -476,7 +476,7 @@ public sealed class TooltipResolver
             var own = placeholder.Constants is not null;
             var source = placeholder.Constants ?? reachable;
 
-            if (Declared(placeholder, declared, bindings) is { } bound)
+            if (Declared(placeholder, cdo, declared, bindings) is { } bound)
             {
                 placeholders[name] = bound;
                 DeclaredByBlueprint++;
@@ -561,13 +561,38 @@ public sealed class TooltipResolver
     public int NamedByToken { get; private set; }
 
     private static Placeholder? Declared(
-        Placeholder placeholder, DynamicTextFloatMap declared, IReadOnlyList<CurveBinding> bindings)
+        Placeholder placeholder,
+        UObject? cdo,
+        DynamicTextFloatMap declared,
+        IReadOnlyList<CurveBinding> bindings)
     {
         if (placeholder.FromOwnConstants is not true) return null;
         if (placeholder.DynamicTextFloatIdentifier is not { } identifier) return null;
-        if (declared.For(identifier) is not { } binding) return null;
 
-        var wanted = Numbers.Normalize(binding.Property);
+        if (declared.For(identifier) is { } binding && Scalable(bindings, binding.Property) is { } number)
+        {
+            return placeholder with
+            {
+                Value = number,
+                Tickrate = binding.ScalesWithHaste ? true : null,
+            };
+        }
+
+        if (cdo is null) return null;
+        if (DynamicTextRanges.For(cdo, identifier, name => Scalable(bindings, name)) is not { } range) return null;
+
+        return placeholder with
+        {
+            Coefficient = range.Coefficient,
+            Attribute = range.Attribute ?? placeholder.Attribute,
+            Spread = range.Spread,
+            ScalesWithExpertise = range.ScalesWithExpertise ? true : null,
+        };
+    }
+
+    private static double? Scalable(IReadOnlyList<CurveBinding> bindings, string property)
+    {
+        var wanted = Numbers.Normalize(property);
 
         var matched = bindings
             .Where(b => b.Value is not null && b.Values is null)
@@ -576,13 +601,7 @@ public sealed class TooltipResolver
             .Distinct()
             .ToArray();
 
-        if (matched.Length != 1) return null;
-
-        return placeholder with
-        {
-            Value = matched[0],
-            Tickrate = binding.ScalesWithHaste ? true : null,
-        };
+        return matched.Length == 1 ? matched[0] : null;
     }
 
     private static string Leaf(string property) => property[(property.LastIndexOf('.') + 1)..];
