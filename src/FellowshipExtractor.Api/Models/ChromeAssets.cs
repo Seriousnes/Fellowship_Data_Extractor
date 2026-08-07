@@ -33,6 +33,15 @@ public sealed class ChromeAssets(
     private const string TraitTexture = "T_Icons_StatTooltip_TraitSlot";
     private const string ExpandTexture = "T_Icons_Generic_TooltipExpand";
 
+    private const string NodeFamily = "T_Buttons_TraitNode_";
+    private const string NodeSuffix = "Default";
+    private const string BlessingFamily = "T_Buttons_BlessingButton_";
+    private const string BlessingArtFamily = "T_Icons_BlessingRuneIcon_";
+    private const string Allocated = "Allocated";
+    private const string Unallocated = "Unallocated";
+    private const string LockTexture = "T_Icons_Locked";
+    private const string DividerTexture = "T_GoldDivider";
+
     private static readonly string[] Badges = [AbilityTexture, LegendaryTexture, SetBonusTexture];
 
     private static readonly string[] RarityTinted = [FrameMask, HeaderMask, IconFrameMask];
@@ -60,6 +69,33 @@ public sealed class ChromeAssets(
     public string? IconFrame(string? rarity) => rarity is null ? null : Url(Name(IconFrameMask, rarity));
 
     public string SlotPlate => Url(Name(SlotPlateTexture));
+
+    public static readonly IReadOnlyList<string> NodeStates = ["selected", "available", "unavailable"];
+
+    public static readonly IReadOnlyList<string> BlessingStates = ["allocated", "unallocated"];
+
+    public string TraitNode(string? state) =>
+        Url(Name(NodeFamily + Chosen(NodeStates, state) + NodeSuffix));
+
+    public string BlessingPlate(string? state) =>
+        Url(Name(BlessingFamily + Chosen(BlessingStates, state)));
+
+    public string? BlessingArt(string? icon, string? state) =>
+        icon is { } art &&
+        art.StartsWith(BlessingArtFamily + Unallocated, StringComparison.Ordinal) &&
+        string.Equals(Chosen(BlessingStates, state), Allocated, StringComparison.Ordinal)
+            ? Url($"{Prefix}/{art.Replace(Unallocated, Allocated, StringComparison.Ordinal)}")
+            : null;
+
+    public string LockGlyph => Url(Name(LockTexture));
+
+    public string GoldDivider => Url(Name(DividerTexture));
+
+    private static string Chosen(IReadOnlyList<string> states, string? state) =>
+        states.FirstOrDefault(known => string.Equals(known, state, StringComparison.OrdinalIgnoreCase))
+            is { } found
+            ? char.ToUpperInvariant(found[0]) + found[1..]
+            : char.ToUpperInvariant(states[0][0]) + states[0][1..];
 
     public string Panel => Url(Name(PanelTexture));
 

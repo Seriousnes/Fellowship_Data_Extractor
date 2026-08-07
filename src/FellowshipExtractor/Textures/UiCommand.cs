@@ -51,7 +51,28 @@ public static class UiCommand
 
         "T_Borders_EmptySlot",
         "T_Borders_RarityFrame",
+
+        "T_Buttons_TraitNode_SelectedDefault",
+        "T_Buttons_TraitNode_SelectedHover",
+        "T_Buttons_TraitNode_SelectedPressed",
+        "T_Buttons_TraitNode_AvailableDefault",
+        "T_Buttons_TraitNode_AvailableHover",
+        "T_Buttons_TraitNode_UnavailableDefault",
+        "T_Buttons_TraitNode_UnavailableHover",
+        "T_Buttons_TraitNode_Color",
+        "T_Buttons_TraitNode_Mask",
+
+        "T_Buttons_BlessingButton_Allocated",
+        "T_Buttons_BlessingButton_AllocatedHover",
+        "T_Buttons_BlessingButton_Unallocated",
+        "T_Buttons_BlessingButton_UnallocatedHover",
+
+        "T_Borders_Modifier_Frame_Hexagon",
+        "T_Icons_Locked",
+        "T_GoldDivider",
     ];
+
+    private static readonly string[] Families = ["T_Icons_BlessingRuneIcon_Allocated_"];
 
     public static async Task RunAsync(ExtractorOptions options)
     {
@@ -59,7 +80,13 @@ public static class UiCommand
 
         var slotIcons = SlotIcons.Textures(provider);
 
-        string[] textures = [.. Chrome, .. slotIcons.Values.Order(StringComparer.Ordinal)];
+        var kin = provider.Files.Values
+            .Select(file => Path.GetFileNameWithoutExtension(file.Name))
+            .Where(name => Families.Any(family => name.StartsWith(family, StringComparison.Ordinal)))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal);
+
+        string[] textures = [.. Chrome, .. kin, .. slotIcons.Values.Order(StringComparer.Ordinal)];
 
         var byName = provider.Files.Values
             .Where(f => f.Path.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
