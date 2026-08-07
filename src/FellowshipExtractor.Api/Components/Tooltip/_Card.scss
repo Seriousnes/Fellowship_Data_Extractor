@@ -80,6 +80,8 @@ $display: ArnoPro, "Arno Pro", "Iowan Old Style", "Palatino Linotype", Palatino,
       content: "";
       position: absolute;
       inset: 0;
+      height: auto;
+      max-height: none;
       pointer-events: none;
       background: none;
       border-style: solid;

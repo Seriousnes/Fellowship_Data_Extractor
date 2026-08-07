@@ -7,6 +7,7 @@ $blessing-crest-top: 8px;
 $blessing-crest-bottom: 7px;
 $blessing-band-height: 26px;
 $blessing-band-inset: 14px;
+$blessing-count-gap: 4px;
 $blessing-prose-inset: 23px;
 $blessing-prose-top: 8px;
 $blessing-prose-bottom: 12px;
@@ -56,7 +57,10 @@ $blessing-line-height: 13.3px;
 
   .tier { color: var(--core-text-info); }
 
-  .count { color: var(--core-text-disabled); }
+  .count {
+    margin-left: $blessing-count-gap;
+    color: var(--core-text-disabled);
+  }
 
   .prose {
     padding: $blessing-prose-top $blessing-prose-inset $blessing-prose-bottom;
