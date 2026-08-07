@@ -8,11 +8,12 @@ public sealed class HasteScalingTests
     private const int FireBall = 1260;
     private const int Chronoshift = 355;
     private const int StoneShield = 1122;
-    private const int PricklyVine = 1057;
+    private const int HeavyStrike = 1929;
+    private const int SweepingStrike = 981;
     private const string ChannelInterval = "IncinerateChannelInterval";
     private const string PulseInterval = "AshaTickPeriod";
     private const string ShieldStrength = "StoneShieldHealth";
-    private const string VineInterval = "PricklyVinePeriod";
+    private const string StrikeDamage = "HeavyStrikeDmg";
 
     private static JsonObject Document(EntityType type, int id) =>
         Export.Loaded.Documents
@@ -84,16 +85,27 @@ public sealed class HasteScalingTests
     }
 
     [Fact]
+    public void SweepingStrikeTellsItsTwoTokensApartByTheIdentifierTheyCarry()
+    {
+        var placeholders = Resolved("GameplayAbility", SweepingStrike).Placeholders;
+
+        Assert.NotNull(placeholders);
+
+        Assert.Equal(6, placeholders!["BloodRushDuration"].Value);
+        Assert.Equal(0.05, placeholders["BloodRushHeal"].Value);
+    }
+
+    [Fact]
     public void SelfNamingTokensWithNoNumberBehindThemStayBare()
     {
         var strength = Resolved("GameplayAbility", StoneShield).Placeholders?[ShieldStrength];
-        var interval = Resolved("GameplayAbility", PricklyVine).Placeholders?[VineInterval];
+        var damage = Resolved("GameplayAbility", HeavyStrike).Placeholders?[StrikeDamage];
 
         Assert.NotNull(strength);
-        Assert.NotNull(interval);
+        Assert.NotNull(damage);
 
         Assert.Null(strength!.Value);
-        Assert.Null(interval!.Value);
+        Assert.Null(damage!.Value);
     }
 
     [Fact]

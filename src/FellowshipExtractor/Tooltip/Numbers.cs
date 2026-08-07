@@ -212,7 +212,7 @@ public static class Numbers
         return key.EndsWith(CostSuffix, StringComparison.Ordinal) ? "cost" : null;
     }
 
-    private static string Normalize(string name)
+    public static string Normalize(string name)
     {
         var compact = name.Replace(" ", "").ToLowerInvariant();
         return compact.EndsWith(RefSuffix, StringComparison.Ordinal) && compact.Length > RefSuffix.Length

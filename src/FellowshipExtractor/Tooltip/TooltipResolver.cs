@@ -468,11 +468,20 @@ public sealed class TooltipResolver
         var reachable = Rejoined(baseline, claimed, split.Promoted);
         var taken = new HashSet<string>(claimed.Keys, StringComparer.Ordinal);
 
+        var declared = cdo is null ? DynamicTextFloatMap.Empty : DynamicTextFloats.Of(cdo);
+
         foreach (var name in placeholders.Keys.ToArray())
         {
             var placeholder = placeholders[name];
             var own = placeholder.Constants is not null;
             var source = placeholder.Constants ?? reachable;
+
+            if (Declared(placeholder, declared, bindings) is { } bound)
+            {
+                placeholders[name] = bound;
+                DeclaredByBlueprint++;
+                continue;
+            }
 
             var wanted = placeholder.Quantity switch
             {
@@ -506,6 +515,7 @@ public sealed class TooltipResolver
             else if (placeholder.FromOwnConstants is true && Numbers.Own(split, wanted) is { } reading)
             {
                 placeholders[name] = placeholder with { Value = reading, Tickrate = tickrate };
+                NamedByToken++;
                 continue;
             }
 
@@ -545,6 +555,37 @@ public sealed class TooltipResolver
             GrantedTags = Empty(grantedTags),
         };
     }
+
+    public int DeclaredByBlueprint { get; private set; }
+
+    public int NamedByToken { get; private set; }
+
+    private static Placeholder? Declared(
+        Placeholder placeholder, DynamicTextFloatMap declared, IReadOnlyList<CurveBinding> bindings)
+    {
+        if (placeholder.FromOwnConstants is not true) return null;
+        if (placeholder.DynamicTextFloatIdentifier is not { } identifier) return null;
+        if (declared.For(identifier) is not { } binding) return null;
+
+        var wanted = Numbers.Normalize(binding.Property);
+
+        var matched = bindings
+            .Where(b => b.Value is not null && b.Values is null)
+            .Where(b => Numbers.Normalize(Leaf(b.Property)) == wanted)
+            .Select(b => b.Value!.Value)
+            .Distinct()
+            .ToArray();
+
+        if (matched.Length != 1) return null;
+
+        return placeholder with
+        {
+            Value = matched[0],
+            Tickrate = binding.ScalesWithHaste ? true : null,
+        };
+    }
+
+    private static string Leaf(string property) => property[(property.LastIndexOf('.') + 1)..];
 
     private double? Band(
         string coefficientKey, string? tuning, EffectSpreads bands, double? ownBand, double? tokenBand)

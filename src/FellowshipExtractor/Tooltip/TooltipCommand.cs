@@ -62,6 +62,9 @@ public static class TooltipCommand
         Console.WriteLine($"\n{records.Count} entr{(records.Count == 1 ? "y" : "ies")} for {tag.Value.Name}");
         foreach (var record in records) Report(record, "  ");
         Console.WriteLine($"\ntuning rows supplied by namespace: {resolver.NamespaceSupplied}");
+        Console.WriteLine(
+            $"tokens bound by ResolveDynamicTextFloat: {resolver.DeclaredByBlueprint}, " +
+            $"by the quantity their name states: {resolver.NamedByToken}");
         Console.WriteLine($"icons in {iconDir}");
         Console.WriteLine($"wrote {target}");
     }

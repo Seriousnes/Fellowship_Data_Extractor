@@ -202,6 +202,9 @@ public sealed record Placeholder
 
     [JsonIgnore]
     public double? PresetSpread { get; init; }
+
+    [JsonIgnore]
+    public int? DynamicTextFloatIdentifier { get; init; }
 }
 
 public static class SlotKinds

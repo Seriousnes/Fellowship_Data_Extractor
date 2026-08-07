@@ -190,6 +190,9 @@ public static class ExportAllCommand
             string.Join(", ", iconless.Select(entry => $"{entry.Key} {entry.Value}")));
         Console.WriteLine($"  {resolver.NamespaceSupplied} tuning rows supplied by namespace that no asset names");
         Console.WriteLine(
+            $"  {resolver.DeclaredByBlueprint} tokens bound by the ability's ResolveDynamicTextFloat, " +
+            $"{resolver.NamedByToken} by the quantity their name states");
+        Console.WriteLine(
             $"  {resolver.SpreadOverrides} coefficient rows banded by their own Spread row, " +
             $"{resolver.SpreadPresetDefaults} by their effect's calculation preset");
 

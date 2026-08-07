@@ -116,7 +116,14 @@ public static class DescriptionTokens
 
         if (objectPath is null) return bare;
 
-        if (self) return bare with { FromOwnConstants = true };
+        if (self)
+        {
+            return bare with
+            {
+                FromOwnConstants = true,
+                DynamicTextFloatIdentifier = Identifier(token),
+            };
+        }
 
         var effect = GameplayEffects.Resolve(provider, constants, presets, objectPath);
         declared = declared with
@@ -134,6 +141,11 @@ public static class DescriptionTokens
 
     private static bool Flag(IPropertyHolder token, string name) =>
         PropertyWalk.Get(token, name)?.GenericValue is true;
+
+    private static int? Identifier(IPropertyHolder token) =>
+        PropertyWalk.AsNumber(PropertyWalk.Get(token, "AbilityDynamicTextFloatIdentifier")?.GenericValue) is { } value
+            ? (int)value
+            : null;
 
     private static CurveBinding? OwnConstant(IPropertyHolder token, ConstantsTable constants) =>
         CurveBindings.Collect(token, constants)
