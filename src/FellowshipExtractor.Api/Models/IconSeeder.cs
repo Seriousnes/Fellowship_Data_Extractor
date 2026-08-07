@@ -13,6 +13,7 @@ public sealed class IconSeeder(
     ILogger<IconSeeder> logger) : IHostedService
 {
     private const string ContentType = "image/png";
+    private const string Revalidate = "no-cache";
     private const int Concurrency = 16;
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -25,7 +26,10 @@ public sealed class IconSeeder(
         var present = new Dictionary<string, string>(StringComparer.Ordinal);
         await foreach (var blob in container.GetBlobsAsync(cancellationToken: cancellationToken))
         {
-            if (blob.Properties.ContentHash is { } hash) present[blob.Name] = Convert.ToBase64String(hash);
+            if (blob.Properties.ContentHash is not { } hash) continue;
+            if (blob.Properties.CacheControl != Revalidate) continue;
+
+            present[blob.Name] = Convert.ToBase64String(hash);
         }
 
         var local = Directory.GetFiles(paths.Export, "*.png");
@@ -89,7 +93,12 @@ public sealed class IconSeeder(
             new BinaryData(content),
             new BlobUploadOptions
             {
-                HttpHeaders = new BlobHttpHeaders { ContentType = ContentType, ContentHash = hash },
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = ContentType,
+                    ContentHash = hash,
+                    CacheControl = Revalidate,
+                },
             },
             token);
 
