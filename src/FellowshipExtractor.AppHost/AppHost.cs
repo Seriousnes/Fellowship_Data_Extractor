@@ -16,8 +16,7 @@ var blobPort = Port(builder, "Ports:Blob", stack.Offset, 10000);
 var storage = builder.AddAzureStorage("storage")
     .RunAsEmulator(emulator => emulator
         .WithDataVolume($"fellowship-azurite-{stack.Name}")
-        .WithBlobPort(blobPort)
-        .InComposeStack("azurite", stack.Project));
+        .WithBlobPort(blobPort));
 
 var icons = storage.AddBlobContainer("icons", "icons");
 
@@ -32,7 +31,7 @@ builder.AddProject<Projects.FellowshipExtractor_Api>("codex")
     .WithHttpHealthCheck("/health")
     .WithExternalHttpEndpoints();
 
-builder.Build().Run();
+builder.InComposeStack(stack.Project, builder.AppHostDirectory).Build().Run();
 
 static (string Name, string Project, int Offset) Stack(string from)
 {
@@ -44,7 +43,56 @@ static (string Name, string Project, int Offset) Stack(string from)
         ? pinned
         : (int.Parse(name[..4], NumberStyles.HexNumber, CultureInfo.InvariantCulture) % 89 + 1) * 10;
 
-    return (name, $"fellowship-{name}", offset);
+    var project = Checkout(from) is { } checkout
+        ? $"fellowship-{checkout}"
+        : $"fellowship-{name}";
+
+    return (name, project, offset);
+}
+
+static string? Checkout(string from)
+{
+    for (var directory = new DirectoryInfo(from); directory is not null; directory = directory.Parent)
+    {
+        var marker = Path.Combine(directory.FullName, ".git");
+
+        if (Directory.Exists(marker))
+            return Branch(marker) ?? Slug(directory.Name);
+
+        if (!File.Exists(marker)) continue;
+
+        var pointer = File.ReadAllText(marker).Trim();
+        if (!pointer.StartsWith("gitdir:", StringComparison.Ordinal)) continue;
+
+        var linked = Path.GetFullPath(pointer["gitdir:".Length..].Trim(), directory.FullName);
+        return Branch(linked) ?? Slug(directory.Name);
+    }
+
+    return null;
+}
+
+static string? Branch(string gitDirectory)
+{
+    var head = Path.Combine(gitDirectory, "HEAD");
+    if (!File.Exists(head)) return null;
+
+    var reference = File.ReadAllText(head).Trim();
+    return reference.StartsWith("ref: refs/heads/", StringComparison.Ordinal)
+        ? Slug(reference["ref: refs/heads/".Length..])
+        : null;
+}
+
+static string? Slug(string text)
+{
+    var slug = new StringBuilder();
+
+    foreach (var character in text.ToLowerInvariant())
+    {
+        if (char.IsAsciiLetterOrDigit(character)) slug.Append(character);
+        else if (slug.Length > 0 && slug[^1] != '-') slug.Append('-');
+    }
+
+    return slug.ToString().Trim('-') is { Length: > 0 } trimmed ? trimmed : null;
 }
 
 static void Rebind(string variable, int offset, params int[] basePorts)
@@ -71,13 +119,33 @@ static int Port(IDistributedApplicationBuilder builder, string key, int offset, 
 
 static class ComposeStackExtensions
 {
-    public static IResourceBuilder<T> InComposeStack<T>(
-        this IResourceBuilder<T> builder, string service, string project)
-        where T : ContainerResource
-        => builder
-            .WithContainerName($"{project}-{service}")
-            .WithContainerRuntimeArgs(
-                "--label", $"com.docker.compose.project={project}",
-                "--label", $"com.docker.compose.service={service}",
-                "--label", "com.docker.compose.oneoff=False");
+    public static IDistributedApplicationBuilder InComposeStack(
+        this IDistributedApplicationBuilder builder, string project, string workingDirectory)
+    {
+        foreach (var resource in builder.Resources)
+        {
+            if (!resource.Annotations.OfType<ContainerImageAnnotation>().Any() &&
+                !resource.Annotations.OfType<DockerfileBuildAnnotation>().Any()) continue;
+
+            var service = resource.Name;
+
+            foreach (var named in resource.Annotations.OfType<ContainerNameAnnotation>().ToArray())
+                resource.Annotations.Remove(named);
+
+            resource.Annotations.Add(new ContainerNameAnnotation { Name = $"{project}-{service}" });
+            resource.Annotations.Add(new ContainerRuntimeArgsCallbackAnnotation(runtimeArgs =>
+            {
+                runtimeArgs.Add("--label");
+                runtimeArgs.Add($"com.docker.compose.project={project}");
+                runtimeArgs.Add("--label");
+                runtimeArgs.Add($"com.docker.compose.project.working_dir={workingDirectory}");
+                runtimeArgs.Add("--label");
+                runtimeArgs.Add($"com.docker.compose.service={service}");
+                runtimeArgs.Add("--label");
+                runtimeArgs.Add("com.docker.compose.oneoff=False");
+            }));
+        }
+
+        return builder;
+    }
 }
