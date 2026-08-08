@@ -10,7 +10,13 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
 {
     private readonly HttpClient client;
 
-    public RouteTests(Factory factory) => client = factory.CreateClient();
+    private readonly ChromeAssets chrome;
+
+    public RouteTests(Factory factory)
+    {
+        client = factory.CreateClient();
+        chrome = factory.Services.GetRequiredService<ChromeAssets>();
+    }
 
     [Fact]
     public async Task Tooltip_route_answers_200_for_one_id_of_every_type()
@@ -95,6 +101,54 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var response = await client.GetAsync("/api/tooltip/no-such-type/1", Xunit.TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task An_entity_page_draws_the_node_state_its_url_asks_for()
+    {
+        var trait = Factory.Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null);
+        var where = $"/entity/{EntityTypes.Slug(EntityType.Trait)}/{trait.Id}";
+
+        var asked = await client.GetStringAsync(
+            $"{where}?state=unavailable", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains(chrome.TraitNode("unavailable"), asked, StringComparison.Ordinal);
+
+        var silent = await client.GetStringAsync(where, Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains(chrome.TraitNode(null), silent, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_entity_page_carries_the_hero_and_the_state_into_its_refetch_address()
+    {
+        var (id, hero) = Shared();
+        var slug = EntityTypes.Slug(EntityType.Item);
+        var wearer = Uri.EscapeDataString(hero);
+
+        var page = await client.GetStringAsync(
+            $"/entity/{slug}/{id}?hero={wearer}&state=unavailable", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains(
+            $"data-stage=\"/api/tooltip/{slug}/{id}?hero={wearer}&amp;state=unavailable\"",
+            page,
+            StringComparison.Ordinal);
+    }
+
+    private static (int Id, string Hero) Shared()
+    {
+        foreach (var document in Factory.Store.Entities)
+        {
+            if (EntityTypes.TypeOf(document) != EntityType.Item) continue;
+            if (Factory.Store.All(EntityType.Item, document.Id).Count < 2) continue;
+            if (Factory.Store.Wearer(document) is not { } wearer) continue;
+
+            return (document.Id, wearer.Name);
+        }
+
+        throw new InvalidOperationException(
+            "No item id the export gives more than one hero's reading of, so no entity page carries a " +
+            "hero and a state at once.");
     }
 
     public sealed class Factory : WebApplicationFactory<Program>

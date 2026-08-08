@@ -39,6 +39,8 @@
 
     [SupplyParameterFromQuery(Name = "hero")] public string? Asked { get; set; }
 
+    [SupplyParameterFromQuery(Name = "state")] public string? State { get; set; }
+
     private EntityType type;
 
     private IReadOnlyList<EntityDocument> Readings = [];
@@ -57,15 +59,19 @@
         {
             var where = Ui.Tip(Shown);
 
-            return Drawn is { } wearer && !where.Contains('?')
-                ? $"{where}?hero={Uri.EscapeDataString(wearer)}"
-                : where;
+            return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(
+                where,
+                new Dictionary<string, string?>(StringComparer.Ordinal)
+                {
+                    ["hero"] = where.Contains('?') ? null : Drawn,
+                    ["state"] = string.IsNullOrWhiteSpace(State) ? null : State,
+                });
         }
     }
 
     private bool PicksHero => Readings.Count > 1 || (Shown as ItemDocument)?.Heroes is { Count: > 1 };
 
-    private TooltipQuery Asking => new() { Hero = Drawn };
+    private TooltipQuery Asking => new() { Hero = Drawn, State = State };
 
     private HeroEntry? Wearer => Drawn is null ? null : Store.Hero(Drawn);
 
