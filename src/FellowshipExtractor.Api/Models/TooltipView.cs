@@ -283,15 +283,10 @@ public sealed class TooltipView(
         document is ItemDocument { ArmorType: not null } or GemDocument or GemTraitDocument or GemTypeDocument;
 
     public EntityDocument? Granted(EntityDocument document) =>
-        document is ItemDocument { GrantsId: { } id } && Power(id) is { } found &&
+        document is ItemDocument { GrantsId: { } id } && store.GrantedPower(id) is { } found &&
         store.All(found.Type, found.Id) is { Count: > 0 } readings
             ? readings[0]
             : null;
-
-    private (EntityType Type, int Id)? Power(int id) =>
-        store.All(EntityType.RelicPower, id).Count > 0 ? (EntityType.RelicPower, id)
-        : store.All(EntityType.WeaponPower, id).Count > 0 ? (EntityType.WeaponPower, id)
-        : null;
 
     public IReadOnlyList<EntityDocument> LegendaryStats(EntityDocument document) =>
         document is ItemDocument { LegendaryStatIds: { Count: > 0 } ids }

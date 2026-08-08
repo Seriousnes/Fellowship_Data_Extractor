@@ -15,6 +15,7 @@ public static class PublicTypes
         (EntityType.WeaponPower, "Weapon Powers", "weapon power", "Items"),
         (EntityType.RelicPower, "Relic Powers", "relic power", "Items"),
         (EntityType.TraitPower, "Trait Powers", "trait power", "Items"),
+        (EntityType.LegendaryPower, "Legendary Powers", "legendary power", "Items"),
         (EntityType.LegendaryStat, "Legendary Stats", "legendary stat", "Items"),
         (EntityType.Currency, "Currencies", "currency", "Items"),
         (EntityType.GemType, "Gem Types", "gem type", "Gems"),

@@ -136,6 +136,19 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
+    public void Names_the_legendary_power_a_legendary_item_grants()
+    {
+        var entity = Store.Entities
+            .OfType<ItemDocument>()
+            .Single(row => row.Id == 5222 && row.Hero == Hero.Tariq);
+
+        var cut = Draw(entity);
+
+        Assert.Equal("Ability: Thundering Vortex", cut.Find("div.sec.ability span").TextContent);
+        Assert.Contains("20 stacks", cut.Find("p.desc").TextContent, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Bands_Skull_Crusher_the_way_the_game_prints_it_at_100_Strength()
     {
         var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1229);

@@ -5,7 +5,8 @@ public sealed class TypeResolver(
     TalentTrees talents,
     GemDefinitions gems,
     ItemTraits traits,
-    ItemSetBonuses setBonuses)
+    ItemSetBonuses setBonuses,
+    GrantedAbilityMappings mappings)
 {
     private readonly HashSet<string> _augmentations = new(
         tags.Where(tag => tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
@@ -63,14 +64,12 @@ public sealed class TypeResolver(
         if (traits.PointsAt(tag.NetId)) return EntityType.TraitPower;
         if (setBonuses.PointsAt(tag.NetId)) return EntityType.SetBonusPower;
 
-        if (packageName is null) return null;
-
         foreach (var (folder, type) in Folders)
         {
-            if (packageName.Contains(folder, StringComparison.OrdinalIgnoreCase)) return type;
+            if (packageName?.Contains(folder, StringComparison.OrdinalIgnoreCase) is true) return type;
         }
 
-        return null;
+        return mappings.PointsAt(tag.Name) ? EntityType.LegendaryPower : null;
     }
 
     private EntityType? Item(TagRecord tag, Entity entity)

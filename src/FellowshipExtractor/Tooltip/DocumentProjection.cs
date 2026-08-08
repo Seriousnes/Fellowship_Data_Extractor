@@ -278,6 +278,17 @@ public static class DocumentProjection
             ScalesOff = entity.ScalesOff,
         },
 
+        EntityType.LegendaryPower => new LegendaryPowerDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Description = entity.Description,
+            Icon = entity.Icon,
+            Cooldown = entity.Cooldown,
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
+            ScalesOff = entity.ScalesOff,
+        },
+
         EntityType.LegendaryStat => new LegendaryStatDocument
         {
             Id = entity.NetId!.Value,

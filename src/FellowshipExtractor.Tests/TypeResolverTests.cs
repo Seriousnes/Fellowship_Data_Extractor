@@ -16,7 +16,7 @@ public sealed class TypeResolverTests
         ExportAllCommand.NotWritten(Resolver.Resolve(tag, icons: null).Single(), Branches);
 
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(21, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(22, Enum.GetValues<EntityType>().Length);
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
@@ -38,6 +38,19 @@ public sealed class TypeResolverTests
     {
         var tag = new TagRecord("CRCharacterAugmentationAsset", "CA_Unclaimed", 999_999, 0);
         Assert.Equal(expected, Resolver.Types.Of(tag, new Entity(), package));
+    }
+
+    [Fact]
+    public void AnAugmentationTheGrantedAbilityMappingsPointAtIsALegendaryPower()
+    {
+        var tag = Tag("CRCharacterAugmentationAsset", "CAA_Talent_Ink_Talent1");
+
+        Assert.Null(Resolver.Talents.ForAugmentation(tag.Name));
+        Assert.True(Resolver.Mappings.PointsAt(tag.Name));
+
+        Assert.Equal(
+            EntityType.LegendaryPower,
+            Resolver.Types.Of(tag, new Entity(), "/Game/Abilities/Talents/Ink/CAA_Talent_Ink_Talent1"));
     }
 
     [Theory]
@@ -189,6 +202,7 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.GemTrait, 60)]
     [InlineData(EntityType.MountPower, 54)]
     [InlineData(EntityType.TraitPower, 40)]
+    [InlineData(EntityType.LegendaryPower, 36)]
     [InlineData(EntityType.Currency, 32)]
     [InlineData(EntityType.Gem, 24)]
     [InlineData(EntityType.SetBonus, 23)]

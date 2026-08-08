@@ -156,6 +156,7 @@ public sealed class CodexView(
         BlessingDocument blessing => blessing.Placeholders ?? [],
         EffectDocument effect => effect.Placeholders ?? [],
         GemTraitDocument trait => trait.Placeholders ?? [],
+        LegendaryPowerDocument legendary => legendary.Placeholders ?? [],
         TalentDocument talent => talent.Placeholders ?? [],
         TraitPowerDocument power => power.Placeholders ?? [],
         WeaponPowerDocument power => power.Placeholders ?? [],
@@ -209,15 +210,10 @@ public sealed class CodexView(
                 Addresses(EntityType.Talent, id),
             GemTraitDocument when property == nameof(GemTraitDocument.ReplacesId) && value is int id =>
                 Addresses(EntityType.GemTrait, id),
-            ItemDocument when property == nameof(ItemDocument.GrantsId) && value is int id && Power(id) is { } found =>
-                Addresses(found.Type, found.Id),
+            ItemDocument when property == nameof(ItemDocument.GrantsId) && value is int id &&
+                store.GrantedPower(id) is { } found => Addresses(found.Type, found.Id),
             _ => null,
         };
-
-    private (EntityType Type, int Id)? Power(int id) =>
-        store.All(EntityType.RelicPower, id).Count > 0 ? (EntityType.RelicPower, id)
-        : store.All(EntityType.WeaponPower, id).Count > 0 ? (EntityType.WeaponPower, id)
-        : null;
 
     public (string Href, string? Tip)? Addresses(EntityType type, int id) =>
         store.All(type, id) is { Count: > 0 } readings ? (Href(type, id), Tip(readings[0])) : null;

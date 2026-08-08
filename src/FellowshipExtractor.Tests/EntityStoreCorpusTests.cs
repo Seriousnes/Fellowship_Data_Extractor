@@ -36,25 +36,48 @@ public sealed class EntityStoreCorpusTests
         Assert.Equal(expected, Store.Entities.Count(document => EntityTypes.TypeOf(document) == type));
 
     [Fact]
-    public void TheStoreHolds12437Entities() => Assert.Equal(12437, Store.Count);
+    public void TheStoreHolds12473Entities() => Assert.Equal(12473, Store.Count);
+
+    private static readonly IReadOnlySet<int> Granted = Store.Entities
+        .OfType<ItemDocument>()
+        .Select(item => item.GrantsId)
+        .OfType<int>()
+        .ToHashSet();
+
+    private static EntityDocument[] Ungranted(EntityType type) =>
+    [
+        .. Store.Entities
+            .Where(document => EntityTypes.TypeOf(document) == type)
+            .Where(document => !Granted.Contains(document.Id)),
+    ];
 
     [Theory]
     [InlineData(EntityType.WeaponPower)]
     [InlineData(EntityType.RelicPower)]
-    public void EveryPowerAnItemCarriesIsReachedByAnItemsGrantsId(EntityType type)
-    {
-        var granted = Store.Entities
-            .OfType<ItemDocument>()
-            .Select(item => item.GrantsId)
-            .OfType<int>()
-            .ToHashSet();
+    public void EveryPowerAnItemCarriesIsReachedByAnItemsGrantsId(EntityType type) =>
+        Assert.Empty(Ungranted(type).Select(document => $"{document.Id} {document.Name}"));
 
-        var orphans = Store.Entities
-            .Where(document => EntityTypes.TypeOf(document) == type)
-            .Where(document => !granted.Contains(document.Id))
-            .Select(document => $"{document.Id} {document.Name}")
+    [Fact]
+    public void TheOneLegendaryPowerNoItemGrantsIsUnimplemented()
+    {
+        var placeholder = Assert.Single(Ungranted(EntityType.LegendaryPower));
+
+        Assert.Equal(713, placeholder.Id);
+        Assert.Equal(
+            "Placeholder - Not Implemented",
+            Assert.IsType<LegendaryPowerDocument>(placeholder).Description);
+    }
+
+    [Fact]
+    public void EveryGrantsIdNamesAPowerTheStoreHolds()
+    {
+        var unreachable = Store.Entities
+            .OfType<ItemDocument>()
+            .Where(item => item.GrantsId is { } id && Store.GrantedPower(id) is null)
+            .Select(item => $"{item.Id} {item.Name} grants {item.GrantsId}")
+            .Distinct(StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Empty(orphans);
+        Assert.Empty(unreachable);
     }
 }

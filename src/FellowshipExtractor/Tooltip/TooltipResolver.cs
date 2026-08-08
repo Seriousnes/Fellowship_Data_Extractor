@@ -138,7 +138,7 @@ public sealed class TooltipResolver
         EffectNames = new EffectNameSources(
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
 
-        Types = new TypeResolver(_tags, Talents, Gems, Traits, SetBonuses);
+        Types = new TypeResolver(_tags, Talents, Gems, Traits, SetBonuses, Mappings);
     }
 
     private string? PrintedName(TagRecord tag, UObject cdo)

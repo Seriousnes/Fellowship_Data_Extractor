@@ -239,6 +239,19 @@ public sealed class EntityStore
     public IReadOnlyList<EntityDocument> All(EntityType type, int id) =>
         byId.TryGetValue((type, id), out var found) ? found : [];
 
+    private static readonly EntityType[] GrantedPowers =
+        [EntityType.RelicPower, EntityType.WeaponPower, EntityType.LegendaryPower, EntityType.Talent];
+
+    public (EntityType Type, int Id)? GrantedPower(int id)
+    {
+        foreach (var type in GrantedPowers)
+        {
+            if (All(type, id).Count > 0) return (type, id);
+        }
+
+        return null;
+    }
+
     public Lookup Resolve(
         EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero)
     {

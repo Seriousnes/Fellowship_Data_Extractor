@@ -155,7 +155,7 @@ public sealed record PublicEntity
     {
         (EntityType Type, int Id)? address = document switch
         {
-            ItemDocument { GrantsId: { } id } => Power(view.Store, id),
+            ItemDocument { GrantsId: { } id } => view.Store.GrantedPower(id),
             TraitDocument { PowerId: { } id } => (EntityType.TraitPower, id),
             SetBonusDocument { PowerId: { } id } => (EntityType.SetBonusPower, id),
             TalentSlotDocument slot => (EntityType.Talent, slot.TalentId),
@@ -166,11 +166,6 @@ public sealed record PublicEntity
 
         return view.Store.All(found.Type, found.Id) is { Count: > 0 } readings ? From(readings[0], view) : null;
     }
-
-    private static (EntityType Type, int Id)? Power(EntityStore store, int id) =>
-        store.All(EntityType.RelicPower, id).Count > 0 ? (EntityType.RelicPower, id)
-        : store.All(EntityType.WeaponPower, id).Count > 0 ? (EntityType.WeaponPower, id)
-        : null;
 
     private static string? GemTypeName(EntityDocument document) => document switch
     {

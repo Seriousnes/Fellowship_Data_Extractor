@@ -62,7 +62,9 @@ public static class ExportAllCommand
         Console.WriteLine(
             $"presentation index: {resolver.Presentation.RowCount} rows across {resolver.Presentation.TableCount} tables");
         Console.WriteLine($"tuning constants:   {resolver.ConstantCount} keys");
-        Console.WriteLine($"granted abilities:  {resolver.Mappings.RowCount} mappings");
+        Console.WriteLine(
+            $"granted abilities:  {resolver.Mappings.RowCount} mappings naming " +
+            $"{resolver.Mappings.GrantedCount} augmentations");
         Console.WriteLine($"hero names:         {resolver.Heroes.Count}");
         Console.WriteLine($"fixed hero items:   {resolver.HeroItems.Count} rows");
         Console.WriteLine($"talents:            {resolver.Talents.Count} across {resolver.Talents.HeroCount} trees");

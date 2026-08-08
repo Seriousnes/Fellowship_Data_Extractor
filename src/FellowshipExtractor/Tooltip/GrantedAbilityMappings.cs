@@ -10,8 +10,14 @@ public sealed class GrantedAbilityMappings
 
     private readonly Dictionary<(string Key, string Hero), string> _byKeyAndHero = new();
 
+    private readonly HashSet<string> _granted = new(StringComparer.OrdinalIgnoreCase);
+
     public int TableCount { get; }
     public int RowCount { get; }
+
+    public int GrantedCount => _granted.Count;
+
+    public bool PointsAt(string assetName) => _granted.Contains(assetName);
 
     public GrantedAbilityMappings(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
@@ -38,6 +44,7 @@ public sealed class GrantedAbilityMappings
 
                 RowCount++;
                 _byKeyAndHero.TryAdd((key, HeroNames.LastSegment(hero)), ability);
+                _granted.Add(AbilityPresentationIndex.AssetName(ability));
             }
         }
     }

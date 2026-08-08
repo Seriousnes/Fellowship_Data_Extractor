@@ -18,6 +18,7 @@ public enum EntityType
     GemTrait,
     GemType,
     Item,
+    LegendaryPower,
     LegendaryStat,
     Mount,
     MountPower,
