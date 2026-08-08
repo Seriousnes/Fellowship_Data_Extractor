@@ -1,5 +1,6 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Tooltip;
 
@@ -58,10 +59,51 @@ public static class GameplayEffects
         return new EffectRef
         {
             CapturedAttributes = Captures(effect),
-            Constants = CurveBindings.Collect(effect, constants) is { Count: > 0 } bindings ? bindings : null,
+            Constants = Collected(effect, constants),
             Spread = presets.Of(effect),
             TickrateIgnoresHaste = IgnoresHaste(effect),
         };
+    }
+
+    public const int Multiplicitive = 1;
+
+    private const string ModifiersField = "Modifiers";
+    private const string ModifierOpField = "ModifierOp";
+
+    private static IReadOnlyList<CurveBinding>? Collected(UObject effect, ConstantsTable constants)
+    {
+        if (CurveBindings.Collect(effect, constants) is not { Count: > 0 } bindings) return null;
+        if (Multiplied(effect) is not { Count: > 0 } scopes) return bindings;
+
+        return
+        [
+            .. bindings.Select(binding =>
+                scopes.Any(scope => binding.Property.StartsWith(scope, StringComparison.Ordinal))
+                    ? binding with { Multiplies = true }
+                    : binding),
+        ];
+    }
+
+    private static IReadOnlyList<string> Multiplied(UObject effect)
+    {
+        if (PropertyWalk.Get(effect, ModifiersField)?.GenericValue is not UScriptArray modifiers) return [];
+
+        var scopes = new List<string>();
+
+        for (var at = 0; at < modifiers.Properties.Count; at++)
+        {
+            if (modifiers.Properties[at]?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier })
+            {
+                continue;
+            }
+
+            if (PropertyWalk.AsOrdinal(PropertyWalk.Get(modifier, ModifierOpField)?.GenericValue) == Multiplicitive)
+            {
+                scopes.Add($"{ModifiersField}[{at}].");
+            }
+        }
+
+        return scopes;
     }
 
     private const string HasteExemptTag = "EffectLogic.TickrateNotAffectedByHasteExclusively";

@@ -183,6 +183,8 @@ public sealed record Placeholder
 
     public bool? Percent { get; init; }
 
+    public bool? Multiplies { get; init; }
+
     public string? Format { get; init; }
 
     public string? Unit { get; init; }

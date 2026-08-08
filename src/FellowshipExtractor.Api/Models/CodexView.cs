@@ -454,7 +454,9 @@ public sealed class CodexView(
         {
             if (token.Percent == true || token.Format == Share)
             {
-                return (((decimal)value * 100m).Normalize().ToString(CultureInfo.InvariantCulture) + "%", true);
+                var share = token.Multiplies == true ? (decimal)value - 1m : (decimal)value;
+
+                return ((share * 100m).Normalize().ToString(CultureInfo.InvariantCulture) + "%", true);
             }
 
             var number = Number(value);
@@ -481,6 +483,8 @@ public sealed class CodexView(
         }
 
         if (token.Format is { } format) parts.Add(Printed(format));
+
+        if (token.Multiplies == true) parts.Add(Printed(Excess));
 
         if (token.Value is null && token.Percent == true) parts.Add("shown as a share");
 

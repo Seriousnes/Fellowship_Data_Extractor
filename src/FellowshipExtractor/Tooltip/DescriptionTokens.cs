@@ -100,6 +100,7 @@ public static class DescriptionTokens
         {
             Quantity = quantity,
             Percent = Flag(token, "ShowPercent") ? true : null,
+            Multiplies = Multiplied(token) ? true : null,
             ShowDamageType = Flag(token, "ShowDamageType") ? true : null,
 
             Unit = Flag(token, "ShowUnit") && quantity is TokenQuantity.Period or TokenQuantity.Duration
@@ -136,11 +137,17 @@ public static class DescriptionTokens
             ? TokenCalculations.Select(effect.Constants ?? [], quantity)
             : effect.Constants ?? [];
 
+        if (selected.Any(binding => binding.Multiplies)) declared = declared with { Multiplies = true };
+
         return Made(declared, direct, effect.CapturedAttributes, selected, tuning);
     }
 
     private static bool Flag(IPropertyHolder token, string name) =>
         PropertyWalk.Get(token, name)?.GenericValue is true;
+
+    private static bool Multiplied(IPropertyHolder token) =>
+        PropertyWalk.AsOrdinal(PropertyWalk.Get(token, "ModifierOp")?.GenericValue)
+            == GameplayEffects.Multiplicitive;
 
     private static int? Identifier(IPropertyHolder token) =>
         PropertyWalk.AsNumber(PropertyWalk.Get(token, "AbilityDynamicTextFloatIdentifier")?.GenericValue) is { } value

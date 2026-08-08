@@ -124,7 +124,9 @@ public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
     {
         if (placeholder.Percent == true || placeholder.Format == "percent")
         {
-            return new Substitution(Print("UnitPercent", Percent(value)) ?? Round((decimal)value) + "%");
+            var share = placeholder.Multiplies == true ? (decimal)value - 1m : (decimal)value;
+
+            return new Substitution(Print("UnitPercent", Share(share)) ?? Round(share) + "%");
         }
 
         var (quickened, title) = Quickened(placeholder, (decimal)value, haste);
