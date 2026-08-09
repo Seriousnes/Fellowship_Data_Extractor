@@ -13,7 +13,7 @@ public sealed record Facet(
     string Label,
     Func<EntityDocument, IEnumerable<string>> Values)
 {
-    public Func<DesignTokens, string, string?>? Colour { get; init; }
+    public Func<IDesignTokenService, string, string?>? Colour { get; init; }
 
     public bool Matches(EntityDocument document, IReadOnlyCollection<string> wanted) =>
         Values(document).Any(value => wanted.Contains(value, StringComparer.OrdinalIgnoreCase));
@@ -73,7 +73,7 @@ public sealed class Codex
     private const int MenuSectionLimit = 4;
 
     private readonly IEntityStoreService store;
-    private readonly DesignTokens tokens;
+    private readonly IDesignTokenService tokens;
 
     private readonly IReadOnlyDictionary<string, string[]> offered;
 
@@ -89,7 +89,7 @@ public sealed class Codex
 
     public IReadOnlyList<MenuGroup> Menu { get; }
 
-    public Codex(IEntityStoreService store, DesignTokens tokens)
+    public Codex(IEntityStoreService store, IDesignTokenService tokens)
     {
         this.store = store;
         this.tokens = tokens;

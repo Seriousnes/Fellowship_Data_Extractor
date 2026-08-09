@@ -300,7 +300,7 @@ public class TooltipTests : BunitContext
 
         var style = coloured.Find("div.fx-tip").GetAttribute("style")!;
 
-        var shade = new DesignTokens(Store.Vocabulary).Rarity(Rarity.Heroic.ToString());
+        var shade = new DesignTokenService(Store.Vocabulary).Rarity(Rarity.Heroic.ToString());
 
         Assert.Contains($"--fx-title:{shade}", style, StringComparison.Ordinal);
         Assert.DoesNotContain("--fx-title:var(--core-text-primary)", style, StringComparison.Ordinal);
@@ -475,7 +475,7 @@ public class TooltipTests : BunitContext
             var cut = Draw(new ItemDocument { Id = 3, Slot = slot });
 
             Assert.EndsWith(
-                $"/{ChromeAssets.Prefix}/{texture}.png",
+                $"/{ChromeAssetService.Prefix}/{texture}.png",
                 cut.Find("div.row img.gi").GetAttribute("src"),
                 StringComparison.Ordinal);
         }

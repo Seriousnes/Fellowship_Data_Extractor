@@ -794,7 +794,7 @@ git commit -m "Put the export paths, the store and the seeder behind interfaces"
   `IFragmentService` (`Task<string> Render<T>(Dictionary<string, object?> parameters) where T : IComponent`),
   `ITooltipService` (`Task<IResult> Get(EntityType type, int id, IQueryCollection request)` for now).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `RouteTests`:
 
@@ -814,7 +814,7 @@ Add to `RouteTests`:
     }
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~Every_rendering_service"
@@ -822,7 +822,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: FAIL to compile.
 
-- [ ] **Step 3: Move the seven classes**
+- [x] **Step 3: Move the seven classes**
 
 Each moves body-unchanged into `Services/<Name>Service.cs` under
 `namespace FellowshipExtractor.Api.Services`, renamed, with an interface above it declaring its
@@ -852,7 +852,7 @@ Add to `ITooltipViewService` and `TooltipViewService` the one new member the ent
 and in `Components/Tooltip/Tooltip.razor`, change the guard in `OnParametersSet` to read
 `if (Ui.DrawsState(Entity)) return;`, leaving the two typed branches in the markup as they stand.
 
-- [ ] **Step 4: Move the call sites**
+- [x] **Step 4: Move the call sites**
 
 `Program.cs`:
 
@@ -887,7 +887,7 @@ time type is what `AddSingleton` registers.
 `PlaceholderReadingTests.cs:7` reads `new PlaceholderService(export.Store, new RichTextService(...))`.
 `IconSeederService` takes `IChromeAssetService chrome` and reads `ChromeAssetService.Prefix`.
 
-- [ ] **Step 5: Build and run the suite**
+- [x] **Step 5: Build and run the suite**
 
 ```powershell
 dotnet build src/FellowshipExtractor.slnx
@@ -896,7 +896,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
 
 Expected: build clean, `Failed: 2, Passed: 264, Total: 266`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A

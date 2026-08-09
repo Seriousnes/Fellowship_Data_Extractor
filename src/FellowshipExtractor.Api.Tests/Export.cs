@@ -33,11 +33,11 @@ public sealed class Export
 {
     public CodexView View { get; }
 
-    public TooltipView Tooltip { get; }
+    public ITooltipViewService Tooltip { get; }
 
     public IEntityStoreService Store { get; }
 
-    public ChromeAssets Chrome { get; }
+    public IChromeAssetService Chrome { get; }
 
     public IExportPathService Paths { get; }
 
@@ -53,17 +53,17 @@ public sealed class Export
 
         Store = new EntityStoreService(paths, NullLogger<EntityStoreService>.Instance);
 
-        var tokens = new DesignTokens(Store.Vocabulary);
-        var richText = new RichTextRenderer(Store.Vocabulary.TextStyles);
+        var tokens = new DesignTokenService(Store.Vocabulary);
+        var richText = new RichTextService(Store.Vocabulary.TextStyles);
 
-        var substitutions = new Placeholders(Store, richText);
+        var substitutions = new PlaceholderService(Store, richText);
 
         var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
-        var chrome = Chrome = new ChromeAssets(icons, paths, Store, tokens);
+        var chrome = Chrome = new ChromeAssetService(icons, paths, Store, tokens);
 
         View = new CodexView(Store, new Codex(Store, tokens), tokens, chrome, richText, substitutions, icons);
 
-        Tooltip = new TooltipView(Store, tokens, richText, substitutions, chrome, icons, new ApiWebRoot());
+        Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, icons, new ApiWebRoot());
     }
 
     private static string Found()

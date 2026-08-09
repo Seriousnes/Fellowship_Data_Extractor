@@ -15,7 +15,7 @@
 
     [Parameter] public int Width { get; set; } = 72;
 
-    private bool Padlocked => ChromeAssets.Padlocked(State);
+    private bool Padlocked => ChromeAssetService.Padlocked(State);
 
     private string Plate => Ui.Chrome.TraitNode(State);
 

@@ -17,19 +17,19 @@ namespace FellowshipExtractor.Api.Models;
 public sealed class CodexView(
     IEntityStoreService store,
     Codex codex,
-    DesignTokens tokens,
-    ChromeAssets chrome,
-    RichTextRenderer richText,
-    Placeholders placeholders,
+    IDesignTokenService tokens,
+    IChromeAssetService chrome,
+    IRichTextService richText,
+    IPlaceholderService placeholders,
     BlobContainerClient icons)
 {
     public IEntityStoreService Store => store;
 
     public Codex Codex => codex;
 
-    public DesignTokens Tokens => tokens;
+    public IDesignTokenService Tokens => tokens;
 
-    public ChromeAssets Chrome => chrome;
+    public IChromeAssetService Chrome => chrome;
 
     public string Icon(string? icon) => icon is null ? chrome.SlotPlate : $"{icons.Uri}/{icon}";
 
@@ -462,7 +462,7 @@ public sealed class CodexView(
             return (token.Unit is { } unit ? $"{number} {unit}" : number, true);
         }
 
-        var unresolved = Placeholders.Unresolved(token);
+        var unresolved = PlaceholderService.Unresolved(token);
 
         return (unresolved.Title ?? unresolved.Text, false);
     }

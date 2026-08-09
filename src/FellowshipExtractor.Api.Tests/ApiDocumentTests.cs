@@ -73,7 +73,7 @@ public class ApiDocumentTests(Export export)
     [Fact]
     public void Every_filter_parameter_the_document_declares_is_read_rather_than_refused()
     {
-        var codex = new Codex(export.Store, new DesignTokens(export.Store.Vocabulary));
+        var codex = new Codex(export.Store, new DesignTokenService(export.Store.Vocabulary));
 
         IEnumerable<ApiParameter> offered =
         [

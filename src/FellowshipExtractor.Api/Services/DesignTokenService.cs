@@ -1,8 +1,31 @@
 using System.Text;
 
-namespace FellowshipExtractor.Api.Models;
+using Fellowship.SDK.Documents;
 
-public sealed class DesignTokens(VocabularyFile vocabulary)
+using FellowshipExtractor.Api.Models;
+
+namespace FellowshipExtractor.Api.Services;
+
+public interface IDesignTokenService
+{
+    IReadOnlyDictionary<string, string> Colors { get; }
+
+    IReadOnlyDictionary<string, TextStyle> TextStyles { get; }
+
+    string? Color(string name);
+
+    string? Rarity(string internalName);
+
+    string? Hero(string codename);
+
+    string? Gem(string type);
+
+    string? Role(string role);
+
+    string CssVariables();
+}
+
+public sealed class DesignTokenService(VocabularyFile vocabulary) : IDesignTokenService
 {
     private readonly IReadOnlyDictionary<string, string> colors = vocabulary.Colors;
 

@@ -10,7 +10,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
 {
     private readonly HttpClient client;
 
-    private readonly ChromeAssets chrome;
+    private readonly IChromeAssetService chrome;
 
     private readonly Factory factory;
 
@@ -18,7 +18,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         this.factory = factory;
         client = factory.CreateClient();
-        chrome = factory.Services.GetRequiredService<ChromeAssets>();
+        chrome = factory.Services.GetRequiredService<IChromeAssetService>();
     }
 
     [Fact]
@@ -26,6 +26,20 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         Assert.NotNull(factory.Services.GetRequiredService<IExportPathService>());
         Assert.NotNull(factory.Services.GetRequiredService<IEntityStoreService>());
+    }
+
+    [Fact]
+    public void Every_rendering_service_is_resolved_through_an_interface()
+    {
+        var provider = factory.Services;
+
+        Assert.NotNull(provider.GetRequiredService<IDesignTokenService>());
+        Assert.NotNull(provider.GetRequiredService<IRichTextService>());
+        Assert.NotNull(provider.GetRequiredService<IChromeAssetService>());
+        Assert.NotNull(provider.GetRequiredService<IPlaceholderService>());
+        Assert.NotNull(provider.GetRequiredService<ITooltipViewService>());
+        Assert.NotNull(provider.GetRequiredService<IFragmentService>());
+        Assert.NotNull(provider.GetRequiredService<ITooltipService>());
     }
 
     [Fact]

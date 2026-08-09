@@ -49,12 +49,12 @@ public class StateTests : BunitContext
     [Fact]
     public void Only_the_unavailable_node_is_padlocked()
     {
-        Assert.True(ChromeAssets.Padlocked("unavailable"));
-        Assert.True(ChromeAssets.Padlocked("UNAVAILABLE"));
-        Assert.False(ChromeAssets.Padlocked("available"));
-        Assert.False(ChromeAssets.Padlocked("selected"));
-        Assert.False(ChromeAssets.Padlocked(null));
-        Assert.False(ChromeAssets.Padlocked("allocated"));
+        Assert.True(ChromeAssetService.Padlocked("unavailable"));
+        Assert.True(ChromeAssetService.Padlocked("UNAVAILABLE"));
+        Assert.False(ChromeAssetService.Padlocked("available"));
+        Assert.False(ChromeAssetService.Padlocked("selected"));
+        Assert.False(ChromeAssetService.Padlocked(null));
+        Assert.False(ChromeAssetService.Padlocked("allocated"));
     }
 
     [Fact]

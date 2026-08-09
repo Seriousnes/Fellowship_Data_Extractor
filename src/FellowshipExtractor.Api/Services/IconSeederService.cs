@@ -13,7 +13,7 @@ namespace FellowshipExtractor.Api.Services;
 public sealed class IconSeederService(
     BlobContainerClient container,
     IExportPathService paths,
-    ChromeAssets chrome,
+    IChromeAssetService chrome,
     ILogger<IconSeederService> logger) : IHostedService
 {
     private const string ContentType = "image/png";
@@ -77,7 +77,7 @@ public sealed class IconSeederService(
 
         logger.LogInformation(
             "Chrome seeded from {Ui} under {Prefix}/: {Uploaded} of {Total} uploaded ({Kilobytes:F0} kB), {Skipped} already current, in {Elapsed:F1}s",
-            paths.Ui, ChromeAssets.Prefix, chromeUploaded, payloads.Count, chromeBytes / 1024d,
+            paths.Ui, ChromeAssetService.Prefix, chromeUploaded, payloads.Count, chromeBytes / 1024d,
             payloads.Count - chromeUploaded, chromeStarted.Elapsed.TotalSeconds);
     }
 
