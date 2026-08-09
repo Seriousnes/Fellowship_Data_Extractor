@@ -46,6 +46,15 @@ public sealed record SettingsFile
     public IReadOnlyDictionary<string, string> SlotIcons { get; init; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+    public IReadOnlyDictionary<string, string> RarityOrnaments { get; init; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlyDictionary<string, string> RarityColorRows { get; init; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlyDictionary<string, string> SectionHeadingRows { get; init; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; init; } =
         new Dictionary<string, IReadOnlyList<TemperCeiling>>(StringComparer.OrdinalIgnoreCase);
 
