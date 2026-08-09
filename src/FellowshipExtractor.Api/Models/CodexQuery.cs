@@ -9,18 +9,8 @@ namespace FellowshipExtractor.Api.Models;
 public sealed record CodexQuery
 {
     public const int DefaultPageSize = 50;
-    private const int MaximumPageSize = 200;
 
-    public static readonly IReadOnlyList<ApiParameter> Parameters =
-    [
-        new("q", ApiValue.Text, "Free text matched against every name."),
-        new("type", ApiValue.Text, "Entity type slug, comma separated for several."),
-        new("sort", ApiValue.Text, "The column to order by. Defaults to name."),
-        new("dir", ApiValue.Text, "Given as desc to order the other way."),
-        new("group", ApiValue.Text, "The facet to group the page by."),
-        new("page", ApiValue.Whole, "Which page to answer, from 1."),
-        new("size", ApiValue.Whole, $"How many rows a page holds, up to {MaximumPageSize}. Defaults to {DefaultPageSize}."),
-    ];
+    public const int MaximumPageSize = 200;
 
     public string? Text { get; init; }
 
@@ -45,7 +35,8 @@ public sealed record CodexQuery
 
     public int PageSize { get; init; } = DefaultPageSize;
 
-    public static CodexQuery Parse(IQueryCollection query, ICodexService codex, out string? error)
+    public static CodexQuery Parse(
+        IQueryCollection query, ICodexService codex, IReadOnlySet<string> declared, out string? error)
     {
         error = null;
 
@@ -67,7 +58,7 @@ public sealed record CodexQuery
                 .Where(value => value.Length > 0)
                 .ToArray();
 
-            if (Declared(key) is { } control)
+            if (Declared(declared, key) is { } control)
             {
                 switch (control)
                 {
@@ -159,7 +150,7 @@ public sealed record CodexQuery
                 string.Join(", ", codex.Facets.Select(f => f.Key)
                     .Concat(codex.Flags.Select(f => f.Key))
                     .Concat(codex.Measures.SelectMany(m => new[] { m.Key + "Min", m.Key + "Max" }))
-                    .Concat(Parameters.Select(p => p.Name))) + ".";
+                    .Concat(declared)) + ".";
             return new CodexQuery();
         }
 
@@ -192,8 +183,8 @@ public sealed record CodexQuery
         };
     }
 
-    private static string? Declared(string key) => Parameters
-        .FirstOrDefault(parameter => parameter.Name.Equals(key, StringComparison.OrdinalIgnoreCase))?.Name;
+    private static string? Declared(IReadOnlySet<string> declared, string key) =>
+        declared.Contains(key) ? key.ToLowerInvariant() : null;
 
     private static (string Key, bool IsMax) Bound(string key) =>
         key.EndsWith("Max", StringComparison.OrdinalIgnoreCase) ? (key[..^3], true)

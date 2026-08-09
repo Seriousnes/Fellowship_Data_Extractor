@@ -2560,7 +2560,7 @@ git commit -m "Give every remaining type a folder and two routes"
   `ToQuery(IQueryCollection raw, ICodexService codex, out string? error)`.
   `CodexQuery.Parse(IQueryCollection query, ICodexService codex, IReadOnlySet<string> declared, out string? error)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `RouteTests`:
 
@@ -2589,7 +2589,7 @@ Add to `RouteTests`:
     }
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 The second test passes against the old routes. Run it after Step 3 deletes them.
 
@@ -2599,7 +2599,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: PASS today, and it is the assertion that must keep holding once `PublicRoutes` is gone.
 
-- [ ] **Step 3: Write the four files**
+- [x] **Step 3: Write the four files**
 
 `Endpoints/Browsing/BrowsingGroup.cs`:
 
@@ -2750,7 +2750,7 @@ public static class EntitiesEndpoint
 `Endpoints/Browsing/CatalogEndpoint.cs` holds the body of the old `/api/catalog` handler, taking
 `ICodexService codex, IEntityStoreService store`, named `GetCatalog`, with no request model.
 
-- [ ] **Step 4: Let `CodexQuery.Parse` take the declared names**
+- [x] **Step 4: Let `CodexQuery.Parse` take the declared names**
 
 In `Models/CodexQuery.cs`, delete the `Parameters` list and change the signature and the two places
 that read it:
@@ -2765,7 +2765,7 @@ its `default:` throw, which now fires when `EntitiesRequest` grows a property no
 message's parameter list reads `declared` instead of `Parameters.Select(p => p.Name)`. `MaximumPageSize`
 becomes `public const int MaximumPageSize = 200;` so a test can name it.
 
-- [ ] **Step 5: Write the browsing operation transformer**
+- [x] **Step 5: Write the browsing operation transformer**
 
 Create `src/FellowshipExtractor.Api/Endpoints/Documentation/BrowsingDocument.cs` holding
 `BrowsingParameters : IOpenApiOperationTransformer`, taking `ICodexService codex`. It acts only on
@@ -2775,14 +2775,14 @@ the operation whose endpoint name is `GetEntities`, adding one query parameter p
 `ApiParameters.Note` wrote for `ApiQuerySet.Catalogue`. Register it beside the other transformers in
 `Program.cs`.
 
-- [ ] **Step 6: Map them and delete the old routes**
+- [x] **Step 6: Map them and delete the old routes**
 
 Add `app.MapBrowsing();` to `MapApiEndpoints`. Delete `app.MapGet("/api/search", ...)`,
 `app.MapGet("/api/entities", ...)`, `app.MapGet("/api/catalog", ...)` and the whole
 `public static class PublicRoutes` from `Program.cs`. `PublicTypes.NoSuchType` keeps its callers in
 `NotFound.razor`, `CodexQuery` and now `SearchEndpoint`.
 
-- [ ] **Step 7: Run it and watch it pass**
+- [x] **Step 7: Run it and watch it pass**
 
 ```powershell
 dotnet build src/FellowshipExtractor.slnx
@@ -2791,7 +2791,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: all passed.
 
-- [ ] **Step 8: Run the whole suite and commit**
+- [x] **Step 8: Run the whole suite and commit**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q

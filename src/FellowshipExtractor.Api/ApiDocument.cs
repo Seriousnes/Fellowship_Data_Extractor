@@ -84,15 +84,6 @@ public sealed class ApiParameters(IEntityStoreService store, ICodexService codex
     private IEnumerable<ApiParameter> Declared(ApiQuerySet set) => set switch
     {
         ApiQuerySet.Tooltip => TooltipQuery.Parameters,
-        ApiQuerySet.Search => SuggestionService.Parameters,
-        ApiQuerySet.Catalogue =>
-        [
-            .. CodexQuery.Parameters,
-            .. codex.Facets.Select(facet => new ApiParameter(
-                facet.Key, ApiValue.Text, $"{facet.Label}, comma separated for several.")),
-            .. codex.Flags.Select(flag => new ApiParameter(
-                flag.Key, ApiValue.Flag, flag.Label + ".")),
-        ],
         _ => [],
     };
 
@@ -100,13 +91,9 @@ public sealed class ApiParameters(IEntityStoreService store, ICodexService codex
     {
         ApiQuerySet.Tooltip =>
             "Any stat the build names may also be given, as `?Stamina=40`, to state a magnitude the tooltip " +
-            "prints rather than computes, and a rating may be given as a percentage with the `Pct` suffix. " +
+            $"prints rather than computes, and a rating may be given as a percentage with the " +
+            $"`{StatConversion.PercentageSuffix}` suffix. " +
             "The stats are " + string.Join(", ", store.Stats.Names) + ".",
-
-        ApiQuerySet.Catalogue =>
-            "Each measure bounds a range through a `Min` and a `Max` parameter, as `?cooldownMin=3`. " +
-            "The measures are " + string.Join(", ", codex.Measures.Select(measure => measure.Key)) + ". " +
-            "`sort` takes name, type or a measure, and `group` takes a facet.",
 
         _ => null,
     };

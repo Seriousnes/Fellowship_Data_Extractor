@@ -199,6 +199,29 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         Assert.Equal(HttpStatusCode.BadRequest, level.StatusCode);
     }
 
+    [Fact]
+    public async Task A_type_naming_no_entity_type_is_refused_by_search()
+    {
+        var response = await client.GetAsync(
+            "/api/search?q=boot&type=no-such-type", Xunit.TestContext.Current.CancellationToken);
+
+        var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains(PublicTypes.NoSuchType("no-such-type"), body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_three_cross_type_routes_keep_their_paths()
+    {
+        foreach (var address in new[] { "/api/search?q=boot", "/api/entities?size=1", "/api/catalog" })
+        {
+            var response = await client.GetAsync(address, Xunit.TestContext.Current.CancellationToken);
+
+            Assert.True(response.IsSuccessStatusCode, $"{address} answered {(int)response.StatusCode}.");
+        }
+    }
+
     private static (int Id, string? Hero) Sample(EntityType type)
     {
         var document = Factory.Store.Entities.First(candidate => EntityTypes.TypeOf(candidate) == type);

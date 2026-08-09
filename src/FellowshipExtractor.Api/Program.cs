@@ -15,6 +15,7 @@ builder.Services.AddOpenApi(ApiDocument.Name, options =>
     options.AddOperationTransformer<ApiParameters>();
     options.AddOperationTransformer<StatsNote>();
     options.AddOperationTransformer<ListParameters>();
+    options.AddOperationTransformer<BrowsingParameters>();
 });
 builder.Services.AddProblemDetails();
 builder.Services.AddValidation();
@@ -81,52 +82,6 @@ app.MapGet("/api/tooltip/{slug}/{id:int}", async (string slug, int id, HttpConte
     .ProducesProblem(StatusCodes.Status400BadRequest)
     .ProducesProblem(StatusCodes.Status404NotFound);
 
-app.MapGet("/api/search", (HttpContext http, ISuggestionService suggestions) =>
-{
-    var limit = SuggestionService.Limit(http.Request.Query["limit"]);
-
-    var asked = http.Request.Query["type"].ToString();
-    var narrowed = string.IsNullOrWhiteSpace(asked) ? null : asked;
-
-    if (narrowed is not null && !EntityTypes.TryParse(narrowed, out _))
-    {
-        return PublicRoutes.NoSuchType(narrowed, StatusCodes.Status400BadRequest);
-    }
-
-    return Results.Ok(suggestions.For(http.Request.Query["q"].ToString(), narrowed, limit));
-})
-    .WithName("Search")
-    .WithTags(ApiDocument.Browsing)
-    .WithSummary("Ranked name matches, across every type or the one the type= slug names.")
-    .WithQuery(ApiQuerySet.Search)
-    .Produces<SearchResponse>()
-    .ProducesProblem(StatusCodes.Status400BadRequest);
-
-app.MapGet("/api/entities", (HttpContext http, ICodexService codex, ICodexSearchService search, ICodexViewService view) =>
-{
-    var query = CodexQuery.Parse(http.Request.Query, codex, out var error);
-
-    if (error is not null)
-    {
-        return Results.Problem(
-            title: "The filter could not be read.", detail: error, statusCode: StatusCodes.Status400BadRequest);
-    }
-
-    var results = search.Run(query);
-
-    return Results.Ok(new EntitiesResponse(
-        results.Total,
-        results.Page,
-        results.Pages,
-        [.. results.Rows.Select(row => SearchResult.From(row.Shown, view))]));
-})
-    .WithName("GetEntities")
-    .WithTags(ApiDocument.Browsing)
-    .WithSummary("Every entity a filter leaves, paged.")
-    .WithQuery(ApiQuerySet.Catalogue)
-    .Produces<EntitiesResponse>()
-    .ProducesProblem(StatusCodes.Status400BadRequest);
-
 app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, IEntityStoreService store, ICodexViewService view) =>
 {
     if (!EntityTypes.TryParse(slug, out var type))
@@ -147,39 +102,6 @@ app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, IEntityStoreServ
     .WithSummary("One entity's record, with every per-hero reading of its id.")
     .Produces<IReadOnlyList<PublicEntity>>()
     .ProducesProblem(StatusCodes.Status404NotFound);
-
-app.MapGet("/api/catalog", (ICodexService codex, IEntityStoreService store) =>
-{
-    var rows = store.Entities;
-
-    return Results.Ok(new
-    {
-        entities = codex.Count,
-
-        types = codex.Types.Select(type => new { type.Slug, type.Label, type.Group, type.Count }),
-        menu = codex.Menu,
-        facets = codex.Facets.Select(facet => codex.View(facet, rows)),
-        flags = codex.Flags.Select(flag => new { flag.Key, flag.Label }),
-        measures = codex.Measures.Select(measure => new { measure.Key, measure.Label, measure.Unit }),
-
-        heroes = store.Vocabulary.Heroes.Select(hero => new
-        {
-            hero.Name,
-            hero.ArmorType,
-            hero.PrimaryStat,
-            hero.Color,
-        }),
-        rarities = store.Vocabulary.Rarities.Select(rarity => new
-        {
-            rarity.Tier,
-            rarity.DisplayName,
-            rarity.GemDisplayName,
-        }),
-    });
-})
-    .WithName("GetCatalog")
-    .WithTags(ApiDocument.Browsing)
-    .WithSummary("The menus, entity types and filter facets the browser is driven by.");
 
 app.Run();
 

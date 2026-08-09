@@ -339,7 +339,7 @@ else
     {
         var asked = Http?.Request.Query ?? Microsoft.AspNetCore.Http.QueryCollection.Empty;
 
-        Query = CodexQuery.Parse(asked, Catalog, out Error);
+        Query = CodexQuery.Parse(asked, Catalog, RequestProperties.Of(typeof(EntitiesRequest)), out Error);
 
         if (Error is null && asked.Any(p => p.Value.All(string.IsNullOrEmpty)))
         {

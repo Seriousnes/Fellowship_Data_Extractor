@@ -16,6 +16,7 @@ public class ListingTests(Export export)
                 pair => pair.Key,
                 pair => new Microsoft.Extensions.Primitives.StringValues(pair.Value))),
             export.View.Codex,
+            RequestProperties.Of(typeof(EntitiesRequest)),
             out var error);
 
         Assert.Null(error);

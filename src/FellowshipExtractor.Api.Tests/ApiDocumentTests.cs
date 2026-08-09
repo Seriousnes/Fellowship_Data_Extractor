@@ -6,7 +6,7 @@ namespace FellowshipExtractor.Api.Tests;
 public class ApiDocumentTests(Export export)
 {
     private static readonly IReadOnlyList<ApiParameter> Declared =
-        [.. TooltipQuery.Parameters, .. CodexQuery.Parameters, .. SuggestionService.Parameters];
+        [.. TooltipQuery.Parameters, .. SuggestionService.Parameters];
 
     [Fact]
     public void Every_parameter_the_document_declares_is_one_a_reader_can_name()
@@ -24,7 +24,7 @@ public class ApiDocumentTests(Export export)
     [Fact]
     public void No_parameter_is_declared_twice_on_one_endpoint()
     {
-        foreach (var set in new[] { TooltipQuery.Parameters, CodexQuery.Parameters, SuggestionService.Parameters })
+        foreach (var set in new[] { TooltipQuery.Parameters, SuggestionService.Parameters })
         {
             var names = set.Select(parameter => parameter.Name).ToArray();
 
@@ -74,10 +74,11 @@ public class ApiDocumentTests(Export export)
     public void Every_filter_parameter_the_document_declares_is_read_rather_than_refused()
     {
         var codex = new CodexService(export.Store, new DesignTokenService(export.Store.Vocabulary));
+        var declared = RequestProperties.Of(typeof(EntitiesRequest));
 
         IEnumerable<ApiParameter> offered =
         [
-            .. CodexQuery.Parameters,
+            .. declared.Select(name => new ApiParameter(name, ApiValue.Text, name)),
             .. codex.Facets.Select(facet => new ApiParameter(facet.Key, ApiValue.Text, facet.Label)),
             .. codex.Flags.Select(flag => new ApiParameter(flag.Key, ApiValue.Flag, flag.Label)),
         ];
@@ -89,7 +90,7 @@ public class ApiDocumentTests(Export export)
                 : Sample(parameter);
 
             CodexQuery.Parse(
-                Query(new Dictionary<string, string> { [parameter.Name] = value }), codex, out var error);
+                Query(new Dictionary<string, string> { [parameter.Name] = value }), codex, declared, out var error);
 
             Assert.True(
                 error is null,
@@ -101,7 +102,7 @@ public class ApiDocumentTests(Export export)
             foreach (var bound in new[] { measure.Key + "Min", measure.Key + "Max" })
             {
                 CodexQuery.Parse(
-                    Query(new Dictionary<string, string> { [bound] = "1" }), codex, out var error);
+                    Query(new Dictionary<string, string> { [bound] = "1" }), codex, declared, out var error);
 
                 Assert.True(error is null, $"The document names '{bound}' and the filter answers: {error}");
             }
@@ -124,10 +125,10 @@ public class ApiDocumentTests(Export export)
         ApiValue.Whole => "1",
         ApiValue.Number => "1",
         ApiValue.Flag => "true",
-        _ when parameter.Name.Equals("gemPowers", StringComparison.Ordinal) => "1:2",
-        _ when parameter.Name.Equals("sort", StringComparison.Ordinal) => "name",
-        _ when parameter.Name.Equals("type", StringComparison.Ordinal) => PublicTypes.All[0].Slug,
-        _ when parameter.Name.Equals("group", StringComparison.Ordinal) => "slot",
+        _ when parameter.Name.Equals("gemPowers", StringComparison.OrdinalIgnoreCase) => "1:2",
+        _ when parameter.Name.Equals("sort", StringComparison.OrdinalIgnoreCase) => "name",
+        _ when parameter.Name.Equals("type", StringComparison.OrdinalIgnoreCase) => PublicTypes.All[0].Slug,
+        _ when parameter.Name.Equals("group", StringComparison.OrdinalIgnoreCase) => "slot",
         _ => "1",
     };
 
