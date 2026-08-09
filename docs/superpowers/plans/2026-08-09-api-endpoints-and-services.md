@@ -3365,7 +3365,7 @@ git commit -m "Read the published document rather than the lists that used to fi
 
 **Files:** none changed unless a difference is found.
 
-- [ ] **Step 1: Draw the cards again**
+- [x] **Step 1: Draw the cards again**
 
 ```powershell
 $env:FELLOWSHIP_TIP_DUMP = "$env:TEMP\fx-tip-after"
@@ -3374,7 +3374,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 $env:FELLOWSHIP_TIP_DUMP = $null
 ```
 
-- [ ] **Step 2: Diff the two folders**
+- [x] **Step 2: Diff the two folders**
 
 ```powershell
 $before = Get-ChildItem "$env:TEMP\fx-tip-before" -Filter *.html | Sort-Object Name
@@ -3400,14 +3400,14 @@ Expected: no output from either. This move changes how a request is bound and wh
 declared, not what a card draws, so an empty diff is what says the move preserved the rendering. Any
 file that does differ is a defect to fix before finishing.
 
-- [ ] **Step 3: Read the published document by hand**
+- [x] **Step 3: Read the published document by hand**
 
 Start the app in the shell tool's background mode with `FELLOWSHIP_EXPORT` pointing at
 `output/export`, fetch `/openapi/v1.json`, and read the item and ability tooltip operations. The item
 operation carries its twelve parameters, the ability operation carries `id` and `Hero`, and `Hero` is
 the only name the two have in common. Stop the process.
 
-- [ ] **Step 4: Run everything one last time**
+- [x] **Step 4: Run everything one last time**
 
 ```powershell
 dotnet build src/FellowshipExtractor.slnx
@@ -3418,7 +3418,7 @@ dotnet test src/FellowshipExtractor.Tests --nologo -v q
 Expected: build clean with no warnings, the API suite failing only the two `PlaceholderReadingTests`
 cases the stale export causes, and the extractor suite green.
 
-- [ ] **Step 5: Confirm the shape on disk**
+- [x] **Step 5: Confirm the shape on disk**
 
 ```powershell
 (Get-ChildItem src/FellowshipExtractor.Api/Endpoints -Directory | Where-Object Name -ne 'Browsing' |
@@ -3430,7 +3430,7 @@ Get-Content src/FellowshipExtractor.Api/Program.cs | Measure-Object -Line
 Expected: 22 type folders, 15 service files, and a `Program.cs` that holds composition and nothing
 else.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit --allow-empty -m "Confirm the move drew nothing new"
