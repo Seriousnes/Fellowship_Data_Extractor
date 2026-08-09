@@ -156,11 +156,23 @@ cards already read. `TooltipQuery` keeps its shape and loses `Parse` and `Parame
 | type | parameters beyond `Id` |
 | --- | --- |
 | item | `Hero`, `Rarity`, `ItemLevel`, `Upgrades`, `MaxUpgrades`, `NoSocket`, `PotentialPower`, `Armor`, `GemPowers`, `Trait`, `AllocatedTraits`, `MaxTraits` |
+| ability, weapon-power | `Hero` |
 | talent-slot | `Hero` |
 | blessing | `State`, `EquippedTier` |
 | trait | `State` |
 | gem, currency | `Rarity` |
-| the remaining 16 | none |
+| the remaining 14 | none |
+
+A tooltip endpoint declares `Hero` where the name changes a reading. On an item and a talent slot it
+picks which reading of the id is drawn. On an ability and a weapon power it names the stat a
+`PrimaryAttribute` coefficient scales off, which the 10 legendary weapon powers carry, being
+equippable by the whole roster where every other ability belongs to one hero and names that hero's
+stat outright. `Placeholders` resolves that stat from the magnitude when exactly one primary is
+given, so `Hero` reads for the two cases a magnitude cannot answer: naming the stat with no
+magnitude supplied, and choosing between several primaries when more than one is.
+
+A rarity, an item level, a tempering count and a power potential are read off an item, so they are
+declared on the item endpoint alone.
 
 The record endpoints for item and talent-slot carry `Hero`. Every other record endpoint takes `Id`
 alone.
@@ -286,9 +298,13 @@ in `NotFound.razor` and `CodexQuery`.
 - `EndpointTests` reads `EndpointDataSource` and asserts every `EntityType` member has both routes
   registered, which fails when a type is added without its endpoint files.
 - `ParameterTests` reads the published OpenAPI document and asserts that `/api/ability/{id}/tooltip`
-  and `/api/item/{id}/tooltip` declare no parameter in common beyond `id`, that every declared
-  parameter binds a property of that endpoint's request model, and that `id` is the only required
-  parameter on any route.
+  declares `id` and `Hero` and nothing else, that the rarity, item level, tempering and power
+  potential parameters are declared on the item endpoint alone, that every declared parameter binds
+  a property of that endpoint's request model, and that `id` is the only required parameter on any
+  route.
+- `AbilityScalingTests` asserts an ability carrying a `PrimaryAttribute` coefficient prints the stat
+  named by `?hero=`, prints the same magnitude whether the stat is named by `?hero=` or by supplying
+  one primary, and takes the hero's stat when several primaries are supplied at once.
 - `ApiDocumentTests` reads the published document rather than the `ApiParameter` lists.
 - `RouteTests.An_entity_page_carries_the_hero_and_the_state_into_its_refetch_address` asserts the
   `data-stage` address reads `/api/item/{id}/tooltip?hero=...&state=...`.
@@ -305,5 +321,5 @@ a route is declared, not what a card draws, so an empty diff is what says the mo
 rendering.
 
 Ask the running app for `/openapi/v1.json` and read the item and ability tooltip operations. The
-item operation carries its twelve parameters, the ability operation carries `id` alone, and neither
-carries a parameter the other does.
+item operation carries its twelve parameters, the ability operation carries `id` and `Hero`, and
+`Hero` is the only name the two have in common.
