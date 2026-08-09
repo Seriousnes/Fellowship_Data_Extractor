@@ -199,8 +199,28 @@ values reach the parser joined by a comma. `?trait=7` reads as trait 7 at rank 1
 ## The stat parameters
 
 Every tooltip endpoint accepts a magnitude for any stat the build names, as `?Stamina=40`, and a
-rating as a percentage with the `Pct` suffix. The names come from `store.Stats.Names`, so they are
-read from the raw query rather than declared as properties.
+rating as a percentage with the `Pct` suffix. The names are open ended rather than declared as
+properties, so they are read from the raw query.
+
+The names are the distinct display names of `Vocabulary.StatCalculation.Attributes`, the build's own
+attribute table, less any name a request model already declares. That is 22 in this build, and it
+carries every stat a hero sheet prints: Stamina and the three primaries, Haste, Critical Strike,
+Expertise and Spirit, Block Chance, Parry, Dodge and Cooldown Reduction, Health, Attack Speed, Life
+Steal, Move Speed, Tenacity, Max Mana, Mana, the two regeneration rates and Reflect Heal.
+
+`StatParameters` is built from that table. `EntityStore.Census` gathers the stats items roll, which
+is what `Codex` counts, and no longer decides which parameters an endpoint accepts: it named 8 of
+the 24 attributes, so a hero sheet's Parry or Dodge answered 400 as an unknown parameter.
+
+`Armor` names the line the tooltip prints above the computed stats, which `ItemTooltipRequest`
+declares. The attribute table carries `Armor` and `BonusArmor` under that one display name, so
+holding the name for the printed line is also what keeps one parameter from meaning two attributes.
+
+Five of the accepted names change a magnitude in this build. `Strength`, `Intellect` and `Agility`
+are the only values a coefficient multiplies, alone or through `PrimaryAttribute`; `Haste` shortens
+a cast and a tickrate; `Expertise` sharpens a band. The rest are accepted, parsed and carried in
+`TooltipQuery` so that a caller can post a whole stat block, and the set follows the attribute table
+if a later build scales something off one of them.
 
 `.WithStats()` marks the endpoints that take them. An operation transformer appends the sentence
 naming the stats to each marked operation.
@@ -305,6 +325,9 @@ in `NotFound.razor` and `CodexQuery`.
 - `AbilityScalingTests` asserts an ability carrying a `PrimaryAttribute` coefficient prints the stat
   named by `?hero=`, prints the same magnitude whether the stat is named by `?hero=` or by supplying
   one primary, and takes the hero's stat when several primaries are supplied at once.
+- `StatParameterTests` asserts every distinct display name in `Vocabulary.StatCalculation.Attributes`
+  is accepted on an ability tooltip, naming Parry and Dodge, that `Armor` reads as the printed line
+  rather than an attribute, and that a name the table does not carry answers 400.
 - `ApiDocumentTests` reads the published document rather than the `ApiParameter` lists.
 - `RouteTests.An_entity_page_carries_the_hero_and_the_state_into_its_refetch_address` asserts the
   `data-stage` address reads `/api/item/{id}/tooltip?hero=...&state=...`.
