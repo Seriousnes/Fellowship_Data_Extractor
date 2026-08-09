@@ -133,22 +133,15 @@ Common, Uncommon and Rare draw none.
 
 ## The slot
 
-An item icon's background carries its rarity. The shipped icon's alpha channel is zero over the
-artwork and non-zero over the background, so compositing the rarity colour through that channel
-colours the background and leaves the artwork alone.
-
-`export-all` writes each icon that a rarity reaches once per rarity, as
-`<icon>-<rarity>.png`, composed as `colour * alpha + rgb * (1 - alpha)` with the alpha the texture
-ships and the colour that rarity's row names. Fitted against a screenshot of item 5217 for Helena,
-`Linked Heavy Metal Cloak`, this reaches 18.98 RMS where the untinted icon reaches 30.97, at a fitted
-alpha scale of 0.93, so the channel is used as it ships. `ItemDocument.IconByRarity` names the
-variant each rarity reads.
-
-An item slot then draws, in this order:
+An item slot draws, in this order:
 
 1. `T_Borders_EmptyWithoutFrame`, the plate.
-2. The icon variant for the slot's rarity, clipped to the chamfered well.
+2. The item icon, clipped to the chamfered well.
 3. `T_Borders_RarityFrame` in the slot's rarity, and `T_Borders_GlassFrame` over it.
+
+`OnRarityChanged` reaches the frame through `SetColorAndOpacity`, which multiplies the texture by the
+rarity colour. `export-all` performs that multiply once per rarity, so the frame arrives in storage
+already coloured.
 
 ## The read side
 
