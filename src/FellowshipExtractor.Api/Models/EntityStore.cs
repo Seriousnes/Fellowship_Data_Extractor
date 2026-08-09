@@ -17,45 +17,6 @@ public enum Lookup
     NotForThatHero,
 }
 
-public sealed class StatParameters
-{
-    private readonly IReadOnlyDictionary<string, string> byName;
-    private readonly IReadOnlyDictionary<string, AttributeDisplay> byStat;
-
-    public StatParameters(IEnumerable<string> stats, IReadOnlyDictionary<string, AttributeDisplay> attributes)
-    {
-        var named = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var rows = new Dictionary<string, AttributeDisplay>(StringComparer.OrdinalIgnoreCase);
-        var printed = new List<string>();
-
-        foreach (var stat in stats)
-        {
-            if (!attributes.TryGetValue(stat, out var attribute) ||
-                attribute.DisplayName is not { Length: > 0 })
-            {
-                continue;
-            }
-
-            named[Compact(attribute.DisplayName)] = stat;
-            rows[stat] = attribute;
-            printed.Add(attribute.DisplayName);
-        }
-
-        byName = named;
-        byStat = rows;
-        Names = [.. printed.Order(StringComparer.OrdinalIgnoreCase)];
-    }
-
-    public IReadOnlyList<string> Names { get; }
-
-    public string? Resolve(string parameter) =>
-        byName.TryGetValue(Compact(parameter), out var stat) ? stat : null;
-
-    public AttributeDisplay Row(string stat) => byStat[stat];
-
-    private static string Compact(string name) => name.Replace(" ", string.Empty, StringComparison.Ordinal);
-}
-
 public sealed class EntityStore
 {
     private const string DefaultDropRow = "Default";
@@ -151,7 +112,7 @@ public sealed class EntityStore
         Ids = byId.Count;
 
         Entities = entities;
-        Stats = new StatParameters(stats, Vocabulary.StatCalculation.Attributes);
+        Stats = new StatParameters(Vocabulary.StatCalculation.Attributes);
 
         Types =
         [

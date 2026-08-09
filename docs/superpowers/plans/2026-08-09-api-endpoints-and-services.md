@@ -367,7 +367,7 @@ git commit -m "Draw every card to a folder so the move can be measured"
   `IReadOnlyList<string> Names`, `string? Resolve(string parameter)`, `AttributeDisplay Row(string stat)`.
   `EntityStore.Stats` keeps its name and type.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/FellowshipExtractor.Api.Tests/StatParameterTests.cs`:
 
@@ -424,7 +424,7 @@ public class StatParameterTests(Export export)
 }
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~StatParameterTests"
@@ -433,7 +433,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 Expected: FAIL. `Names` today holds the 8 display names the census reaches, so the first, second and
 fourth tests fail on the missing names.
 
-- [ ] **Step 3: Move `StatParameters` and build it from the table**
+- [x] **Step 3: Move `StatParameters` and build it from the table**
 
 Create `src/FellowshipExtractor.Api/Models/StatParameters.cs`:
 
@@ -496,7 +496,7 @@ Stats = new StatParameters(Vocabulary.StatCalculation.Attributes);
 Leave `Census` and the two `logger.LogInformation` calls as they stand. `Census` still fills the
 `stats` and `spelled` sets the log lines count, and `stats` is no longer read by anything else.
 
-- [ ] **Step 4: Run it and watch it pass**
+- [x] **Step 4: Run it and watch it pass**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~StatParameterTests"
@@ -504,7 +504,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: 4 passed.
 
-- [ ] **Step 5: Run the whole suite**
+- [x] **Step 5: Run the whole suite**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
@@ -513,7 +513,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
 Expected: `Failed: 2, Passed: 262, Total: 264`. `TooltipQueryTests.Leaves_armor_free_for_the_reserved_parameter_to_claim`
 still passes, because `Armor` is the name two rows share.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/FellowshipExtractor.Api/Models/StatParameters.cs src/FellowshipExtractor.Api/Models/EntityStore.cs src/FellowshipExtractor.Api.Tests/StatParameterTests.cs
