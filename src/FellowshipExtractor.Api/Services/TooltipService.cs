@@ -7,29 +7,29 @@ namespace FellowshipExtractor.Api.Services;
 public interface ITooltipService
 {
     Task<IResult> Get(EntityType type, int id, IQueryCollection request);
+
+    Task<IResult> Get(EntityType type, int id, TooltipQuery query);
 }
 
 public sealed class TooltipService(IEntityStoreService store, IFragmentService fragments) : ITooltipService
 {
-    public async Task<IResult> Get(EntityType type, int id, IQueryCollection request)
+    public Task<IResult> Get(EntityType type, int id, IQueryCollection request)
     {
         var query = TooltipQuery.Parse(request, store.Stats, out var error);
 
-        if (error is not null)
-        {
-            return Results.Problem(
+        return error is null
+            ? Get(type, id, query)
+            : Task.FromResult(Results.Problem(
                 title: "The request parameters could not be read.",
                 detail: $"{error} Stat parameters are {string.Join(", ", store.Stats.Names)}.",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
+                statusCode: StatusCodes.Status400BadRequest));
+    }
 
+    public async Task<IResult> Get(EntityType type, int id, TooltipQuery query)
+    {
         if (query.Hero is { } named && store.Hero(named) is null)
         {
-            return Results.Problem(
-                title: "No such hero.",
-                detail: $"'{named}' is not a hero. The roster is " +
-                    string.Join(", ", store.Vocabulary.Heroes.Select(h => h.Name).Order()) + ".",
-                statusCode: StatusCodes.Status400BadRequest);
+            return Lookups.NoSuchHero(named, store.Vocabulary.Heroes);
         }
 
         if (query.Rarity is { } rung && store.Rarity(rung, gem: false) is null && store.Rarity(rung, gem: true) is null)
@@ -55,49 +55,18 @@ public sealed class TooltipService(IEntityStoreService store, IFragmentService f
 
         var outcome = store.Resolve(type, id, query.Hero, out var document, out var hero);
 
-        var noun = PublicTypes.Noun(type);
-        var readings = store.All(type, id);
-
-        if (outcome == Lookup.Found)
+        if (outcome != Lookup.Found)
         {
-            var fragment = await fragments.Render<Components.Tooltip.Tooltip>(new()
-            {
-                ["Entity"] = document!,
-                ["Query"] = query,
-                ["Hero"] = hero,
-            });
-
-            return Results.Content(fragment, "text/html; charset=utf-8");
+            return Lookups.Problem(outcome, type, id, hero, store.All(type, id));
         }
 
-        return outcome switch
+        var fragment = await fragments.Render<Components.Tooltip.Tooltip>(new()
         {
-            Lookup.NoSuchId => Results.Problem(
-                title: "No such id.",
-                detail: $"The build has no {noun} {id}.",
-                statusCode: StatusCodes.Status404NotFound),
+            ["Entity"] = document!,
+            ["Query"] = query,
+            ["Hero"] = hero,
+        });
 
-            Lookup.NeedsHero => Results.Problem(
-                title: "This id reads differently per hero.",
-                detail: $"The build has {readings.Count} readings of {noun} {id} and no hero was given. " +
-                    "Add hero=<name> to pick one. The readings are " +
-                    string.Join("; ", readings.Select(Describe)) + ".",
-                statusCode: StatusCodes.Status400BadRequest),
-
-            Lookup.NotForThatHero => Results.Problem(
-                title: "Not for that hero.",
-                detail: $"The build has no reading of {noun} {id} for {hero!.Name}.",
-                statusCode: StatusCodes.Status404NotFound),
-
-            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
-        };
+        return Results.Content(fragment, "text/html; charset=utf-8");
     }
-
-    private static string Describe(EntityDocument document) => document switch
-    {
-        ItemDocument item => $"{PublicTypes.NameOf(item)} " +
-            $"[{item.ArmorType?.ToString() ?? "any"}/{item.PrimaryStat?.ToString() ?? "any"}]",
-        TalentSlotDocument slot => $"{PublicTypes.NameOf(slot)} [{slot.Hero}]",
-        _ => PublicTypes.NameOf(document),
-    };
 }

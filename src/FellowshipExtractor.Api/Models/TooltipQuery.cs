@@ -46,6 +46,54 @@ public readonly record struct ImbuedTrait(int Id, int Rank)
     }
 }
 
+public sealed class ImbuedTraits
+{
+    public required IReadOnlyList<ImbuedTrait> Values { get; init; }
+
+    public static bool TryParse(string? value, out ImbuedTraits result)
+    {
+        var parsed = new List<ImbuedTrait>();
+
+        foreach (var part in (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!ImbuedTrait.TryParse(part, CultureInfo.InvariantCulture, out var trait))
+            {
+                result = new ImbuedTraits { Values = [] };
+                return false;
+            }
+
+            parsed.Add(trait);
+        }
+
+        result = new ImbuedTraits { Values = parsed };
+        return true;
+    }
+}
+
+public sealed class GemPowers
+{
+    public required IReadOnlyList<GemPower> Values { get; init; }
+
+    public static bool TryParse(string? value, out GemPowers result)
+    {
+        var parsed = new List<GemPower>();
+
+        foreach (var part in (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!GemPower.TryParse(part, CultureInfo.InvariantCulture, out var gem))
+            {
+                result = new GemPowers { Values = [] };
+                return false;
+            }
+
+            parsed.Add(gem);
+        }
+
+        result = new GemPowers { Values = parsed };
+        return true;
+    }
+}
+
 public sealed record TooltipQuery
 {
     public string? Hero { get; init; }

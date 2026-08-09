@@ -1081,7 +1081,7 @@ Nothing here answers a route yet. It is the machinery every endpoint file leans 
   - `ITooltipService.Get(EntityType type, int id, TooltipQuery query)`.
   - `ImbuedTraits` and `GemPowers`, each with `TryParse(string?, out T)` and `Values`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/FellowshipExtractor.Api.Tests/ParameterTests.cs` with its first case only:
 
@@ -1164,7 +1164,7 @@ public class ParameterTests(Export export)
 }
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~ParameterTests"
@@ -1172,7 +1172,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: FAIL to compile, `RequestProperties`, `StatQuery`, `ImbuedTraits` and `GemPowers` not found.
 
-- [ ] **Step 3: Write `RequestProperties`**
+- [x] **Step 3: Write `RequestProperties`**
 
 Create `src/FellowshipExtractor.Api/Endpoints/RequestProperties.cs`:
 
@@ -1195,7 +1195,7 @@ public static class RequestProperties
 }
 ```
 
-- [ ] **Step 4: Write the two list types**
+- [x] **Step 4: Write the two list types**
 
 Append to `src/FellowshipExtractor.Api/Models/TooltipQuery.cs`:
 
@@ -1249,7 +1249,7 @@ public sealed class GemPowers
 }
 ```
 
-- [ ] **Step 5: Write `StatQuery`**
+- [x] **Step 5: Write `StatQuery`**
 
 Create `src/FellowshipExtractor.Api/Endpoints/StatQuery.cs`:
 
@@ -1343,7 +1343,7 @@ public static class StatQuery
 }
 ```
 
-- [ ] **Step 6: Run the parameter tests and watch them pass**
+- [x] **Step 6: Run the parameter tests and watch them pass**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~ParameterTests"
@@ -1351,7 +1351,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: 6 passed.
 
-- [ ] **Step 7: Write `Lookups` and `Records`**
+- [x] **Step 7: Write `Lookups` and `Records`**
 
 Append to `src/FellowshipExtractor.Api/Models/Lookup.cs`:
 
@@ -1434,7 +1434,7 @@ public static class Records
 }
 ```
 
-- [ ] **Step 8: Give `ITooltipService` the query overload**
+- [x] **Step 8: Give `ITooltipService` the query overload**
 
 In `Services/TooltipService.cs`, add to the interface and the class:
 
@@ -1446,7 +1446,7 @@ The new body is the existing one from the `store.Hero` check onward. The existin
 `Get(EntityType, int, IQueryCollection)` keeps its `TooltipQuery.Parse` call and then calls the new
 overload. Task 12 deletes it.
 
-- [ ] **Step 9: Write `WithStats`, the stats note and the list schema**
+- [x] **Step 9: Write `WithStats`, the stats note and the list schema**
 
 Create `src/FellowshipExtractor.Api/Endpoints/Documentation/StatsDocument.cs`:
 
@@ -1534,7 +1534,7 @@ public sealed class ListParameters : IOpenApiSchemaTransformer
 }
 ```
 
-- [ ] **Step 10: Write the empty `ApiEndpoints` and wire it in**
+- [x] **Step 10: Write the empty `ApiEndpoints` and wire it in**
 
 Create `src/FellowshipExtractor.Api/Endpoints/ApiEndpoints.cs`:
 
@@ -1572,7 +1572,7 @@ app.MapApiEndpoints();
 
 Add `global using FellowshipExtractor.Api.Endpoints;` to `Api.Tests/GlobalUsings.cs`.
 
-- [ ] **Step 11: Build and run the suite**
+- [x] **Step 11: Build and run the suite**
 
 ```powershell
 dotnet build src/FellowshipExtractor.slnx
@@ -1581,7 +1581,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
 
 Expected: build clean, `Failed: 2, Passed: 271, Total: 273`.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add -A

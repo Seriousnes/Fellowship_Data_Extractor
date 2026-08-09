@@ -4,6 +4,7 @@ global using Fellowship.SDK.Documents;
 global using FellowshipExtractor.Api.Components.Cx;
 global using FellowshipExtractor.Api.Components.Sections;
 global using FellowshipExtractor.Api.Components.Shared;
+global using FellowshipExtractor.Api.Endpoints;
 global using FellowshipExtractor.Api.Models;
 global using FellowshipExtractor.Api.Services;
 global using Microsoft.Extensions.DependencyInjection;

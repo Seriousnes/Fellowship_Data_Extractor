@@ -2,6 +2,7 @@ using Fellowship.SDK.Documents;
 
 using FellowshipExtractor.Api;
 using FellowshipExtractor.Api.Components;
+using FellowshipExtractor.Api.Endpoints;
 using FellowshipExtractor.Api.Models;
 using FellowshipExtractor.Api.Services;
 
@@ -12,8 +13,11 @@ builder.Services.AddOpenApi(ApiDocument.Name, options =>
 {
     options.AddDocumentTransformer<ApiInfo>();
     options.AddOperationTransformer<ApiParameters>();
+    options.AddOperationTransformer<StatsNote>();
+    options.AddOperationTransformer<ListParameters>();
 });
 builder.Services.AddProblemDetails();
+builder.Services.AddValidation();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.DefaultIgnoreCondition =
@@ -62,6 +66,8 @@ app.UseSwaggerUI(options =>
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+
+app.MapApiEndpoints();
 
 app.MapGet("/api/ability/{abilityId:int}", (int abilityId, HttpContext http, ITooltipService tooltips) =>
         tooltips.Get(EntityType.Ability, abilityId, http.Request.Query))
