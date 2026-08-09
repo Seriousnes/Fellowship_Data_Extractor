@@ -29,6 +29,12 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public void The_hosted_seeder_the_factory_removes_still_finds_every_service_it_takes()
+    {
+        Assert.NotNull(ActivatorUtilities.CreateInstance<IconSeederService>(factory.Services));
+    }
+
+    [Fact]
     public void Every_rendering_service_is_resolved_through_an_interface()
     {
         var provider = factory.Services;

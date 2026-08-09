@@ -14,10 +14,10 @@ public class NoteTests : BunitContext
     public void Renders_inline_markup_inside_the_note()
     {
         var cut = Render<Note>(p => p.AddChildContent(
-            "belongs to <a href=\"/entity/items/12\" data-tip=\"/api/items/12/tooltip\">Old Boots</a>"));
+            "belongs to <a href=\"/entity/item/12\" data-tip=\"/api/item/12/tooltip\">Old Boots</a>"));
 
         cut.MarkupMatches(
             "<p class=\"cx-note\">belongs to " +
-            "<a href=\"/entity/items/12\" data-tip=\"/api/items/12/tooltip\">Old Boots</a></p>");
+            "<a href=\"/entity/item/12\" data-tip=\"/api/item/12/tooltip\">Old Boots</a></p>");
     }
 }
