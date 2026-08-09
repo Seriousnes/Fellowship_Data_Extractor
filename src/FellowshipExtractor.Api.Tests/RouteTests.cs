@@ -55,46 +55,50 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public async Task Tooltip_route_answers_200_for_one_id_of_every_type()
+    public async Task Both_routes_answer_for_one_id_of_every_type()
     {
         foreach (var type in Enum.GetValues<EntityType>())
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
-            var address = hero is null ? $"/api/tooltip/{slug}/{id}" : $"/api/tooltip/{slug}/{id}?hero={hero}";
+            var wearer = hero is null ? string.Empty : $"?hero={hero}";
 
-            var response = await client.GetAsync(address, Xunit.TestContext.Current.CancellationToken);
+            foreach (var address in new[] { $"/api/{slug}/{id}{wearer}", $"/api/{slug}/{id}/tooltip{wearer}" })
+            {
+                var response = await client.GetAsync(address, Xunit.TestContext.Current.CancellationToken);
+                var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
 
-            var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
-
-            Assert.True(
-                response.StatusCode == HttpStatusCode.OK,
-                $"{address} answered {(int)response.StatusCode}, not 200. Body: {body}");
+                Assert.True(
+                    response.StatusCode == HttpStatusCode.OK,
+                    $"{address} answered {(int)response.StatusCode}, not 200. Body: {body}");
+            }
         }
     }
 
     [Fact]
-    public async Task Entity_route_answers_a_record_typed_as_the_slug_asked_for()
+    public async Task A_record_answers_the_type_the_slug_asked_for()
     {
         foreach (var type in Enum.GetValues<EntityType>())
         {
-            var (id, _) = Sample(type);
+            var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
+            var wearer = hero is null ? string.Empty : $"?hero={hero}";
 
-            var response = await client.GetAsync(
-                $"/api/entity/{slug}/{id}", Xunit.TestContext.Current.CancellationToken);
-            response.EnsureSuccessStatusCode();
+            var body = await client.GetStringAsync(
+                $"/api/{slug}/{id}{wearer}", Xunit.TestContext.Current.CancellationToken);
 
-            var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
-            using var readings = JsonDocument.Parse(body);
+            using var reading = JsonDocument.Parse(body);
 
-            Assert.True(readings.RootElement.GetArrayLength() > 0, $"{slug}/{id} answered no readings.");
-
-            foreach (var reading in readings.RootElement.EnumerateArray())
-            {
-                Assert.Equal(slug, reading.GetProperty("type").GetString());
-            }
+            Assert.Equal(slug, reading.RootElement.GetProperty("type").GetString());
         }
+    }
+
+    [Fact]
+    public async Task An_address_naming_no_type_is_a_routing_404()
+    {
+        var response = await client.GetAsync("/api/no-such-type/1", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -257,14 +261,6 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public async Task An_unknown_type_answers_404_rather_than_throwing()
-    {
-        var response = await client.GetAsync("/api/tooltip/no-such-type/1", Xunit.TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
     public async Task An_entity_page_draws_the_node_state_its_url_asks_for()
     {
         var trait = Factory.Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null);
@@ -281,19 +277,30 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public async Task An_entity_page_carries_the_hero_and_the_state_into_its_refetch_address()
+    public async Task An_entity_page_carries_the_hero_into_its_refetch_address()
     {
         var (id, hero) = Shared();
         var slug = EntityTypes.Slug(EntityType.Item);
         var wearer = Uri.EscapeDataString(hero);
 
         var page = await client.GetStringAsync(
-            $"/entity/{slug}/{id}?hero={wearer}&state=unavailable", Xunit.TestContext.Current.CancellationToken);
+            $"/entity/{slug}/{id}?hero={wearer}", Xunit.TestContext.Current.CancellationToken);
 
         Assert.Contains(
-            $"data-stage=\"/api/tooltip/{slug}/{id}?hero={wearer}&amp;state=unavailable\"",
-            page,
-            StringComparison.Ordinal);
+            $"data-stage=\"/api/{slug}/{id}/tooltip?hero={wearer}\"", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_entity_page_carries_the_state_into_the_refetch_address_of_a_card_that_draws_one()
+    {
+        var trait = Factory.Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null);
+        var slug = EntityTypes.Slug(EntityType.Trait);
+
+        var page = await client.GetStringAsync(
+            $"/entity/{slug}/{trait.Id}?state=unavailable", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains(
+            $"data-stage=\"/api/{slug}/{trait.Id}/tooltip?state=unavailable\"", page, StringComparison.Ordinal);
     }
 
     private static (int Id, string Hero) Shared()

@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using FellowshipExtractor.Api.Endpoints;
 using FellowshipExtractor.Api.Models;
 
 using Microsoft.AspNetCore.Http;
@@ -37,9 +38,15 @@ public sealed class RollLineTests
     private static StatParameters Parameters() =>
         new(Export.Loaded.Vocabulary.StatCalculation.Attributes);
 
+    private sealed record Probe
+    {
+        public int Id { get; init; }
+    }
+
     private static IReadOnlyList<StatLine> Lines(params (string Key, string Value)[] pairs)
     {
-        var query = TooltipQuery.Parse(
+        var query = StatQuery.Read(
+            new Probe(),
             new QueryCollection(pairs
                 .GroupBy(pair => pair.Key, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => new StringValues(group.Select(p => p.Value).ToArray()))),

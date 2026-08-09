@@ -2819,7 +2819,7 @@ whole query goes with them.
   `TooltipTests.cs`, `Sections/BorrowedTests.cs`, `Sections/PageSectionTests.cs`,
   `Sections/ParticularsTests.cs`, `ScopedTests.cs`, `Cx/FactTests.cs`, `Cx/NoteTests.cs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Replace the two walking tests in `RouteTests` and the two address tests:
 
@@ -2899,7 +2899,7 @@ Replace the two walking tests in `RouteTests` and the two address tests:
     }
 ```
 
-- [ ] **Step 2: Run them and watch them fail**
+- [x] **Step 2: Run them and watch them fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~RouteTests"
@@ -2907,7 +2907,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: FAIL on the two address tests, which still read `/api/tooltip/...`.
 
-- [ ] **Step 3: Move `Tip` and the page address**
+- [x] **Step 3: Move `Tip` and the page address**
 
 In `CodexViewService`:
 
@@ -2941,7 +2941,7 @@ In `EntityPage.razor`, inject `ITooltipViewService Cards` and read:
     }
 ```
 
-- [ ] **Step 4: Delete the two slug routes and the old parser**
+- [x] **Step 4: Delete the two slug routes and the old parser**
 
 From `Program.cs`, delete `app.MapGet("/api/tooltip/{slug}/{id:int}", ...)` and
 `app.MapGet("/api/entity/{slug}/{id:int}", ...)`. `Program.cs` now builds the host, registers the
@@ -2963,7 +2963,7 @@ From `Services/SuggestionService.cs`, delete `Parameters`.
 From `Services/TooltipService.cs`, delete the `IQueryCollection` overload from both the interface and
 the class.
 
-- [ ] **Step 5: Move the tests that named the old shapes**
+- [x] **Step 5: Move the tests that named the old shapes**
 
 `TooltipQueryTests` becomes a walk over the request models rather than over `Parse`. A declared
 property reaches `ToQuery` through the model, and only a stat reaches it through `raw`, so each case
@@ -3116,7 +3116,7 @@ The literal `/api/tooltip/{slug}/{id}` strings in `Sections/BorrowedTests.cs`,
 and `Cx/NoteTests.cs` are parameters fed in rather than addresses produced, so they still pass. Move
 them to `/api/{slug}/{id}/tooltip` so no test file states an address the app never writes.
 
-- [ ] **Step 6: Build and run the whole suite**
+- [x] **Step 6: Build and run the whole suite**
 
 ```powershell
 dotnet build src/FellowshipExtractor.slnx
@@ -3125,7 +3125,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
 
 Expected: build clean, only the two `PlaceholderReadingTests` failures.
 
-- [ ] **Step 7: Confirm the old shapes are gone**
+- [x] **Step 7: Confirm the old shapes are gone**
 
 ```powershell
 Select-String -Path src/FellowshipExtractor.Api -Include *.cs,*.razor -Recurse `
@@ -3134,7 +3134,7 @@ Select-String -Path src/FellowshipExtractor.Api -Include *.cs,*.razor -Recurse `
 
 Expected: no matches.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A

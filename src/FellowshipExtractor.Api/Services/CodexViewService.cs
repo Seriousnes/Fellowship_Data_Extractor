@@ -135,8 +135,8 @@ public sealed class CodexViewService(
 
     public string Tip(EntityDocument document)
     {
-        var where = $"/api/tooltip/{EntityTypes.Slug(EntityTypes.TypeOf(document))}/" +
-            document.Id.ToString(CultureInfo.InvariantCulture);
+        var where = $"/api/{EntityTypes.Slug(EntityTypes.TypeOf(document))}/" +
+            document.Id.ToString(CultureInfo.InvariantCulture) + "/tooltip";
 
         return Reading(document) is { } hero ? $"{where}?hero={Uri.EscapeDataString(hero)}" : where;
     }

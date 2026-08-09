@@ -1,100 +1,167 @@
+using System.Text.Json;
+
 using Microsoft.AspNetCore.Http;
 
 namespace FellowshipExtractor.Api.Tests;
 
-[Collection(Corpus.Name)]
-public class ApiDocumentTests(Export export)
+public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
 {
-    private static readonly IReadOnlyList<ApiParameter> Declared =
-        [.. TooltipQuery.Parameters, .. SuggestionService.Parameters];
+    private readonly JsonDocument document;
+
+    private readonly ICodexService codex;
+
+    public ApiDocumentTests(RouteTests.Factory factory)
+    {
+        var client = factory.CreateClient();
+
+        document = JsonDocument.Parse(client.GetStringAsync(ApiDocument.Route).GetAwaiter().GetResult());
+        codex = factory.Services.GetRequiredService<ICodexService>();
+    }
+
+    private IEnumerable<(string Path, JsonElement Operation)> Operations() =>
+        document.RootElement.GetProperty("paths").EnumerateObject()
+            .Select(entry => (entry.Name, entry.Value.GetProperty("get")));
+
+    private static IEnumerable<JsonElement> Parameters(JsonElement operation) =>
+        operation.TryGetProperty("parameters", out var declared) ? declared.EnumerateArray() : [];
+
+    private JsonElement Operation(string path) =>
+        document.RootElement.GetProperty("paths").GetProperty(path).GetProperty("get");
+
+    private string Description(string path, string parameter) =>
+        Parameters(Operation(path))
+            .First(declared => string.Equals(
+                declared.GetProperty("name").GetString(), parameter, StringComparison.OrdinalIgnoreCase))
+            .GetProperty("description")
+            .GetString()!;
 
     [Fact]
     public void Every_parameter_the_document_declares_is_one_a_reader_can_name()
     {
-        foreach (var parameter in Declared)
+        foreach (var (path, operation) in Operations())
         {
-            Assert.False(
-                string.IsNullOrWhiteSpace(parameter.Name),
-                "A parameter with no name would land in the document as an unusable field.");
+            foreach (var parameter in Parameters(operation))
+            {
+                var name = parameter.GetProperty("name").GetString();
 
-            Assert.EndsWith(".", parameter.Description, StringComparison.Ordinal);
+                Assert.False(
+                    string.IsNullOrWhiteSpace(name),
+                    $"{path} declares a parameter with no name, which would land in the document unusable.");
+
+                Assert.True(
+                    parameter.TryGetProperty("description", out var described),
+                    $"{path} declares '{name}' and states nothing about it.");
+
+                Assert.EndsWith(".", described.GetString()!, StringComparison.Ordinal);
+            }
         }
     }
 
     [Fact]
     public void No_parameter_is_declared_twice_on_one_endpoint()
     {
-        foreach (var set in new[] { TooltipQuery.Parameters, SuggestionService.Parameters })
+        foreach (var (path, operation) in Operations())
         {
-            var names = set.Select(parameter => parameter.Name).ToArray();
+            var names = Parameters(operation).Select(parameter => parameter.GetProperty("name").GetString()!).ToArray();
 
-            Assert.Equal(names.Length, names.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+            Assert.True(
+                names.Length == names.Distinct(StringComparer.OrdinalIgnoreCase).Count(),
+                $"{path} declares a parameter twice.");
         }
     }
 
     [Fact]
-    public void Every_tooltip_parameter_the_document_declares_changes_the_reading()
+    public void The_search_limit_description_names_the_bounds_the_service_holds_to()
     {
-        var bare = Signature(TooltipQuery.Parse(Query([]), export.Store.Stats, out _));
+        var described = Description("/api/search", "Limit");
 
-        foreach (var parameter in TooltipQuery.Parameters)
+        Assert.Contains(
+            SuggestionService.MaximumLimit.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            described,
+            StringComparison.Ordinal);
+
+        Assert.Contains(
+            SuggestionService.DefaultLimit.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            described,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_page_size_description_names_the_bounds_the_filter_holds_to()
+    {
+        var described = Description("/api/entities", "Size");
+
+        Assert.Contains(
+            CodexQuery.MaximumPageSize.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            described,
+            StringComparison.Ordinal);
+
+        Assert.Contains(
+            CodexQuery.DefaultPageSize.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            described,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_document_names_the_entity_count_it_was_given()
+    {
+        var described = document.RootElement.GetProperty("info").GetProperty("description").GetString()!;
+
+        Assert.Contains(
+            RouteTests.Factory.Store.Ids.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
+            described,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Every_tag_is_a_type_label_or_the_browsing_tag()
+    {
+        var offered = PublicTypes.All
+            .Select(type => type.Label)
+            .Append(BrowsingGroup.Tag)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var (_, operation) in Operations())
         {
-            var query = Query(new Dictionary<string, string> { [parameter.Name] = Sample(parameter) });
+            if (!operation.TryGetProperty("tags", out var tags)) continue;
 
-            var parsed = TooltipQuery.Parse(query, export.Store.Stats, out var error);
-
-            Assert.True(
-                error is null,
-                $"The document offers '{parameter.Name}' and the parser answers: {error}");
-
-            Assert.True(
-                Signature(parsed) != bare,
-                $"'{parameter.Name}' is offered by the document and reserved by the parser, and giving it " +
-                "changes nothing about the reading, so a caller would set it and see no difference.");
+            foreach (var tag in tags.EnumerateArray())
+            {
+                Assert.Contains(tag.GetString()!, offered, StringComparer.Ordinal);
+            }
         }
     }
 
-    private static string Signature(TooltipQuery query) => string.Join(
-        '|',
-        query.Hero, query.Rarity, query.State, query.EquippedTier,
-        query.ItemLevel, query.Upgrades, query.MaxUpgrades, query.NoSocket,
-        query.PotentialPower, query.Armor, query.AllocatedTraits, query.MaxTraits,
-        query.Traits.Count, query.GemPowers.Count, query.Stats.Count, query.Attributes.Count);
-
     [Fact]
-    public void A_parameter_the_document_never_declares_is_refused()
+    public void The_search_limit_holds_between_the_bounds_the_document_states()
     {
-        TooltipQuery.Parse(
-            Query(new Dictionary<string, string> { ["nonesuch"] = "1" }), export.Store.Stats, out var error);
-
-        Assert.NotNull(error);
+        Assert.Equal(SuggestionService.DefaultLimit, SuggestionService.Limit(null));
+        Assert.Equal(SuggestionService.DefaultLimit, SuggestionService.Limit("not a number"));
+        Assert.Equal(1, SuggestionService.Limit("0"));
+        Assert.Equal(1, SuggestionService.Limit("-5"));
+        Assert.Equal(
+            SuggestionService.MaximumLimit,
+            SuggestionService.Limit((SuggestionService.MaximumLimit + 1).ToString()));
+        Assert.Equal(25, SuggestionService.Limit("25"));
     }
 
     [Fact]
     public void Every_filter_parameter_the_document_declares_is_read_rather_than_refused()
     {
-        var codex = new CodexService(export.Store, new DesignTokenService(export.Store.Vocabulary));
         var declared = RequestProperties.Of(typeof(EntitiesRequest));
 
-        IEnumerable<ApiParameter> offered =
-        [
-            .. declared.Select(name => new ApiParameter(name, ApiValue.Text, name)),
-            .. codex.Facets.Select(facet => new ApiParameter(facet.Key, ApiValue.Text, facet.Label)),
-            .. codex.Flags.Select(flag => new ApiParameter(flag.Key, ApiValue.Flag, flag.Label)),
-        ];
-
-        foreach (var parameter in offered)
+        foreach (var parameter in Parameters(Operation("/api/entities")))
         {
-            var value = codex.Facet(parameter.Name) is { } facet
+            var name = parameter.GetProperty("name").GetString()!;
+
+            var value = codex.Facet(name) is { } facet
                 ? codex.Offered(facet).FirstOrDefault() ?? string.Empty
-                : Sample(parameter);
+                : Sample(name);
 
             CodexQuery.Parse(
-                Query(new Dictionary<string, string> { [parameter.Name] = value }), codex, declared, out var error);
+                Query(new Dictionary<string, string> { [name] = value }), codex, declared, out var error);
 
-            Assert.True(
-                error is null,
-                $"The document offers '{parameter.Name}' and the filter answers: {error}");
+            Assert.True(error is null, $"The document offers '{name}' and the filter answers: {error}");
         }
 
         foreach (var measure in codex.Measures)
@@ -109,26 +176,11 @@ public class ApiDocumentTests(Export export)
         }
     }
 
-    [Fact]
-    public void The_search_limit_holds_between_the_bounds_the_document_states()
+    private static string Sample(string name) => name switch
     {
-        Assert.Equal(SuggestionService.DefaultLimit, SuggestionService.Limit(null));
-        Assert.Equal(SuggestionService.DefaultLimit, SuggestionService.Limit("not a number"));
-        Assert.Equal(1, SuggestionService.Limit("0"));
-        Assert.Equal(1, SuggestionService.Limit("-5"));
-        Assert.Equal(SuggestionService.MaximumLimit, SuggestionService.Limit((SuggestionService.MaximumLimit + 1).ToString()));
-        Assert.Equal(25, SuggestionService.Limit("25"));
-    }
-
-    private static string Sample(ApiParameter parameter) => parameter.Value switch
-    {
-        ApiValue.Whole => "1",
-        ApiValue.Number => "1",
-        ApiValue.Flag => "true",
-        _ when parameter.Name.Equals("gemPowers", StringComparison.OrdinalIgnoreCase) => "1:2",
-        _ when parameter.Name.Equals("sort", StringComparison.OrdinalIgnoreCase) => "name",
-        _ when parameter.Name.Equals("type", StringComparison.OrdinalIgnoreCase) => PublicTypes.All[0].Slug,
-        _ when parameter.Name.Equals("group", StringComparison.OrdinalIgnoreCase) => "slot",
+        _ when name.Equals("sort", StringComparison.OrdinalIgnoreCase) => "name",
+        _ when name.Equals("type", StringComparison.OrdinalIgnoreCase) => PublicTypes.All[0].Slug,
+        _ when name.Equals("group", StringComparison.OrdinalIgnoreCase) => "slot",
         _ => "1",
     };
 

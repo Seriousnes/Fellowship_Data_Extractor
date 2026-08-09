@@ -16,14 +16,6 @@ public sealed class SuggestionService(ISearchIndexService index, ICodexViewServi
 
     public const int MaximumLimit = 100;
 
-    public static readonly IReadOnlyList<ApiParameter> Parameters =
-    [
-        new("q", ApiValue.Text, "The text to match. An empty one answers no results."),
-        new("type", ApiValue.Text, "One entity type slug, to narrow the results to it."),
-        new("limit", ApiValue.Whole,
-            $"How many results to answer, 1 to {MaximumLimit}. Defaults to {DefaultLimit}."),
-    ];
-
     public static int Limit(string? asked) =>
         int.TryParse(asked, out var wanted) ? Math.Clamp(wanted, 1, MaximumLimit) : DefaultLimit;
 

@@ -12,7 +12,6 @@ builder.AddServiceDefaults();
 builder.Services.AddOpenApi(ApiDocument.Name, options =>
 {
     options.AddDocumentTransformer<ApiInfo>();
-    options.AddOperationTransformer<ApiParameters>();
     options.AddOperationTransformer<StatsNote>();
     options.AddOperationTransformer<ListParameters>();
     options.AddOperationTransformer<BrowsingParameters>();
@@ -70,47 +69,6 @@ app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.MapApiEndpoints();
 
-app.MapGet("/api/tooltip/{slug}/{id:int}", async (string slug, int id, HttpContext http, ITooltipService tooltips) =>
-        EntityTypes.TryParse(slug, out var type)
-            ? await tooltips.Get(type, id, http.Request.Query)
-            : PublicRoutes.NoSuchType(slug, StatusCodes.Status404NotFound))
-    .WithName("GetTooltip")
-    .WithTags(ApiDocument.Tooltips)
-    .WithSummary("Any entity's tooltip as a self-contained HTML fragment, addressed by type and id.")
-    .WithQuery(ApiQuerySet.Tooltip)
-    .Produces<string>(StatusCodes.Status200OK, "text/html")
-    .ProducesProblem(StatusCodes.Status400BadRequest)
-    .ProducesProblem(StatusCodes.Status404NotFound);
-
-app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, IEntityStoreService store, ICodexViewService view) =>
-{
-    if (!EntityTypes.TryParse(slug, out var type))
-    {
-        return PublicRoutes.NoSuchType(slug, StatusCodes.Status404NotFound);
-    }
-
-    var readings = store.All(type, id);
-
-    return readings.Count == 0
-        ? Results.Problem(
-            title: "No such id.", detail: $"The build has no {PublicTypes.Noun(type)} {id}.",
-            statusCode: StatusCodes.Status404NotFound)
-        : Results.Ok(readings.Select(reading => PublicEntity.From(reading, view)));
-})
-    .WithName("GetEntity")
-    .WithTags(ApiDocument.Records)
-    .WithSummary("One entity's record, with every per-hero reading of its id.")
-    .Produces<IReadOnlyList<PublicEntity>>()
-    .ProducesProblem(StatusCodes.Status404NotFound);
-
 app.Run();
 
 public partial class Program;
-
-public static class PublicRoutes
-{
-    public static IResult NoSuchType(string? asked, int status) => Results.Problem(
-        title: "No such type.",
-        detail: PublicTypes.NoSuchType(asked),
-        statusCode: status);
-}

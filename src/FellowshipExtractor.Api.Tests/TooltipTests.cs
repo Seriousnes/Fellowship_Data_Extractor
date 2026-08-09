@@ -195,13 +195,12 @@ public class TooltipTests : BunitContext
 
     private IRenderedComponent<Components.Tooltip.Tooltip> Card(EntityDocument entity, string query)
     {
-        var parsed = TooltipQuery.Parse(
-            new QueryCollection(query
-                .Split('&')
-                .Select(pair => pair.Split('='))
-                .ToDictionary(pair => pair[0], pair => new StringValues(pair[1]))),
-            Store.Stats,
-            out _);
+        var asked = new QueryCollection(query
+            .Split('&')
+            .Select(pair => pair.Split('='))
+            .ToDictionary(pair => pair[0], pair => new StringValues(pair[1])));
+
+        var parsed = new AbilityTooltipRequest { Id = entity.Id }.ToQuery(asked, Store.Stats, out _);
 
         return Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, entity)

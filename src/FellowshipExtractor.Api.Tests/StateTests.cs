@@ -126,13 +126,8 @@ public class StateTests : BunitContext
     [Fact]
     public void The_node_a_query_string_names_reaches_the_query()
     {
-        var query = TooltipQuery.Parse(
-            new QueryCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
-            {
-                ["state"] = "available",
-            }),
-            export.Store.Stats,
-            out var error);
+        var query = new TraitTooltipRequest { Id = 1, State = "available" }
+            .ToQuery(new QueryCollection(), export.Store.Stats, out var error);
 
         Assert.Null(error);
         Assert.Equal("available", query.State);

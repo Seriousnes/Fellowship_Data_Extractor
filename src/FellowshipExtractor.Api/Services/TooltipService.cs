@@ -6,25 +6,11 @@ namespace FellowshipExtractor.Api.Services;
 
 public interface ITooltipService
 {
-    Task<IResult> Get(EntityType type, int id, IQueryCollection request);
-
     Task<IResult> Get(EntityType type, int id, TooltipQuery query);
 }
 
 public sealed class TooltipService(IEntityStoreService store, IFragmentService fragments) : ITooltipService
 {
-    public Task<IResult> Get(EntityType type, int id, IQueryCollection request)
-    {
-        var query = TooltipQuery.Parse(request, store.Stats, out var error);
-
-        return error is null
-            ? Get(type, id, query)
-            : Task.FromResult(Results.Problem(
-                title: "The request parameters could not be read.",
-                detail: $"{error} Stat parameters are {string.Join(", ", store.Stats.Names)}.",
-                statusCode: StatusCodes.Status400BadRequest));
-    }
-
     public async Task<IResult> Get(EntityType type, int id, TooltipQuery query)
     {
         if (query.Hero is { } named && store.Hero(named) is null)
