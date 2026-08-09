@@ -19,6 +19,4 @@ public static class TooltipView
     public sealed record Fact(string Label, string Value, string? Title);
 
     public sealed record TraitLine(string Name, int Rank);
-
-    public enum Block { Identity, Facts, Rolls, Traits, Prose, Overflow, Granted, Legendaries, Sets }
 }
