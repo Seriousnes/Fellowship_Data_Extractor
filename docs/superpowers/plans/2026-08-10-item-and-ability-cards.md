@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- **The app must not be running.** `FellowshipExtractor.Api.exe` and Visual Studio hold `Fellowship.SDK.dll` in `src/FellowshipExtractor.Api/bin`, and every build fails at the copy step with MSB3027 while they do. Stop the app before Task 1.
+- **Build from the worktree, never from the shared checkout.** `FellowshipExtractor.Api.exe` and Visual Studio hold `Fellowship.SDK.dll` in `G:\source\Fellowship_Data_Extractor\src\FellowshipExtractor.Api\bin`, so a build there fails at the copy step with MSB3027 while the app runs. The worktree has a `bin` of its own and builds while the app is up. An MSB3027 in this plan means a command was run from the wrong directory.
 - **Byte-identical output.** No card gets a root class of its own, no SCSS partial is added, and `Styles/tooltip.scss` keeps its three `@use` lines.
 - **No comments.** Do not add `//`, `/* */`, XML doc comments or `<!-- -->` to any file in this plan.
 - **No em dashes or en dashes** in code, markup, commit messages or UI text.
@@ -22,25 +22,108 @@
 
 ---
 
-### Task 1: Draw the baseline
+### Task 1: Widen the dump sample and draw the baseline
+
+`TooltipDumpTests` draws the three lowest ids of each type. For items those are 53, 54 and 55, and
+not one of them carries `GrantsId`, `LegendaryStatIds`, `SetBonus`, `GemSlot`, `UniqueEquipped`,
+`ArmorType` or `Slot`. So `TipGranted`, `TipLegendaries`, `TipSets` and most of the Identity guard
+appear in no file of the dump, and an empty diff would prove nothing about the most intricate lines
+Task 2 rewrites. The sample is widened first, and the same harness then draws both sides.
 
 **Files:**
-- Create: none. This task writes only to a temp folder outside the repo.
+- Modify: `src/FellowshipExtractor.Api.Tests/TooltipDumpTests.cs`
 
 **Interfaces:**
-- Consumes: `TooltipDumpTests` as it already exists at `9d38d2e`.
-- Produces: `%TEMP%\fx-tips\before`, the markup every later task is measured against.
+- Consumes: `IEntityStoreService.Entities`, `EntityTypes.TypeOf`.
+- Produces: `%TEMP%\fx-tips\before`, the markup every later task is measured against, and the corpus hash that says whether the two dumps are comparable.
 
 - [ ] **Step 1: Confirm the tree is clean and on the right commit**
 
 Run:
 ```powershell
-git -C G:\source\Fellowship_Data_Extractor.item-and-ability-cards log --oneline -1
-git -C G:\source\Fellowship_Data_Extractor.item-and-ability-cards status --short
+Set-Location G:\source\Fellowship_Data_Extractor.item-and-ability-cards
+git log --oneline -1
+git status --short
 ```
-Expected: the spec revision commit on top of `9d38d2e`, and no modified files.
+Expected: the plan commit on top of `154d03f`, and no modified files.
 
-- [ ] **Step 2: Draw the baseline**
+- [ ] **Step 2: Widen the sample**
+
+In `src/FellowshipExtractor.Api.Tests/TooltipDumpTests.cs`, replace this block:
+
+```csharp
+            var ids = export.Store.Entities
+                .Where(row => EntityTypes.TypeOf(row) == type)
+                .Select(row => row.Id)
+                .Distinct()
+                .Order()
+                .Take(3);
+```
+
+with:
+
+```csharp
+            var ids = Ids(type);
+```
+
+and add these two methods to the class, beside `FirstTrait`:
+
+```csharp
+    private IReadOnlyList<int> Ids(EntityType type)
+    {
+        var rows = export.Store.Entities.Where(row => EntityTypes.TypeOf(row) == type).ToArray();
+
+        var ids = rows.Select(row => row.Id).Distinct().Order().Take(3).ToList();
+
+        foreach (var id in Shapes(rows))
+        {
+            if (!ids.Contains(id)) ids.Add(id);
+        }
+
+        return [.. ids.Order()];
+    }
+
+    private static IEnumerable<int> Shapes(IReadOnlyList<EntityDocument> rows)
+    {
+        int? First(Func<EntityDocument, bool> carries) =>
+            rows.Where(carries).Select(row => (int?)row.Id).Order().FirstOrDefault();
+
+        int?[] picks =
+        [
+            First(row => row is ItemDocument { GrantsId: not null }),
+            First(row => row is ItemDocument { LegendaryStatIds.Count: > 0 }),
+            First(row => row is ItemDocument { SetBonus.Count: > 0 }),
+            First(row => row is ItemDocument { GemSlot: true }),
+            First(row => row is ItemDocument { UniqueEquipped: true }),
+            First(row => row is ItemDocument { ArmorType: not null }),
+            First(row => row is ItemDocument { Slot: not null }),
+            First(row => row is ItemDocument { Stats.Count: > 0 }),
+            First(row => row is ItemDocument { Description: not null }),
+            First(row => row is AbilityDocument { Detail.Count: > 0 }),
+            First(row => row is GemTypeDocument { OverflowDescription: not null }),
+        ];
+
+        return picks.Where(id => id is not null).Select(id => id!.Value);
+    }
+```
+
+- [ ] **Step 3: Commit the harness before it measures anything**
+
+```bash
+git add src/FellowshipExtractor.Api.Tests/TooltipDumpTests.cs
+git commit -m "Draw the shapes the item card is about to be rewritten around"
+```
+
+- [ ] **Step 4: Record the corpus the baseline is drawn from**
+
+Run:
+```powershell
+Set-Location G:\source\Fellowship_Data_Extractor.item-and-ability-cards
+(Get-FileHash output\export\entities.jsonl -Algorithm SHA256).Hash
+```
+Write the hash into the task notes. `output` is a junction to the shared checkout, and another session regenerating the export mid-task would move the dump for reasons that have nothing to do with these cards.
+
+- [ ] **Step 5: Draw the baseline**
 
 Run:
 ```powershell
@@ -48,23 +131,38 @@ Set-Location G:\source\Fellowship_Data_Extractor.item-and-ability-cards
 Remove-Item -Recurse -Force "$env:TEMP\fx-tips" -ErrorAction SilentlyContinue
 $env:FELLOWSHIP_TIP_DUMP = "$env:TEMP\fx-tips\before"
 dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj --filter "FullyQualifiedName~TooltipDumpTests" --nologo
+Remove-Item Env:\FELLOWSHIP_TIP_DUMP
 ```
-Expected: PASS. If it fails with MSB3027 the app is still running; stop it and repeat.
+Expected: PASS.
 
-- [ ] **Step 3: Confirm the baseline is not empty**
+- [ ] **Step 6: Confirm the baseline reaches every group the cards will draw**
 
 Run:
 ```powershell
-(Get-ChildItem "$env:TEMP\fx-tips\before" -Filter *.html).Count
+$before = "$env:TEMP\fx-tips\before"
+(Get-ChildItem $before -Filter *.html).Count
+foreach ($mark in 'sec ability','sec legendary','sec setbonus','class="rar"','class="temper"','Gem socket','Unique Equipped','Past Max Power','class="stats"','class="note"') {
+    $hits = (Select-String -Path "$before\*.html" -Pattern ([regex]::Escape($mark)) -List).Count
+    "{0,-18} {1}" -f $mark, $hits
+}
 ```
-Expected: a count in the hundreds. If it is 0, the corpus did not load; check that `output` in the worktree is a junction to `G:\source\Fellowship_Data_Extractor\output` and that `output\export\entities.jsonl` exists.
+Expected: a file count in the hundreds and a non-zero hit count on every row. The corpus carries
+200 items with a granted power, 37 with legendary stats, 930 with a set bonus, 732 with a gem
+socket, 2 unique-equipped, 3 abilities with `Detail` and 6 gem types with overflow wording, so every
+row above is reachable. A zero means the dump still never draws that group and the guard producing
+it would be rewritten unmeasured; add a shape to `Shapes` that reaches it and redraw before going
+on.
 
-- [ ] **Step 4: Run the whole suite green before touching anything**
+One guard is unmeasurable and that is a property of the build, not of the sample: no item in the
+corpus carries a `Description`, so `Item.razor`'s prose guard draws nothing for any of the 5744 of
+them. Leave the guard in, matching what `Blocks` reads today, and do not go looking for a file that
+exercises it.
+
+- [ ] **Step 7: Run the whole suite green before touching anything**
 
 Run:
 ```powershell
 Set-Location G:\source\Fellowship_Data_Extractor.item-and-ability-cards
-Remove-Item Env:\FELLOWSHIP_TIP_DUMP -ErrorAction SilentlyContinue
 dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj --nologo
 ```
 Expected: PASS. Record the passing test count; every later task must match or exceed it.
@@ -964,6 +1062,15 @@ Expected: PASS, at the Task 1 count plus the tests added in Tasks 2 to 5. `Toolt
 
 - [ ] **Step 7: Draw the after dump and diff it**
 
+First confirm the corpus has not moved under the junction since Task 1 Step 4:
+```powershell
+Set-Location G:\source\Fellowship_Data_Extractor.item-and-ability-cards
+(Get-FileHash output\export\entities.jsonl -Algorithm SHA256).Hash
+```
+If it does not match the hash recorded in Task 1, another session regenerated the export. Redraw the
+baseline from this commit's parent before comparing; do not debug a card against a diff the corpus
+caused.
+
 Run:
 ```powershell
 Set-Location G:\source\Fellowship_Data_Extractor.item-and-ability-cards
@@ -1163,7 +1270,11 @@ State in the handoff what was toggled and what was seen. If the page could not b
 | The service and the static | 6 |
 | The styling | Global constraint: no root class, no partial, no `@use` |
 | Tests | 2, 3, 4, 5 |
-| Verification | 1, 5 (Step 7), 7 |
+| Verification | 1 (sample, baseline, corpus hash), 5 Step 7 (diff), 7 (interactive) |
+
+`Blessing` and `Trait` are rendered only by `Tooltip.razor`, so moving their `Entity` onto the
+cascade in Task 5 breaks no test. `BlessingCardTests` renders `BlessingCrest`, which this plan does
+not touch, and every other suite reaches them through `Tooltip`.
 
 **Type consistency**
 
