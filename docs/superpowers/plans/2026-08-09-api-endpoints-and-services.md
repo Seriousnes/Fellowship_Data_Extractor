@@ -1605,7 +1605,7 @@ The item is the shape carrying everything, so it is where `AddValidation`, `[Des
 - Produces: `IEndpointRouteBuilder.MapItem()`, `ItemRecordRequest` (`Id`, `Hero`),
   `ItemTooltipRequest` (`Id` and the twelve).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `RouteTests`:
 
@@ -1669,7 +1669,7 @@ Add to `RouteTests`:
     }
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~An_item_answers_its_record"
@@ -1677,7 +1677,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: FAIL. `/api/item/{id}` answers the old tooltip route as HTML, so the JSON assertion fails.
 
-- [ ] **Step 3: Write the group**
+- [x] **Step 3: Write the group**
 
 Create `src/FellowshipExtractor.Api/Endpoints/Item/ItemGroup.cs`:
 
@@ -1698,7 +1698,7 @@ public static class ItemGroup
 }
 ```
 
-- [ ] **Step 4: Write the record endpoint**
+- [x] **Step 4: Write the record endpoint**
 
 Create `src/FellowshipExtractor.Api/Endpoints/Item/ItemRecordEndpoint.cs`:
 
@@ -1731,7 +1731,7 @@ public static class ItemRecordEndpoint
 }
 ```
 
-- [ ] **Step 5: Write the tooltip endpoint**
+- [x] **Step 5: Write the tooltip endpoint**
 
 Create `src/FellowshipExtractor.Api/Endpoints/Item/ItemTooltipEndpoint.cs`:
 
@@ -1831,12 +1831,12 @@ public static class ItemTooltipEndpoint
 }
 ```
 
-- [ ] **Step 6: Map it and retire the colliding route**
+- [x] **Step 6: Map it and retire the colliding route**
 
 In `ApiEndpoints.MapApiEndpoints`, add `app.MapItem();`. In `Program.cs`, delete the whole
 `app.MapGet("/api/item/{itemId:int}", ...)` block, which now collides with `/api/item/{id:int}`.
 
-- [ ] **Step 7: Run it and watch it pass**
+- [x] **Step 7: Run it and watch it pass**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~An_item_answers_its_record|FullyQualifiedName~An_optional_property_the_binder|FullyQualifiedName~A_hero_the_roster_does_not_carry|FullyQualifiedName~An_item_level_past_the_ceiling"
@@ -1865,7 +1865,7 @@ before the `return`, keeping today's wording:
 
 and change the test's assertion to `Assert.Contains("itemLevel 10001 is outside", body, StringComparison.Ordinal)`.
 
-- [ ] **Step 8: Read the published operation**
+- [x] **Step 8: Read the published operation**
 
 ```powershell
 $env:FELLOWSHIP_EXPORT = "G:\source\Fellowship_Data_Extractor.route-redesign\output\export"
@@ -1886,7 +1886,7 @@ fetch `/openapi/v1.json` and read the item tooltip operation. Confirm three thin
 
 Stop the process.
 
-- [ ] **Step 9: Run the whole suite**
+- [x] **Step 9: Run the whole suite**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
@@ -1894,7 +1894,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
 
 Expected: `Failed: 2`, everything else green.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add -A

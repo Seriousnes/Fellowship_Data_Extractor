@@ -79,16 +79,6 @@ app.MapGet("/api/ability/{abilityId:int}", (int abilityId, HttpContext http, ITo
     .ProducesProblem(StatusCodes.Status400BadRequest)
     .ProducesProblem(StatusCodes.Status404NotFound);
 
-app.MapGet("/api/item/{itemId:int}", (int itemId, HttpContext http, ITooltipService tooltips) =>
-        tooltips.Get(EntityType.Item, itemId, http.Request.Query))
-    .WithName("GetItemTooltip")
-    .WithTags(ApiDocument.Tooltips)
-    .WithSummary("One item's tooltip as a self-contained HTML fragment.")
-    .WithQuery(ApiQuerySet.Tooltip)
-    .Produces<string>(StatusCodes.Status200OK, "text/html")
-    .ProducesProblem(StatusCodes.Status400BadRequest)
-    .ProducesProblem(StatusCodes.Status404NotFound);
-
 app.MapGet("/api/tooltip/{slug}/{id:int}", async (string slug, int id, HttpContext http, ITooltipService tooltips) =>
         EntityTypes.TryParse(slug, out var type)
             ? await tooltips.Get(type, id, http.Request.Query)

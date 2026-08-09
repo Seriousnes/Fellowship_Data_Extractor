@@ -97,6 +97,64 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         }
     }
 
+    [Fact]
+    public async Task An_item_answers_its_record_and_its_tooltip_at_its_own_address()
+    {
+        var (id, hero) = Sample(EntityType.Item);
+        var wearer = hero is null ? string.Empty : $"?hero={hero}";
+
+        var record = await client.GetAsync($"/api/item/{id}{wearer}", Xunit.TestContext.Current.CancellationToken);
+        var tooltip = await client.GetAsync(
+            $"/api/item/{id}/tooltip{wearer}", Xunit.TestContext.Current.CancellationToken);
+
+        record.EnsureSuccessStatusCode();
+        tooltip.EnsureSuccessStatusCode();
+
+        var body = await record.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains("\"type\":\"item\"", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_optional_property_the_binder_fills_reaches_the_card()
+    {
+        var id = Factory.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 }).Id;
+
+        var drawn = await client.GetStringAsync(
+            $"/api/item/{id}/tooltip?armor=303", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains("303", drawn, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_hero_the_roster_does_not_carry_is_refused_by_the_record()
+    {
+        var (id, _) = Sample(EntityType.Item);
+
+        var response = await client.GetAsync(
+            $"/api/item/{id}?hero=nonsense", Xunit.TestContext.Current.CancellationToken);
+
+        var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("is not a hero", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_item_level_past_the_ceiling_is_refused_by_the_field_that_states_it()
+    {
+        var (id, hero) = Sample(EntityType.Item);
+        var wearer = hero is null ? "?" : $"?hero={hero}&";
+
+        var response = await client.GetAsync(
+            $"/api/item/{id}/tooltip{wearer}itemLevel=10001", Xunit.TestContext.Current.CancellationToken);
+
+        var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("ItemLevel", body, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static (int Id, string? Hero) Sample(EntityType type)
     {
         var document = Factory.Store.Entities.First(candidate => EntityTypes.TypeOf(candidate) == type);

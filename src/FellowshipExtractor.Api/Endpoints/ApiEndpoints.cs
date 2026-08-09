@@ -9,5 +9,6 @@ public static class ApiEndpoints
 {
     public static void MapApiEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapItem();
     }
 }
