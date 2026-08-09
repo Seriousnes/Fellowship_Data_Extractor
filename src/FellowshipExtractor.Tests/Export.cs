@@ -41,7 +41,7 @@ public sealed class Export
             }).GetAwaiter().GetResult());
     }
 
-    public required VocabularyFile Vocabulary { get; init; }
+    public required SettingsFile Settings { get; init; }
     public required IReadOnlyList<(EntityType Type, int Id, string? Name, JsonObject Body)> Documents { get; init; }
     public required string Folder { get; init; }
 
@@ -75,11 +75,11 @@ public sealed class Export
             documents.Add((type, body["id"]!.GetValue<int>(), body["name"]?.GetValue<string>(), body));
         }
 
-        var vocabulary = JsonSerializer.Deserialize<VocabularyFile>(
-            File.ReadAllText(Path.Combine(folder, "vocabulary.json")), Options)
-            ?? throw new InvalidOperationException($"vocabulary.json in {folder} deserialized to nothing.");
+        var settings = JsonSerializer.Deserialize<SettingsFile>(
+            File.ReadAllText(Path.Combine(folder, "settings.json")), Options)
+            ?? throw new InvalidOperationException($"settings.json in {folder} deserialized to nothing.");
 
-        return new Export { Vocabulary = vocabulary, Documents = documents, Folder = folder };
+        return new Export { Settings = settings, Documents = documents, Folder = folder };
     }
 
     private static string Folder_()
@@ -99,6 +99,6 @@ public sealed class Export
 
         throw new DirectoryNotFoundException(
             "No export to test against. Run 'dotnet run --project src/FellowshipExtractor -- export-all' " +
-            $"or point {Variable} at a folder holding entities.jsonl and vocabulary.json.");
+            $"or point {Variable} at a folder holding entities.jsonl and settings.json.");
     }
 }

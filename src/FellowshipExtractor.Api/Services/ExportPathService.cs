@@ -10,7 +10,7 @@ public interface IExportPathService
 
     string Entities { get; }
 
-    string Vocabulary { get; }
+    string Settings { get; }
 
     string Ui { get; }
 }
@@ -26,7 +26,7 @@ public sealed class ExportPathService(IConfiguration configuration) : IExportPat
 
     public string Entities => Path.Combine(Export, "entities.jsonl");
 
-    public string Vocabulary => Path.Combine(Export, "vocabulary.json");
+    public string Settings => Path.Combine(Export, "settings.json");
 
     public string Ui => Path.Combine(Export, "ui");
 }

@@ -29,9 +29,9 @@ builder.Services.AddHostedService<IconSeederService>();
 
 builder.Services.AddSingleton<IEntityStoreService, EntityStoreService>();
 builder.Services.AddSingleton<IDesignTokenService>(s =>
-    new DesignTokenService(s.GetRequiredService<IEntityStoreService>().Vocabulary));
+    new DesignTokenService(s.GetRequiredService<IEntityStoreService>().Settings));
 builder.Services.AddSingleton<IRichTextService>(s =>
-    new RichTextService(s.GetRequiredService<IEntityStoreService>().Vocabulary.TextStyles));
+    new RichTextService(s.GetRequiredService<IEntityStoreService>().Settings.TextStyles));
 
 builder.Services.AddSingleton<IChromeAssetService, ChromeAssetService>();
 builder.Services.AddSingleton<IPlaceholderService, PlaceholderService>();

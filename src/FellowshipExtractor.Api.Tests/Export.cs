@@ -53,8 +53,8 @@ public sealed class Export
 
         Store = new EntityStoreService(paths, NullLogger<EntityStoreService>.Instance);
 
-        var tokens = new DesignTokenService(Store.Vocabulary);
-        var richText = new RichTextService(Store.Vocabulary.TextStyles);
+        var tokens = new DesignTokenService(Store.Settings);
+        var richText = new RichTextService(Store.Settings.TextStyles);
 
         var substitutions = new PlaceholderService(Store, richText);
 

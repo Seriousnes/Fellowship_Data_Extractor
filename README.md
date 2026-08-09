@@ -620,13 +620,13 @@ wrote output\export\entities.jsonl
   1282 icons inherited from the entity that applies them, 10 withheld because two entities that apply them disagree
   1713 tuning rows supplied by namespace that no asset names
   18 coefficient rows banded by their own Spread row, 44 by their effect's calculation preset
-wrote output\export\vocabulary.json (36891 bytes)
+wrote output\export\settings.json (36891 bytes)
 ```
 
 Every line is the same record the `tooltip` command writes for one entity - one shape, 4.2 MB for
 the whole game, down from 22.5 MB.
 
-### vocabulary.json
+### settings.json
 
 The one file beside `entities.jsonl` that is not an entity. 36,891 bytes of lookup tables that no
 entity line can carry, written by the same `export-all` run so the two always describe the same
@@ -688,7 +688,7 @@ granted abilities being dropped, 421 rows across the augmentation table. The att
 gameplay effects losing their own scaling: an ability's comes from the effect it applies, but an
 effect asked for in its own right captures on itself, and only the referenced ones were being read.
 
-`grep -c '/Game/\|/Script/' entities.jsonl vocabulary.json` returns 0 for both, which is the check
+`grep -c '/Game/\|/Script/' entities.jsonl settings.json` returns 0 for both, which is the check
 that no asset path survived anywhere in the export.
 
 Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` tables are indexed:
@@ -913,7 +913,7 @@ back at the same path.
   `CRAbilityDataRow` join, `ItemSlots` holds the item slot definition join, `GameplayEffects` reads
   an effect for its scaling, `DescriptionTokens` follows a `{Token}` to the effect behind it,
   `Spread` works out the band a coefficient rolls in from the ability's own tuning or the effect's
-  calculation preset, and `Vocabulary` writes the shared lookup tables beside the entity stream.
+  calculation preset, and `Settings` writes the shared lookup tables beside the entity stream.
 - `src/FellowshipExtractor.Api/` - the codex. `EntityStore` reads the export once; `Codex` declares
   the facets, flags and measures the whole browser is driven by and counts them off that; `SearchIndex`
   is the name index behind the omnibox and `Suggestions` is the one answer both it and `/api/search`

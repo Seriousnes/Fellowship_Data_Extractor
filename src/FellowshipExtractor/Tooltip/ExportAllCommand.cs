@@ -77,11 +77,11 @@ public static class ExportAllCommand
         Console.WriteLine($"set bonuses:        {resolver.SetBonuses.Count} rows");
         Console.WriteLine($"calculation presets:{resolver.PresetCount} rows carrying a default spread");
         Console.WriteLine(
-            $"vocabulary:         {resolver.Vocabulary.Heroes.Count} heroes, {resolver.Vocabulary.Rarities.Count} " +
-            $"rarities, {resolver.Vocabulary.PrintFormats.Count} print formats, " +
-            $"{resolver.Vocabulary.Colors.Count} colours, {resolver.Vocabulary.TextStyles.Count} text styles, " +
-            $"{resolver.Vocabulary.SlotIcons.Count} slot glyphs, " +
-            $"{resolver.Vocabulary.MaxTempers.Count} tempering ladders");
+            $"settings:           {resolver.Settings.Heroes.Count} heroes, {resolver.Settings.Rarities.Count} " +
+            $"rarities, {resolver.Settings.PrintFormats.Count} print formats, " +
+            $"{resolver.Settings.Colors.Count} colours, {resolver.Settings.TextStyles.Count} text styles, " +
+            $"{resolver.Settings.SlotIcons.Count} slot glyphs, " +
+            $"{resolver.Settings.MaxTempers.Count} tempering ladders");
 
         var wanted = new HashSet<string>(tables, StringComparer.OrdinalIgnoreCase);
         var selected = resolver.Tags
@@ -170,7 +170,7 @@ public static class ExportAllCommand
             }
         }
 
-        await output.WriteVocabularyAsync(resolver.Vocabulary, default);
+        await output.WriteSettingsAsync(resolver.Settings, default);
 
         var images = Directory.EnumerateFiles(folder, "*.png").Count();
         Console.WriteLine($"\nwrote {written} documents from {resolved.Count} entities across {scanned} tags");
@@ -203,6 +203,6 @@ public static class ExportAllCommand
         {
             Console.WriteLine($"  no band for {row}: two effects bind it under different presets");
         }
-        Console.WriteLine("wrote the vocabulary the documents are read against");
+        Console.WriteLine("wrote the settings the documents are read against");
     }
 }

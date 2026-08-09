@@ -150,7 +150,7 @@ switch (command)
                ui                    write the item tooltip's chrome textures to output/export/ui
                tooltip <table> <id>  reconstruct one entity's tooltip from name, text and constants
                export-all [table...] [--output-format jsonl]  every entity as its type's document
-               enums                 regenerate the enumerated types from the exported vocabulary
+               enums                 regenerate the enumerated types from the exported settings
                webdb                 that export as one self-contained, searchable HTML page
                probe [sample]        report how many packages parse with current mappings
              """);

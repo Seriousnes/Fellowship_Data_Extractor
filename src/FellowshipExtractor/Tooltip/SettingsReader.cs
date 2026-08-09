@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace FellowshipExtractor.Tooltip;
 
-public static class VocabularyReader
+public static class SettingsReader
 {
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -12,7 +12,7 @@ public static class VocabularyReader
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public static VocabularyFile Read(string path) =>
-        JsonSerializer.Deserialize<VocabularyFile>(File.ReadAllText(path), Options)
+    public static SettingsFile Read(string path) =>
+        JsonSerializer.Deserialize<SettingsFile>(File.ReadAllText(path), Options)
         ?? throw new InvalidOperationException($"{path} deserialised to nothing.");
 }

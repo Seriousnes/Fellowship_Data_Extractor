@@ -50,7 +50,7 @@ public class IconTests : BunitContext
     [Fact]
     public void An_icon_a_rung_names_wears_that_rung_and_the_bevel_over_it()
     {
-        var rung = Export.Store.Vocabulary.Rarities[0].Name;
+        var rung = Export.Store.Settings.Rarities[0].Name;
 
         var drawn = Render<Icon>(p => p
             .Add(x => x.Src, "http://localhost/icons/boots.png")

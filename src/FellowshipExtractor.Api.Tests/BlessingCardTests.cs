@@ -30,9 +30,9 @@ public class BlessingCardTests : BunitContext
     {
         var drawn = Draw(new TooltipQuery());
 
-        Assert.Equal("Blessing", export.Store.Vocabulary.Blessings.Name);
+        Assert.Equal("Blessing", export.Store.Settings.Blessings.Name);
         Assert.Equal(
-            export.Store.Vocabulary.Blessings.Name, drawn.Find(".fx-blessing .head .eyebrow").TextContent.Trim());
+            export.Store.Settings.Blessings.Name, drawn.Find(".fx-blessing .head .eyebrow").TextContent.Trim());
 
         Assert.Equal("The Mystic", drawn.Find(".fx-blessing .head .title").TextContent.Trim());
     }
@@ -40,7 +40,7 @@ public class BlessingCardTests : BunitContext
     [Fact]
     public void The_band_says_what_the_row_is_and_which_tier_is_equipped()
     {
-        var wording = export.Store.Vocabulary.Blessings;
+        var wording = export.Store.Settings.Blessings;
 
         Assert.Equal("Hero Blessing", wording.HeroBlessing);
         Assert.Equal("Equipped Tier", wording.TierLevel);

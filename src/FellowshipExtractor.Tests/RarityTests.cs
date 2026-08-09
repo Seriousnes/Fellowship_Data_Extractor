@@ -15,7 +15,7 @@ public sealed class RarityTests
         body["rarities"] is JsonArray rungs ? [.. rungs.Select(rung => rung!.GetValue<string>())] : [];
 
     private static int Tier(string rung) =>
-        Export.Loaded.Vocabulary.Rarities.Single(entry => entry.Name == rung).Tier;
+        Export.Loaded.Settings.Rarities.Single(entry => entry.Name == rung).Tier;
 
     [Fact]
     public void EveryItemThatDropsStatesTheRungsItDropsIn()
@@ -33,7 +33,7 @@ public sealed class RarityTests
     [Fact]
     public void ADroppedItemToppsOutAtTheRungThePrintsAsRegal()
     {
-        var regal = Export.Loaded.Vocabulary.Rarities.Single(rung => rung.DisplayName == "Regal");
+        var regal = Export.Loaded.Settings.Rarities.Single(rung => rung.DisplayName == "Regal");
 
         var dropped = Items()
             .Where(item => item.Body["ruleSet"]?.GetValue<string>() is { } set && set != LegendaryRuleSet)
@@ -72,7 +72,7 @@ public sealed class RarityTests
     [Fact]
     public void AFixedHeroItemComesInTheRungItsRowStates()
     {
-        var floor = Export.Loaded.Vocabulary.Rarities.MinBy(rung => rung.Tier)!;
+        var floor = Export.Loaded.Settings.Rarities.MinBy(rung => rung.Tier)!;
 
         var heroItems = Items()
             .Where(item => item.Body["ruleSet"] is null && item.Body["stats"] is JsonArray)
@@ -108,12 +108,12 @@ public sealed class RarityTests
             .ToArray();
 
         Assert.Equal(
-            Export.Loaded.Vocabulary.Rarities.Select(rung => rung.Name).Order(StringComparer.Ordinal),
+            Export.Loaded.Settings.Rarities.Select(rung => rung.Name).Order(StringComparer.Ordinal),
             rungs.Order(StringComparer.Ordinal));
     }
 
     private static DropPlateau Plateau(string row) =>
-        Export.Loaded.Vocabulary.DropItemLevels.Single(plateau => plateau.Row == row);
+        Export.Loaded.Settings.DropItemLevels.Single(plateau => plateau.Row == row);
 
     [Fact]
     public void TheDropLadderPlateausAt315AndALegendaryDropAt360()
@@ -128,9 +128,9 @@ public sealed class RarityTests
     [Fact]
     public void EveryPlateauIsAMultipleOfFifteen()
     {
-        Assert.NotEmpty(Export.Loaded.Vocabulary.DropItemLevels);
+        Assert.NotEmpty(Export.Loaded.Settings.DropItemLevels);
 
-        Assert.All(Export.Loaded.Vocabulary.DropItemLevels, plateau => Assert.Equal(0, plateau.ItemLevel % 15));
+        Assert.All(Export.Loaded.Settings.DropItemLevels, plateau => Assert.Equal(0, plateau.ItemLevel % 15));
     }
 
     [Fact]

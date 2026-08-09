@@ -26,7 +26,7 @@ public sealed record StatCalculationFile
         new Dictionary<string, IReadOnlyDictionary<int, RaritySlots>>(StringComparer.OrdinalIgnoreCase);
 }
 
-public sealed record VocabularyFile
+public sealed record SettingsFile
 {
     public IReadOnlyList<HeroEntry> Heroes { get; init; } = [];
 

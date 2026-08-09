@@ -5,7 +5,7 @@ public sealed class StatPoolTests
     [Fact]
     public void PrimaryPoolCoefficientsAreUnchanged()
     {
-        var pool = Export.Loaded.Vocabulary.StatCalculation.PrimaryPool;
+        var pool = Export.Loaded.Settings.StatCalculation.PrimaryPool;
 
         Assert.NotNull(pool);
         Assert.Equal(15, pool!.MinimumItemLevel);
@@ -17,7 +17,7 @@ public sealed class StatPoolTests
     [Fact]
     public void SecondaryPoolCoefficientsAreUnchanged()
     {
-        var pool = Export.Loaded.Vocabulary.StatCalculation.SecondaryPool;
+        var pool = Export.Loaded.Settings.StatCalculation.SecondaryPool;
 
         Assert.NotNull(pool);
         Assert.Equal(15, pool!.MinimumItemLevel);
@@ -27,13 +27,13 @@ public sealed class StatPoolTests
 
     [Fact]
     public void RarityStillDoesNotScaleMagnitudes() =>
-        Assert.Equal(1, Export.Loaded.Vocabulary.StatCalculation.StatRarityBase);
+        Assert.Equal(1, Export.Loaded.Settings.StatCalculation.StatRarityBase);
 
     [Fact]
     public void PoolsRiseWithItemLevel()
     {
-        var primary = Export.Loaded.Vocabulary.StatCalculation.PrimaryPool;
-        var secondary = Export.Loaded.Vocabulary.StatCalculation.SecondaryPool;
+        var primary = Export.Loaded.Settings.StatCalculation.PrimaryPool;
+        var secondary = Export.Loaded.Settings.StatCalculation.SecondaryPool;
 
         Assert.NotNull(primary);
         Assert.NotNull(secondary);

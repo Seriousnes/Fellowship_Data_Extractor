@@ -62,7 +62,7 @@ public sealed class TooltipResolver
     public TalentTrees Talents { get; }
     public GemDefinitions Gems { get; }
     public ItemTraits Traits { get; }
-    public Vocabulary Vocabulary { get; }
+    public Settings Settings { get; }
     public TypeResolver Types { get; }
 
     public int NamespaceSupplied { get; private set; }
@@ -128,7 +128,7 @@ public sealed class TooltipResolver
 
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
-        Vocabulary = new Vocabulary(
+        Settings = new Settings(
             provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types,
             SlotGlyphs, Tempers, Drops, new Blessings(provider, _constants));
 

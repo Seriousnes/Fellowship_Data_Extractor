@@ -36,7 +36,7 @@ public sealed class RollLineTests
     }
 
     private static StatParameters Parameters() =>
-        new(Export.Loaded.Vocabulary.StatCalculation.Attributes);
+        new(Export.Loaded.Settings.StatCalculation.Attributes);
 
     private sealed record Probe
     {
@@ -57,10 +57,10 @@ public sealed class RollLineTests
 
         return StatMagnitudes.For(
             Cloak(),
-            Export.Loaded.Vocabulary.StatCalculation,
+            Export.Loaded.Settings.StatCalculation,
             new HashSet<string>(["Strength", "Intellect", "Agility"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
-            Export.Loaded.Vocabulary.DropItemLevels
+            Export.Loaded.Settings.DropItemLevels
                 .Single(plateau => plateau.Row == FellowshipExtractor.Tooltip.DropItemLevels.DefaultRow).ItemLevel,
             query);
     }

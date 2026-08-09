@@ -77,7 +77,7 @@ public sealed class TooltipViewService(
 
     public IChromeAssetService Chrome => chrome;
 
-    public BlessingEntry Blessings => store.Vocabulary.Blessings;
+    public BlessingEntry Blessings => store.Settings.Blessings;
 
     public RarityEntry? Rarity(EntityDocument document, TooltipQuery query)
     {
@@ -91,7 +91,7 @@ public sealed class TooltipViewService(
         };
 
         return store.Rarity(query.Rarity, document is GemDocument)
-            ?? (tier is { } t ? store.Vocabulary.Rarities.FirstOrDefault(r => r.Tier == t) : null);
+            ?? (tier is { } t ? store.Settings.Rarities.FirstOrDefault(r => r.Tier == t) : null);
     }
 
     public string Variables(RarityEntry? rarity)
@@ -133,7 +133,7 @@ public sealed class TooltipViewService(
         if (query.Upgrades is not { } upgrades) return null;
 
         var ceiling = query.MaxUpgrades
-            ?? Tempering.Ceiling(store.Vocabulary.MaxTempers, rarity?.Name, level);
+            ?? Tempering.Ceiling(store.Settings.MaxTempers, rarity?.Name, level);
 
         return ceiling is { } max
             ? $"{upgrades.ToString(CultureInfo.InvariantCulture)} / {max.ToString(CultureInfo.InvariantCulture)}"
@@ -217,7 +217,7 @@ public sealed class TooltipViewService(
         document is ItemDocument item
             ? StatMagnitudes.For(
                 item,
-                store.Vocabulary.StatCalculation,
+                store.Settings.StatCalculation,
                 store.PrimaryAttributes,
                 rarity,
                 query.ItemLevel ?? store.DropItemLevel(item),

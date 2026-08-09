@@ -14,7 +14,7 @@ public static class Records
 
         if (asked is not null && store.Hero(asked) is null)
         {
-            return Lookups.NoSuchHero(asked, store.Vocabulary.Heroes);
+            return Lookups.NoSuchHero(asked, store.Settings.Heroes);
         }
 
         var outcome = store.Resolve(type, id, asked, out var document, out var wearer);

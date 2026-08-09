@@ -155,7 +155,7 @@ public class StateChromeTests(Export export)
     [Fact]
     public void The_well_the_stylesheet_cuts_a_rarity_slot_to_is_the_hole_in_the_rarity_frame()
     {
-        var rung = export.Store.Vocabulary.Rarities[0].Name;
+        var rung = export.Store.Settings.Rarities[0].Name;
 
         using var frame = Carried(export.Chrome.SlotFrame(rung));
 
@@ -185,7 +185,7 @@ public class StateChromeTests(Export export)
     [Fact]
     public void The_rarity_backing_fills_its_well_so_the_art_is_composited_over_it()
     {
-        using var backing = Carried(export.Chrome.SlotBacking(export.Store.Vocabulary.Rarities[0].Name));
+        using var backing = Carried(export.Chrome.SlotBacking(export.Store.Settings.Rarities[0].Name));
 
         Assert.True(Covers(backing, 4d / 60), "T_Borders_EmptyWithoutFrame no longer hides art drawn under it.");
     }
@@ -209,7 +209,7 @@ public class StateChromeTests(Export export)
     [Fact]
     public void A_slot_wears_the_chrome_its_rung_names_and_the_ornate_plate_is_gone()
     {
-        var rung = export.Store.Vocabulary.Rarities[0].Name;
+        var rung = export.Store.Settings.Rarities[0].Name;
 
         Assert.EndsWith(
             "T_Borders_EmptyWithoutFrame.png", export.Chrome.SlotBacking(rung), StringComparison.Ordinal);

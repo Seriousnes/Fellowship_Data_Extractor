@@ -16,7 +16,7 @@ public sealed class StaleExportTests
 
         try
         {
-            File.Copy(Path.Combine(Export.Loaded.Folder, "vocabulary.json"), Path.Combine(folder, "vocabulary.json"));
+            File.Copy(Path.Combine(Export.Loaded.Folder, "settings.json"), Path.Combine(folder, "settings.json"));
             File.WriteAllLines(Path.Combine(folder, "entities.jsonl"), [line]);
 
             var configuration = new ConfigurationBuilder()

@@ -177,7 +177,7 @@ public sealed class ChromeAssetService(
     public string WindowFill => Url(Name(WindowFillTexture));
 
     public string SlotGlyph(string? slot) =>
-        Url(Name(slot is not null && store.Vocabulary.SlotIcons.TryGetValue(slot, out var gear)
+        Url(Name(slot is not null && store.Settings.SlotIcons.TryGetValue(slot, out var gear)
             ? gear
             : SlotTexture));
 
@@ -216,7 +216,7 @@ public sealed class ChromeAssetService(
         {
             using var mask = Image.Load<Rgba32>(Path.Combine(paths.Ui, texture + ".png"));
 
-            foreach (var rarity in store.Vocabulary.Rarities)
+            foreach (var rarity in store.Settings.Rarities)
             {
                 payloads.Add((Name(texture, rarity.Name), Tint(mask, Colour(tokens, rarity.Name))));
             }
@@ -285,7 +285,7 @@ public sealed class ChromeAssetService(
     private static IReadOnlyDictionary<string, string> MatchOrnaments(
         IExportPathService paths, IEntityStoreService store, IDesignTokenService tokens)
     {
-        var rungs = store.Vocabulary.Rarities
+        var rungs = store.Settings.Rarities
             .Select(rarity => (rarity.Name, Colour: Colour(tokens, rarity.Name)))
             .ToArray();
 

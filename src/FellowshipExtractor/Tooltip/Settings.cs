@@ -5,9 +5,9 @@ using CUE4Parse.UE4.Assets.Exports.Engine;
 
 namespace FellowshipExtractor.Tooltip;
 
-public sealed class Vocabulary
+public sealed class Settings
 {
-    public const string FileName = "vocabulary.json";
+    public const string FileName = "settings.json";
 
     private const string ColorRowStructure = "/Script/fellowship.CRDSNamedColorDataRow";
     private const string FormatRowStructure = "/Script/fellowship.CRDynamicTooltipDataRow";
@@ -37,7 +37,7 @@ public sealed class Vocabulary
 
     public BlessingEntry Blessings { get; }
 
-    public Vocabulary(
+    public Settings(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
         HeroNames heroes,
@@ -87,7 +87,7 @@ public sealed class Vocabulary
             Colors.Count == 0 || TextStyles.Count == 0)
         {
             throw new InvalidOperationException(
-                $"The vocabulary is missing a whole section: {Heroes.Count} heroes, {Rarities.Count} rarities, " +
+                $"The settings are missing a whole section: {Heroes.Count} heroes, {Rarities.Count} rarities, " +
                 $"{PrintFormats.Count} print formats, {Colors.Count} colours, {TextStyles.Count} text styles. " +
                 "A reader would silently resolve nothing.");
         }

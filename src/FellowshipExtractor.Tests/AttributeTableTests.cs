@@ -10,7 +10,7 @@ public sealed class AttributeTableTests
 
     private static AttributeDisplayView Attribute(string stat)
     {
-        var attributes = Export.Loaded.Vocabulary.StatCalculation.Attributes;
+        var attributes = Export.Loaded.Settings.StatCalculation.Attributes;
 
         Assert.True(attributes.ContainsKey(stat), $"DT_AttributeProperties no longer has a '{stat}' row.");
         return new AttributeDisplayView(attributes[stat]);
@@ -70,7 +70,7 @@ public sealed class AttributeTableTests
     [Fact]
     public void NoCoefficientMultipliesAStatThatConverts()
     {
-        var attributes = Export.Loaded.Vocabulary.StatCalculation.Attributes;
+        var attributes = Export.Loaded.Settings.StatCalculation.Attributes;
 
         var multiplied = Export.Loaded.Documents
             .Select(document => document.Body["placeholders"])
@@ -98,7 +98,7 @@ public sealed class AttributeTableTests
     [Fact]
     public void EveryStatTheApiAcceptsHasARow()
     {
-        var attributes = Export.Loaded.Vocabulary.StatCalculation.Attributes;
+        var attributes = Export.Loaded.Settings.StatCalculation.Attributes;
 
         foreach (var stat in RatedStats.Concat(["Strength", "Agility", "Intellect", "Stamina", "Armor"]))
         {

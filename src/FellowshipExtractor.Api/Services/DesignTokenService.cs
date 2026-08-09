@@ -25,15 +25,15 @@ public interface IDesignTokenService
     string CssVariables();
 }
 
-public sealed class DesignTokenService(VocabularyFile vocabulary) : IDesignTokenService
+public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenService
 {
-    private readonly IReadOnlyDictionary<string, string> colors = vocabulary.Colors;
+    private readonly IReadOnlyDictionary<string, string> colors = settings.Colors;
 
-    private readonly IReadOnlySet<string> unshown = Unshown(vocabulary);
+    private readonly IReadOnlySet<string> unshown = Unshown(settings);
 
     public IReadOnlyDictionary<string, string> Colors => colors;
 
-    public IReadOnlyDictionary<string, TextStyle> TextStyles => vocabulary.TextStyles;
+    public IReadOnlyDictionary<string, TextStyle> TextStyles => settings.TextStyles;
 
     public string? Color(string name) => colors.TryGetValue(name, out var value) ? '#' + value : null;
 
@@ -60,11 +60,11 @@ public sealed class DesignTokenService(VocabularyFile vocabulary) : IDesignToken
         return css.ToString();
     }
 
-    private static IReadOnlySet<string> Unshown(VocabularyFile vocabulary)
+    private static IReadOnlySet<string> Unshown(SettingsFile settings)
     {
         var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var hero in vocabulary.Heroes)
+        foreach (var hero in settings.Heroes)
         {
             if (!string.Equals(hero.Codename, hero.Name, StringComparison.OrdinalIgnoreCase))
             {
@@ -72,7 +72,7 @@ public sealed class DesignTokenService(VocabularyFile vocabulary) : IDesignToken
             }
         }
 
-        foreach (var rung in vocabulary.Rarities)
+        foreach (var rung in settings.Rarities)
         {
             if (string.Equals(rung.Name, rung.DisplayName, StringComparison.OrdinalIgnoreCase)) continue;
 

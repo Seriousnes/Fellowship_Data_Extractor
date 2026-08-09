@@ -24,8 +24,8 @@ public sealed class JsonlOutputFormat(string folder) : IOutputFormat
     public async Task WriteAsync(EntityDocument entity, CancellationToken cancellationToken) =>
         await Writer().WriteLineAsync(JsonSerializer.Serialize<EntityDocument>(entity, EntityDocuments.Options));
 
-    public async Task WriteVocabularyAsync(Vocabulary vocabulary, CancellationToken cancellationToken) =>
-        await vocabulary.WriteAsync(Folder());
+    public async Task WriteSettingsAsync(Settings settings, CancellationToken cancellationToken) =>
+        await settings.WriteAsync(Folder());
 
     public async ValueTask DisposeAsync()
     {
