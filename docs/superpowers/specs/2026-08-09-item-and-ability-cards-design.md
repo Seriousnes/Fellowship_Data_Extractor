@@ -149,6 +149,12 @@ Each card computes in `OnParametersSet` only what its own groups ask for, and se
 `Ui.Granted(Entity)` is read once into a field, which both the `TipGranted` guard and the `Named`
 the badge prints are taken from.
 
+The typed guards read what the reflected ones read: `DocumentFields.Text` is an `as string` and
+`DocumentFields.Words` an `as IReadOnlyList<string> ?? []`, neither of which trims, filters or
+otherwise normalises, so `Description is not null` answers for an empty description exactly as
+`DocumentFields.Text(document, nameof(AbilityDocument.Description)) is not null` does, and an
+`ItemDocument` carries no `Detail` for `Words` to find.
+
 ## Ability.razor
 
 `src/FellowshipExtractor.Api/Components/Tooltip/Ability.razor` draws an `AbilityDocument` or an
@@ -228,7 +234,16 @@ test: the first three ids of each `EntityType`, ordered by id, each drawn under 
 under `?rarity=`, `?itemLevel=&upgrades=`, `?traits=`, `?potentialPower=` and `?hero=`, whose values
 come from `store.Vocabulary` and the first trait id the build carries.
 
-Run it on `a74e348`, the commit this work starts from, run it again on the finished branch, and diff
-the two folders. An empty diff is what makes this an extraction: no texture is composited
-differently, so the screenshot pass the chrome work needs is not owed here. Any file that does
-differ is either a defect or a change that has to be argued for on its own.
+`TooltipDumpTests` is the branch's first commit, sitting on `a74e348` and moving no rendering, so the
+baseline is drawn by the tooltip as it stands and the branch carries the harness that drew it. Run
+it for the baseline, make the cards, run it again, and diff the two folders. An empty diff is what
+makes this an extraction: no texture is composited differently, so the screenshot pass the chrome
+work needs is not owed here. Any file that does differ is either a defect or a change that has to be
+argued for on its own.
+
+A dump is drawn by `HtmlRenderer` in one pass, which says nothing about the interactive page, where
+`EntityPage.razor` runs under `AddInteractiveServerRenderMode` and `Knobs.razor` moves the
+`TooltipQuery` under a drawn card. Every group renders at the same sequence number inside the loop,
+so adding and removing one moves a different component type through that position. Load an item's
+entity page and toggle a knob that adds a group and then takes it away, `traits` or `upgrades`, and
+watch the card follow it.
