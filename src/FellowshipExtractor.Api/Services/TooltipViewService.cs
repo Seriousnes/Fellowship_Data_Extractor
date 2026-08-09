@@ -101,7 +101,6 @@ public sealed class TooltipViewService(
         return
             tokens.CssVariables() +
             "--fx-frame:" + (chrome.Frame(rarity?.Name) is { } frame ? $"url({frame})" : "none") +
-            ";--fx-slot:" + (chrome.IconFrame(rarity?.Name) is { } slot ? $"url({slot})" : "none") +
             ";--fx-header:" + (rarity is null ? "none" : $"url({chrome.Header(rarity.Name)})") +
             ";--fx-window:url(" + (rarity is null ? chrome.RoundedWindow : chrome.Window) +
             ");--fx-title:" + (colour ?? "var(--core-text-primary)") +
@@ -265,7 +264,7 @@ public sealed class TooltipViewService(
 
         return
             $$"""
-            .{{TooltipView.Root}}{--fx-slot-plate:url({{chrome.SlotPlate}});--fx-window:url({{chrome.Window}});
+            .{{TooltipView.Root}}{--fx-window:url({{chrome.Window}});
             --fx-thin:url({{chrome.ThinWindow}});--fx-fill:url({{chrome.WindowFill}});
             --fx-divider:url({{chrome.GoldDivider}});--fx-subheader:url({{chrome.Header(null)}});
             --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};

@@ -11,6 +11,15 @@ public static class CodexView
 
     private const double Floor = 0.16;
 
+    public static Rarity? Tier(EntityDocument document) => document switch
+    {
+        ItemDocument { Rarities: { Count: > 0 } rungs } => rungs[^1],
+        ItemDocument { Rarity: { } stated } => stated,
+        CurrencyDocument { Rarity: { } coin } => coin,
+        GemDocument gem => gem.Rarity,
+        _ => null,
+    };
+
     public static string? Readable(string? colour)
     {
         if (colour is null || colour.Length != 7 || colour[0] != '#') return colour;

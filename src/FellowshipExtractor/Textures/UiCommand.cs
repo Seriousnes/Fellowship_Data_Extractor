@@ -49,8 +49,11 @@ public static class UiCommand
         "T_Backgrounds_TooltipSlot_Gradient_Decor",
         "T_Backgrounds_TooltipSlot_Gradient_Fade",
 
-        "T_Borders_EmptySlot",
+        "T_Borders_EmptyWithoutFrame",
         "T_Borders_RarityFrame",
+        "T_Borders_GlassFrame",
+        "T_Buttons_AbilityBarBackground_Small",
+        "T_Buttons_SmallAbilityButton_Default",
 
         "T_Buttons_TraitNode_SelectedDefault",
         "T_Buttons_TraitNode_SelectedHover",

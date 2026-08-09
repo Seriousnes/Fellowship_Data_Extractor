@@ -10,6 +10,8 @@ public static class TooltipView
 
     public const EntityType TraitType = EntityType.Trait;
 
+    public const int SlotWidth = 48;
+
     public static string Magnitude(StatLine line) =>
         (line.Value < 0 ? string.Empty : "+") +
         line.Value.Normalize().ToString(CultureInfo.InvariantCulture);

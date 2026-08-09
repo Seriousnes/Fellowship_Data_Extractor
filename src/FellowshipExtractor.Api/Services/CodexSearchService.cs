@@ -86,6 +86,7 @@ public sealed class CodexSearchService(
         return new Listing.Variant(
             name,
             (readings[0] as ItemDocument)?.Icon,
+            CodexView.Tier(readings[0]),
             heroes is [var first, ..] ? $"{address}?hero={Uri.EscapeDataString(first)}" : address,
             heroes is [{ } one] ? view.HeroColour(one) : null);
     }

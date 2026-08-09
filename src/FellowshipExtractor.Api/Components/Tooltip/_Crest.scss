@@ -1,5 +1,66 @@
 @use "sass:math";
 
+$slot-canvas: 60;
+$slot-well-inset: 4;
+$slot-well-chamfer: 9;
+
+$plain-slot-canvas: 128;
+$plain-slot-well-inset: 10;
+$plain-slot-well-chamfer: 16;
+
+@function well($canvas, $inset, $chamfer) {
+  $near-edge: math.percentage(math.div($inset, $canvas));
+  $far-edge: 100% - $near-edge;
+  $near-cut: math.percentage(math.div($chamfer, $canvas));
+  $far-cut: 100% - $near-cut;
+
+  @return polygon(
+    $near-cut $near-edge,
+    $far-cut $near-edge,
+    $far-edge $near-cut,
+    $far-edge $far-cut,
+    $far-cut $far-edge,
+    $near-cut $far-edge,
+    $near-edge $far-cut,
+    $near-edge $near-cut
+  );
+}
+
+@mixin slot-chrome {
+  .fx-slot {
+    position: relative;
+    display: block;
+    flex: 0 0 auto;
+    margin: 0;
+    width: var(--fx-slot-width);
+    aspect-ratio: 1;
+    background: var(--fx-slot-backing) 0 0/100% 100% no-repeat;
+
+    img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      clip-path: well($slot-canvas, $slot-well-inset, $slot-well-chamfer);
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        var(--fx-slot-bevel, none) 0 0/100% 100% no-repeat,
+        var(--fx-slot-frame) 0 0/100% 100% no-repeat;
+    }
+
+    &.plain img {
+      clip-path: well($plain-slot-canvas, $plain-slot-well-inset, $plain-slot-well-chamfer);
+    }
+  }
+}
+
 $plate-brush-width: 148;
 $plate-brush-height: 188;
 $plate-art-share: 45%;

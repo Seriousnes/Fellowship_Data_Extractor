@@ -339,7 +339,7 @@ public sealed record CodexQuery
 
 public sealed record Listing(EntityDocument Shown, IReadOnlyList<Listing.Variant> Variants)
 {
-    public sealed record Variant(string Name, string? Icon, string Href, string? Colour);
+    public sealed record Variant(string Name, string? Icon, Rarity? Rarity, string Href, string? Colour);
 }
 
 public sealed record CodexResults(

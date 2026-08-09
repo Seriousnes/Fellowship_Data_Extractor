@@ -29,7 +29,7 @@ public class TraitCardTests : BunitContext
 
         Assert.Contains("fx-trait", root.ClassList, StringComparer.Ordinal);
         Assert.Contains("plain", root.ClassList, StringComparer.Ordinal);
-        Assert.Empty(drawn.FindAll("figure.slot"));
+        Assert.Empty(drawn.FindAll("figure.fx-slot"));
         Assert.Equal(PublicTypes.NameOf(Written), drawn.Find(".fx-trait .head .title").TextContent.Trim());
     }
 
@@ -40,7 +40,7 @@ public class TraitCardTests : BunitContext
 
         Assert.NotNull(drawn.Find(".fx-trait .card"));
         Assert.Empty(drawn.FindAll(".fx-trait-crest"));
-        Assert.Empty(drawn.FindAll("figure.slot"));
+        Assert.Empty(drawn.FindAll("figure.fx-slot"));
     }
 
     [Fact]
