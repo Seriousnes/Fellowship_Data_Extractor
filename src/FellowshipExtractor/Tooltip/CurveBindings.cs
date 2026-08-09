@@ -15,6 +15,8 @@ public sealed record CurveBinding(string Property, string RowName)
     public string? Comment { get; init; }
     public string? ConstantsTable { get; init; }
 
+    public bool Multiplies { get; init; }
+
     public string[]? AmbiguousIn { get; init; }
 }
 

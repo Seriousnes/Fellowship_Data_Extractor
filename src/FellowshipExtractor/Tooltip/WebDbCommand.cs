@@ -244,7 +244,10 @@ public static class WebDbCommand
             };
         }
 
-        if (Flag(placeholder, "percent")) return Share(value);
+        if (Flag(placeholder, "percent"))
+        {
+            return Share(Flag(placeholder, "multiplies") ? value - 1m : value);
+        }
 
         var number = Number(value);
         return Text(placeholder, "unit") is { } unit ? $"{number} {Singular(unit, value)}" : number;
