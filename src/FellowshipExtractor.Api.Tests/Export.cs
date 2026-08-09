@@ -31,15 +31,15 @@ public sealed class ApiWebRoot : IWebHostEnvironment
 
 public sealed class Export
 {
-    public CodexView View { get; }
+    public ICodexViewService View { get; }
 
-    public TooltipView Tooltip { get; }
+    public ITooltipViewService Tooltip { get; }
 
-    public EntityStore Store { get; }
+    public IEntityStoreService Store { get; }
 
-    public ChromeAssets Chrome { get; }
+    public IChromeAssetService Chrome { get; }
 
-    public ExportPaths Paths { get; }
+    public IExportPathService Paths { get; }
 
     public Export()
     {
@@ -49,21 +49,21 @@ public sealed class Export
             .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = folder })
             .Build();
 
-        var paths = Paths = new ExportPaths(configuration);
+        var paths = Paths = new ExportPathService(configuration);
 
-        Store = new EntityStore(paths, NullLogger<EntityStore>.Instance);
+        Store = new EntityStoreService(paths, NullLogger<EntityStoreService>.Instance);
 
-        var tokens = new DesignTokens(Store.Vocabulary);
-        var richText = new RichTextRenderer(Store.Vocabulary.TextStyles);
+        var tokens = new DesignTokenService(Store.Vocabulary);
+        var richText = new RichTextService(Store.Vocabulary.TextStyles);
 
-        var substitutions = new Placeholders(Store, richText);
+        var substitutions = new PlaceholderService(Store, richText);
 
         var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
-        var chrome = Chrome = new ChromeAssets(icons, paths, Store, tokens);
+        var chrome = Chrome = new ChromeAssetService(icons, paths, Store, tokens);
 
-        View = new CodexView(Store, new Codex(Store, tokens), tokens, chrome, richText, substitutions, icons);
+        View = new CodexViewService(Store, new CodexService(Store, tokens), tokens, chrome, richText, substitutions, icons);
 
-        Tooltip = new TooltipView(Store, tokens, richText, substitutions, chrome, icons, new ApiWebRoot());
+        Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, icons, new ApiWebRoot());
     }
 
     private static string Found()

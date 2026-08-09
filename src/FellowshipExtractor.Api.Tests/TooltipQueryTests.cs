@@ -6,80 +6,131 @@ namespace FellowshipExtractor.Api.Tests;
 [Collection(Corpus.Name)]
 public class TooltipQueryTests(Export export)
 {
-    private TooltipQuery Parse(out string? error, params (string Key, string[] Values)[] asked) =>
-        TooltipQuery.Parse(
-            new QueryCollection(asked.ToDictionary(a => a.Key, a => new StringValues(a.Values))),
-            export.Store.Stats,
-            out error);
+    private static IQueryCollection Raw(params (string Key, string[] Values)[] asked) =>
+        new QueryCollection(asked.ToDictionary(a => a.Key, a => new StringValues(a.Values)));
 
     [Fact]
-    public void Reads_the_armor_the_caller_states()
+    public void An_item_reads_the_armor_the_caller_states()
     {
-        var query = Parse(out var error, ("armor", ["303"]));
+        var query = new ItemTooltipRequest { Id = 1, Armor = 303m }
+            .ToQuery(Raw(), export.Store.Stats, out var error);
 
         Assert.Null(error);
         Assert.Equal(303m, query.Armor);
     }
 
     [Fact]
-    public void Says_what_is_wrong_with_an_armor_that_is_not_a_number()
+    public void An_item_reads_each_imbued_trait_and_the_rank_it_sits_at()
     {
-        Parse(out var error, ("armor", ["heavy"]));
+        Assert.True(ImbuedTraits.TryParse("12:2,7", out var traits));
 
-        Assert.Equal("armor 'heavy' is not a number.", error);
-    }
+        var query = new ItemTooltipRequest { Id = 1, Trait = traits, MaxTraits = 5 }
+            .ToQuery(Raw(), export.Store.Stats, out _);
 
-    [Fact]
-    public void Reads_each_imbued_trait_and_the_rank_it_sits_at()
-    {
-        var query = Parse(out var error, ("trait", ["12:2", "7"]), ("maxTraits", ["5"]));
-
-        Assert.Null(error);
         Assert.Equal([new ImbuedTrait(12, 2), new ImbuedTrait(7, 1)], query.Traits);
         Assert.Equal(5, query.MaxTraits);
+        Assert.Equal(2, query.AllocatedTraits);
     }
 
     [Fact]
-    public void Counts_the_traits_it_was_given_when_the_caller_states_no_count()
+    public void An_item_counts_no_traits_when_the_caller_names_none()
     {
-        var counted = Parse(out _, ("trait", ["12:2,7:1"]));
-        var stated = Parse(out _, ("trait", ["12:2,7:1"]), ("allocatedTraits", ["5"]));
+        var query = new ItemTooltipRequest { Id = 1 }.ToQuery(Raw(), export.Store.Stats, out _);
 
-        Assert.Equal(2, counted.AllocatedTraits);
-        Assert.Equal(5, stated.AllocatedTraits);
-        Assert.Null(Parse(out _).AllocatedTraits);
+        Assert.Null(query.AllocatedTraits);
+        Assert.Empty(query.Traits);
+        Assert.Empty(query.GemPowers);
+        Assert.False(query.NoSocket);
     }
 
     [Fact]
-    public void Says_what_is_wrong_with_a_trait_that_names_no_id()
+    public void An_item_keeps_armor_for_the_printed_line_and_still_reads_a_stat()
     {
-        Parse(out var error, ("trait", ["hunters-focus"]));
-
-        Assert.Equal(
-            "trait entry 'hunters-focus' is not an item trait id, optionally followed by a colon and the rank " +
-            "it sits at.",
-            error);
-    }
-
-    [Fact]
-    public void Leaves_armor_free_for_the_reserved_parameter_to_claim()
-    {
-        var stat = export.Store.Stats.Resolve("armor");
-
-        Assert.True(
-            stat is null,
-            $"'armor' is reserved for the armour line, and it now also spells the stat {stat}. Reserved keys " +
-            "are read first, so that stat can no longer be sent. Both Armor and BonusArmor print the word " +
-            "Armor, so either becoming a declared slot stat trips this.");
-    }
-
-    [Fact]
-    public void Keeps_reading_a_stat_that_shares_its_spelling_with_nothing_reserved()
-    {
-        var query = Parse(out var error, ("stamina", ["36"]), ("armor", ["303"]));
+        var query = new ItemTooltipRequest { Id = 1, Armor = 303m }
+            .ToQuery(Raw(("stamina", ["36"])), export.Store.Stats, out var error);
 
         Assert.Null(error);
         Assert.Equal(303m, query.Armor);
         Assert.Equal(36m, query.Total("Stamina"));
+    }
+
+    [Fact]
+    public void An_item_refuses_a_key_that_is_neither_its_property_nor_a_stat()
+    {
+        new ItemTooltipRequest { Id = 1 }.ToQuery(Raw(("nonesuch", ["1"])), export.Store.Stats, out var error);
+
+        Assert.Equal("Unknown parameter 'nonesuch'.", error);
+    }
+
+    [Fact]
+    public void An_ability_carries_the_hero_and_nothing_more()
+    {
+        var query = new AbilityTooltipRequest { Id = 1, Hero = "Barbarian" }
+            .ToQuery(Raw(), export.Store.Stats, out var error);
+
+        Assert.Null(error);
+        Assert.Equal("Barbarian", query.Hero);
+        Assert.Null(query.Rarity);
+        Assert.Null(query.ItemLevel);
+    }
+
+    [Fact]
+    public void An_ability_reads_a_blank_hero_as_none_given()
+    {
+        var query = new AbilityTooltipRequest { Id = 1, Hero = string.Empty }
+            .ToQuery(Raw(), export.Store.Stats, out _);
+
+        Assert.Null(query.Hero);
+    }
+
+    [Fact]
+    public void A_blessing_carries_the_state_and_the_tier()
+    {
+        var query = new BlessingTooltipRequest { Id = 1, State = "allocated", EquippedTier = 2 }
+            .ToQuery(Raw(), export.Store.Stats, out _);
+
+        Assert.Equal("allocated", query.State);
+        Assert.Equal(2, query.EquippedTier);
+    }
+
+    [Fact]
+    public void A_trait_carries_the_state()
+    {
+        var query = new TraitTooltipRequest { Id = 1, State = "unavailable" }
+            .ToQuery(Raw(), export.Store.Stats, out _);
+
+        Assert.Equal("unavailable", query.State);
+    }
+
+    [Fact]
+    public void A_gem_and_a_currency_carry_the_rung()
+    {
+        Assert.Equal(
+            "3",
+            new GemTooltipRequest { Id = 1, Rarity = "3" }.ToQuery(Raw(), export.Store.Stats, out _).Rarity);
+
+        Assert.Equal(
+            "3",
+            new CurrencyTooltipRequest { Id = 1, Rarity = "3" }.ToQuery(Raw(), export.Store.Stats, out _).Rarity);
+    }
+
+    [Fact]
+    public void A_talent_slot_carries_the_hero()
+    {
+        var query = new TalentSlotTooltipRequest { Id = 1, Hero = "Barbarian" }
+            .ToQuery(Raw(), export.Store.Stats, out _);
+
+        Assert.Equal("Barbarian", query.Hero);
+    }
+
+    [Fact]
+    public void A_bare_type_carries_the_stats_and_nothing_else()
+    {
+        var query = new EffectTooltipRequest { Id = 1 }
+            .ToQuery(Raw(("Stamina", ["40"])), export.Store.Stats, out var error);
+
+        Assert.Null(error);
+        Assert.Equal(40m, query.Total("Stamina"));
+        Assert.Null(query.Hero);
     }
 }

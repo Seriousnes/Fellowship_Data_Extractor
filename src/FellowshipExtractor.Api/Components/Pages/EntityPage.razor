@@ -1,7 +1,8 @@
 @page "/entity/{slug}/{id:int}"
-@inject CodexView Ui
-@inject Codex Catalog
-@inject EntityStore Store
+@inject ICodexViewService Ui
+@inject ICodexService Catalog
+@inject IEntityStoreService Store
+@inject ITooltipViewService Cards
 @inject NavigationManager Nav
 
 @if (Readings.Count > 0)
@@ -64,7 +65,7 @@
                 new Dictionary<string, string?>(StringComparer.Ordinal)
                 {
                     ["hero"] = where.Contains('?') ? null : Drawn,
-                    ["state"] = string.IsNullOrWhiteSpace(State) ? null : State,
+                    ["state"] = Cards.DrawsState(Shown) && !string.IsNullOrWhiteSpace(State) ? State : null,
                 });
         }
     }

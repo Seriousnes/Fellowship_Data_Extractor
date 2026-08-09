@@ -6,7 +6,7 @@ namespace FellowshipExtractor.Api.Tests;
 [Collection(Corpus.Name)]
 public class TooltipTests : BunitContext
 {
-    private readonly EntityStore Store;
+    private readonly IEntityStoreService Store;
 
     public TooltipTests(Export export)
     {
@@ -195,13 +195,12 @@ public class TooltipTests : BunitContext
 
     private IRenderedComponent<Components.Tooltip.Tooltip> Card(EntityDocument entity, string query)
     {
-        var parsed = TooltipQuery.Parse(
-            new QueryCollection(query
-                .Split('&')
-                .Select(pair => pair.Split('='))
-                .ToDictionary(pair => pair[0], pair => new StringValues(pair[1]))),
-            Store.Stats,
-            out _);
+        var asked = new QueryCollection(query
+            .Split('&')
+            .Select(pair => pair.Split('='))
+            .ToDictionary(pair => pair[0], pair => new StringValues(pair[1])));
+
+        var parsed = new AbilityTooltipRequest { Id = entity.Id }.ToQuery(asked, Store.Stats, out _);
 
         return Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, entity)
@@ -300,7 +299,7 @@ public class TooltipTests : BunitContext
 
         var style = coloured.Find("div.fx-tip").GetAttribute("style")!;
 
-        var shade = new DesignTokens(Store.Vocabulary).Rarity(Rarity.Heroic.ToString());
+        var shade = new DesignTokenService(Store.Vocabulary).Rarity(Rarity.Heroic.ToString());
 
         Assert.Contains($"--fx-title:{shade}", style, StringComparison.Ordinal);
         Assert.DoesNotContain("--fx-title:var(--core-text-primary)", style, StringComparison.Ordinal);
@@ -475,7 +474,7 @@ public class TooltipTests : BunitContext
             var cut = Draw(new ItemDocument { Id = 3, Slot = slot });
 
             Assert.EndsWith(
-                $"/{ChromeAssets.Prefix}/{texture}.png",
+                $"/{ChromeAssetService.Prefix}/{texture}.png",
                 cut.Find("div.row img.gi").GetAttribute("src"),
                 StringComparison.Ordinal);
         }

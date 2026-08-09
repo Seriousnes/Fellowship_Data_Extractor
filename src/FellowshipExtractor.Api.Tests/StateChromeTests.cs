@@ -65,7 +65,7 @@ public class StateChromeTests(Export export)
     [Fact]
     public void The_well_the_stylesheet_cuts_the_art_to_is_the_hole_in_every_plate()
     {
-        var wells = ChromeAssets.NodeStates
+        var wells = ChromeAssetService.NodeStates
             .Select(state => Well(Texture(export.Chrome.TraitNode(state))))
             .ToArray();
 
@@ -83,11 +83,11 @@ public class StateChromeTests(Export export)
     public void Every_state_frame_is_the_shape_the_stylesheet_derives_its_height_from()
     {
         Assert.All(
-            ChromeAssets.NodeStates,
+            ChromeAssetService.NodeStates,
             state => Assert.Equal((208, 240), Shape(Texture(export.Chrome.TraitNode(state)))));
 
         Assert.All(
-            ChromeAssets.BlessingStates,
+            ChromeAssetService.BlessingStates,
             state => Assert.Equal((148, 188), Shape(Texture(export.Chrome.BlessingPlate(state)))));
     }
 
@@ -139,7 +139,7 @@ public class StateChromeTests(Export export)
     [Fact]
     public void The_states_are_the_ones_the_build_ships_and_the_padlock_is_there()
     {
-        Assert.Equal(["selected", "available", "unavailable"], ChromeAssets.NodeStates);
+        Assert.Equal(["selected", "available", "unavailable"], ChromeAssetService.NodeStates);
         Assert.EndsWith("T_Icons_Locked.png", export.Chrome.LockGlyph, StringComparison.Ordinal);
         Assert.EndsWith("T_GoldDivider.png", export.Chrome.GoldDivider, StringComparison.Ordinal);
     }
@@ -147,7 +147,7 @@ public class StateChromeTests(Export export)
     [Fact]
     public void A_blessing_answers_the_plate_its_state_names()
     {
-        Assert.Equal(["allocated", "unallocated"], ChromeAssets.BlessingStates);
+        Assert.Equal(["allocated", "unallocated"], ChromeAssetService.BlessingStates);
 
         Assert.EndsWith(
             "T_Buttons_BlessingButton_Allocated.png", export.Chrome.BlessingPlate("allocated"),
