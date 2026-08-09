@@ -11,11 +11,25 @@ public static class ApiEndpoints
     {
         app.MapAbility();
         app.MapBlessing();
+        app.MapCompanionPet();
+        app.MapCreature();
         app.MapCurrency();
+        app.MapEffect();
         app.MapGem();
+        app.MapGemTrait();
+        app.MapGemType();
         app.MapItem();
+        app.MapLegendaryPower();
+        app.MapLegendaryStat();
+        app.MapMount();
+        app.MapMountPower();
+        app.MapRelicPower();
+        app.MapSetBonus();
+        app.MapSetBonusPower();
+        app.MapTalent();
         app.MapTalentSlot();
         app.MapTrait();
+        app.MapTraitPower();
         app.MapWeaponPower();
     }
 }

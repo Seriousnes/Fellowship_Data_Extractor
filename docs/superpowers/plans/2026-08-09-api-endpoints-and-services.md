@@ -2307,7 +2307,7 @@ RelicPower, SetBonus, SetBonusPower, Talent and TraitPower each take `Id` alone 
 - Produces: `Map<Member>()` for each of the fourteen, and the durable guarantee that a type added
   later cannot ship without its routes.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/FellowshipExtractor.Api.Tests/EndpointTests.cs`:
 
@@ -2365,7 +2365,7 @@ If the second test fails because `RawText` reads as the group relative `/{id:int
 combined path, replace its body with a walk over `endpoint.DisplayName`, which carries the full
 template. Print one `RawText` first to see which it is.
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~EndpointTests"
@@ -2373,7 +2373,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: FAIL, naming the fourteen types with no routes.
 
-- [ ] **Step 3: Scaffold the fourteen**
+- [x] **Step 3: Scaffold the fourteen**
 
 Write this to the scratchpad and run it from the repository root. It reads the member list out of
 `EntityType.cs`, so the list is never copied.
@@ -2492,7 +2492,7 @@ Get-ChildItem $root -Directory | Select-Object -ExpandProperty Name
 Expected: 22 folder names. Read three of the generated files before going on, checking the slug, the
 `EntityType` member and that no stray backtick survived the here-strings.
 
-- [ ] **Step 4: Map all twenty two**
+- [x] **Step 4: Map all twenty two**
 
 Rewrite `MapApiEndpoints` so it names each group once, in the enum's own order:
 
@@ -2524,7 +2524,7 @@ Rewrite `MapApiEndpoints` so it names each group once, in the enum's own order:
     }
 ```
 
-- [ ] **Step 5: Run it and watch it pass**
+- [x] **Step 5: Run it and watch it pass**
 
 ```powershell
 dotnet build src/FellowshipExtractor.slnx
@@ -2533,7 +2533,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: 2 passed.
 
-- [ ] **Step 6: Run the whole suite and commit**
+- [x] **Step 6: Run the whole suite and commit**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
