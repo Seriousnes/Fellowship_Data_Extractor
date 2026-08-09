@@ -133,17 +133,22 @@ Common, Uncommon and Rare draw none.
 
 ## The slot
 
-An item slot draws the stack `UW_GenericItemWidget` draws, in this order:
+An item icon's background carries its rarity. The shipped icon's alpha channel is zero over the
+artwork and non-zero over the background, so compositing the rarity colour through that channel
+colours the background and leaves the artwork alone.
+
+`export-all` writes each icon that a rarity reaches once per rarity, as
+`<icon>-<rarity>.png`, composed as `colour * alpha + rgb * (1 - alpha)` with the alpha the texture
+ships and the colour that rarity's row names. Fitted against a screenshot of item 5217 for Helena,
+`Linked Heavy Metal Cloak`, this reaches 18.98 RMS where the untinted icon reaches 30.97, at a fitted
+alpha scale of 0.93, so the channel is used as it ships. `ItemDocument.IconByRarity` names the
+variant each rarity reads.
+
+An item slot then draws, in this order:
 
 1. `T_Borders_EmptyWithoutFrame`, the plate.
-2. The item icon, clipped to the chamfered well.
-3. `T_Borders_RarityGlow` in the slot's rarity. Its alpha is zero within 18px of centre and lit in
-   the 18px to 24px ring, so it lights the border and leaves the art untouched.
-4. `T_Borders_RarityFrame` in the slot's rarity, and `T_Borders_GlassFrame` over it.
-
-`ChromeAssets` gains `SlotGlow(rarity)` alongside `SlotBacking`, `SlotFrame` and `SlotBevel`, and
-`Cx/Icon.razor` sets `--fx-slot-glow` beside the variables it already sets. `_Crest.scss` draws the
-glow in the `.fx-slot` stack under the `::after` that carries the bevel and frame.
+2. The icon variant for the slot's rarity, clipped to the chamfered well.
+3. `T_Borders_RarityFrame` in the slot's rarity, and `T_Borders_GlassFrame` over it.
 
 ## The read side
 
