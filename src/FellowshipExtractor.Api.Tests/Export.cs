@@ -31,7 +31,7 @@ public sealed class ApiWebRoot : IWebHostEnvironment
 
 public sealed class Export
 {
-    public CodexView View { get; }
+    public ICodexViewService View { get; }
 
     public ITooltipViewService Tooltip { get; }
 
@@ -61,7 +61,7 @@ public sealed class Export
         var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
         var chrome = Chrome = new ChromeAssetService(icons, paths, Store, tokens);
 
-        View = new CodexView(Store, new Codex(Store, tokens), tokens, chrome, richText, substitutions, icons);
+        View = new CodexViewService(Store, new CodexService(Store, tokens), tokens, chrome, richText, substitutions, icons);
 
         Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, icons, new ApiWebRoot());
     }

@@ -46,7 +46,7 @@ public static class ApiDocument
     }
 }
 
-public sealed class ApiInfo(Codex codex) : IOpenApiDocumentTransformer
+public sealed class ApiInfo(ICodexService codex) : IOpenApiDocumentTransformer
 {
     public Task TransformAsync(
         OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellation)
@@ -57,7 +57,7 @@ public sealed class ApiInfo(Codex codex) : IOpenApiDocumentTransformer
     }
 }
 
-public sealed class ApiParameters(IEntityStoreService store, Codex codex) : IOpenApiOperationTransformer
+public sealed class ApiParameters(IEntityStoreService store, ICodexService codex) : IOpenApiOperationTransformer
 {
     public Task TransformAsync(
         OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellation)
@@ -84,7 +84,7 @@ public sealed class ApiParameters(IEntityStoreService store, Codex codex) : IOpe
     private IEnumerable<ApiParameter> Declared(ApiQuerySet set) => set switch
     {
         ApiQuerySet.Tooltip => TooltipQuery.Parameters,
-        ApiQuerySet.Search => Suggestions.Parameters,
+        ApiQuerySet.Search => SuggestionService.Parameters,
         ApiQuerySet.Catalogue =>
         [
             .. CodexQuery.Parameters,

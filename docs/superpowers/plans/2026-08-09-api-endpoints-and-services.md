@@ -926,7 +926,7 @@ git commit -m "Put the rendering services behind interfaces"
   `SuggestionService.Limit`, `Ceiling`, `DefaultLimit`, `MaximumLimit`, `Words` and `Mark` stay static
   on the implementation.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `RouteTests`:
 
@@ -944,7 +944,7 @@ Add to `RouteTests`:
     }
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~Every_browsing_service"
@@ -952,7 +952,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: FAIL to compile.
 
-- [ ] **Step 3: Move the five classes**
+- [x] **Step 3: Move the five classes**
 
 Each moves body-unchanged into `Services/<Name>Service.cs` with an interface above it.
 `CodexSearch` moves out of `Models/CodexQuery.cs`, which keeps `CodexQuery`, `Listing` and
@@ -996,7 +996,7 @@ with the private `Floor`, `Luminance` and `Channel` helpers moving with `Readabl
 `Models/Suggestions.cs` keeps `SearchResult`, `SearchGroup`, `SearchResponse` and `EntitiesResponse`.
 `SearchResult.From` and `PublicEntity.From` take `ICodexViewService view`.
 
-- [ ] **Step 4: Move the call sites**
+- [x] **Step 4: Move the call sites**
 
 `Program.cs`:
 
@@ -1026,7 +1026,7 @@ becomes `@inject ICodexSearchService Search`, and `@inject Suggestions Suggest` 
 `ListingTests.cs` reads `new CodexSearchService(...)` and `new SearchIndexService(...)`.
 `SuggestionsTests.cs` reads `new SuggestionService(new SearchIndexService(...), export.View)`.
 
-- [ ] **Step 5: Build and run the suite**
+- [x] **Step 5: Build and run the suite**
 
 ```powershell
 dotnet build src/FellowshipExtractor.slnx
@@ -1035,7 +1035,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
 
 Expected: build clean, `Failed: 2, Passed: 265, Total: 267`.
 
-- [ ] **Step 6: Confirm nothing is registered by its concrete type**
+- [x] **Step 6: Confirm nothing is registered by its concrete type**
 
 ```powershell
 Select-String -Path src/FellowshipExtractor.Api/Program.cs -Pattern "AddSingleton" -Context 0,0
@@ -1044,7 +1044,7 @@ Select-String -Path src/FellowshipExtractor.Api/Program.cs -Pattern "AddSingleto
 Expected: every line names an interface first, except `AddHostedService<IconSeederService>()` and the
 `AddAzureBlobContainerClient` line.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A

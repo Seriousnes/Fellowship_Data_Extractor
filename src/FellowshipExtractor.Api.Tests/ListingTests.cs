@@ -20,10 +20,10 @@ public class ListingTests(Export export)
 
         Assert.Null(error);
 
-        return new CodexSearch(
+        return new CodexSearchService(
             export.Store,
             export.View.Codex,
-            new SearchIndex(export.Store, NullLogger<SearchIndex>.Instance),
+            new SearchIndexService(export.Store, NullLogger<SearchIndexService>.Instance),
             export.View).Run(query with { PageSize = 200 });
     }
 

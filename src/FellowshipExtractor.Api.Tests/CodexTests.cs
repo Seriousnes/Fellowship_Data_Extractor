@@ -3,7 +3,7 @@ namespace FellowshipExtractor.Api.Tests;
 [Collection(Corpus.Name)]
 public class CodexTests
 {
-    private readonly Codex Codex;
+    private readonly ICodexService Codex;
     private readonly IEntityStoreService Store;
 
     public CodexTests(Export export)

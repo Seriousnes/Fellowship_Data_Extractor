@@ -43,6 +43,18 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public void Every_browsing_service_is_resolved_through_an_interface()
+    {
+        var provider = factory.Services;
+
+        Assert.NotNull(provider.GetRequiredService<ICodexService>());
+        Assert.NotNull(provider.GetRequiredService<ISearchIndexService>());
+        Assert.NotNull(provider.GetRequiredService<ICodexSearchService>());
+        Assert.NotNull(provider.GetRequiredService<ICodexViewService>());
+        Assert.NotNull(provider.GetRequiredService<ISuggestionService>());
+    }
+
+    [Fact]
     public async Task Tooltip_route_answers_200_for_one_id_of_every_type()
     {
         foreach (var type in Enum.GetValues<EntityType>())

@@ -6,7 +6,7 @@ namespace FellowshipExtractor.Api.Tests;
 public class ApiDocumentTests(Export export)
 {
     private static readonly IReadOnlyList<ApiParameter> Declared =
-        [.. TooltipQuery.Parameters, .. CodexQuery.Parameters, .. Suggestions.Parameters];
+        [.. TooltipQuery.Parameters, .. CodexQuery.Parameters, .. SuggestionService.Parameters];
 
     [Fact]
     public void Every_parameter_the_document_declares_is_one_a_reader_can_name()
@@ -24,7 +24,7 @@ public class ApiDocumentTests(Export export)
     [Fact]
     public void No_parameter_is_declared_twice_on_one_endpoint()
     {
-        foreach (var set in new[] { TooltipQuery.Parameters, CodexQuery.Parameters, Suggestions.Parameters })
+        foreach (var set in new[] { TooltipQuery.Parameters, CodexQuery.Parameters, SuggestionService.Parameters })
         {
             var names = set.Select(parameter => parameter.Name).ToArray();
 
@@ -73,7 +73,7 @@ public class ApiDocumentTests(Export export)
     [Fact]
     public void Every_filter_parameter_the_document_declares_is_read_rather_than_refused()
     {
-        var codex = new Codex(export.Store, new DesignTokenService(export.Store.Vocabulary));
+        var codex = new CodexService(export.Store, new DesignTokenService(export.Store.Vocabulary));
 
         IEnumerable<ApiParameter> offered =
         [
@@ -111,12 +111,12 @@ public class ApiDocumentTests(Export export)
     [Fact]
     public void The_search_limit_holds_between_the_bounds_the_document_states()
     {
-        Assert.Equal(Suggestions.DefaultLimit, Suggestions.Limit(null));
-        Assert.Equal(Suggestions.DefaultLimit, Suggestions.Limit("not a number"));
-        Assert.Equal(1, Suggestions.Limit("0"));
-        Assert.Equal(1, Suggestions.Limit("-5"));
-        Assert.Equal(Suggestions.MaximumLimit, Suggestions.Limit((Suggestions.MaximumLimit + 1).ToString()));
-        Assert.Equal(25, Suggestions.Limit("25"));
+        Assert.Equal(SuggestionService.DefaultLimit, SuggestionService.Limit(null));
+        Assert.Equal(SuggestionService.DefaultLimit, SuggestionService.Limit("not a number"));
+        Assert.Equal(1, SuggestionService.Limit("0"));
+        Assert.Equal(1, SuggestionService.Limit("-5"));
+        Assert.Equal(SuggestionService.MaximumLimit, SuggestionService.Limit((SuggestionService.MaximumLimit + 1).ToString()));
+        Assert.Equal(25, SuggestionService.Limit("25"));
     }
 
     private static string Sample(ApiParameter parameter) => parameter.Value switch

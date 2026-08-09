@@ -35,11 +35,11 @@ builder.Services.AddSingleton<ITooltipViewService, TooltipViewService>();
 builder.Services.AddSingleton<IFragmentService, FragmentService>();
 builder.Services.AddSingleton<ITooltipService, TooltipService>();
 
-builder.Services.AddSingleton<Codex>();
-builder.Services.AddSingleton<SearchIndex>();
-builder.Services.AddSingleton<CodexSearch>();
-builder.Services.AddSingleton<CodexView>();
-builder.Services.AddSingleton<Suggestions>();
+builder.Services.AddSingleton<ICodexService, CodexService>();
+builder.Services.AddSingleton<ISearchIndexService, SearchIndexService>();
+builder.Services.AddSingleton<ICodexSearchService, CodexSearchService>();
+builder.Services.AddSingleton<ICodexViewService, CodexViewService>();
+builder.Services.AddSingleton<ISuggestionService, SuggestionService>();
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
@@ -95,9 +95,9 @@ app.MapGet("/api/tooltip/{slug}/{id:int}", async (string slug, int id, HttpConte
     .ProducesProblem(StatusCodes.Status400BadRequest)
     .ProducesProblem(StatusCodes.Status404NotFound);
 
-app.MapGet("/api/search", (HttpContext http, Suggestions suggestions) =>
+app.MapGet("/api/search", (HttpContext http, ISuggestionService suggestions) =>
 {
-    var limit = Suggestions.Limit(http.Request.Query["limit"]);
+    var limit = SuggestionService.Limit(http.Request.Query["limit"]);
 
     var asked = http.Request.Query["type"].ToString();
     var narrowed = string.IsNullOrWhiteSpace(asked) ? null : asked;
@@ -116,7 +116,7 @@ app.MapGet("/api/search", (HttpContext http, Suggestions suggestions) =>
     .Produces<SearchResponse>()
     .ProducesProblem(StatusCodes.Status400BadRequest);
 
-app.MapGet("/api/entities", (HttpContext http, Codex codex, CodexSearch search, CodexView view) =>
+app.MapGet("/api/entities", (HttpContext http, ICodexService codex, ICodexSearchService search, ICodexViewService view) =>
 {
     var query = CodexQuery.Parse(http.Request.Query, codex, out var error);
 
@@ -141,7 +141,7 @@ app.MapGet("/api/entities", (HttpContext http, Codex codex, CodexSearch search, 
     .Produces<EntitiesResponse>()
     .ProducesProblem(StatusCodes.Status400BadRequest);
 
-app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, IEntityStoreService store, CodexView view) =>
+app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, IEntityStoreService store, ICodexViewService view) =>
 {
     if (!EntityTypes.TryParse(slug, out var type))
     {
@@ -162,7 +162,7 @@ app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, IEntityStoreServ
     .Produces<IReadOnlyList<PublicEntity>>()
     .ProducesProblem(StatusCodes.Status404NotFound);
 
-app.MapGet("/api/catalog", (Codex codex, IEntityStoreService store) =>
+app.MapGet("/api/catalog", (ICodexService codex, IEntityStoreService store) =>
 {
     var rows = store.Entities;
 
