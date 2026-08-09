@@ -20,7 +20,9 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public TraitDocument Entity { get; set; } = default!;
+    [CascadingParameter] public EntityDocument Shown { get; set; } = default!;
+
+    private TraitDocument Entity => (TraitDocument)Shown;
 
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
