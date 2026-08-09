@@ -444,33 +444,41 @@ public sealed record PublicType(EntityType Type, string Slug, string Label, stri
 states the tab order separately:
 
 ```csharp
-private static readonly EntityType[] Ordered =
+private static readonly EntityType[] Tabbed =
 [
     EntityType.Item, EntityType.Ability, EntityType.Effect, EntityType.Talent,
     EntityType.Blessing, EntityType.GemTrait, EntityType.Trait, EntityType.SetBonus,
-    EntityType.Gem, EntityType.GemType, EntityType.Creature, EntityType.Mount,
-    EntityType.CompanionPet, EntityType.Currency, EntityType.LegendaryPower,
-    EntityType.LegendaryStat, EntityType.WeaponPower, EntityType.RelicPower,
-    EntityType.TraitPower, EntityType.SetBonusPower,
+    EntityType.GemType, EntityType.Creature, EntityType.Mount, EntityType.CompanionPet,
+    EntityType.Currency, EntityType.LegendaryPower, EntityType.WeaponPower,
+    EntityType.RelicPower, EntityType.TraitPower, EntityType.SetBonusPower,
 ];
+
+private static readonly EntityType[] Untabbed = [EntityType.Gem, EntityType.LegendaryStat];
 
 private static readonly EntityType[] Unlisted = [EntityType.TalentSlot, EntityType.MountPower];
 ```
 
-`Position` is the index in `Ordered`. `PublicTypes.Listed` answers whether a type has a position,
-and `PublicTypes.Tabs` answers `Ordered` mapped to `PublicType`.
+A type is in exactly one of the three. `Tabbed` is listed and holds a tab, in that order.
+`Untabbed` is listed, so its slug filters, its entity pages answer and its names are searched, and
+it holds no tab because three legendary stats and twenty-four gems are not worth one; the tab strip
+already draws the chosen type whether or not it is one of the tabs, so arriving at
+`/browse?type=gem` from a breadcrumb or the mega menu still marks itself. `Unlisted` is reachable
+nowhere.
+
+`PublicType` gains `bool Listed`, `bool Tabbed` and `int Position`, and `PublicTypes.Tabs` answers
+`Tabbed` mapped to `PublicType`.
 
 **Step 1: Verify the ordering against the enum.**
 
-Extend the existing `Verified` guard so it also throws when `Ordered` and `Unlisted` together do
-not cover every `EntityType` exactly once. Adding an `EntityType` then fails the build until it is
-placed or explicitly left unlisted, so no list can drift.
+Extend the existing `Verified` guard so it also throws when `Tabbed`, `Untabbed` and `Unlisted`
+together do not cover every `EntityType` exactly once. Adding an `EntityType` then fails the build
+until it is placed in one of the three, so no list can drift.
 
 **Step 2: Filter what the codex offers.**
 
 `Codex.Types` keeps `Table` order and drops the unlisted types, which removes them from the mega
-menu and the home page. `Codex.Tabs` is the same set in `Position` order. `PublicTypes.Accepted`,
-which spells the legal slugs in the no-such-type message, lists only the listed slugs.
+menu and the home page. `Codex.Tabs` is the tabbed set in `Position` order. `PublicTypes.Accepted`,
+which spells the legal slugs in the no-such-type message, lists every listed slug, tabbed or not.
 
 **Step 3: Refuse an unlisted slug everywhere a reader can reach one.**
 
@@ -497,19 +505,39 @@ both narrow to the listed types and gain a case asserting an unlisted slug answe
 `SearchIndex` builds over the listed types only, so the omnibox, `/api/search` and free-text browse
 stop returning them.
 
-**Step 5: Publish it.**
+**Step 5: List only what the build names.**
 
-`/api/catalog` publishes `types` in tab order with each type's `position`.
+Of 12,473 documents, 6,522 carry a display name; the rest print `Item 53` or `Effect 1204` over an
+empty plate, and on the item list that is 3,039 of 5,744 rows. `CodexQuery` therefore defaults its
+existing `named` flag to true when a caller states none, so every list and `/api/entities` answer
+named rows and `?named=0` still asks for the others. The flag, its label and its rail entry already
+exist, so this is a default rather than a new filter.
 
-**Step 6: Verify.**
+**Step 6: Find an unnamed row by its id.**
 
-`TabTests` asserts: `Ordered` and `Unlisted` partition `EntityType`; `Codex.Tabs` opens with Items,
-Abilities, Effects, Talents, Blessings, Gem Traits; `Codex.Types` holds neither talent slots nor
-mount powers; the search index answers nothing for a talent slot name; `/browse?type=talent-slot`
-answers a problem naming the legal slugs; `/entity/talent-slot/1` answers 404; and
-`/api/entity/mount-power/1` and `/api/tooltip/mount-power/1` answer the no-such-type problem. A
-further test asserts the store still holds all 216 talent slots, so the Talents list can read
-them.
+An unnamed row stays reachable by the one thing it has. `SearchIndex.Search` parses the typed text
+as a whole number first, and answers the documents carrying that id ahead of any name match, so
+typing `53` reaches item 53 and effect 53 whether or not either is named. The omnibox draws those
+hits the way it draws the rest, and `PublicTypes.NameOf` already prints `Item 53` for them.
+
+**Step 7: Publish it.**
+
+`/api/catalog` publishes `types` in tab order with each type's `position` and whether it is tabbed.
+
+**Step 8: Verify.**
+
+`TabTests` asserts: `Tabbed`, `Untabbed` and `Unlisted` partition `EntityType`; `Codex.Tabs` opens
+with Items, Abilities, Effects, Talents, Blessings, Gem Traits and holds neither gems nor legendary
+stats; `/browse?type=gem` answers a gem list even though no tab names it, and the strip marks it
+current; `Codex.Types` holds neither talent slots nor mount powers; the search index answers
+nothing for a talent slot name; `/browse?type=talent-slot` answers a problem naming the legal
+slugs; `/entity/talent-slot/1` answers 404; and `/api/entity/mount-power/1` and
+`/api/tooltip/mount-power/1` answer the no-such-type problem. A further test asserts the store
+still holds all 216 talent slots, so the Talents list can read them.
+
+`NamedTests` asserts: a bare `/browse` answers only named rows and the item total reads 2,684;
+`?named=0` answers the other 3,060; the tab counts equal the totals of the lists they open; and
+typing an id into the omnibox answers the documents carrying it, named or not.
 
 ---
 
@@ -619,11 +647,15 @@ the column count; and an empty item list draws a header and no body rows.
 - Modify: `src/FellowshipExtractor.Api.Tests/CountTests.cs`, `ListingTests.cs`, `NearbyAudit.cs`,
   `EntityLinkTests.cs`
 
-**Step 1: Stop folding.**
+**Step 1: Stop folding, and drop what the fold existed to draw.**
 
-`CodexSearch.Fold` becomes a projection: every matched document becomes one `Listing`.
-`Listed` keeps computing `Variants` as it does today, from the other readings of the same id
-grouped by display name, so a row still points at the id's other namings.
+`CodexSearch.Fold`, `Listed`, `Variant` and the `Listing` record all go, and `CodexResults.Rows`
+becomes `IReadOnlyList<EntityDocument>`. Every matched document is a row.
+
+The variant icons were the fold's user interface: they existed to show the names an id read under
+when only one of its readings was drawn. Now that each reading is its own row they would point at
+rows already on the same page, so the browse list loses them. `Sections/Versions.razor` on the
+entity page is untouched, because a page still stands for an id rather than a reading.
 
 **Step 2: Choose the type when the query names none.**
 
@@ -670,10 +702,13 @@ once. The view-results button opens the browse list, which shows all twelve rows
 **Step 7: Verify.**
 
 Update `CountTests` to assert every per-type count equals a document count and that they sum to
-`Codex.Count`. Update `ListingTests`: an item id with twelve readings draws twelve rows; a talent
-slot id draws one row per hero; the `Find` helper takes a hero as well as an id; a row's link
-carries the hero its tooltip carries. `Every_count_beneath_the_list_counts_ids` stays as the guard
-that a facet value's count equals the total of filtering by it.
+`Codex.Count`. Rewrite `ListingTests` around the row rather than the fold: an item id with twelve
+readings draws twelve rows; a talent slot id draws one row per hero; a row's link carries the hero
+its tooltip carries; and the six tests that reached a row through
+`results.Rows.Single(row => row.Shown.Id == id)` take a hero as well as an id, since that helper
+throws the moment several rows share one. The four that asserted variant icons go with the column
+they covered. `Every_count_beneath_the_list_counts_ids` stays as the guard that a facet value's
+count equals the total of filtering by it.
 
 ---
 
@@ -695,9 +730,10 @@ public sealed record Sorting(string Key, string Label, Func<EntityDocument, ICom
 **Step 1: State the sortable columns.**
 
 `Codex.Sortings` holds `name` and `type`, which move out of the special cases in `CodexSearch.Order`,
-and one entry per column the per-type lists draw: `slot`, `ilvl`, `kind`, `source`, `set`, `hero`,
-`school`, `gem`, `power`, `tier`, `cost`, `pieces`, `rarity`, `category`. Each reads the document
-the same way the column that draws it does, so a header and its ordering cannot disagree.
+and one entry per column the per-type lists draw: `slot`, `ilvl`, `kind`, `source`, `set`,
+`applier`, `hero`, `school`, `gem`, `power`, `tier`, `cost`, `pieces`, `attribute`, `role`,
+`rarity`, `category`. Each reads the document the same way the column that draws it does, so a
+header and its ordering cannot disagree.
 
 **Step 2: Answer a talent's slot.**
 
@@ -741,9 +777,12 @@ slot's row; and an unknown sort key answers a problem that names the legal keys.
 Every per-type component takes the same two parameters, so the dispatcher passes them uniformly:
 
 ```csharp
-[Parameter, EditorRequired] public IReadOnlyList<Listing> Rows { get; set; }
+[Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; }
 [Parameter, EditorRequired] public BrowseView View { get; set; }
 ```
+
+Each casts its rows to the document class it draws, which is sound because `CodexSearch` has
+already filtered to one type by the time a component is chosen.
 
 `Rows.razor` switches on `EntityType` and renders the component for it, with a
 `DynamicComponent` over a switch expression the way `Tooltip.razor` names its cards.
@@ -758,8 +797,7 @@ as two `<Column>` entries, the art one unsortable with `Class="cx-art"` and the 
 **Step 2: Draw the items list.**
 
 Columns after art and name: `ILvl` bound to `ItemDocument.ItemLevel`, numeric, keyed `ilvl`;
-`Slot` bound to `Slot`, keyed `slot`; `Versions`, a template drawing `row.Variants` as icon links
-each carrying `href` and `data-tip`; `Source`, a template drawing each `ItemSource` with its name,
+`Slot` bound to `Slot`, keyed `slot`; `Source`, a template drawing each `ItemSource` by name,
 keyed `source`; `Type`, a template drawing the armour type for the eight armour slots, the slot
 word for Neck, Ring and Relic, and the hero in the hero's own colour for a weapon, keyed `kind`;
 `Set`, a template drawing an `EntityLink` to the set bonus the item names, keyed `set`.
@@ -768,11 +806,25 @@ The type rule is slot-gated because `ItemDocument.ArmorType` holds the wearer's 
 non-armour slot, which is why five plate weapons and eighteen legendary rings read an armour type
 they do not have.
 
+A source reads its own words: `Any dungeon` for a definition that drops everywhere, the dungeon's
+display name for one that names dungeons, `Equipment Vendor` for the 324 vendor rows, the starmap
+track for a starmap grant, and `Starting gear - {hero}` for a hero's default outfit. The equipment
+vendor carries `IsDisabled: true` in this build and is named plainly regardless, because it is
+still the only thing that sells those items.
+
 **Step 3: Draw the abilities and effects lists.**
 
-Both draw `Hero`, a template drawing a `<Chip>` per hero in the hero's colour, and an
-`<EntityLink>` to the owning creature when there is no hero, keyed `hero`; and `Type`, a template
-drawing a `<Chip>` per school, keyed `school`.
+Both draw `Source`, a template drawing the owner's name as a plain anchor with no icon and no
+`data-tip`: a hero links to that hero's list of the type being drawn, a creature and a mount link
+to their entity pages, and a dungeon modifier draws its name with no link because it is not an
+entity. Keyed `source`.
+
+Both draw `Type`, a template drawing a `<Chip>` per school, keyed `school`. An effect states no
+school of its own on any of 3,261 rows, so an effect draws the schools of the ability that applies
+it, which the same graph that gives it its owner already reaches.
+
+Effects draw one column abilities do not: `Applied by`, the ability that applies the effect, again
+as a plain anchor with no icon and no `data-tip`, keyed `applier`.
 
 **Step 4: Draw the talents list.**
 
@@ -786,15 +838,16 @@ the gem's own colour, keyed `gem`.
 
 **Step 6: Draw the set bonuses list.**
 
-`Items`, a template drawing one icon link per item that names the set, each carrying `href` and
-`data-tip`; `Required` bound to `Pieces`, numeric, keyed `pieces`. The item list is read per
-reading, so a hero's own version of a set piece is the icon that hero's row would show.
+`Required` bound to `Pieces`, numeric, keyed `pieces`; `Attribute`, a template drawing a `<Chip>`
+per `AllowedAttributes` entry, keyed `attribute`; `Role`, a template drawing a `<Chip>` per
+`AllowedRoles` entry in the role's own colour, keyed `role`.
 
-Three set names carry three rows each, split by `AllowedAttributes`, and one carries three split by
-`AllowedRoles`. A row narrows its item list to the items whose `PrimaryStat` its
-`AllowedAttributes` names, keeping the items that carry no primary stat, because the neck piece of
-an attribute-split set carries neither a stat nor an armour type and belongs to all three. A row
-split by role shows every item of its name, since no item states a role.
+Those last two are what make the list readable, because a name does not identify a row. `Draconic
+Might`, `Torment of Bael'Aurum` and `Drakheim's Absolution` each carry three rows split by
+attribute into Agility, Intellect and Strength, and `Sin Warding` carries three split by role into
+Dps, Healer and Tank. Ids 676 and 688 serialize as `{"$type":"set-bonus","id":N}` with no name,
+pieces, power or roles, and no item points at either, so the named default of Task 4 Step 5 drops
+them and the list draws the 21 rows that say something.
 
 **Step 7: Draw the remaining lists.**
 
