@@ -6,9 +6,9 @@ the card that draws it, and every card writes the same bytes the tooltip writes 
 
 ## The dispatch
 
-`Tooltip.razor` keeps `Entity`, `Query` and `Hero` as its parameters, so `EntityPage.razor` and the
-`/api/tooltip/{type}/{id}`, `/api/item/{id}` and `/api/ability/{id}` endpoints reach it unchanged.
-It names the card in a switch expression over the document:
+`Tooltip.razor` keeps `Entity`, `Query` and `Hero` as its parameters, so `EntityPage.razor` and
+every endpoint under `Endpoints/<Type>/<Type>TooltipEndpoint.cs` reach it unchanged. It names the
+card in a switch expression over the document:
 
 ```csharp
 private static Type GetTooltipComponent(EntityDocument document) => document switch
@@ -47,7 +47,8 @@ they land on is shared.
 served fragment still opens on the card's own root element.
 
 `Tooltip.razor` holds nothing else: no rarity, art, level, temper, facts, rolls, traits, granted
-name or sheet, and no `OnParametersSet`.
+name or sheet, and no `OnParametersSet`. It injects nothing, the cards each injecting the
+`ITooltipViewService` they ask their questions of.
 
 ## The document each card reads
 
@@ -79,7 +80,8 @@ The `Tip*` components the groups name are unchanged, and each keeps taking the `
 
 ## The card
 
-Each card owns its whole window, the way `Blessing.razor` and `Trait.razor` do:
+Each card owns its whole window, the way `Blessing.razor` and `Trait.razor` do, opening on
+`@inject ITooltipViewService Ui` and reading `Root` from the static `TooltipView`:
 
 ```razor
 <div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
@@ -191,16 +193,23 @@ It carries six groups: `TipIdentity`, `TipFacts`, `TipRolls`, `TipTraits`, `TipP
 - `TipRolls` is drawn for `Ui.Potential(Query)` alone.
 - `TipOverflow` is drawn for a `GemTypeDocument` carrying an `OverflowDescription`.
 
-## TooltipView
+## The service and the static
 
-`TooltipView` keeps `Rarity`, `Variables`, `Art`, `Ornament`, `Rung`, `Level`, `Temper`, `Facts`,
-`Potential`, `Traits`, `Rolls`, `Magnitude`, `Text`, `Style`, `Granted` and `LegendaryStats`, which
-the cards ask it for.
+`ITooltipViewService` keeps `Chrome`, `Blessings`, `Rarity`, `Variables`, `Art`, `Ornament`, `Rung`,
+`Level`, `Temper`, `Facts`, `Potential`, `Traits`, `Rolls`, `Text`, `Style`, `Granted` and
+`LegendaryStats`, which the cards ask it for. The static `TooltipView` keeps `Root`, `TraitType`,
+`Magnitude`, `Fact` and `TraitLine`.
 
-`Block`, `Blocks` and `HasKind` go, and the guards they held are the ones each card now states.
-`Rolls` narrows from `EntityDocument` to `ItemDocument`, `Item.razor` being its one caller.
-`Granted` and `LegendaryStats` keep taking an `EntityDocument`, because `Sections/Grants.razor` and
-`Sections/Legendaries.razor` call them with one.
+`Blocks` leaves `ITooltipViewService` and `TooltipViewService`, the private `HasKind` leaves
+`TooltipViewService`, and the `Block` enum leaves the static `TooltipView`. The guards they held are
+the ones each card now states.
+
+`Rolls` narrows from `EntityDocument` to `ItemDocument` on both the interface and the service,
+`Item.razor` being its one caller. `Granted` and `LegendaryStats` keep taking an `EntityDocument`,
+because `Sections/Grants.razor` and `Sections/Legendaries.razor` call them with one.
+
+`DrawsState` stays as it is. `EntityPage.razor` asks it which cards read `?state=`, and only
+`Tooltip.razor`'s reading of it goes, along with the `OnParametersSet` that held it.
 
 ## The styling
 
@@ -231,15 +240,14 @@ served markup over the corpus.
 `TooltipDumpTests` writes one file per case to the folder `FELLOWSHIP_TIP_DUMP` names, and is
 skipped when that variable is unset. Every input is read from the store rather than written into the
 test: the first three ids of each `EntityType`, ordered by id, each drawn under a bare query and
-under `?rarity=`, `?itemLevel=&upgrades=`, `?traits=`, `?potentialPower=` and `?hero=`, whose values
-come from `store.Vocabulary` and the first trait id the build carries.
+under `rarity`, `level`, `traits`, `potential` and `hero`, whose values come from
+`store.Vocabulary`, `store.DropItemLevel`, `store.Wearer` and the first trait id the build carries.
 
-`TooltipDumpTests` is the branch's first commit, sitting on `a74e348` and moving no rendering, so the
-baseline is drawn by the tooltip as it stands and the branch carries the harness that drew it. Run
-it for the baseline, make the cards, run it again, and diff the two folders. An empty diff is what
-makes this an extraction: no texture is composited differently, so the screenshot pass the chrome
-work needs is not owed here. Any file that does differ is either a defect or a change that has to be
-argued for on its own.
+It is already on `9d38d2e`, which this branch starts from, so the baseline is drawn by the tooltip
+as it stands before a card is written. Run it there for the baseline, make the cards, run it again,
+and diff the two folders. An empty diff is what makes this an extraction: no texture is composited
+differently, so the screenshot pass the chrome work needs is not owed here. Any file that does
+differ is either a defect or a change that has to be argued for on its own.
 
 A dump is drawn by `HtmlRenderer` in one pass, which says nothing about the interactive page, where
 `EntityPage.razor` runs under `AddInteractiveServerRenderMode` and `Knobs.razor` moves the
