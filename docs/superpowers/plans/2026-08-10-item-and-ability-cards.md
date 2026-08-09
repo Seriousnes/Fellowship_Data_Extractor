@@ -37,7 +37,7 @@ Task 2 rewrites. The sample is widened first, and the same harness then draws bo
 - Consumes: `IEntityStoreService.Entities`, `EntityTypes.TypeOf`.
 - Produces: `%TEMP%\fx-tips\before`, the markup every later task is measured against, and the corpus hash that says whether the two dumps are comparable.
 
-- [ ] **Step 1: Confirm the tree is clean and on the right commit**
+- [x] **Step 1: Confirm the tree is clean and on the right commit**
 
 Run:
 ```powershell
@@ -47,7 +47,7 @@ git status --short
 ```
 Expected: the plan commit on top of `154d03f`, and no modified files.
 
-- [ ] **Step 2: Widen the sample**
+- [x] **Step 2: Widen the sample**
 
 In `src/FellowshipExtractor.Api.Tests/TooltipDumpTests.cs`, replace this block:
 
@@ -107,14 +107,14 @@ and add these two methods to the class, beside `FirstTrait`:
     }
 ```
 
-- [ ] **Step 3: Commit the harness before it measures anything**
+- [x] **Step 3: Commit the harness before it measures anything**
 
 ```bash
 git add src/FellowshipExtractor.Api.Tests/TooltipDumpTests.cs
 git commit -m "Draw the shapes the item card is about to be rewritten around"
 ```
 
-- [ ] **Step 4: Record the corpus the baseline is drawn from**
+- [x] **Step 4: Record the corpus the baseline is drawn from**
 
 Run:
 ```powershell
@@ -123,7 +123,7 @@ Set-Location G:\source\Fellowship_Data_Extractor.item-and-ability-cards
 ```
 Write the hash into the task notes. `output` is a junction to the shared checkout, and another session regenerating the export mid-task would move the dump for reasons that have nothing to do with these cards.
 
-- [ ] **Step 5: Draw the baseline**
+- [x] **Step 5: Draw the baseline**
 
 Run:
 ```powershell
@@ -135,7 +135,7 @@ Remove-Item Env:\FELLOWSHIP_TIP_DUMP
 ```
 Expected: PASS.
 
-- [ ] **Step 6: Confirm the baseline reaches every group the cards will draw**
+- [x] **Step 6: Confirm the baseline reaches every group the cards will draw**
 
 Run:
 ```powershell
@@ -158,7 +158,7 @@ corpus carries a `Description`, so `Item.razor`'s prose guard draws nothing for 
 them. Leave the guard in, matching what `Blocks` reads today, and do not go looking for a file that
 exercises it.
 
-- [ ] **Step 7: Run the whole suite green before touching anything**
+- [x] **Step 7: Run the whole suite green before touching anything**
 
 Run:
 ```powershell
@@ -179,7 +179,7 @@ Expected: PASS. Record the passing test count; every later task must match or ex
 - Consumes: `ITooltipViewService` (`Rarity`, `Art`, `Ornament`, `Level`, `Temper`, `Style`, `Facts`, `Rolls`, `Traits`, `Potential`, `Granted`, `LegendaryStats`, `Variables`), the static `TooltipView.Root`, and the `Tip*` components.
 - Produces: `FellowshipExtractor.Api.Components.Tooltip.Item`, a component taking `[CascadingParameter] EntityDocument Shown`, `[Parameter] TooltipQuery Query` and `[Parameter] HeroEntry? Hero`. Task 5 names `typeof(Item)` in the dispatch.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/FellowshipExtractor.Api.Tests/ItemCardTests.cs`:
 
@@ -274,7 +274,7 @@ public class ItemCardTests : BunitContext
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run:
 ```powershell
@@ -283,7 +283,7 @@ dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.cspr
 ```
 Expected: FAIL to build, with `CS0246: The type or namespace name 'Item' could not be found`.
 
-- [ ] **Step 3: Write the card**
+- [x] **Step 3: Write the card**
 
 Create `src/FellowshipExtractor.Api/Components/Tooltip/Item.razor`:
 
@@ -417,7 +417,7 @@ Create `src/FellowshipExtractor.Api/Components/Tooltip/Item.razor`:
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run:
 ```powershell
@@ -426,7 +426,7 @@ dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.cspr
 ```
 Expected: PASS, 5 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/FellowshipExtractor.Api/Components/Tooltip/Item.razor src/FellowshipExtractor.Api.Tests/ItemCardTests.cs
@@ -445,7 +445,7 @@ git commit -m "Draw an item on a card of its own"
 - Consumes: the same `ITooltipViewService` members Task 2 consumes, less `Granted` and `LegendaryStats`.
 - Produces: `FellowshipExtractor.Api.Components.Tooltip.Ability`, taking `[CascadingParameter] EntityDocument Shown`, `[Parameter] TooltipQuery Query`, `[Parameter] HeroEntry? Hero`. It draws both `AbilityDocument` and `EffectDocument`. Task 5 names `typeof(Ability)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/FellowshipExtractor.Api.Tests/AbilityCardTests.cs`:
 
@@ -536,7 +536,7 @@ public class AbilityCardTests : BunitContext
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run:
 ```powershell
@@ -545,7 +545,7 @@ dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.cspr
 ```
 Expected: FAIL to build, with `CS0246: The type or namespace name 'Ability' could not be found`.
 
-- [ ] **Step 3: Write the card**
+- [x] **Step 3: Write the card**
 
 Create `src/FellowshipExtractor.Api/Components/Tooltip/Ability.razor`:
 
@@ -650,7 +650,7 @@ Create `src/FellowshipExtractor.Api/Components/Tooltip/Ability.razor`:
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run:
 ```powershell
@@ -659,7 +659,7 @@ dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.cspr
 ```
 Expected: PASS, 5 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/FellowshipExtractor.Api/Components/Tooltip/Ability.razor src/FellowshipExtractor.Api.Tests/AbilityCardTests.cs
@@ -678,7 +678,7 @@ git commit -m "Draw an ability and an effect on one card"
 - Consumes: the same `ITooltipViewService` members Task 3 consumes, plus nothing new.
 - Produces: `FellowshipExtractor.Api.Components.Tooltip.Generic`, taking `[CascadingParameter] EntityDocument Shown`, `[Parameter] TooltipQuery Query`, `[Parameter] HeroEntry? Hero`. Task 5 names `typeof(Generic)` as the fall-through.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/FellowshipExtractor.Api.Tests/GenericCardTests.cs`:
 
@@ -752,7 +752,7 @@ public class GenericCardTests : BunitContext
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run:
 ```powershell
@@ -761,7 +761,7 @@ dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.cspr
 ```
 Expected: FAIL to build, with `CS0246: The type or namespace name 'Generic' could not be found`.
 
-- [ ] **Step 3: Write the card**
+- [x] **Step 3: Write the card**
 
 Create `src/FellowshipExtractor.Api/Components/Tooltip/Generic.razor`:
 
@@ -873,7 +873,7 @@ Create `src/FellowshipExtractor.Api/Components/Tooltip/Generic.razor`:
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run:
 ```powershell
@@ -882,7 +882,7 @@ dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.cspr
 ```
 Expected: PASS, 4 tests (some may report as skipped if the build carries no such row).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/FellowshipExtractor.Api/Components/Tooltip/Generic.razor src/FellowshipExtractor.Api.Tests/GenericCardTests.cs
@@ -905,7 +905,7 @@ This is the switchover. Until it lands the three new cards are unreachable; afte
 - Consumes: `Item`, `Ability`, `Generic` from Tasks 2 to 4, and the existing `Blessing` and `Trait`.
 - Produces: `Tooltip` keeps its three parameters, so `EntityPage.razor` and every `Endpoints/<Type>/<Type>TooltipEndpoint.cs` are untouched.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/FellowshipExtractor.Api.Tests/CardTests.cs`:
 
@@ -976,7 +976,7 @@ public class CardTests : BunitContext
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run:
 ```powershell
@@ -985,7 +985,7 @@ dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.cspr
 ```
 Expected: FAIL. `Every_type_the_build_carries_is_drawn_by_exactly_one_card` reports 0 cards for an item, because `Tooltip.razor` still draws the rump itself.
 
-- [ ] **Step 3: Replace Tooltip.razor**
+- [x] **Step 3: Replace Tooltip.razor**
 
 Replace the whole of `src/FellowshipExtractor.Api/Components/Tooltip/Tooltip.razor` with:
 
@@ -1015,7 +1015,7 @@ Replace the whole of `src/FellowshipExtractor.Api/Components/Tooltip/Tooltip.raz
 }
 ```
 
-- [ ] **Step 4: Move Blessing.razor onto the cascade**
+- [x] **Step 4: Move Blessing.razor onto the cascade**
 
 In `src/FellowshipExtractor.Api/Components/Tooltip/Blessing.razor`, replace this line:
 
@@ -1033,7 +1033,7 @@ with:
 
 Leave every other line of the file alone.
 
-- [ ] **Step 5: Move Trait.razor onto the cascade**
+- [x] **Step 5: Move Trait.razor onto the cascade**
 
 In `src/FellowshipExtractor.Api/Components/Tooltip/Trait.razor`, replace this line:
 
@@ -1051,7 +1051,7 @@ with:
 
 Leave every other line of the file alone.
 
-- [ ] **Step 6: Run the whole suite**
+- [x] **Step 6: Run the whole suite**
 
 Run:
 ```powershell
@@ -1060,7 +1060,7 @@ dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.cspr
 ```
 Expected: PASS, at the Task 1 count plus the tests added in Tasks 2 to 5. `TooltipTests`, `InsetArtTests`, `StateTests`, `SheetTests`, `BlessingCardTests`, `TraitCardTests` and `WindowChromeTests` must all still pass without being edited. If one of them fails, the card is not byte-identical; fix the card, not the test.
 
-- [ ] **Step 7: Draw the after dump and diff it**
+- [x] **Step 7: Draw the after dump and diff it**
 
 First confirm the corpus has not moved under the junction since Task 1 Step 4:
 ```powershell
@@ -1090,7 +1090,7 @@ git diff --no-index "$env:TEMP\fx-tips\before\$name" "$env:TEMP\fx-tips\after\$n
 ```
 Fix the card until the comparison is silent. Do not edit `TooltipDumpTests` to make it agree.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/FellowshipExtractor.Api/Components/Tooltip/Tooltip.razor src/FellowshipExtractor.Api/Components/Tooltip/Blessing.razor src/FellowshipExtractor.Api/Components/Tooltip/Trait.razor src/FellowshipExtractor.Api.Tests/CardTests.cs
@@ -1109,7 +1109,7 @@ git commit -m "Name the card in one switch and let the document cascade"
 - Consumes: nothing new.
 - Produces: `ITooltipViewService.Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity)`. No later task depends on this.
 
-- [ ] **Step 1: Confirm nothing outside the service still reads them**
+- [x] **Step 1: Confirm nothing outside the service still reads them**
 
 Run:
 ```powershell
@@ -1119,7 +1119,7 @@ Select-String -Path src -Include *.cs,*.razor -Pattern "\.Blocks\(|TooltipView\.
 ```
 Expected: only lines inside `src/FellowshipExtractor.Api/Services/TooltipViewService.cs` and the `Block` declaration in `src/FellowshipExtractor.Api/Models/TooltipView.cs`. If anything else appears, stop and report it rather than deleting.
 
-- [ ] **Step 2: Confirm Rolls has exactly one caller**
+- [x] **Step 2: Confirm Rolls has exactly one caller**
 
 Run:
 ```powershell
@@ -1129,7 +1129,7 @@ Select-String -Path src -Include *.cs,*.razor -Pattern "Ui\.Rolls\(|\.Rolls\(" -
 ```
 Expected: the interface declaration, the implementation, and `Components/Tooltip/Item.razor`. If `Generic.razor` or `Ability.razor` appear, they were written wrong in Tasks 3 or 4; fix those first.
 
-- [ ] **Step 3: Delete the Block enum**
+- [x] **Step 3: Delete the Block enum**
 
 In `src/FellowshipExtractor.Api/Models/TooltipView.cs`, delete this line and the blank line above it:
 
@@ -1137,7 +1137,7 @@ In `src/FellowshipExtractor.Api/Models/TooltipView.cs`, delete this line and the
     public enum Block { Identity, Facts, Rolls, Traits, Prose, Overflow, Granted, Legendaries, Sets }
 ```
 
-- [ ] **Step 4: Delete Blocks from the interface**
+- [x] **Step 4: Delete Blocks from the interface**
 
 In `src/FellowshipExtractor.Api/Services/TooltipViewService.cs`, delete this declaration from `ITooltipViewService`:
 
@@ -1163,7 +1163,7 @@ to:
     IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity);
 ```
 
-- [ ] **Step 5: Delete Blocks and HasKind from the service**
+- [x] **Step 5: Delete Blocks and HasKind from the service**
 
 In the same file, delete the whole `public IReadOnlyList<TooltipView.Block> Blocks(...)` method body and the `private static bool HasKind(EntityDocument document) => ...` member.
 
@@ -1197,7 +1197,7 @@ to:
 
 Leave `DrawsState`, `Granted` and `LegendaryStats` exactly as they are. `EntityPage.razor:68` reads `DrawsState`.
 
-- [ ] **Step 6: Run the whole suite**
+- [x] **Step 6: Run the whole suite**
 
 Run:
 ```powershell
@@ -1206,7 +1206,7 @@ dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.cspr
 ```
 Expected: PASS, the same count as Task 5 Step 6. A deletion that changes a test result means something still depended on it.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/FellowshipExtractor.Api/Services/TooltipViewService.cs src/FellowshipExtractor.Api/Models/TooltipView.cs
@@ -1226,7 +1226,7 @@ A dump is drawn by `HtmlRenderer` in one pass and says nothing about the interac
 - Consumes: the finished branch.
 - Produces: a statement in the handoff of what was seen, or of what could not be confirmed.
 
-- [ ] **Step 1: Start the app from the worktree**
+- [x] **Step 1: Start the app from the worktree**
 
 Run in a tracked background shell:
 ```powershell
@@ -1235,21 +1235,21 @@ dotnet run --project src/FellowshipExtractor.Api/FellowshipExtractor.Api.csproj
 ```
 Wait for the listening URL in the output.
 
-- [ ] **Step 2: Open an item's entity page**
+- [x] **Step 2: Open an item's entity page**
 
 Navigate to `/entity/item/<id>`, using an id the dump wrote a file for, and confirm the tooltip draws with its rarity frame, stat rolls and name.
 
-- [ ] **Step 3: Toggle a knob that adds a group**
+- [x] **Step 3: Toggle a knob that adds a group**
 
 In the `Knobs` panel, set `Upgrades` so the `Tempered X / Y` line appears, then clear it so the line goes away. Then do the same with a trait, which adds and removes the whole `Imbued Traits` group.
 
 Expected: the card redraws each time, the rule count changes with the group count, and no group is left stale or duplicated.
 
-- [ ] **Step 4: Stop the app**
+- [x] **Step 4: Stop the app**
 
 Stop the background shell. Leave nothing running.
 
-- [ ] **Step 5: Report**
+- [x] **Step 5: Report**
 
 State in the handoff what was toggled and what was seen. If the page could not be reached, say so plainly rather than implying it was checked.
 
