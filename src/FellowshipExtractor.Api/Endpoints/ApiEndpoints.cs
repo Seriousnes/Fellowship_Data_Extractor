@@ -10,7 +10,12 @@ public static class ApiEndpoints
     public static void MapApiEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapAbility();
+        app.MapBlessing();
+        app.MapCurrency();
+        app.MapGem();
         app.MapItem();
+        app.MapTalentSlot();
+        app.MapTrait();
         app.MapWeaponPower();
     }
 }

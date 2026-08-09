@@ -2147,7 +2147,7 @@ git commit -m "Declare hero on the two kinds of card whose stat it names"
   `Id`, `State`. `GemTooltipRequest` and `CurrencyTooltipRequest` carry `Id`, `Rarity`. The record
   request for blessing, trait, gem and currency carries `Id` alone.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `RouteTests`:
 
@@ -2197,7 +2197,7 @@ Add to `RouteTests`:
     }
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~A_state_reaches_the_card|FullyQualifiedName~A_talent_slot_reads|FullyQualifiedName~A_rarity_reaches_a_gem"
@@ -2205,7 +2205,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: FAIL, 404 on every address.
 
-- [ ] **Step 3: Write the five trios**
+- [x] **Step 3: Write the five trios**
 
 Each group file follows `ItemGroup` with its own `EntityType` member. Each record endpoint follows
 `AbilityRecordEndpoint`, except talent slot, whose request carries `Hero` and whose handler passes
@@ -2267,12 +2267,12 @@ public sealed record GemTooltipRequest
 
 `CurrencyTooltipRequest` is `GemTooltipRequest` with its own name.
 
-- [ ] **Step 4: Map them**
+- [x] **Step 4: Map them**
 
 Add `app.MapTalentSlot();`, `app.MapBlessing();`, `app.MapTrait();`, `app.MapGem();` and
 `app.MapCurrency();` to `MapApiEndpoints`.
 
-- [ ] **Step 5: Run it and watch it pass**
+- [x] **Step 5: Run it and watch it pass**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~A_state_reaches_the_card|FullyQualifiedName~A_talent_slot_reads|FullyQualifiedName~A_rarity_reaches_a_gem"
@@ -2280,7 +2280,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: 3 passed.
 
-- [ ] **Step 6: Run the whole suite and commit**
+- [x] **Step 6: Run the whole suite and commit**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q

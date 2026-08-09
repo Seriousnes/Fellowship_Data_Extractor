@@ -155,6 +155,50 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         Assert.Contains("ItemLevel", body, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task A_state_reaches_the_card_that_draws_one()
+    {
+        var trait = Factory.Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null);
+
+        var drawn = await client.GetStringAsync(
+            $"/api/trait/{trait.Id}/tooltip?state=unavailable", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains(chrome.TraitNode("unavailable"), drawn, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_talent_slot_reads_the_hero_its_id_needs()
+    {
+        var (id, hero) = Sample(EntityType.TalentSlot);
+
+        var bare = await client.GetAsync($"/api/talent-slot/{id}", Xunit.TestContext.Current.CancellationToken);
+        var named = await client.GetAsync(
+            $"/api/talent-slot/{id}?hero={hero}", Xunit.TestContext.Current.CancellationToken);
+
+        named.EnsureSuccessStatusCode();
+
+        var expected = Factory.Store.All(EntityType.TalentSlot, id).Count > 1
+            ? HttpStatusCode.BadRequest
+            : HttpStatusCode.OK;
+
+        Assert.Equal(expected, bare.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_rarity_reaches_a_gem_and_nothing_reaches_it_that_belongs_to_an_item()
+    {
+        var (id, _) = Sample(EntityType.Gem);
+
+        var rung = await client.GetAsync(
+            $"/api/gem/{id}/tooltip?rarity=1", Xunit.TestContext.Current.CancellationToken);
+        var level = await client.GetAsync(
+            $"/api/gem/{id}/tooltip?itemLevel=100", Xunit.TestContext.Current.CancellationToken);
+
+        rung.EnsureSuccessStatusCode();
+
+        Assert.Equal(HttpStatusCode.BadRequest, level.StatusCode);
+    }
+
     private static (int Id, string? Hero) Sample(EntityType type)
     {
         var document = Factory.Store.Entities.First(candidate => EntityTypes.TypeOf(candidate) == type);
