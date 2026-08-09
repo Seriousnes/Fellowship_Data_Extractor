@@ -53,7 +53,7 @@ public class ParticularsTests : BunitContext
     {
         IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> facts =
         [
-            ("Resource", "Mana", null, "/browse?resource=Mana", "/api/tooltip/effect/9"),
+            ("Resource", "Mana", null, "/browse?resource=Mana", "/api/effect/9/tooltip"),
         ];
 
         var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }).Add(x => x.Facts, facts));
@@ -61,7 +61,7 @@ public class ParticularsTests : BunitContext
         var link = cut.Find("table.cx-facts a");
 
         Assert.Equal("/browse?resource=Mana", link.GetAttribute("href"));
-        Assert.Equal("/api/tooltip/effect/9", link.GetAttribute("data-tip"));
+        Assert.Equal("/api/effect/9/tooltip", link.GetAttribute("data-tip"));
         Assert.Equal("Mana", link.TextContent);
     }
 

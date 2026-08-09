@@ -1,4 +1,4 @@
-@inject TooltipView Ui
+@inject ITooltipViewService Ui
 
 @if (Entity is BlessingDocument blessing)
 {
@@ -106,7 +106,7 @@ else
 
     protected override void OnParametersSet()
     {
-        if (Entity is BlessingDocument or TraitDocument) return;
+        if (Ui.DrawsState(Entity)) return;
 
         Rung = Ui.Rarity(Entity, Query);
         Art = Ui.Art(Entity, Rung);

@@ -1,6 +1,8 @@
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
 
+using FellowshipExtractor.Api.Services;
+
 namespace FellowshipExtractor.Api.Models;
 
 public sealed record PublicEntity
@@ -76,7 +78,7 @@ public sealed record PublicEntity
 
     public IReadOnlyList<PublicEntity>? LegendaryStats { get; init; }
 
-    public static PublicEntity From(EntityDocument document, CodexView view)
+    public static PublicEntity From(EntityDocument document, ICodexViewService view)
     {
         var tokens = CodexView.PlaceholdersOf(document);
         var tags = Codex.Schools(document);
@@ -151,7 +153,7 @@ public sealed record PublicEntity
         _ => null,
     };
 
-    private static PublicEntity? Granted(EntityDocument document, CodexView view)
+    private static PublicEntity? Granted(EntityDocument document, ICodexViewService view)
     {
         (EntityType Type, int Id)? address = document switch
         {
@@ -175,7 +177,7 @@ public sealed record PublicEntity
         _ => null,
     };
 
-    private static IReadOnlyDictionary<string, string>? Art(EntityDocument document, CodexView view)
+    private static IReadOnlyDictionary<string, string>? Art(EntityDocument document, ICodexViewService view)
     {
         if (document is not ItemDocument { IconByRarity: { Count: > 0 } art }) return null;
 
@@ -193,12 +195,12 @@ public sealed record PublicEntity
     }
 
     private static IReadOnlyList<PublicPlaceholder>? Tokens(
-        IReadOnlyList<Placeholder> tokens, IReadOnlyList<string> tags, CodexView view) =>
+        IReadOnlyList<Placeholder> tokens, IReadOnlyList<string> tags, ICodexViewService view) =>
         tokens.Select((token, at) => PublicPlaceholder.From(token, view, at + 1, tags)).ToArray() is { Length: > 0 } spent
             ? spent
             : null;
 
-    private static IReadOnlyList<PublicStatSlot>? Slots(EntityDocument document, CodexView view) =>
+    private static IReadOnlyList<PublicStatSlot>? Slots(EntityDocument document, ICodexViewService view) =>
         document is ItemDocument { Stats: { Count: > 0 } slots }
             ? [.. slots.Select(slot => new PublicStatSlot(view.Store.StatName(slot.Stat), slot.Weight, slot.Kind))]
             : null;
@@ -211,7 +213,7 @@ public sealed record PublicStatSlot(string Stat, int Weight, string Kind);
 
 public sealed record PublicReference(string Type, int Id, string Name)
 {
-    public static PublicReference? From(EntityReference? source, CodexView view) =>
+    public static PublicReference? From(EntityReference? source, ICodexViewService view) =>
         source is null ? null : new PublicReference(
             EntityTypes.Slug(source.Type), source.Id, view.Name(source.Type, source.Id));
 }
@@ -234,7 +236,7 @@ public sealed record PublicPlaceholder
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
     public static PublicPlaceholder From(
-        Placeholder token, CodexView view, int ordinal, IReadOnlyList<string>? tags) => new()
+        Placeholder token, ICodexViewService view, int ordinal, IReadOnlyList<string>? tags) => new()
     {
         Ordinal = ordinal,
         Reading = view.Reading(token, tags),
@@ -275,7 +277,7 @@ public sealed record PublicGemOverflow(string Description)
 
     public string? IconUrl { get; init; }
 
-    public static PublicGemOverflow? From(GemTypeDocument gem, CodexView view)
+    public static PublicGemOverflow? From(GemTypeDocument gem, ICodexViewService view)
     {
         if (gem.OverflowDescription is not { } description) return null;
 

@@ -4,13 +4,17 @@ using System.Security.Cryptography;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 
-namespace FellowshipExtractor.Api.Models;
+using Fellowship.SDK.Documents;
 
-public sealed class IconSeeder(
+using FellowshipExtractor.Api.Models;
+
+namespace FellowshipExtractor.Api.Services;
+
+public sealed class IconSeederService(
     BlobContainerClient container,
-    ExportPaths paths,
-    ChromeAssets chrome,
-    ILogger<IconSeeder> logger) : IHostedService
+    IExportPathService paths,
+    IChromeAssetService chrome,
+    ILogger<IconSeederService> logger) : IHostedService
 {
     private const string ContentType = "image/png";
     private const string Revalidate = "no-cache";
@@ -73,7 +77,7 @@ public sealed class IconSeeder(
 
         logger.LogInformation(
             "Chrome seeded from {Ui} under {Prefix}/: {Uploaded} of {Total} uploaded ({Kilobytes:F0} kB), {Skipped} already current, in {Elapsed:F1}s",
-            paths.Ui, ChromeAssets.Prefix, chromeUploaded, payloads.Count, chromeBytes / 1024d,
+            paths.Ui, ChromeAssetService.Prefix, chromeUploaded, payloads.Count, chromeBytes / 1024d,
             payloads.Count - chromeUploaded, chromeStarted.Elapsed.TotalSeconds);
     }
 
@@ -104,20 +108,4 @@ public sealed class IconSeeder(
 
         return true;
     }
-}
-
-public sealed class ExportPaths(IConfiguration configuration)
-{
-    private const string Variable = "FELLOWSHIP_EXPORT";
-
-    public string Export { get; } = configuration[Variable]
-        ?? throw new InvalidOperationException(
-            $"{Variable} is not set. It names the folder the extractor's export-all command wrote, " +
-            "and the AppHost passes it. Set it to run the API outside the AppHost.");
-
-    public string Entities => Path.Combine(Export, "entities.jsonl");
-
-    public string Vocabulary => Path.Combine(Export, "vocabulary.json");
-
-    public string Ui => Path.Combine(Export, "ui");
 }

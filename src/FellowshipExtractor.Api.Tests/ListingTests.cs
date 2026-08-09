@@ -16,14 +16,15 @@ public class ListingTests(Export export)
                 pair => pair.Key,
                 pair => new Microsoft.Extensions.Primitives.StringValues(pair.Value))),
             export.View.Codex,
+            RequestProperties.Of(typeof(EntitiesRequest)),
             out var error);
 
         Assert.Null(error);
 
-        return new CodexSearch(
+        return new CodexSearchService(
             export.Store,
             export.View.Codex,
-            new SearchIndex(export.Store, NullLogger<SearchIndex>.Instance),
+            new SearchIndexService(export.Store, NullLogger<SearchIndexService>.Instance),
             export.View).Run(query with { PageSize = 200 });
     }
 

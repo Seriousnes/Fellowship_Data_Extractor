@@ -11,7 +11,7 @@ public class IdentityTests : BunitContext
             Under = $"/browse?type={slug}",
             Label = "Items",
             Id = 5208,
-            Address = $"/api/tooltip/{slug}/5208",
+            Address = $"/api/{slug}/5208/tooltip",
         };
 
         var cut = Render<Identity>(p => p.AddCascadingValue(here));
@@ -24,7 +24,7 @@ public class IdentityTests : BunitContext
         Assert.Equal($"/browse?type={slug}", rows[0].QuerySelector("a")!.GetAttribute("href"));
         Assert.Equal("Items", rows[0].QuerySelector("a")!.TextContent);
         Assert.Equal("5208", rows[1].QuerySelector("td")!.TextContent);
-        Assert.Equal($"/api/tooltip/{slug}/5208", rows[2].QuerySelector("a")!.GetAttribute("href"));
+        Assert.Equal($"/api/{slug}/5208/tooltip", rows[2].QuerySelector("a")!.GetAttribute("href"));
     }
 }
 

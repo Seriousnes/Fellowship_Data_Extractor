@@ -4,6 +4,7 @@ using Fellowship.SDK.Documents;
 
 using FellowshipExtractor.Api;
 using FellowshipExtractor.Api.Models;
+using FellowshipExtractor.Api.Services;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -12,15 +13,15 @@ namespace FellowshipExtractor.Tests;
 
 public sealed class EntityStoreCorpusTests
 {
-    private static readonly EntityStore Store = Build();
+    private static readonly EntityStoreService Store = Build();
 
-    private static EntityStore Build()
+    private static EntityStoreService Build()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = Export.Loaded.Folder })
             .Build();
 
-        return new EntityStore(new ExportPaths(configuration), NullLogger<EntityStore>.Instance);
+        return new EntityStoreService(new ExportPathService(configuration), NullLogger<EntityStoreService>.Instance);
     }
 
     public static IEnumerable<object[]> Counts()

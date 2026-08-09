@@ -1,8 +1,14 @@
 using Fellowship.SDK.Documents;
 
-namespace FellowshipExtractor.Api.Models;
+using FellowshipExtractor.Api.Models;
 
-public sealed class SearchIndex
+namespace FellowshipExtractor.Api.Services;
+
+public interface ISearchIndexService
+{
+    IReadOnlyList<SearchIndexService.Hit> Search(string text, int limit);
+}
+public sealed class SearchIndexService : ISearchIndexService
 {
     private readonly EntityDocument[] docs;
 
@@ -14,7 +20,7 @@ public sealed class SearchIndex
 
     private readonly int[][] postings;
 
-    public SearchIndex(EntityStore store, ILogger<SearchIndex> logger)
+    public SearchIndexService(IEntityStoreService store, ILogger<SearchIndexService> logger)
     {
         docs = [.. store.Entities];
 

@@ -5,7 +5,9 @@ namespace FellowshipExtractor.Api.Tests;
 [Collection(Corpus.Name)]
 public class SuggestionsTests(Export export)
 {
-    private Suggestions Box => new(new SearchIndex(export.Store, NullLogger<SearchIndex>.Instance), export.View);
+    private ISuggestionService Box =>
+        new SuggestionService(
+            new SearchIndexService(export.Store, NullLogger<SearchIndexService>.Instance), export.View);
 
     [Fact]
     public void A_word_matching_many_readings_of_one_id_suggests_it_once()

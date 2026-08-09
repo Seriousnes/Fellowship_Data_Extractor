@@ -49,12 +49,12 @@ public class StateTests : BunitContext
     [Fact]
     public void Only_the_unavailable_node_is_padlocked()
     {
-        Assert.True(ChromeAssets.Padlocked("unavailable"));
-        Assert.True(ChromeAssets.Padlocked("UNAVAILABLE"));
-        Assert.False(ChromeAssets.Padlocked("available"));
-        Assert.False(ChromeAssets.Padlocked("selected"));
-        Assert.False(ChromeAssets.Padlocked(null));
-        Assert.False(ChromeAssets.Padlocked("allocated"));
+        Assert.True(ChromeAssetService.Padlocked("unavailable"));
+        Assert.True(ChromeAssetService.Padlocked("UNAVAILABLE"));
+        Assert.False(ChromeAssetService.Padlocked("available"));
+        Assert.False(ChromeAssetService.Padlocked("selected"));
+        Assert.False(ChromeAssetService.Padlocked(null));
+        Assert.False(ChromeAssetService.Padlocked("allocated"));
     }
 
     [Fact]
@@ -126,13 +126,8 @@ public class StateTests : BunitContext
     [Fact]
     public void The_node_a_query_string_names_reaches_the_query()
     {
-        var query = TooltipQuery.Parse(
-            new QueryCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
-            {
-                ["state"] = "available",
-            }),
-            export.Store.Stats,
-            out var error);
+        var query = new TraitTooltipRequest { Id = 1, State = "available" }
+            .ToQuery(new QueryCollection(), export.Store.Stats, out var error);
 
         Assert.Null(error);
         Assert.Equal("available", query.State);
