@@ -3,7 +3,7 @@ namespace FellowshipExtractor.Api.Tests;
 [Collection(Corpus.Name)]
 public class CorpusTests : BunitContext
 {
-    private readonly EntityStore Store;
+    private readonly IEntityStoreService Store;
 
     private readonly TooltipView Tooltip;
 

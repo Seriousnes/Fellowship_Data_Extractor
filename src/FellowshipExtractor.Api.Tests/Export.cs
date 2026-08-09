@@ -35,11 +35,11 @@ public sealed class Export
 
     public TooltipView Tooltip { get; }
 
-    public EntityStore Store { get; }
+    public IEntityStoreService Store { get; }
 
     public ChromeAssets Chrome { get; }
 
-    public ExportPaths Paths { get; }
+    public IExportPathService Paths { get; }
 
     public Export()
     {
@@ -49,9 +49,9 @@ public sealed class Export
             .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = folder })
             .Build();
 
-        var paths = Paths = new ExportPaths(configuration);
+        var paths = Paths = new ExportPathService(configuration);
 
-        Store = new EntityStore(paths, NullLogger<EntityStore>.Instance);
+        Store = new EntityStoreService(paths, NullLogger<EntityStoreService>.Instance);
 
         var tokens = new DesignTokens(Store.Vocabulary);
         var richText = new RichTextRenderer(Store.Vocabulary.TextStyles);

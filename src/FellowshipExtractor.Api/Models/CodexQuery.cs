@@ -2,6 +2,8 @@ using System.Globalization;
 
 using Fellowship.SDK.Documents;
 
+using FellowshipExtractor.Api.Services;
+
 namespace FellowshipExtractor.Api.Models;
 
 public sealed record CodexQuery
@@ -349,7 +351,7 @@ public sealed record Listing(EntityDocument Shown, IReadOnlyList<Listing.Variant
     public sealed record Variant(string Name, string? Icon, string Href, string? Colour);
 }
 
-public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex index, CodexView view)
+public sealed class CodexSearch(IEntityStoreService store, Codex codex, SearchIndex index, CodexView view)
 {
     public CodexResults Run(CodexQuery query)
     {

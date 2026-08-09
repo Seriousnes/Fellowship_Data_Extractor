@@ -4,6 +4,8 @@ using System.Reflection;
 
 using Fellowship.SDK.Documents;
 
+using FellowshipExtractor.Api.Services;
+
 namespace FellowshipExtractor.Api.Models;
 
 public sealed record Facet(
@@ -70,7 +72,7 @@ public sealed class Codex
 
     private const int MenuSectionLimit = 4;
 
-    private readonly EntityStore store;
+    private readonly IEntityStoreService store;
     private readonly DesignTokens tokens;
 
     private readonly IReadOnlyDictionary<string, string[]> offered;
@@ -87,7 +89,7 @@ public sealed class Codex
 
     public IReadOnlyList<MenuGroup> Menu { get; }
 
-    public Codex(EntityStore store, DesignTokens tokens)
+    public Codex(IEntityStoreService store, DesignTokens tokens)
     {
         this.store = store;
         this.tokens = tokens;
@@ -322,15 +324,15 @@ public sealed class Codex
     public IEnumerable<string> Scaling(IReadOnlyList<string>? attributes) =>
         (attributes ?? []).Select(store.StatName).Distinct(StringComparer.Ordinal);
 
-    private static string Codename(EntityStore store, string name) =>
+    private static string Codename(IEntityStoreService store, string name) =>
         store.Hero(name)?.Codename ?? name;
 
-    private static string RarityWord(EntityStore store, Rarity rarity, bool gem) =>
+    private static string RarityWord(IEntityStoreService store, Rarity rarity, bool gem) =>
         store.Vocabulary.Rarities.FirstOrDefault(r => r.Tier == (int)rarity) is { } entry
             ? (gem ? entry.GemDisplayName : entry.DisplayName)
             : rarity.ToString();
 
-    private static string Filed(EntityStore store, string printed) =>
+    private static string Filed(IEntityStoreService store, string printed) =>
         store.Rarity(printed, gem: true)?.Name ?? printed;
 
     public static string Spaced(string value)

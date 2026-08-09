@@ -35,7 +35,7 @@ public sealed class RollLineTests
     }
 
     private static StatParameters Parameters() =>
-        new(["Stamina", "Agility", "Expertise", "Spirit"], Export.Loaded.Vocabulary.StatCalculation.Attributes);
+        new(Export.Loaded.Vocabulary.StatCalculation.Attributes);
 
     private static IReadOnlyList<StatLine> Lines(params (string Key, string Value)[] pairs)
     {

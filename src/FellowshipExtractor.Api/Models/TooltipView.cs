@@ -6,10 +6,12 @@ using Fellowship.SDK.Documents;
 
 using Microsoft.AspNetCore.Components;
 
+using FellowshipExtractor.Api.Services;
+
 namespace FellowshipExtractor.Api.Models;
 
 public sealed class TooltipView(
-    EntityStore store,
+    IEntityStoreService store,
     DesignTokens tokens,
     RichTextRenderer renderer,
     Placeholders placeholders,

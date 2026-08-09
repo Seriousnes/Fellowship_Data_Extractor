@@ -10,10 +10,12 @@ using Fellowship.SDK.Documents;
 
 using Microsoft.AspNetCore.Components;
 
+using FellowshipExtractor.Api.Services;
+
 namespace FellowshipExtractor.Api.Models;
 
 public sealed class CodexView(
-    EntityStore store,
+    IEntityStoreService store,
     Codex codex,
     DesignTokens tokens,
     ChromeAssets chrome,
@@ -21,7 +23,7 @@ public sealed class CodexView(
     Placeholders placeholders,
     BlobContainerClient icons)
 {
-    public EntityStore Store => store;
+    public IEntityStoreService Store => store;
 
     public Codex Codex => codex;
 

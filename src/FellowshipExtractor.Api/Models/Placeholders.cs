@@ -1,8 +1,10 @@
 using System.Globalization;
 
+using FellowshipExtractor.Api.Services;
+
 namespace FellowshipExtractor.Api.Models;
 
-public sealed class Placeholders(EntityStore store, RichTextRenderer renderer)
+public sealed class Placeholders(IEntityStoreService store, RichTextRenderer renderer)
 {
     private const string Relative = "PrimaryAttribute";
 

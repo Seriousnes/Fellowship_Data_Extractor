@@ -5,6 +5,7 @@ global using FellowshipExtractor.Api.Components.Cx;
 global using FellowshipExtractor.Api.Components.Sections;
 global using FellowshipExtractor.Api.Components.Shared;
 global using FellowshipExtractor.Api.Models;
+global using FellowshipExtractor.Api.Services;
 global using Microsoft.Extensions.DependencyInjection;
 global using Xunit;
 global using Entity = Fellowship.SDK.Entity;

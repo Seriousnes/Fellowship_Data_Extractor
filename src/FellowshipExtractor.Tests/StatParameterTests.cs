@@ -8,7 +8,7 @@ namespace FellowshipExtractor.Tests;
 public sealed class StatParameterTests
 {
     private static StatParameters Parameters() =>
-        new(["Haste", "Strength", "CritChance"], Export.Loaded.Vocabulary.StatCalculation.Attributes);
+        new(Export.Loaded.Vocabulary.StatCalculation.Attributes);
 
     private static TooltipQuery Parse(out string? error, params (string Key, string Value)[] pairs) =>
         TooltipQuery.Parse(

@@ -12,10 +12,20 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
 
     private readonly ChromeAssets chrome;
 
+    private readonly Factory factory;
+
     public RouteTests(Factory factory)
     {
+        this.factory = factory;
         client = factory.CreateClient();
         chrome = factory.Services.GetRequiredService<ChromeAssets>();
+    }
+
+    [Fact]
+    public void Every_registered_service_is_resolved_through_an_interface()
+    {
+        Assert.NotNull(factory.Services.GetRequiredService<IExportPathService>());
+        Assert.NotNull(factory.Services.GetRequiredService<IEntityStoreService>());
     }
 
     [Fact]
@@ -153,16 +163,17 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
 
     public sealed class Factory : WebApplicationFactory<Program>
     {
-        public static readonly EntityStore Store = BuildStore();
+        public static readonly IEntityStoreService Store = BuildStore();
 
-        private static EntityStore BuildStore()
+        private static IEntityStoreService BuildStore()
         {
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = ExportFolder() })
                 .Build();
 
-            return new EntityStore(
-                new ExportPaths(configuration), Microsoft.Extensions.Logging.Abstractions.NullLogger<EntityStore>.Instance);
+            return new EntityStoreService(
+                new ExportPathService(configuration),
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<EntityStoreService>.Instance);
         }
 
         private static string ExportFolder()
@@ -189,7 +200,8 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
 
             builder.ConfigureServices(services =>
             {
-                var seeder = services.SingleOrDefault(descriptor => descriptor.ImplementationType == typeof(IconSeeder));
+                var seeder = services.SingleOrDefault(
+                    descriptor => descriptor.ImplementationType == typeof(IconSeederService));
                 if (seeder is not null) services.Remove(seeder);
             });
         }

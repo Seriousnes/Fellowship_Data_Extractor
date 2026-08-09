@@ -3,6 +3,7 @@ using Fellowship.SDK.Documents;
 using FellowshipExtractor.Api;
 using FellowshipExtractor.Api.Components;
 using FellowshipExtractor.Api.Models;
+using FellowshipExtractor.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,13 +20,13 @@ builder.Services.ConfigureHttpJsonOptions(options =>
         System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);
 
 builder.AddAzureBlobContainerClient("icons");
-builder.Services.AddSingleton<ExportPaths>();
-builder.Services.AddHostedService<IconSeeder>();
+builder.Services.AddSingleton<IExportPathService, ExportPathService>();
+builder.Services.AddHostedService<IconSeederService>();
 
-builder.Services.AddSingleton<EntityStore>();
-builder.Services.AddSingleton(s => new DesignTokens(s.GetRequiredService<EntityStore>().Vocabulary));
+builder.Services.AddSingleton<IEntityStoreService, EntityStoreService>();
+builder.Services.AddSingleton(s => new DesignTokens(s.GetRequiredService<IEntityStoreService>().Vocabulary));
 builder.Services.AddSingleton(s => new RichTextRenderer(
-    s.GetRequiredService<EntityStore>().Vocabulary.TextStyles));
+    s.GetRequiredService<IEntityStoreService>().Vocabulary.TextStyles));
 
 builder.Services.AddSingleton<ChromeAssets>();
 builder.Services.AddSingleton<Placeholders>();
@@ -139,7 +140,7 @@ app.MapGet("/api/entities", (HttpContext http, Codex codex, CodexSearch search, 
     .Produces<EntitiesResponse>()
     .ProducesProblem(StatusCodes.Status400BadRequest);
 
-app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, EntityStore store, CodexView view) =>
+app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, IEntityStoreService store, CodexView view) =>
 {
     if (!EntityTypes.TryParse(slug, out var type))
     {
@@ -160,7 +161,7 @@ app.MapGet("/api/entity/{slug}/{id:int}", (string slug, int id, EntityStore stor
     .Produces<IReadOnlyList<PublicEntity>>()
     .ProducesProblem(StatusCodes.Status404NotFound);
 
-app.MapGet("/api/catalog", (Codex codex, EntityStore store) =>
+app.MapGet("/api/catalog", (Codex codex, IEntityStoreService store) =>
 {
     var rows = store.Entities;
 
@@ -225,7 +226,7 @@ public sealed class Fragments(IServiceScopeFactory scopes, ILoggerFactory logger
     }
 }
 
-public sealed class Tooltips(EntityStore store, Fragments fragments)
+public sealed class Tooltips(IEntityStoreService store, Fragments fragments)
 {
     public async Task<IResult> Get(EntityType type, int id, IQueryCollection request)
     {

@@ -5,19 +5,48 @@ using System.Text.Json;
 
 using Fellowship.SDK.Documents;
 
-namespace FellowshipExtractor.Api.Models;
+using FellowshipExtractor.Api.Models;
 
-public enum Lookup
+namespace FellowshipExtractor.Api.Services;
+
+public interface IEntityStoreService
 {
-    Found,
-    NoSuchId,
+    VocabularyFile Vocabulary { get; }
 
-    NeedsHero,
+    IReadOnlyList<EntityDocument> Entities { get; }
 
-    NotForThatHero,
+    IReadOnlyList<EntityType> Types { get; }
+
+    StatParameters Stats { get; }
+
+    IReadOnlySet<string> PrimaryAttributes { get; }
+
+    int Count { get; }
+
+    int Ids { get; }
+
+    string StatName(string key);
+
+    AttributeDisplay? StatDisplay(string? key);
+
+    string StatValue(string? key, double value);
+
+    HeroEntry? Hero(string? name);
+
+    IReadOnlyList<EntityDocument> All(EntityType type, int id);
+
+    (EntityType Type, int Id)? GrantedPower(int id);
+
+    Lookup Resolve(EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero);
+
+    HeroEntry? Wearer(EntityDocument document);
+
+    int DropItemLevel(EntityDocument document);
+
+    RarityEntry? Rarity(string? word, bool gem);
 }
 
-public sealed class EntityStore
+public sealed class EntityStoreService : IEntityStoreService
 {
     private const string DefaultDropRow = "Default";
 
@@ -49,7 +78,7 @@ public sealed class EntityStore
 
     public int Ids { get; }
 
-    public EntityStore(ExportPaths paths, ILogger<EntityStore> logger)
+    public EntityStoreService(IExportPathService paths, ILogger<EntityStoreService> logger)
     {
         var file = JsonSerializer.Deserialize<VocabularyFile>(File.ReadAllText(paths.Vocabulary), Options)
             ?? throw new InvalidOperationException($"{paths.Vocabulary} deserialised to nothing.");
@@ -231,7 +260,7 @@ public sealed class EntityStore
         if (hero is null) return heroName is null ? Lookup.NeedsHero : Lookup.NotForThatHero;
 
         var named = hero;
-        var matches = candidates.Where(e => Reads(e, named)).ToArray();
+        var matches = candidates.Where(e => EntityStore.Reads(e, named)).ToArray();
 
         if (matches.Length == 0) return Lookup.NotForThatHero;
 
@@ -239,25 +268,8 @@ public sealed class EntityStore
         return Lookup.Found;
     }
 
-    public static bool Reads(EntityDocument document, HeroEntry hero) =>
-        document switch
-        {
-            ItemDocument item => item.Heroes is { } heroes
-                ? heroes.Contains(ParseEnum<Hero>(hero.Name))
-                : (item.ArmorType is null || item.ArmorType == ParseEnumOrNull<ArmorType>(hero.ArmorType)) &&
-                  (item.PrimaryStat is null || item.PrimaryStat == ParseEnum<PrimaryStat>(hero.PrimaryStat)),
-            TalentSlotDocument slot => slot.Hero == ParseEnum<Hero>(hero.Name),
-            _ => true,
-        };
-
-    private static T ParseEnum<T>(string name) where T : struct, Enum =>
-        Enum.TryParse<T>(name, out var value) ? value : throw new FormatException($"'{name}' names no {typeof(T).Name}.");
-
-    private static T? ParseEnumOrNull<T>(string? name) where T : struct, Enum =>
-        name is null ? null : ParseEnum<T>(name);
-
     public HeroEntry? Wearer(EntityDocument document) =>
-        Vocabulary.Heroes.FirstOrDefault(hero => Reads(document, hero));
+        Vocabulary.Heroes.FirstOrDefault(hero => EntityStore.Reads(document, hero));
 
     public int DropItemLevel(EntityDocument document) =>
         Plateau(document is ItemDocument { Rarity: Fellowship.SDK.Rarity.Legendary }

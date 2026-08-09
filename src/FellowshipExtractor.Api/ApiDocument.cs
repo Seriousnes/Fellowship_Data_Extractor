@@ -1,4 +1,5 @@
 using FellowshipExtractor.Api.Models;
+using FellowshipExtractor.Api.Services;
 
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
@@ -56,7 +57,7 @@ public sealed class ApiInfo(Codex codex) : IOpenApiDocumentTransformer
     }
 }
 
-public sealed class ApiParameters(EntityStore store, Codex codex) : IOpenApiOperationTransformer
+public sealed class ApiParameters(IEntityStoreService store, Codex codex) : IOpenApiOperationTransformer
 {
     public Task TransformAsync(
         OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellation)

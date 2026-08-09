@@ -6,7 +6,7 @@ namespace FellowshipExtractor.Api.Tests;
 [Collection(Corpus.Name)]
 public class TooltipTests : BunitContext
 {
-    private readonly EntityStore Store;
+    private readonly IEntityStoreService Store;
 
     public TooltipTests(Export export)
     {

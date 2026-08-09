@@ -1,5 +1,7 @@
 using Fellowship.SDK.Documents;
 
+using FellowshipExtractor.Api.Services;
+
 namespace FellowshipExtractor.Api.Models;
 
 public sealed class SearchIndex
@@ -14,7 +16,7 @@ public sealed class SearchIndex
 
     private readonly int[][] postings;
 
-    public SearchIndex(EntityStore store, ILogger<SearchIndex> logger)
+    public SearchIndex(IEntityStoreService store, ILogger<SearchIndex> logger)
     {
         docs = [.. store.Entities];
 

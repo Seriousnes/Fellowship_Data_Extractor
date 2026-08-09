@@ -557,7 +557,7 @@ git commit -m "Take the stat parameters from the attribute table, not from the r
   `public static class EntityStore` in `Models/Lookup.cs` keeps `Reads` under its present name for
   the call sites that already say `EntityStore.Reads`.
 
-- [ ] **Step 1: Write the failing registration test**
+- [x] **Step 1: Write the failing registration test**
 
 Add to `src/FellowshipExtractor.Api.Tests/RouteTests.cs`, inside the class:
 
@@ -580,7 +580,7 @@ nested type rather than to an instance:
 
 and assign `this.factory = factory;` in the constructor.
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~Every_registered_service_is_resolved_through_an_interface"
@@ -588,7 +588,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: FAIL to compile, `IExportPathService` not found.
 
-- [ ] **Step 3: Write the two services and the seeder**
+- [x] **Step 3: Write the two services and the seeder**
 
 Create `src/FellowshipExtractor.Api/Services/ExportPathService.cs`:
 
@@ -714,7 +714,7 @@ host runs. Until Task 4 renames the chrome service, take `ChromeAssets chrome` a
 
 Delete `Models/IconSeeder.cs` and `Models/EntityStore.cs`.
 
-- [ ] **Step 4: Move the call sites**
+- [x] **Step 4: Move the call sites**
 
 `Program.cs`:
 
@@ -755,7 +755,7 @@ In `src/FellowshipExtractor.Tests`, `EntityStoreCorpusTests` and `StaleExportTes
 `new EntityStoreService(new ExportPathService(configuration), NullLogger<EntityStoreService>.Instance)`
 and need `using FellowshipExtractor.Api.Services;`.
 
-- [ ] **Step 5: Build and run both suites**
+- [x] **Step 5: Build and run both suites**
 
 ```powershell
 dotnet build src/FellowshipExtractor.slnx
@@ -765,7 +765,7 @@ dotnet test src/FellowshipExtractor.Tests --nologo -v q
 
 Expected: build clean, API `Failed: 2, Passed: 263, Total: 265`, extractor suite green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A

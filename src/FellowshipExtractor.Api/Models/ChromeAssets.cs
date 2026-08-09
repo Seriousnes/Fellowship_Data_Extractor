@@ -5,12 +5,14 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
+using FellowshipExtractor.Api.Services;
+
 namespace FellowshipExtractor.Api.Models;
 
 public sealed class ChromeAssets(
     BlobContainerClient container,
-    ExportPaths paths,
-    EntityStore store,
+    IExportPathService paths,
+    IEntityStoreService store,
     DesignTokens tokens)
 {
     public const string Prefix = "ui";
@@ -220,7 +222,7 @@ public sealed class ChromeAssets(
     }
 
     private static IReadOnlyDictionary<string, string> MatchOrnaments(
-        ExportPaths paths, EntityStore store, DesignTokens tokens)
+        IExportPathService paths, IEntityStoreService store, DesignTokens tokens)
     {
         var rungs = store.Vocabulary.Rarities
             .Select(rarity => (rarity.Name, Colour: Colour(tokens, rarity.Name)))
@@ -248,7 +250,7 @@ public sealed class ChromeAssets(
         return matched;
     }
 
-    private static IReadOnlyDictionary<string, string> ReadBadgeColours(ExportPaths paths)
+    private static IReadOnlyDictionary<string, string> ReadBadgeColours(IExportPathService paths)
     {
         var read = new Dictionary<string, string>(StringComparer.Ordinal);
 
