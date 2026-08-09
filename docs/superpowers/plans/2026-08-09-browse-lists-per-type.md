@@ -96,11 +96,15 @@ Measured on 2026-08-09 against `output/export/entities.jsonl` (12,473 documents 
   15 at difficulty 0 to 315 at 21; row `Legendary` runs 75 to 360 at 21. The row is chosen by
   `DT_DroptableGroups.ItemLevelCurveNameOverride`, which is `None` on `DefaultGearCheck` and
   `Legendary` on `LegendaryDropCheck`.
-- **The lowest item level the build states is 15.** The hero's 66 default-outfit rows state no
-  level, and need none: they carry `PrimaryStatsWeightsTemplate` "None" and empty stat weight maps,
-  so they print no stat lines at any level, and both stat pools floor at `minimumItemLevel` 15.
-- **`DefaultGame.ini` bounds it**: `MaxItemLevel=420`, `ItemLevelsPerUpgrade=15`, so both 315 and
-  360 reach 420 by upgrades.
+- **A hero's starting outfit is item level 1, and `DefaultItemForHeroes` is where that 1 is
+  written.** The field is a `Map<CRHeroID,int>` on the 66 `*Default*` rows of `DT_HeroItems`, and
+  its value is 1 on every one of them. The user read item level 1 off the gear a brand new
+  character logs in wearing on 2026-08-09, which is what identifies the map's value as an item
+  level rather than a quantity or a flag. It is consistent with the rest of those rows:
+  they carry `PrimaryStatsWeightsTemplate` "None" and empty stat weight maps, so they print no stat
+  lines, which is what an item level below the stat pools' `minimumItemLevel` of 15 draws.
+- **`DefaultGame.ini` bounds the ladder**: `MaxItemLevel=420`, `ItemLevelsPerUpgrade=15`, so both
+  315 and 360 reach 420 by upgrades.
 
 ### Item source
 
@@ -264,7 +268,7 @@ holds no digits. A second test asserts `ArrowUp` from the initial state selects 
 **Interfaces:**
 
 ```csharp
-public enum SourceKind { Dungeon, Vendor, Starmap }
+public enum SourceKind { Dungeon, Vendor, Starmap, Character }
 
 public sealed record ItemSource(SourceKind Kind, string Name);
 ```
@@ -308,10 +312,19 @@ in all dungeons carries one `Dungeon` source named by the same word the UI print
 **Step 5: Answer an item level.**
 
 `DropItemLevels` gains `int? Plateau(string row)` so a curve row is addressable by name.
-`ItemSources` answers the item level: a vendor or starmap item takes its granting group's
-`ItemLevel`; a dropped item takes the plateau of the curve row its droptable group names, which is
-`Default` unless the group states an `ItemLevelCurveNameOverride`, and `LegendaryDropCheck` states
-`Legendary`. An item reached by neither carries no level.
+`ItemSources` answers the item level in four branches, read in this order:
+
+1. A `DT_HeroItems` row whose `DefaultItemForHeroes` map is not empty takes that map's value, which
+   the build writes as 1 on all 66 of them, and carries a `Character` source.
+2. A vendor or starmap item takes its granting group's `ItemLevel`: 15, 75, 135 by vendor tier, and
+   30 to 315 up the starmap ladder.
+3. A dropped item takes the plateau of the curve row its droptable group names, which is `Default`
+   at 315 unless the group states an `ItemLevelCurveNameOverride`, and `LegendaryDropCheck` states
+   `Legendary` at 360.
+4. An item reached by none of them carries no level.
+
+A row can be reached by more than one branch, and reading them in this order is what makes a hero's
+starting chestpiece read 1 rather than the vendor tier of the same slot.
 
 **Step 6: Project them.**
 
@@ -459,14 +472,25 @@ placed or explicitly left unlisted, so no list can drift.
 menu and the home page. `Codex.Tabs` is the same set in `Position` order. `PublicTypes.Accepted`,
 which spells the legal slugs in the no-such-type message, lists only the listed slugs.
 
-**Step 3: Refuse an unlisted slug as a filter.**
+**Step 3: Refuse an unlisted slug everywhere a reader can reach one.**
 
-`CodexQuery.Parse` rejects a `type=` slug whose type is unlisted with the existing no-such-type
-error, so `/browse?type=talent-slot` answers 400 and `/api/entities?type=mount-power` does too.
-`/entity/{slug}/{id}` and `/api/tooltip/{slug}/{id}` resolve by `EntityTypes.TryParse` and keep
-answering, which is how a talent slot stays readable as the metadata behind a talent. Its
-breadcrumb stops linking to a browse list it can no longer open: `EntityPage.Under` answers a link
-for a listed type and the plain label for an unlisted one, and `Crumbs` already takes a null href.
+A talent slot and a mount power are metadata a player is never shown, so no route answers for one.
+`PublicTypes.Listed` is the single gate, and each route asks it beside the `EntityTypes.TryParse`
+it already calls:
+
+- `CodexQuery.Parse` rejects an unlisted `type=` slug with the existing no-such-type error, so
+  `/browse?type=talent-slot` answers 400 and `/api/entities?type=mount-power` does too.
+- `EntityPage` treats an unlisted slug as it treats an unparseable one and calls `Nav.NotFound()`.
+- `/api/entity/{slug}/{id}`, `/api/tooltip/{slug}/{id}`, `/api/item/{id}` and `/api/ability/{id}`
+  answer the same no-such-type problem an unknown slug gets.
+
+Nothing in the app links to either type today, so no live link breaks. `EntityStore` keeps loading
+both, because the Talents list reads a talent's slot for its hero, cost and tier, and a tooltip
+reads a mount's powers.
+
+`RouteTests.Tooltip_route_answers_200_for_one_id_of_every_type` and
+`Entity_route_answers_a_record_typed_as_the_slug_asked_for` walk `Enum.GetValues<EntityType>()`, so
+both narrow to the listed types and gain a case asserting an unlisted slug answers 404.
 
 **Step 4: Keep them out of search.**
 
@@ -481,8 +505,11 @@ stop returning them.
 
 `TabTests` asserts: `Ordered` and `Unlisted` partition `EntityType`; `Codex.Tabs` opens with Items,
 Abilities, Effects, Talents, Blessings, Gem Traits; `Codex.Types` holds neither talent slots nor
-mount powers; the search index answers nothing for a talent slot name; and `/browse?type=talent-slot`
-answers a problem naming the legal slugs.
+mount powers; the search index answers nothing for a talent slot name; `/browse?type=talent-slot`
+answers a problem naming the legal slugs; `/entity/talent-slot/1` answers 404; and
+`/api/entity/mount-power/1` and `/api/tooltip/mount-power/1` answer the no-such-type problem. A
+further test asserts the store still holds all 216 talent slots, so the Talents list can read
+them.
 
 ---
 
