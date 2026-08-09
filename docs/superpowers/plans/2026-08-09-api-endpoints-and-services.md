@@ -1916,7 +1916,7 @@ git commit -m "Give the item a folder, two routes and a request model apiece"
 - Produces: `MapAbility()`, `MapWeaponPower()`, `AbilityRecordRequest` (`Id`),
   `AbilityTooltipRequest` (`Id`, `Hero`), and the same pair for weapon power.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/FellowshipExtractor.Api.Tests/AbilityScalingTests.cs`:
 
@@ -2012,7 +2012,7 @@ public sealed class AbilityScalingTests : IClassFixture<RouteTests.Factory>
 }
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~AbilityScalingTests"
@@ -2020,7 +2020,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: FAIL, 404 on every address.
 
-- [ ] **Step 3: Write the four files for ability**
+- [x] **Step 3: Write the four files for ability**
 
 `Endpoints/Ability/AbilityGroup.cs` follows `ItemGroup` with `EntityType.Ability`.
 
@@ -2098,7 +2098,7 @@ only thing a hero changes on an ability card is which attribute a `PrimaryAttrib
 reads, so narrow both assertions to the substituted magnitude by matching
 `<span class="sub"` and comparing the captured text, and keep the rest of the test as written.
 
-- [ ] **Step 4: Write the same three for weapon power**
+- [x] **Step 4: Write the same three for weapon power**
 
 Copy the ability trio into `Endpoints/WeaponPower/`, replacing `Ability` with `WeaponPower` in the
 class names, the request record names, the method names, the `WithName` values and the `EntityType`
@@ -2106,12 +2106,12 @@ member. `WeaponPowerRecordRequest` carries `Id` alone, and `WeaponPowerTooltipRe
 and `Hero` with the same description, because the 10 legendary weapon powers are equippable by the
 whole roster and name no hero's stat outright.
 
-- [ ] **Step 5: Map them and retire the colliding route**
+- [x] **Step 5: Map them and retire the colliding route**
 
 Add `app.MapAbility();` and `app.MapWeaponPower();` to `MapApiEndpoints`. Delete the
 `app.MapGet("/api/ability/{abilityId:int}", ...)` block from `Program.cs`.
 
-- [ ] **Step 6: Run it and watch it pass**
+- [x] **Step 6: Run it and watch it pass**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~AbilityScalingTests"
@@ -2119,7 +2119,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 
 Expected: 4 passed.
 
-- [ ] **Step 7: Run the whole suite and commit**
+- [x] **Step 7: Run the whole suite and commit**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q

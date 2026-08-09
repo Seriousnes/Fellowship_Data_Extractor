@@ -69,16 +69,6 @@ app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.MapApiEndpoints();
 
-app.MapGet("/api/ability/{abilityId:int}", (int abilityId, HttpContext http, ITooltipService tooltips) =>
-        tooltips.Get(EntityType.Ability, abilityId, http.Request.Query))
-    .WithName("GetAbilityTooltip")
-    .WithTags(ApiDocument.Tooltips)
-    .WithSummary("One ability's tooltip as a self-contained HTML fragment.")
-    .WithQuery(ApiQuerySet.Tooltip)
-    .Produces<string>(StatusCodes.Status200OK, "text/html")
-    .ProducesProblem(StatusCodes.Status400BadRequest)
-    .ProducesProblem(StatusCodes.Status404NotFound);
-
 app.MapGet("/api/tooltip/{slug}/{id:int}", async (string slug, int id, HttpContext http, ITooltipService tooltips) =>
         EntityTypes.TryParse(slug, out var type)
             ? await tooltips.Get(type, id, http.Request.Query)

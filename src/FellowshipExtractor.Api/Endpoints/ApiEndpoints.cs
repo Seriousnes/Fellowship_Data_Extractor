@@ -9,6 +9,8 @@ public static class ApiEndpoints
 {
     public static void MapApiEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapAbility();
         app.MapItem();
+        app.MapWeaponPower();
     }
 }
