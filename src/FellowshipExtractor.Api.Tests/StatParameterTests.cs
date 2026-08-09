@@ -48,3 +48,54 @@ public class StatParameterTests(Export export)
         Assert.Equal("CritChance", export.Store.Stats.Resolve("Critical Strike"));
     }
 }
+
+public sealed class PublishedStatTests : IClassFixture<RouteTests.Factory>
+{
+    private readonly HttpClient client;
+
+    public PublishedStatTests(RouteTests.Factory factory) => client = factory.CreateClient();
+
+    [Fact]
+    public async Task Every_stat_the_table_names_is_accepted_on_an_ability_tooltip()
+    {
+        var id = RouteTests.Factory.Store.Entities.First(row => row is AbilityDocument).Id;
+
+        foreach (var stat in RouteTests.Factory.Store.Stats.Names)
+        {
+            var key = stat.Replace(" ", string.Empty, StringComparison.Ordinal);
+
+            var response = await client.GetAsync(
+                $"/api/ability/{id}/tooltip?{key}=10", Xunit.TestContext.Current.CancellationToken);
+
+            Assert.True(response.IsSuccessStatusCode, $"?{key}=10 answered {(int)response.StatusCode}.");
+        }
+    }
+
+    [Fact]
+    public async Task A_name_the_table_does_not_carry_is_refused()
+    {
+        var id = RouteTests.Factory.Store.Entities.First(row => row is AbilityDocument).Id;
+
+        var response = await client.GetAsync(
+            $"/api/ability/{id}/tooltip?Nonesuch=10", Xunit.TestContext.Current.CancellationToken);
+
+        var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("Nonesuch", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Armor_on_an_item_reads_as_the_printed_line()
+    {
+        var id = RouteTests.Factory.Store.Entities
+            .OfType<ItemDocument>()
+            .First(row => row.Stats is { Count: > 0 })
+            .Id;
+
+        var drawn = await client.GetStringAsync(
+            $"/api/item/{id}/tooltip?armor=303", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Contains("303", drawn, StringComparison.Ordinal);
+    }
+}

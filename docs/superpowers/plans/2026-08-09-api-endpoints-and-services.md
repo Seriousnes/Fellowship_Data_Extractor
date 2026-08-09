@@ -3153,7 +3153,7 @@ git commit -m "Retire the routes that took a slug and the parser that read the w
 **Interfaces:**
 - Consumes: `RouteTests.Factory`, `/openapi/v1.json`, `EndpointDataSource`.
 
-- [ ] **Step 1: Write the failing document tests**
+- [x] **Step 1: Write the failing document tests**
 
 Add a second class to `ParameterTests.cs`, reading the published document through the factory. It
 needs four usings the file does not carry yet: `System.Reflection`, `System.Text.Json`,
@@ -3317,7 +3317,7 @@ public sealed class PublishedStatTests : IClassFixture<RouteTests.Factory>
 }
 ```
 
-- [ ] **Step 2: Run them and watch them fail**
+- [x] **Step 2: Run them and watch them fail**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~PublishedParameterTests|FullyQualifiedName~PublishedStatTests"
@@ -3326,7 +3326,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedN
 Expected: FAIL where a real gap exists. Read each failure before changing anything: these tests
 measure what Tasks 7 to 12 built, so a failure here names a bug in an endpoint file, not in the test.
 
-- [ ] **Step 3: Rewrite `ApiDocumentTests` to read the document**
+- [x] **Step 3: Rewrite `ApiDocumentTests` to read the document**
 
 `ApiDocumentTests` no longer has `ApiParameter` lists to walk. Replace it with a class taking
 `RouteTests.Factory`, reading `ApiDocument.Route`, and asserting:
@@ -3344,7 +3344,7 @@ Keep `Every_filter_parameter_the_document_declares_is_read_rather_than_refused`,
 the parameters the `/api/entities` operation publishes and to call
 `CodexQuery.Parse(query, codex, RequestProperties.Of(typeof(EntitiesRequest)), out var error)`.
 
-- [ ] **Step 4: Run the whole suite**
+- [x] **Step 4: Run the whole suite**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
@@ -3352,7 +3352,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
 
 Expected: only the two `PlaceholderReadingTests` failures.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A

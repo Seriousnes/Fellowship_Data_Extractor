@@ -1,4 +1,8 @@
+using System.Reflection;
+using System.Text.Json;
+
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
 
 namespace FellowshipExtractor.Api.Tests;
@@ -72,5 +76,119 @@ public class ParameterTests(Export export)
 
         Assert.Equal([new GemPower(1, 2), new GemPower(3, 4)], joined.Values);
         Assert.False(GemPowers.TryParse("1", out _));
+    }
+}
+
+public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
+{
+    private readonly JsonDocument document;
+
+    private readonly IReadOnlyList<RouteEndpoint> endpoints;
+
+    private readonly IReadOnlySet<string> filters;
+
+    public PublishedParameterTests(RouteTests.Factory factory)
+    {
+        var client = factory.CreateClient();
+
+        document = JsonDocument.Parse(
+            client.GetStringAsync(ApiDocument.Route).GetAwaiter().GetResult());
+
+        endpoints =
+            [.. factory.Services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>()];
+
+        var codex = factory.Services.GetRequiredService<ICodexService>();
+
+        filters = codex.Facets.Select(facet => facet.Key)
+            .Concat(codex.Flags.Select(flag => flag.Key))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private JsonElement Operation(string path) =>
+        document.RootElement.GetProperty("paths").GetProperty(path).GetProperty("get");
+
+    private static IReadOnlyList<(string Name, bool Required, string? In)> Parameters(JsonElement operation) =>
+        operation.TryGetProperty("parameters", out var declared)
+            ? [.. declared.EnumerateArray().Select(parameter => (
+                parameter.GetProperty("name").GetString()!,
+                parameter.TryGetProperty("required", out var required) && required.GetBoolean(),
+                parameter.TryGetProperty("in", out var where) ? where.GetString() : null))]
+            : [];
+
+    [Fact]
+    public void An_ability_tooltip_declares_the_id_and_the_hero_and_nothing_else()
+    {
+        var names = Parameters(Operation("/api/ability/{id}/tooltip"))
+            .Select(parameter => parameter.Name)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        Assert.Equal(["Hero", "id"], names);
+    }
+
+    [Fact]
+    public void The_item_alone_declares_the_level_the_tempering_and_the_potential()
+    {
+        string[] owned = ["ItemLevel", "Upgrades", "MaxUpgrades", "PotentialPower"];
+
+        foreach (var (path, operation) in document.RootElement.GetProperty("paths").EnumerateObject()
+            .Where(entry => entry.Name.EndsWith("/tooltip", StringComparison.Ordinal))
+            .Select(entry => (entry.Name, entry.Value.GetProperty("get"))))
+        {
+            var names = Parameters(operation)
+                .Select(parameter => parameter.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var name in owned)
+            {
+                if (!names.Contains(name)) continue;
+
+                Assert.Equal("/api/item/{id}/tooltip", path);
+            }
+        }
+    }
+
+    [Fact]
+    public void Every_declared_parameter_binds_a_property_of_that_endpoint_s_request_model()
+    {
+        foreach (var endpoint in endpoints)
+        {
+            var pattern = endpoint.RoutePattern.RawText;
+            if (pattern is null || !pattern.StartsWith("/api/", StringComparison.Ordinal)) continue;
+
+            var published = pattern.Replace(":int", string.Empty, StringComparison.Ordinal);
+            if (!document.RootElement.GetProperty("paths").TryGetProperty(published, out var path)) continue;
+
+            var model = endpoint.Metadata.OfType<MethodInfo>()
+                .SelectMany(method => method.GetParameters())
+                .FirstOrDefault(parameter => parameter.GetCustomAttribute<AsParametersAttribute>() is not null);
+
+            if (model is null) continue;
+
+            var declared = RequestProperties.Of(model.ParameterType);
+
+            foreach (var (name, _, _) in Parameters(path.GetProperty("get")))
+            {
+                Assert.True(
+                    declared.Contains(name) || filters.Contains(name),
+                    $"{published} declares '{name}' and its model has no such property, " +
+                    "and the codex names no such facet or flag.");
+            }
+        }
+    }
+
+    [Fact]
+    public void The_id_is_the_only_required_parameter_on_any_route()
+    {
+        foreach (var path in document.RootElement.GetProperty("paths").EnumerateObject())
+        {
+            foreach (var (name, required, where) in Parameters(path.Value.GetProperty("get")))
+            {
+                if (!required) continue;
+
+                Assert.Equal("id", name);
+                Assert.Equal("path", where);
+            }
+        }
     }
 }
