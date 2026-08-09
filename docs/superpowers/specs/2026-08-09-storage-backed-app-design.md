@@ -89,8 +89,31 @@ Every image transform happens here, before anything lands on disk or in storage:
 - Four textures are written once per rarity, multiplied by that rarity's colour the way the game's
   `SetColorAndOpacity` multiplies them: `T_Borders_Frame_TooltipRarityFrame`,
   `T_Backgrounds_TooltipHeader_Rarity`, `T_Borders_RarityFrame` and `T_Borders_RarityGlow`.
+- Every skin render icon is written once per rarity as `<icon>-<rarity>.png`, composed by the
+  formula the `armory_item_icon` material computes. See "An icon's background".
 - `T_GoldDivider` is written as rows 24 to 27 of its 56 row canvas, the gold band the header rule
   draws.
+
+## An icon's background
+
+The rarity colour on an item icon's backdrop is computed, not drawn from an asset. The material
+`fellowship/Content/ui/frontend/armory/armory_item_icon` composes it from the icon texture and two
+parameters `W_ItemIcon` writes, `GlowColor` carrying the rarity colour and `UseGlow` gating it:
+
+```
+out = srgbEncode( lerp( srgbDecode(icon.rgb), srgbDecode(rarityColour), icon.a ) )
+```
+
+A source-over of the rarity colour through the icon's own alpha, in **linear** colour space. That
+alpha is an inverted mask, zero over the artwork and rising over the backdrop, so the blend colours
+the backdrop and leaves the art untouched. The colour space is the whole of it: reconstructing the
+game's render of item 5217 for Helena, `Linked Heavy Metal Cloak`, this reaches 9.20 RMS where the
+same blend in sRGB byte space reaches 19.05 and the untouched icon reaches 30.97, against a
+screenshot noise floor of 11.78.
+
+`export-all` performs this once per rarity per icon and writes the results, so no consumer composes
+anything at render time. `ItemDocument.IconByRarity` names the variant each rarity reads, and an icon
+outside the skin render population is written once, unchanged.
 
 ## What settings.json states
 
@@ -133,15 +156,18 @@ Common, Uncommon and Rare draw none.
 
 ## The slot
 
-An item slot draws, in this order:
+An item slot draws the layers `UW_GenericItemWidget` paints, bottom to top:
+`T_Borders_EmptyWithoutFrame`, the icon variant for the slot's rarity, `T_Borders_Glows_ItemSquare`,
+`T_Borders_RarityFrame`, `T_Borders_RarityGlow`, `T_Borders_GlassFrame`,
+`T_Borders_SlotHoverHighlight`, the item level, and `T_Borders_ItemRomanNumerals_<level>`.
+`T_Borders_RarityGlow` paints above the icon.
 
-1. `T_Borders_EmptyWithoutFrame`, the plate.
-2. The item icon, clipped to the chamfered well.
-3. `T_Borders_RarityFrame` in the slot's rarity, and `T_Borders_GlassFrame` over it.
+`OnRarityChanged` reaches the frame, the glow and the item level text with one `GetRarityColor`
+result: the two images through `SetColorAndOpacity`, which multiplies the texture by the colour, and
+the text through `SetOverrideColor`. `export-all` performs both multiplies once per rarity, so every
+layer arrives in storage already coloured.
 
-`OnRarityChanged` reaches the frame through `SetColorAndOpacity`, which multiplies the texture by the
-rarity colour. `export-all` performs that multiply once per rarity, so the frame arrives in storage
-already coloured.
+The icon is drawn as a rounded box of corner radius 10 at 128px.
 
 ## The read side
 
