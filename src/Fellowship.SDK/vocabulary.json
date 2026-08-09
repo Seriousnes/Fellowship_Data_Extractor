@@ -137,6 +137,206 @@
     "Sapphire",
     "Topaz"
   ],
+  "maxTempers": {
+    "Common": [
+      {
+        "itemLevel": 0,
+        "maxTempers": 0
+      },
+      {
+        "itemLevel": 420,
+        "maxTempers": 0
+      }
+    ],
+    "Uncommon": [
+      {
+        "itemLevel": 0,
+        "maxTempers": 0
+      },
+      {
+        "itemLevel": 15,
+        "maxTempers": 1
+      },
+      {
+        "itemLevel": 105,
+        "maxTempers": 2
+      },
+      {
+        "itemLevel": 180,
+        "maxTempers": 3
+      },
+      {
+        "itemLevel": 255,
+        "maxTempers": 4
+      },
+      {
+        "itemLevel": 420,
+        "maxTempers": 4
+      }
+    ],
+    "Rare": [
+      {
+        "itemLevel": 0,
+        "maxTempers": 0
+      },
+      {
+        "itemLevel": 15,
+        "maxTempers": 1
+      },
+      {
+        "itemLevel": 105,
+        "maxTempers": 2
+      },
+      {
+        "itemLevel": 180,
+        "maxTempers": 3
+      },
+      {
+        "itemLevel": 255,
+        "maxTempers": 4
+      },
+      {
+        "itemLevel": 315,
+        "maxTempers": 5
+      },
+      {
+        "itemLevel": 420,
+        "maxTempers": 5
+      }
+    ],
+    "Epic": [
+      {
+        "itemLevel": 0,
+        "maxTempers": 0
+      },
+      {
+        "itemLevel": 15,
+        "maxTempers": 1
+      },
+      {
+        "itemLevel": 105,
+        "maxTempers": 2
+      },
+      {
+        "itemLevel": 180,
+        "maxTempers": 3
+      },
+      {
+        "itemLevel": 255,
+        "maxTempers": 4
+      },
+      {
+        "itemLevel": 315,
+        "maxTempers": 6
+      },
+      {
+        "itemLevel": 420,
+        "maxTempers": 6
+      }
+    ],
+    "Champion": [
+      {
+        "itemLevel": 0,
+        "maxTempers": 0
+      },
+      {
+        "itemLevel": 15,
+        "maxTempers": 1
+      },
+      {
+        "itemLevel": 105,
+        "maxTempers": 2
+      },
+      {
+        "itemLevel": 180,
+        "maxTempers": 3
+      },
+      {
+        "itemLevel": 255,
+        "maxTempers": 4
+      },
+      {
+        "itemLevel": 315,
+        "maxTempers": 7
+      },
+      {
+        "itemLevel": 420,
+        "maxTempers": 7
+      }
+    ],
+    "Heroic": [
+      {
+        "itemLevel": 0,
+        "maxTempers": 0
+      },
+      {
+        "itemLevel": 15,
+        "maxTempers": 1
+      },
+      {
+        "itemLevel": 105,
+        "maxTempers": 2
+      },
+      {
+        "itemLevel": 180,
+        "maxTempers": 3
+      },
+      {
+        "itemLevel": 255,
+        "maxTempers": 4
+      },
+      {
+        "itemLevel": 315,
+        "maxTempers": 8
+      },
+      {
+        "itemLevel": 420,
+        "maxTempers": 8
+      }
+    ],
+    "Legendary": [
+      {
+        "itemLevel": 0,
+        "maxTempers": 0
+      },
+      {
+        "itemLevel": 420,
+        "maxTempers": 0
+      }
+    ]
+  },
+  "dropItemLevels": [
+    {
+      "row": "Default",
+      "difficulty": 21,
+      "itemLevel": 315
+    },
+    {
+      "row": "Legendary",
+      "difficulty": 21,
+      "itemLevel": 360
+    }
+  ],
+  "blessings": {
+    "name": "Blessing",
+    "heroBlessing": "Hero Blessing",
+    "tierLevel": "Equipped Tier",
+    "tiers": 4
+  },
+  "slotIcons": {
+    "Head": "T_Icons_Gear_Head",
+    "Neck": "T_Icons_Gear_Neck",
+    "Shoulders": "T_Icons_Gear_Shoulders",
+    "Back": "T_Icons_Gear_Back",
+    "Chest": "T_Icons_Gear_Chest",
+    "Wrists": "T_Icons_Gear_Wrist",
+    "Hands": "T_Icons_Gear_Hands",
+    "Legs": "T_Icons_Gear_Waist",
+    "Feet": "T_Icons_Gear_Feet",
+    "Ring": "T_Icons_Gear_Ring",
+    "Relic": "T_Icons_Gear_Relic",
+    "Weapon": "T_Icons_Gear_Weapon"
+  },
   "printFormats": {
     "Damage": "{0}",
     "DamageMagic": "\u003Crt.warning\u003E{0}\u003C/\u003E magic damage",
