@@ -191,7 +191,7 @@ itself with, so it is built once, here.
 - Produces: one HTML file per case under the folder `FELLOWSHIP_TIP_DUMP` names, called
   `{slug}-{id}-{case}.html`.
 
-- [ ] **Step 1: Make the export reachable from this worktree**
+- [x] **Step 1: Make the export reachable from this worktree**
 
 `output/` is gitignored and lives in the main checkout. `RouteTests.Factory.ExportFolder` walks up
 from the test binary and does not read `FELLOWSHIP_EXPORT`, so a junction is what makes both the
@@ -208,7 +208,7 @@ Test-Path "G:\source\Fellowship_Data_Extractor.route-redesign\output\export\enti
 
 Expected: `True`.
 
-- [ ] **Step 2: Record the baseline**
+- [x] **Step 2: Record the baseline**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
@@ -217,7 +217,7 @@ dotnet test src/FellowshipExtractor.Api.Tests --nologo -v q
 Expected: `Failed: 2, Passed: 258, Total: 260`, the two failures being the `PlaceholderReadingTests`
 pair named under "What the build states". Any other failure is a problem to solve before going on.
 
-- [ ] **Step 3: Write the harness**
+- [x] **Step 3: Write the harness**
 
 Create `src/FellowshipExtractor.Api.Tests/TooltipDumpTests.cs`:
 
@@ -327,7 +327,7 @@ public class TooltipDumpTests : BunitContext
 }
 ```
 
-- [ ] **Step 4: Run it skipped, then run it for the baseline**
+- [x] **Step 4: Run it skipped, then run it for the baseline**
 
 ```powershell
 dotnet test src/FellowshipExtractor.Api.Tests --nologo --filter "FullyQualifiedName~TooltipDumpTests"
@@ -345,7 +345,7 @@ $env:FELLOWSHIP_TIP_DUMP = $null
 
 Expected: 1 passed, and a count in the hundreds. Keep that folder. Task 14 diffs against it.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/FellowshipExtractor.Api.Tests/TooltipDumpTests.cs
