@@ -12,10 +12,13 @@ the documents. The omnibox keeps its view-results button on screen whatever the 
 and cascades itself to `Cx/Column.razor`, a `Column<T>` that renders nothing and registers itself
 with the table. Registration completes before the header draws because the table places its
 `Columns` fragment in one `<CascadingValue>` and the table markup in a sibling `<CascadingValue>`,
-so the first cascade's children are instantiated before the second cascade renders. That holds
-under static server rendering with no second pass and no interactivity, which is what this app
-uses. Each type's component supplies the columns; `Browse.razor` picks the component and owns the
-tabs, rail, count and pager as it does today.
+so the first cascade's children are instantiated before the second cascade renders. **This is
+measured, not assumed:** `Cx/Table.razor`, `Cx/Column.razor` and `Cx/StaticTableTests.cs` were
+written before anything else on this branch, and rendering a four-column table through
+`HtmlRenderer`, the same single-pass static renderer `Fragments.Render` uses, returns every header
+cell in declaration order with its sort link, numeric class, unit span and template markup already
+in place. Each type's component supplies the columns; `Browse.razor` picks the component and owns
+the tabs, rail, count and pager as it does today.
 
 Row identity moves from `(EntityType, Id)` to the exported document. `CodexSearch.Fold` becomes a
 per-document projection, and every count, badge and link that deduped by id follows it. A row
@@ -381,7 +384,15 @@ creature; an effect reached by more than one owner carries none. The `DisplayNam
 `Icon is null` gates that `EffectNameSources` and `EffectIconSources` apply do not apply here,
 because an effect that names itself still has an owner.
 
-**Step 5: Project them, and write the export.**
+**Step 5: Let the rail filter by them.**
+
+`Codex.Facets`'s `hero` facet reads `ItemDocument.Heroes` and `TalentSlotDocument.Hero` today. It
+gains the `Heroes` of an ability and an effect, so the rail's hero values count and filter the
+abilities and effects list rather than silently excluding them. A `source` facet joins it, reading
+an item's `Sources` by name and an ability's or effect's `Owner`, so a reader can narrow a list to
+one dungeon, one vendor or one creature.
+
+**Step 6: Project them, and write the export.**
 
 `TooltipResolver` constructs `AbilityOwners` and `AppliedEffects` beside `EffectNames` and
 `EffectIcons`, sets `Heroes` and `Owner` in the `entity with` block, and `DocumentProjection`
@@ -389,7 +400,7 @@ copies them onto `AbilityDocument` and `EffectDocument`. Then run
 `dotnet run --project src/FellowshipExtractor -- export-all` and confirm the new export loads by
 running the Api tests against it.
 
-**Step 6: Verify.**
+**Step 7: Verify.**
 
 `AbilityOwnerTests` asserts: twelve heroes resolve to an ability set and Gunde among them; all
 `GameplayAbilityClass` references resolve to a tag with none unmatched; `GA_Interact` and `GA_Dance`
@@ -453,7 +464,9 @@ which spells the legal slugs in the no-such-type message, lists only the listed 
 `CodexQuery.Parse` rejects a `type=` slug whose type is unlisted with the existing no-such-type
 error, so `/browse?type=talent-slot` answers 400 and `/api/entities?type=mount-power` does too.
 `/entity/{slug}/{id}` and `/api/tooltip/{slug}/{id}` resolve by `EntityTypes.TryParse` and keep
-answering, which is how a talent slot stays readable as the metadata behind a talent.
+answering, which is how a talent slot stays readable as the metadata behind a talent. Its
+breadcrumb stops linking to a browse list it can no longer open: `EntityPage.Under` answers a link
+for a listed type and the plain label for an unlisted one, and `Crumbs` already takes a null href.
 
 **Step 4: Keep them out of search.**
 
@@ -601,10 +614,14 @@ component to draw, and drops `AcrossTypes`, which only the All tab read.
 
 **Step 3: Count rows everywhere a row is counted.**
 
-`Codex.Types` counts documents rather than distinct ids, `Codex.View` accumulates a document count
-rather than a `HashSet<(EntityType, int)>`, and `Codex.Count` answers `store.Count`. The tab badge,
-the rail counts, the mega menu counts and the results head then all state the same number as the
-list beneath them.
+`Codex.Types` counts documents rather than distinct ids, and `Codex.View` accumulates a document
+count rather than a `HashSet<(EntityType, int)>`. The tab badge, the rail counts, the mega menu
+counts and the results head then all state the same number as the list beneath them.
+
+`Codex.Count` counts the documents of the listed types, so the home page's headline, the OpenAPI
+description and `/api/catalog`'s `entities` state the same 12,203 the tabs sum to. The home page's
+sentence names items, abilities, effects, talents, traits and creatures, every one of which is a
+listed type, so it stays literally true.
 
 **Step 4: Address a reading.**
 
@@ -745,6 +762,12 @@ the gem's own colour, keyed `gem`.
 `Items`, a template drawing one icon link per item that names the set, each carrying `href` and
 `data-tip`; `Required` bound to `Pieces`, numeric, keyed `pieces`. The item list is read per
 reading, so a hero's own version of a set piece is the icon that hero's row would show.
+
+Three set names carry three rows each, split by `AllowedAttributes`, and one carries three split by
+`AllowedRoles`. A row narrows its item list to the items whose `PrimaryStat` its
+`AllowedAttributes` names, keeping the items that carry no primary stat, because the neck piece of
+an attribute-split set carries neither a stat nor an armour type and belongs to all three. A row
+split by role shows every item of its name, since no item states a role.
 
 **Step 7: Draw the remaining lists.**
 
