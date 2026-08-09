@@ -1,0 +1,98 @@
+@inject ITooltipViewService Ui
+
+<div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
+    <style>@Sheet</style>
+    @if (Art is { } art)
+    {
+        <Icon Src="@art" Rarity="@Rung?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
+    }
+    <div class="card">
+        <header class="head">
+            @if (Ui.Ornament(Rung) is { } ornament)
+            {
+                <img class="orn" alt="" src="@ornament">
+            }
+
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+        </header>
+        @if (groups.Count > 0)
+        {
+            <div class="lines">
+                @for (var at = 0; at < groups.Count; at++)
+                {
+                    @if (at > 0) { <hr class="rule"> }
+                    @groups[at]
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public EntityDocument Shown { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    private EntityDocument Entity => Shown;
+
+    private RarityEntry? Rung;
+
+    private string? Art;
+
+    private int? Level;
+
+    private string? Temper;
+
+    private MarkupString Sheet;
+
+    private IReadOnlyList<TooltipView.Fact> facts = [];
+
+    private IReadOnlyList<TooltipView.TraitLine> traits = [];
+
+    private IReadOnlyList<RenderFragment> groups = [];
+
+    protected override void OnParametersSet()
+    {
+        Rung = Ui.Rarity(Entity, Query);
+        Art = Ui.Art(Entity, Rung);
+        Level = Ui.Level(Entity, Query);
+        Temper = Ui.Temper(Query, Rung, Level);
+        Sheet = new MarkupString(Ui.Style());
+        facts = Ui.Facts(Entity, Query);
+        traits = Ui.Traits(Query);
+
+        groups = Groups();
+    }
+
+    private List<RenderFragment> Groups()
+    {
+        var drawn = new List<RenderFragment>(5);
+
+        if (Level is not null || Rung is not null || Temper is not null)
+        {
+            drawn.Add(@<TipIdentity Entity="Entity" Query="Query" Rung="Rung" Level="Level" Temper="@Temper" />);
+        }
+
+        if (facts.Count > 0) drawn.Add(@<TipFacts Items="facts" />);
+
+        if (Ui.Potential(Query) is not null)
+        {
+            drawn.Add(@<TipRolls Potential="@Ui.Potential(Query)" />);
+        }
+
+        if (traits.Count > 0 || Query.AllocatedTraits is not null || Query.MaxTraits is not null)
+        {
+            drawn.Add(@<TipTraits Lines="traits" Allocated="Query.AllocatedTraits" Total="Query.MaxTraits" />);
+        }
+
+        if (Prose) drawn.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);
+
+        return drawn;
+    }
+
+    private bool Prose =>
+        DocumentFields.Text(Entity, nameof(AbilityDocument.Description)) is not null ||
+        DocumentFields.Words(Entity, nameof(AbilityDocument.Detail)) is { Count: > 0 };
+}
