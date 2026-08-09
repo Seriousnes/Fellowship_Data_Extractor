@@ -1,8 +1,10 @@
+using FellowshipExtractor.Api.Services;
+
 namespace FellowshipExtractor.Api.Models;
 
-public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults results)
+public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResults results)
 {
-    public Codex Codex => codex;
+    public ICodexService Codex => codex;
 
     public CodexQuery Query => query;
 
@@ -73,7 +75,7 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
             foreach (var type in query.Types)
             {
                 var slug = EntityTypes.Slug(type);
-                chips.Add((Codex.Label(type), "/browse" + query.ToQueryString(toggle: ("type", slug))));
+                chips.Add((Models.Codex.Label(type), "/browse" + query.ToQueryString(toggle: ("type", slug))));
             }
 
             foreach (var (key, values) in query.Selections)
@@ -99,9 +101,9 @@ public sealed class BrowseView(Codex codex, CodexQuery query, CodexResults resul
 
                 var bounds = range switch
                 {
-                    (not null, not null) => $"{Codex.Number(range.Min!.Value)} to {Codex.Number(range.Max!.Value)}",
-                    (not null, null) => $"from {Codex.Number(range.Min!.Value)}",
-                    (null, not null) => $"up to {Codex.Number(range.Max!.Value)}",
+                    (not null, not null) => $"{Models.Codex.Number(range.Min!.Value)} to {Models.Codex.Number(range.Max!.Value)}",
+                    (not null, null) => $"from {Models.Codex.Number(range.Min!.Value)}",
+                    (null, not null) => $"up to {Models.Codex.Number(range.Max!.Value)}",
                     _ => null,
                 };
 

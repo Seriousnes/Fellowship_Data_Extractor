@@ -37,11 +37,11 @@ public class FactTests : BunitContext
         var cut = Render<Fact>(p => p
             .Add(x => x.Label, "Resource")
             .AddChildContent(
-                "<a href=\"/browse?resource=Mana\" data-tip=\"/api/tooltip/effect/9\">Mana</a>"));
+                "<a href=\"/browse?resource=Mana\" data-tip=\"/api/effect/9/tooltip\">Mana</a>"));
 
         Assert.Equal(
             "<tr><th>Resource</th><td>" +
-            "<a href=\"/browse?resource=Mana\" data-tip=\"/api/tooltip/effect/9\">Mana</a></td></tr>",
+            "<a href=\"/browse?resource=Mana\" data-tip=\"/api/effect/9/tooltip\">Mana</a></td></tr>",
             cut.Markup.Bare());
     }
 }

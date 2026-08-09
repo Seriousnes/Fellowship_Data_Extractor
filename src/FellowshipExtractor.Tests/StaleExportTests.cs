@@ -1,6 +1,7 @@
 using System.Text.Json;
 
 using FellowshipExtractor.Api.Models;
+using FellowshipExtractor.Api.Services;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -9,7 +10,7 @@ namespace FellowshipExtractor.Tests;
 
 public sealed class StaleExportTests
 {
-    private static EntityStore Read(string line)
+    private static EntityStoreService Read(string line)
     {
         var folder = Directory.CreateTempSubdirectory("fellowship-export").FullName;
 
@@ -22,7 +23,7 @@ public sealed class StaleExportTests
                 .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = folder })
                 .Build();
 
-            return new EntityStore(new ExportPaths(configuration), NullLogger<EntityStore>.Instance);
+            return new EntityStoreService(new ExportPathService(configuration), NullLogger<EntityStoreService>.Instance);
         }
         finally
         {

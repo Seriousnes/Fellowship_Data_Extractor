@@ -63,14 +63,14 @@ public class BlessingCardTests : BunitContext
     [Fact]
     public void The_equipped_tier_a_query_string_names_reaches_the_query()
     {
-        var query = TooltipQuery.Parse(
-            new QueryCollection(new Dictionary<string, StringValues> { ["equippedTier"] = "3" }),
-            export.Store.Stats,
-            out var error);
+        var query = new BlessingTooltipRequest { Id = 1, EquippedTier = 3 }
+            .ToQuery(new QueryCollection(), export.Store.Stats, out var error);
 
         Assert.Null(error);
         Assert.Equal(3, query.EquippedTier);
-        Assert.Null(TooltipQuery.Parse(new QueryCollection(), export.Store.Stats, out _).EquippedTier);
+
+        Assert.Null(new BlessingTooltipRequest { Id = 1 }
+            .ToQuery(new QueryCollection(), export.Store.Stats, out _).EquippedTier);
     }
 
     [Fact]

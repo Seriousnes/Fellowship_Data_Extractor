@@ -1,3 +1,4 @@
+using FellowshipExtractor.Api.Endpoints;
 using FellowshipExtractor.Api.Models;
 
 using Microsoft.AspNetCore.Http;
@@ -8,10 +9,16 @@ namespace FellowshipExtractor.Tests;
 public sealed class StatParameterTests
 {
     private static StatParameters Parameters() =>
-        new(["Haste", "Strength", "CritChance"], Export.Loaded.Vocabulary.StatCalculation.Attributes);
+        new(Export.Loaded.Vocabulary.StatCalculation.Attributes);
+
+    private sealed record Probe
+    {
+        public int Id { get; init; }
+    }
 
     private static TooltipQuery Parse(out string? error, params (string Key, string Value)[] pairs) =>
-        TooltipQuery.Parse(
+        StatQuery.Read(
+            new Probe(),
             new QueryCollection(pairs
                 .GroupBy(pair => pair.Key, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => new StringValues(group.Select(p => p.Value).ToArray()))),
