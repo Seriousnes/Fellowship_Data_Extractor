@@ -53,7 +53,7 @@
 
                 <a class="cx-omnibox-hit" href="@hit.Href" role="option" data-tip="@hit.Tooltip"
                    aria-selected="@(active == mine ? "true" : "false")" data-active="@On(active == mine)">
-                    <Icon Src="@hit.IconUrl" />
+                    <Icon Src="@hit.IconUrl" Rarity="@hit.Rarity" Width="HitPlateWidth" />
                     <span class="cx-t">
                         <span class="cx-nm">
                             @foreach (var run in Suggestions.Mark(hit.Name, Words))
@@ -85,6 +85,8 @@
 
 @code {
     [Parameter] public string? Text { get; set; }
+
+    private const int HitPlateWidth = 30;
 
     private const int Rows = 12;
 

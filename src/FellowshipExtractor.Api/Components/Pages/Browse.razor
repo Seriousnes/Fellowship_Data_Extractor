@@ -200,7 +200,8 @@ else
                                         }
                                         else
                                         {
-                                            <Icon Src="@Ui.Icon(DocumentFields.Text(shown, nameof(ItemDocument.Icon)))" />
+                                            <Icon Src="@Ui.Icon(DocumentFields.Text(shown, nameof(ItemDocument.Icon)))"
+                                                  Rarity="@Ui.RarityName(shown)" Width="RowSlotWidth" />
                                         }
                                     </td>
                                     <td>
@@ -212,7 +213,9 @@ else
                                                 {
                                                     <a href="@variant.Href" title="@variant.Name" aria-label="@variant.Name"
                                                        style="@(variant.Colour is null ? null : $"color:{variant.Colour}")">
-                                                        <Icon Src="@Ui.Icon(variant.Icon)" />
+                                                        <Icon Src="@Ui.Icon(variant.Icon)"
+                                                              Rarity="@Ui.RarityName(variant.Rarity)"
+                                                              Width="VariantSlotWidth" />
                                                     </a>
                                                 }
                                             </span>
@@ -322,6 +325,10 @@ else
                 : "Browse the codex";
 
     private const int RowPlateWidth = 26;
+
+    private const int RowSlotWidth = 34;
+
+    private const int VariantSlotWidth = 18;
 
     private Facet? Grouping => Query.Group is null ? null : Catalog.Facet(Query.Group);
 

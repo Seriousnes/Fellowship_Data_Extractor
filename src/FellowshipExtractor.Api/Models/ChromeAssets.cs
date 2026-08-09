@@ -32,7 +32,10 @@ public sealed class ChromeAssets(
     private const string AbilityTexture = "T_Icons_StatTooltip_AbilitySlot_Pink";
     private const string LegendaryTexture = "T_Icons_StatTooltip_Legendary";
     private const string SetBonusTexture = "T_Icons_StatTooltip_Set_Bonus";
-    private const string SlotPlateTexture = "T_Borders_EmptySlot";
+    private const string SlotBackingTexture = "T_Borders_EmptyWithoutFrame";
+    private const string SlotBevelTexture = "T_Borders_GlassFrame";
+    private const string PlainSlotBackingTexture = "T_Buttons_AbilityBarBackground_Small";
+    private const string PlainSlotFrameTexture = "T_Buttons_SmallAbilityButton_Default";
     private const string TraitTexture = "T_Icons_StatTooltip_TraitSlot";
     private const string ExpandTexture = "T_Icons_Generic_TooltipExpand";
 
@@ -79,9 +82,13 @@ public sealed class ChromeAssets(
     public string? Ornament(string rarity) =>
         ornaments.TryGetValue(rarity, out var texture) ? Url(Name(texture)) : null;
 
-    public string? IconFrame(string? rarity) => rarity is null ? null : Url(Name(IconFrameMask, rarity));
+    public string SlotBacking(string? rarity) =>
+        Url(Name(rarity is null ? PlainSlotBackingTexture : SlotBackingTexture));
 
-    public string SlotPlate => Url(Name(SlotPlateTexture));
+    public string SlotFrame(string? rarity) =>
+        rarity is null ? Url(Name(PlainSlotFrameTexture)) : Url(Name(IconFrameMask, rarity));
+
+    public string? SlotBevel(string? rarity) => rarity is null ? null : Url(Name(SlotBevelTexture));
 
     public string TraitNode(string? state) =>
         Url(Name(NodeFamily + Chosen(NodeStates, state) + NodeSuffix));

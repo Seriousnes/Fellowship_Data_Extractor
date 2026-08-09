@@ -59,7 +59,8 @@
             {
                 <EntityLink Entity="entity" Class="cx-card">
                     <span class="cx-linked">
-                        <Icon Src="@Ui.Icon(DocumentFields.Text(entity, nameof(ItemDocument.Icon)))" />
+                        <Icon Src="@Ui.Icon(DocumentFields.Text(entity, nameof(ItemDocument.Icon)))"
+                              Rarity="@Ui.RarityName(entity)" Width="CardPlateWidth" />
                         <span>
                             <span class="cx-card-name" style="color:@Ui.NameColour(entity)">@PublicTypes.NameOf(entity)</span><br />
                             <span class="cx-card-count">@Codex.Label(EntityTypes.TypeOf(entity))</span>
@@ -72,6 +73,8 @@
 }
 
 @code {
+    private const int CardPlateWidth = 30;
+
     private int Entries => Ui.Codex.Count;
 
     private string Roster => $"{Store.Vocabulary.Heroes.Count} heroes";

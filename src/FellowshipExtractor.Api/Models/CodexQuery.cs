@@ -346,7 +346,7 @@ public sealed record CodexQuery
 
 public sealed record Listing(EntityDocument Shown, IReadOnlyList<Listing.Variant> Variants)
 {
-    public sealed record Variant(string Name, string? Icon, string Href, string? Colour);
+    public sealed record Variant(string Name, string? Icon, Rarity? Rarity, string Href, string? Colour);
 }
 
 public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex index, CodexView view)
@@ -423,6 +423,7 @@ public sealed class CodexSearch(EntityStore store, Codex codex, SearchIndex inde
         return new Listing.Variant(
             name,
             (readings[0] as ItemDocument)?.Icon,
+            CodexView.Tier(readings[0]),
             heroes is [var first, ..] ? $"{address}?hero={Uri.EscapeDataString(first)}" : address,
             heroes is [{ } one] ? view.HeroColour(one) : null);
     }

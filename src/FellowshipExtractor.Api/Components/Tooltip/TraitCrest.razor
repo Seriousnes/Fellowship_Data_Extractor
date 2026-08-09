@@ -1,7 +1,7 @@
 @inject CodexView Ui
 
 <figure class="fx-trait-crest @(Padlocked ? "locked" : null)" style="--fx-node:url(@Plate);--fx-node-width:@Across">
-    <div class="well"><img alt="" src="@Art"></div>
+    <div class="well">@if (Art is { } art) { <img alt="" src="@art"> }</div>
     @if (Padlocked)
     {
         <img class="lock" alt="" src="@Ui.Chrome.LockGlyph">
@@ -19,7 +19,7 @@
 
     private string Plate => Ui.Chrome.TraitNode(State);
 
-    private string Art => Ui.Icon(Entity.Icon);
+    private string? Art => Ui.Icon(Entity.Icon);
 
     private string Across => Width.ToString(CultureInfo.InvariantCulture) + "px";
 }

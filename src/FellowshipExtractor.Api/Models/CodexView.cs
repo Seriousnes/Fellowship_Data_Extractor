@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
@@ -29,17 +30,28 @@ public sealed class CodexView(
 
     public ChromeAssets Chrome => chrome;
 
-    public string Icon(string? icon) => icon is null ? chrome.SlotPlate : $"{icons.Uri}/{icon}";
+    [return: NotNullIfNotNull(nameof(icon))]
+    public string? Icon(string? icon) => icon is null ? null : $"{icons.Uri}/{icon}";
+
+    public static Rarity? Tier(EntityDocument document) => document switch
+    {
+        ItemDocument { Rarities: { Count: > 0 } rungs } => rungs[^1],
+        ItemDocument { Rarity: { } stated } => stated,
+        CurrencyDocument { Rarity: { } coin } => coin,
+        GemDocument gem => gem.Rarity,
+        _ => null,
+    };
+
+    public string? RarityName(EntityDocument document) => Tier(document) is { } rung ? Named(rung) : null;
+
+    public string? RarityName(Rarity? rarity) => rarity is { } rung ? Named(rung) : null;
+
+    private string? Named(Rarity rarity) =>
+        store.Vocabulary.Rarities.FirstOrDefault(entry => entry.Tier == (int)rarity)?.Name;
 
     public string? LinkColour(EntityDocument document)
     {
-        Rarity? rung = document switch
-        {
-            ItemDocument { Rarities: { Count: > 0 } rungs } => rungs[^1],
-            ItemDocument { Rarity: { } stated } => stated,
-            GemDocument gem => gem.Rarity,
-            _ => null,
-        };
+        var rung = Tier(document);
 
         if (rung is { } found && Rung(found) is { } shade) return shade;
 

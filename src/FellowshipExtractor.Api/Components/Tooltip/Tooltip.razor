@@ -14,7 +14,7 @@ else
         <style>@Sheet</style>
         @if (Art is { } art)
         {
-            <figure class="slot"><img class="art" alt="" src="@art"></figure>
+            <Icon Src="@art" Rarity="@Rung?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
         }
         <div class="card">
             <header class="head">

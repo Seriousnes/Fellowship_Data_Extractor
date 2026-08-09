@@ -1,5 +1,24 @@
-<img alt="" loading="lazy" src="@Src" />
+@inject CodexView Ui
+
+<figure class="fx-slot @(Rarity is null ? "plain" : null)" style="@Chrome">
+    @if (Src is { } art)
+    {
+        <img alt="" loading="@(Lazy ? "lazy" : "eager")" src="@art" />
+    }
+</figure>
 
 @code {
-    [Parameter, EditorRequired] public string Src { get; set; } = string.Empty;
+    [Parameter] public string? Src { get; set; }
+
+    [Parameter] public string? Rarity { get; set; }
+
+    [Parameter] public int Width { get; set; } = 34;
+
+    [Parameter] public bool Lazy { get; set; } = true;
+
+    private string Chrome =>
+        $"--fx-slot-backing:url({Ui.Chrome.SlotBacking(Rarity)});" +
+        $"--fx-slot-frame:url({Ui.Chrome.SlotFrame(Rarity)});" +
+        (Ui.Chrome.SlotBevel(Rarity) is { } bevel ? $"--fx-slot-bevel:url({bevel});" : string.Empty) +
+        $"--fx-slot-width:{Width.ToString(CultureInfo.InvariantCulture)}px";
 }

@@ -21,6 +21,8 @@ public sealed class TooltipView(
 
     public const EntityType TraitType = EntityType.Trait;
 
+    public const int SlotWidth = 48;
+
     private const string Sheet = "css/tooltip.css";
 
     private readonly string sheet = Compose(environment, chrome, renderer);
@@ -51,7 +53,6 @@ public sealed class TooltipView(
         return
             tokens.CssVariables() +
             "--fx-frame:" + (chrome.Frame(rarity?.Name) is { } frame ? $"url({frame})" : "none") +
-            ";--fx-slot:" + (chrome.IconFrame(rarity?.Name) is { } slot ? $"url({slot})" : "none") +
             ";--fx-header:" + (rarity is null ? "none" : $"url({chrome.Header(rarity.Name)})") +
             ";--fx-window:url(" + (rarity is null ? chrome.RoundedWindow : chrome.Window) +
             ");--fx-title:" + (colour ?? "var(--core-text-primary)") +
@@ -219,7 +220,7 @@ public sealed class TooltipView(
 
         return
             $$"""
-            .{{Root}}{--fx-slot-plate:url({{chrome.SlotPlate}});--fx-window:url({{chrome.Window}});
+            .{{Root}}{--fx-window:url({{chrome.Window}});
             --fx-thin:url({{chrome.ThinWindow}});--fx-fill:url({{chrome.WindowFill}});
             --fx-divider:url({{chrome.GoldDivider}});--fx-subheader:url({{chrome.Header(null)}});
             --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};

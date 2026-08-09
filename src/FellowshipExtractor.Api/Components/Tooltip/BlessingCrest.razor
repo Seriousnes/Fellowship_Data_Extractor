@@ -1,7 +1,7 @@
 @inject CodexView Ui
 
 <figure class="fx-blessing-crest" style="--fx-plate:url(@Plate);--fx-plate-width:@Across">
-    <img alt="" src="@Art">
+    @if (Art is { } art) { <img alt="" src="@art"> }
 </figure>
 
 @code {
@@ -13,7 +13,7 @@
 
     private string Plate => Ui.Chrome.BlessingPlate(State);
 
-    private string Art => Ui.Chrome.BlessingArt(Entity.Icon, State) ?? Ui.Icon(Entity.Icon);
+    private string? Art => Ui.Chrome.BlessingArt(Entity.Icon, State) ?? Ui.Icon(Entity.Icon);
 
     private string Across => Width.ToString(CultureInfo.InvariantCulture) + "px";
 }

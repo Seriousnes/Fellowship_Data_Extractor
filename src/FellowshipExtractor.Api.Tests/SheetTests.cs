@@ -56,7 +56,7 @@ public partial class SheetTests(Export export)
 
         Assert.Contains($".{TooltipView.Root} .card {{", sheet, StringComparison.Ordinal);
         Assert.Contains($".{TooltipView.Root} .stats .random {{", sheet, StringComparison.Ordinal);
-        Assert.Contains("--fx-slot-plate:url(", sheet, StringComparison.Ordinal);
+        Assert.Contains($".{TooltipView.Root} .fx-slot img {{", sheet, StringComparison.Ordinal);
         Assert.Contains($".{TooltipView.Root} .rt-", sheet, StringComparison.Ordinal);
     }
 

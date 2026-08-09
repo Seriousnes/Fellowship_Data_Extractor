@@ -25,6 +25,67 @@ public class StateChromeTests(Export export)
         return false;
     }
 
+    private Image<Rgba32> Carried(string url)
+    {
+        var blob = url[(url.IndexOf(ChromeAssets.Prefix + "/", StringComparison.Ordinal))..];
+
+        return Image.Load<Rgba32>(export.Chrome.Payloads()
+            .Single(payload => string.Equals(payload.Name, blob, StringComparison.Ordinal))
+            .Content);
+    }
+
+    private static (Rectangle Box, int Chamfer) Hollow(Image<Rgba32> frame)
+    {
+        var reached = new bool[frame.Width, frame.Height];
+        var walking = new Stack<Point>();
+        walking.Push(new Point(frame.Width / 2, frame.Height / 2));
+        reached[frame.Width / 2, frame.Height / 2] = true;
+
+        int left = frame.Width, right = -1, top = frame.Height, bottom = -1;
+
+        while (walking.Count > 0)
+        {
+            var at = walking.Pop();
+
+            left = Math.Min(left, at.X);
+            right = Math.Max(right, at.X);
+            top = Math.Min(top, at.Y);
+            bottom = Math.Max(bottom, at.Y);
+
+            foreach (var step in new[] { new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1) })
+            {
+                var next = new Point(at.X + step.X, at.Y + step.Y);
+
+                if (next.X < 0 || next.Y < 0 || next.X >= frame.Width || next.Y >= frame.Height) continue;
+                if (reached[next.X, next.Y] || frame[next.X, next.Y].A != 0) continue;
+
+                reached[next.X, next.Y] = true;
+                walking.Push(next);
+            }
+        }
+
+        var cut = 0;
+        while (cut < frame.Width && !reached[cut, top]) cut++;
+
+        return (new Rectangle(left, top, right - left + 1, bottom - top + 1), cut);
+    }
+
+    private static bool Covers(Image<Rgba32> backing, double inset)
+    {
+        var left = (int)Math.Ceiling(backing.Width * inset);
+        var top = (int)Math.Ceiling(backing.Height * inset);
+
+        for (var y = top; y < backing.Height - top; y++)
+        {
+            for (var x = left; x < backing.Width - left; x++)
+            {
+                if (backing[x, y].A < 254) return false;
+            }
+        }
+
+        return true;
+    }
+
     private static Rectangle Well(string file)
     {
         using var plate = Image.Load<Rgba32>(file);
@@ -89,6 +150,84 @@ public class StateChromeTests(Export export)
         Assert.All(
             ChromeAssets.BlessingStates,
             state => Assert.Equal((148, 188), Shape(Texture(export.Chrome.BlessingPlate(state)))));
+    }
+
+    [Fact]
+    public void The_well_the_stylesheet_cuts_a_rarity_slot_to_is_the_hole_in_the_rarity_frame()
+    {
+        var rung = export.Store.Vocabulary.Rarities[0].Name;
+
+        using var frame = Carried(export.Chrome.SlotFrame(rung));
+
+        Assert.Equal(60, frame.Width);
+        Assert.Equal(60, frame.Height);
+
+        var (well, chamfer) = Hollow(frame);
+
+        Assert.Equal(new Rectangle(4, 4, 52, 52), well);
+        Assert.Equal(9, chamfer);
+    }
+
+    [Fact]
+    public void The_well_the_stylesheet_cuts_a_plain_slot_to_is_the_hole_in_the_ability_frame()
+    {
+        using var frame = Carried(export.Chrome.SlotFrame(null));
+
+        Assert.Equal(128, frame.Width);
+        Assert.Equal(128, frame.Height);
+
+        var (well, chamfer) = Hollow(frame);
+
+        Assert.Equal(new Rectangle(10, 10, 108, 108), well);
+        Assert.Equal(16, chamfer);
+    }
+
+    [Fact]
+    public void The_rarity_backing_fills_its_well_so_the_art_is_composited_over_it()
+    {
+        using var backing = Carried(export.Chrome.SlotBacking(export.Store.Vocabulary.Rarities[0].Name));
+
+        Assert.True(Covers(backing, 4d / 60), "T_Borders_EmptyWithoutFrame no longer hides art drawn under it.");
+    }
+
+    [Fact]
+    public void The_ability_band_is_opaque_so_the_art_is_cut_to_the_well_rather_than_drawn_under_it()
+    {
+        using var frame = Carried(export.Chrome.SlotFrame(null));
+
+        var middle = frame.Height / 2;
+
+        Assert.All(
+            Enumerable.Range(0, 10),
+            column => Assert.Equal(255, frame[column, middle].A));
+
+        Assert.All(
+            Enumerable.Range(frame.Width - 10, 10),
+            column => Assert.Equal(255, frame[column, middle].A));
+    }
+
+    [Fact]
+    public void A_slot_wears_the_chrome_its_rung_names_and_the_ornate_plate_is_gone()
+    {
+        var rung = export.Store.Vocabulary.Rarities[0].Name;
+
+        Assert.EndsWith(
+            "T_Borders_EmptyWithoutFrame.png", export.Chrome.SlotBacking(rung), StringComparison.Ordinal);
+        Assert.EndsWith(
+            $"T_Borders_RarityFrame-{rung.ToLowerInvariant()}.png", export.Chrome.SlotFrame(rung),
+            StringComparison.Ordinal);
+        Assert.EndsWith("T_Borders_GlassFrame.png", export.Chrome.SlotBevel(rung), StringComparison.Ordinal);
+
+        Assert.EndsWith(
+            "T_Buttons_AbilityBarBackground_Small.png", export.Chrome.SlotBacking(null),
+            StringComparison.Ordinal);
+        Assert.EndsWith(
+            "T_Buttons_SmallAbilityButton_Default.png", export.Chrome.SlotFrame(null), StringComparison.Ordinal);
+        Assert.Null(export.Chrome.SlotBevel(null));
+
+        Assert.DoesNotContain(
+            export.Chrome.Payloads(),
+            payload => payload.Name.Contains("T_Borders_EmptySlot", StringComparison.Ordinal));
     }
 
     [Fact]

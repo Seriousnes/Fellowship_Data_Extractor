@@ -25,7 +25,7 @@ public class InsetArtTests : BunitContext
         var drawn = Draw(Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null));
 
         Assert.NotNull(drawn.Find(".card .fx-trait-crest img"));
-        Assert.Empty(drawn.FindAll("figure.slot"));
+        Assert.Empty(drawn.FindAll("figure.fx-slot"));
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class InsetArtTests : BunitContext
         var drawn = Draw(Store.Entities.OfType<BlessingDocument>().First(row => row.Icon is not null));
 
         Assert.NotNull(drawn.Find(".card .fx-blessing-crest img"));
-        Assert.Empty(drawn.FindAll("figure.slot"));
+        Assert.Empty(drawn.FindAll("figure.fx-slot"));
     }
 
     [Fact]
@@ -54,7 +54,32 @@ public class InsetArtTests : BunitContext
             var drawn = Draw(document);
 
             Assert.Empty(drawn.FindAll(".card .fx-trait-crest"));
-            Assert.NotEmpty(drawn.FindAll("figure.slot"));
+            Assert.NotEmpty(drawn.FindAll("figure.fx-slot"));
         });
+    }
+
+    [Fact]
+    public void A_rung_chooses_the_rarity_chrome_and_its_absence_chooses_the_plain_chrome()
+    {
+        var item = Draw(Store.Entities.OfType<ItemDocument>()
+            .First(row => row.Icon is not null && (row.Rarity is not null || row.Rarities is { Count: > 0 })));
+
+        var slot = item.Find("figure.fx-slot");
+        var worn = slot.GetAttribute("style") ?? string.Empty;
+
+        Assert.DoesNotContain("plain", slot.ClassList);
+        Assert.Contains("T_Borders_EmptyWithoutFrame.png", worn, StringComparison.Ordinal);
+        Assert.Contains("T_Borders_RarityFrame-", worn, StringComparison.Ordinal);
+        Assert.Contains("--fx-slot-bevel:url(", worn, StringComparison.Ordinal);
+
+        var ability = Draw(Store.Entities.OfType<AbilityDocument>().First(row => row.Icon is not null))
+            .Find("figure.fx-slot");
+
+        var cast = ability.GetAttribute("style") ?? string.Empty;
+
+        Assert.Contains("plain", ability.ClassList);
+        Assert.Contains("T_Buttons_AbilityBarBackground_Small.png", cast, StringComparison.Ordinal);
+        Assert.Contains("T_Buttons_SmallAbilityButton_Default.png", cast, StringComparison.Ordinal);
+        Assert.DoesNotContain("--fx-slot-bevel", cast, StringComparison.Ordinal);
     }
 }
