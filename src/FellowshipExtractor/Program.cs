@@ -123,7 +123,7 @@ switch (command)
                 $"""
                  export-all needs somewhere to write.
                    {OutputFlag} <path>              a folder laid out like the container
-                   {ConnectionStringFlag} <value>   blob storage, container '{BlobTarget.ContainerName}'
+                   {ConnectionStringFlag} <value>  blob storage, container '{BlobTarget.ContainerName}'
                  Naming both writes both in one pass. The connection string is also read from the
                  {ConnectionStringVariable} environment variable, which the Publisher app host injects.
                  """);

@@ -57,6 +57,58 @@ public sealed class OutputFormatTests
     }
 
     [Fact]
+    public async Task AnImageLandsUnderUiAndTheSettingsBesideTheDocuments()
+    {
+        var folder = Directory.CreateTempSubdirectory().FullName;
+
+        await using (var target = new FolderTarget(folder))
+        {
+            await target.WriteImageAsync("Firemage_Bolt.png", [1, 2, 3], default);
+            await target.WriteSettingsAsync(new SettingsFile { GemTypes = ["Ruby"] }, default);
+        }
+
+        Assert.Equal(
+            [1, 2, 3],
+            await File.ReadAllBytesAsync(
+                Path.Combine(folder, ExportLayout.UiFolder, "Firemage_Bolt.png")));
+
+        var settings = JsonSerializer.Deserialize<SettingsFile>(
+            await File.ReadAllTextAsync(
+                Path.Combine(folder, ExportLayout.DataFolder, Tooltip.Settings.FileName)),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        Assert.Equal(["Ruby"], settings!.GemTypes);
+    }
+
+    [Fact]
+    public async Task AnImageWrittenTwiceWithTheSameBytesIsWrittenOnce()
+    {
+        var folder = Directory.CreateTempSubdirectory().FullName;
+
+        await using var target = new FolderTarget(folder);
+
+        await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
+        await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
+
+        Assert.Single(Directory.EnumerateFiles(Path.Combine(folder, ExportLayout.UiFolder)));
+    }
+
+    [Fact]
+    public async Task AnImageWrittenTwiceWithDifferentBytesNamesTheNameTwoSourcesClaim()
+    {
+        var folder = Directory.CreateTempSubdirectory().FullName;
+
+        await using var target = new FolderTarget(folder);
+
+        await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => target.WriteImageAsync("T_GoldDivider.png", [8, 8, 8], default));
+
+        Assert.Contains("T_GoldDivider.png", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AReferencesTypeReadsBackAsTheMemberItWasWrittenFrom() =>
         Assert.All(Enum.GetValues<EntityType>(), type =>
         {
