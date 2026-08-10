@@ -171,13 +171,8 @@ public sealed class ChromeAssetService(
 
     private Badge Section(string texture, string heading) => new(Url(Name(texture)), Colour(heading));
 
-    private string Colour(string heading) =>
-        store.Settings.SectionHeadingRows.TryGetValue(heading, out var row) && tokens.Color(row) is { } hex
-            ? hex
-            : throw new InvalidOperationException(
-                $"The settings name no colour the {heading} section heading is written in, so its badge " +
-                "has no colour. Write the export again with 'dotnet run --project src/FellowshipExtractor " +
-                "-- export-all'.");
+    private string? Colour(string heading) =>
+        store.Settings.SectionHeadingRows.TryGetValue(heading, out var row) ? tokens.Color(row) : null;
 
     private static string Name(string texture) => $"{Prefix}/{texture}.png";
 

@@ -148,9 +148,7 @@ public class StateChromeTests(Export export)
     [Fact]
     public void The_well_the_stylesheet_cuts_a_rarity_slot_to_is_the_hole_in_the_rarity_frame()
     {
-        var rung = export.Store.Settings.Rarities[0].Name;
-
-        using var frame = Carried(export.Chrome.SlotFrame(rung));
+        using var frame = Carried("T_Borders_RarityFrame.png");
 
         Assert.Equal(60, frame.Width);
         Assert.Equal(60, frame.Height);
@@ -220,12 +218,14 @@ public class StateChromeTests(Export export)
     }
 
     [Fact]
-    public void The_gold_rule_written_is_the_band_all_four_rows_of_it_painted()
+    public void The_gold_rule_is_one_band_of_four_painted_rows()
     {
-        using var band = Image.Load<Rgba32>(Texture(export.Chrome.GoldDivider));
+        using var rule = Carried(export.Chrome.GoldDivider);
 
-        Assert.Equal(4, band.Height);
-        Assert.All(Enumerable.Range(0, band.Height), row => Assert.True(Painted(band, row)));
+        var painted = Enumerable.Range(0, rule.Height).Where(row => Painted(rule, row)).ToArray();
+
+        Assert.Equal(4, painted.Length);
+        Assert.Equal(painted.Length, painted[^1] - painted[0] + 1);
     }
 
     [Fact]

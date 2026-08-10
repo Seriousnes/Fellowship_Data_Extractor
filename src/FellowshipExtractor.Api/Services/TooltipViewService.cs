@@ -267,13 +267,16 @@ public sealed class TooltipViewService(
             .{{TooltipView.Root}}{--fx-window:url({{chrome.Window}});
             --fx-thin:url({{chrome.ThinWindow}});--fx-fill:url({{chrome.WindowFill}});
             --fx-divider:url({{chrome.GoldDivider}});--fx-subheader:url({{chrome.Header(null)}});
-            --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};
-            --fx-setbonus:{{chrome.SetBonusBadge.Colour}}}
+            {{Heading("ability", chrome.AbilityBadge)}}{{Heading("legendary", chrome.LegendaryBadge)}}
+            {{Heading("setbonus", chrome.SetBonusBadge)}}}
 
             """ +
             reading.ReadToEnd() +
             renderer.Css(TooltipView.Root);
     }
+
+    private static string Heading(string section, Badge badge) =>
+        badge.Colour is { } hex ? $"--fx-{section}:{hex};" : string.Empty;
 
     public IReadOnlyList<TooltipView.Block> Blocks(
         EntityDocument document,
