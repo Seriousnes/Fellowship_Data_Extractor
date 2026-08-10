@@ -32,6 +32,14 @@ public sealed class ExportedChromeTests
 
     private static readonly string[] SlotPlates = ["T_Borders_EmptySlot", "T_Icons_Gems_EmptySlot"];
 
+    private static readonly (string Texture, string Row)[] ModifierChrome =
+    [
+        ("T_Icons_Generic_WeaponSkill", "core.primary-200"),
+        ("T_Icons_Generic_TooltipSlot", "core.primary-main"),
+        ("T_Icons_Generic_Gem", "core.primary-200"),
+        ("T_Backgrounds_TooltipSlot_Gradient_Decor", "core.secondary-600"),
+    ];
+
     private static string Ui(string name) => Path.Combine(Export.Loaded.Folder, ExportLayout.UiFolder, name);
 
     private static IReadOnlyList<RarityEntry> Ladder => Export.Loaded.Settings.Rarities;
@@ -141,6 +149,40 @@ public sealed class ExportedChromeTests
         string[] missing = [.. SlotPlates.Where(texture => !File.Exists(Ui(texture + ".png")))];
 
         Assert.Empty(missing);
+    }
+
+    [Fact]
+    public void EveryTextureAModifierRowDrawsIsWrittenPlainAndMultipliedByTheColourRowItNames()
+    {
+        var wrong = new List<string>();
+
+        foreach (var (texture, row) in ModifierChrome)
+        {
+            var plain = Ui(texture + ".png");
+
+            if (!File.Exists(plain))
+            {
+                wrong.Add($"{texture}.png was not written");
+                continue;
+            }
+
+            var variant = ExportLayout.Variant(texture + ".png", row.Replace('.', '-'));
+
+            if (!File.Exists(Ui(variant)))
+            {
+                wrong.Add($"{variant} was not written");
+                continue;
+            }
+
+            using var source = Image.Load<Rgba32>(plain);
+            using var painted = Image.Load<Rgba32>(Ui(variant));
+
+            var colour = Color.ParseHex(Export.Loaded.Settings.Colors[row]).ToPixel<Rgba32>();
+
+            if (Mismatch(source, painted, colour) is { } reading) wrong.Add($"{variant} {reading}");
+        }
+
+        Assert.Empty(wrong);
     }
 
     private static string? Mismatch(Image<Rgba32> source, Image<Rgba32> tinted, Rgba32 colour)

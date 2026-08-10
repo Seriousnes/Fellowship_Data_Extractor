@@ -92,6 +92,15 @@ public static class ChromeTextures
         "T_Borders_RarityGlow",
     ];
 
+    private static readonly IReadOnlyDictionary<string, string> ModifierTinted =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["T_Icons_Generic_WeaponSkill"] = "core.primary-200",
+            ["T_Icons_Generic_TooltipSlot"] = "core.primary-main",
+            ["T_Icons_Generic_Gem"] = "core.primary-200",
+            ["T_Backgrounds_TooltipSlot_Gradient_Decor"] = "core.secondary-600",
+        };
+
     public static async Task<int> WriteAsync(
         AbstractFileProvider provider,
         Settings settings,
@@ -124,6 +133,8 @@ public static class ChromeTextures
             $"{slotIcons.Count} of them the slot glyphs {SlotIcons.Widget} names");
 
         int written = 0, missing = 0, variants = 0;
+
+        var painted = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var name in textures)
         {
@@ -163,6 +174,18 @@ public static class ChromeTextures
             await target.WriteImageAsync(image, content, cancellationToken);
             written++;
 
+            if (ModifierTinted.TryGetValue(name, out var row))
+            {
+                using var glyph = Image.Load<Rgba32>(content);
+
+                await target.WriteImageAsync(
+                    ExportLayout.Variant(image, Variable(row)),
+                    RarityImages.Tint(glyph, Colour(settings, row)),
+                    cancellationToken);
+
+                painted.Add(name);
+            }
+
             if (!Array.Exists(Tinted, tinted => tinted.Equals(name, StringComparison.Ordinal))) continue;
 
             using var mask = Image.Load<Rgba32>(content);
@@ -178,16 +201,38 @@ public static class ChromeTextures
             }
         }
 
+        if (painted.Count != ModifierTinted.Count)
+        {
+            var absent = ModifierTinted.Keys
+                .Where(texture => !painted.Contains(texture))
+                .Order(StringComparer.Ordinal);
+
+            throw new InvalidOperationException(
+                $"The export wrote no {string.Join(", ", absent)}, so a modifier row drawing it has no glyph. " +
+                "Every texture a modifier row draws is written multiplied by the colour row it names.");
+        }
+
         Console.WriteLine($"  {written} of {textures.Length} chrome texture(s) written");
         Console.WriteLine(
             $"  {variants} rarity variants, {Tinted.Length} textures multiplied by each of " +
             $"{ladder.Count} rarity colours");
+        Console.WriteLine(
+            $"  {painted.Count} modifier row texture(s), each multiplied by the colour row the row draws it in");
         Console.WriteLine(
             $"  {GoldBand.Texture} written as rows {GoldBand.FirstRow} to {GoldBand.LastRow} of its " +
             $"{GoldBand.CanvasHeight} row canvas");
         if (missing > 0) Console.WriteLine($"  {missing} not written, see above");
         Console.WriteLine("  no font is exported: the header face is ArnoPro and is not ours to redistribute");
 
-        return written + variants;
+        return written + variants + painted.Count;
     }
+
+    private static string Variable(string row) => row.Replace('.', '-');
+
+    private static Rgba32 Colour(Settings settings, string row) =>
+        settings.Colors.TryGetValue(row, out var hex)
+            ? Color.ParseHex(hex).ToPixel<Rgba32>()
+            : throw new InvalidOperationException(
+                $"{row} is not a row the named colour table carries, so the modifier chrome it paints would be " +
+                "multiplied by no colour at all.");
 }

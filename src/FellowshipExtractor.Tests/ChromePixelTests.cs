@@ -2,6 +2,7 @@ using Azure.Storage.Blobs;
 
 using Fellowship.SDK.Documents;
 
+using FellowshipExtractor.Api.Models;
 using FellowshipExtractor.Api.Services;
 
 using Microsoft.Extensions.Logging.Abstractions;
@@ -280,6 +281,22 @@ public sealed class ChromePixelTests
             Assert.True(
                 File.Exists(Texture(url)),
                 $"{Texture(url)} is not there, so the window would draw nothing."));
+    }
+
+    [Fact]
+    public void EveryTextureAModifierRowNamesIsInTheFolderTheChromeReads()
+    {
+        string[] named =
+        [
+            Read.Chrome.ModifierPlate,
+            Read.Chrome.ModifierDecor,
+            .. Enum.GetValues<ModifierKind>().Select(Read.Chrome.ModifierGlyph),
+        ];
+
+        Assert.All(named, url =>
+            Assert.True(
+                File.Exists(Texture(url)),
+                $"{Texture(url)} is not there, so a modifier row would draw nothing."));
     }
 
     [Fact]
