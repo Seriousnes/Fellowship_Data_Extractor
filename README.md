@@ -29,7 +29,7 @@ dotnet run --project src/FellowshipExtractor -- <command>
 
 | Environment variable | Effect |
 | --- | --- |
-| `FELLOWSHIP_USMAP` | Path to a `.usmap` supplying property mappings |
+| `FELLOWSHIP_USMAP` | Path to a `.usmap` supplying property mappings. Unset, the extractor reads `output/fellowship.usmap`, the file the `usmap` command writes |
 | `FELLOWSHIP_UE_VERSION` | Engine version override, e.g. `5.6` or `GAME_UE5_6` |
 
 ## Container facts
@@ -110,8 +110,11 @@ Cooked packages use unversioned property serialization and the build ships no `.
 `probe 300` sampled 302 packages spread across the whole content set: 0 parsed, 302 raised
 `MappingException`. Fellowship is not present in TheNaeem's Unreal-Mappings-Archive (checked 2026-08-01).
 
-Reading `.uasset` exports needs a mappings file supplied via `FELLOWSHIP_USMAP`. That is what
-gates the per-asset half of the database: `GameplayAbilityBlueprint` (1,602),
+Reading `.uasset` exports needs a mappings file. `FELLOWSHIP_USMAP` names one, and with it unset the
+extractor reads `output/fellowship.usmap`, which is where the `usmap` command writes the mappings it
+recovers, so a checkout that has generated them needs no environment at all. A run that finds
+neither stops before it opens a package and names the command that writes them, rather than reading
+every table back empty. That mappings file is what gates the per-asset half of the database: `GameplayAbilityBlueprint` (1,602),
 `DataTable` (528), `CRDynamicHeroItemDefinition` (237), `CRVendorItemDataAsset` (145),
 `CRMountData` (54), `CRItemStatWeightTemplate` (20), `CRGameplayAbilitySet` (16),
 `CRTalentData` (12) and `CRTraitTreeGraph` (6).
@@ -733,7 +736,6 @@ before the app will start:
 
 ```powershell
 dotnet run --project src/FellowshipExtractor -- usmap
-$env:FELLOWSHIP_USMAP = "$PWD/output/fellowship.usmap"
 
 dotnet run --project src/FellowshipExtractor.Publisher
 
@@ -742,7 +744,9 @@ aspire run
 
 `FellowshipExtractor.Publisher` is an app host of its own: it starts the same Azurite the codex uses
 and runs `export-all` against it, so publishing is one command and needs no connection string on the
-line. The extractor resource runs once and finishes, and the host keeps running until it is stopped,
+line. The extractor resource reads the same `output/fellowship.usmap` the `usmap` command wrote, and
+a `FELLOWSHIP_USMAP` set in the shell that starts the host is passed to it as an absolute path, so a
+usmap named there is the one the run reads. The extractor resource runs once and finishes, and the host keeps running until it is stopped,
 so stop it once the dashboard shows the run has exited. `aspire run` then starts the codex against
 the container that run filled.
 

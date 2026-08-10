@@ -96,6 +96,15 @@ public sealed class TooltipResolver
 
     public TooltipResolver(AbstractFileProvider provider)
     {
+        if (provider.MappingsContainer is null)
+        {
+            throw new InvalidOperationException(
+                "No mappings are loaded, so every cooked package reads back as nothing and every table looks " +
+                "absent. Set FELLOWSHIP_USMAP to a .usmap for this build, or write " +
+                $"output/{ExtractorOptions.MappingsName} with " +
+                "'dotnet run --project src/FellowshipExtractor -- usmap'.");
+        }
+
         _provider = provider;
         _assets = [.. RegistryCommand.ReadAssets(provider)];
         _tags = [.. CsvExportCommands.ReadTags(provider)];

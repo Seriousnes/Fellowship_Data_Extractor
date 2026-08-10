@@ -31,23 +31,21 @@ public sealed class Export
 
     private static AbstractFileProvider Mount()
     {
-        if (Environment.GetEnvironmentVariable(Mappings) is not { Length: > 0 } mappings)
+        var options = new ExtractorOptions
+        {
+            MappingsFile = Environment.GetEnvironmentVariable(Mappings),
+            Game = ExtractorOptions.ParseGame(Environment.GetEnvironmentVariable("FELLOWSHIP_UE_VERSION")),
+        };
+
+        if (options.ResolvedMappingsFile is null)
         {
             throw new InvalidOperationException(
-                $"No mappings to read the build with. Set {Mappings} to a .usmap for this build, which " +
-                "'dotnet run --project src/FellowshipExtractor -- usmap' writes to output/fellowship.usmap.");
+                $"No mappings to read the build with. Set {Mappings} to a .usmap for this build, or write " +
+                $"output/{ExtractorOptions.MappingsName} with " +
+                "'dotnet run --project src/FellowshipExtractor -- usmap'.");
         }
 
-        if (!File.Exists(mappings))
-        {
-            throw new FileNotFoundException($"{Mappings} names {mappings}, which does not exist.", mappings);
-        }
-
-        return ProviderFactory.CreateAsync(new ExtractorOptions
-        {
-            MappingsFile = mappings,
-            Game = ExtractorOptions.ParseGame(Environment.GetEnvironmentVariable("FELLOWSHIP_UE_VERSION")),
-        }).GetAwaiter().GetResult();
+        return ProviderFactory.CreateAsync(options).GetAwaiter().GetResult();
     }
 
     public required SettingsFile Settings { get; init; }

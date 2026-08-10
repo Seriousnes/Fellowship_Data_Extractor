@@ -10,6 +10,16 @@ public static class ProviderFactory
 {
     public static async Task<DefaultFileProvider> CreateAsync(ExtractorOptions options)
     {
+        var mappings = options.ResolvedMappingsFile;
+
+        if (mappings is not null && !File.Exists(mappings))
+        {
+            throw new FileNotFoundException(
+                $"FELLOWSHIP_USMAP names {mappings}, which does not exist. Write the mappings for this build " +
+                "with 'dotnet run --project src/FellowshipExtractor -- usmap'.",
+                mappings);
+        }
+
         await EnsureOodleAsync();
         await EnsureDetexAsync();
 
@@ -22,7 +32,7 @@ public static class ProviderFactory
 
         provider.LoadVirtualPaths();
 
-        if (options.MappingsFile is { Length: > 0 } mappings)
+        if (mappings is not null)
         {
             provider.MappingsContainer = new FileUsmapTypeMappingsProvider(mappings);
         }

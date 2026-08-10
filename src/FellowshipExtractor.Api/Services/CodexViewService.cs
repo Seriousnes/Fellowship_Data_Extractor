@@ -448,6 +448,14 @@ public sealed class CodexViewService(
 
         if (token.Value is { } value)
         {
+            if (token.Format == Excess)
+            {
+                var excess = (decimal)value - 1m;
+                var printed = (excess * 100m).Normalize().ToString(CultureInfo.InvariantCulture) + "%";
+
+                return (excess < 0 ? printed : "+" + printed, true);
+            }
+
             if (token.Percent == true || token.Format == Share)
             {
                 var share = token.Multiplies == true ? (decimal)value - 1m : (decimal)value;

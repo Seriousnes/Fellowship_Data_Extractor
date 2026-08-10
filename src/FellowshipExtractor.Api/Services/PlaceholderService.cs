@@ -137,6 +137,15 @@ public sealed class PlaceholderService(IEntityStoreService store, IRichTextServi
 
     private Substitution Number(Placeholder placeholder, double value, decimal? haste)
     {
+        if (placeholder.Format == "delta")
+        {
+            var excess = (decimal)value - 1m;
+            var share = Share(excess);
+            var percent = Print("UnitPercent", share) ?? share + "%";
+
+            return new Substitution(excess < 0 ? percent : "+" + percent);
+        }
+
         if (placeholder.Percent == true || placeholder.Format == "percent")
         {
             var share = placeholder.Multiplies == true ? (decimal)value - 1m : (decimal)value;
