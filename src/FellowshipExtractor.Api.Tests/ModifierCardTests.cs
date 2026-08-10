@@ -1,5 +1,9 @@
 using System.Globalization;
 
+using Azure.Storage.Blobs;
+
+using Microsoft.Extensions.Configuration;
+
 using FellowshipExtractor.Api.Components.Tooltip;
 
 namespace FellowshipExtractor.Api.Tests;
@@ -121,6 +125,44 @@ public class ModifierCardTests : BunitContext
 
         Assert.Contains(Blob(export.Chrome.ModifierDecor), carried, StringComparer.Ordinal);
         Assert.Contains(Blob(export.Chrome.ModifierPlate), carried, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void An_export_written_before_the_glyphs_names_the_command_that_writes_them()
+    {
+        var folder = Directory.CreateTempSubdirectory("fellowship-ui").FullName;
+
+        try
+        {
+            var ui = Path.Combine(folder, "ui");
+            Directory.CreateDirectory(ui);
+
+            foreach (var file in Directory.GetFiles(export.Paths.Ui, "*.png"))
+            {
+                File.Copy(file, Path.Combine(ui, Path.GetFileName(file)));
+            }
+
+            File.Delete(Path.Combine(ui, "T_Icons_Generic_WeaponSkill.png"));
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = folder })
+                .Build();
+
+            var stale = new ChromeAssetService(
+                new BlobContainerClient(new Uri("http://localhost/icons")),
+                new ExportPathService(configuration),
+                export.Store,
+                new DesignTokenService(export.Store.Vocabulary));
+
+            var failure = Assert.Throws<InvalidOperationException>(() => stale.Payloads());
+
+            Assert.Contains("T_Icons_Generic_WeaponSkill.png", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("-- ui", failure.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
     [Fact]

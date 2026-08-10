@@ -215,6 +215,30 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public void A_list_parameter_publishes_the_string_a_caller_writes_rather_than_its_shape()
+    {
+        var listed = Operation("/api/item/{id}/tooltip").GetProperty("parameters").EnumerateArray()
+            .ToDictionary(
+                parameter => parameter.GetProperty("name").GetString()!,
+                parameter => parameter.GetProperty("schema"),
+                StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (name, example) in new[]
+        {
+            ("Modifiers", "trait:412:1,blessing:7:1,essence:3:100"),
+            ("ImbuedTraits", "7:2,12:1"),
+        })
+        {
+            Assert.True(listed.ContainsKey(name), $"The item tooltip declares no '{name}' parameter.");
+
+            var schema = listed[name];
+
+            Assert.Equal("string", schema.GetProperty("type").GetString());
+            Assert.Equal(example, schema.GetProperty("example").GetString());
+        }
+    }
+
+    [Fact]
     public void The_id_is_the_only_required_parameter_on_any_route()
     {
         foreach (var path in document.RootElement.GetProperty("paths").EnumerateObject())

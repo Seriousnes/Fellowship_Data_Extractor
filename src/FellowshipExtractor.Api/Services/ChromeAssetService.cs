@@ -274,7 +274,17 @@ public sealed class ChromeAssetService(
 
         foreach (var (texture, token) in ModifierTinted)
         {
-            using var mask = Image.Load<Rgba32>(Path.Combine(paths.Ui, texture + ".png"));
+            var file = Path.Combine(paths.Ui, texture + ".png");
+
+            if (!File.Exists(file))
+            {
+                throw new InvalidOperationException(
+                    $"{texture}.png is not in {paths.Ui}, so a modifier row has no glyph to draw. " +
+                    "This export was written before the modifier chrome was named; " +
+                    "'dotnet run --project src/FellowshipExtractor -- ui' rewrites it.");
+            }
+
+            using var mask = Image.Load<Rgba32>(file);
 
             payloads.Add((Tinted(texture), Tint(mask, Painted(tokens, token))));
         }
