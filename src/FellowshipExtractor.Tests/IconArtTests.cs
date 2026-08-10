@@ -1,4 +1,9 @@
+using System.Text.Json.Nodes;
+
+using CUE4Parse_Conversion.Textures;
+
 using FellowshipExtractor.Output;
+using FellowshipExtractor.Textures;
 
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -10,14 +15,26 @@ public sealed class IconArtTests
     private static string Ui(string name) =>
         Path.Combine(Export.Loaded.Folder, ExportLayout.UiFolder, name);
 
-    private static string? Exported(string objectPath)
+    private static string Image_(string objectPath)
     {
         var dot = objectPath.LastIndexOf('.');
-        var name = dot >= 0 ? objectPath[(dot + 1)..] : objectPath;
-        var file = Ui(name + ".png");
-
-        return File.Exists(file) ? file : null;
+        return (dot >= 0 ? objectPath[(dot + 1)..] : objectPath) + ".png";
     }
+
+    private static IReadOnlyList<RarityEntry> Ladder => Export.Loaded.Settings.Rarities;
+
+    private static string[] Composed =>
+    [
+        .. Export.Resolver.Collections.Renders
+            .Select(Image_)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(render => File.Exists(Ui(ExportLayout.Variant(render, Ladder[^1].Name))))
+            .Order(StringComparer.Ordinal),
+    ];
+
+    private static Rgba32 Colour(string rarity) =>
+        Color.ParseHex(Export.Loaded.Settings.Colors[Export.Loaded.Settings.RarityColorRows[rarity]])
+            .ToPixel<Rgba32>();
 
     private static (double MeanAlpha, double Visible) Alpha(string file)
     {
@@ -42,29 +59,135 @@ public sealed class IconArtTests
     }
 
     [Fact]
-    public void AnIconARenderedSkinDeclaresCarriesItsOwnBackgroundSoItIsExportedOpaque()
+    public void EveryRenderedSkinIsComposedOncePerRarityAndWrittenOpaque()
     {
-        var exported = Export.Resolver.Collections.Renders.Select(Exported).OfType<string>().ToArray();
+        var renders = Composed;
 
-        int declaredAndExported = exported.Length;
-        Assert.Equal(450, declaredAndExported);
+        Assert.Equal(450, renders.Length);
 
-        var faded = exported
-            .Select(file => (Name: Path.GetFileNameWithoutExtension(file), Reading: Alpha(file)))
-            .Where(icon => icon.Reading.Visible < 1)
-            .Select(icon => $"{icon.Name} is {icon.Reading.Visible:P0} opaque, mean alpha {icon.Reading.MeanAlpha:F1}")
+        var faults = new List<string>();
+
+        foreach (var render in renders)
+        {
+            if (File.Exists(Ui(render)))
+            {
+                faults.Add($"{render} is written unchanged as well as composed");
+            }
+
+            foreach (var rung in Ladder)
+            {
+                var variant = ExportLayout.Variant(render, rung.Name);
+                var file = Ui(variant);
+
+                if (!File.Exists(file))
+                {
+                    faults.Add($"{variant} was not written");
+                    continue;
+                }
+
+                var reading = Alpha(file);
+                if (reading.Visible < 1)
+                {
+                    faults.Add($"{variant} is {reading.Visible:P0} opaque, mean alpha {reading.MeanAlpha:F1}");
+                }
+            }
+        }
+
+        Assert.Empty(faults);
+    }
+
+    [Fact]
+    public void TheComposedIconsWrittenAreTheirSourceTexturesRunThroughTheFormula()
+    {
+        string[] sample =
+        [
+            .. Export.Resolver.Collections.Renders
+                .Where(path => File.Exists(Ui(ExportLayout.Variant(Image_(path), Ladder[^1].Name))))
+                .Order(StringComparer.Ordinal)
+                .Take(3),
+        ];
+
+        Assert.Equal(3, sample.Length);
+
+        var faults = new List<string>();
+
+        foreach (var path in sample)
+        {
+            var texture = TextureExporter.Load(Export.Provider, path);
+            Assert.NotNull(texture);
+
+            var decoded = TextureExporter.Export(texture, ETextureFormat.Png);
+            Assert.True(decoded.Written, $"{path} did not decode: {decoded.Error}");
+
+            using var icon = Image.Load<Rgba32>(decoded.Content!);
+
+            foreach (var rung in Ladder)
+            {
+                var variant = ExportLayout.Variant(Image_(path), rung.Name);
+
+                if (!RarityImages.Compose(icon, Colour(rung.Name)).SequenceEqual(File.ReadAllBytes(Ui(variant))))
+                {
+                    faults.Add($"{variant} is not {Image_(path)} composed against {rung.Name}");
+                }
+            }
+        }
+
+        Assert.Empty(faults);
+    }
+
+    [Fact]
+    public void TheComposeLerpsTowardTheRarityColourInLinearSpaceNotInByteSpace()
+    {
+        using var icon = new Image<Rgba32>(3, 1);
+
+        icon[0, 0] = new Rgba32(128, 128, 128, 0);
+        icon[1, 0] = new Rgba32(128, 128, 128, 128);
+        icon[2, 0] = new Rgba32(128, 128, 128, 255);
+
+        using var composed = Image.Load<Rgba32>(RarityImages.Compose(icon, new Rgba32(255, 128, 0, 255)));
+
+        Assert.Equal(new Rgba32(128, 128, 128, 255), composed[0, 0]);
+        Assert.Equal(new Rgba32(205, 128, 92, 255), composed[1, 0]);
+        Assert.Equal(new Rgba32(255, 128, 0, 255), composed[2, 0]);
+    }
+
+    [Fact]
+    public void EveryRarityAnItemSpreadsItsArtOverNamesThatRaritysVariant()
+    {
+        var wrong = Export.Loaded.Documents
+            .Select(document => document.Body["iconByRarity"] as JsonObject)
+            .OfType<JsonObject>()
+            .SelectMany(spread => spread.Select(entry => (Rarity: entry.Key, Image: entry.Value!.GetValue<string>())))
+            .Distinct()
+            .Where(entry => !Path.GetFileNameWithoutExtension(entry.Image)
+                .EndsWith($"-{entry.Rarity.ToLowerInvariant()}", StringComparison.Ordinal))
+            .Select(entry => $"{entry.Rarity} reads {entry.Image}")
             .Order(StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Empty(faded);
+        Assert.Empty(wrong);
+    }
+
+    [Fact]
+    public void EveryIconADocumentNamesIsWritten()
+    {
+        var named = Export.Loaded.Documents
+            .SelectMany(document => Named(document.Body))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        string[] missing = [.. named.Where(name => !File.Exists(Ui(name)))];
+
+        Assert.NotEmpty(named);
+        Assert.Empty(missing);
     }
 
     [Fact]
     public void NoIconAnEntityNamesIsBlank()
     {
         var blank = Export.Loaded.Documents
-            .Select(document => document.Body["icon"]?.GetValue<string>())
-            .OfType<string>()
+            .SelectMany(document => Named(document.Body))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Select(Ui)
             .Where(File.Exists)
@@ -74,5 +197,17 @@ public sealed class IconArtTests
             .ToArray();
 
         Assert.Empty(blank);
+    }
+
+    private static IEnumerable<string> Named(JsonObject body)
+    {
+        if (body["icon"]?.GetValue<string>() is { } icon) yield return icon;
+
+        if (body["iconByRarity"] is not JsonObject spread) yield break;
+
+        foreach (var (_, variant) in spread)
+        {
+            if (variant?.GetValue<string>() is { } named) yield return named;
+        }
     }
 }

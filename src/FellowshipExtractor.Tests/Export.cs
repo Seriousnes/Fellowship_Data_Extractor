@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using CUE4Parse.FileProvider;
 using FellowshipExtractor.Output;
 using FellowshipExtractor.Tooltip;
 using Fellowship.SDK.Documents;
@@ -20,7 +21,13 @@ public sealed class Export
 
     public static TooltipResolver Resolver => ResolverInstance.Value;
 
-    private static TooltipResolver Build()
+    private static readonly Lazy<AbstractFileProvider> ProviderInstance = new(Mount, isThreadSafe: true);
+
+    public static AbstractFileProvider Provider => ProviderInstance.Value;
+
+    private static TooltipResolver Build() => new(Provider);
+
+    private static AbstractFileProvider Mount()
     {
         if (Environment.GetEnvironmentVariable(Mappings) is not { Length: > 0 } mappings)
         {
@@ -34,12 +41,11 @@ public sealed class Export
             throw new FileNotFoundException($"{Mappings} names {mappings}, which does not exist.", mappings);
         }
 
-        return new TooltipResolver(
-            ProviderFactory.CreateAsync(new ExtractorOptions
-            {
-                MappingsFile = mappings,
-                Game = ExtractorOptions.ParseGame(Environment.GetEnvironmentVariable("FELLOWSHIP_UE_VERSION")),
-            }).GetAwaiter().GetResult());
+        return ProviderFactory.CreateAsync(new ExtractorOptions
+        {
+            MappingsFile = mappings,
+            Game = ExtractorOptions.ParseGame(Environment.GetEnvironmentVariable("FELLOWSHIP_UE_VERSION")),
+        }).GetAwaiter().GetResult();
     }
 
     public required SettingsFile Settings { get; init; }
