@@ -279,11 +279,10 @@ public sealed class TooltipResolver
     {
         var mappingKey = PropertyWalk.GetString(cdo, VisualKeyField);
         var slot = SlotNames.ByOrdinal(PropertyWalk.AsOrdinal(PropertyWalk.Get(cdo, SlotOrdinalField)?.GenericValue) ?? 0);
-        var tiers = DynamicVisuals.Tiers(cdo);
 
         return codename =>
         [
-            .. DynamicVisuals.Icons(mappingKey, codename, slot?.Type, tiers)
+            .. DynamicVisuals.Icons(mappingKey, codename, slot?.Type)
                 .Select(entry => (entry.Rarity, Image: Written(entry.IconPath, icons, entry.Rarity)))
                 .Where(entry => entry.Image is not null)
                 .Select(entry => new RarityImage(entry.Rarity, entry.Image!)),
@@ -380,18 +379,38 @@ public sealed class TooltipResolver
     private static string? Written(string? iconPath, IconWriter? icons, string? rarity = null) =>
         iconPath is null ? null : icons?.Invoke(iconPath, rarity);
 
-    private Entity WithFixedItem(Entity entity, HeroItem item, IconWriter? icons) => entity with
+    private IReadOnlyDictionary<string, string>? ArtByRarity(string? iconPath, IconWriter? icons)
     {
-        DisplayName = entity.DisplayName ?? item.DisplayName,
-        Slot = item.Slot ?? entity.Slot,
-        ArmorType = item.ArmorType,
-        Stats = entity.Stats ?? Empty(item.Stats),
-        SetBonus = SetBonuses.ForRow(item.SetBonus),
-        UniqueEquipped = item.UniqueEquipped ? true : null,
-        Rarities = entity.Rarities ?? (item.Rarity is { } rung ? [rung] : null),
-        Heroes = Empty([.. item.Heroes.Select(hero => Heroes.Shipped(hero) ?? hero)]),
-        Icon = entity.Icon ?? Written(item.IconPath, icons, item.Rarity),
-    };
+        if (iconPath is null || icons is null || !Collections.Renders.Contains(iconPath)) return null;
+
+        var spread = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var rung in Settings.Rarities)
+        {
+            if (icons(iconPath, rung.Name) is { } image) spread[rung.Name] = image;
+        }
+
+        return spread.Count == 0 ? null : spread;
+    }
+
+    private Entity WithFixedItem(Entity entity, HeroItem item, IconWriter? icons)
+    {
+        var art = entity.Icon is null ? item.IconPath : null;
+
+        return entity with
+        {
+            DisplayName = entity.DisplayName ?? item.DisplayName,
+            Slot = item.Slot ?? entity.Slot,
+            ArmorType = item.ArmorType,
+            Stats = entity.Stats ?? Empty(item.Stats),
+            SetBonus = SetBonuses.ForRow(item.SetBonus),
+            UniqueEquipped = item.UniqueEquipped ? true : null,
+            Rarities = entity.Rarities ?? (item.Rarity is { } rung ? [rung] : null),
+            Heroes = Empty([.. item.Heroes.Select(hero => Heroes.Shipped(hero) ?? hero)]),
+            Icon = entity.Icon ?? Written(art, icons, item.Rarity),
+            IconByRarity = entity.IconByRarity ?? ArtByRarity(art, icons),
+        };
+    }
 
     private static Entity WithTalent(Entity entity, Talent talent, IconWriter? icons) => entity with
     {

@@ -169,25 +169,20 @@ public sealed class IconArtTests
     }
 
     [Fact]
-    public void AnItemsIconNamesTheHighestRungOfTheSpreadItCarries()
+    public void AnItemsIconNamesTheHighestRungItDropsAt()
     {
         var rung = Ladder
             .Select((rarity, at) => (rarity.Name, At: at))
             .ToDictionary(entry => entry.Name, entry => entry.At, StringComparer.OrdinalIgnoreCase);
 
-        var spreads = Export.Loaded.Documents
-            .Select(document => (
-                Icon: document.Body["icon"]?.GetValue<string>(),
-                Spread: document.Body["iconByRarity"] as JsonObject))
-            .Where(document => document.Spread is { Count: > 0 })
-            .ToArray();
+        var spreads = Spreads();
 
         Assert.NotEmpty(spreads);
 
         string[] unnamed =
         [
             .. spreads
-                .SelectMany(document => document.Spread!.Select(entry => entry.Key))
+                .SelectMany(document => document.Spread.Select(entry => entry.Key))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Where(rarity => !rung.ContainsKey(rarity))
                 .Order(StringComparer.Ordinal),
@@ -198,17 +193,99 @@ public sealed class IconArtTests
         string[] wrong =
         [
             .. spreads
-                .Select(document => (
-                    document.Icon,
-                    Highest: document.Spread!.MaxBy(entry => rung[entry.Key])))
+                .Select(document => (document.Icon, Highest: Top(document.Spread, document.DropsAt, rung)))
                 .Where(document => !string.Equals(
-                    document.Icon, document.Highest.Value!.GetValue<string>(), StringComparison.Ordinal))
-                .Select(document => $"{document.Icon} is named where {document.Highest.Key} reads {document.Highest.Value}")
+                    document.Icon, document.Highest.Image, StringComparison.Ordinal))
+                .Select(document =>
+                    $"{document.Icon} is named where {document.Highest.Rarity} reads {document.Highest.Image}")
                 .Distinct(StringComparer.Ordinal)
                 .Order(StringComparer.Ordinal),
         ];
 
         Assert.Empty(wrong);
+    }
+
+    [Fact]
+    public void EverySpreadCoversEveryRungOfTheLadder()
+    {
+        string[] ladder = [.. Ladder.Select(rarity => rarity.Name).Order(StringComparer.Ordinal)];
+
+        var spreads = Spreads();
+
+        Assert.NotEmpty(spreads);
+
+        string[] partial =
+        [
+            .. spreads
+                .Where(document => !document.Spread
+                    .Select(entry => entry.Key)
+                    .Order(StringComparer.Ordinal)
+                    .SequenceEqual(ladder, StringComparer.OrdinalIgnoreCase))
+                .Select(document =>
+                    $"{document.Icon} spreads over {string.Join(',', document.Spread.Select(entry => entry.Key))}")
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal),
+        ];
+
+        Assert.Empty(partial);
+    }
+
+    [Fact]
+    public void EveryDocumentThatNamesAComposedIconCarriesTheSpreadTheRungsRead()
+    {
+        string[] alone =
+        [
+            .. Export.Loaded.Documents
+                .Where(document => document.Body["iconByRarity"] is not JsonObject)
+                .Select(document => document.Body["icon"]?.GetValue<string>())
+                .OfType<string>()
+                .Where(icon => Rung(icon) is not null)
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal),
+        ];
+
+        Assert.Empty(alone);
+    }
+
+    private static string? Rung(string icon)
+    {
+        var name = Path.GetFileNameWithoutExtension(icon);
+
+        foreach (var rarity in Ladder)
+        {
+            if (name.EndsWith($"-{rarity.Name.ToLowerInvariant()}", StringComparison.Ordinal)) return rarity.Name;
+        }
+
+        return null;
+    }
+
+    private static (string? Icon, JsonObject Spread, string[]? DropsAt)[] Spreads() =>
+    [
+        .. Export.Loaded.Documents
+            .Select(document => (
+                Icon: document.Body["icon"]?.GetValue<string>(),
+                Spread: document.Body["iconByRarity"] as JsonObject,
+                DropsAt: (document.Body["rarities"] as JsonArray)?
+                    .Select(rarity => rarity!.GetValue<string>())
+                    .ToArray()))
+            .Where(document => document.Spread is { Count: > 0 })
+            .Select(document => (Icon: document.Icon, Spread: document.Spread!, DropsAt: document.DropsAt)),
+    ];
+
+    private static (string Rarity, string Image) Top(
+        JsonObject spread, string[]? dropsAt, IReadOnlyDictionary<string, int> rung)
+    {
+        KeyValuePair<string, JsonNode?>[] reachable =
+        [
+            .. spread.Where(entry => dropsAt is not { Length: > 0 } ||
+                dropsAt.Contains(entry.Key, StringComparer.OrdinalIgnoreCase)),
+        ];
+
+        KeyValuePair<string, JsonNode?>[] entries = reachable.Length == 0 ? [.. spread] : reachable;
+
+        var highest = entries.MaxBy(entry => rung[entry.Key]);
+
+        return (highest.Key, highest.Value!.GetValue<string>());
     }
 
     [Fact]

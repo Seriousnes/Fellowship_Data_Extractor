@@ -1,8 +1,13 @@
+using System.Globalization;
+
 namespace FellowshipExtractor.Api.Tests;
 
 [Collection(Corpus.Name)]
 public class SettingsChromeTests(Export export)
 {
+    private static TooltipQuery At(RarityEntry rung) =>
+        new() { Rarity = rung.Tier.ToString(CultureInfo.InvariantCulture) };
+
     private static void Under(string url)
     {
         var name = url[(url.LastIndexOf('/') + 1)..];
@@ -102,5 +107,36 @@ public class SettingsChromeTests(Export export)
 
         Assert.Null(export.Chrome.Art(null));
         Assert.Null(export.View.Icon(null));
+    }
+
+    [Fact]
+    public void Every_rung_an_item_can_be_asked_at_draws_that_rungs_art()
+    {
+        var spread = export.Store.Entities
+            .OfType<ItemDocument>()
+            .Where(item => item.IconByRarity is { Count: > 0 })
+            .ToArray();
+
+        Assert.NotEmpty(spread);
+
+        string[] wrong =
+        [
+            .. spread
+                .SelectMany(item => export.Store.Settings.Rarities.Select(rung => (Item: item, Rung: rung)))
+                .Select(asked => (
+                    asked.Rung,
+                    Art: export.Tooltip.Art(asked.Item, export.Tooltip.Rarity(asked.Item, At(asked.Rung)))))
+                .Where(drawn => drawn.Art is null || !drawn.Art.EndsWith(
+                    $"-{drawn.Rung.Name.ToLowerInvariant()}.png", StringComparison.Ordinal))
+                .Select(drawn => $"{drawn.Rung.Name} draws {drawn.Art ?? "nothing"}")
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal),
+        ];
+
+        Assert.Empty(wrong);
+
+        Assert.All(
+            export.Store.Settings.Rarities,
+            rung => Under(export.Tooltip.Art(spread[0], export.Tooltip.Rarity(spread[0], At(rung)))!));
     }
 }

@@ -64,15 +64,25 @@ public static class ItemVariants
                     Stats = card.Stats,
                     Grants = card.Grants,
                     GrantsId = card.GrantsId,
-                    Icon = Best(card.Art) ?? item.Icon,
-                    IconByRarity = Spread(card.Art),
+                    Icon = Best(card.Art, item.Rarities) ?? item.Icon,
+                    IconByRarity = Spread(card.Art) ?? item.IconByRarity,
                     Variants = null,
                 }),
         ];
     }
 
-    private static string? Best(IReadOnlyList<RarityImage> art) =>
-        art.Count == 0 ? null : art[^1].Image;
+    private static string? Best(IReadOnlyList<RarityImage> art, IReadOnlyList<string>? dropsAt)
+    {
+        if (art.Count == 0) return null;
+        if (dropsAt is not { Count: > 0 }) return art[^1].Image;
+
+        for (var at = art.Count - 1; at >= 0; at--)
+        {
+            if (dropsAt.Contains(art[at].Rarity, StringComparer.OrdinalIgnoreCase)) return art[at].Image;
+        }
+
+        return art[^1].Image;
+    }
 
     private static IReadOnlyDictionary<string, string>? Spread(IReadOnlyList<RarityImage> art)
     {
