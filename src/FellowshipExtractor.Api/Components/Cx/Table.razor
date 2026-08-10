@@ -1,0 +1,120 @@
+@typeparam T
+@attribute [CascadingTypeParameter(nameof(T))]
+
+<CascadingValue Value="this" IsFixed="true">@Columns</CascadingValue>
+
+<CascadingValue Value="this" IsFixed="true">
+    <div class="cx-table-scroll">
+        <table class="cx-rows">
+            <thead>
+                <tr>
+                    @foreach (var column in drawn)
+                    {
+                        <th class="@Tone(column)" aria-sort="@Sorted(column)">
+                            @if (Link(column) is { } href)
+                            {
+                                <a href="@href">@column.Head</a>
+                            }
+                            else
+                            {
+                                @column.Head
+                            }
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var opened = false;
+                    string? last = null;
+                }
+                @foreach (var item in Items)
+                {
+                    if (Group is { } grouped)
+                    {
+                        var value = grouped(item);
+
+                        if (!opened || !string.Equals(value, last, StringComparison.Ordinal))
+                        {
+                            opened = true;
+                            last = value;
+
+                            <tr class="cx-group-head">
+                                <td colspan="@drawn.Count">@(value ?? Ungrouped)</td>
+                            </tr>
+                        }
+                    }
+
+                    <tr>
+                        @foreach (var column in drawn)
+                        {
+                            <td class="@Tone(column)">
+                                @if (column.Content is { } template)
+                                {
+                                    @template(item)
+                                }
+                                else if (Printed(column, item) is { } text)
+                                {
+                                    @text
+
+                                    @if (column.Unit is { } unit)
+                                    {
+                                        <span class="cx-unit">@unit</span>
+                                    }
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</CascadingValue>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<T> Items { get; set; } = [];
+
+    [Parameter] public RenderFragment? Columns { get; set; }
+
+    [Parameter] public Func<T, string?>? Group { get; set; }
+
+    [Parameter] public Func<string, string>? SortLink { get; set; }
+
+    [Parameter] public Func<string, string?>? SortState { get; set; }
+
+    [Parameter] public string Ungrouped { get; set; } = "Carries none";
+
+    private readonly List<Column<T>> drawn = [];
+
+    public void Add(Column<T> column)
+    {
+        if (!drawn.Contains(column)) drawn.Add(column);
+    }
+
+    public void Remove(Column<T> column) => drawn.Remove(column);
+
+    private static string? Tone(Column<T> column) =>
+        (column.Numeric ? "cx-numeric" : null, column.Class) switch
+        {
+            (null, null) => null,
+            ({ } numeric, null) => numeric,
+            (null, { } named) => named,
+            ({ } numeric, { } named) => $"{numeric} {named}",
+        };
+
+    private string? Link(Column<T> column) =>
+        column.Key is { } key && SortLink is { } link ? link(key) : null;
+
+    private string? Sorted(Column<T> column) =>
+        column.Key is { } key && SortState is { } state ? state(key) : null;
+
+    private static string? Printed(Column<T> column, T item) =>
+        column.Value?.Invoke(item) switch
+        {
+            null => null,
+            double number => Codex.Number(number),
+            float number => Codex.Number(number),
+            bool flag => flag ? "Yes" : "No",
+            var value => value.ToString() is { Length: > 0 } text ? text : null,
+        };
+}
