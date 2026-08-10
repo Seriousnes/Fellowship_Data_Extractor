@@ -32,6 +32,12 @@ public interface IChromeAssetService
 
     string ExpandGlyph { get; }
 
+    string ModifierPlate { get; }
+
+    string ModifierDecor { get; }
+
+    string ModifierGlyph(ModifierKind kind);
+
     Badge AbilityBadge { get; }
 
     Badge LegendaryBadge { get; }
@@ -94,6 +100,12 @@ public sealed class ChromeAssetService(
     private const string TraitTexture = "T_Icons_StatTooltip_TraitSlot";
     private const string ExpandTexture = "T_Icons_Generic_TooltipExpand";
 
+    private const string ModifierPlateTexture = WindowFillTexture;
+    private const string ModifierDecorTexture = "T_Backgrounds_TooltipSlot_Gradient_Decor";
+    private const string TraitModifierTexture = "T_Icons_Generic_WeaponSkill";
+    private const string BlessingModifierTexture = "T_Icons_Generic_TooltipSlot";
+    private const string EssenceModifierTexture = "T_Icons_Generic_Gem";
+
     private const string NodeFamily = "T_Buttons_TraitNode_";
     private const string NodeSuffix = "Default";
     private const string BlessingFamily = "T_Buttons_BlessingButton_";
@@ -107,6 +119,35 @@ public sealed class ChromeAssetService(
     private const string AbilityHeading = "Ability";
     private const string LegendaryHeading = "Legendary";
     private const string SetBonusHeading = "SetBonus";
+
+    private static readonly IReadOnlyDictionary<ModifierKind, string> ModifierGlyphs = Everywhere(
+        new Dictionary<ModifierKind, string>
+        {
+            [ModifierKind.Trait] = TraitModifierTexture,
+            [ModifierKind.Blessing] = BlessingModifierTexture,
+            [ModifierKind.Essence] = EssenceModifierTexture,
+        });
+
+    private static readonly IReadOnlyDictionary<string, string> ModifierTinted =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [TraitModifierTexture] = "core.primary-200",
+            [BlessingModifierTexture] = "core.primary-main",
+            [EssenceModifierTexture] = "core.primary-200",
+            [ModifierDecorTexture] = "core.secondary-600",
+        };
+
+    private static IReadOnlyDictionary<ModifierKind, string> Everywhere(
+        IReadOnlyDictionary<ModifierKind, string> glyphs)
+    {
+        var missing = Enum.GetValues<ModifierKind>().Where(kind => !glyphs.ContainsKey(kind)).ToArray();
+
+        return missing.Length == 0
+            ? glyphs
+            : throw new InvalidOperationException(
+                $"{string.Join(", ", missing)} {(missing.Length == 1 ? "names" : "name")} no modifier " +
+                $"glyph texture in {nameof(ChromeAssetService)}, so a row of that kind draws no glyph.");
+    }
 
     public static readonly IReadOnlyList<string> NodeStates = ["selected", "available", "unavailable"];
 
@@ -175,6 +216,15 @@ public sealed class ChromeAssetService(
     public string TraitGlyph => Url(Name(TraitTexture));
 
     public string ExpandGlyph => Url(Name(ExpandTexture));
+
+    public string ModifierPlate => Url(Name(ModifierPlateTexture));
+
+    public string ModifierDecor => Url(Tinted(ModifierDecorTexture));
+
+    public string ModifierGlyph(ModifierKind kind) => Url(Tinted(ModifierGlyphs[kind]));
+
+    private static string Tinted(string texture) =>
+        Name(texture, DesignTokenService.Variable(ModifierTinted[texture]));
 
     public Badge AbilityBadge => Section(AbilityTexture, AbilityHeading);
 

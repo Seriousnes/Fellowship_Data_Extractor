@@ -37,6 +37,8 @@ public static class ChromeTextures
         "T_Icons_Generic_TooltipSlot",
         "T_Icons_Generic_TooltipExpand",
         "T_Icons_Generic_TooltipFinesse",
+        "T_Icons_Generic_WeaponSkill",
+        "T_Icons_Generic_Gem",
         "T_Icons_Progression_ItemLevel",
         "T_Icons_StatTooltip_TraitSlot",
         "T_Icons_StatTooltip_AbilitySlot_Pink",

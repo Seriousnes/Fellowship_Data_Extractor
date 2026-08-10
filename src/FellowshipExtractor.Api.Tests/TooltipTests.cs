@@ -403,7 +403,7 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
-    public void Names_every_imbued_trait_beside_the_rank_it_sits_at()
+    public void Names_every_modifier_beside_the_amount_it_carries()
     {
         var trait = Store.Entities.OfType<TraitDocument>().First(imbued => imbued.Name is not null);
 
@@ -411,59 +411,69 @@ public class TooltipTests : BunitContext
             .Add(x => x.Entity, new ItemDocument { Id = 3, Name = "Darkfrost Arms" })
             .Add(x => x.Query, new TooltipQuery
             {
-                Traits = [new ImbuedTrait(trait.Id, 1), new ImbuedTrait(trait.Id, 3)],
-                AllocatedTraits = 5,
-                MaxTraits = 5,
+                Modifiers =
+                [
+                    new ItemModifier(ModifierKind.Trait, trait.Id, 1),
+                    new ItemModifier(ModifierKind.Trait, trait.Id, 3),
+                ],
             }));
 
-        var rows = cut.FindAll("span.trait");
+        var rows = cut.FindAll("div.mod");
 
         Assert.Equal(2, rows.Count);
-        Assert.Equal($"Trait: {trait.Name} +1", rows[0].TextContent);
-        Assert.Equal($"Trait: {trait.Name} +3", rows[1].TextContent);
+
+        Assert.All(rows, row =>
+        {
+            Assert.Equal("Trait:", row.QuerySelector("span.mk")!.TextContent);
+            Assert.Equal(trait.Name, row.QuerySelector("span.mn")!.TextContent);
+        });
+
+        Assert.Equal("+1", rows[0].QuerySelector("span.mv")!.TextContent);
+        Assert.Equal("+3", rows[1].QuerySelector("span.mv")!.TextContent);
     }
 
     [Fact]
-    public void Counts_the_traits_imbued_against_the_traits_the_item_can_hold()
+    public void Counts_the_traits_imbued_against_the_traits_the_slot_can_hold()
     {
         var counted = Render<Components.Tooltip.Tooltip>(p => p
-            .Add(x => x.Entity, new ItemDocument { Id = 3, Name = "Darkfrost Arms" })
-            .Add(x => x.Query, new TooltipQuery { AllocatedTraits = 5, MaxTraits = 5 }));
-
-        var uncapped = Render<Components.Tooltip.Tooltip>(p => p
-            .Add(x => x.Entity, new ItemDocument { Id = 3, Name = "Darkfrost Arms" })
-            .Add(x => x.Query, new TooltipQuery { AllocatedTraits = 2 }));
+            .Add(x => x.Entity, new ItemDocument { Id = 3, Name = "Darkfrost Arms", Slot = "Weapon" })
+            .Add(x => x.Query, new TooltipQuery { AllocatedTraits = 5 }));
 
         Assert.Equal("Imbued Traits", counted.Find("div.sec span").TextContent);
         Assert.Equal("(5/5)", counted.Find("div.sec span.n").TextContent);
         Assert.Equal("5", counted.Find("div.sec span.alloc").TextContent);
-        Assert.Equal("(2)", uncapped.Find("div.sec span.n").TextContent);
     }
 
     [Fact]
     public void Counts_nothing_imbued_on_an_item_that_can_still_hold_traits()
     {
         var cut = Render<Components.Tooltip.Tooltip>(p => p
-            .Add(x => x.Entity, new ItemDocument { Id = 3, Name = "Darkfrost Arms" })
-            .Add(x => x.Query, new TooltipQuery { MaxTraits = 5 }));
+            .Add(x => x.Entity, new ItemDocument { Id = 3, Name = "Darkfrost Arms", Slot = "Weapon" })
+            .Add(x => x.Query, new TooltipQuery()));
 
         Assert.Equal("(0/5)", cut.Find("div.sec span.n").TextContent);
-        Assert.Empty(cut.FindAll("span.trait"));
+        Assert.Empty(cut.FindAll("div.mod"));
     }
 
     [Fact]
-    public void Draws_the_traits_between_the_stats_and_the_prose()
+    public void Draws_the_imbued_line_and_the_modifiers_between_the_stats_and_the_prose()
     {
         var cut = Render<Components.Tooltip.Tooltip>(p => p
-            .Add(x => x.Entity, new ItemDocument { Id = 3, Description = "burns" })
-            .Add(x => x.Query, new TooltipQuery { Armor = 12, AllocatedTraits = 1 }));
+            .Add(x => x.Entity, new ItemDocument { Id = 3, Slot = "Weapon", Description = "burns" })
+            .Add(x => x.Query, new TooltipQuery
+            {
+                Armor = 12,
+                Modifiers = [new ItemModifier(ModifierKind.Trait, 1, 1)],
+            }));
 
         var groups = cut.Find("div.lines").QuerySelectorAll(":scope > div.grp");
 
-        Assert.Equal(3, groups.Length);
-        Assert.NotNull(groups[0].QuerySelector("ul.stats"));
-        Assert.Equal("Imbued Traits", groups[1].QuerySelector("div.sec span")!.TextContent);
-        Assert.Equal("burns", groups[2].QuerySelector("p.desc")!.TextContent);
+        Assert.Equal(5, groups.Length);
+        Assert.NotNull(groups[0].QuerySelector("img.gi"));
+        Assert.NotNull(groups[1].QuerySelector("ul.stats"));
+        Assert.Equal("Imbued Traits", groups[2].QuerySelector("div.sec span")!.TextContent);
+        Assert.NotNull(groups[3].QuerySelector("div.mod"));
+        Assert.Equal("burns", groups[4].QuerySelector("p.desc")!.TextContent);
     }
 
     [Fact]

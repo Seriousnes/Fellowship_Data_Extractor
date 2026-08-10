@@ -1,0 +1,18 @@
+@inject ITooltipViewService Ui
+
+<div class="grp mods">
+    @for (var at = 0; at < Lines.Count; at++)
+    {
+        @if (at > 0) { <hr class="rule"> }
+        <div class="mod @TooltipView.Token(Lines[at].Kind)">
+            <img class="mi" alt="" src="@Ui.Chrome.ModifierGlyph(Lines[at].Kind)">
+            <span class="mk">@TooltipView.Label(Lines[at].Kind):</span>
+            <span class="mn">@Lines[at].Name</span>
+            <span class="mv">+@Lines[at].Amount</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<TooltipView.ModifierLine> Lines { get; set; } = [];
+}

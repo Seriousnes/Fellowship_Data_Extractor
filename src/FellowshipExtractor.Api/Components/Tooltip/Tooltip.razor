@@ -1,81 +1,6 @@
-@inject ITooltipViewService Ui
-
-@if (Entity is BlessingDocument blessing)
-{
-    <Blessing Entity="blessing" Query="Query" Hero="Hero" />
-}
-else if (Entity is TraitDocument trait)
-{
-    <Trait Entity="trait" Query="Query" Hero="Hero" />
-}
-else
-{
-    <div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
-        <style>@Sheet</style>
-        @if (Art is { } art)
-        {
-            <Icon Src="@art" Rarity="@Rung?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
-        }
-        <div class="card">
-            <header class="head">
-                @if (Ui.Ornament(Rung) is { } ornament)
-                {
-                    <img class="orn" alt="" src="@ornament">
-                }
-
-                <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
-            </header>
-            @if (shown.Count > 0)
-            {
-                <div class="lines">
-                    @foreach (var block in shown)
-                    {
-                        @if (block != shown[0]) { <hr class="rule"> }
-
-                        switch (block)
-                        {
-                            case TooltipView.Block.Identity:
-                                <TipIdentity Entity="Entity" Query="Query" Rung="Rung" Level="Level" Temper="@Temper" />
-                                break;
-
-                            case TooltipView.Block.Facts:
-                                <TipFacts Items="facts" />
-                                break;
-
-                            case TooltipView.Block.Rolls:
-                                <TipRolls Potential="@Ui.Potential(Query)" Lines="rolls" />
-                                break;
-
-                            case TooltipView.Block.Traits:
-                                <TipTraits Lines="traits" Allocated="Query.AllocatedTraits" Total="Query.MaxTraits" />
-                                break;
-
-                            case TooltipView.Block.Prose:
-                                <TipProse Entity="Entity" Query="Query" Hero="Hero" />
-                                break;
-
-                            case TooltipView.Block.Overflow:
-                                <TipOverflow Entity="Entity" Query="Query" Hero="Hero" />
-                                break;
-
-                            case TooltipView.Block.Granted:
-                                <TipGranted Entity="Entity" Query="Query" Hero="Hero" Named="@Named" />
-                                break;
-
-                            case TooltipView.Block.Legendaries:
-                                <TipLegendaries Entity="Entity" Query="Query" Hero="Hero" />
-                                break;
-
-                            case TooltipView.Block.Sets:
-                                <TipSets Entity="Entity" />
-                                break;
-                        }
-                    }
-                </div>
-            }
-        </div>
-    </div>
-}
+<CascadingValue Value="Entity">
+    <DynamicComponent Type="GetTooltipComponent(Entity)" Parameters="Knobs" />
+</CascadingValue>
 
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
@@ -84,40 +9,15 @@ else
 
     [Parameter] public HeroEntry? Hero { get; set; }
 
-    private RarityEntry? Rung;
+    private Dictionary<string, object?> Knobs =>
+        new(StringComparer.Ordinal) { ["Query"] = Query, ["Hero"] = Hero };
 
-    private string? Art;
-
-    private int? Level;
-
-    private string? Temper;
-
-    private string? Named;
-
-    private MarkupString Sheet;
-
-    private IReadOnlyList<TooltipView.Fact> facts = [];
-
-    private IReadOnlyList<StatLine> rolls = [];
-
-    private IReadOnlyList<TooltipView.TraitLine> traits = [];
-
-    private IReadOnlyList<TooltipView.Block> shown = [];
-
-    protected override void OnParametersSet()
+    private static Type GetTooltipComponent(EntityDocument document) => document switch
     {
-        if (Ui.DrawsState(Entity)) return;
-
-        Rung = Ui.Rarity(Entity, Query);
-        Art = Ui.Art(Entity, Rung);
-        Level = Ui.Level(Entity, Query);
-        Temper = Ui.Temper(Query, Rung, Level);
-        Sheet = new MarkupString(Ui.Style());
-        facts = Ui.Facts(Entity, Query);
-        rolls = Ui.Rolls(Entity, Query, Rung);
-        traits = Ui.Traits(Query);
-        Named = Ui.Granted(Entity) is { } grants ? PublicTypes.DisplayNameOf(grants) : null;
-
-        shown = Ui.Blocks(Entity, Query, Rung, facts, rolls, traits);
-    }
+        BlessingDocument => typeof(Blessing),
+        TraitDocument => typeof(Trait),
+        ItemDocument => typeof(Item),
+        AbilityDocument or EffectDocument => typeof(Ability),
+        _ => typeof(Generic),
+    };
 }

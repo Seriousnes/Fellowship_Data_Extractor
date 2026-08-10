@@ -24,12 +24,34 @@ public class TooltipQueryTests(Export export)
     {
         Assert.True(ImbuedTraits.TryParse("12:2,7", out var traits));
 
-        var query = new ItemTooltipRequest { Id = 1, Trait = traits, MaxTraits = 5 }
+        var query = new ItemTooltipRequest { Id = 1, ImbuedTraits = traits, HasImbuedTraits = true }
             .ToQuery(Raw(), export.Store.Stats, out _);
 
-        Assert.Equal([new ImbuedTrait(12, 2), new ImbuedTrait(7, 1)], query.Traits);
-        Assert.Equal(5, query.MaxTraits);
-        Assert.Equal(2, query.AllocatedTraits);
+        Assert.Equal([new ImbuedTrait(12, 2), new ImbuedTrait(7, 1)], query.ImbuedTraits);
+        Assert.True(query.HasImbuedTraits);
+    }
+
+    [Fact]
+    public void An_item_reads_every_modifier_the_caller_states_in_the_order_stated()
+    {
+        Assert.True(ItemModifiers.TryParse("trait:412:1,blessing:7:1,essence:3:100", out var modifiers));
+
+        var query = new ItemTooltipRequest { Id = 1, Modifiers = modifiers }
+            .ToQuery(Raw(), export.Store.Stats, out _);
+
+        Assert.Equal(modifiers.Values, query.Modifiers);
+    }
+
+    [Fact]
+    public void An_item_carries_the_allocated_count_the_caller_states_beside_the_list()
+    {
+        Assert.True(ImbuedTraits.TryParse("12:2,7", out var traits));
+
+        var query = new ItemTooltipRequest { Id = 1, ImbuedTraits = traits, AllocatedTraits = 4 }
+            .ToQuery(Raw(), export.Store.Stats, out _);
+
+        Assert.Equal(2, query.ImbuedTraits.Count);
+        Assert.Equal(4, query.AllocatedTraits);
     }
 
     [Fact]
@@ -38,8 +60,9 @@ public class TooltipQueryTests(Export export)
         var query = new ItemTooltipRequest { Id = 1 }.ToQuery(Raw(), export.Store.Stats, out _);
 
         Assert.Null(query.AllocatedTraits);
-        Assert.Empty(query.Traits);
-        Assert.Empty(query.GemPowers);
+        Assert.Null(query.HasImbuedTraits);
+        Assert.Empty(query.ImbuedTraits);
+        Assert.Empty(query.Modifiers);
         Assert.False(query.NoSocket);
     }
 

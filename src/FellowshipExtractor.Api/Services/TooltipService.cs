@@ -29,7 +29,7 @@ public sealed class TooltipService(IEntityStoreService store, IFragmentService f
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
-        foreach (var imbued in query.Traits)
+        foreach (var imbued in query.ImbuedTraits)
         {
             if (store.All(TooltipView.TraitType, imbued.Id).Count > 0) continue;
 
