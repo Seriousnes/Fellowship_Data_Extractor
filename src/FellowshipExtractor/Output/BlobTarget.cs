@@ -39,6 +39,7 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
 
         var container = new BlobContainerClient(connectionString, ContainerName);
         await container.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
+        await container.SetAccessPolicyAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
 
         var published = new Dictionary<string, string>(StringComparer.Ordinal);
         await foreach (var blob in container.GetBlobsAsync(cancellationToken: cancellationToken))
