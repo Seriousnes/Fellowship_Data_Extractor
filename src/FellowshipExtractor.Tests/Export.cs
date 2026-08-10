@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using FellowshipExtractor.Output;
 using FellowshipExtractor.Tooltip;
 using Fellowship.SDK.Documents;
 
@@ -58,9 +59,10 @@ public sealed class Export
     private static Export Load()
     {
         var folder = Folder_();
+        var data = Path.Combine(folder, ExportLayout.DataFolder);
 
         var documents = new List<(EntityType Type, int Id, string? Name, JsonObject Body)>();
-        foreach (var line in File.ReadLines(Path.Combine(folder, "entities.jsonl")))
+        foreach (var line in File.ReadLines(Path.Combine(data, ExportLayout.EntitiesFile)))
         {
             if (line.Length == 0) continue;
 
@@ -69,15 +71,16 @@ public sealed class Export
 
             if (!TypeBySlug.TryGetValue(slug, out var type))
             {
-                throw new InvalidOperationException($"'{slug}' in entities.jsonl names no EntityType. The export is corrupt.");
+                throw new InvalidOperationException(
+                    $"'{slug}' in {ExportLayout.EntitiesFile} names no EntityType. The export is corrupt.");
             }
 
             documents.Add((type, body["id"]!.GetValue<int>(), body["name"]?.GetValue<string>(), body));
         }
 
         var settings = JsonSerializer.Deserialize<SettingsFile>(
-            File.ReadAllText(Path.Combine(folder, "settings.json")), Options)
-            ?? throw new InvalidOperationException($"settings.json in {folder} deserialized to nothing.");
+            File.ReadAllText(Path.Combine(data, Tooltip.Settings.FileName)), Options)
+            ?? throw new InvalidOperationException($"{Tooltip.Settings.FileName} in {data} deserialized to nothing.");
 
         return new Export { Settings = settings, Documents = documents, Folder = folder };
     }
@@ -94,11 +97,16 @@ public sealed class Export
         for (var at = new DirectoryInfo(AppContext.BaseDirectory); at is not null; at = at.Parent)
         {
             var candidate = Path.Combine(at.FullName, "output", "export");
-            if (File.Exists(Path.Combine(candidate, "entities.jsonl"))) return candidate;
+            if (File.Exists(Path.Combine(candidate, ExportLayout.DataFolder, ExportLayout.EntitiesFile)))
+            {
+                return candidate;
+            }
         }
 
         throw new DirectoryNotFoundException(
-            "No export to test against. Run 'dotnet run --project src/FellowshipExtractor -- export-all' " +
-            $"or point {Variable} at a folder holding entities.jsonl and settings.json.");
+            "No export to test against. Run 'dotnet run --project src/FellowshipExtractor -- export-all " +
+            $"--output output/export' or point {Variable} at a folder holding " +
+            $"{ExportLayout.DataFolder}/{ExportLayout.EntitiesFile} and " +
+            $"{ExportLayout.DataFolder}/{Tooltip.Settings.FileName}.");
     }
 }

@@ -5,6 +5,7 @@ using Fellowship.SDK.Documents;
 using FellowshipExtractor.Api;
 using FellowshipExtractor.Api.Models;
 using FellowshipExtractor.Api.Services;
+using FellowshipExtractor.Output;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -18,7 +19,10 @@ public sealed class EntityStoreCorpusTests
     private static EntityStoreService Build()
     {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = Export.Loaded.Folder })
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["FELLOWSHIP_EXPORT"] = Path.Combine(Export.Loaded.Folder, ExportLayout.DataFolder),
+            })
             .Build();
 
         return new EntityStoreService(new ExportPathService(configuration), NullLogger<EntityStoreService>.Instance);

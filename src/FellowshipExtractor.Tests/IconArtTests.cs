@@ -1,3 +1,5 @@
+using FellowshipExtractor.Output;
+
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -5,11 +7,14 @@ namespace FellowshipExtractor.Tests;
 
 public sealed class IconArtTests
 {
+    private static string Ui(string name) =>
+        Path.Combine(Export.Loaded.Folder, ExportLayout.UiFolder, name);
+
     private static string? Exported(string objectPath)
     {
         var dot = objectPath.LastIndexOf('.');
         var name = dot >= 0 ? objectPath[(dot + 1)..] : objectPath;
-        var file = Path.Combine(Export.Loaded.Folder, name + ".png");
+        var file = Ui(name + ".png");
 
         return File.Exists(file) ? file : null;
     }
@@ -61,7 +66,7 @@ public sealed class IconArtTests
             .Select(document => document.Body["icon"]?.GetValue<string>())
             .OfType<string>()
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(name => Path.Combine(Export.Loaded.Folder, name))
+            .Select(Ui)
             .Where(File.Exists)
             .Where(file => Alpha(file).MeanAlpha == 0)
             .Select(Path.GetFileName)
