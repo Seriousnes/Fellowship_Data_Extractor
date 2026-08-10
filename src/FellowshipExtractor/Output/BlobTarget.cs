@@ -17,6 +17,8 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
 
     private const string CacheControl = "no-cache";
 
+    private readonly (string Account, string Name) _storage = Parse(connectionString);
+
     private readonly WrittenNames _names = new();
 
     private readonly MemoryStream _entities = new();
@@ -35,9 +37,12 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
 
     private StreamWriter Lines() => _lines ??= new StreamWriter(_entities, leaveOpen: true);
 
-    public BlobContainerClient Container => _client ??= Connect();
+    public string Name => _storage.Name;
 
-    private BlobContainerClient Connect()
+    public BlobContainerClient Container =>
+        _client ??= new BlobServiceClient(_storage.Account).GetBlobContainerClient(_storage.Name);
+
+    private static (string Account, string Name) Parse(string connectionString)
     {
         List<string> account = [];
         var name = ContainerName;
@@ -57,7 +62,7 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
             account.Add(pair);
         }
 
-        return new BlobServiceClient(string.Join(';', account)).GetBlobContainerClient(name);
+        return (string.Join(';', account), name);
     }
 
     private async Task<BlobContainerClient> ContainerAsync(CancellationToken cancellationToken)
@@ -76,7 +81,7 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
         }
 
         _published = published;
-        Console.WriteLine($"container {container.Name} already holds {published.Count} blob(s) carrying a hash");
+        Console.WriteLine($"container {Name} already holds {published.Count} blob(s) carrying a hash");
 
         return container;
     }
