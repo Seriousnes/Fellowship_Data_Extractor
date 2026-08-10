@@ -169,6 +169,49 @@ public sealed class IconArtTests
     }
 
     [Fact]
+    public void AnItemsIconNamesTheHighestRungOfTheSpreadItCarries()
+    {
+        var rung = Ladder
+            .Select((rarity, at) => (rarity.Name, At: at))
+            .ToDictionary(entry => entry.Name, entry => entry.At, StringComparer.OrdinalIgnoreCase);
+
+        var spreads = Export.Loaded.Documents
+            .Select(document => (
+                Icon: document.Body["icon"]?.GetValue<string>(),
+                Spread: document.Body["iconByRarity"] as JsonObject))
+            .Where(document => document.Spread is { Count: > 0 })
+            .ToArray();
+
+        Assert.NotEmpty(spreads);
+
+        string[] unnamed =
+        [
+            .. spreads
+                .SelectMany(document => document.Spread!.Select(entry => entry.Key))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(rarity => !rung.ContainsKey(rarity))
+                .Order(StringComparer.Ordinal),
+        ];
+
+        Assert.Empty(unnamed);
+
+        string[] wrong =
+        [
+            .. spreads
+                .Select(document => (
+                    document.Icon,
+                    Highest: document.Spread!.MaxBy(entry => rung[entry.Key])))
+                .Where(document => !string.Equals(
+                    document.Icon, document.Highest.Value!.GetValue<string>(), StringComparison.Ordinal))
+                .Select(document => $"{document.Icon} is named where {document.Highest.Key} reads {document.Highest.Value}")
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal),
+        ];
+
+        Assert.Empty(wrong);
+    }
+
+    [Fact]
     public void EveryIconADocumentNamesIsWritten()
     {
         var named = Export.Loaded.Documents
