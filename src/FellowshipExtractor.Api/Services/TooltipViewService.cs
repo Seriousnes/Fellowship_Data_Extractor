@@ -255,16 +255,12 @@ public sealed class TooltipViewService(
             --fx-divider:url({{chrome.GoldDivider}});--fx-subheader:url({{chrome.Header(null)}});
             --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};
             --fx-setbonus:{{chrome.SetBonusBadge.Colour}};--fx-modplate:url({{chrome.ModifierPlate}});
-            --fx-moddecor:url({{chrome.ModifierDecor}});{{Glyphs(chrome)}}}
+            --fx-moddecor:url({{chrome.ModifierDecor}})}
 
             """ +
             reading.ReadToEnd() +
             renderer.Css(TooltipView.Root);
     }
-
-    private static string Glyphs(IChromeAssetService chrome) => string.Concat(
-        Enum.GetValues<ModifierKind>().Select(kind =>
-            $"--fx-mod-{TooltipView.Token(kind)}:url({chrome.ModifierGlyph(kind)});"));
 
     public bool DrawsState(EntityDocument document) => document is BlessingDocument or TraitDocument;
 

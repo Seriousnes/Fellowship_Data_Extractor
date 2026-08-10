@@ -132,6 +132,15 @@ public sealed class ChromeAssetService(
             [ModifierKind.Essence] = EssenceModifierTexture,
         });
 
+    private static readonly IReadOnlyDictionary<string, string> ModifierTinted =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [TraitModifierTexture] = "core.primary-200",
+            [BlessingModifierTexture] = "core.primary-main",
+            [EssenceModifierTexture] = "core.primary-200",
+            [ModifierDecorTexture] = "core.secondary-600",
+        };
+
     private static IReadOnlyDictionary<ModifierKind, string> Everywhere(
         IReadOnlyDictionary<ModifierKind, string> glyphs)
     {
@@ -223,9 +232,12 @@ public sealed class ChromeAssetService(
 
     public string ModifierPlate => Url(Name(ModifierPlateTexture));
 
-    public string ModifierDecor => Url(Name(ModifierDecorTexture));
+    public string ModifierDecor => Url(Tinted(ModifierDecorTexture));
 
-    public string ModifierGlyph(ModifierKind kind) => Url(Name(ModifierGlyphs[kind]));
+    public string ModifierGlyph(ModifierKind kind) => Url(Tinted(ModifierGlyphs[kind]));
+
+    private static string Tinted(string texture) =>
+        Name(texture, DesignTokenService.Variable(ModifierTinted[texture]));
 
     public Badge AbilityBadge => Section(AbilityTexture);
 
@@ -258,6 +270,13 @@ public sealed class ChromeAssetService(
             {
                 payloads.Add((Name(texture, rarity.Name), Tint(mask, Colour(tokens, rarity.Name))));
             }
+        }
+
+        foreach (var (texture, token) in ModifierTinted)
+        {
+            using var mask = Image.Load<Rgba32>(Path.Combine(paths.Ui, texture + ".png"));
+
+            payloads.Add((Tinted(texture), Tint(mask, Painted(tokens, token))));
         }
 
         return payloads;
@@ -400,6 +419,12 @@ public sealed class ChromeAssetService(
         int r = left.R - right.R, g = left.G - right.G, b = left.B - right.B;
         return (r * r) + (g * g) + (b * b);
     }
+
+    private static Rgba32 Painted(IDesignTokenService tokens, string token) =>
+        Color.ParseHex(tokens.Color(token)
+            ?? throw new InvalidOperationException(
+                $"The palette has no colour {token}, so the modifier chrome it paints cannot be tinted."))
+            .ToPixel<Rgba32>();
 
     private static Rgba32 Colour(IDesignTokenService tokens, string rarity) =>
         Color.ParseHex(tokens.Rarity(rarity)

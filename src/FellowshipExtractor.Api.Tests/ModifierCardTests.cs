@@ -46,7 +46,24 @@ public class ModifierCardTests : BunitContext
 
         Assert.Equal(
             [.. stated.Select(modifier => TooltipView.Token(modifier.Kind))],
-            [.. rows.Select(row => row.QuerySelector(".mi")!.ClassList.Last())]);
+            [.. rows.Select(row => row.ClassList.Last())]);
+    }
+
+    [Fact]
+    public void Every_kind_draws_the_glyph_the_widget_names_for_it()
+    {
+        foreach (var kind in Enum.GetValues<ModifierKind>())
+        {
+            var row = Draw(new ItemModifier(kind, Lowest(kind), 1)).Find(".grp.mods > .mod");
+
+            Assert.Equal(
+                export.Chrome.ModifierGlyph(kind),
+                row.QuerySelector("img.mi")!.GetAttribute("src"));
+        }
+
+        Assert.Equal(
+            Enum.GetValues<ModifierKind>().Length,
+            Enum.GetValues<ModifierKind>().Select(export.Chrome.ModifierGlyph).Distinct(StringComparer.Ordinal).Count());
     }
 
     [Fact]
@@ -86,6 +103,24 @@ public class ModifierCardTests : BunitContext
         var row = Draw(new ItemModifier(ModifierKind.Trait, unknown, 1)).Find(".grp.mods > .mod");
 
         Assert.Equal(unknown.ToString(CultureInfo.InvariantCulture), row.QuerySelector(".mn")!.TextContent);
+    }
+
+    [Fact]
+    public void Every_glyph_the_rows_ask_for_is_a_payload_the_seeder_uploads()
+    {
+        var carried = export.Chrome.Payloads()
+            .Select(payload => payload.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        static string Blob(string url) => url[(url.IndexOf($"/{ChromeAssetService.Prefix}/", StringComparison.Ordinal) + 1)..];
+
+        foreach (var kind in Enum.GetValues<ModifierKind>())
+        {
+            Assert.Contains(Blob(export.Chrome.ModifierGlyph(kind)), carried, StringComparer.Ordinal);
+        }
+
+        Assert.Contains(Blob(export.Chrome.ModifierDecor), carried, StringComparer.Ordinal);
+        Assert.Contains(Blob(export.Chrome.ModifierPlate), carried, StringComparer.Ordinal);
     }
 
     [Fact]

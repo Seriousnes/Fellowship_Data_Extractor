@@ -99,8 +99,7 @@ $modifier-row-inset: 6px;
       width: $modifier-decor-width;
       height: $modifier-row-height;
       transform: translateY(-50%);
-      background-color: var(--core-secondary-600);
-      mask: var(--fx-moddecor) center/100% 100% no-repeat;
+      background: var(--fx-moddecor) 0 0/100% 100% no-repeat;
     }
   }
 
@@ -108,20 +107,13 @@ $modifier-row-inset: 6px;
     flex: 0 0 auto;
     width: $modifier-glyph-size;
     height: $modifier-glyph-size;
-    background-color: var(--core-primary-200);
-    mask: center/contain no-repeat;
-
-    &.trait { mask-image: var(--fx-mod-trait); }
-
-    &.blessing {
-      background-color: var(--core-primary-main);
-      mask-image: var(--fx-mod-blessing);
-    }
-
-    &.essence { mask-image: var(--fx-mod-essence); }
+    object-fit: contain;
   }
 
-  .mk { color: var(--core-primary-main); }
+  .mk {
+    white-space: nowrap;
+    color: var(--core-primary-main);
+  }
 
   .mn {
     flex: 1 1 auto;
