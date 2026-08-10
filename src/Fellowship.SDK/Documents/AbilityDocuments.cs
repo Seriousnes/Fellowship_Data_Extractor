@@ -1,3 +1,5 @@
+using Fellowship.SDK.Models;
+
 namespace Fellowship.SDK.Documents;
 
 public sealed class AbilityDocument : EntityDocument
@@ -25,4 +27,8 @@ public sealed class AbilityDocument : EntityDocument
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }
+
+    public IReadOnlyList<Hero>? Heroes { get; init; }
+
+    public EntityReference? Owner { get; init; }
 }

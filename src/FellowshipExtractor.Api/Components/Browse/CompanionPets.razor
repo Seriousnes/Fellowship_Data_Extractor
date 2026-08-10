@@ -1,0 +1,23 @@
+@inject ICodexViewService Ui
+
+<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<CompanionPetDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column T="CompanionPetDocument" Head="" Class="cx-art">
+            <Content Context="row"><Art Entity="row" /></Content>
+        </Column>
+        <Column T="CompanionPetDocument" Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<CompanionPetDocument> Drawn = [];
+
+    protected override void OnParametersSet() => Drawn = [.. Rows.OfType<CompanionPetDocument>()];
+}

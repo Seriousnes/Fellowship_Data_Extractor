@@ -1,3 +1,5 @@
+using Fellowship.SDK.Models;
+
 namespace Fellowship.SDK.Documents;
 
 public sealed class ItemDocument : EntityDocument
@@ -30,4 +32,8 @@ public sealed class ItemDocument : EntityDocument
     public int? GrantsId { get; init; }
 
     public IReadOnlyList<int>? LegendaryStatIds { get; init; }
+
+    public IReadOnlyList<ItemSource>? Sources { get; init; }
+
+    public int? ItemLevel { get; init; }
 }

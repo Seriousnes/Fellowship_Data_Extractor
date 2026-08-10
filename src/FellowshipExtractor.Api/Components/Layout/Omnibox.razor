@@ -73,12 +73,9 @@
                 </a>
             }
 
-            @if (found.Total > found.Results.Count)
-            {
-                <a class="cx-omnibox-all" href="@All" data-active="@On(active == found.Results.Count)">
-                    View all @found.Total.ToString("N0") results
-                </a>
-            }
+            <a class="cx-omnibox-all" href="@All" data-active="@On(active == found.Results.Count)">
+                View all results
+            </a>
         </div>
     }
 </div>
@@ -183,7 +180,7 @@
     private void Key(KeyboardEventArgs key)
     {
         var hits = answer?.Results.Count ?? 0;
-        var last = hits + (answer is { } found && found.Total > hits ? 1 : 0) - 1;
+        var last = hits;
 
         switch (key.Key)
         {

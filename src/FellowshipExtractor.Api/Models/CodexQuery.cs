@@ -69,7 +69,7 @@ public sealed record CodexQuery
                     case "type":
                         foreach (var slug in values)
                         {
-                            if (!EntityTypes.TryParse(slug, out var named))
+                            if (!EntityTypes.TryParse(slug, out var named) || !PublicTypes.Listed(named))
                             {
                                 error = PublicTypes.NoSuchType(slug);
                                 return new CodexQuery();
@@ -115,17 +115,36 @@ public sealed record CodexQuery
             if (codex.Facet(key) is { } facet)
             {
                 var offered = codex.Offered(facet);
+                var chosen = new List<string>();
 
-                foreach (var value in values)
+                foreach (var entry in raw)
                 {
-                    if (offered.Contains(value, StringComparer.OrdinalIgnoreCase)) continue;
+                    var whole = (entry ?? string.Empty).Trim();
+                    if (whole.Length == 0) continue;
 
-                    error = $"'{value}' is not a value of {facet.Label}. The values are " +
-                        string.Join(", ", offered) + ".";
-                    return new CodexQuery();
+                    if (offered.Contains(whole, StringComparer.OrdinalIgnoreCase))
+                    {
+                        chosen.Add(whole);
+                        continue;
+                    }
+
+                    foreach (var part in whole.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var value = part.Trim();
+                        if (value.Length == 0) continue;
+
+                        if (!offered.Contains(value, StringComparer.OrdinalIgnoreCase))
+                        {
+                            error = $"'{value}' is not a value of {facet.Label}. The values are " +
+                                string.Join(", ", offered) + ".";
+                            return new CodexQuery();
+                        }
+
+                        chosen.Add(value);
+                    }
                 }
 
-                selections[facet.Key] = values;
+                selections[facet.Key] = chosen;
                 continue;
             }
 
@@ -154,10 +173,10 @@ public sealed record CodexQuery
             return new CodexQuery();
         }
 
-        if (sort is not "name" and not "type" && codex.Measure(sort) is null)
+        if (codex.Sorting(sort) is null && codex.Measure(sort) is null)
         {
-            error = $"'{sort}' is not a column. Sort by name, type or one of " +
-                string.Join(", ", codex.Measures.Select(m => m.Key)) + ".";
+            error = $"'{sort}' is not a column. Sort by one of " +
+                string.Join(", ", codex.Sortings.Select(s => s.Key).Concat(codex.Measures.Select(m => m.Key))) + ".";
             return new CodexQuery();
         }
 
@@ -332,22 +351,23 @@ public sealed record CodexQuery
 
     public bool ChosenType(EntityType type) => Types.Contains(type);
 
+    public const string NamedFlag = "named";
+
+    public bool StatesNamed => Flags.ContainsKey(NamedFlag);
+
+    public bool Named => !Flags.TryGetValue(NamedFlag, out var wanted) || wanted;
+
     public bool IsEmpty =>
         Text is null && Types.Count == 0 && Selections.All(s => s.Value.Count == 0) &&
         Flags.Count == 0 && Ranges.Count == 0;
-}
-
-public sealed record Listing(EntityDocument Shown, IReadOnlyList<Listing.Variant> Variants)
-{
-    public sealed record Variant(string Name, string? Icon, Rarity? Rarity, string Href, string? Colour);
 }
 
 public sealed record CodexResults(
     int Total,
     int Page,
     int Pages,
-    IReadOnlyList<Listing> Rows,
+    IReadOnlyList<EntityDocument> Rows,
     IReadOnlyList<FacetView> Facets,
     IReadOnlyDictionary<EntityType, int> Types,
-    int AcrossTypes,
+    EntityType Chosen,
     IReadOnlyList<string> Measured);

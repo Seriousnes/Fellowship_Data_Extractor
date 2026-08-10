@@ -4,7 +4,7 @@ namespace FellowshipExtractor.Api.Tests;
 public class NearbyAudit(Export export)
 {
     [Fact]
-    public void No_facet_value_falls_from_two_rows_to_fewer_than_two_ids()
+    public void No_facet_value_counts_rows_the_list_it_opens_does_not_draw()
     {
         var lost = new List<string>();
 
@@ -14,21 +14,40 @@ public class NearbyAudit(Export export)
 
             foreach (var facet in export.View.Codex.Facets)
             {
-                foreach (var value in rows.SelectMany(facet.Values).Distinct(StringComparer.OrdinalIgnoreCase))
+                var view = export.View.Codex.View(facet, rows);
+
+                foreach (var value in view.Values)
                 {
-                    if (value.Length == 0) continue;
+                    var matched = rows.Count(row => facet.Matches(row, [value.Value]));
 
-                    var matched = rows.Where(row => facet.Matches(row, [value])).ToArray();
-                    var ids = matched.Select(row => row.Id).Distinct().Count();
-
-                    if (matched.Length >= 2 && ids < 2)
+                    if (matched != value.Count)
                     {
-                        lost.Add($"{EntityTypes.Slug(type)} {facet.Key}={value}: {matched.Length} rows, {ids} ids");
+                        lost.Add($"{EntityTypes.Slug(type)} {facet.Key}={value.Value}: " +
+                            $"counted {value.Count}, matches {matched}");
                     }
                 }
             }
         }
 
-        Assert.True(lost.Count == 0, string.Join("; ", lost));
+        Assert.True(lost.Count == 0, string.Join("; ", lost.Take(10)));
+    }
+
+    [Fact]
+    public void A_more_like_this_badge_states_the_total_of_the_list_it_links_to()
+    {
+        var facet = export.View.Codex.Facet("slot")!;
+        var named = export.View.Codex.Flag(CodexQuery.NamedFlag)!;
+
+        foreach (var value in export.View.Codex.Offered(facet).Take(4))
+        {
+            var badge = export.Store.Entities.Count(row =>
+                EntityTypes.TypeOf(row) == EntityType.Item &&
+                facet.Matches(row, [value]) &&
+                named.Predicate(row));
+
+            var drawn = Searching.Run(export, ("type", "item"), (facet.Key, value)).Total;
+
+            Assert.Equal(badge, drawn);
+        }
     }
 }

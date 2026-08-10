@@ -24,15 +24,30 @@ public sealed record Flag(string Key, string Label, Func<EntityDocument, bool> P
 public sealed record Measure(string Key, string Label, Func<EntityDocument, double?> Value)
 {
     public string? Unit { get; init; }
+}
 
-    public bool Column { get; init; }
+public sealed record Sorting(string Key, string Label, Func<EntityDocument, IComparable?> Value);
+
+public sealed class SortOrder : IComparer<IComparable?>
+{
+    public static readonly SortOrder Reading = new();
+
+    public int Compare(IComparable? left, IComparable? right) => (left, right) switch
+    {
+        (null, null) => 0,
+        (null, _) => 1,
+        (_, null) => -1,
+        (string first, string second) => string.Compare(first, second, StringComparison.OrdinalIgnoreCase),
+        _ => left.CompareTo(right),
+    };
 }
 
 public sealed record FacetValue(string Value, string Label, int Count, string? Colour);
 
 public sealed record FacetView(string Key, string Label, IReadOnlyList<FacetValue> Values);
 
-public sealed record TypeView(EntityType Type, string Slug, string Label, string Group, int Count);
+public sealed record TypeView(
+    EntityType Type, string Slug, string Label, string Group, int Count, bool Tabbed, int Position);
 
 public sealed record MenuLink(string Label, string Query, int Count, string? Colour = null);
 

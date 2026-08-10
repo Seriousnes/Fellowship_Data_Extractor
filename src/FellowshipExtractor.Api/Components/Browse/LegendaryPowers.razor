@@ -1,0 +1,25 @@
+@inject ICodexViewService Ui
+
+<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<LegendaryPowerDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column T="LegendaryPowerDocument" Head="" Class="cx-art">
+            <Content Context="row"><Art Entity="row" /></Content>
+        </Column>
+        <Column T="LegendaryPowerDocument" Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column T="LegendaryPowerDocument" Head="Cooldown" Key="cooldown" Unit="s" Numeric
+                Value="row => row.Cooldown" />
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<LegendaryPowerDocument> Drawn = [];
+
+    protected override void OnParametersSet() => Drawn = [.. Rows.OfType<LegendaryPowerDocument>()];
+}

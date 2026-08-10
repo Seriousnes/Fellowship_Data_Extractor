@@ -133,7 +133,12 @@ public sealed class CodexViewService(
 
     public string Name(EntityType type, int id) => PublicTypes.NameOf(store.All(type, id)[0]);
 
-    public string Href(EntityDocument document) => Href(EntityTypes.TypeOf(document), document.Id);
+    public string Href(EntityDocument document)
+    {
+        var where = Href(EntityTypes.TypeOf(document), document.Id);
+
+        return Reading(document) is { } hero ? $"{where}?hero={Uri.EscapeDataString(hero)}" : where;
+    }
 
     public string Href(EntityType type, int id) =>
         $"/entity/{EntityTypes.Slug(type)}/{id.ToString(CultureInfo.InvariantCulture)}";

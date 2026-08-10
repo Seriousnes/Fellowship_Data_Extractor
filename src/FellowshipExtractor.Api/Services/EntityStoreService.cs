@@ -34,6 +34,8 @@ public interface IEntityStoreService
 
     IReadOnlyList<EntityDocument> All(EntityType type, int id);
 
+    TalentSlotDocument? Slot(int talentId);
+
     (EntityType Type, int Id)? GrantedPower(int id);
 
     Lookup Resolve(EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero);
@@ -60,6 +62,8 @@ public sealed class EntityStoreService : IEntityStoreService
     private readonly Dictionary<(EntityType Type, int Id), EntityDocument[]> byId = new();
 
     private readonly Dictionary<string, HeroEntry> heroesByName = new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly Dictionary<int, TalentSlotDocument> slotsByTalent = [];
 
     public SettingsFile Settings { get; }
 
@@ -124,6 +128,8 @@ public sealed class EntityStoreService : IEntityStoreService
 
             if (!groups.TryGetValue(key, out var list)) groups[key] = list = [];
             list.Add(document);
+
+            if (document is TalentSlotDocument slot) slotsByTalent.TryAdd(slot.TalentId, slot);
 
             Census(document, stats, spelled);
 
@@ -205,6 +211,9 @@ public sealed class EntityStoreService : IEntityStoreService
 
     public IReadOnlyList<EntityDocument> All(EntityType type, int id) =>
         byId.TryGetValue((type, id), out var found) ? found : [];
+
+    public TalentSlotDocument? Slot(int talentId) =>
+        slotsByTalent.TryGetValue(talentId, out var slot) ? slot : null;
 
     private static readonly EntityType[] GrantedPowers =
         [EntityType.RelicPower, EntityType.WeaponPower, EntityType.LegendaryPower, EntityType.Talent];

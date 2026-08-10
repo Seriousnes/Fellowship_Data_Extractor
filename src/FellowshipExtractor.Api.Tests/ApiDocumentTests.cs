@@ -107,8 +107,11 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
     {
         var described = document.RootElement.GetProperty("info").GetProperty("description").GetString()!;
 
+        var listed = RouteTests.Factory.Store.Entities
+            .Count(row => PublicTypes.Listed(EntityTypes.TypeOf(row)));
+
         Assert.Contains(
-            RouteTests.Factory.Store.Ids.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
+            listed.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
             described,
             StringComparison.Ordinal);
     }

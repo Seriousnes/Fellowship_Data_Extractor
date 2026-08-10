@@ -7,12 +7,46 @@ public class CorpusTests : BunitContext
 
     private readonly ITooltipViewService Tooltip;
 
+    private readonly Export Exported;
+
     public CorpusTests(Export export)
     {
         Store = export.Store;
         Tooltip = export.Tooltip;
+        Exported = export;
         Services.AddSingleton(export.Tooltip);
         Services.AddSingleton(export.View);
+    }
+
+    [Fact]
+    public void Every_listed_type_answers_a_first_page_that_draws_a_header_row()
+    {
+        var listed = PublicTypes.All.Where(type => type.Listed).ToArray();
+
+        Assert.NotEmpty(listed);
+
+        foreach (var type in listed)
+        {
+            var results = Searching.Run(Exported, ("type", type.Slug));
+
+            Assert.Equal(type.Type, results.Chosen);
+            Assert.NotEmpty(results.Rows);
+
+            var view = new BrowseView(Exported.View.Codex, new CodexQuery { Types = [type.Type] }, results);
+
+            var cut = Render<Components.Browse.Rows>(p => p
+                .Add(x => x.Type, type.Type)
+                .Add(x => x.Documents, results.Rows)
+                .Add(x => x.View, view));
+
+            var heads = cut.FindAll("thead th");
+
+            Assert.NotEmpty(heads);
+            Assert.Equal(results.Rows.Count, cut.FindAll("tbody tr").Count);
+
+            Assert.All(cut.FindAll("tbody tr"),
+                row => Assert.Equal(heads.Count, row.QuerySelectorAll(":scope > td").Length));
+        }
     }
 
     [Fact]

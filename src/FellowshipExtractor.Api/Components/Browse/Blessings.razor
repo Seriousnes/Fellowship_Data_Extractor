@@ -1,0 +1,31 @@
+@inject ICodexViewService Ui
+
+<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<BlessingDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column T="BlessingDocument" Head="" Class="cx-art">
+            <Content Context="row"><Art Entity="row" /></Content>
+        </Column>
+        <Column T="BlessingDocument" Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column T="BlessingDocument" Head="Scales off" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var stat in Ui.Codex.Scaling(row.ScalesOff))
+                {
+                    <Chip>@stat</Chip>
+                }
+            </Content>
+        </Column>
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<BlessingDocument> Drawn = [];
+
+    protected override void OnParametersSet() => Drawn = [.. Rows.OfType<BlessingDocument>()];
+}

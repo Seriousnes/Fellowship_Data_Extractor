@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 
+using Fellowship.SDK.Models;
+
 namespace Fellowship.SDK;
 
 public sealed record Entity
@@ -132,6 +134,18 @@ public sealed record Entity
     public IReadOnlyList<int>? LegendaryStatIds { get; init; }
 
     public bool? SlotBorneTalent { get; init; }
+
+    public IReadOnlyList<ItemSource>? Sources { get; init; }
+
+    public int? ItemLevel { get; init; }
+
+    public IReadOnlyList<string>? OwningHeroes { get; init; }
+
+    public IconSource? Owner { get; init; }
+
+    public IconSource? AppliedBy { get; init; }
+
+    public IReadOnlyList<string>? ApplierTags { get; init; }
 
     [JsonIgnore]
     public IReadOnlyList<Variant>? Variants { get; init; }

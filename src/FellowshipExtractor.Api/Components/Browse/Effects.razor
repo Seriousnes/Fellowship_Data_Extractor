@@ -1,0 +1,41 @@
+@inject ICodexViewService Ui
+
+<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<EffectDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column T="EffectDocument" Head="" Class="cx-art">
+            <Content Context="row"><Art Entity="row" /></Content>
+        </Column>
+        <Column T="EffectDocument" Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column T="EffectDocument" Head="Source" Key="source" Class="cx-tags">
+            <Content Context="row">
+                <Owner Type="EntityType.Effect" Owners="row.Heroes" Holder="row.Owner" />
+            </Content>
+        </Column>
+        <Column T="EffectDocument" Head="Type" Key="school" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var school in row.Schools ?? [])
+                {
+                    <Chip>@school</Chip>
+                }
+            </Content>
+        </Column>
+        <Column T="EffectDocument" Head="Applied by" Key="applier">
+            <Content Context="row">
+                <Owner Type="EntityType.Ability" Holder="row.AppliedBy" />
+            </Content>
+        </Column>
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<EffectDocument> Drawn = [];
+
+    protected override void OnParametersSet() => Drawn = [.. Rows.OfType<EffectDocument>()];
+}

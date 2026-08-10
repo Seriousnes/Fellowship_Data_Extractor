@@ -19,7 +19,7 @@ public sealed class EndpointTests : IClassFixture<RouteTests.Factory>
 
         var missing = new List<string>();
 
-        foreach (var type in Enum.GetValues<EntityType>())
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
         {
             if (!named.Contains($"Get{type}")) missing.Add($"Get{type}");
             if (!named.Contains($"Get{type}Tooltip")) missing.Add($"Get{type}Tooltip");
@@ -36,12 +36,29 @@ public sealed class EndpointTests : IClassFixture<RouteTests.Factory>
             .OfType<string>()
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var type in Enum.GetValues<EntityType>())
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
         {
             var slug = EntityTypes.Slug(type);
 
             Assert.Contains($"/api/{slug}/{{id:int}}", patterns);
             Assert.Contains($"/api/{slug}/{{id:int}}/tooltip", patterns);
+        }
+    }
+
+    [Fact]
+    public void An_unlisted_type_registers_no_route_at_all()
+    {
+        var patterns = endpoints
+            .Select(endpoint => endpoint.RoutePattern.RawText)
+            .OfType<string>()
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var type in Enum.GetValues<EntityType>().Where(named => !PublicTypes.Listed(named)))
+        {
+            var slug = EntityTypes.Slug(type);
+
+            Assert.DoesNotContain($"/api/{slug}/{{id:int}}", patterns);
+            Assert.DoesNotContain($"/api/{slug}/{{id:int}}/tooltip", patterns);
         }
     }
 }

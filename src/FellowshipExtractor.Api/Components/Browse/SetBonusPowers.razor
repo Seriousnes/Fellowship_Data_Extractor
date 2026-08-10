@@ -1,0 +1,33 @@
+@inject ICodexViewService Ui
+
+<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<SetBonusPowerDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column T="SetBonusPowerDocument" Head="" Class="cx-art">
+            <Content Context="row"><Art Entity="row" /></Content>
+        </Column>
+        <Column T="SetBonusPowerDocument" Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column T="SetBonusPowerDocument" Head="Cooldown" Key="cooldown" Unit="s" Numeric
+                Value="row => row.Cooldown" />
+        <Column T="SetBonusPowerDocument" Head="Scales off" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var stat in Ui.Codex.Scaling(row.ScalesOff))
+                {
+                    <Chip>@stat</Chip>
+                }
+            </Content>
+        </Column>
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<SetBonusPowerDocument> Drawn = [];
+
+    protected override void OnParametersSet() => Drawn = [.. Rows.OfType<SetBonusPowerDocument>()];
+}

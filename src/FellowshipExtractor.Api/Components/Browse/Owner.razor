@@ -1,0 +1,35 @@
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+
+@if (Owners is { Count: > 0 } heroes)
+{
+    @foreach (var hero in heroes)
+    {
+        <a class="cx-owner" href="@HeroList(hero.ToString())" style="color:@Ui.HeroColour(hero.ToString())">@hero</a>
+    }
+}
+else if (Holder is { } holder && Named(holder) is { } name)
+{
+    @if (Ui.Store.All(holder.Type, holder.Id).Count > 0)
+    {
+        <a href="@Ui.Href(holder.Type, holder.Id)">@name</a>
+    }
+    else
+    {
+        @name
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public EntityType Type { get; set; }
+
+    [Parameter] public IReadOnlyList<Hero>? Owners { get; set; }
+
+    [Parameter] public EntityReference? Holder { get; set; }
+
+    private string HeroList(string hero) =>
+        $"/browse?type={Uri.EscapeDataString(EntityTypes.Slug(Type))}&hero={Uri.EscapeDataString(hero)}";
+
+    private string? Named(EntityReference holder) =>
+        holder.Name ?? (Ui.Store.All(holder.Type, holder.Id) is [var first, ..] ? Ui.Name(first) : null);
+}
