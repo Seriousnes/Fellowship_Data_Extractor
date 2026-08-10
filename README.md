@@ -626,18 +626,23 @@ Either destination is the same layout:
 <root>/ui/<texture>.png
 ```
 
-The run reports what it read: 15,235 entries from 13,088 tags, 6,570 with a display name and 5,916
-with an icon; 1,288 names and 1,282 icons inherited from the entity that applies them, 70 and 10
-withheld because two entities that apply them disagree; 1,713 tuning rows supplied by namespace that
-no asset names; 18 coefficient rows banded by their own `Spread` row and 44 by their effect's
-calculation preset.
+The run reports what it read: 12,473 documents from 12,472 entities across 13,088 tags, 6,522 with a
+display name and 5,871 with an icon; 1,288 names and 1,282 icons inherited from the entity that
+applies them, 70 and 10 withheld because two entities that apply them disagree; 1,713 tuning rows
+supplied by namespace that no asset names; 1 coefficient row banded by its own `Spread` row and 61
+banded by their effect's calculation preset.
 
-Every line is the same record the `tooltip` command writes for one entity - one shape, 4.2 MB for
+It reports what it drew too: 121 chrome images, which is 93 chrome textures plus 28 rarity variants,
+four textures multiplied by each of the seven rarity colours; and 4,367 entity icon images, 3,150 of
+them an icon composed against a rarity colour. `ui/` ends at 4,488 files and 212 MB, the whole of
+the transform work done once so that no consumer composes anything at render time.
+
+Every line is the same record the `tooltip` command writes for one entity - one shape, 2.6 MB for
 the whole game, down from 22.5 MB.
 
 ### settings.json
 
-The one file beside `entities.jsonl` that is not an entity. 36,891 bytes of lookup tables that no
+The one file beside `entities.jsonl` that is not an entity. 47,646 bytes of lookup tables that no
 entity line can carry, written by the same `export-all` run so the two always describe the same
 build. Three of them are below; the rest are the design system's named colours, the rich text style
 set and the stat calculation settings, which is what lets a renderer draw a tooltip in the game's
