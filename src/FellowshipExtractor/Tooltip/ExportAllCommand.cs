@@ -94,7 +94,8 @@ public static class ExportAllCommand
             return;
         }
 
-        var icons = new IconImages(provider, resolver.Collections.Renders);
+        var icons = new IconImages(
+            provider, resolver.Collections.Renders, RarityImages.Ladder(resolver.Settings));
 
         int written = 0, withIcon = 0, withText = 0, scanned = 0;
 
@@ -167,7 +168,7 @@ public static class ExportAllCommand
             }
         }
 
-        var chrome = await ChromeTextures.WriteAsync(provider, target, default);
+        var chrome = await ChromeTextures.WriteAsync(provider, resolver.Settings, target, default);
 
         await target.WriteSettingsAsync(resolver.Settings.ToFile(), default);
 
@@ -179,7 +180,9 @@ public static class ExportAllCommand
                 $"  {dropped.Values.Sum()} entries dropped: " +
                 string.Join(", ", dropped.Select(entry => $"{entry.Key} {entry.Value}")));
         }
-        Console.WriteLine($"  {icons.Written} entity icons and {chrome} chrome textures written");
+        Console.WriteLine(
+            $"  {icons.Written} entity icon images and {chrome} chrome images written, " +
+            $"{icons.Composed} of the icons composed against a rarity colour");
         Console.WriteLine(
             $"  {resolver.NamesInherited} names inherited from the entity that applies them, " +
             $"{resolver.NamesContested} withheld because two entities that apply them disagree");

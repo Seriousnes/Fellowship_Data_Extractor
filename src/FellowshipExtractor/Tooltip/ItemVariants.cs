@@ -76,7 +76,7 @@ public static class ItemVariants
 
     private static IReadOnlyDictionary<string, string>? Spread(IReadOnlyList<RarityImage> art)
     {
-        if (art.Select(entry => entry.Image).Distinct(StringComparer.Ordinal).Count() < 2) return null;
+        if (art.Count == 0) return null;
 
         var spread = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var entry in art) spread[entry.Rarity] = entry.Image;

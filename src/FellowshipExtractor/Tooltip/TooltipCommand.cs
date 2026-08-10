@@ -82,7 +82,7 @@ public static class TooltipCommand
         var written = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         Directory.CreateDirectory(directory);
 
-        return iconPath =>
+        return (iconPath, _) =>
         {
             if (written.TryGetValue(iconPath, out var cached)) return cached;
 

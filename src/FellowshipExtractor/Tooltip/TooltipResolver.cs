@@ -6,7 +6,7 @@ using FellowshipExtractor.Commands;
 
 namespace FellowshipExtractor.Tooltip;
 
-public delegate string? IconWriter(string iconObjectPath);
+public delegate string? IconWriter(string iconObjectPath, string? rarity);
 
 public sealed class TooltipResolver
 {
@@ -284,7 +284,7 @@ public sealed class TooltipResolver
         return codename =>
         [
             .. DynamicVisuals.Icons(mappingKey, codename, slot?.Type, tiers)
-                .Select(entry => (entry.Rarity, Image: Written(entry.IconPath, icons)))
+                .Select(entry => (entry.Rarity, Image: Written(entry.IconPath, icons, entry.Rarity)))
                 .Where(entry => entry.Image is not null)
                 .Select(entry => new RarityImage(entry.Rarity, entry.Image!)),
         ];
@@ -377,8 +377,8 @@ public sealed class TooltipResolver
     private static GemOverflow? WithOverflow(GemOverflow? overflow, IconWriter? icons) =>
         overflow is null ? null : overflow with { Icon = Written(overflow.Icon, icons) };
 
-    private static string? Written(string? iconPath, IconWriter? icons) =>
-        iconPath is null ? null : icons?.Invoke(iconPath);
+    private static string? Written(string? iconPath, IconWriter? icons, string? rarity = null) =>
+        iconPath is null ? null : icons?.Invoke(iconPath, rarity);
 
     private Entity WithFixedItem(Entity entity, HeroItem item, IconWriter? icons) => entity with
     {
@@ -390,14 +390,14 @@ public sealed class TooltipResolver
         UniqueEquipped = item.UniqueEquipped ? true : null,
         Rarities = entity.Rarities ?? (item.Rarity is { } rung ? [rung] : null),
         Heroes = Empty([.. item.Heroes.Select(hero => Heroes.Shipped(hero) ?? hero)]),
-        Icon = entity.Icon ?? (item.IconPath is { } path ? icons?.Invoke(path) : null),
+        Icon = entity.Icon ?? Written(item.IconPath, icons, item.Rarity),
     };
 
     private static Entity WithTalent(Entity entity, Talent talent, IconWriter? icons) => entity with
     {
         DisplayName = talent.DisplayName ?? entity.DisplayName,
         Description = talent.Description ?? entity.Description,
-        Icon = (talent.IconPath is { } path ? icons?.Invoke(path) : null) ?? entity.Icon,
+        Icon = Written(talent.IconPath, icons) ?? entity.Icon,
         Heroes = [talent.HeroName],
         TalentSlot = talent.Slot,
         TalentRow = talent.Row,
@@ -533,7 +533,7 @@ public sealed class TooltipResolver
             Tags = cdo is null ? null : Empty(AbilityTypes(cdo)),
             Description = display.Description,
             Detail = Empty(detail),
-            Icon = display.Icon is null ? null : icons?.Invoke(display.Icon),
+            Icon = Written(display.Icon, icons),
             CastTime = Named(split, "castTime"),
             ChannelTime = Named(split, "channelTime"),
             ChannelTick = Named(split, "channelTick"),

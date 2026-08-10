@@ -4,6 +4,9 @@ using CUE4Parse_Conversion.Textures;
 using FellowshipExtractor.Output;
 using FellowshipExtractor.Tooltip;
 
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+
 namespace FellowshipExtractor.Textures;
 
 public static class ChromeTextures
@@ -22,11 +25,6 @@ public static class ChromeTextures
         "T_Backgrounds_TooltipHeader_Rarity_Alt",
         "T_Backgrounds_TooltipHeader_Subheader",
         "T_Borders_TooltipHeader_Sub",
-
-        "T_Backgrounds_TooltipItemHeader_TopDecor_Clean_Champion",
-        "T_Backgrounds_TooltipItemHeader_TopDecor_Clean_Paragon",
-        "T_Backgrounds_TooltipItemHeader_TopDecor_Clean_Eternal",
-        "T_Backgrounds_TooltipItemHeader_TopDecor_Clean_Legendary",
 
         "T_Borders_Divider_Simple",
         "T_Borders_Divider_SimpleFade",
@@ -52,7 +50,12 @@ public static class ChromeTextures
 
         "T_Borders_EmptyWithoutFrame",
         "T_Borders_RarityFrame",
+        "T_Borders_RarityGlow",
         "T_Borders_GlassFrame",
+        "T_Borders_SlotHoverHighlight",
+        "T_Borders_Glows_ItemSquare",
+        "T_Borders_EmptySlot",
+        "T_Icons_Gems_EmptySlot",
         "T_Buttons_AbilityBarBackground_Small",
         "T_Buttons_SmallAbilityButton_Default",
 
@@ -73,15 +76,28 @@ public static class ChromeTextures
 
         "T_Borders_Modifier_Frame_Hexagon",
         "T_Icons_Locked",
-        "T_GoldDivider",
+        GoldBand.Texture,
     ];
 
-    private static readonly string[] Families = ["T_Icons_BlessingRuneIcon_Allocated_"];
+    private static readonly string[] Families =
+        ["T_Icons_BlessingRuneIcon_Allocated_", "T_Borders_ItemRomanNumerals_"];
+
+    private static readonly string[] Tinted =
+    [
+        "T_Borders_Frame_TooltipRarityFrame",
+        "T_Backgrounds_TooltipHeader_Rarity",
+        "T_Borders_RarityFrame",
+        "T_Borders_RarityGlow",
+    ];
 
     public static async Task<int> WriteAsync(
-        AbstractFileProvider provider, IExportTarget target, CancellationToken cancellationToken)
+        AbstractFileProvider provider,
+        Settings settings,
+        IExportTarget target,
+        CancellationToken cancellationToken)
     {
         var slotIcons = SlotIcons.Textures(provider);
+        var ladder = RarityImages.Ladder(settings);
 
         var kin = provider.Files.Values
             .Select(file => Path.GetFileNameWithoutExtension(file.Name))
@@ -89,7 +105,13 @@ public static class ChromeTextures
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal);
 
-        string[] textures = [.. Chrome, .. kin, .. slotIcons.Values.Order(StringComparer.Ordinal)];
+        string[] textures =
+        [
+            .. Chrome,
+            .. settings.RarityOrnaments.Values.Order(StringComparer.Ordinal),
+            .. kin,
+            .. slotIcons.Values.Order(StringComparer.Ordinal),
+        ];
 
         var byName = provider.Files.Values
             .Where(f => f.Path.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
@@ -99,7 +121,7 @@ public static class ChromeTextures
             $"\nwriting {textures.Length} tooltip chrome texture(s), " +
             $"{slotIcons.Count} of them the slot glyphs {SlotIcons.Widget} names");
 
-        int written = 0, missing = 0;
+        int written = 0, missing = 0, variants = 0;
 
         foreach (var name in textures)
         {
@@ -127,14 +149,43 @@ public static class ChromeTextures
                 continue;
             }
 
-            await target.WriteImageAsync($"{name}.{encoded.Extension}", encoded.Content!, cancellationToken);
+            var image = $"{name}.{encoded.Extension}";
+            var content = encoded.Content!;
+
+            if (name.Equals(GoldBand.Texture, StringComparison.Ordinal))
+            {
+                using var canvas = Image.Load<Rgba32>(content);
+                content = GoldBand.Crop(canvas);
+            }
+
+            await target.WriteImageAsync(image, content, cancellationToken);
             written++;
+
+            if (!Array.Exists(Tinted, tinted => tinted.Equals(name, StringComparison.Ordinal))) continue;
+
+            using var mask = Image.Load<Rgba32>(content);
+
+            foreach (var rung in ladder)
+            {
+                await target.WriteImageAsync(
+                    ExportLayout.Variant(image, rung.Rarity),
+                    RarityImages.Tint(mask, rung.Colour),
+                    cancellationToken);
+
+                variants++;
+            }
         }
 
         Console.WriteLine($"  {written} of {textures.Length} chrome texture(s) written");
+        Console.WriteLine(
+            $"  {variants} rarity variants, {Tinted.Length} textures multiplied by each of " +
+            $"{ladder.Count} rarity colours");
+        Console.WriteLine(
+            $"  {GoldBand.Texture} written as rows {GoldBand.FirstRow} to {GoldBand.LastRow} of its " +
+            $"{GoldBand.CanvasHeight} row canvas");
         if (missing > 0) Console.WriteLine($"  {missing} not written, see above");
         Console.WriteLine("  no font is exported: the header face is ArnoPro and is not ours to redistribute");
 
-        return written;
+        return written + variants;
     }
 }
