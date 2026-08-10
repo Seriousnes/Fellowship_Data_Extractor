@@ -26,6 +26,15 @@ public sealed class StatPoolTests
     }
 
     [Fact]
+    public void PrimaryPowerCoefficientsAreUnchanged()
+    {
+        var calculation = Export.Loaded.Settings.StatCalculation;
+
+        Assert.Equal(1.03, calculation.PrimaryPowerBase);
+        Assert.Equal(10, calculation.PrimaryAndStaminaMultiplier);
+    }
+
+    [Fact]
     public void RarityStillDoesNotScaleMagnitudes() =>
         Assert.Equal(1, Export.Loaded.Settings.StatCalculation.StatRarityBase);
 

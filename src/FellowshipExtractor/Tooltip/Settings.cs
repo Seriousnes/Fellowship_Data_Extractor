@@ -111,6 +111,8 @@ public sealed class Settings
         {
             PrimaryPool = StatCalculation.Primary,
             SecondaryPool = StatCalculation.Secondary,
+            PrimaryPowerBase = StatCalculation.PrimaryPowerBase,
+            PrimaryAndStaminaMultiplier = StatCalculation.PrimaryAndStaminaMultiplier,
             StatRarityBase = StatCalculation.StatRarityBase,
             BaseSlot = StatCalculation.BaseSlot,
             FixedSlot = StatCalculation.FixedSlot,

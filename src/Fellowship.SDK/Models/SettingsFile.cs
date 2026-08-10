@@ -5,6 +5,9 @@ public sealed record StatCalculationFile
     public PrimaryStatPool? PrimaryPool { get; init; }
     public SecondaryStatPool? SecondaryPool { get; init; }
 
+    public double PrimaryPowerBase { get; init; }
+    public double PrimaryAndStaminaMultiplier { get; init; }
+
     public double StatRarityBase { get; init; }
 
     public SlotStatSettings BaseSlot { get; init; } = new();
