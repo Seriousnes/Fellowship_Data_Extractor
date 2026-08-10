@@ -1,6 +1,6 @@
 using static StackIdentity;
 
-var stack = Stack(Directory.GetCurrentDirectory());
+var stack = Stack(AppContext.BaseDirectory);
 
 Rebind("ASPNETCORE_URLS", stack.Offset, 18079, 16133);
 Rebind("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", stack.Offset, 23256);

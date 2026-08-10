@@ -903,13 +903,15 @@ a second. That only works if both name the same thing, so both compute the volum
 port, the Docker Compose project and the container name from `StackIdentity`, one file in the
 AppHost project that the Publisher compiles as a linked item.
 
-The identity is the checkout root: the directory `Checkout()` walks up to from the working directory
-the host was started in, looking for a `.git` entry. Two hosts whose binaries sit in different `bin`
-folders therefore agree, and one checkout gets one volume name and one port offset whichever host
-starts. A worktree's `.git` is a file pointing at the main checkout's `.git/worktrees/<name>`, and
-the identity is the directory holding that file rather than the directory it points at, so every
-worktree is its own checkout root and its own stack. The branch the pointer names is what the
-compose project is called: `fellowship-master`, `fellowship-sba-topology`.
+The identity is the checkout root: each host walks up from its own build output directory, the one
+`AppContext.BaseDirectory` names, until `Checkout()` finds a `.git` entry, and hashes the directory
+holding it. Two hosts whose binaries sit in different `bin` folders therefore agree, and one
+checkout gets one volume name and one port offset whichever host starts. A build output directory
+with no `.git` above it has no checkout root, and is hashed itself. A worktree's `.git` is a file
+pointing at the main checkout's `.git/worktrees/<name>`, and the identity is the directory holding
+that file rather than the directory it points at, so every worktree is its own checkout root and its
+own stack. The branch the pointer names is what the compose project is called: `fellowship-master`,
+`fellowship-sba-topology`.
 
 ### One stack per worktree
 
@@ -920,7 +922,7 @@ are literals every worktree shares, so a second app host fails on
 
 The stack's offset moves every port along by it - the dashboard, its OTLP and resource-service
 endpoints, the blob port and the web app's own port - and the containers are filed under one Docker
-Compose project named after the checkout, with the stack's hash in the container name as well: a
+Compose project named after the checkout, with that project name in the container name as well: a
 compose label groups containers, it does not namespace their names, so two worktrees both naming an
 emulator `azurite` still collide. The offset is stable across restarts, because a blob URL is baked
 into every tooltip fragment already handed out; `FELLOWSHIP_PORT_OFFSET` pins it by hand.
