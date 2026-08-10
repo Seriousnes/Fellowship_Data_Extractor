@@ -30,6 +30,12 @@ public sealed class Settings
 
     public IReadOnlyDictionary<string, string> SlotIcons { get; }
 
+    public IReadOnlyDictionary<string, string> RarityOrnaments { get; }
+
+    public IReadOnlyDictionary<string, string> RarityColorRows { get; }
+
+    public IReadOnlyDictionary<string, string> SectionHeadingRows { get; }
+
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; }
 
     public IReadOnlyList<DropPlateau> DropItemLevels { get; }
@@ -45,6 +51,9 @@ public sealed class Settings
         IReadOnlyList<string> randomStatPool,
         IReadOnlyList<string> gemTypes,
         SlotIcons slotIcons,
+        RarityOrnaments ornaments,
+        RarityColorRows colorRows,
+        SectionHeadingRows headings,
         TemperCeilings tempers,
         DropItemLevels drops,
         Blessings blessings)
@@ -53,11 +62,17 @@ public sealed class Settings
         RandomStatPool = randomStatPool;
         GemTypes = gemTypes;
         SlotIcons = slotIcons.BySlot;
+        RarityOrnaments = ornaments.ByRarity;
+        RarityColorRows = colorRows.ByRarity;
+        SectionHeadingRows = headings.BySection;
         MaxTempers = tempers.ByRarity;
         DropItemLevels = drops.Plateaus;
         Blessings = blessings.Wording;
 
         var colours = Colours(provider, assets);
+
+        Resolvable(RarityColorRows, colours, colorRows.Source);
+        Resolvable(SectionHeadingRows, colours, headings.Source);
 
         Heroes =
         [
@@ -101,6 +116,9 @@ public sealed class Settings
         DropItemLevels = DropItemLevels,
         Blessings = Blessings,
         SlotIcons = SlotIcons,
+        RarityOrnaments = RarityOrnaments,
+        RarityColorRows = RarityColorRows,
+        SectionHeadingRows = SectionHeadingRows,
         PrintFormats = PrintFormats,
         Colors = Colors,
         TextStyles = TextStyles.ToDictionary(
@@ -124,6 +142,21 @@ public sealed class Settings
             RarityAdditions = StatCalculation.RarityAdditions,
         },
     };
+
+    private static void Resolvable(
+        IReadOnlyDictionary<string, string> rows,
+        IReadOnlyDictionary<string, string> colours,
+        string source)
+    {
+        foreach (var (key, row) in rows)
+        {
+            if (colours.ContainsKey(row)) continue;
+
+            throw new InvalidOperationException(
+                $"{source} draws {key} in {row}, which no named colour table declares, so it would resolve to no " +
+                "hex at all.");
+        }
+    }
 
     private static Dictionary<string, string> Colours(
         AbstractFileProvider provider, IReadOnlyList<FAssetData> assets) =>

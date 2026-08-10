@@ -130,7 +130,8 @@ public sealed class TooltipResolver
 
         Settings = new Settings(
             provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types,
-            SlotGlyphs, Tempers, Drops, new Blessings(provider, _constants));
+            SlotGlyphs, new RarityOrnaments(provider, rarities), new RarityColorRows(provider, rarities),
+            new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
