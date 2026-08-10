@@ -1,7 +1,5 @@
 using System.Globalization;
 
-using Azure.Storage.Blobs;
-
 using Fellowship.SDK.Documents;
 
 using Microsoft.AspNetCore.Components;
@@ -68,7 +66,6 @@ public sealed class TooltipViewService(
     IRichTextService renderer,
     IPlaceholderService placeholders,
     IChromeAssetService chrome,
-    BlobContainerClient icons,
     IWebHostEnvironment environment) : ITooltipViewService
 {
     private const string Sheet = "css/tooltip.css";
@@ -115,7 +112,7 @@ public sealed class TooltipViewService(
             ? art
             : DocumentFields.Text(document, nameof(ItemDocument.Icon));
 
-        return icon is null ? null : $"{icons.Uri}/{icon}";
+        return chrome.Art(icon);
     }
 
     public string? Ornament(RarityEntry? rarity) => rarity is null ? null : chrome.Ornament(rarity.Name);

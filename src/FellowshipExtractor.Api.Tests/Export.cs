@@ -40,8 +40,6 @@ public sealed class Export
 
     public string Folder { get; }
 
-    public string Ui => Path.Combine(Folder, ChromeAssetService.Prefix);
-
     public Export()
     {
         Folder = Environment.GetEnvironmentVariable("FELLOWSHIP_EXPORT") ?? Found();
@@ -61,9 +59,9 @@ public sealed class Export
         var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
         var chrome = Chrome = new ChromeAssetService(icons, Store, tokens);
 
-        View = new CodexViewService(Store, new CodexService(Store, tokens), tokens, chrome, richText, substitutions, icons);
+        View = new CodexViewService(Store, new CodexService(Store, tokens), tokens, chrome, richText, substitutions);
 
-        Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, icons, new ApiWebRoot());
+        Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, new ApiWebRoot());
     }
 
     public static string Found()
