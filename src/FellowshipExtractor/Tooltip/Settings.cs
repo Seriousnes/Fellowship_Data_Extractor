@@ -1,4 +1,3 @@
-using System.Text.Json;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports.Engine;
@@ -93,44 +92,36 @@ public sealed class Settings
         }
     }
 
-    public async Task<long> WriteAsync(string folder)
+    public SettingsFile ToFile() => new()
     {
-        var target = Path.Combine(folder, FileName);
-
-        await File.WriteAllTextAsync(target, JsonSerializer.Serialize(
-            new
-            {
-                heroes = Heroes,
-                rarities = Rarities,
-                gemTypes = GemTypes,
-                maxTempers = MaxTempers,
-                dropItemLevels = DropItemLevels,
-                blessings = Blessings,
-                slotIcons = SlotIcons,
-                printFormats = PrintFormats,
-                colors = Colors,
-                textStyles = TextStyles,
-                statCalculation = new
-                {
-                    primaryPool = StatCalculation.Primary,
-                    secondaryPool = StatCalculation.Secondary,
-                    primaryPowerBase = StatCalculation.PrimaryPowerBase,
-                    primaryAndStaminaMultiplier = StatCalculation.PrimaryAndStaminaMultiplier,
-                    statRarityBase = StatCalculation.StatRarityBase,
-                    baseSlot = StatCalculation.BaseSlot,
-                    fixedSlot = StatCalculation.FixedSlot,
-                    dynamicSlot = StatCalculation.DynamicSlot,
-                    slotWeights = StatCalculation.SlotWeights,
-                    armorWeights = StatCalculation.ArmorWeights,
-                    attributes = StatCalculation.Attributes,
-                    randomStatPool = RandomStatPool,
-                    rarityAdditions = StatCalculation.RarityAdditions,
-                },
-            },
-            TooltipCommand.JsonOptions));
-
-        return new FileInfo(target).Length;
-    }
+        Heroes = Heroes,
+        Rarities = Rarities,
+        GemTypes = GemTypes,
+        MaxTempers = MaxTempers,
+        DropItemLevels = DropItemLevels,
+        Blessings = Blessings,
+        SlotIcons = SlotIcons,
+        PrintFormats = PrintFormats,
+        Colors = Colors,
+        TextStyles = TextStyles.ToDictionary(
+            style => style.Key,
+            style => new TextStyle(style.Value.Color, style.Value.Weight, style.Value.Size),
+            StringComparer.OrdinalIgnoreCase),
+        StatCalculation = new StatCalculationFile
+        {
+            PrimaryPool = StatCalculation.Primary,
+            SecondaryPool = StatCalculation.Secondary,
+            StatRarityBase = StatCalculation.StatRarityBase,
+            BaseSlot = StatCalculation.BaseSlot,
+            FixedSlot = StatCalculation.FixedSlot,
+            DynamicSlot = StatCalculation.DynamicSlot,
+            SlotWeights = StatCalculation.SlotWeights,
+            ArmorWeights = StatCalculation.ArmorWeights,
+            Attributes = StatCalculation.Attributes,
+            RandomStatPool = RandomStatPool,
+            RarityAdditions = StatCalculation.RarityAdditions,
+        },
+    };
 
     private static Dictionary<string, string> Colours(
         AbstractFileProvider provider, IReadOnlyList<FAssetData> assets) =>

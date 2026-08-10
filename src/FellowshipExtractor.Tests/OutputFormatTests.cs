@@ -12,12 +12,13 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using (var output = new JsonlOutputFormat(folder))
+        await using (var target = new FolderTarget(folder))
         {
-            await output.WriteAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
+            await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
         }
 
-        var line = (await File.ReadAllLinesAsync(Path.Combine(folder, "entities.jsonl")))[0];
+        var line = (await File.ReadAllLinesAsync(
+            Path.Combine(folder, ExportLayout.DataFolder, ExportLayout.EntitiesFile)))[0];
         using var document = JsonDocument.Parse(line);
 
         Assert.Equal("ability", document.RootElement.GetProperty(EntityDocuments.Discriminator).GetString());
@@ -31,9 +32,9 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using (var output = new JsonlOutputFormat(folder))
+        await using (var target = new FolderTarget(folder))
         {
-            await output.WriteAsync(
+            await target.WriteDocumentAsync(
                 new EffectDocument
                 {
                     Id = 7788,
@@ -43,7 +44,8 @@ public sealed class OutputFormatTests
                 default);
         }
 
-        var line = (await File.ReadAllLinesAsync(Path.Combine(folder, "entities.jsonl")))[0];
+        var line = (await File.ReadAllLinesAsync(
+            Path.Combine(folder, ExportLayout.DataFolder, ExportLayout.EntitiesFile)))[0];
         using var document = JsonDocument.Parse(line);
 
         Assert.Equal("effect", document.RootElement.GetProperty(EntityDocuments.Discriminator).GetString());

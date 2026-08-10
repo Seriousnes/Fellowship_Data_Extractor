@@ -1,5 +1,7 @@
 using System.Text;
 
+using FellowshipExtractor.Output;
+
 namespace FellowshipExtractor.Tooltip;
 
 public static class EnumsCommand
@@ -24,7 +26,7 @@ public static class EnumsCommand
     public static async Task RunAsync(ExtractorOptions options)
     {
         var folder = Path.Combine(options.ResolvedOutputDir, "export");
-        var exported = Path.Combine(folder, Settings.FileName);
+        var exported = Path.Combine(folder, ExportLayout.DataFolder, Settings.FileName);
         var settings = SettingsReader.Read(exported);
         var members = Members(settings);
 

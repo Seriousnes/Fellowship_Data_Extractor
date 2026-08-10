@@ -7,6 +7,12 @@ using FellowshipExtractor.Usmap;
 
 ReadFailureLog.EnableIfRequested();
 
+const string OutputFlag = "--output";
+const string ConnectionStringFlag = "--connection-string";
+const string ConnectionStringVariable = "ConnectionStrings__icons";
+
+string[] valuedFlags = [OutputFlag, ConnectionStringFlag];
+
 var command = args.Length > 0 ? args[0].ToLowerInvariant() : "list";
 var options = new ExtractorOptions
 {
@@ -92,9 +98,6 @@ switch (command)
         }
         await TextureCommand.RunAsync(options, args[1], args.Length > 2 ? args[2] : null);
         break;
-    case "ui":
-        await UiCommand.RunAsync(options);
-        break;
     case "functions":
         await FellowshipExtractor.Tooltip.FunctionsCommand.RunAsync(options);
         break;
@@ -108,23 +111,39 @@ switch (command)
         break;
     case "export-all":
     {
-        var format = Argument(args, "--output-format") ?? "jsonl";
-        var folder = Path.Combine(options.ResolvedOutputDir, "export");
+        var rest = args[1..];
 
-        if (format != "jsonl")
+        var connectionString = Argument(rest, ConnectionStringFlag)
+            ?? Environment.GetEnvironmentVariable(ConnectionStringVariable);
+        var folder = Argument(rest, OutputFlag);
+
+        if (connectionString is null && folder is null)
         {
-            Console.Error.WriteLine($"Unknown output format '{format}'. Formats: jsonl.");
+            Console.Error.WriteLine(
+                $"""
+                 export-all needs somewhere to write.
+                   {OutputFlag} <path>              a folder laid out like the container
+                   {ConnectionStringFlag} <value>   blob storage, container '{BlobTarget.ContainerName}'
+                 Naming both writes both in one pass. The connection string is also read from the
+                 {ConnectionStringVariable} environment variable, which the Publisher app host injects.
+                 """);
             return 1;
         }
 
-        await using IOutputFormat output = new JsonlOutputFormat(folder);
+        List<IExportTarget> destinations = [];
+        if (folder is not null) destinations.Add(new FolderTarget(folder));
+        if (connectionString is not null) destinations.Add(new BlobTarget(connectionString));
 
-        var rest = args[1..];
+        await using IExportTarget target = destinations.Count == 1
+            ? destinations[0]
+            : new CompositeTarget(destinations);
+
         var tables = rest.Where((a, i) =>
             !a.StartsWith('-') &&
-            (i == 0 || !rest[i - 1].Equals("--output-format", StringComparison.OrdinalIgnoreCase)));
+            (i == 0 || !Array.Exists(
+                valuedFlags, flag => rest[i - 1].Equals(flag, StringComparison.OrdinalIgnoreCase))));
 
-        await FellowshipExtractor.Tooltip.ExportAllCommand.RunAsync(options, [.. tables], output);
+        await FellowshipExtractor.Tooltip.ExportAllCommand.RunAsync(options, [.. tables], target);
         break;
     }
     case "enums":
@@ -147,9 +166,10 @@ switch (command)
                index                 join the tag tables to the asset registry
                dump <filter>         serialize a package's exports to JSON
                textures <filter> [f] decode matching textures to png (or jpeg, tga, dds)
-               ui                    write the item tooltip's chrome textures to output/export/ui
                tooltip <table> <id>  reconstruct one entity's tooltip from name, text and constants
-               export-all [table...] [--output-format jsonl]  every entity as its type's document
+               export-all [table...] [--output <path>] [--connection-string <value>]
+                                     every entity as its type's document, with the settings and every
+                                     image, into a folder, into blob storage, or into both
                enums                 regenerate the enumerated types from the exported settings
                webdb                 that export as one self-contained, searchable HTML page
                probe [sample]        report how many packages parse with current mappings

@@ -1,11 +1,12 @@
+using CUE4Parse.FileProvider;
 using CUE4Parse_Conversion.Textures;
+
+using FellowshipExtractor.Output;
 using FellowshipExtractor.Tooltip;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace FellowshipExtractor.Textures;
 
-public static class UiCommand
+public static class ChromeTextures
 {
     private static readonly string[] Chrome =
     [
@@ -77,10 +78,9 @@ public static class UiCommand
 
     private static readonly string[] Families = ["T_Icons_BlessingRuneIcon_Allocated_"];
 
-    public static async Task RunAsync(ExtractorOptions options)
+    public static async Task<int> WriteAsync(
+        AbstractFileProvider provider, IExportTarget target, CancellationToken cancellationToken)
     {
-        var provider = await ProviderFactory.CreateAsync(options);
-
         var slotIcons = SlotIcons.Textures(provider);
 
         var kin = provider.Files.Values
@@ -95,12 +95,9 @@ public static class UiCommand
             .Where(f => f.Path.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
             .ToLookup(f => Path.GetFileNameWithoutExtension(f.Path), StringComparer.OrdinalIgnoreCase);
 
-        var folder = Path.Combine(options.ResolvedOutputDir, "export", "ui");
-        Directory.CreateDirectory(folder);
-
         Console.WriteLine(
-            $"writing {textures.Length} tooltip chrome texture(s) to {folder}, " +
-            $"{slotIcons.Count} of them the slot glyphs {SlotIcons.Widget} names\n");
+            $"\nwriting {textures.Length} tooltip chrome texture(s), " +
+            $"{slotIcons.Count} of them the slot glyphs {SlotIcons.Widget} names");
 
         int written = 0, missing = 0;
 
@@ -122,65 +119,22 @@ public static class UiCommand
                 continue;
             }
 
-            var export = TextureExporter.Export(
-                texture, Path.Combine(folder, name), ETextureFormat.Png);
-
-            if (!export.Written)
+            var encoded = TextureExporter.Export(texture, ETextureFormat.Png);
+            if (!encoded.Written)
             {
-                Console.Error.WriteLine($"{name,-56} did not decode: {export.Error}");
+                Console.Error.WriteLine($"{name,-56} did not decode: {encoded.Error}");
                 missing++;
                 continue;
             }
 
+            await target.WriteImageAsync($"{name}.{encoded.Extension}", encoded.Content!, cancellationToken);
             written++;
-            Console.WriteLine(
-                $"{name,-56} {export.Width,4}x{export.Height,-4} {texture.Format,-14} " +
-                $"{Describe(export.File!),-28} {new FileInfo(export.File!).Length,8} bytes");
         }
 
-        Console.WriteLine($"\nwrote {written} of {textures.Length} texture(s) to {folder}");
+        Console.WriteLine($"  {written} of {textures.Length} chrome texture(s) written");
         if (missing > 0) Console.WriteLine($"  {missing} not written, see above");
-        Console.WriteLine("no font is exported: the header face is ArnoPro and is not ours to redistribute");
-    }
+        Console.WriteLine("  no font is exported: the header face is ArnoPro and is not ours to redistribute");
 
-    private static string Describe(string file)
-    {
-        using var image = Image.Load<Rgba32>(file);
-
-        var neutral = true;
-        int minLuma = 255, maxLuma = 0, bestChroma = -1, bestLuma = -1;
-        Rgba32 saturated = default;
-
-        image.ProcessPixelRows(rows =>
-        {
-            for (var y = 0; y < rows.Height; y++)
-            {
-                var row = rows.GetRowSpan(y);
-                for (var x = 0; x < row.Length; x++)
-                {
-                    var p = row[x];
-                    if (p.A == 0) continue;
-
-                    var hi = Math.Max(p.R, Math.Max(p.G, p.B));
-                    var lo = Math.Min(p.R, Math.Min(p.G, p.B));
-                    if (hi != lo) neutral = false;
-
-                    minLuma = Math.Min(minLuma, hi);
-                    maxLuma = Math.Max(maxLuma, hi);
-
-                    var chroma = hi - lo;
-                    if (p.A >= 128 && (chroma > bestChroma || (chroma == bestChroma && hi > bestLuma)))
-                    {
-                        bestChroma = chroma;
-                        bestLuma = hi;
-                        saturated = p;
-                    }
-                }
-            }
-        });
-
-        return neutral
-            ? $"mask, luma {minLuma} to {maxLuma}"
-            : $"colour, peak #{saturated.R:X2}{saturated.G:X2}{saturated.B:X2}";
+        return written;
     }
 }

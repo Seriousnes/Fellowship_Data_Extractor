@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using FellowshipExtractor.Output;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -13,7 +14,7 @@ namespace FellowshipExtractor.Tooltip;
 public static class WebDbCommand
 {
     private const string FolderName = "export";
-    private const string SourceName = "entities.jsonl";
+    private const string SourceName = ExportLayout.EntitiesFile;
     private const string FileName = "tooltips.html";
 
     private const string PayloadMarker = "const DATA = \"__PAYLOAD__\";";
@@ -23,7 +24,7 @@ public static class WebDbCommand
     public static async Task RunAsync(ExtractorOptions options)
     {
         var folder = Path.Combine(options.ResolvedOutputDir, FolderName);
-        var source = Path.Combine(folder, SourceName);
+        var source = Path.Combine(folder, ExportLayout.DataFolder, SourceName);
 
         if (!File.Exists(source))
         {
@@ -56,7 +57,7 @@ public static class WebDbCommand
         Console.WriteLine($"  {entities.Count} carry a display name and become cards");
         Console.WriteLine($"  {iconNames.Count} distinct icons referenced");
 
-        var icons = Thumbnails(folder, iconNames);
+        var icons = Thumbnails(Path.Combine(folder, ExportLayout.UiFolder), iconNames);
         var payload = Payload(entities, icons, out var resolvedTokens);
 
         foreach (var document in entities) document.Dispose();
