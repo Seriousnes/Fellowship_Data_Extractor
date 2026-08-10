@@ -1,122 +1,87 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging.Abstractions;
-
 namespace FellowshipExtractor.Api.Tests;
 
 [Collection(Corpus.Name)]
 public class ListingTests(Export export)
 {
-    private const int Sinbinding = 5250;
     private const int Betrayers = 5191;
 
-    private CodexResults Run(params (string Key, string Value)[] asked)
-    {
-        var query = CodexQuery.Parse(
-            new QueryCollection(asked.ToDictionary(
-                pair => pair.Key,
-                pair => new Microsoft.Extensions.Primitives.StringValues(pair.Value))),
-            export.View.Codex,
-            RequestProperties.Of(typeof(EntitiesRequest)),
-            out var error);
+    private CodexResults Run(params (string Key, string Value)[] asked) => Searching.Run(export, asked);
 
-        Assert.Null(error);
-
-        return new CodexSearchService(
-            export.Store,
-            export.View.Codex,
-            new SearchIndexService(export.Store, NullLogger<SearchIndexService>.Instance),
-            export.View).Run(query with { PageSize = 200 });
-    }
-
-    private ItemDocument Legendary => export.Store.Entities.OfType<ItemDocument>()
-        .First(item => item.Rarity is { } rung && (int)rung == 6
-            && export.Store.All(EntityType.Item, item.Id).Count > 1);
-
-    private static Listing Find(CodexResults results, int id) =>
-        results.Rows.Single(row => row.Shown.Id == id);
+    private EntityDocument Find(CodexResults results, int id, string hero) =>
+        results.Rows.Single(row => row.Id == id && export.Store.Wearer(row)?.Name == hero);
 
     [Fact]
-    public void An_id_is_drawn_once_however_many_readings_it_has()
+    public void An_id_is_drawn_once_per_reading()
     {
         var results = Run(("type", "item"));
-        var ids = results.Rows.Select(row => row.Shown.Id).ToArray();
 
-        Assert.Equal(ids.Length, ids.Distinct().Count());
-        Assert.Equal(3789, results.Total);
+        Assert.Equal(results.Rows.Count, results.Rows.Distinct().Count());
+        Assert.Equal(2684, results.Total);
     }
 
     [Fact]
-    public void A_talent_slot_is_drawn_once_per_id()
+    public void An_id_reading_twelve_ways_draws_twelve_rows()
     {
-        Assert.Equal(19, Run(("type", "talent-slot")).Total);
+        var id = Betrayers.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        Assert.Equal(12, export.Store.All(EntityType.Item, Betrayers).Count);
+
+        var drawn = Run(("type", "item"), ("idMin", id), ("idMax", id));
+
+        Assert.Equal(12, drawn.Total);
+        Assert.All(drawn.Rows, row => Assert.Equal(Betrayers, row.Id));
+        Assert.Equal(12, drawn.Rows.Select(row => export.Store.Wearer(row)?.Name).Distinct().Count());
     }
 
     [Fact]
-    public void An_id_reading_under_one_name_draws_no_variant_link()
+    public void A_talent_slot_id_draws_one_row_per_hero()
     {
-        Assert.Empty(Find(Run(("type", "item"), ("q", "Sinbinding")), Sinbinding).Variants);
+        var slots = export.Store.Entities.OfType<TalentSlotDocument>().ToArray();
+
+        Assert.Equal(216, slots.Length);
+        Assert.Equal(19, slots.Select(slot => slot.Id).Distinct().Count());
+
+        var one = slots.GroupBy(slot => slot.Id).First(group => group.Count() > 1);
+
+        Assert.Equal(one.Count(), one.Select(slot => slot.Hero).Distinct().Count());
     }
 
     [Fact]
-    public void An_id_reading_under_four_names_draws_the_other_three()
+    public void A_rows_link_carries_the_hero_its_tooltip_carries()
     {
-        var row = Find(Run(("type", "item"), ("q", "Betrayer's")), Betrayers);
+        var row = Run(("type", "item"), ("q", "Betrayer's")).Rows.First(drawn => drawn.Id == Betrayers);
 
-        Assert.Equal(3, row.Variants.Count);
-        Assert.DoesNotContain(export.View.Name(row.Shown), row.Variants.Select(variant => variant.Name));
-        Assert.Equal(row.Variants.Count, row.Variants.Select(variant => variant.Name).Distinct().Count());
+        var hero = export.Store.Wearer(row)!.Name;
+        var wearer = Uri.EscapeDataString(hero);
+
+        Assert.Equal($"/entity/item/{Betrayers}?hero={wearer}", export.View.Href(row));
+        Assert.Equal($"/api/item/{Betrayers}/tooltip?hero={wearer}", export.View.Tip(row));
+    }
+
+    [Fact]
+    public void A_row_of_an_id_with_one_reading_carries_no_hero()
+    {
+        var only = export.Store.Entities
+            .First(row => EntityTypes.TypeOf(row) == EntityType.Item &&
+                export.Store.All(EntityType.Item, row.Id).Count == 1);
+
+        Assert.Equal($"/entity/item/{only.Id}", export.View.Href(only));
     }
 
     [Fact]
     public void A_filter_decides_which_reading_a_row_is_named_by()
     {
-        var row = Find(Run(("type", "item"), ("hero", "Meiko")), Betrayers);
+        var row = Find(Run(("type", "item"), ("hero", "Meiko")), Betrayers, "Meiko");
 
-        Assert.Equal("Betrayer's Dragonhide Gloves", export.View.Name(row.Shown));
+        Assert.Equal("Betrayer's Dragonhide Gloves", export.View.Name(row));
     }
 
     [Fact]
-    public void A_variant_link_opens_the_reading_whose_name_it_shows()
-    {
-        var row = Find(Run(("type", "item"), ("q", "Betrayer's")), Betrayers);
-
-        Assert.All(row.Variants, variant =>
-        {
-            Assert.StartsWith($"/entity/item/{Betrayers}?hero=", variant.Href, StringComparison.Ordinal);
-
-            var hero = Uri.UnescapeDataString(variant.Href.Split("?hero=")[1]);
-            var reading = export.Store.All(EntityType.Item, Betrayers)
-                .Single(read => export.Store.Wearer(read)?.Name == hero);
-
-            Assert.Equal(export.View.Name(reading), variant.Name);
-        });
-    }
-
-    [Fact]
-    public void A_name_one_hero_reads_carries_that_heros_colour()
-    {
-        var legendary = Legendary;
-        var row = Find(Run(("type", "item"), ("q", legendary.Name!)), legendary.Id);
-
-        Assert.NotEmpty(row.Variants);
-        Assert.All(row.Variants, variant => Assert.NotNull(variant.Colour));
-    }
-
-    [Fact]
-    public void A_name_several_heroes_read_carries_none()
-    {
-        var shared = Find(Run(("type", "item"), ("q", "Betrayer's")), Betrayers).Variants;
-
-        Assert.All(shared, variant => Assert.Null(variant.Colour));
-    }
-
-    [Fact]
-    public void Every_count_beneath_the_list_counts_ids()
+    public void Every_count_beneath_the_list_counts_rows()
     {
         var results = Run(("type", "item"), ("hero", "Meiko"));
 
         Assert.Equal(results.Total, results.Types[EntityType.Item]);
-        Assert.Equal(results.AcrossTypes, results.Types.Values.Sum());
 
         var slot = results.Facets.Single(facet => facet.Key == "slot");
         var chosen = slot.Values[0];
@@ -125,16 +90,14 @@ public class ListingTests(Export export)
     }
 
     [Fact]
-    public void A_more_like_this_badge_counts_the_ids_its_link_opens()
+    public void A_more_like_this_badge_counts_the_rows_its_link_opens()
     {
         var slot = ((ItemDocument)export.Store.All(EntityType.Item, Betrayers)[0]).Slot!;
         var facet = export.View.Codex.Facet("slot")!;
+        var named = export.View.Codex.Flag(CodexQuery.NamedFlag)!;
 
-        var badge = export.Store.Entities
-            .Where(row => EntityTypes.TypeOf(row) == EntityType.Item && facet.Matches(row, [slot]))
-            .Select(row => row.Id)
-            .Distinct()
-            .Count();
+        var badge = export.Store.Entities.Count(row =>
+            EntityTypes.TypeOf(row) == EntityType.Item && facet.Matches(row, [slot]) && named.Predicate(row));
 
         Assert.True(badge >= 2);
         Assert.Equal(badge, Run(("type", "item"), ("slot", slot)).Total);

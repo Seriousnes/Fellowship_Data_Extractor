@@ -29,6 +29,9 @@ public sealed class DropItemLevels
 
     public int Count => Plateaus.Count;
 
+    public int? Plateau(string row) =>
+        Plateaus.FirstOrDefault(plateau => plateau.Row.Equals(row, StringComparison.OrdinalIgnoreCase))?.ItemLevel;
+
     public DropItemLevels(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
         var file = provider.Files.Values.FirstOrDefault(f =>

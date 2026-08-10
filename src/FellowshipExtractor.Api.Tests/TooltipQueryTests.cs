@@ -138,15 +138,6 @@ public class TooltipQueryTests(Export export)
     }
 
     [Fact]
-    public void A_talent_slot_carries_the_hero()
-    {
-        var query = new TalentSlotTooltipRequest { Id = 1, Hero = "Barbarian" }
-            .ToQuery(Raw(), export.Store.Stats, out _);
-
-        Assert.Equal("Barbarian", query.Hero);
-    }
-
-    [Fact]
     public void A_bare_type_carries_the_stats_and_nothing_else()
     {
         var query = new EffectTooltipRequest { Id = 1 }

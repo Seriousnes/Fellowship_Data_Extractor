@@ -76,35 +76,6 @@
 .cx-results-head .cx-count { margin-right: auto; }
 .cx-results-head .cx-count b { color: var(--ink); }
 
-.cx-table-scroll { overflow-x: auto; }
-
-table.cx-rows {
-  width: 100%; border-collapse: collapse; font-size: 13px;
-
-  thead th {
-    text-align: left; font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
-    color: var(--faint); padding: 7px 10px; border-bottom: 1px solid var(--line);
-    background: var(--sunken); white-space: nowrap;
-
-    a { color: inherit; display: inline-flex; align-items: center; gap: 4px; }
-    a:hover { color: var(--gold-bright); text-decoration: none; }
-  }
-  thead th[aria-sort] a { color: var(--gold-bright); }
-
-  tbody td { padding: 5px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
-  tbody tr:hover td { background: #131f2a; }
-
-  .cx-numeric { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
-  .cx-art { width: 40px; }
-  .cx-group-head td {
-    background: var(--raised); font-family: var(--display); letter-spacing: .09em; text-transform: uppercase;
-    color: var(--gold-bright); font-size: 13px; padding: 7px 10px;
-  }
-  .cx-tags { max-width: 230px; }
-  .cx-unit { color: var(--faint); }
-  .cx-variants { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: middle; }
-}
-
 .cx-pager {
   display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 12px; font-size: 12px;
 }

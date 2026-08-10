@@ -57,7 +57,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task Both_routes_answer_for_one_id_of_every_type()
     {
-        foreach (var type in Enum.GetValues<EntityType>())
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
@@ -78,7 +78,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task A_record_answers_the_type_the_slug_asked_for()
     {
-        foreach (var type in Enum.GetValues<EntityType>())
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
@@ -171,21 +171,19 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public async Task A_talent_slot_reads_the_hero_its_id_needs()
+    public async Task An_item_reads_the_hero_its_id_needs()
     {
-        var (id, hero) = Sample(EntityType.TalentSlot);
+        var (id, hero) = Shared();
+        var wearer = Uri.EscapeDataString(hero);
 
-        var bare = await client.GetAsync($"/api/talent-slot/{id}", Xunit.TestContext.Current.CancellationToken);
+        var bare = await client.GetAsync($"/api/item/{id}", Xunit.TestContext.Current.CancellationToken);
         var named = await client.GetAsync(
-            $"/api/talent-slot/{id}?hero={hero}", Xunit.TestContext.Current.CancellationToken);
+            $"/api/item/{id}?hero={wearer}", Xunit.TestContext.Current.CancellationToken);
 
         named.EnsureSuccessStatusCode();
 
-        var expected = Factory.Store.All(EntityType.TalentSlot, id).Count > 1
-            ? HttpStatusCode.BadRequest
-            : HttpStatusCode.OK;
-
-        Assert.Equal(expected, bare.StatusCode);
+        Assert.True(Factory.Store.All(EntityType.Item, id).Count > 1);
+        Assert.Equal(HttpStatusCode.BadRequest, bare.StatusCode);
     }
 
     [Fact]

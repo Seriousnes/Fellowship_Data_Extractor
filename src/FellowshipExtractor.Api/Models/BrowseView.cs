@@ -29,12 +29,6 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
     public string Bare =>
         query.Text is null ? "/browse" : "/browse?q=" + Uri.EscapeDataString(query.Text);
 
-    public IReadOnlyList<Measure> Columns =>
-    [
-        .. codex.Measures.Where(m =>
-            m.Column && (m.Key == "id" || results.Rows.Any(row => m.Value(row.Shown) is not null))),
-    ];
-
     public IReadOnlyList<FacetView> Rail =>
     [
         .. results.Facets.Where(facet => facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Key)),

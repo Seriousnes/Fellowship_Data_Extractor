@@ -1,0 +1,19 @@
+@inject ICodexViewService Ui
+
+@if (Entity is BlessingDocument blessing)
+{
+    <BlessingCrest Entity="blessing" Width="PlateWidth" />
+}
+else
+{
+    <Icon Src="@Ui.Icon(DocumentFields.Text(Entity, nameof(ItemDocument.Icon)))"
+          Rarity="@Ui.RarityName(Entity)" Width="SlotWidth" />
+}
+
+@code {
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    private const int PlateWidth = 26;
+
+    private const int SlotWidth = 34;
+}

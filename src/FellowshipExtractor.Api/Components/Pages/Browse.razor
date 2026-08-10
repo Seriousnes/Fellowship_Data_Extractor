@@ -1,7 +1,6 @@
 @page "/browse"
 @inject ICodexService Catalog
 @inject ICodexSearchService Search
-@inject ICodexViewService Ui
 @inject NavigationManager Nav
 
 <PageTitle>@Heading - Fellowship Codex</PageTitle>
@@ -19,19 +18,12 @@
 else
 {
     <div class="cx-tabs">
-        @{
-            var across = Results.AcrossTypes.ToString("N0");
-        }
-        <a class="cx-tab" href="@View.Replace("type", null)"
-           aria-current="@(Query.Types.Count == 0 ? "page" : null)">
-            All <CountBadge Text="@across" />
-        </a>
-        @foreach (var type in Catalog.Types.Where(t => Results.Types.ContainsKey(t.Type) || Query.ChosenType(t.Type)))
+        @foreach (var type in Strip)
         {
             var counted = Results.Types.GetValueOrDefault(type.Type).ToString("N0");
 
             <a class="cx-tab" href="@View.Replace("type", type.Slug)"
-               aria-current="@(Query.ChosenType(type.Type) ? "page" : null)">
+               aria-current="@(Results.Chosen == type.Type ? "page" : null)">
                 @type.Label <CountBadge Text="@counted" />
             </a>
         }
@@ -116,7 +108,9 @@ else
                 <ul class="cx-facet-values">
                     @foreach (var flag in Catalog.Flags)
                     {
-                        var state = Query.Flags.TryGetValue(flag.Key, out var wanted) ? wanted : (bool?)null;
+                        var state = Query.Flags.TryGetValue(flag.Key, out var wanted)
+                            ? wanted
+                            : flag.Key == CodexQuery.NamedFlag ? Query.Named : (bool?)null;
                         var next = state is null ? "1" : state.Value ? "0" : null;
                         <li>
                             <a href="@View.Replace(flag.Key, next)" class="@BrowseView.On(state is not null)">
@@ -155,121 +149,7 @@ else
             }
             else
             {
-                <div class="cx-table-scroll">
-                    <table class="cx-rows">
-                        <thead>
-                            <tr>
-                                <th class="cx-art"></th>
-                                <th aria-sort="@View.SortState("name")"><a href="@View.SortLink("name")">Name</a></th>
-                                <th aria-sort="@View.SortState("type")"><a href="@View.SortLink("type")">Type</a></th>
-                                @if (ShowSlot) { <th>Slot</th> }
-                                @if (ShowWorn) { <th>Worn by</th> }
-                                @if (ShowSchools) { <th>School</th> }
-                                @foreach (var measure in Columns)
-                                {
-                                    <th class="cx-numeric" aria-sort="@View.SortState(measure.Key)">
-                                        <a href="@View.SortLink(measure.Key)">@measure.Label</a>
-                                    </th>
-                                }
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @{ string? lastGroup = null; }
-                            @foreach (var row in Results.Rows)
-                            {
-                                var shown = row.Shown;
-
-                                if (Grouping is { } group)
-                                {
-                                    var value = group.Values(shown).FirstOrDefault();
-                                    if (value != lastGroup)
-                                    {
-                                        lastGroup = value;
-                                        <tr class="cx-group-head">
-                                            <td colspan="12">@(value is null ? "Carries none" : Catalog.Printed(group, value))</td>
-                                        </tr>
-                                    }
-                                }
-
-                                <tr>
-                                    @{ var item = shown as ItemDocument; }
-                                    <td class="cx-art">
-                                        @if (shown is BlessingDocument blessing)
-                                        {
-                                            <BlessingCrest Entity="blessing" Width="RowPlateWidth" />
-                                        }
-                                        else
-                                        {
-                                            <Icon Src="@Ui.Icon(DocumentFields.Text(shown, nameof(ItemDocument.Icon)))"
-                                                  Rarity="@Ui.RarityName(shown)" Width="RowSlotWidth" />
-                                        }
-                                    </td>
-                                    <td>
-                                        <EntityLink Entity="shown" Class="cx-nm" />
-                                        @if (row.Variants.Count > 0)
-                                        {
-                                            <span class="cx-variants">
-                                                @foreach (var variant in row.Variants)
-                                                {
-                                                    <a href="@variant.Href" title="@variant.Name" aria-label="@variant.Name"
-                                                       style="@(variant.Colour is null ? null : $"color:{variant.Colour}")">
-                                                        <Icon Src="@Ui.Icon(variant.Icon)"
-                                                              Rarity="@Ui.RarityName(variant.Rarity)"
-                                                              Width="VariantSlotWidth" />
-                                                    </a>
-                                                }
-                                            </span>
-                                        }
-                                    </td>
-                                    <td>@Codex.Label(EntityTypes.TypeOf(shown))</td>
-                                    @if (ShowSlot)
-                                    {
-                                        <td>@item?.Slot</td>
-                                    }
-                                    @if (ShowWorn)
-                                    {
-                                        <td>
-                                            @if (item?.ArmorType is { } armor)
-                                            {
-                                                <Chip>@armor</Chip>
-                                            }
-                                            @if (item?.PrimaryStat is { } stat)
-                                            {
-                                                <Chip>@stat</Chip>
-                                            }
-                                            @foreach (var hero in (item?.Heroes ?? []).Take(3))
-                                            {
-                                                <Chip Colour="@Ui.HeroColour(hero.ToString())">@hero</Chip>
-                                            }
-                                            @if (item?.Heroes is { Count: > 3 } heroes)
-                                            {
-                                                <Chip>+@(heroes.Count - 3)</Chip>
-                                            }
-                                        </td>
-                                    }
-                                    @if (ShowSchools)
-                                    {
-                                        <td class="cx-tags">
-                                            @foreach (var school in Codex.Schools(shown))
-                                            {
-                                                <Chip>@school</Chip>
-                                            }
-                                        </td>
-                                    }
-                                    @foreach (var measure in Columns)
-                                    {
-                                        <td class="cx-numeric">
-                                            @if (measure.Value(shown) is { } number)
-                                            {
-                                                @Codex.Number(number)<span class="cx-unit">@measure.Unit</span>
-                                            }
-                                        </td>
-                                    }
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+                <Rows Type="Results.Chosen" Documents="Results.Rows" View="View" />
 
                 @if (Results.Pages > 1)
                 {
@@ -311,36 +191,40 @@ else
 
     private CodexQuery Query = new();
 
-    private CodexResults Results = new(0, 1, 1, [], [], new Dictionary<EntityType, int>(), 0, []);
+    private CodexResults Results =
+        new(0, 1, 1, [], [], new Dictionary<EntityType, int>(), EntityType.Item, []);
 
     private BrowseView View = default!;
 
     private string? Error;
 
     private string Heading =>
-        Query.Text is { } typed
-            ? $"Search results for “{typed}”"
-            : Query.Types.Count == 1
-                ? Codex.Label(Query.Types[0])
-                : "Browse the codex";
+        Error is not null
+            ? "Browse the codex"
+            : Query.Text is { } typed
+                ? $"Search results for “{typed}”"
+                : Codex.Label(Results.Chosen);
 
-    private const int RowPlateWidth = 26;
+    private IReadOnlyList<TypeView> Strip
+    {
+        get
+        {
+            var tabs = Catalog.Tabs
+                .Where(tab => Results.Types.ContainsKey(tab.Type) || Results.Chosen == tab.Type)
+                .ToList();
 
-    private const int RowSlotWidth = 34;
+            if (tabs.Any(tab => tab.Type == Results.Chosen)) return tabs;
 
-    private const int VariantSlotWidth = 18;
+            if (Catalog.Types.FirstOrDefault(type => type.Type == Results.Chosen) is { } untabbed)
+            {
+                tabs.Add(untabbed);
+            }
+
+            return tabs;
+        }
+    }
 
     private Facet? Grouping => Query.Group is null ? null : Catalog.Facet(Query.Group);
-
-    private IReadOnlyList<Measure> Columns => View.Columns;
-
-    private bool ShowSlot => Results.Rows.Any(r => (r.Shown as ItemDocument)?.Slot is not null);
-
-    private bool ShowWorn =>
-        Results.Rows.Any(r => r.Shown is ItemDocument { ArmorType: not null } or ItemDocument { PrimaryStat: not null } or
-            ItemDocument { Heroes: { Count: > 0 } });
-
-    private bool ShowSchools => Results.Rows.Any(r => Codex.Schools(r.Shown).Any());
 
     protected override void OnParametersSet()
     {

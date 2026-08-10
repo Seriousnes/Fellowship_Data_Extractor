@@ -1,6 +1,7 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
 
 using FellowshipExtractor.Commands;
 
@@ -23,6 +24,11 @@ public sealed class TooltipResolver
     private const string GrantedTagsField = "GrantedGameplayTags";
     private const string ChargeEffectField = "ChargeGameplayEffectClass";
     private const string NativeChargeEffect = "CRChargeEffect";
+    private const string DynamicDefinitionClass = "CRDynamicHeroItemDefinition";
+    private const string SpecificDungeonsField = "DropsInSpecificDungeons";
+    private const string CreatureTable = "CRAICharacter";
+    private const string ItemTable = "ItemID";
+    private const string AbilityTable = "GameplayAbility";
 
     private readonly AbstractFileProvider _provider;
     private readonly FAssetData[] _assets;
@@ -35,6 +41,7 @@ public sealed class TooltipResolver
 
     private readonly List<TagRecord> _tags;
     private readonly AugmentationIds _augmentationIds;
+    private readonly RarityNames _rarities;
     private readonly Dictionary<string, FAssetData> _byPrimaryAssetName = new(StringComparer.Ordinal);
     private readonly Dictionary<string, FAssetData> _byAssetName = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
@@ -51,6 +58,10 @@ public sealed class TooltipResolver
 
     public TemperCeilings Tempers { get; }
     public DropItemLevels Drops { get; }
+    public DungeonNames Dungeons { get; }
+    public VendorInventories Vendors { get; }
+    public ItemSources Sources { get; }
+    public AbilityOwners Owners { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
@@ -99,7 +110,7 @@ public sealed class TooltipResolver
         }
 
         _augmentationIds = new AugmentationIds(_tags);
-        var rarities = new RarityNames(provider, _assets);
+        var rarities = _rarities = new RarityNames(provider, _assets);
 
         Presentation = new AbilityPresentationIndex(provider, _assets);
         Mappings = new GrantedAbilityMappings(provider, _assets);
@@ -128,6 +139,10 @@ public sealed class TooltipResolver
 
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
+        Dungeons = new DungeonNames(provider, _assets);
+        Vendors = new VendorInventories(provider, _assets);
+        Sources = new ItemSources(provider, _assets, Dungeons, Vendors, HeroItems, Drops, Heroes);
+
         Settings = new Settings(
             provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types,
             SlotGlyphs, new RarityOrnaments(provider, rarities), new RarityColorRows(provider, rarities),
@@ -140,6 +155,8 @@ public sealed class TooltipResolver
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
 
         Types = new TypeResolver(_tags, Talents, Gems, Traits, SetBonuses, Mappings);
+
+        Owners = new AbilityOwners(provider, _assets, _tags);
     }
 
     private string? PrintedName(TagRecord tag, UObject cdo)
@@ -225,6 +242,9 @@ public sealed class TooltipResolver
         entity = WithTableText(entity, tag.Name, icons);
 
         if (HeroItems.Find(tag.Name) is { } fixedItem) entity = WithFixedItem(entity, fixedItem, icons);
+
+        entity = WithProvenance(entity, tag, asset, cdo);
+        entity = WithOwners(entity, tag);
 
         if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
         {
@@ -392,6 +412,64 @@ public sealed class TooltipResolver
 
         return spread.Count == 0 ? null : spread;
     }
+
+    private Entity WithOwners(Entity entity, TagRecord tag)
+    {
+        var claimed = Owners.HeroesOf(tag.Name).Select(hero => Heroes.Shipped(hero) ?? hero).ToArray();
+        var owner = Owned(Owners.CreatureOf(tag.Name), CreatureTable)
+            ?? Owned(Owners.OutsiderOf(tag.Name), ItemTable);
+
+        var applier = tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)
+            ? Owners.ApplierOf(tag.Name)
+            : null;
+
+        var appliedBy = Owned(applier, AbilityTable);
+
+        if (claimed.Length == 0 && owner is null && appliedBy is null) return entity;
+
+        return entity with
+        {
+            OwningHeroes = Empty(claimed),
+            Owner = owner,
+            AppliedBy = appliedBy,
+            ApplierTags = appliedBy is null ? null : Empty(Owners.AbilityTagsOf(applier!)),
+        };
+    }
+
+    private IconSource? Owned(string? named, string table)
+    {
+        if (named is null or AbilityOwners.Contested) return null;
+        if (FindTag(table, named) is not { } tag) return null;
+
+        return new IconSource(table, tag.NetId, named);
+    }
+
+    private Entity WithProvenance(Entity entity, TagRecord tag, FAssetData? asset, UObject? cdo)
+    {
+        var carried = Sources.Fixed(tag.Name, out var granted);
+
+        if (carried.Count > 0) return entity with { Sources = [.. carried], ItemLevel = granted };
+
+        if (cdo is null) return entity;
+        if (asset?.AssetClass.Text.Equals(DynamicDefinitionClass, StringComparison.OrdinalIgnoreCase) is not true)
+        {
+            return entity;
+        }
+
+        var tiers = DynamicVisuals.Tiers(cdo);
+        var top = _rarities.Tiers.Max();
+
+        return entity with
+        {
+            Sources = Empty(Sources.Dropped(DropsIn(cdo))),
+            ItemLevel = Sources.DropLevel(tiers.Count > 0 && tiers.All(tier => tier == top)),
+        };
+    }
+
+    private static IReadOnlyList<string> DropsIn(UObject definition) =>
+        PropertyWalk.Get(definition, SpecificDungeonsField)?.GenericValue is UScriptArray listed
+            ? [.. listed.Properties.Select(entry => PropertyWalk.AsString(entry?.GenericValue)).OfType<string>()]
+            : [];
 
     private Entity WithFixedItem(Entity entity, HeroItem item, IconWriter? icons)
     {

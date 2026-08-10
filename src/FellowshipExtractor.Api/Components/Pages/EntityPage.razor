@@ -90,7 +90,9 @@
 
     protected override void OnParametersSet()
     {
-        var resolved = EntityTypes.TryParse(Slug, out var named) ? named : (EntityType?)null;
+        var resolved = EntityTypes.TryParse(Slug, out var named) && PublicTypes.Listed(named)
+            ? named
+            : (EntityType?)null;
         type = resolved ?? default;
         Readings = resolved is { } t ? Store.All(t, Id) : [];
 
@@ -124,17 +126,17 @@
     private IReadOnlyList<(string, string, int)> Nearby()
     {
         var nearby = new List<(string, string, int)>();
+        var named = Catalog.Flag(CodexQuery.NamedFlag);
 
         void Add(string facet, string? value)
         {
             if (value is null) return;
             if (Catalog.Facet(facet) is not { } definition) return;
 
-            var count = Store.Entities
-                .Where(row => EntityTypes.TypeOf(row) == type && definition.Matches(row, [value]))
-                .Select(row => row.Id)
-                .Distinct()
-                .Count();
+            var count = Store.Entities.Count(row =>
+                EntityTypes.TypeOf(row) == type &&
+                definition.Matches(row, [value]) &&
+                (named is null || named.Predicate(row)));
 
             if (count < 2) return;
 

@@ -25,6 +25,10 @@ public sealed record HeroItem
     public string? Rarity { get; init; }
 
     public string? IconPath { get; init; }
+
+    public required IReadOnlyList<string> Tags { get; init; }
+
+    public int? DefaultItemLevel { get; init; }
 }
 
 public sealed class HeroItemTable
@@ -37,6 +41,8 @@ public sealed class HeroItemTable
     private const string NoneValue = "None";
     private const string OverrideFlagField = "OverrideRarity";
     private const string OverrideRarityField = "ItemRarityOverride";
+    private const string TagsField = "Tags";
+    private const string DefaultsField = "DefaultItemForHeroes";
 
     private readonly Dictionary<string, HeroItem> _byTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _primaryStatByHero = new(StringComparer.OrdinalIgnoreCase);
@@ -49,6 +55,8 @@ public sealed class HeroItemTable
     private readonly RarityNames _rarities;
 
     public int Count => _byTag.Count;
+
+    public IReadOnlyDictionary<string, HeroItem> Rows => _byTag;
 
     public IReadOnlyDictionary<string, string> PrimaryStatByHero => _primaryStatByHero;
 
@@ -112,7 +120,21 @@ public sealed class HeroItemTable
             UniqueEquipped = PropertyWalk.Get(row, "IsUniqueEquippable")?.GenericValue is true,
             Rarity = Rarity(row),
             IconPath = Icon(row, slot?.Type),
+            Tags = PropertyWalk.GetTags(row, TagsField) ?? [],
+            DefaultItemLevel = DefaultLevel(row),
         };
+    }
+
+    private static int? DefaultLevel(FStructFallback row)
+    {
+        if (PropertyWalk.Get(row, DefaultsField)?.GenericValue is not UScriptMap defaults) return null;
+
+        foreach (var (_, value) in defaults.Properties)
+        {
+            if (PropertyWalk.AsOrdinal(value?.GenericValue) is { } level) return level;
+        }
+
+        return null;
     }
 
     private string? Rarity(FStructFallback row)
@@ -133,7 +155,7 @@ public sealed class HeroItemTable
             Add(tag);
         }
 
-        if (PropertyWalk.Get(row, "DefaultItemForHeroes")?.GenericValue is UScriptMap defaults)
+        if (PropertyWalk.Get(row, DefaultsField)?.GenericValue is UScriptMap defaults)
         {
             foreach (var (key, _) in defaults.Properties) Add(PropertyWalk.AsString(key?.GenericValue));
         }

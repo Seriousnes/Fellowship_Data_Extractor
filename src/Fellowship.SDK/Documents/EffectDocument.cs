@@ -22,4 +22,10 @@ public sealed class EffectDocument : EntityDocument
 
     public EntityReference? NameBorrowedFrom { get; init; }
     public EntityReference? ArtBorrowedFrom { get; init; }
+
+    public IReadOnlyList<Hero>? Heroes { get; init; }
+
+    public EntityReference? Owner { get; init; }
+
+    public EntityReference? AppliedBy { get; init; }
 }

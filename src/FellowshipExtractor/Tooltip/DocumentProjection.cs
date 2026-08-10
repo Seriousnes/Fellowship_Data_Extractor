@@ -33,6 +33,8 @@ public static class DocumentProjection
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Schools = Schools(entity.Tags),
+            Heroes = Owning(entity),
+            Owner = Reference(entity.Owner, lookup),
         },
 
         EntityType.Item => new ItemDocument
@@ -59,6 +61,8 @@ public static class DocumentProjection
             IconByRarity = entity.IconByRarity,
             GrantsId = entity.GrantsId,
             LegendaryStatIds = entity.LegendaryStatIds,
+            Sources = entity.Sources,
+            ItemLevel = entity.ItemLevel,
         },
 
         EntityType.Gem => new GemDocument
@@ -100,9 +104,12 @@ public static class DocumentProjection
             TickrateIgnoresHaste = entity.TickrateIgnoresHaste,
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Schools = Schools(entity.Tags),
+            Schools = Schools(entity.Tags) ?? Schools(entity.ApplierTags),
             NameBorrowedFrom = Reference(entity.NameInheritedFrom, lookup),
             ArtBorrowedFrom = Reference(entity.IconInheritedFrom, lookup),
+            Heroes = Owning(entity),
+            Owner = Reference(entity.Owner, lookup),
+            AppliedBy = Reference(entity.AppliedBy, lookup),
         },
 
         EntityType.Creature => new CreatureDocument
@@ -374,6 +381,13 @@ public static class DocumentProjection
         var at = text.IndexOf($"{{{name}}}", StringComparison.Ordinal);
 
         return at < 0 ? int.MaxValue : at;
+    }
+
+    private static IReadOnlyList<Hero>? Owning(Entity entity)
+    {
+        if (entity.OwningHeroes is not { Count: > 0 } claimed) return null;
+
+        return [.. claimed.Select(Enum.Parse<Hero>).Distinct().Order()];
     }
 
     private static EntityReference? Reference(IconSource? source, TypeLookup lookup) =>

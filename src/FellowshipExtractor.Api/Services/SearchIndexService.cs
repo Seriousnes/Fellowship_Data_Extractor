@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Fellowship.SDK.Documents;
 
 using FellowshipExtractor.Api.Models;
@@ -20,9 +22,11 @@ public sealed class SearchIndexService : ISearchIndexService
 
     private readonly int[][] postings;
 
+    private readonly Dictionary<int, int[]> carrying;
+
     public SearchIndexService(IEntityStoreService store, ILogger<SearchIndexService> logger)
     {
-        docs = [.. store.Entities];
+        docs = [.. store.Entities.Where(document => PublicTypes.Listed(EntityTypes.TypeOf(document)))];
 
         display = new string[docs.Length];
         displayWords = new string[docs.Length][];
@@ -50,36 +54,52 @@ public sealed class SearchIndexService : ISearchIndexService
         postings = new int[terms.Length][];
         for (var at = 0; at < terms.Length; at++) postings[at] = [.. building[terms[at]]];
 
+        carrying = docs
+            .Select((document, at) => (document.Id, At: at))
+            .GroupBy(row => row.Id)
+            .ToDictionary(group => group.Key, group => group.Select(row => row.At).ToArray());
+
         logger.LogInformation(
             "Search index built: {Documents} documents, {Reachable} named and searchable, {Terms} terms, {Postings} postings",
             docs.Length, reachable, terms.Length, postings.Sum(p => p.Length));
     }
 
+    public const int IdScore = 100_000;
+
     public IReadOnlyList<Hit> Search(string text, int limit)
     {
+        var numbered = int.TryParse(text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var id) &&
+            carrying.TryGetValue(id, out var found)
+                ? found
+                : [];
+
         var typed = Words(text).Distinct(StringComparer.Ordinal).ToArray();
-        if (typed.Length == 0) return [];
 
-        HashSet<int>? candidates = null;
+        HashSet<int> candidates = [];
 
-        foreach (var word in typed)
+        for (var at = 0; at < typed.Length; at++)
         {
-            var reached = Reach(word);
+            var reached = Reach(typed[at]);
 
-            if (candidates is null) candidates = reached;
+            if (at == 0) candidates = reached;
             else candidates.IntersectWith(reached);
 
-            if (candidates.Count == 0) return [];
+            if (candidates.Count == 0) break;
         }
+
+        if (numbered.Length == 0 && candidates.Count == 0) return [];
 
         var whole = text.Trim().ToLowerInvariant();
 
-        var hits = new List<Hit>(candidates!.Count);
-        foreach (var doc in candidates) hits.Add(new Hit(docs[doc], Score(doc, typed, whole)));
+        var scored = new Dictionary<int, int>(candidates.Count + numbered.Length);
+
+        foreach (var doc in candidates) scored[doc] = Score(doc, typed, whole);
+        foreach (var doc in numbered) scored[doc] = IdScore;
 
         return
         [
-            .. hits
+            .. scored
+                .Select(pair => new Hit(docs[pair.Key], pair.Value))
                 .OrderByDescending(hit => hit.Score)
                 .ThenBy(hit => PublicTypes.NameOf(hit.Document).Length)
                 .ThenBy(hit => PublicTypes.NameOf(hit.Document), StringComparer.OrdinalIgnoreCase)

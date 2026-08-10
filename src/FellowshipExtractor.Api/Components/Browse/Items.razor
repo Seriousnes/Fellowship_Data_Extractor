@@ -1,0 +1,89 @@
+@inject ICodexViewService Ui
+
+<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<ItemDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column T="ItemDocument" Head="" Class="cx-art">
+            <Content Context="row"><Art Entity="row" /></Content>
+        </Column>
+        <Column T="ItemDocument" Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column T="ItemDocument" Head="ILvl" Key="ilvl" Numeric Value="row => row.ItemLevel" />
+        <Column T="ItemDocument" Head="Slot" Key="slot" Value="row => row.Slot" />
+        <Column T="ItemDocument" Head="Source" Key="source" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var source in row.Sources ?? [])
+                {
+                    <Chip>@source.Name</Chip>
+                }
+            </Content>
+        </Column>
+        <Column T="ItemDocument" Head="Type" Key="kind" Class="cx-tags">
+            <Content Context="row">
+                @if (string.Equals(row.Slot, WeaponSlot, StringComparison.Ordinal))
+                {
+                    @foreach (var hero in row.Heroes ?? [])
+                    {
+                        <Chip Colour="@Ui.HeroColour(hero.ToString())">@hero</Chip>
+                    }
+                }
+                else if (Armoured(row.Slot))
+                {
+                    @if (row.ArmorType is { } armor)
+                    {
+                        <Chip>@armor</Chip>
+                    }
+                }
+                else
+                {
+                    @row.Slot
+                }
+            </Content>
+        </Column>
+        <Column T="ItemDocument" Head="Set" Key="set" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var set in row.SetBonus ?? [])
+                {
+                    @if (Sets.TryGetValue(set, out var bonus))
+                    {
+                        <EntityLink Entity="bonus" />
+                    }
+                    else
+                    {
+                        @set
+                    }
+                }
+            </Content>
+        </Column>
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private const string WeaponSlot = "Weapon";
+
+    private IReadOnlyList<ItemDocument> Drawn = [];
+
+    private IReadOnlyDictionary<string, SetBonusDocument> Sets =
+        new Dictionary<string, SetBonusDocument>(StringComparer.OrdinalIgnoreCase);
+
+    protected override void OnParametersSet()
+    {
+        Drawn = [.. Rows.OfType<ItemDocument>()];
+
+        Sets = Ui.Codex.Of(EntityType.SetBonus)
+            .OfType<SetBonusDocument>()
+            .Where(bonus => bonus.Name is { Length: > 0 })
+            .GroupBy(bonus => bonus.Name!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(names => names.Key, names => names.First(), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private bool Armoured(string? slot) =>
+        slot is not null &&
+        Ui.Store.Settings.StatCalculation.SlotWeights.TryGetValue(slot, out var weight) &&
+        weight.ArmorWeight > 0;
+}
