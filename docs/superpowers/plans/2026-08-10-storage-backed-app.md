@@ -262,7 +262,10 @@ Build, on top of A1 and A2:
 ## Stream B (worktree `sba-api`): the codex reads a snapshot
 
 Owns: `src/FellowshipExtractor.Api/**`, `src/FellowshipExtractor.Api.Tests/**`,
-`src/FellowshipExtractor.Tests/StaleExportTests.cs`, and may add new files (not existing ones) to
+`src/FellowshipExtractor.Tests/StaleExportTests.cs`, the `EntityStoreService` construction inside
+`src/FellowshipExtractor.Tests/EntityStoreCorpusTests.Build()`, which the removal of
+`ExportPathService` reaches through the `ProjectReference` to `FellowshipExtractor.Api` that
+`FellowshipExtractor.Tests.csproj` already carries, and may add new files (not existing ones) to
 `FellowshipExtractor.Tests` for migrated pixel assertions. Does not touch
 `src/FellowshipExtractor/**`, README, SDK, AppHost, slnx, or any other existing
 `FellowshipExtractor.Tests` file.
@@ -383,6 +386,10 @@ Build:
   `data/entities.jsonl` and builds its fixture through `FolderExportSource`, so the suite runs with
   no Azurite and no imaging package" (the Api project reference makes `FolderExportSource`
   available; the fixture keeps exposing `Settings`, `Documents`, `Folder`).
+- `FellowshipExtractor.Tests/EntityStoreCorpusTests.Build()` keeps the body that loads through
+  `FolderExportSource(Export.Loaded.Folder)` and constructs `EntityStoreService` from the snapshot.
+  `FolderExportSource` composes `data/` itself, so the fixture folder is passed whole and
+  `using FellowshipExtractor.Output;` is unused in that file.
 - Regenerate the export in the worktree: `dotnet run --project src/FellowshipExtractor -- usmap`
   if needed, then `dotnet run --project src/FellowshipExtractor -- export-all --output
   output/export`.

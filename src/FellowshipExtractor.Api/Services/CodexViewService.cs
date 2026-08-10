@@ -5,8 +5,6 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
-using Azure.Storage.Blobs;
-
 using Fellowship.SDK.Documents;
 
 using Microsoft.AspNetCore.Components;
@@ -79,8 +77,7 @@ public sealed class CodexViewService(
     IDesignTokenService tokens,
     IChromeAssetService chrome,
     IRichTextService richText,
-    IPlaceholderService placeholders,
-    BlobContainerClient icons) : ICodexViewService
+    IPlaceholderService placeholders) : ICodexViewService
 {
     public IEntityStoreService Store => store;
 
@@ -91,7 +88,7 @@ public sealed class CodexViewService(
     public IChromeAssetService Chrome => chrome;
 
     [return: NotNullIfNotNull(nameof(icon))]
-    public string? Icon(string? icon) => icon is null ? null : $"{icons.Uri}/{icon}";
+    public string? Icon(string? icon) => chrome.Art(icon);
 
     public string? RarityName(EntityDocument document) => Tier(document) is { } rung ? Named(rung) : null;
 

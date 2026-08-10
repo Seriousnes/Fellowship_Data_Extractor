@@ -3,7 +3,6 @@ using System.Text.Json;
 using FellowshipExtractor.Api.Models;
 using FellowshipExtractor.Api.Services;
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FellowshipExtractor.Tests;
@@ -16,14 +15,20 @@ public sealed class StaleExportTests
 
         try
         {
-            File.Copy(Path.Combine(Export.Loaded.Folder, "settings.json"), Path.Combine(folder, "settings.json"));
-            File.WriteAllLines(Path.Combine(folder, "entities.jsonl"), [line]);
+            var data = Directory.CreateDirectory(Path.Combine(folder, ExportReader.Data)).FullName;
 
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = folder })
-                .Build();
+            File.Copy(
+                Path.Combine(Export.Loaded.Folder, ExportReader.Data, ExportReader.SettingsName),
+                Path.Combine(data, ExportReader.SettingsName));
 
-            return new EntityStoreService(new ExportPathService(configuration), NullLogger<EntityStoreService>.Instance);
+            File.WriteAllLines(Path.Combine(data, ExportReader.EntitiesName), [line]);
+
+            var snapshot = new FolderExportSource(folder)
+                .LoadAsync(CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+
+            return new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
         }
         finally
         {
@@ -52,6 +57,28 @@ public sealed class StaleExportTests
             () => Read($"{document}\n{document}\n{{\"id\":3}}"));
 
         Assert.Contains("Line 3", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AFolderCarryingNoSettingsNamesThePublisherAndTheCommandThatFillsIt()
+    {
+        var folder = Directory.CreateTempSubdirectory("fellowship-export").FullName;
+
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(folder, ExportReader.Data));
+
+            var failure = Assert.Throws<InvalidOperationException>(() =>
+                new FolderExportSource(folder).LoadAsync(CancellationToken.None).GetAwaiter().GetResult());
+
+            Assert.Contains("data/settings.json", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("FellowshipExtractor.Publisher", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("export-all", failure.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
     [Fact]

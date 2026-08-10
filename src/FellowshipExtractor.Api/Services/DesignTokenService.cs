@@ -29,6 +29,8 @@ public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenServ
 {
     private readonly IReadOnlyDictionary<string, string> colors = settings.Colors;
 
+    private readonly IReadOnlyDictionary<string, string> rarityRows = settings.RarityColorRows;
+
     private readonly IReadOnlySet<string> unshown = Unshown(settings);
 
     public IReadOnlyDictionary<string, string> Colors => colors;
@@ -38,7 +40,7 @@ public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenServ
     public string? Color(string name) => colors.TryGetValue(name, out var value) ? '#' + value : null;
 
     public string? Rarity(string internalName) =>
-        Color(RarityKey(internalName)) ?? Color(LadderKey(internalName));
+        rarityRows.TryGetValue(internalName, out var row) ? Color(row) : null;
 
     public string? Hero(string codename) => Color(HeroKey(codename));
 
@@ -76,20 +78,13 @@ public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenServ
         {
             if (string.Equals(rung.Name, rung.DisplayName, StringComparison.OrdinalIgnoreCase)) continue;
 
-            keys.Add(RarityKey(rung.Name));
-            keys.Add(LadderKey(rung.Name));
+            if (settings.RarityColorRows.TryGetValue(rung.Name, out var row)) keys.Add(row);
         }
 
         return keys;
     }
 
     private static string HeroKey(string codename) => $"game.game.hero-{codename.ToLowerInvariant()}";
-
-    private static string RarityKey(string internalName) =>
-        $"game.game.rarity-{internalName.ToLowerInvariant()}";
-
-    private static string LadderKey(string internalName) =>
-        $"game.rarity-{internalName.ToLowerInvariant()}";
 
     public static string Variable(string name) => name.Replace('.', '-');
 }

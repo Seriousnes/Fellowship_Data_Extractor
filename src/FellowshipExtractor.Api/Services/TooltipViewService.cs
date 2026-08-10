@@ -1,7 +1,5 @@
 using System.Globalization;
 
-using Azure.Storage.Blobs;
-
 using Fellowship.SDK.Documents;
 
 using Microsoft.AspNetCore.Components;
@@ -68,7 +66,6 @@ public sealed class TooltipViewService(
     IRichTextService renderer,
     IPlaceholderService placeholders,
     IChromeAssetService chrome,
-    BlobContainerClient icons,
     IWebHostEnvironment environment) : ITooltipViewService
 {
     private const string Sheet = "css/tooltip.css";
@@ -115,7 +112,7 @@ public sealed class TooltipViewService(
             ? art
             : DocumentFields.Text(document, nameof(ItemDocument.Icon));
 
-        return icon is null ? null : $"{icons.Uri}/{icon}";
+        return chrome.Art(icon);
     }
 
     public string? Ornament(RarityEntry? rarity) => rarity is null ? null : chrome.Ornament(rarity.Name);
@@ -267,13 +264,16 @@ public sealed class TooltipViewService(
             .{{TooltipView.Root}}{--fx-window:url({{chrome.Window}});
             --fx-thin:url({{chrome.ThinWindow}});--fx-fill:url({{chrome.WindowFill}});
             --fx-divider:url({{chrome.GoldDivider}});--fx-subheader:url({{chrome.Header(null)}});
-            --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};
-            --fx-setbonus:{{chrome.SetBonusBadge.Colour}}}
+            {{Heading("ability", chrome.AbilityBadge)}}{{Heading("legendary", chrome.LegendaryBadge)}}
+            {{Heading("setbonus", chrome.SetBonusBadge)}}}
 
             """ +
             reading.ReadToEnd() +
             renderer.Css(TooltipView.Root);
     }
+
+    private static string Heading(string section, Badge badge) =>
+        badge.Colour is { } hex ? $"--fx-{section}:{hex};" : string.Empty;
 
     public IReadOnlyList<TooltipView.Block> Blocks(
         EntityDocument document,
