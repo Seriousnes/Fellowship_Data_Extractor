@@ -632,12 +632,13 @@ applies them, 70 and 10 withheld because two entities that apply them disagree; 
 supplied by namespace that no asset names; 1 coefficient row banded by its own `Spread` row and 61
 banded by their effect's calculation preset.
 
-It reports what it drew too: 121 chrome images, which is 93 chrome textures plus 28 rarity variants,
-four textures multiplied by each of the seven rarity colours; and 4,367 entity icon images, 3,150 of
-them an icon composed against a rarity colour. `ui/` ends at 4,488 files and 212 MB, the whole of
-the transform work done once so that no consumer composes anything at render time.
+It reports what it drew too: 127 chrome images, which is 95 chrome textures plus 28 rarity variants,
+four textures multiplied by each of the seven rarity colours, plus 4 modifier row textures, each
+multiplied by the colour row the row draws it in; and 4,367 entity icon images, 3,150 of them an
+icon composed against a rarity colour. `ui/` ends at 4,494 files and 212 MB, the whole of the
+transform work done once so that no consumer composes anything at render time.
 
-Every line is the same record the `tooltip` command writes for one entity - one shape, 2.6 MB for
+Every line is the same record the `tooltip` command writes for one entity - one shape, 2.9 MB for
 the whole game, down from 22.5 MB.
 
 ### settings.json
