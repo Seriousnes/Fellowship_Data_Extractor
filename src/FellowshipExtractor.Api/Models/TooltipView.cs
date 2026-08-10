@@ -12,11 +12,36 @@ public static class TooltipView
 
     public const int SlotWidth = 48;
 
+    public static readonly IReadOnlyDictionary<string, int> ImbuedTraitCapacities =
+        new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Weapon"] = 5,
+            ["Neck"] = 2,
+        };
+
+    public static EntityType TypeOf(ModifierKind kind) => kind switch
+    {
+        ModifierKind.Trait => TraitType,
+        ModifierKind.Blessing => EntityType.Blessing,
+        ModifierKind.Essence => EntityType.GemType,
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, $"{kind} names no entity type."),
+    };
+
+    public static string Label(ModifierKind kind) => kind switch
+    {
+        ModifierKind.Trait => "Trait",
+        ModifierKind.Blessing => "Blessing",
+        ModifierKind.Essence => "Imbued Essence",
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, $"{kind} names no label."),
+    };
+
+    public static string Token(ModifierKind kind) => kind.ToString().ToLowerInvariant();
+
     public static string Magnitude(StatLine line) =>
         (line.Value < 0 ? string.Empty : "+") +
         line.Value.Normalize().ToString(CultureInfo.InvariantCulture);
 
     public sealed record Fact(string Label, string Value, string? Title);
 
-    public sealed record TraitLine(string Name, int Rank);
+    public sealed record ModifierLine(ModifierKind Kind, string Name, int Amount);
 }

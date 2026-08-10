@@ -35,6 +35,12 @@ public interface IChromeAssetService
 
     string ExpandGlyph { get; }
 
+    string ModifierPlate { get; }
+
+    string ModifierDecor { get; }
+
+    string ModifierGlyph(ModifierKind kind);
+
     Badge AbilityBadge { get; }
 
     Badge LegendaryBadge { get; }
@@ -95,6 +101,12 @@ public sealed class ChromeAssetService(
     private const string TraitTexture = "T_Icons_StatTooltip_TraitSlot";
     private const string ExpandTexture = "T_Icons_Generic_TooltipExpand";
 
+    private const string ModifierPlateTexture = WindowFillTexture;
+    private const string ModifierDecorTexture = "T_Backgrounds_TooltipSlot_Gradient_Decor";
+    private const string TraitModifierTexture = "T_Icons_Generic_WeaponSkill";
+    private const string BlessingModifierTexture = "T_Icons_Generic_TooltipSlot";
+    private const string EssenceModifierTexture = "T_Icons_Generic_Gem";
+
     private const string NodeFamily = "T_Buttons_TraitNode_";
     private const string NodeSuffix = "Default";
     private const string BlessingFamily = "T_Buttons_BlessingButton_";
@@ -111,6 +123,35 @@ public sealed class ChromeAssetService(
     private const int DividerBandRows = DividerBandLastRow - DividerBandFirstRow + 1;
 
     private static readonly string[] Badges = [AbilityTexture, LegendaryTexture, SetBonusTexture];
+
+    private static readonly IReadOnlyDictionary<ModifierKind, string> ModifierGlyphs = Everywhere(
+        new Dictionary<ModifierKind, string>
+        {
+            [ModifierKind.Trait] = TraitModifierTexture,
+            [ModifierKind.Blessing] = BlessingModifierTexture,
+            [ModifierKind.Essence] = EssenceModifierTexture,
+        });
+
+    private static readonly IReadOnlyDictionary<string, string> ModifierTinted =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [TraitModifierTexture] = "core.primary-200",
+            [BlessingModifierTexture] = "core.primary-main",
+            [EssenceModifierTexture] = "core.primary-200",
+            [ModifierDecorTexture] = "core.secondary-600",
+        };
+
+    private static IReadOnlyDictionary<ModifierKind, string> Everywhere(
+        IReadOnlyDictionary<ModifierKind, string> glyphs)
+    {
+        var missing = Enum.GetValues<ModifierKind>().Where(kind => !glyphs.ContainsKey(kind)).ToArray();
+
+        return missing.Length == 0
+            ? glyphs
+            : throw new InvalidOperationException(
+                $"{string.Join(", ", missing)} {(missing.Length == 1 ? "names" : "name")} no modifier " +
+                $"glyph texture in {nameof(ChromeAssetService)}, so a row of that kind draws no glyph.");
+    }
 
     private static readonly string[] RarityTinted = [FrameMask, HeaderMask, IconFrameMask];
 
@@ -189,6 +230,15 @@ public sealed class ChromeAssetService(
 
     public string ExpandGlyph => Url(Name(ExpandTexture));
 
+    public string ModifierPlate => Url(Name(ModifierPlateTexture));
+
+    public string ModifierDecor => Url(Tinted(ModifierDecorTexture));
+
+    public string ModifierGlyph(ModifierKind kind) => Url(Tinted(ModifierGlyphs[kind]));
+
+    private static string Tinted(string texture) =>
+        Name(texture, DesignTokenService.Variable(ModifierTinted[texture]));
+
     public Badge AbilityBadge => Section(AbilityTexture);
 
     public Badge LegendaryBadge => Section(LegendaryTexture);
@@ -220,6 +270,23 @@ public sealed class ChromeAssetService(
             {
                 payloads.Add((Name(texture, rarity.Name), Tint(mask, Colour(tokens, rarity.Name))));
             }
+        }
+
+        foreach (var (texture, token) in ModifierTinted)
+        {
+            var file = Path.Combine(paths.Ui, texture + ".png");
+
+            if (!File.Exists(file))
+            {
+                throw new InvalidOperationException(
+                    $"{texture}.png is not in {paths.Ui}, so a modifier row has no glyph to draw. " +
+                    "This export was written before the modifier chrome was named; " +
+                    "'dotnet run --project src/FellowshipExtractor -- ui' rewrites it.");
+            }
+
+            using var mask = Image.Load<Rgba32>(file);
+
+            payloads.Add((Tinted(texture), Tint(mask, Painted(tokens, token))));
         }
 
         return payloads;
@@ -362,6 +429,12 @@ public sealed class ChromeAssetService(
         int r = left.R - right.R, g = left.G - right.G, b = left.B - right.B;
         return (r * r) + (g * g) + (b * b);
     }
+
+    private static Rgba32 Painted(IDesignTokenService tokens, string token) =>
+        Color.ParseHex(tokens.Color(token)
+            ?? throw new InvalidOperationException(
+                $"The palette has no colour {token}, so the modifier chrome it paints cannot be tinted."))
+            .ToPixel<Rgba32>();
 
     private static Rgba32 Colour(IDesignTokenService tokens, string rarity) =>
         Color.ParseHex(tokens.Rarity(rarity)

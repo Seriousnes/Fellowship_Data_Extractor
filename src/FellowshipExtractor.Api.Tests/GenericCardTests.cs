@@ -54,6 +54,25 @@ public class GenericCardTests : BunitContext
     }
 
     [Fact]
+    public void A_gem_draws_neither_the_imbued_line_nor_a_modifier_row()
+    {
+        var gem = export.Store.Entities.OfType<GemDocument>().First();
+
+        var drawn = Draw(gem, new TooltipQuery
+        {
+            Modifiers = [new ItemModifier(ModifierKind.Essence, 1, 100)],
+            ImbuedTraits = [new ImbuedTrait(1, 1)],
+            AllocatedTraits = 2,
+            HasImbuedTraits = true,
+        });
+
+        Assert.Empty(drawn.FindComponents<TipImbuedTraits>());
+        Assert.Empty(drawn.FindComponents<TipModifiers>());
+        Assert.Empty(drawn.FindAll(".sec.imbued"));
+        Assert.Empty(drawn.FindAll(".mod"));
+    }
+
+    [Fact]
     public void A_power_the_query_says_nothing_about_draws_only_the_groups_it_carries()
     {
         var power = export.Store.Entities.OfType<RelicPowerDocument>().First();

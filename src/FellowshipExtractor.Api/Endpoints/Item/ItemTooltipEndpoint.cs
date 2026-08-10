@@ -38,22 +38,23 @@ public sealed record ItemTooltipRequest
     [Description("The armour to print above the stats the tooltip computes.")]
     public decimal? Armor { get; init; }
 
-    [Description("A gem type id and its power separated by a colon, comma separated for several.")]
-    public GemPowers? GemPowers { get; init; }
+    [Description(
+        "A modifier the item carries as a kind token, an id and an amount separated by colons, " +
+        "comma separated for several. The kinds are trait, blessing and essence.")]
+    public ItemModifiers? Modifiers { get; init; }
 
     [Description("An item trait id, optionally a colon and the rank it sits at, comma separated for several.")]
-    public ImbuedTraits? Trait { get; init; }
+    public ImbuedTraits? ImbuedTraits { get; init; }
 
-    [Description("How many trait slots are filled.")]
+    [Description("How many imbued trait slots are filled.")]
     public int? AllocatedTraits { get; init; }
 
-    [Description("How many trait slots the item carries.")]
-    public int? MaxTraits { get; init; }
+    [Description("Given as true when the imbued traits line is to be drawn whatever slot the item sits in.")]
+    public bool? HasImbuedTraits { get; init; }
 
     public TooltipQuery ToQuery(IQueryCollection raw, StatParameters stats, out string? error)
     {
         var read = StatQuery.Read(this, raw, stats, out error);
-        var traits = Trait?.Values ?? [];
 
         return read with
         {
@@ -65,10 +66,10 @@ public sealed record ItemTooltipRequest
             NoSocket = NoSocket == true,
             PotentialPower = PotentialPower,
             Armor = Armor,
-            GemPowers = GemPowers?.Values ?? [],
-            Traits = traits,
-            AllocatedTraits = AllocatedTraits ?? (traits.Count > 0 ? traits.Count : null),
-            MaxTraits = MaxTraits,
+            Modifiers = Modifiers?.Values ?? [],
+            ImbuedTraits = ImbuedTraits?.Values ?? [],
+            AllocatedTraits = AllocatedTraits,
+            HasImbuedTraits = HasImbuedTraits,
         };
     }
 }

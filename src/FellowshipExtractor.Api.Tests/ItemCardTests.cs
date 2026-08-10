@@ -72,6 +72,63 @@ public class ItemCardTests : BunitContext
     }
 
     [Fact]
+    public void The_imbued_line_and_the_modifier_rows_sit_between_the_rolls_and_the_groups_below()
+    {
+        var worn = Items.First(row => row.Stats is { Count: > 0 } && row.SetBonus is { Count: > 0 });
+
+        var drawn = Draw(worn, Rich());
+
+        var at = Groups(drawn, ".rar", ".stats", ".sec.imbued", ".mod", ".sec.setbonus");
+
+        Assert.DoesNotContain(-1, at);
+        Assert.Equal(at.Count, at.Distinct().Count());
+        Assert.Equal([.. at.Order()], at);
+    }
+
+    [Fact]
+    public void Every_group_the_card_draws_comes_out_in_the_order_the_card_builds_them()
+    {
+        string[] markers =
+        [
+            ".rar", ".stats", ".sec.imbued", ".mod",
+            ".sec.ability", ".sec.legendary", ".sec.setbonus",
+        ];
+
+        ItemDocument[] shapes =
+        [
+            Items.First(row => row.GrantsId is not null && export.Tooltip.Granted(row) is not null),
+            Items.First(row => export.Tooltip.LegendaryStats(row).Count > 0),
+            Items.First(row => row.SetBonus is { Count: > 0 }),
+            Items.First(row => row.Stats is { Count: > 0 }),
+        ];
+
+        foreach (var worn in shapes)
+        {
+            var at = Groups(Draw(worn, Rich()), markers).Where(index => index >= 0).ToArray();
+
+            Assert.Equal([.. at.Order()], at);
+        }
+    }
+
+    private TooltipQuery Rich() => new()
+    {
+        Rarity = export.Store.Vocabulary.Rarities[^1].Tier.ToString(CultureInfo.InvariantCulture),
+        HasImbuedTraits = true,
+        Modifiers = [new ItemModifier(ModifierKind.Trait, 1, 1)],
+    };
+
+    private static IReadOnlyList<int> Groups(IRenderedComponent<Item> drawn, params string[] markers)
+    {
+        var groups = drawn.FindAll(".lines > .grp");
+
+        return
+        [
+            .. markers.Select(marker => Enumerable.Range(0, groups.Count)
+                .FirstOrDefault(at => groups[at].QuerySelector(marker) is not null, -1)),
+        ];
+    }
+
+    [Fact]
     public void A_rule_sits_between_every_pair_of_groups_and_never_above_the_first()
     {
         var drawn = Draw(Items.First(row => row.SetBonus is { Count: > 0 }), new TooltipQuery());

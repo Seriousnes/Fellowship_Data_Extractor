@@ -16,7 +16,7 @@ public sealed class ListParameters : IOpenApiOperationTransformer
     private static readonly IReadOnlyDictionary<Type, string> Examples = new Dictionary<Type, string>
     {
         [typeof(ImbuedTraits)] = "7:2,12:1",
-        [typeof(GemPowers)] = "3:40,5:25",
+        [typeof(ItemModifiers)] = "trait:412:1,blessing:7:1,essence:3:100",
     };
 
     public Task TransformAsync(

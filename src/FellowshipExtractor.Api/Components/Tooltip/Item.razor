@@ -55,7 +55,7 @@
 
     private IReadOnlyList<StatLine> rolls = [];
 
-    private IReadOnlyList<TooltipView.TraitLine> traits = [];
+    private IReadOnlyList<TooltipView.ModifierLine> modifiers = [];
 
     private IReadOnlyList<RenderFragment> groups = [];
 
@@ -68,7 +68,7 @@
         Sheet = new MarkupString(Ui.Style());
         facts = Ui.Facts(Entity, Query);
         rolls = Ui.Rolls(Entity, Query, Rung);
-        traits = Ui.Traits(Query);
+        modifiers = Ui.Modifiers(Query);
         granted = Ui.Granted(Entity);
         Named = granted is null ? null : PublicTypes.DisplayNameOf(granted);
 
@@ -91,10 +91,12 @@
             drawn.Add(@<TipRolls Potential="@Ui.Potential(Query)" Lines="rolls" />);
         }
 
-        if (traits.Count > 0 || Query.AllocatedTraits is not null || Query.MaxTraits is not null)
+        if (TipImbuedTraits.Capacity(Entity, Query) is not null)
         {
-            drawn.Add(@<TipTraits Lines="traits" Allocated="Query.AllocatedTraits" Total="Query.MaxTraits" />);
+            drawn.Add(@<TipImbuedTraits Entity="Entity" Query="Query" />);
         }
+
+        if (modifiers.Count > 0) drawn.Add(@<TipModifiers Lines="modifiers" />);
 
         if (Entity.Description is not null)
         {

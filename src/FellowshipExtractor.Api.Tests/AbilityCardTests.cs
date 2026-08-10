@@ -71,6 +71,23 @@ public class AbilityCardTests : BunitContext
     }
 
     [Fact]
+    public void An_ability_draws_neither_the_imbued_line_nor_a_modifier_row()
+    {
+        var drawn = Draw(Spell, new TooltipQuery
+        {
+            Modifiers = [new ItemModifier(ModifierKind.Trait, 1, 1)],
+            ImbuedTraits = [new ImbuedTrait(1, 1)],
+            AllocatedTraits = 2,
+            HasImbuedTraits = true,
+        });
+
+        Assert.Empty(drawn.FindComponents<TipImbuedTraits>());
+        Assert.Empty(drawn.FindComponents<TipModifiers>());
+        Assert.Empty(drawn.FindAll(".sec.imbued"));
+        Assert.Empty(drawn.FindAll(".mod"));
+    }
+
+    [Fact]
     public void The_prose_reads_the_description_in_the_styles_the_build_ships()
     {
         var styled = export.Store.Entities.OfType<AbilityDocument>().First(row =>
