@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
-using System.Text.Json;
 
 using Fellowship.SDK.Documents;
 
@@ -11,7 +10,7 @@ namespace FellowshipExtractor.Api.Services;
 
 public interface IEntityStoreService
 {
-    VocabularyFile Vocabulary { get; }
+    SettingsFile Settings { get; }
 
     IReadOnlyList<EntityDocument> Entities { get; }
 
@@ -52,8 +51,6 @@ public sealed class EntityStoreService : IEntityStoreService
 
     private const string LegendaryDropRow = "Legendary";
 
-    private static readonly JsonSerializerOptions Options = EntityDocuments.Options;
-
     private static readonly ConcurrentDictionary<(Type Document, string Property), PropertyInfo?> Fields = new();
 
     private static IReadOnlyList<T> Field<T>(EntityDocument document, string name) =>
@@ -64,7 +61,7 @@ public sealed class EntityStoreService : IEntityStoreService
 
     private readonly Dictionary<string, HeroEntry> heroesByName = new(StringComparer.OrdinalIgnoreCase);
 
-    public VocabularyFile Vocabulary { get; }
+    public SettingsFile Settings { get; }
 
     public IReadOnlyList<EntityDocument> Entities { get; }
 
@@ -78,16 +75,21 @@ public sealed class EntityStoreService : IEntityStoreService
 
     public int Ids { get; }
 
-    public EntityStoreService(IExportPathService paths, ILogger<EntityStoreService> logger)
+    public EntityStoreService(ExportSnapshot snapshot, ILogger<EntityStoreService> logger)
     {
-        var file = JsonSerializer.Deserialize<VocabularyFile>(File.ReadAllText(paths.Vocabulary), Options)
-            ?? throw new InvalidOperationException($"{paths.Vocabulary} deserialised to nothing.");
+        var file = snapshot.Settings;
 
-        Vocabulary = file with
+        Settings = file with
         {
             TextStyles = new Dictionary<string, TextStyle>(file.TextStyles, StringComparer.OrdinalIgnoreCase),
             Colors = new Dictionary<string, string>(file.Colors, StringComparer.OrdinalIgnoreCase),
             SlotIcons = new Dictionary<string, string>(file.SlotIcons, StringComparer.OrdinalIgnoreCase),
+            RarityOrnaments = new Dictionary<string, string>(
+                file.RarityOrnaments, StringComparer.OrdinalIgnoreCase),
+            RarityColorRows = new Dictionary<string, string>(
+                file.RarityColorRows, StringComparer.OrdinalIgnoreCase),
+            SectionHeadingRows = new Dictionary<string, string>(
+                file.SectionHeadingRows, StringComparer.OrdinalIgnoreCase),
             MaxTempers = new Dictionary<string, IReadOnlyList<TemperCeiling>>(
                 file.MaxTempers, StringComparer.OrdinalIgnoreCase),
             StatCalculation = file.StatCalculation with
@@ -103,7 +105,7 @@ public sealed class EntityStoreService : IEntityStoreService
 
         var attributes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var hero in Vocabulary.Heroes)
+        foreach (var hero in Settings.Heroes)
         {
             heroesByName[hero.Name] = hero;
             attributes.Add(hero.PrimaryStat);
@@ -114,22 +116,14 @@ public sealed class EntityStoreService : IEntityStoreService
         var groups = new Dictionary<(EntityType, int), List<EntityDocument>>();
         var stats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var spelled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var entities = new List<EntityDocument>();
+        var entities = snapshot.Entities;
 
-        var number = 0;
-
-        foreach (var line in File.ReadLines(paths.Entities))
+        foreach (var document in entities)
         {
-            number++;
-            if (line.Length == 0) continue;
-
-            var document = Read(line, number, paths.Entities);
-
             var key = (EntityTypes.TypeOf(document), document.Id);
 
             if (!groups.TryGetValue(key, out var list)) groups[key] = list = [];
             list.Add(document);
-            entities.Add(document);
 
             Census(document, stats, spelled);
 
@@ -141,7 +135,7 @@ public sealed class EntityStoreService : IEntityStoreService
         Ids = byId.Count;
 
         Entities = entities;
-        Stats = new StatParameters(Vocabulary.StatCalculation.Attributes);
+        Stats = new StatParameters(Settings.StatCalculation.Attributes);
 
         Types =
         [
@@ -151,38 +145,21 @@ public sealed class EntityStoreService : IEntityStoreService
                 .Select(g => g.Key),
         ];
 
-        var rows = Vocabulary.StatCalculation.Attributes;
+        var rows = Settings.StatCalculation.Attributes;
         var named = rows.Count(row => row.Value.DisplayName is { Length: > 0 });
         var unnamed = spelled.Count(key => !rows.ContainsKey(key));
 
         logger.LogInformation(
-            "Export loaded from {Path}: {Entities} entities under {Ids} ids, {Ambiguous} of which read differently per hero. " +
+            "Export snapshot loaded: {Entities} entities under {Ids} ids, {Ambiguous} of which read differently per hero. " +
             "{Heroes} heroes, {Rarities} rarity rungs, {Formats} print formats, {Colors} colours, {Styles} text styles, {Stats} stat names",
-            paths.Export, Count, Ids, byId.Count(e => e.Value.Length > 1), Vocabulary.Heroes.Count,
-            Vocabulary.Rarities.Count, Vocabulary.PrintFormats.Count, Vocabulary.Colors.Count,
-            Vocabulary.TextStyles.Count, Stats.Names.Count);
+            Count, Ids, byId.Count(e => e.Value.Length > 1), Settings.Heroes.Count,
+            Settings.Rarities.Count, Settings.PrintFormats.Count, Settings.Colors.Count,
+            Settings.TextStyles.Count, Stats.Names.Count);
 
         logger.LogInformation(
             "Attribute names: {Named} of {Attributes} shipped rows print a word, and {Unnamed} of the {Spelled} attribute " +
             "names the export spells have no row, so they print spaced out",
             named, rows.Count, unnamed, spelled.Count);
-    }
-
-    private static EntityDocument Read(string line, int number, string path)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<EntityDocument>(line, Options)
-                ?? throw new InvalidOperationException($"Line {number} of {path} deserialised to nothing.");
-        }
-        catch (Exception failure) when (failure is JsonException or NotSupportedException)
-        {
-            throw new InvalidOperationException(
-                $"Line {number} of {path} does not read as a document: {failure.Message} An export written " +
-                $"before a document carried the '{EntityDocuments.Discriminator}' it is read back as reads this " +
-                "way. Write it again with 'dotnet run --project src/FellowshipExtractor -- export-all'.",
-                failure);
-        }
     }
 
     private static void Census(EntityDocument document, HashSet<string> stats, HashSet<string> spelled)
@@ -203,13 +180,13 @@ public sealed class EntityStoreService : IEntityStoreService
     }
 
     public string StatName(string key) =>
-        Vocabulary.StatCalculation.Attributes.TryGetValue(key, out var attribute) &&
+        Settings.StatCalculation.Attributes.TryGetValue(key, out var attribute) &&
         attribute.DisplayName is { Length: > 0 } printed
             ? printed
             : Codex.Spaced(key);
 
     public AttributeDisplay? StatDisplay(string? key) =>
-        key is not null && Vocabulary.StatCalculation.Attributes.TryGetValue(key, out var attribute)
+        key is not null && Settings.StatCalculation.Attributes.TryGetValue(key, out var attribute)
             ? attribute
             : null;
 
@@ -269,7 +246,7 @@ public sealed class EntityStoreService : IEntityStoreService
     }
 
     public HeroEntry? Wearer(EntityDocument document) =>
-        Vocabulary.Heroes.FirstOrDefault(hero => EntityStore.Reads(document, hero));
+        Settings.Heroes.FirstOrDefault(hero => EntityStore.Reads(document, hero));
 
     public int DropItemLevel(EntityDocument document) =>
         Plateau(document is ItemDocument { Rarity: Fellowship.SDK.Rarity.Legendary }
@@ -277,10 +254,10 @@ public sealed class EntityStoreService : IEntityStoreService
             : DefaultDropRow);
 
     private int Plateau(string row) =>
-        Vocabulary.DropItemLevels.FirstOrDefault(
+        Settings.DropItemLevels.FirstOrDefault(
             plateau => plateau.Row.Equals(row, StringComparison.OrdinalIgnoreCase))?.ItemLevel
         ?? throw new InvalidOperationException(
-            $"The vocabulary states no {row} drop plateau, so there is no item level to answer a request that " +
+            $"The settings state no {row} drop plateau, so there is no item level to answer a request that " +
             "names none. Write it again with 'dotnet run --project src/FellowshipExtractor -- export-all'.");
 
     public RarityEntry? Rarity(string? word, bool gem)
@@ -289,10 +266,10 @@ public sealed class EntityStoreService : IEntityStoreService
 
         if (int.TryParse(word, NumberStyles.Integer, CultureInfo.InvariantCulture, out var tier))
         {
-            return Vocabulary.Rarities.FirstOrDefault(r => r.Tier == tier);
+            return Settings.Rarities.FirstOrDefault(r => r.Tier == tier);
         }
 
-        return Vocabulary.Rarities.FirstOrDefault(r =>
+        return Settings.Rarities.FirstOrDefault(r =>
             string.Equals(gem ? r.GemDisplayName : r.DisplayName, word, StringComparison.OrdinalIgnoreCase));
     }
 }

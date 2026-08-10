@@ -6,7 +6,7 @@ public class StatParameterTests(Export export)
     [Fact]
     public void Names_every_display_name_the_attribute_table_carries_once()
     {
-        var rows = export.Store.Vocabulary.StatCalculation.Attributes;
+        var rows = export.Store.Settings.StatCalculation.Attributes;
 
         var shared = rows.Values
             .Select(row => row.DisplayName)

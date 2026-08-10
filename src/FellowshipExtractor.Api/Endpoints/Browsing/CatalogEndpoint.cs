@@ -26,14 +26,14 @@ public static class CatalogEndpoint
             flags = codex.Flags.Select(flag => new { flag.Key, flag.Label }),
             measures = codex.Measures.Select(measure => new { measure.Key, measure.Label, measure.Unit }),
 
-            heroes = store.Vocabulary.Heroes.Select(hero => new
+            heroes = store.Settings.Heroes.Select(hero => new
             {
                 hero.Name,
                 hero.ArmorType,
                 hero.PrimaryStat,
                 hero.Color,
             }),
-            rarities = store.Vocabulary.Rarities.Select(rarity => new
+            rarities = store.Settings.Rarities.Select(rarity => new
             {
                 rarity.Tier,
                 rarity.DisplayName,

@@ -12,23 +12,23 @@ using Microsoft.CodeAnalysis.Text;
 namespace Fellowship.SDK.Generators;
 
 [Generator]
-public sealed class VocabularyEnumGenerator : IIncrementalGenerator
+public sealed class SettingsEnumGenerator : IIncrementalGenerator
 {
-    private const string VocabularyName = "vocabulary.json";
-    private const string HintName = "VocabularyEnums.g.cs";
+    private const string SettingsName = "settings.json";
+    private const string HintName = "SettingsEnums.g.cs";
     private const string Category = "Fellowship.SDK";
 
-    private static readonly DiagnosticDescriptor NoVocabulary = new(
+    private static readonly DiagnosticDescriptor NoSettings = new(
         "FSDK001",
-        "The vocabulary is not among the additional files",
+        "The settings are not among the additional files",
         "No {0} was passed to the generator. Add it as an AdditionalFiles item so the enumerated fields can be declared.",
         Category,
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    private static readonly DiagnosticDescriptor UnreadableVocabulary = new(
+    private static readonly DiagnosticDescriptor UnreadableSettings = new(
         "FSDK002",
-        "The vocabulary cannot be read",
+        "The settings cannot be read",
         "{0} cannot be read: {1}",
         Category,
         DiagnosticSeverity.Error,
@@ -36,7 +36,7 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
 
     private static readonly DiagnosticDescriptor IllegalMember = new(
         "FSDK003",
-        "The vocabulary states a word that is not a legal C# identifier",
+        "The settings state a word that is not a legal C# identifier",
         "{0} states \"{1}\" for {2}, which is not a legal C# identifier and cannot be an enum member",
         Category,
         DiagnosticSeverity.Error,
@@ -44,7 +44,7 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
 
     private static readonly DiagnosticDescriptor EmptyField = new(
         "FSDK004",
-        "The vocabulary states no members for an enumerated field",
+        "The settings state no members for an enumerated field",
         "{0} states no members for {1}",
         Category,
         DiagnosticSeverity.Error,
@@ -52,27 +52,27 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var vocabulary = context.AdditionalTextsProvider
-            .Where(static text => IsVocabulary(text.Path))
+        var settings = context.AdditionalTextsProvider
+            .Where(static text => IsSettings(text.Path))
             .Select(static (text, token) => text.GetText(token)?.ToString())
             .Collect();
 
-        context.RegisterSourceOutput(vocabulary, static (production, texts) => Emit(production, texts));
+        context.RegisterSourceOutput(settings, static (production, texts) => Emit(production, texts));
     }
 
-    private static bool IsVocabulary(string path)
+    private static bool IsSettings(string path)
     {
         var separator = path.LastIndexOfAny(['/', '\\']);
         var name = separator < 0 ? path : path.Substring(separator + 1);
-        return string.Equals(name, VocabularyName, StringComparison.OrdinalIgnoreCase);
+        return string.Equals(name, SettingsName, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void Emit(SourceProductionContext context, ImmutableArray<string?> vocabularies)
+    private static void Emit(SourceProductionContext context, ImmutableArray<string?> settings)
     {
-        var json = vocabularies.FirstOrDefault(static text => text is not null);
+        var json = settings.FirstOrDefault(static text => text is not null);
         if (json is null)
         {
-            context.ReportDiagnostic(Diagnostic.Create(NoVocabulary, Location.None, VocabularyName));
+            context.ReportDiagnostic(Diagnostic.Create(NoSettings, Location.None, SettingsName));
             context.AddSource(HintName, SourceText.From(Declare(Fields(null, null)), Encoding.UTF8));
             return;
         }
@@ -85,7 +85,7 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
         catch (JsonException failure)
         {
             context.ReportDiagnostic(
-                Diagnostic.Create(UnreadableVocabulary, Location.None, VocabularyName, failure.Message));
+                Diagnostic.Create(UnreadableSettings, Location.None, SettingsName, failure.Message));
             context.AddSource(HintName, SourceText.From(Declare(Fields(null, null)), Encoding.UTF8));
             return;
         }
@@ -137,9 +137,9 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
             }
 
             context?.ReportDiagnostic(Diagnostic.Create(
-                UnreadableVocabulary,
+                UnreadableSettings,
                 Location.None,
-                VocabularyName,
+                SettingsName,
                 $"the rarity \"{name}\" states no whole-number tier"));
         }
 
@@ -154,7 +154,7 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
         {
             if (members.Count == 0)
             {
-                context.ReportDiagnostic(Diagnostic.Create(EmptyField, Location.None, VocabularyName, name));
+                context.ReportDiagnostic(Diagnostic.Create(EmptyField, Location.None, SettingsName, name));
                 continue;
             }
 
@@ -163,7 +163,7 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
                 if (IsIdentifier(members[at].Member)) continue;
 
                 context.ReportDiagnostic(Diagnostic.Create(
-                    IllegalMember, Location.None, VocabularyName, members[at].Member, name));
+                    IllegalMember, Location.None, SettingsName, members[at].Member, name));
                 members.RemoveAt(at);
             }
         }
@@ -178,7 +178,7 @@ public sealed class VocabularyEnumGenerator : IIncrementalGenerator
     {
         var source = new StringBuilder();
         source.Append("// <auto-generated/>\n");
-        source.Append("// Declared from vocabulary.json by Fellowship.SDK.Generators at build time.\n");
+        source.Append("// Declared from settings.json by Fellowship.SDK.Generators at build time.\n");
         source.Append("\nnamespace Fellowship.SDK;\n");
 
         foreach (var (name, members) in fields)

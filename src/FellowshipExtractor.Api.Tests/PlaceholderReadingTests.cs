@@ -4,7 +4,7 @@ namespace FellowshipExtractor.Api.Tests;
 public class PlaceholderReadingTests(Export export)
 {
     private readonly IPlaceholderService Readings =
-        new PlaceholderService(export.Store, new RichTextService(export.Store.Vocabulary.TextStyles));
+        new PlaceholderService(export.Store, new RichTextService(export.Store.Settings.TextStyles));
 
     private Substitution Read(Placeholder placeholder) =>
         Readings.Reading(placeholder, new TooltipQuery(), null);

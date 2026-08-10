@@ -5,6 +5,9 @@ public sealed record StatCalculationFile
     public PrimaryStatPool? PrimaryPool { get; init; }
     public SecondaryStatPool? SecondaryPool { get; init; }
 
+    public double PrimaryPowerBase { get; init; }
+    public double PrimaryAndStaminaMultiplier { get; init; }
+
     public double StatRarityBase { get; init; }
 
     public SlotStatSettings BaseSlot { get; init; } = new();
@@ -26,7 +29,7 @@ public sealed record StatCalculationFile
         new Dictionary<string, IReadOnlyDictionary<int, RaritySlots>>(StringComparer.OrdinalIgnoreCase);
 }
 
-public sealed record VocabularyFile
+public sealed record SettingsFile
 {
     public IReadOnlyList<HeroEntry> Heroes { get; init; } = [];
 
@@ -44,6 +47,15 @@ public sealed record VocabularyFile
     public IReadOnlyList<string> GemTypes { get; init; } = [];
 
     public IReadOnlyDictionary<string, string> SlotIcons { get; init; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlyDictionary<string, string> RarityOrnaments { get; init; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlyDictionary<string, string> RarityColorRows { get; init; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlyDictionary<string, string> SectionHeadingRows { get; init; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; init; } =

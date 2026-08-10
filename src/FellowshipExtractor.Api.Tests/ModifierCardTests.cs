@@ -1,9 +1,5 @@
 using System.Globalization;
 
-using Azure.Storage.Blobs;
-
-using Microsoft.Extensions.Configuration;
-
 using FellowshipExtractor.Api.Components.Tooltip;
 
 namespace FellowshipExtractor.Api.Tests;
@@ -110,59 +106,20 @@ public class ModifierCardTests : BunitContext
     }
 
     [Fact]
-    public void Every_glyph_the_rows_ask_for_is_a_payload_the_seeder_uploads()
+    public void Every_texture_a_row_asks_for_composes_under_the_prefix()
     {
-        var carried = export.Chrome.Payloads()
-            .Select(payload => payload.Name)
-            .ToHashSet(StringComparer.Ordinal);
-
-        static string Blob(string url) => url[(url.IndexOf($"/{ChromeAssetService.Prefix}/", StringComparison.Ordinal) + 1)..];
-
-        foreach (var kind in Enum.GetValues<ModifierKind>())
+        static void Under(string url)
         {
-            Assert.Contains(Blob(export.Chrome.ModifierGlyph(kind)), carried, StringComparer.Ordinal);
+            var name = url[(url.LastIndexOf('/') + 1)..];
+
+            Assert.EndsWith(".png", name, StringComparison.Ordinal);
+            Assert.EndsWith($"/{ChromeAssetService.Prefix}/{name}", url, StringComparison.Ordinal);
         }
 
-        Assert.Contains(Blob(export.Chrome.ModifierDecor), carried, StringComparer.Ordinal);
-        Assert.Contains(Blob(export.Chrome.ModifierPlate), carried, StringComparer.Ordinal);
-    }
+        Under(export.Chrome.ModifierPlate);
+        Under(export.Chrome.ModifierDecor);
 
-    [Fact]
-    public void An_export_written_before_the_glyphs_names_the_command_that_writes_them()
-    {
-        var folder = Directory.CreateTempSubdirectory("fellowship-ui").FullName;
-
-        try
-        {
-            var ui = Path.Combine(folder, "ui");
-            Directory.CreateDirectory(ui);
-
-            foreach (var file in Directory.GetFiles(export.Paths.Ui, "*.png"))
-            {
-                File.Copy(file, Path.Combine(ui, Path.GetFileName(file)));
-            }
-
-            File.Delete(Path.Combine(ui, "T_Icons_Generic_WeaponSkill.png"));
-
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = folder })
-                .Build();
-
-            var stale = new ChromeAssetService(
-                new BlobContainerClient(new Uri("http://localhost/icons")),
-                new ExportPathService(configuration),
-                export.Store,
-                new DesignTokenService(export.Store.Vocabulary));
-
-            var failure = Assert.Throws<InvalidOperationException>(() => stale.Payloads());
-
-            Assert.Contains("T_Icons_Generic_WeaponSkill.png", failure.Message, StringComparison.Ordinal);
-            Assert.Contains("-- ui", failure.Message, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(folder, recursive: true);
-        }
+        foreach (var kind in Enum.GetValues<ModifierKind>()) Under(export.Chrome.ModifierGlyph(kind));
     }
 
     [Fact]

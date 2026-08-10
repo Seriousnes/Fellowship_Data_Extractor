@@ -4,7 +4,7 @@ namespace FellowshipExtractor.Api.Tests;
 public class TemperingTests(Export export)
 {
     private int? Ceiling(string? rarity, int? itemLevel) =>
-        Tempering.Ceiling(export.Store.Vocabulary.MaxTempers, rarity, itemLevel);
+        Tempering.Ceiling(export.Store.Settings.MaxTempers, rarity, itemLevel);
 
     private static int DefaultPlateau(Export export) =>
         export.Store.DropItemLevel(new ItemDocument { Id = 1 });
@@ -12,10 +12,10 @@ public class TemperingTests(Export export)
     [Fact]
     public void Every_rung_the_ladder_names_states_a_ceiling()
     {
-        foreach (var rung in export.Store.Vocabulary.Rarities)
+        foreach (var rung in export.Store.Settings.Rarities)
         {
             Assert.True(
-                export.Store.Vocabulary.MaxTempers.ContainsKey(rung.Name),
+                export.Store.Settings.MaxTempers.ContainsKey(rung.Name),
                 $"{rung.Name} carries no tempering ceiling, so a tooltip read at that rung would print none.");
         }
     }

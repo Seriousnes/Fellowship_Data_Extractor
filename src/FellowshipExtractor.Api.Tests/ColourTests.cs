@@ -5,7 +5,7 @@ public class ColourTests(Export export)
 {
     private string? Shipped(int tier) =>
         CodexView.Readable(export.View.Tokens.Rarity(
-            export.Store.Vocabulary.Rarities.Single(rung => rung.Tier == tier).Name));
+            export.Store.Settings.Rarities.Single(rung => rung.Tier == tier).Name));
 
     [Fact]
     public void A_dropped_item_is_drawn_at_the_top_of_its_own_ladder()

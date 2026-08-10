@@ -15,7 +15,7 @@
 
 <Panel Head="The roster" Badge="@Roster">
     <div class="cx-roster">
-        @foreach (var hero in Store.Vocabulary.Heroes.OrderBy(h => h.Name, StringComparer.OrdinalIgnoreCase))
+        @foreach (var hero in Store.Settings.Heroes.OrderBy(h => h.Name, StringComparer.OrdinalIgnoreCase))
         {
             <a href="/browse?type=@ItemSlug&hero=@Uri.EscapeDataString(hero.Name)"
                style="color:@(Ui.HeroColour(hero.Name) ?? "var(--muted)")">
@@ -77,7 +77,7 @@
 
     private int Entries => Ui.Codex.Count;
 
-    private string Roster => $"{Store.Vocabulary.Heroes.Count} heroes";
+    private string Roster => $"{Store.Settings.Heroes.Count} heroes";
 
     private static readonly string ItemSlug = EntityTypes.Slug(EntityType.Item);
 

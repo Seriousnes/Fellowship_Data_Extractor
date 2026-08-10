@@ -289,7 +289,7 @@ public sealed class CodexService : ICodexService
         store.Hero(name)?.Codename ?? name;
 
     private static string RarityWord(IEntityStoreService store, Rarity rarity, bool gem) =>
-        store.Vocabulary.Rarities.FirstOrDefault(r => r.Tier == (int)rarity) is { } entry
+        store.Settings.Rarities.FirstOrDefault(r => r.Tier == (int)rarity) is { } entry
             ? (gem ? entry.GemDisplayName : entry.DisplayName)
             : rarity.ToString();
 

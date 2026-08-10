@@ -242,7 +242,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Prints_a_gem_rung_under_the_gem_ladders_word()
     {
-        var rung = Store.Vocabulary.Rarities[^1];
+        var rung = Store.Settings.Rarities[^1];
 
         var asGem = Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, new GemDocument { Id = 1, Type = GemType.Amethyst, Power = 10, Rarity = Rarity.Champion })
@@ -299,7 +299,7 @@ public class TooltipTests : BunitContext
 
         var style = coloured.Find("div.fx-tip").GetAttribute("style")!;
 
-        var shade = new DesignTokenService(Store.Vocabulary).Rarity(Rarity.Heroic.ToString());
+        var shade = new DesignTokenService(Store.Settings).Rarity(Rarity.Heroic.ToString());
 
         Assert.Contains($"--fx-title:{shade}", style, StringComparison.Ordinal);
         Assert.DoesNotContain("--fx-title:var(--core-text-primary)", style, StringComparison.Ordinal);
@@ -479,7 +479,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Draws_the_glyph_the_game_gives_that_slot()
     {
-        foreach (var (slot, texture) in Store.Vocabulary.SlotIcons)
+        foreach (var (slot, texture) in Store.Settings.SlotIcons)
         {
             var cut = Draw(new ItemDocument { Id = 3, Slot = slot });
 

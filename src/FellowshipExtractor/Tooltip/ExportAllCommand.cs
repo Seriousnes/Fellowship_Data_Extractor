@@ -1,13 +1,12 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 using FellowshipExtractor.Output;
+using FellowshipExtractor.Textures;
 
 namespace FellowshipExtractor.Tooltip;
 
 public static class ExportAllCommand
 {
-    private const string FolderName = "export";
-
     public static IReadOnlySet<string> Branches(IEnumerable<TagRecord> tags)
     {
         var branches = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -54,7 +53,7 @@ public static class ExportAllCommand
         return null;
     }
 
-    public static async Task RunAsync(ExtractorOptions options, string[] tables, IOutputFormat output)
+    public static async Task RunAsync(ExtractorOptions options, string[] tables, IExportTarget target)
     {
         var provider = await ProviderFactory.CreateAsync(options);
         var resolver = new TooltipResolver(provider);
@@ -77,11 +76,11 @@ public static class ExportAllCommand
         Console.WriteLine($"set bonuses:        {resolver.SetBonuses.Count} rows");
         Console.WriteLine($"calculation presets:{resolver.PresetCount} rows carrying a default spread");
         Console.WriteLine(
-            $"vocabulary:         {resolver.Vocabulary.Heroes.Count} heroes, {resolver.Vocabulary.Rarities.Count} " +
-            $"rarities, {resolver.Vocabulary.PrintFormats.Count} print formats, " +
-            $"{resolver.Vocabulary.Colors.Count} colours, {resolver.Vocabulary.TextStyles.Count} text styles, " +
-            $"{resolver.Vocabulary.SlotIcons.Count} slot glyphs, " +
-            $"{resolver.Vocabulary.MaxTempers.Count} tempering ladders");
+            $"settings:           {resolver.Settings.Heroes.Count} heroes, {resolver.Settings.Rarities.Count} " +
+            $"rarities, {resolver.Settings.PrintFormats.Count} print formats, " +
+            $"{resolver.Settings.Colors.Count} colours, {resolver.Settings.TextStyles.Count} text styles, " +
+            $"{resolver.Settings.SlotIcons.Count} slot glyphs, " +
+            $"{resolver.Settings.MaxTempers.Count} tempering ladders");
 
         var wanted = new HashSet<string>(tables, StringComparer.OrdinalIgnoreCase);
         var selected = resolver.Tags
@@ -95,11 +94,8 @@ public static class ExportAllCommand
             return;
         }
 
-        var folder = Path.Combine(options.ResolvedOutputDir, FolderName);
-        Directory.CreateDirectory(folder);
-
-        var icons = TooltipCommand.IconWriterInto(
-            provider, folder, reportFailures: false, resolver.Collections.Renders);
+        var icons = new IconImages(
+            provider, resolver.Collections.Renders, RarityImages.Ladder(resolver.Settings));
 
         int written = 0, withIcon = 0, withText = 0, scanned = 0;
 
@@ -113,7 +109,7 @@ public static class ExportAllCommand
 
         foreach (var tag in selected)
         {
-            foreach (var record in resolver.Resolve(tag, icons))
+            foreach (var record in resolver.Resolve(tag, icons.Writer))
             {
                 if (NotWritten(record, branches) is { } reason)
                 {
@@ -148,6 +144,8 @@ public static class ExportAllCommand
                 }
             }
 
+            await icons.FlushAsync(target, default);
+
             scanned++;
             if (scanned % 500 == 0) Console.WriteLine($"  {scanned} of {selected.Length}...");
         }
@@ -160,19 +158,20 @@ public static class ExportAllCommand
 
         foreach (var record in resolved)
         {
-            await output.WriteAsync(DocumentProjection.From(record, lookup), default);
+            await target.WriteDocumentAsync(DocumentProjection.From(record, lookup), default);
             written++;
 
             if (DocumentProjection.Implied(record) is { } implied)
             {
-                await output.WriteAsync(implied, default);
+                await target.WriteDocumentAsync(implied, default);
                 written++;
             }
         }
 
-        await output.WriteVocabularyAsync(resolver.Vocabulary, default);
+        var chrome = await ChromeTextures.WriteAsync(provider, resolver.Settings, target, default);
 
-        var images = Directory.EnumerateFiles(folder, "*.png").Count();
+        await target.WriteSettingsAsync(resolver.Settings.ToFile(), default);
+
         Console.WriteLine($"\nwrote {written} documents from {resolved.Count} entities across {scanned} tags");
         Console.WriteLine($"  {withText} entities with a display name, {withIcon} with an icon");
         if (dropped.Count > 0)
@@ -181,7 +180,9 @@ public static class ExportAllCommand
                 $"  {dropped.Values.Sum()} entries dropped: " +
                 string.Join(", ", dropped.Select(entry => $"{entry.Key} {entry.Value}")));
         }
-        Console.WriteLine($"  {images} images in {folder}");
+        Console.WriteLine(
+            $"  {icons.Written} entity icon images and {chrome} chrome images written, " +
+            $"{icons.Composed} of the icons composed against a rarity colour");
         Console.WriteLine(
             $"  {resolver.NamesInherited} names inherited from the entity that applies them, " +
             $"{resolver.NamesContested} withheld because two entities that apply them disagree");
@@ -203,6 +204,6 @@ public static class ExportAllCommand
         {
             Console.WriteLine($"  no band for {row}: two effects bind it under different presets");
         }
-        Console.WriteLine("wrote the vocabulary the documents are read against");
+        Console.WriteLine("wrote the settings the documents are read against");
     }
 }

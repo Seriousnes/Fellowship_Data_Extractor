@@ -9,7 +9,7 @@ namespace FellowshipExtractor.Tests;
 public sealed class StatParameterTests
 {
     private static StatParameters Parameters() =>
-        new(Export.Loaded.Vocabulary.StatCalculation.Attributes);
+        new(Export.Loaded.Settings.StatCalculation.Attributes);
 
     private sealed record Probe
     {

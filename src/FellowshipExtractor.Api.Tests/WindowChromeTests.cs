@@ -8,11 +8,6 @@ public partial class WindowChromeTests(Export export)
     [GeneratedRegex(@"(?:^|[{}])\s*([^@{}/][^{}]*?)\s*\{")]
     private static partial Regex Selector();
 
-    private static readonly string[] Windowed =
-    [
-        "T_Borders_Rounded_16", "T_Borders_Thin", "T_Borders_WindowBackground_Windowed",
-    ];
-
     private static readonly string[] NoRungOnly = ["var(--fx-thin)", "var(--fx-fill)"];
 
     private static readonly string Rows = $".{TooltipView.Root}";
@@ -57,15 +52,6 @@ public partial class WindowChromeTests(Export export)
         Assert.EndsWith(
             "T_Borders_WindowBackground_Windowed.png", export.Chrome.WindowFill,
             StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Every_texture_the_window_names_is_on_disk_to_be_uploaded()
-    {
-        Assert.All(Windowed, texture =>
-            Assert.True(
-                File.Exists(Path.Combine(export.Paths.Ui, texture + ".png")),
-                $"{texture}.png is not in {export.Paths.Ui}, so the window would draw nothing."));
     }
 
     [Fact]

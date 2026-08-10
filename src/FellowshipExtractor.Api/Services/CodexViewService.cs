@@ -5,8 +5,6 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
-using Azure.Storage.Blobs;
-
 using Fellowship.SDK.Documents;
 
 using Microsoft.AspNetCore.Components;
@@ -79,8 +77,7 @@ public sealed class CodexViewService(
     IDesignTokenService tokens,
     IChromeAssetService chrome,
     IRichTextService richText,
-    IPlaceholderService placeholders,
-    BlobContainerClient icons) : ICodexViewService
+    IPlaceholderService placeholders) : ICodexViewService
 {
     public IEntityStoreService Store => store;
 
@@ -91,14 +88,14 @@ public sealed class CodexViewService(
     public IChromeAssetService Chrome => chrome;
 
     [return: NotNullIfNotNull(nameof(icon))]
-    public string? Icon(string? icon) => icon is null ? null : $"{icons.Uri}/{icon}";
+    public string? Icon(string? icon) => chrome.Art(icon);
 
     public string? RarityName(EntityDocument document) => Tier(document) is { } rung ? Named(rung) : null;
 
     public string? RarityName(Rarity? rarity) => rarity is { } rung ? Named(rung) : null;
 
     private string? Named(Rarity rarity) =>
-        store.Vocabulary.Rarities.FirstOrDefault(entry => entry.Tier == (int)rarity)?.Name;
+        store.Settings.Rarities.FirstOrDefault(entry => entry.Tier == (int)rarity)?.Name;
 
     public string? LinkColour(EntityDocument document)
     {
@@ -118,7 +115,7 @@ public sealed class CodexViewService(
     }
 
     private string? Rung(Rarity rarity) =>
-        store.Vocabulary.Rarities.FirstOrDefault(entry => entry.Tier == (int)rarity) is { } rung
+        store.Settings.Rarities.FirstOrDefault(entry => entry.Tier == (int)rarity) is { } rung
             ? Readable(tokens.Rarity(rung.Name))
             : null;
 
@@ -286,7 +283,7 @@ public sealed class CodexViewService(
 
         if (rung is not { } tier2) return null;
 
-        var entry = store.Vocabulary.Rarities.FirstOrDefault(r => r.Tier == (int)tier2);
+        var entry = store.Settings.Rarities.FirstOrDefault(r => r.Tier == (int)tier2);
 
         return entry is null ? tier2.ToString() : document is GemDocument ? entry.GemDisplayName : entry.DisplayName;
     }
@@ -402,10 +399,10 @@ public sealed class CodexViewService(
         return [.. words];
     }
 
-    private readonly IReadOnlyDictionary<string, string> heroes = store.Vocabulary.Heroes
+    private readonly IReadOnlyDictionary<string, string> heroes = store.Settings.Heroes
         .ToDictionary(hero => hero.Codename, hero => hero.Name, StringComparer.Ordinal);
 
-    private readonly IReadOnlyDictionary<string, string> stats = store.Vocabulary.StatCalculation.Attributes
+    private readonly IReadOnlyDictionary<string, string> stats = store.Settings.StatCalculation.Attributes
         .Where(row => row.Value.DisplayName is { Length: > 0 } printed &&
             !printed.Replace(" ", string.Empty, StringComparison.Ordinal)
                 .Contains(row.Key, StringComparison.OrdinalIgnoreCase))

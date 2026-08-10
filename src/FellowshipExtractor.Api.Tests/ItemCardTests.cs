@@ -37,7 +37,7 @@ public class ItemCardTests : BunitContext
     [Fact]
     public void The_rung_asks_for_the_rarity_chrome_and_its_absence_asks_for_the_plain_window()
     {
-        var rung = export.Store.Vocabulary.Rarities[^1];
+        var rung = export.Store.Settings.Rarities[^1];
         var asked = new TooltipQuery { Rarity = rung.Tier.ToString(CultureInfo.InvariantCulture) };
 
         var coloured = Draw(Items.First(), asked);
@@ -112,7 +112,7 @@ public class ItemCardTests : BunitContext
 
     private TooltipQuery Rich() => new()
     {
-        Rarity = export.Store.Vocabulary.Rarities[^1].Tier.ToString(CultureInfo.InvariantCulture),
+        Rarity = export.Store.Settings.Rarities[^1].Tier.ToString(CultureInfo.InvariantCulture),
         HasImbuedTraits = true,
         Modifiers = [new ItemModifier(ModifierKind.Trait, 1, 1)],
     };

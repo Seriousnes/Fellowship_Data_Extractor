@@ -1,6 +1,5 @@
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -39,44 +38,43 @@ public sealed class Export
 
     public IChromeAssetService Chrome { get; }
 
-    public IExportPathService Paths { get; }
+    public string Folder { get; }
 
     public Export()
     {
-        var folder = Environment.GetEnvironmentVariable("FELLOWSHIP_EXPORT") ?? Found();
+        Folder = Environment.GetEnvironmentVariable("FELLOWSHIP_EXPORT") ?? Found();
 
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = folder })
-            .Build();
+        var snapshot = new FolderExportSource(Folder)
+            .LoadAsync(CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
 
-        var paths = Paths = new ExportPathService(configuration);
+        Store = new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
 
-        Store = new EntityStoreService(paths, NullLogger<EntityStoreService>.Instance);
-
-        var tokens = new DesignTokenService(Store.Vocabulary);
-        var richText = new RichTextService(Store.Vocabulary.TextStyles);
+        var tokens = new DesignTokenService(Store.Settings);
+        var richText = new RichTextService(Store.Settings.TextStyles);
 
         var substitutions = new PlaceholderService(Store, richText);
 
         var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
-        var chrome = Chrome = new ChromeAssetService(icons, paths, Store, tokens);
+        var chrome = Chrome = new ChromeAssetService(icons, Store, tokens);
 
-        View = new CodexViewService(Store, new CodexService(Store, tokens), tokens, chrome, richText, substitutions, icons);
+        View = new CodexViewService(Store, new CodexService(Store, tokens), tokens, chrome, richText, substitutions);
 
-        Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, icons, new ApiWebRoot());
+        Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, new ApiWebRoot());
     }
 
-    private static string Found()
+    public static string Found()
     {
         for (var here = new DirectoryInfo(AppContext.BaseDirectory); here is not null; here = here.Parent)
         {
             var export = Path.Combine(here.FullName, "output", "export");
 
-            if (File.Exists(Path.Combine(export, "entities.jsonl"))) return export;
+            if (File.Exists(Path.Combine(export, ExportReader.Data, ExportReader.EntitiesName))) return export;
         }
 
         throw new InvalidOperationException(
             "No output/export above the test binary and FELLOWSHIP_EXPORT is not set. It names the " +
-            "folder the extractor's export-all command wrote, which is the same folder the app reads.");
+            "folder the extractor's export-all command wrote, which is the same layout the container holds.");
     }
 }

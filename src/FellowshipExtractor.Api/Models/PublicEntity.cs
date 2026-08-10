@@ -185,7 +185,7 @@ public sealed record PublicEntity
 
         foreach (var (rung, icon) in art)
         {
-            var known = view.Store.Vocabulary.Rarities.FirstOrDefault(r =>
+            var known = view.Store.Settings.Rarities.FirstOrDefault(r =>
                 string.Equals(r.Name, rung, StringComparison.OrdinalIgnoreCase));
 
             if (known is not null) printed[known.DisplayName] = view.Icon(icon);

@@ -1,0 +1,23 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.4.6">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>7f2c1d54-8b39-4a6e-9c07-2f5d1e4b8a63</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FellowshipExtractor\FellowshipExtractor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\FellowshipExtractor.AppHost\StackIdentity.cs" Link="StackIdentity.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.4.6" />
+  </ItemGroup>
+
+</Project>

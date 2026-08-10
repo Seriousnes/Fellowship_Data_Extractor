@@ -11,6 +11,12 @@ public readonly record struct TextureExport(string? File, int Width, int Height,
     public bool Written => File is not null;
 }
 
+public readonly record struct TextureBytes(
+    byte[]? Content, string? Extension, int Width, int Height, string? PixelFormat, string? Error)
+{
+    public bool Written => Content is not null;
+}
+
 public static class TextureExporter
 {
     public static ETextureFormat ParseFormat(string? value) => value?.ToLowerInvariant() switch
@@ -22,8 +28,7 @@ public static class TextureExporter
         _ => throw new ArgumentException($"Unknown image format '{value}'. Use png, jpeg, tga or dds."),
     };
 
-    public static TextureExport Export(
-        UTexture texture, string targetWithoutExtension, ETextureFormat format, bool discardAlpha = false)
+    public static TextureBytes Export(UTexture texture, ETextureFormat format, bool discardAlpha = false)
     {
         var pixelFormat = texture.Format.ToString();
 
@@ -32,26 +37,47 @@ public static class TextureExporter
             var decoded = texture.Decode(ETexturePlatform.DesktopMobile);
             if (decoded is null)
             {
-                return new TextureExport(null, 0, 0, pixelFormat, "decoder returned nothing");
+                return new TextureBytes(null, null, 0, 0, pixelFormat, "decoder returned nothing");
             }
 
             var bytes = decoded.Encode(format, saveHdrAsHdr: false, out var extension);
             if (bytes is null or { Length: 0 })
             {
-                return new TextureExport(null, decoded.Width, decoded.Height, pixelFormat, "encoder produced no bytes");
+                return new TextureBytes(
+                    null, null, decoded.Width, decoded.Height, pixelFormat, "encoder produced no bytes");
             }
 
             if (discardAlpha) bytes = Opaque(bytes);
 
-            var target = $"{targetWithoutExtension}.{extension}";
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.WriteAllBytes(target, bytes);
-
-            return new TextureExport(target, decoded.Width, decoded.Height, pixelFormat, null);
+            return new TextureBytes(bytes, extension, decoded.Width, decoded.Height, pixelFormat, null);
         }
         catch (Exception ex)
         {
-            return new TextureExport(null, 0, 0, pixelFormat, $"{ex.GetType().Name}: {ex.Message}");
+            return new TextureBytes(null, null, 0, 0, pixelFormat, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    public static TextureExport Export(
+        UTexture texture, string targetWithoutExtension, ETextureFormat format, bool discardAlpha = false)
+    {
+        var encoded = Export(texture, format, discardAlpha);
+        if (!encoded.Written)
+        {
+            return new TextureExport(null, encoded.Width, encoded.Height, encoded.PixelFormat, encoded.Error);
+        }
+
+        try
+        {
+            var target = $"{targetWithoutExtension}.{encoded.Extension}";
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.WriteAllBytes(target, encoded.Content!);
+
+            return new TextureExport(target, encoded.Width, encoded.Height, encoded.PixelFormat, null);
+        }
+        catch (Exception ex)
+        {
+            return new TextureExport(
+                null, encoded.Width, encoded.Height, encoded.PixelFormat, $"{ex.GetType().Name}: {ex.Message}");
         }
     }
 

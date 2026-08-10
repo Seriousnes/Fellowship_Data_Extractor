@@ -51,8 +51,7 @@ public sealed class DynamicItemVisuals
         }
     }
 
-    public IReadOnlyList<RarityIcon> Icons(
-        string? mappingKey, string heroCodename, string? slotType, IReadOnlyList<int> tiers)
+    public IReadOnlyList<RarityIcon> Icons(string? mappingKey, string heroCodename, string? slotType)
     {
         if (mappingKey is null || slotType is null) return [];
         if (!_collections.TryGetValue(Key(mappingKey, heroCodename), out var collection)) return [];
@@ -62,7 +61,7 @@ public sealed class DynamicItemVisuals
 
         var icons = new List<RarityIcon>();
 
-        foreach (var tier in tiers)
+        foreach (var tier in _rarities.Tiers)
         {
             if (_rarities.Label(tier) is not { } rarity) continue;
             if (Rung(tier, rungs) is not { } rung) continue;

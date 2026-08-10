@@ -25,20 +25,22 @@ public interface IDesignTokenService
     string CssVariables();
 }
 
-public sealed class DesignTokenService(VocabularyFile vocabulary) : IDesignTokenService
+public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenService
 {
-    private readonly IReadOnlyDictionary<string, string> colors = vocabulary.Colors;
+    private readonly IReadOnlyDictionary<string, string> colors = settings.Colors;
 
-    private readonly IReadOnlySet<string> unshown = Unshown(vocabulary);
+    private readonly IReadOnlyDictionary<string, string> rarityRows = settings.RarityColorRows;
+
+    private readonly IReadOnlySet<string> unshown = Unshown(settings);
 
     public IReadOnlyDictionary<string, string> Colors => colors;
 
-    public IReadOnlyDictionary<string, TextStyle> TextStyles => vocabulary.TextStyles;
+    public IReadOnlyDictionary<string, TextStyle> TextStyles => settings.TextStyles;
 
     public string? Color(string name) => colors.TryGetValue(name, out var value) ? '#' + value : null;
 
     public string? Rarity(string internalName) =>
-        Color(RarityKey(internalName)) ?? Color(LadderKey(internalName));
+        rarityRows.TryGetValue(internalName, out var row) ? Color(row) : null;
 
     public string? Hero(string codename) => Color(HeroKey(codename));
 
@@ -60,11 +62,11 @@ public sealed class DesignTokenService(VocabularyFile vocabulary) : IDesignToken
         return css.ToString();
     }
 
-    private static IReadOnlySet<string> Unshown(VocabularyFile vocabulary)
+    private static IReadOnlySet<string> Unshown(SettingsFile settings)
     {
         var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var hero in vocabulary.Heroes)
+        foreach (var hero in settings.Heroes)
         {
             if (!string.Equals(hero.Codename, hero.Name, StringComparison.OrdinalIgnoreCase))
             {
@@ -72,24 +74,17 @@ public sealed class DesignTokenService(VocabularyFile vocabulary) : IDesignToken
             }
         }
 
-        foreach (var rung in vocabulary.Rarities)
+        foreach (var rung in settings.Rarities)
         {
             if (string.Equals(rung.Name, rung.DisplayName, StringComparison.OrdinalIgnoreCase)) continue;
 
-            keys.Add(RarityKey(rung.Name));
-            keys.Add(LadderKey(rung.Name));
+            if (settings.RarityColorRows.TryGetValue(rung.Name, out var row)) keys.Add(row);
         }
 
         return keys;
     }
 
     private static string HeroKey(string codename) => $"game.game.hero-{codename.ToLowerInvariant()}";
-
-    private static string RarityKey(string internalName) =>
-        $"game.game.rarity-{internalName.ToLowerInvariant()}";
-
-    private static string LadderKey(string internalName) =>
-        $"game.rarity-{internalName.ToLowerInvariant()}";
 
     public static string Variable(string name) => name.Replace('.', '-');
 }

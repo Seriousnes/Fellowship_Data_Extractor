@@ -38,8 +38,8 @@ public static class TooltipCommand
             $"effect icon sources:{resolver.EffectIcons.Determined} effects can take an icon from the entity " +
             $"that applies them, {resolver.EffectIcons.Contested} contested");
         Console.WriteLine(
-            $"vocabulary:         {resolver.Vocabulary.Heroes.Count} heroes, {resolver.Vocabulary.Rarities.Count} " +
-            $"rarities, {resolver.Vocabulary.PrintFormats.Count} print formats");
+            $"settings:           {resolver.Settings.Heroes.Count} heroes, {resolver.Settings.Rarities.Count} " +
+            $"rarities, {resolver.Settings.PrintFormats.Count} print formats");
 
         var (covered, total) = resolver.Coverage(table);
         Console.WriteLine($"{table} coverage: {covered} of {total} names have a presentation row");
@@ -82,7 +82,7 @@ public static class TooltipCommand
         var written = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         Directory.CreateDirectory(directory);
 
-        return iconPath =>
+        return (iconPath, _) =>
         {
             if (written.TryGetValue(iconPath, out var cached)) return cached;
 

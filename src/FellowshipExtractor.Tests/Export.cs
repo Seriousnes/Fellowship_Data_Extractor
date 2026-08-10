@@ -1,7 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
+
+using CUE4Parse.FileProvider;
+
+using FellowshipExtractor.Api.Services;
 using FellowshipExtractor.Tooltip;
+
 using Fellowship.SDK.Documents;
 
 namespace FellowshipExtractor.Tests;
@@ -19,7 +23,13 @@ public sealed class Export
 
     public static TooltipResolver Resolver => ResolverInstance.Value;
 
-    private static TooltipResolver Build()
+    private static readonly Lazy<AbstractFileProvider> ProviderInstance = new(Mount, isThreadSafe: true);
+
+    public static AbstractFileProvider Provider => ProviderInstance.Value;
+
+    private static TooltipResolver Build() => new(Provider);
+
+    private static AbstractFileProvider Mount()
     {
         if (Environment.GetEnvironmentVariable(Mappings) is not { Length: > 0 } mappings)
         {
@@ -33,54 +43,39 @@ public sealed class Export
             throw new FileNotFoundException($"{Mappings} names {mappings}, which does not exist.", mappings);
         }
 
-        return new TooltipResolver(
-            ProviderFactory.CreateAsync(new ExtractorOptions
-            {
-                MappingsFile = mappings,
-                Game = ExtractorOptions.ParseGame(Environment.GetEnvironmentVariable("FELLOWSHIP_UE_VERSION")),
-            }).GetAwaiter().GetResult());
+        return ProviderFactory.CreateAsync(new ExtractorOptions
+        {
+            MappingsFile = mappings,
+            Game = ExtractorOptions.ParseGame(Environment.GetEnvironmentVariable("FELLOWSHIP_UE_VERSION")),
+        }).GetAwaiter().GetResult();
     }
 
-    public required VocabularyFile Vocabulary { get; init; }
+    public required SettingsFile Settings { get; init; }
     public required IReadOnlyList<(EntityType Type, int Id, string? Name, JsonObject Body)> Documents { get; init; }
     public required string Folder { get; init; }
-
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
-
-    private static readonly IReadOnlyDictionary<string, EntityType> TypeBySlug =
-        Enum.GetValues<EntityType>().ToDictionary(EntityTypes.Slug, type => type, StringComparer.Ordinal);
 
     private static Export Load()
     {
         var folder = Folder_();
 
-        var documents = new List<(EntityType Type, int Id, string? Name, JsonObject Body)>();
-        foreach (var line in File.ReadLines(Path.Combine(folder, "entities.jsonl")))
+        var snapshot = new FolderExportSource(folder)
+            .LoadAsync(CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
+
+        return new Export
         {
-            if (line.Length == 0) continue;
-
-            var body = JsonNode.Parse(line)!.AsObject();
-            var slug = body[EntityDocuments.Discriminator]!.GetValue<string>();
-
-            if (!TypeBySlug.TryGetValue(slug, out var type))
-            {
-                throw new InvalidOperationException($"'{slug}' in entities.jsonl names no EntityType. The export is corrupt.");
-            }
-
-            documents.Add((type, body["id"]!.GetValue<int>(), body["name"]?.GetValue<string>(), body));
-        }
-
-        var vocabulary = JsonSerializer.Deserialize<VocabularyFile>(
-            File.ReadAllText(Path.Combine(folder, "vocabulary.json")), Options)
-            ?? throw new InvalidOperationException($"vocabulary.json in {folder} deserialized to nothing.");
-
-        return new Export { Vocabulary = vocabulary, Documents = documents, Folder = folder };
+            Settings = snapshot.Settings,
+            Documents = [.. snapshot.Entities.Select(Row)],
+            Folder = folder,
+        };
     }
+
+    private static (EntityType Type, int Id, string? Name, JsonObject Body) Row(EntityDocument document) =>
+        (EntityTypes.TypeOf(document),
+            document.Id,
+            document.Name,
+            JsonSerializer.SerializeToNode(document, EntityDocuments.Options)!.AsObject());
 
     private static string Folder_()
     {
@@ -94,11 +89,16 @@ public sealed class Export
         for (var at = new DirectoryInfo(AppContext.BaseDirectory); at is not null; at = at.Parent)
         {
             var candidate = Path.Combine(at.FullName, "output", "export");
-            if (File.Exists(Path.Combine(candidate, "entities.jsonl"))) return candidate;
+            if (File.Exists(Path.Combine(candidate, ExportReader.Data, ExportReader.EntitiesName)))
+            {
+                return candidate;
+            }
         }
 
         throw new DirectoryNotFoundException(
-            "No export to test against. Run 'dotnet run --project src/FellowshipExtractor -- export-all' " +
-            $"or point {Variable} at a folder holding entities.jsonl and vocabulary.json.");
+            "No export to test against. Run 'dotnet run --project src/FellowshipExtractor -- export-all " +
+            $"--output output/export' or point {Variable} at a folder holding " +
+            $"{ExportReader.Data}/{ExportReader.EntitiesName} and " +
+            $"{ExportReader.Data}/{ExportReader.SettingsName}.");
     }
 }

@@ -29,7 +29,7 @@ public sealed class AbilityScalingTests : IClassFixture<RouteTests.Factory>
     public async Task An_ability_prints_the_stat_the_hero_names()
     {
         var (id, _) = Scaling();
-        var hero = RouteTests.Factory.Store.Vocabulary.Heroes[0];
+        var hero = RouteTests.Factory.Store.Settings.Heroes[0];
 
         var drawn = await client.GetStringAsync(
             $"/api/ability/{id}/tooltip?hero={Uri.EscapeDataString(hero.Name)}",
@@ -42,7 +42,7 @@ public sealed class AbilityScalingTests : IClassFixture<RouteTests.Factory>
     public async Task A_hero_and_one_primary_read_the_same_magnitude()
     {
         var (id, _) = Scaling();
-        var hero = RouteTests.Factory.Store.Vocabulary.Heroes[0];
+        var hero = RouteTests.Factory.Store.Settings.Heroes[0];
         var stat = hero.PrimaryStat;
 
         var named = await client.GetStringAsync(
@@ -60,7 +60,7 @@ public sealed class AbilityScalingTests : IClassFixture<RouteTests.Factory>
     {
         var (id, _) = Scaling();
 
-        var hero = RouteTests.Factory.Store.Vocabulary.Heroes
+        var hero = RouteTests.Factory.Store.Settings.Heroes
             .First(candidate => string.Equals(candidate.PrimaryStat, "Strength", StringComparison.Ordinal));
 
         var both = await client.GetStringAsync(

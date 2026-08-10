@@ -13,7 +13,7 @@
                     {
                         <option value="">Any</option>
                     }
-                    @foreach (var who in Store.Vocabulary.Heroes
+                    @foreach (var who in Store.Settings.Heroes
                         .Where(who => Here.Readings.Any(reading => EntityStore.Reads(reading, who)))
                         .OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase))
                     {
@@ -29,7 +29,7 @@
         {
             <Knob Caption="Rarity" As="div">
                 <div class="cx-rungs">
-                    @foreach (var rung in Store.Vocabulary.Rarities)
+                    @foreach (var rung in Store.Settings.Rarities)
                     {
                         var colour = CodexView.Readable(Ui.Tokens.Rarity(rung.Name));
                         <button type="button" data-knob="rarity" data-choice="@rung.Tier"

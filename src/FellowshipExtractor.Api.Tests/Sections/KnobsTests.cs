@@ -12,7 +12,7 @@ public class KnobsTests : BunitContext
         Services.AddSingleton(export.Store);
     }
 
-    private ItemDocument AnyHero() => export.Store.Vocabulary.Heroes[0] is { } who
+    private ItemDocument AnyHero() => export.Store.Settings.Heroes[0] is { } who
         ? new ItemDocument
         {
             Id = 1,
@@ -54,7 +54,7 @@ public class KnobsTests : BunitContext
 
         var rungs = cut.FindAll("button[data-knob=rarity]");
 
-        Assert.Equal(export.Store.Vocabulary.Rarities.Count, rungs.Count);
+        Assert.Equal(export.Store.Settings.Rarities.Count, rungs.Count);
         Assert.All(rungs, rung =>
         {
             Assert.Equal("button", rung.GetAttribute("type"));
@@ -81,7 +81,7 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Offers_an_any_option_only_where_the_id_has_one_reading()
     {
-        var heroes = export.Store.Vocabulary.Heroes.Take(2).Select(h => Enum.Parse<Hero>(h.Name)).ToList();
+        var heroes = export.Store.Settings.Heroes.Take(2).Select(h => Enum.Parse<Hero>(h.Name)).ToList();
         var shared = new ItemDocument { Id = 1, Heroes = heroes };
 
         var one = Render<Knobs>(p => p.AddCascadingValue(
@@ -98,7 +98,7 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Selects_the_hero_whose_reading_is_on_the_stage()
     {
-        var who = export.Store.Vocabulary.Heroes[0];
+        var who = export.Store.Settings.Heroes[0];
         var reading = new ItemDocument
         {
             Id = 1,
@@ -127,7 +127,7 @@ public class KnobsTests : BunitContext
         var asItem = Render<Knobs>(p => p.AddCascadingValue(
             new Bearings { Shown = wearable, Readings = [wearable] }));
 
-        var rung = export.Store.Vocabulary.Rarities[0];
+        var rung = export.Store.Settings.Rarities[0];
 
         Assert.Equal(rung.GemDisplayName, asGem.FindAll("button[data-knob=rarity]")[0].TextContent.Trim());
         Assert.Equal(rung.DisplayName, asItem.FindAll("button[data-knob=rarity]")[0].TextContent.Trim());

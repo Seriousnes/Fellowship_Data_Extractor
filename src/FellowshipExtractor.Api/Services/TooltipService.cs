@@ -15,7 +15,7 @@ public sealed class TooltipService(IEntityStoreService store, IFragmentService f
     {
         if (query.Hero is { } named && store.Hero(named) is null)
         {
-            return Lookups.NoSuchHero(named, store.Vocabulary.Heroes);
+            return Lookups.NoSuchHero(named, store.Settings.Heroes);
         }
 
         if (query.Rarity is { } rung && store.Rarity(rung, gem: false) is null && store.Rarity(rung, gem: true) is null)
@@ -23,9 +23,9 @@ public sealed class TooltipService(IEntityStoreService store, IFragmentService f
             return Results.Problem(
                 title: "No such rarity.",
                 detail: $"'{rung}' is not a rarity. The rungs are " +
-                    string.Join(", ", store.Vocabulary.Rarities.Select(r => $"{r.DisplayName} ({r.Tier})")) +
+                    string.Join(", ", store.Settings.Rarities.Select(r => $"{r.DisplayName} ({r.Tier})")) +
                     ", and a gem's are " +
-                    string.Join(", ", store.Vocabulary.Rarities.Select(r => r.GemDisplayName)) + ".",
+                    string.Join(", ", store.Settings.Rarities.Select(r => r.GemDisplayName)) + ".",
                 statusCode: StatusCodes.Status400BadRequest);
         }
 

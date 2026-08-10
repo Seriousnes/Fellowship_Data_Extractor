@@ -1,7 +1,5 @@
 using System.Globalization;
 
-using Azure.Storage.Blobs;
-
 using Fellowship.SDK.Documents;
 
 using Microsoft.AspNetCore.Components;
@@ -60,7 +58,6 @@ public sealed class TooltipViewService(
     IRichTextService renderer,
     IPlaceholderService placeholders,
     IChromeAssetService chrome,
-    BlobContainerClient icons,
     IWebHostEnvironment environment) : ITooltipViewService
 {
     private const string Sheet = "css/tooltip.css";
@@ -69,7 +66,7 @@ public sealed class TooltipViewService(
 
     public IChromeAssetService Chrome => chrome;
 
-    public BlessingEntry Blessings => store.Vocabulary.Blessings;
+    public BlessingEntry Blessings => store.Settings.Blessings;
 
     public RarityEntry? Rarity(EntityDocument document, TooltipQuery query)
     {
@@ -83,7 +80,7 @@ public sealed class TooltipViewService(
         };
 
         return store.Rarity(query.Rarity, document is GemDocument)
-            ?? (tier is { } t ? store.Vocabulary.Rarities.FirstOrDefault(r => r.Tier == t) : null);
+            ?? (tier is { } t ? store.Settings.Rarities.FirstOrDefault(r => r.Tier == t) : null);
     }
 
     public string Variables(RarityEntry? rarity)
@@ -107,7 +104,7 @@ public sealed class TooltipViewService(
             ? art
             : DocumentFields.Text(document, nameof(ItemDocument.Icon));
 
-        return icon is null ? null : $"{icons.Uri}/{icon}";
+        return chrome.Art(icon);
     }
 
     public string? Ornament(RarityEntry? rarity) => rarity is null ? null : chrome.Ornament(rarity.Name);
@@ -125,7 +122,7 @@ public sealed class TooltipViewService(
         if (query.Upgrades is not { } upgrades) return null;
 
         var ceiling = query.MaxUpgrades
-            ?? Tempering.Ceiling(store.Vocabulary.MaxTempers, rarity?.Name, level);
+            ?? Tempering.Ceiling(store.Settings.MaxTempers, rarity?.Name, level);
 
         return ceiling is { } max
             ? $"{upgrades.ToString(CultureInfo.InvariantCulture)} / {max.ToString(CultureInfo.InvariantCulture)}"
@@ -204,7 +201,7 @@ public sealed class TooltipViewService(
     public IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity) =>
         StatMagnitudes.For(
             document,
-            store.Vocabulary.StatCalculation,
+            store.Settings.StatCalculation,
             store.PrimaryAttributes,
             rarity,
             query.ItemLevel ?? store.DropItemLevel(document),
@@ -253,14 +250,17 @@ public sealed class TooltipViewService(
             .{{TooltipView.Root}}{--fx-window:url({{chrome.Window}});
             --fx-thin:url({{chrome.ThinWindow}});--fx-fill:url({{chrome.WindowFill}});
             --fx-divider:url({{chrome.GoldDivider}});--fx-subheader:url({{chrome.Header(null)}});
-            --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};
-            --fx-setbonus:{{chrome.SetBonusBadge.Colour}};--fx-modplate:url({{chrome.ModifierPlate}});
-            --fx-moddecor:url({{chrome.ModifierDecor}})}
+            --fx-modplate:url({{chrome.ModifierPlate}});--fx-moddecor:url({{chrome.ModifierDecor}});
+            {{Heading("ability", chrome.AbilityBadge)}}{{Heading("legendary", chrome.LegendaryBadge)}}
+            {{Heading("setbonus", chrome.SetBonusBadge)}}}
 
             """ +
             reading.ReadToEnd() +
             renderer.Css(TooltipView.Root);
     }
+
+    private static string Heading(string section, Badge badge) =>
+        badge.Colour is { } hex ? $"--fx-{section}:{hex};" : string.Empty;
 
     public bool DrawsState(EntityDocument document) => document is BlessingDocument or TraitDocument;
 

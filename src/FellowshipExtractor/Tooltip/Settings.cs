@@ -1,13 +1,12 @@
-using System.Text.Json;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports.Engine;
 
 namespace FellowshipExtractor.Tooltip;
 
-public sealed class Vocabulary
+public sealed class Settings
 {
-    public const string FileName = "vocabulary.json";
+    public const string FileName = "settings.json";
 
     private const string ColorRowStructure = "/Script/fellowship.CRDSNamedColorDataRow";
     private const string FormatRowStructure = "/Script/fellowship.CRDynamicTooltipDataRow";
@@ -31,13 +30,19 @@ public sealed class Vocabulary
 
     public IReadOnlyDictionary<string, string> SlotIcons { get; }
 
+    public IReadOnlyDictionary<string, string> RarityOrnaments { get; }
+
+    public IReadOnlyDictionary<string, string> RarityColorRows { get; }
+
+    public IReadOnlyDictionary<string, string> SectionHeadingRows { get; }
+
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; }
 
     public IReadOnlyList<DropPlateau> DropItemLevels { get; }
 
     public BlessingEntry Blessings { get; }
 
-    public Vocabulary(
+    public Settings(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
         HeroNames heroes,
@@ -46,6 +51,9 @@ public sealed class Vocabulary
         IReadOnlyList<string> randomStatPool,
         IReadOnlyList<string> gemTypes,
         SlotIcons slotIcons,
+        RarityOrnaments ornaments,
+        RarityColorRows colorRows,
+        SectionHeadingRows headings,
         TemperCeilings tempers,
         DropItemLevels drops,
         Blessings blessings)
@@ -54,11 +62,17 @@ public sealed class Vocabulary
         RandomStatPool = randomStatPool;
         GemTypes = gemTypes;
         SlotIcons = slotIcons.BySlot;
+        RarityOrnaments = ornaments.ByRarity;
+        RarityColorRows = colorRows.ByRarity;
+        SectionHeadingRows = headings.BySection;
         MaxTempers = tempers.ByRarity;
         DropItemLevels = drops.Plateaus;
         Blessings = blessings.Wording;
 
         var colours = Colours(provider, assets);
+
+        Resolvable(RarityColorRows, colours, colorRows.Source);
+        Resolvable(SectionHeadingRows, colours, headings.Source);
 
         Heroes =
         [
@@ -87,49 +101,61 @@ public sealed class Vocabulary
             Colors.Count == 0 || TextStyles.Count == 0)
         {
             throw new InvalidOperationException(
-                $"The vocabulary is missing a whole section: {Heroes.Count} heroes, {Rarities.Count} rarities, " +
+                $"The settings are missing a whole section: {Heroes.Count} heroes, {Rarities.Count} rarities, " +
                 $"{PrintFormats.Count} print formats, {Colors.Count} colours, {TextStyles.Count} text styles. " +
                 "A reader would silently resolve nothing.");
         }
     }
 
-    public async Task<long> WriteAsync(string folder)
+    public SettingsFile ToFile() => new()
     {
-        var target = Path.Combine(folder, FileName);
+        Heroes = Heroes,
+        Rarities = Rarities,
+        GemTypes = GemTypes,
+        MaxTempers = MaxTempers,
+        DropItemLevels = DropItemLevels,
+        Blessings = Blessings,
+        SlotIcons = SlotIcons,
+        RarityOrnaments = RarityOrnaments,
+        RarityColorRows = RarityColorRows,
+        SectionHeadingRows = SectionHeadingRows,
+        PrintFormats = PrintFormats,
+        Colors = Colors,
+        TextStyles = TextStyles.ToDictionary(
+            style => style.Key,
+            style => new TextStyle(style.Value.Color, style.Value.Weight, style.Value.Size),
+            StringComparer.OrdinalIgnoreCase),
+        StatCalculation = new StatCalculationFile
+        {
+            PrimaryPool = StatCalculation.Primary,
+            SecondaryPool = StatCalculation.Secondary,
+            PrimaryPowerBase = StatCalculation.PrimaryPowerBase,
+            PrimaryAndStaminaMultiplier = StatCalculation.PrimaryAndStaminaMultiplier,
+            StatRarityBase = StatCalculation.StatRarityBase,
+            BaseSlot = StatCalculation.BaseSlot,
+            FixedSlot = StatCalculation.FixedSlot,
+            DynamicSlot = StatCalculation.DynamicSlot,
+            SlotWeights = StatCalculation.SlotWeights,
+            ArmorWeights = StatCalculation.ArmorWeights,
+            Attributes = StatCalculation.Attributes,
+            RandomStatPool = RandomStatPool,
+            RarityAdditions = StatCalculation.RarityAdditions,
+        },
+    };
 
-        await File.WriteAllTextAsync(target, JsonSerializer.Serialize(
-            new
-            {
-                heroes = Heroes,
-                rarities = Rarities,
-                gemTypes = GemTypes,
-                maxTempers = MaxTempers,
-                dropItemLevels = DropItemLevels,
-                blessings = Blessings,
-                slotIcons = SlotIcons,
-                printFormats = PrintFormats,
-                colors = Colors,
-                textStyles = TextStyles,
-                statCalculation = new
-                {
-                    primaryPool = StatCalculation.Primary,
-                    secondaryPool = StatCalculation.Secondary,
-                    primaryPowerBase = StatCalculation.PrimaryPowerBase,
-                    primaryAndStaminaMultiplier = StatCalculation.PrimaryAndStaminaMultiplier,
-                    statRarityBase = StatCalculation.StatRarityBase,
-                    baseSlot = StatCalculation.BaseSlot,
-                    fixedSlot = StatCalculation.FixedSlot,
-                    dynamicSlot = StatCalculation.DynamicSlot,
-                    slotWeights = StatCalculation.SlotWeights,
-                    armorWeights = StatCalculation.ArmorWeights,
-                    attributes = StatCalculation.Attributes,
-                    randomStatPool = RandomStatPool,
-                    rarityAdditions = StatCalculation.RarityAdditions,
-                },
-            },
-            TooltipCommand.JsonOptions));
+    private static void Resolvable(
+        IReadOnlyDictionary<string, string> rows,
+        IReadOnlyDictionary<string, string> colours,
+        string source)
+    {
+        foreach (var (key, row) in rows)
+        {
+            if (colours.ContainsKey(row)) continue;
 
-        return new FileInfo(target).Length;
+            throw new InvalidOperationException(
+                $"{source} draws {key} in {row}, which no named colour table declares, so it would resolve to no " +
+                "hex at all.");
+        }
     }
 
     private static Dictionary<string, string> Colours(

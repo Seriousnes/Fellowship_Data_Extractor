@@ -190,7 +190,7 @@ public sealed class PlaceholderService(IEntityStoreService store, IRichTextServi
 
         var name = (high is not null ? "DamageRange" : "Damage") + spoken;
 
-        if (!store.Vocabulary.PrintFormats.TryGetValue(name, out var format)) return null;
+        if (!store.Settings.PrintFormats.TryGetValue(name, out var format)) return null;
 
         var filled = format
             .Replace("{0}", low, StringComparison.Ordinal)
@@ -200,7 +200,7 @@ public sealed class PlaceholderService(IEntityStoreService store, IRichTextServi
     }
 
     private string? Print(string format, string value) =>
-        store.Vocabulary.PrintFormats.TryGetValue(format, out var text)
+        store.Settings.PrintFormats.TryGetValue(format, out var text)
             ? text.Replace("{0}", value, StringComparison.Ordinal)
             : null;
 

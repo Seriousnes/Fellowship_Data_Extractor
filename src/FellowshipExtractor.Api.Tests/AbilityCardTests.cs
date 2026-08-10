@@ -58,7 +58,7 @@ public class AbilityCardTests : BunitContext
     [Fact]
     public void A_rarity_in_the_query_puts_the_rarity_chrome_on_an_ability()
     {
-        var rung = export.Store.Vocabulary.Rarities[^1];
+        var rung = export.Store.Settings.Rarities[^1];
 
         var drawn = Draw(Spell, new TooltipQuery
         {

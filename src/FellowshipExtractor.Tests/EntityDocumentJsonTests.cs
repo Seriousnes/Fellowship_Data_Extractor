@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
+using FellowshipExtractor.Output;
 
 namespace FellowshipExtractor.Tests;
 
@@ -13,7 +14,8 @@ public sealed class EntityDocumentJsonTests
     private static readonly Lazy<IReadOnlyList<(EntityType Type, string Line, EntityDocument Document)>> Loaded =
         new(() =>
         [
-            .. File.ReadLines(Path.Combine(Export.Loaded.Folder, "entities.jsonl"))
+            .. File.ReadLines(Path.Combine(
+                    Export.Loaded.Folder, ExportLayout.DataFolder, ExportLayout.EntitiesFile))
                 .Where(line => line.Length > 0)
                 .Select(line => (
                     Type: EntityTypes.Parse(JsonNode.Parse(line)![EntityDocuments.Discriminator]!.GetValue<string>()),

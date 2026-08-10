@@ -64,7 +64,7 @@ public class TooltipDumpTests : BunitContext
     {
         yield return ("bare", new TooltipQuery());
 
-        var rung = export.Store.Vocabulary.Rarities[^1];
+        var rung = export.Store.Settings.Rarities[^1];
         yield return ("rarity", new TooltipQuery { Rarity = rung.Tier.ToString(CultureInfo.InvariantCulture) });
 
         yield return ("level", new TooltipQuery

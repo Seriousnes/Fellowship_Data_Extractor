@@ -6,7 +6,7 @@ using FellowshipExtractor.Commands;
 
 namespace FellowshipExtractor.Tooltip;
 
-public delegate string? IconWriter(string iconObjectPath);
+public delegate string? IconWriter(string iconObjectPath, string? rarity);
 
 public sealed class TooltipResolver
 {
@@ -62,7 +62,7 @@ public sealed class TooltipResolver
     public TalentTrees Talents { get; }
     public GemDefinitions Gems { get; }
     public ItemTraits Traits { get; }
-    public Vocabulary Vocabulary { get; }
+    public Settings Settings { get; }
     public TypeResolver Types { get; }
 
     public int NamespaceSupplied { get; private set; }
@@ -128,9 +128,10 @@ public sealed class TooltipResolver
 
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
-        Vocabulary = new Vocabulary(
+        Settings = new Settings(
             provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types,
-            SlotGlyphs, Tempers, Drops, new Blessings(provider, _constants));
+            SlotGlyphs, new RarityOrnaments(provider, rarities), new RarityColorRows(provider, rarities),
+            new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -278,12 +279,11 @@ public sealed class TooltipResolver
     {
         var mappingKey = PropertyWalk.GetString(cdo, VisualKeyField);
         var slot = SlotNames.ByOrdinal(PropertyWalk.AsOrdinal(PropertyWalk.Get(cdo, SlotOrdinalField)?.GenericValue) ?? 0);
-        var tiers = DynamicVisuals.Tiers(cdo);
 
         return codename =>
         [
-            .. DynamicVisuals.Icons(mappingKey, codename, slot?.Type, tiers)
-                .Select(entry => (entry.Rarity, Image: Written(entry.IconPath, icons)))
+            .. DynamicVisuals.Icons(mappingKey, codename, slot?.Type)
+                .Select(entry => (entry.Rarity, Image: Written(entry.IconPath, icons, entry.Rarity)))
                 .Where(entry => entry.Image is not null)
                 .Select(entry => new RarityImage(entry.Rarity, entry.Image!)),
         ];
@@ -376,27 +376,47 @@ public sealed class TooltipResolver
     private static GemOverflow? WithOverflow(GemOverflow? overflow, IconWriter? icons) =>
         overflow is null ? null : overflow with { Icon = Written(overflow.Icon, icons) };
 
-    private static string? Written(string? iconPath, IconWriter? icons) =>
-        iconPath is null ? null : icons?.Invoke(iconPath);
+    private static string? Written(string? iconPath, IconWriter? icons, string? rarity = null) =>
+        iconPath is null ? null : icons?.Invoke(iconPath, rarity);
 
-    private Entity WithFixedItem(Entity entity, HeroItem item, IconWriter? icons) => entity with
+    private IReadOnlyDictionary<string, string>? ArtByRarity(string? iconPath, IconWriter? icons)
     {
-        DisplayName = entity.DisplayName ?? item.DisplayName,
-        Slot = item.Slot ?? entity.Slot,
-        ArmorType = item.ArmorType,
-        Stats = entity.Stats ?? Empty(item.Stats),
-        SetBonus = SetBonuses.ForRow(item.SetBonus),
-        UniqueEquipped = item.UniqueEquipped ? true : null,
-        Rarities = entity.Rarities ?? (item.Rarity is { } rung ? [rung] : null),
-        Heroes = Empty([.. item.Heroes.Select(hero => Heroes.Shipped(hero) ?? hero)]),
-        Icon = entity.Icon ?? (item.IconPath is { } path ? icons?.Invoke(path) : null),
-    };
+        if (iconPath is null || icons is null || !Collections.Renders.Contains(iconPath)) return null;
+
+        var spread = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var rung in Settings.Rarities)
+        {
+            if (icons(iconPath, rung.Name) is { } image) spread[rung.Name] = image;
+        }
+
+        return spread.Count == 0 ? null : spread;
+    }
+
+    private Entity WithFixedItem(Entity entity, HeroItem item, IconWriter? icons)
+    {
+        var art = entity.Icon is null ? item.IconPath : null;
+
+        return entity with
+        {
+            DisplayName = entity.DisplayName ?? item.DisplayName,
+            Slot = item.Slot ?? entity.Slot,
+            ArmorType = item.ArmorType,
+            Stats = entity.Stats ?? Empty(item.Stats),
+            SetBonus = SetBonuses.ForRow(item.SetBonus),
+            UniqueEquipped = item.UniqueEquipped ? true : null,
+            Rarities = entity.Rarities ?? (item.Rarity is { } rung ? [rung] : null),
+            Heroes = Empty([.. item.Heroes.Select(hero => Heroes.Shipped(hero) ?? hero)]),
+            Icon = entity.Icon ?? Written(art, icons, item.Rarity),
+            IconByRarity = entity.IconByRarity ?? ArtByRarity(art, icons),
+        };
+    }
 
     private static Entity WithTalent(Entity entity, Talent talent, IconWriter? icons) => entity with
     {
         DisplayName = talent.DisplayName ?? entity.DisplayName,
         Description = talent.Description ?? entity.Description,
-        Icon = (talent.IconPath is { } path ? icons?.Invoke(path) : null) ?? entity.Icon,
+        Icon = Written(talent.IconPath, icons) ?? entity.Icon,
         Heroes = [talent.HeroName],
         TalentSlot = talent.Slot,
         TalentRow = talent.Row,
@@ -532,7 +552,7 @@ public sealed class TooltipResolver
             Tags = cdo is null ? null : Empty(AbilityTypes(cdo)),
             Description = display.Description,
             Detail = Empty(detail),
-            Icon = display.Icon is null ? null : icons?.Invoke(display.Icon),
+            Icon = Written(display.Icon, icons),
             CastTime = Named(split, "castTime"),
             ChannelTime = Named(split, "channelTime"),
             ChannelTick = Named(split, "channelTick"),
