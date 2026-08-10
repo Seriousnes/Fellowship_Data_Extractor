@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
-using System.Text.Json;
 
 using Fellowship.SDK.Documents;
 
@@ -52,8 +51,6 @@ public sealed class EntityStoreService : IEntityStoreService
 
     private const string LegendaryDropRow = "Legendary";
 
-    private static readonly JsonSerializerOptions Options = EntityDocuments.Options;
-
     private static readonly ConcurrentDictionary<(Type Document, string Property), PropertyInfo?> Fields = new();
 
     private static IReadOnlyList<T> Field<T>(EntityDocument document, string name) =>
@@ -78,16 +75,21 @@ public sealed class EntityStoreService : IEntityStoreService
 
     public int Ids { get; }
 
-    public EntityStoreService(IExportPathService paths, ILogger<EntityStoreService> logger)
+    public EntityStoreService(ExportSnapshot snapshot, ILogger<EntityStoreService> logger)
     {
-        var file = JsonSerializer.Deserialize<SettingsFile>(File.ReadAllText(paths.Settings), Options)
-            ?? throw new InvalidOperationException($"{paths.Settings} deserialised to nothing.");
+        var file = snapshot.Settings;
 
         Settings = file with
         {
             TextStyles = new Dictionary<string, TextStyle>(file.TextStyles, StringComparer.OrdinalIgnoreCase),
             Colors = new Dictionary<string, string>(file.Colors, StringComparer.OrdinalIgnoreCase),
             SlotIcons = new Dictionary<string, string>(file.SlotIcons, StringComparer.OrdinalIgnoreCase),
+            RarityOrnaments = new Dictionary<string, string>(
+                file.RarityOrnaments, StringComparer.OrdinalIgnoreCase),
+            RarityColorRows = new Dictionary<string, string>(
+                file.RarityColorRows, StringComparer.OrdinalIgnoreCase),
+            SectionHeadingRows = new Dictionary<string, string>(
+                file.SectionHeadingRows, StringComparer.OrdinalIgnoreCase),
             MaxTempers = new Dictionary<string, IReadOnlyList<TemperCeiling>>(
                 file.MaxTempers, StringComparer.OrdinalIgnoreCase),
             StatCalculation = file.StatCalculation with
@@ -114,22 +116,14 @@ public sealed class EntityStoreService : IEntityStoreService
         var groups = new Dictionary<(EntityType, int), List<EntityDocument>>();
         var stats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var spelled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var entities = new List<EntityDocument>();
+        var entities = snapshot.Entities;
 
-        var number = 0;
-
-        foreach (var line in File.ReadLines(paths.Entities))
+        foreach (var document in entities)
         {
-            number++;
-            if (line.Length == 0) continue;
-
-            var document = Read(line, number, paths.Entities);
-
             var key = (EntityTypes.TypeOf(document), document.Id);
 
             if (!groups.TryGetValue(key, out var list)) groups[key] = list = [];
             list.Add(document);
-            entities.Add(document);
 
             Census(document, stats, spelled);
 
@@ -156,9 +150,9 @@ public sealed class EntityStoreService : IEntityStoreService
         var unnamed = spelled.Count(key => !rows.ContainsKey(key));
 
         logger.LogInformation(
-            "Export loaded from {Path}: {Entities} entities under {Ids} ids, {Ambiguous} of which read differently per hero. " +
+            "Export snapshot loaded: {Entities} entities under {Ids} ids, {Ambiguous} of which read differently per hero. " +
             "{Heroes} heroes, {Rarities} rarity rungs, {Formats} print formats, {Colors} colours, {Styles} text styles, {Stats} stat names",
-            paths.Export, Count, Ids, byId.Count(e => e.Value.Length > 1), Settings.Heroes.Count,
+            Count, Ids, byId.Count(e => e.Value.Length > 1), Settings.Heroes.Count,
             Settings.Rarities.Count, Settings.PrintFormats.Count, Settings.Colors.Count,
             Settings.TextStyles.Count, Stats.Names.Count);
 
@@ -166,23 +160,6 @@ public sealed class EntityStoreService : IEntityStoreService
             "Attribute names: {Named} of {Attributes} shipped rows print a word, and {Unnamed} of the {Spelled} attribute " +
             "names the export spells have no row, so they print spaced out",
             named, rows.Count, unnamed, spelled.Count);
-    }
-
-    private static EntityDocument Read(string line, int number, string path)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<EntityDocument>(line, Options)
-                ?? throw new InvalidOperationException($"Line {number} of {path} deserialised to nothing.");
-        }
-        catch (Exception failure) when (failure is JsonException or NotSupportedException)
-        {
-            throw new InvalidOperationException(
-                $"Line {number} of {path} does not read as a document: {failure.Message} An export written " +
-                $"before a document carried the '{EntityDocuments.Discriminator}' it is read back as reads this " +
-                "way. Write it again with 'dotnet run --project src/FellowshipExtractor -- export-all'.",
-                failure);
-        }
     }
 
     private static void Census(EntityDocument document, HashSet<string> stats, HashSet<string> spelled)

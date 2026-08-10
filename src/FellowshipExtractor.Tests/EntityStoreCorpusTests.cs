@@ -6,7 +6,6 @@ using FellowshipExtractor.Api;
 using FellowshipExtractor.Api.Models;
 using FellowshipExtractor.Api.Services;
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FellowshipExtractor.Tests;
@@ -17,11 +16,12 @@ public sealed class EntityStoreCorpusTests
 
     private static EntityStoreService Build()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = Export.Loaded.Folder })
-            .Build();
+        var snapshot = new FolderExportSource(Export.Loaded.Folder)
+            .LoadAsync(CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
 
-        return new EntityStoreService(new ExportPathService(configuration), NullLogger<EntityStoreService>.Instance);
+        return new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
     }
 
     public static IEnumerable<object[]> Counts()

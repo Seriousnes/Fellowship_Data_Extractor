@@ -2,7 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace FellowshipExtractor.Api.Tests;
 
@@ -24,14 +24,8 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public void Every_registered_service_is_resolved_through_an_interface()
     {
-        Assert.NotNull(factory.Services.GetRequiredService<IExportPathService>());
+        Assert.NotNull(factory.Services.GetRequiredService<IExportSource>());
         Assert.NotNull(factory.Services.GetRequiredService<IEntityStoreService>());
-    }
-
-    [Fact]
-    public void The_hosted_seeder_the_factory_removes_still_finds_every_service_it_takes()
-    {
-        Assert.NotNull(ActivatorUtilities.CreateInstance<IconSeederService>(factory.Services));
     }
 
     [Fact]
@@ -329,33 +323,13 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         public static readonly IEntityStoreService Store = BuildStore();
 
-        private static IEntityStoreService BuildStore()
-        {
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?> { ["FELLOWSHIP_EXPORT"] = ExportFolder() })
-                .Build();
-
-            return new EntityStoreService(
-                new ExportPathService(configuration),
+        private static IEntityStoreService BuildStore() =>
+            new EntityStoreService(
+                new FolderExportSource(Export.Found()).LoadAsync(CancellationToken.None).GetAwaiter().GetResult(),
                 Microsoft.Extensions.Logging.Abstractions.NullLogger<EntityStoreService>.Instance);
-        }
-
-        private static string ExportFolder()
-        {
-            for (var here = new DirectoryInfo(AppContext.BaseDirectory); here is not null; here = here.Parent)
-            {
-                var export = Path.Combine(here.FullName, "output", "export");
-
-                if (File.Exists(Path.Combine(export, "entities.jsonl"))) return export;
-            }
-
-            throw new InvalidOperationException("No output/export above the test binary.");
-        }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.UseSetting("FELLOWSHIP_EXPORT", ExportFolder());
-
             builder.UseSetting(
                 "ConnectionStrings:icons",
                 "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;" +
@@ -364,9 +338,8 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
 
             builder.ConfigureServices(services =>
             {
-                var seeder = services.SingleOrDefault(
-                    descriptor => descriptor.ImplementationType == typeof(IconSeederService));
-                if (seeder is not null) services.Remove(seeder);
+                services.RemoveAll<IExportSource>();
+                services.AddSingleton<IExportSource>(new FolderExportSource(Export.Found()));
             });
         }
     }

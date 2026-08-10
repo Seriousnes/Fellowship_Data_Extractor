@@ -7,7 +7,7 @@ namespace FellowshipExtractor.Api.Tests;
 public class StateChromeTests(Export export)
 {
     private string Texture(string url) =>
-        Path.Combine(export.Paths.Ui, url[(url.LastIndexOf('/') + 1)..]);
+        Path.Combine(export.Ui, url[(url.LastIndexOf('/') + 1)..]);
 
     private static (int Width, int Height) Shape(string file)
     {
@@ -25,14 +25,7 @@ public class StateChromeTests(Export export)
         return false;
     }
 
-    private Image<Rgba32> Carried(string url)
-    {
-        var blob = url[(url.IndexOf(ChromeAssetService.Prefix + "/", StringComparison.Ordinal))..];
-
-        return Image.Load<Rgba32>(export.Chrome.Payloads()
-            .Single(payload => string.Equals(payload.Name, blob, StringComparison.Ordinal))
-            .Content);
-    }
+    private Image<Rgba32> Carried(string url) => Image.Load<Rgba32>(Texture(url));
 
     private static (Rectangle Box, int Chamfer) Hollow(Image<Rgba32> frame)
     {
@@ -207,7 +200,7 @@ public class StateChromeTests(Export export)
     }
 
     [Fact]
-    public void A_slot_wears_the_chrome_its_rung_names_and_the_ornate_plate_is_gone()
+    public void A_slot_wears_the_chrome_its_rung_names()
     {
         var rung = export.Store.Settings.Rarities[0].Name;
 
@@ -224,29 +217,13 @@ public class StateChromeTests(Export export)
         Assert.EndsWith(
             "T_Buttons_SmallAbilityButton_Default.png", export.Chrome.SlotFrame(null), StringComparison.Ordinal);
         Assert.Null(export.Chrome.SlotBevel(null));
-
-        Assert.DoesNotContain(
-            export.Chrome.Payloads(),
-            payload => payload.Name.Contains("T_Borders_EmptySlot", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void The_gold_rule_uploaded_is_the_band_cropped_out_of_its_canvas()
+    public void The_gold_rule_written_is_the_band_all_four_rows_of_it_painted()
     {
-        using var canvas = Image.Load<Rgba32>(Texture(export.Chrome.GoldDivider));
+        using var band = Image.Load<Rgba32>(Texture(export.Chrome.GoldDivider));
 
-        Assert.Equal(56, canvas.Height);
-
-        Assert.All(
-            Enumerable.Range(0, canvas.Height),
-            row => Assert.Equal(row is >= 24 and <= 27, Painted(canvas, row)));
-
-        var payload = export.Chrome.Payloads().Single(carried =>
-            carried.Name.EndsWith("T_GoldDivider.png", StringComparison.Ordinal));
-
-        using var band = Image.Load<Rgba32>(payload.Content);
-
-        Assert.Equal(canvas.Width, band.Width);
         Assert.Equal(4, band.Height);
         Assert.All(Enumerable.Range(0, band.Height), row => Assert.True(Painted(band, row)));
     }
@@ -317,7 +294,7 @@ public class StateChromeTests(Export export)
                 StringComparison.Ordinal);
 
             Assert.True(File.Exists(Path.Combine(
-                export.Paths.Ui,
+                export.Ui,
                 blessing.Icon.Replace("Unallocated", "Allocated", StringComparison.Ordinal))));
         });
 

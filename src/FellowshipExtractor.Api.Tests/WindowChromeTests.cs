@@ -64,8 +64,8 @@ public partial class WindowChromeTests(Export export)
     {
         Assert.All(Windowed, texture =>
             Assert.True(
-                File.Exists(Path.Combine(export.Paths.Ui, texture + ".png")),
-                $"{texture}.png is not in {export.Paths.Ui}, so the window would draw nothing."));
+                File.Exists(Path.Combine(export.Ui, texture + ".png")),
+                $"{texture}.png is not in {export.Ui}, so the window would draw nothing."));
     }
 
     [Fact]

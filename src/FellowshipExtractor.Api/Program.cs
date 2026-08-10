@@ -24,10 +24,12 @@ builder.Services.ConfigureHttpJsonOptions(options =>
         System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);
 
 builder.AddAzureBlobContainerClient("icons");
-builder.Services.AddSingleton<IExportPathService, ExportPathService>();
-builder.Services.AddHostedService<IconSeederService>();
+builder.Services.AddSingleton<IExportSource, BlobExportSource>();
+builder.Services.AddSingleton<ExportSnapshotHolder>();
 
-builder.Services.AddSingleton<IEntityStoreService, EntityStoreService>();
+builder.Services.AddSingleton<IEntityStoreService>(s => new EntityStoreService(
+    s.GetRequiredService<ExportSnapshotHolder>().Snapshot,
+    s.GetRequiredService<ILogger<EntityStoreService>>()));
 builder.Services.AddSingleton<IDesignTokenService>(s =>
     new DesignTokenService(s.GetRequiredService<IEntityStoreService>().Settings));
 builder.Services.AddSingleton<IRichTextService>(s =>
@@ -49,6 +51,9 @@ builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
 
 var app = builder.Build();
+
+app.Services.GetRequiredService<ExportSnapshotHolder>().Snapshot =
+    await app.Services.GetRequiredService<IExportSource>().LoadAsync(app.Lifetime.ApplicationStopping);
 
 app.MapDefaultEndpoints();
 app.MapOpenApi();
