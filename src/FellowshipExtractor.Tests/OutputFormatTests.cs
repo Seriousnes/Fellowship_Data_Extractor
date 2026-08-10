@@ -7,6 +7,31 @@ namespace FellowshipExtractor.Tests;
 
 public sealed class OutputFormatTests
 {
+    private const string NoStorage = "nothing here parses as a connection string";
+
+    private sealed class ClosingTarget(bool fails) : IExportTarget
+    {
+        public bool Disposed { get; private set; }
+
+        public Task WriteDocumentAsync(EntityDocument document, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task WriteSettingsAsync(SettingsFile settings, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task WriteImageAsync(string name, byte[] png, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public ValueTask DisposeAsync()
+        {
+            Disposed = true;
+
+            return fails
+                ? ValueTask.FromException(new InvalidOperationException("this target failed to close"))
+                : ValueTask.CompletedTask;
+        }
+    }
+
     [Fact]
     public async Task AJsonlLineIsTheDocumentAndItsType()
     {
@@ -106,6 +131,40 @@ public sealed class OutputFormatTests
             () => target.WriteImageAsync("T_GoldDivider.png", [8, 8, 8], default));
 
         Assert.Contains("T_GoldDivider.png", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task APassThatEndedWithoutItsSettingsPublishesNoDocumentsEither()
+    {
+        var target = new BlobTarget(NoStorage);
+
+        await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
+
+        Assert.Null(await Record.ExceptionAsync(async () => await target.DisposeAsync()));
+    }
+
+    [Fact]
+    public async Task APassHoldingBothHalvesPublishesThem()
+    {
+        var target = new BlobTarget(NoStorage);
+
+        await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
+        await target.WriteSettingsAsync(new SettingsFile { GemTypes = ["Ruby"] }, default);
+
+        await Assert.ThrowsAsync<FormatException>(async () => await target.DisposeAsync());
+    }
+
+    [Fact]
+    public async Task ATargetThatFailsToCloseLeavesEveryOtherTargetClosed()
+    {
+        ClosingTarget failing = new(fails: true), second = new(fails: false);
+
+        var failure = await Assert.ThrowsAsync<AggregateException>(
+            async () => await new CompositeTarget([failing, second]).DisposeAsync());
+
+        Assert.True(failing.Disposed);
+        Assert.True(second.Disposed);
+        Assert.Single(failure.InnerExceptions);
     }
 
     [Fact]

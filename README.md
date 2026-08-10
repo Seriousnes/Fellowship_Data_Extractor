@@ -618,6 +618,11 @@ taken from the `ConnectionStrings:icons` configuration key when the argument is 
 key the Publisher app host injects, so a run under it needs no argument at all. Naming both writes
 both in one pass over the build.
 
+A blob run uploads every image as it draws it, and publishes `data/entities.jsonl` and
+`data/settings.json` together once the pass has both. A pass that throws part way publishes neither,
+so the container keeps the pair the last finished pass left and the codex never boots on this run's
+entities beside the last run's settings.
+
 Either destination is the same layout:
 
 ```

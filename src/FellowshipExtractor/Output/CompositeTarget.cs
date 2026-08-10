@@ -21,6 +21,20 @@ public sealed class CompositeTarget(IReadOnlyList<IExportTarget> targets) : IExp
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var target in targets) await target.DisposeAsync();
+        List<Exception> failures = [];
+
+        foreach (var target in targets)
+        {
+            try
+            {
+                await target.DisposeAsync();
+            }
+            catch (Exception failure)
+            {
+                failures.Add(failure);
+            }
+        }
+
+        if (failures.Count > 0) throw new AggregateException(failures);
     }
 }

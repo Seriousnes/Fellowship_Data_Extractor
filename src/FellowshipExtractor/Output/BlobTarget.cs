@@ -102,21 +102,30 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
         {
             await _lines.FlushAsync();
             await _lines.DisposeAsync();
+        }
 
+        if (_lines is not null && _settings is not null)
+        {
             await PublishAsync(
                 $"{ExportLayout.DataFolder}/{ExportLayout.EntitiesFile}",
                 _entities.ToArray(),
                 "application/x-ndjson",
                 default);
-        }
 
-        if (_settings is not null)
-        {
             await PublishAsync(
                 $"{ExportLayout.DataFolder}/{Settings.FileName}",
                 JsonSerializer.SerializeToUtf8Bytes(_settings, TooltipCommand.JsonOptions),
                 "application/json",
                 default);
+        }
+        else if (_lines is not null || _settings is not null)
+        {
+            var held = _lines is not null ? ExportLayout.EntitiesFile : Settings.FileName;
+            var absent = _lines is not null ? Settings.FileName : ExportLayout.EntitiesFile;
+
+            Console.Error.WriteLine(
+                $"the pass ended holding {held} without {absent}, so neither was published: a snapshot is " +
+                "both files from one pass, and the container keeps the pair the last finished pass left.");
         }
 
         await _entities.DisposeAsync();
