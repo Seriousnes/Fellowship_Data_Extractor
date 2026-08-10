@@ -281,9 +281,9 @@ public sealed class IconArtTests
                 dropsAt.Contains(entry.Key, StringComparer.OrdinalIgnoreCase)),
         ];
 
-        KeyValuePair<string, JsonNode?>[] entries = reachable.Length == 0 ? [.. spread] : reachable;
+        Assert.NotEmpty(reachable);
 
-        var highest = entries.MaxBy(entry => rung[entry.Key]);
+        var highest = reachable.MaxBy(entry => rung[entry.Key]);
 
         return (highest.Key, highest.Value!.GetValue<string>());
     }
