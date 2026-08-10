@@ -36,7 +36,7 @@ public interface ITooltipViewService
 
     IReadOnlyList<TooltipView.TraitLine> Traits(TooltipQuery query);
 
-    IReadOnlyList<StatLine> Rolls(EntityDocument document, TooltipQuery query, RarityEntry? rarity);
+    IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity);
 
     MarkupString Text(
         string source,
@@ -46,14 +46,6 @@ public interface ITooltipViewService
         IReadOnlyList<string>? tags);
 
     string Style();
-
-    IReadOnlyList<TooltipView.Block> Blocks(
-        EntityDocument document,
-        TooltipQuery query,
-        RarityEntry? rarity,
-        IReadOnlyList<TooltipView.Fact> facts,
-        IReadOnlyList<StatLine> rolls,
-        IReadOnlyList<TooltipView.TraitLine> traits);
 
     bool DrawsState(EntityDocument document);
 
@@ -213,16 +205,14 @@ public sealed class TooltipViewService(
         ];
     }
 
-    public IReadOnlyList<StatLine> Rolls(EntityDocument document, TooltipQuery query, RarityEntry? rarity) =>
-        document is ItemDocument item
-            ? StatMagnitudes.For(
-                item,
-                store.Vocabulary.StatCalculation,
-                store.PrimaryAttributes,
-                rarity,
-                query.ItemLevel ?? store.DropItemLevel(item),
-                query)
-            : [];
+    public IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity) =>
+        StatMagnitudes.For(
+            document,
+            store.Vocabulary.StatCalculation,
+            store.PrimaryAttributes,
+            rarity,
+            query.ItemLevel ?? store.DropItemLevel(document),
+            query);
 
     public MarkupString Text(
         string source,
@@ -275,56 +265,7 @@ public sealed class TooltipViewService(
             renderer.Css(TooltipView.Root);
     }
 
-    public IReadOnlyList<TooltipView.Block> Blocks(
-        EntityDocument document,
-        TooltipQuery query,
-        RarityEntry? rarity,
-        IReadOnlyList<TooltipView.Fact> facts,
-        IReadOnlyList<StatLine> rolls,
-        IReadOnlyList<TooltipView.TraitLine> traits)
-    {
-        var shown = new List<TooltipView.Block>(9);
-        var item = document as ItemDocument;
-
-        if (HasKind(document) || item?.Slot is not null ||
-            Level(document, query) is not null || rarity is not null ||
-            Temper(query, rarity, Level(document, query)) is not null ||
-            item?.GemSlot == true || item?.UniqueEquipped == true) shown.Add(TooltipView.Block.Identity);
-
-        if (facts.Count > 0) shown.Add(TooltipView.Block.Facts);
-
-        if (Potential(query) is not null || rolls.Count > 0) shown.Add(TooltipView.Block.Rolls);
-
-        if (traits.Count > 0 || query.AllocatedTraits is not null || query.MaxTraits is not null)
-        {
-            shown.Add(TooltipView.Block.Traits);
-        }
-
-        if (DocumentFields.Text(document, nameof(AbilityDocument.Description)) is not null ||
-            DocumentFields.Words(document, nameof(AbilityDocument.Detail)) is { Count: > 0 })
-        {
-            shown.Add(TooltipView.Block.Prose);
-        }
-
-        if (document is GemTypeDocument { OverflowDescription: not null }) shown.Add(TooltipView.Block.Overflow);
-
-        if (Granted(document) is { } grants &&
-            (grants.Name ?? DocumentFields.Text(grants, nameof(AbilityDocument.Description))) is not null)
-        {
-            shown.Add(TooltipView.Block.Granted);
-        }
-
-        if (LegendaryStats(document).Count > 0) shown.Add(TooltipView.Block.Legendaries);
-
-        if (item?.SetBonus is { Count: > 0 }) shown.Add(TooltipView.Block.Sets);
-
-        return shown;
-    }
-
     public bool DrawsState(EntityDocument document) => document is BlessingDocument or TraitDocument;
-
-    private static bool HasKind(EntityDocument document) =>
-        document is ItemDocument { ArmorType: not null } or GemDocument or GemTraitDocument or GemTypeDocument;
 
     public EntityDocument? Granted(EntityDocument document) =>
         document is ItemDocument { GrantsId: { } id } && store.GrantedPower(id) is { } found &&

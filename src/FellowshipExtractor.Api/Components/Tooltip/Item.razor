@@ -1,0 +1,127 @@
+@inject ITooltipViewService Ui
+
+<div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
+    <style>@Sheet</style>
+    @if (Art is { } art)
+    {
+        <Icon Src="@art" Rarity="@Rung?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
+    }
+    <div class="card">
+        <header class="head">
+            @if (Ui.Ornament(Rung) is { } ornament)
+            {
+                <img class="orn" alt="" src="@ornament">
+            }
+
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+        </header>
+        @if (groups.Count > 0)
+        {
+            <div class="lines">
+                @for (var at = 0; at < groups.Count; at++)
+                {
+                    @if (at > 0) { <hr class="rule"> }
+                    @groups[at]
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public EntityDocument Shown { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    private ItemDocument Entity => (ItemDocument)Shown;
+
+    private RarityEntry? Rung;
+
+    private string? Art;
+
+    private int? Level;
+
+    private string? Temper;
+
+    private string? Named;
+
+    private MarkupString Sheet;
+
+    private EntityDocument? granted;
+
+    private IReadOnlyList<TooltipView.Fact> facts = [];
+
+    private IReadOnlyList<StatLine> rolls = [];
+
+    private IReadOnlyList<TooltipView.TraitLine> traits = [];
+
+    private IReadOnlyList<RenderFragment> groups = [];
+
+    protected override void OnParametersSet()
+    {
+        Rung = Ui.Rarity(Entity, Query);
+        Art = Ui.Art(Entity, Rung);
+        Level = Ui.Level(Entity, Query);
+        Temper = Ui.Temper(Query, Rung, Level);
+        Sheet = new MarkupString(Ui.Style());
+        facts = Ui.Facts(Entity, Query);
+        rolls = Ui.Rolls(Entity, Query, Rung);
+        traits = Ui.Traits(Query);
+        granted = Ui.Granted(Entity);
+        Named = granted is null ? null : PublicTypes.DisplayNameOf(granted);
+
+        groups = Groups();
+    }
+
+    private List<RenderFragment> Groups()
+    {
+        var drawn = new List<RenderFragment>(8);
+
+        if (Identity)
+        {
+            drawn.Add(@<TipIdentity Entity="Entity" Query="Query" Rung="Rung" Level="Level" Temper="@Temper" />);
+        }
+
+        if (facts.Count > 0) drawn.Add(@<TipFacts Items="facts" />);
+
+        if (Ui.Potential(Query) is not null || rolls.Count > 0)
+        {
+            drawn.Add(@<TipRolls Potential="@Ui.Potential(Query)" Lines="rolls" />);
+        }
+
+        if (traits.Count > 0 || Query.AllocatedTraits is not null || Query.MaxTraits is not null)
+        {
+            drawn.Add(@<TipTraits Lines="traits" Allocated="Query.AllocatedTraits" Total="Query.MaxTraits" />);
+        }
+
+        if (Entity.Description is not null)
+        {
+            drawn.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);
+        }
+
+        if (Grants)
+        {
+            drawn.Add(@<TipGranted Entity="Entity" Query="Query" Hero="Hero" Named="@Named" />);
+        }
+
+        if (Ui.LegendaryStats(Entity).Count > 0)
+        {
+            drawn.Add(@<TipLegendaries Entity="Entity" Query="Query" Hero="Hero" />);
+        }
+
+        if (Entity.SetBonus is { Count: > 0 }) drawn.Add(@<TipSets Entity="Entity" />);
+
+        return drawn;
+    }
+
+    private bool Identity =>
+        Entity.ArmorType is not null || Entity.Slot is not null || Level is not null ||
+        Rung is not null || Temper is not null ||
+        Entity.GemSlot == true || Entity.UniqueEquipped == true;
+
+    private bool Grants =>
+        granted is { } power &&
+        (power.Name ?? DocumentFields.Text(power, nameof(AbilityDocument.Description))) is not null;
+}
