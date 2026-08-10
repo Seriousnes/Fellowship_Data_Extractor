@@ -603,25 +603,34 @@ rarities it can drop in.
 
 ## Everything at once
 
-`export-all` writes one JSONL line per gameplay tag with every icon beside it in the same folder,
-using the same resolution the `tooltip` command uses for one entity. Naming an icon after its own
-texture means a texture shared by many entities is decoded once:
+`export-all` writes one JSONL line per gameplay tag with every icon beside it, using the same
+resolution the `tooltip` command uses for one entity. Naming an icon after its own texture means a
+texture shared by many entities is decoded once:
 
 ```powershell
-dotnet run --project src/FellowshipExtractor -- export-all
-dotnet run --project src/FellowshipExtractor -- export-all ItemID GameplayAbility
+dotnet run --project src/FellowshipExtractor -- export-all --output output/export
+dotnet run --project src/FellowshipExtractor -- export-all --output output/export ItemID GameplayAbility
 ```
 
+Two arguments name the destination. `--output <path>` writes a folder. `--connection-string <value>`
+writes straight into the `icons` blob container and nothing touches the file system; the value is
+taken from the `ConnectionStrings:icons` configuration key when the argument is absent, which is the
+key the Publisher app host injects, so a run under it needs no argument at all. Naming both writes
+both in one pass over the build.
+
+Either destination is the same layout:
+
 ```
-wrote output\export\entities.jsonl
-  15235 entries from 13088 tags, 6570 with a display name, 5916 with an icon
-  1667 images in output\export
-  1288 names inherited from the entity that applies them, 70 withheld because two entities that apply them disagree
-  1282 icons inherited from the entity that applies them, 10 withheld because two entities that apply them disagree
-  1713 tuning rows supplied by namespace that no asset names
-  18 coefficient rows banded by their own Spread row, 44 by their effect's calculation preset
-wrote output\export\settings.json (36891 bytes)
+<root>/data/entities.jsonl
+<root>/data/settings.json
+<root>/ui/<texture>.png
 ```
+
+The run reports what it read: 15,235 entries from 13,088 tags, 6,570 with a display name and 5,916
+with an icon; 1,288 names and 1,282 icons inherited from the entity that applies them, 70 and 10
+withheld because two entities that apply them disagree; 1,713 tuning rows supplied by namespace that
+no asset names; 18 coefficient rows banded by their own `Spread` row and 44 by their effect's
+calculation preset.
 
 Every line is the same record the `tooltip` command writes for one entity - one shape, 4.2 MB for
 the whole game, down from 22.5 MB.
@@ -688,7 +697,7 @@ granted abilities being dropped, 421 rows across the augmentation table. The att
 gameplay effects losing their own scaling: an ability's comes from the effect it applies, but an
 effect asked for in its own right captures on itself, and only the referenced ones were being read.
 
-`grep -c '/Game/\|/Script/' entities.jsonl settings.json` returns 0 for both, which is the check
+`grep -c '/Game/\|/Script/' data/entities.jsonl data/settings.json` returns 0 for both, which is the check
 that no asset path survived anywhere in the export.
 
 Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` tables are indexed:
@@ -708,20 +717,28 @@ Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` t
 
 ## The codex
 
-`src/FellowshipExtractor.Api` serves the export as a website and as an API from one process. The
-Aspire AppHost starts it beside the blob store its icons live in:
+`src/FellowshipExtractor.Api` serves the export as a website and as an API from one process. It
+reads everything it draws out of the `icons` blob container, so the container has to be filled
+before the app will start:
 
 ```powershell
 dotnet run --project src/FellowshipExtractor -- usmap
 $env:FELLOWSHIP_USMAP = "$PWD/output/fellowship.usmap"
-dotnet run --project src/FellowshipExtractor -- export-all
-dotnet run --project src/FellowshipExtractor -- ui
+
+dotnet run --project src/FellowshipExtractor.Publisher
 
 aspire run
 ```
 
-The three extractor commands are what the site reads: `output/export` is a build output and is not
-in the repository, so a fresh clone or a fresh worktree has to produce it before the app will start.
+`FellowshipExtractor.Publisher` is an app host of its own: it starts the same Azurite the codex uses
+and runs `export-all` against it, so publishing is one command and needs no connection string on the
+line. The extractor resource runs once and finishes, and the host keeps running until it is stopped,
+so stop it once the dashboard shows the run has exited. `aspire run` then starts the codex against
+the container that run filled.
+
+`export-all --output output/export` writes the same target as a folder instead, laid out exactly
+like the container, which is what the test suite reads. Either way the export is a build output and
+is not in the repository, so a fresh clone or a fresh worktree has to produce it first.
 
 | Address | What it answers |
 | --- | --- |
@@ -872,24 +889,48 @@ The client draws those on lit 3D and on bright panels, where Gunde's `#5A1F20` i
 `#0C1722` it is not. The hue is kept, and a swatch beside the name is still filled with the shipped
 value.
 
+### Two app hosts, one Azurite
+
+Two Aspire app hosts share one Azurite instance. `FellowshipExtractor.AppHost` holds the storage
+emulator and the codex. `FellowshipExtractor.Publisher` holds the same storage emulator and
+`FellowshipExtractor` as a resource, with the container connection string injected by
+`WithReference` as `ConnectionStrings__icons` and `export-all` as its arguments, so running it
+publishes the build into the container the codex reads.
+
+The emulator carries `WithLifetime(ContainerLifetime.Persistent)` in both, so the container outlives
+whichever host started it and the other attaches to the one already running rather than standing up
+a second. That only works if both name the same thing, so both compute the volume name, the blob
+port, the Docker Compose project and the container name from `StackIdentity`, one file in the
+AppHost project that the Publisher compiles as a linked item.
+
+The identity is the checkout root: each host walks up from its own build output directory, the one
+`AppContext.BaseDirectory` names, until `Checkout()` finds a `.git` entry, and hashes the directory
+holding it. Two hosts whose binaries sit in different `bin` folders therefore agree, and one
+checkout gets one volume name and one port offset whichever host starts. A build output directory
+with no `.git` above it has no checkout root, and is hashed itself. A worktree's `.git` is a file
+pointing at the main checkout's `.git/worktrees/<name>`, and the identity is the directory holding
+that file rather than the directory it points at, so every worktree is its own checkout root and its
+own stack. The branch the pointer names is what the compose project is called: `fellowship-master`,
+`fellowship-sba-topology`.
+
 ### One stack per worktree
 
-Several worktrees of this repo are open at once and each runs its own AppHost. Every address an
-AppHost claims is global to the machine or to the Docker daemon, and the ports in
-`launchSettings.json` are literals every worktree shares, so a second AppHost fails on
+Several worktrees of this repo are open at once and each runs its own hosts. Every address an app
+host claims is global to the machine or to the Docker daemon, and the ports in `launchSettings.json`
+are literals every worktree shares, so a second app host fails on
 `Failed to bind to address https://127.0.0.1:22186` before any resource starts.
 
-`AppHost.cs` derives a discriminator from its own build output directory and moves every port along
-by it - the dashboard, its OTLP and resource-service endpoints, the blob port and the web app's own
-port - and files the containers under one Docker Compose project named after the same
-discriminator, with the discriminator in the container name as well: a compose label groups
-containers, it does not namespace their names, so two worktrees both naming an emulator `azurite`
-still collide. The offset is stable across restarts, because a blob URL is baked into every tooltip
-fragment already handed out; `FELLOWSHIP_PORT_OFFSET` pins it by hand. Checked both ways round, with
-a second AppHost from another worktree already running: `dotnet run --project` and `aspire run` each
-start clean and land on the same derived ports.
+The stack's offset moves every port along by it - the dashboard, its OTLP and resource-service
+endpoints, the blob port and the web app's own port - and the containers are filed under one Docker
+Compose project named after the checkout, with that project name in the container name as well: a
+compose label groups containers, it does not namespace their names, so two worktrees both naming an
+emulator `azurite` still collide. The offset is stable across restarts, because a blob URL is baked
+into every tooltip fragment already handed out; `FELLOWSHIP_PORT_OFFSET` pins it by hand.
 
-Each worktree also gets its own `fellowship-azurite-<hash>` data volume, which nothing removes when
+The two hosts read different base ports out of their own `launchSettings.json`, and the ranges an
+offset can move them into do not overlap, so neither takes an address the other needs.
+
+Each checkout also gets its own `fellowship-azurite-<hash>` data volume, which nothing removes when
 the worktree goes: `docker volume rm` it, or leave it and it will be reused if the worktree comes
 back at the same path.
 
@@ -926,6 +967,10 @@ back at the same path.
   interactive component; `Pages/` holds the four routes; `Shared/Detail.razor` is every field of an
   entity, recursive so a granted ability and a legendary roll are drawn by the same component, and
   `Shared/EntityLink.razor` is the only place a link to an entity is built.
+- `src/FellowshipExtractor.AppHost/` and `src/FellowshipExtractor.Publisher/` - the two app hosts.
+  `StackIdentity.cs` sits in the first and is compiled into the second as a linked item, so the
+  stack name, the port offset, the data volume, the compose project and the container name have one
+  implementation and both hosts reach the same Azurite.
 
 ## Known limits
 
