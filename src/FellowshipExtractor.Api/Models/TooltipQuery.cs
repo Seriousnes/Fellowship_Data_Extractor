@@ -2,19 +2,34 @@ using System.Globalization;
 
 namespace FellowshipExtractor.Api.Models;
 
-public readonly record struct GemPower(int GemTypeId, int Power)
+public enum ModifierKind
 {
-    public static bool TryParse(string? value, IFormatProvider? provider, out GemPower result)
+    Trait,
+    Blessing,
+    Essence,
+}
+
+public readonly record struct ItemModifier(ModifierKind Kind, int Id, int Amount)
+{
+    private static readonly IReadOnlyDictionary<string, ModifierKind> Tokens =
+        Enum.GetValues<ModifierKind>().ToDictionary(
+            kind => kind.ToString(), kind => kind, StringComparer.OrdinalIgnoreCase);
+
+    public static bool TryParse(string? value, IFormatProvider? provider, out ItemModifier result)
     {
         result = default;
 
-        var separator = value?.IndexOf(':') ?? -1;
-        if (value is null || separator <= 0) return false;
+        if (value is null) return false;
 
-        if (!int.TryParse(value.AsSpan(..separator), NumberStyles.Integer, provider, out var type)) return false;
-        if (!int.TryParse(value.AsSpan((separator + 1)..), NumberStyles.Integer, provider, out var power)) return false;
+        var parts = value.Split(':');
+        if (parts.Length != 3) return false;
 
-        result = new GemPower(type, power);
+        if (!Tokens.TryGetValue(parts[0], out var kind)) return false;
+
+        if (!int.TryParse(parts[1], NumberStyles.Integer, provider, out var id)) return false;
+        if (!int.TryParse(parts[2], NumberStyles.Integer, provider, out var amount)) return false;
+
+        result = new ItemModifier(kind, id, amount);
         return true;
     }
 }
@@ -68,26 +83,26 @@ public sealed class ImbuedTraits
     }
 }
 
-public sealed class GemPowers
+public sealed class ItemModifiers
 {
-    public required IReadOnlyList<GemPower> Values { get; init; }
+    public required IReadOnlyList<ItemModifier> Values { get; init; }
 
-    public static bool TryParse(string? value, out GemPowers result)
+    public static bool TryParse(string? value, out ItemModifiers result)
     {
-        var parsed = new List<GemPower>();
+        var parsed = new List<ItemModifier>();
 
         foreach (var part in (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
-            if (!GemPower.TryParse(part, CultureInfo.InvariantCulture, out var gem))
+            if (!ItemModifier.TryParse(part, CultureInfo.InvariantCulture, out var modifier))
             {
-                result = new GemPowers { Values = [] };
+                result = new ItemModifiers { Values = [] };
                 return false;
             }
 
-            parsed.Add(gem);
+            parsed.Add(modifier);
         }
 
-        result = new GemPowers { Values = parsed };
+        result = new ItemModifiers { Values = parsed };
         return true;
     }
 }
@@ -112,18 +127,19 @@ public sealed record TooltipQuery
 
     public decimal? Armor { get; init; }
 
-    public IReadOnlyList<ImbuedTrait> Traits { get; init; } = [];
+    public IReadOnlyList<ItemModifier> Modifiers { get; init; } = [];
+
+    public IReadOnlyList<ImbuedTrait> ImbuedTraits { get; init; } = [];
 
     public int? AllocatedTraits { get; init; }
-    public int? MaxTraits { get; init; }
+
+    public bool? HasImbuedTraits { get; init; }
 
     public IReadOnlyDictionary<string, IReadOnlyList<decimal>> Stats { get; init; } =
         new Dictionary<string, IReadOnlyList<decimal>>(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyDictionary<string, decimal> Attributes { get; init; } =
         new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
-
-    public IReadOnlyList<GemPower> GemPowers { get; init; } = [];
 
     public decimal? Total(string stat) =>
         Stats.TryGetValue(stat, out var values) ? values.Sum() : null;

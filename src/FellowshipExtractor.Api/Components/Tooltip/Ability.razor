@@ -49,8 +49,6 @@
 
     private IReadOnlyList<TooltipView.Fact> facts = [];
 
-    private IReadOnlyList<TooltipView.TraitLine> traits = [];
-
     private IReadOnlyList<RenderFragment> groups = [];
 
     protected override void OnParametersSet()
@@ -61,7 +59,6 @@
         Temper = Ui.Temper(Query, Rung, Level);
         Sheet = new MarkupString(Ui.Style());
         facts = Ui.Facts(Entity, Query);
-        traits = Ui.Traits(Query);
 
         groups = Groups();
     }
@@ -80,11 +77,6 @@
         if (Ui.Potential(Query) is not null)
         {
             drawn.Add(@<TipRolls Potential="@Ui.Potential(Query)" />);
-        }
-
-        if (traits.Count > 0 || Query.AllocatedTraits is not null || Query.MaxTraits is not null)
-        {
-            drawn.Add(@<TipTraits Lines="traits" Allocated="Query.AllocatedTraits" Total="Query.MaxTraits" />);
         }
 
         if (Prose) drawn.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);

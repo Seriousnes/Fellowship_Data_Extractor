@@ -70,12 +70,49 @@ public class ParameterTests(Export export)
     }
 
     [Fact]
-    public void A_comma_and_a_repetition_read_the_same_gem_powers()
+    public void One_modifier_and_several_read_back_as_the_entries_they_name()
     {
-        Assert.True(GemPowers.TryParse("1:2,3:4", out var joined));
+        Assert.True(ItemModifiers.TryParse("trait:412:1", out var alone));
 
-        Assert.Equal([new GemPower(1, 2), new GemPower(3, 4)], joined.Values);
-        Assert.False(GemPowers.TryParse("1", out _));
+        Assert.Equal([new ItemModifier(ModifierKind.Trait, 412, 1)], alone.Values);
+
+        Assert.True(ItemModifiers.TryParse("trait:412:1,blessing:7:1,essence:3:100", out var several));
+
+        Assert.Equal(
+            [
+                new ItemModifier(ModifierKind.Trait, 412, 1),
+                new ItemModifier(ModifierKind.Blessing, 7, 1),
+                new ItemModifier(ModifierKind.Essence, 3, 100),
+            ],
+            several.Values);
+    }
+
+    [Fact]
+    public void Every_kind_the_enum_names_is_read_from_a_token_of_its_own()
+    {
+        foreach (var kind in Enum.GetValues<ModifierKind>())
+        {
+            Assert.True(ItemModifiers.TryParse($"{TooltipView.Token(kind)}:1:2", out var read));
+            Assert.Equal([new ItemModifier(kind, 1, 2)], read.Values);
+
+            Assert.True(ItemModifiers.TryParse($"{TooltipView.Token(kind).ToUpperInvariant()}:1:2", out var loud));
+            Assert.Equal(read.Values, loud.Values);
+        }
+    }
+
+    [Fact]
+    public void An_entry_the_reader_cannot_make_out_is_refused()
+    {
+        Assert.False(ItemModifiers.TryParse("nonesuch:1:2", out _));
+        Assert.False(ItemModifiers.TryParse("trait:1", out _));
+        Assert.False(ItemModifiers.TryParse("trait", out _));
+        Assert.False(ItemModifiers.TryParse("trait:one:2", out _));
+        Assert.False(ItemModifiers.TryParse("trait:1:two", out _));
+        Assert.False(ItemModifiers.TryParse("trait:1:2:3", out _));
+        Assert.False(ItemModifiers.TryParse("trait:412:1,nonesuch:7:1", out _));
+
+        Assert.True(ItemModifiers.TryParse(null, out var none));
+        Assert.Empty(none.Values);
     }
 }
 

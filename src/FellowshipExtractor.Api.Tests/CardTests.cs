@@ -58,7 +58,9 @@ public class CardTests : BunitContext
     public void A_group_the_query_adds_and_takes_away_leaves_the_card_holding_neither_a_stale_group_nor_a_stray_rule()
     {
         var worn = export.Store.Entities.OfType<ItemDocument>()
-            .First(row => row.Stats is { Count: > 0 } && row.SetBonus is { Count: > 0 });
+            .First(row =>
+                row.Stats is { Count: > 0 } && row.SetBonus is { Count: > 0 } &&
+                (row.Slot is not { } slot || !TooltipView.ImbuedTraitCapacities.ContainsKey(slot)));
 
         var drawn = Render<Tooltip>(p => p.Add(x => x.Entity, worn).Add(x => x.Query, new TooltipQuery()));
 
@@ -67,7 +69,9 @@ public class CardTests : BunitContext
 
         Assert.Empty(drawn.FindAll(".lines .sec .alloc"));
 
-        drawn.Render(p => p.Add(x => x.Entity, worn).Add(x => x.Query, new TooltipQuery { MaxTraits = 3 }));
+        drawn.Render(p => p
+            .Add(x => x.Entity, worn)
+            .Add(x => x.Query, new TooltipQuery { HasImbuedTraits = true }));
 
         var imbued = Shape(drawn);
         Assert.Equal(bare.Groups + 1, imbued.Groups);

@@ -77,9 +77,14 @@ public class TooltipDumpTests : BunitContext
         {
             yield return ("traits", new TooltipQuery
             {
-                Traits = [new ImbuedTrait(trait, 2)],
-                MaxTraits = 3,
+                ImbuedTraits = [new ImbuedTrait(trait, 2)],
+                HasImbuedTraits = true,
             });
+        }
+
+        if (Modifiers() is { Count: > 0 } modifiers)
+        {
+            yield return ("modifiers", new TooltipQuery { Modifiers = modifiers });
         }
 
         yield return ("potential", new TooltipQuery { PotentialPower = 42m });
@@ -122,13 +127,26 @@ public class TooltipDumpTests : BunitContext
             First(row => row is ItemDocument { Description: not null }),
             First(row => row is AbilityDocument { Detail.Count: > 0 }),
             First(row => row is GemTypeDocument { OverflowDescription: not null }),
+            .. TooltipView.ImbuedTraitCapacities.Keys.Select(slot => First(row =>
+                row is ItemDocument worn &&
+                string.Equals(worn.Slot, slot, StringComparison.OrdinalIgnoreCase))),
         ];
 
         return picks.Where(id => id is not null).Select(id => id!.Value);
     }
 
-    private int? FirstTrait() => export.Store.Entities
-        .Where(row => EntityTypes.TypeOf(row) == TooltipView.TraitType)
+    private int? FirstTrait() => Lowest(TooltipView.TraitType);
+
+    private IReadOnlyList<ItemModifier> Modifiers() =>
+    [
+        .. Enum.GetValues<ModifierKind>()
+            .Select(kind => (Kind: kind, Id: Lowest(TooltipView.TypeOf(kind))))
+            .Where(carried => carried.Id is not null)
+            .Select(carried => new ItemModifier(carried.Kind, carried.Id!.Value, 1)),
+    ];
+
+    private int? Lowest(EntityType type) => export.Store.Entities
+        .Where(row => EntityTypes.TypeOf(row) == type)
         .Select(row => (int?)row.Id)
         .Order()
         .FirstOrDefault();

@@ -34,7 +34,7 @@ public interface ITooltipViewService
 
     string? Potential(TooltipQuery query);
 
-    IReadOnlyList<TooltipView.TraitLine> Traits(TooltipQuery query);
+    IReadOnlyList<TooltipView.ModifierLine> Modifiers(TooltipQuery query);
 
     IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity);
 
@@ -192,18 +192,14 @@ public sealed class TooltipViewService(
             ? power.Normalize().ToString(CultureInfo.InvariantCulture)
             : null;
 
-    public IReadOnlyList<TooltipView.TraitLine> Traits(TooltipQuery query)
-    {
-        if (query.Traits.Count == 0) return [];
-
-        return
-        [
-            .. query.Traits.Select(imbued => new TooltipView.TraitLine(
-                store.All(TooltipView.TraitType, imbued.Id).Select(PublicTypes.NameOf).FirstOrDefault()
-                    ?? imbued.Id.ToString(CultureInfo.InvariantCulture),
-                imbued.Rank)),
-        ];
-    }
+    public IReadOnlyList<TooltipView.ModifierLine> Modifiers(TooltipQuery query) =>
+    [
+        .. query.Modifiers.Select(modifier => new TooltipView.ModifierLine(
+            modifier.Kind,
+            store.All(TooltipView.TypeOf(modifier.Kind), modifier.Id).Select(PublicTypes.NameOf).FirstOrDefault()
+                ?? modifier.Id.ToString(CultureInfo.InvariantCulture),
+            modifier.Amount)),
+    ];
 
     public IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity) =>
         StatMagnitudes.For(
@@ -258,12 +254,17 @@ public sealed class TooltipViewService(
             --fx-thin:url({{chrome.ThinWindow}});--fx-fill:url({{chrome.WindowFill}});
             --fx-divider:url({{chrome.GoldDivider}});--fx-subheader:url({{chrome.Header(null)}});
             --fx-ability:{{chrome.AbilityBadge.Colour}};--fx-legendary:{{chrome.LegendaryBadge.Colour}};
-            --fx-setbonus:{{chrome.SetBonusBadge.Colour}}}
+            --fx-setbonus:{{chrome.SetBonusBadge.Colour}};--fx-modplate:url({{chrome.ModifierPlate}});
+            --fx-moddecor:url({{chrome.ModifierDecor}});{{Glyphs(chrome)}}}
 
             """ +
             reading.ReadToEnd() +
             renderer.Css(TooltipView.Root);
     }
+
+    private static string Glyphs(IChromeAssetService chrome) => string.Concat(
+        Enum.GetValues<ModifierKind>().Select(kind =>
+            $"--fx-mod-{TooltipView.Token(kind)}:url({chrome.ModifierGlyph(kind)});"));
 
     public bool DrawsState(EntityDocument document) => document is BlessingDocument or TraitDocument;
 
