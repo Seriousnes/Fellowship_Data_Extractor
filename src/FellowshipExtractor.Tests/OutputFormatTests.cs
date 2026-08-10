@@ -9,6 +9,11 @@ public sealed class OutputFormatTests
 {
     private const string NoStorage = "nothing here parses as a connection string";
 
+    private const string DevelopmentStorage =
+        "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;" +
+        "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;" +
+        "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1";
+
     private sealed class ClosingTarget(bool fails) : IExportTarget
     {
         public bool Disposed { get; private set; }
@@ -152,6 +157,24 @@ public sealed class OutputFormatTests
         await target.WriteSettingsAsync(new SettingsFile { GemTypes = ["Ruby"] }, default);
 
         await Assert.ThrowsAsync<FormatException>(async () => await target.DisposeAsync());
+    }
+
+    [Fact]
+    public async Task AConnectionStringNamingItsContainerWritesThatContainer()
+    {
+        await using var target = new BlobTarget($"{DevelopmentStorage};ContainerName=snapshots");
+
+        Assert.Equal("snapshots", target.Container.Name);
+        Assert.Equal("http://127.0.0.1:10000/devstoreaccount1/snapshots", target.Container.Uri.AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task AConnectionStringNamingNoContainerWritesIcons()
+    {
+        await using var target = new BlobTarget(DevelopmentStorage);
+
+        Assert.Equal("icons", target.Container.Name);
+        Assert.Equal("http://127.0.0.1:10000/devstoreaccount1/icons", target.Container.Uri.AbsoluteUri);
     }
 
     [Fact]

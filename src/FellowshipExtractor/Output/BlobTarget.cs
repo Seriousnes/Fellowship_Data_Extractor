@@ -13,13 +13,15 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
 {
     public const string ContainerName = "icons";
 
+    private const string ContainerKey = "ContainerName";
+
     private const string CacheControl = "no-cache";
 
     private readonly WrittenNames _names = new();
 
     private readonly MemoryStream _entities = new();
 
-    private BlobContainerClient? _container;
+    private BlobContainerClient? _client;
 
     private Dictionary<string, string>? _published;
 
@@ -33,11 +35,37 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
 
     private StreamWriter Lines() => _lines ??= new StreamWriter(_entities, leaveOpen: true);
 
+    public BlobContainerClient Container => _client ??= Connect();
+
+    private BlobContainerClient Connect()
+    {
+        List<string> account = [];
+        var name = ContainerName;
+
+        foreach (var pair in connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = pair.IndexOf('=');
+
+            if (separator > 0 && pair[..separator].Trim().Equals(ContainerKey, StringComparison.OrdinalIgnoreCase))
+            {
+                var named = pair[(separator + 1)..].Trim();
+                if (named.Length > 0) name = named;
+
+                continue;
+            }
+
+            account.Add(pair);
+        }
+
+        return new BlobServiceClient(string.Join(';', account)).GetBlobContainerClient(name);
+    }
+
     private async Task<BlobContainerClient> ContainerAsync(CancellationToken cancellationToken)
     {
-        if (_container is not null) return _container;
+        var container = Container;
 
-        var container = new BlobContainerClient(connectionString, ContainerName);
+        if (_published is not null) return container;
+
         await container.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
         await container.SetAccessPolicyAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
 
@@ -48,9 +76,9 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
         }
 
         _published = published;
-        Console.WriteLine($"container {ContainerName} already holds {published.Count} blob(s) carrying a hash");
+        Console.WriteLine($"container {container.Name} already holds {published.Count} blob(s) carrying a hash");
 
-        return _container = container;
+        return container;
     }
 
     private async Task PublishAsync(
@@ -130,10 +158,10 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
 
         await _entities.DisposeAsync();
 
-        if (_container is not null)
+        if (_published is not null)
         {
             Console.WriteLine(
-                $"uploaded {_uploaded} blob(s) to {_container.Uri}, {_matched} already matched their hash");
+                $"uploaded {_uploaded} blob(s) to {Container.Uri}, {_matched} already matched their hash");
         }
     }
 }
