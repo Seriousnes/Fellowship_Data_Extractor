@@ -1,0 +1,61 @@
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+
+<EntityView Entity="Entity">
+    @if (Drawn.Background is { } behind)
+    {
+        <Panel Head="Loading screen">
+            <img class="cx-loading-screen" alt="" loading="lazy" src="@Ui.Icon(behind)" />
+        </Panel>
+    }
+
+    @if (Dwelling.Count > 0)
+    {
+        <Panel Head="Creatures" Badge="@Dwelling.Count.ToString()">
+            <Table Items="Dwelling" T="CreatureDocument">
+                <Columns>
+                    <Column Head="" Class="cx-art">
+                        <Content Context="row"><Art Entity="row" /></Content>
+                    </Column>
+                    <Column Head="Name">
+                        <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+                    </Column>
+                    <Column Head="Rank" Class="cx-tags">
+                        <Content Context="row">
+                            @if (row.Rank is { } rank)
+                            {
+                                <Chip>@rank</Chip>
+                            }
+                        </Content>
+                    </Column>
+                    <Column Head="Health" Numeric Value="row => row.Health" />
+                    <Column Head="Kill score" Numeric Value="row => row.KillScore" />
+                </Columns>
+            </Table>
+        </Panel>
+    }
+</EntityView>
+
+@code {
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    private DungeonDocument Drawn => (DungeonDocument)Entity;
+
+    private IReadOnlyList<CreatureDocument> Dwelling = [];
+
+    protected override void OnParametersSet() =>
+        Dwelling =
+        [
+            .. Ui.Codex.Of(EntityType.Creature)
+                .OfType<CreatureDocument>()
+                .Where(creature => creature.FoundIn?.Any(level => level.Id == Entity.Id) is true)
+                .OrderBy(creature => Standing(creature.Rank))
+                .ThenBy(creature => PublicTypes.NameOf(creature), StringComparer.OrdinalIgnoreCase),
+        ];
+
+    private static readonly CreatureRank[] Order =
+        [CreatureRank.Boss, CreatureRank.Elite, CreatureRank.Enemy, CreatureRank.Friendly];
+
+    private static int Standing(CreatureRank? rank) =>
+        rank is { } named ? Array.IndexOf(Order, named) : Order.Length;
+}

@@ -36,13 +36,15 @@ public interface IEntityStoreService
 
     TalentSlotDocument? Slot(int talentId);
 
-    (EntityType Type, int Id)? GrantedPower(int id);
-
     Lookup Resolve(EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero);
 
     HeroEntry? Wearer(EntityDocument document);
 
     int DropItemLevel(EntityDocument document);
+
+    int Difficulty(string? asked);
+
+    CreatureDocument? Menacing(EntityDocument? document);
 
     RarityEntry? Rarity(string? word, bool gem);
 }
@@ -129,7 +131,7 @@ public sealed class EntityStoreService : IEntityStoreService
             if (!groups.TryGetValue(key, out var list)) groups[key] = list = [];
             list.Add(document);
 
-            if (document is TalentSlotDocument slot) slotsByTalent.TryAdd(slot.TalentId, slot);
+            if (document is TalentSlotDocument slot) slotsByTalent.TryAdd(slot.Talent.Id, slot);
 
             Census(document, stats, spelled);
 
@@ -215,19 +217,6 @@ public sealed class EntityStoreService : IEntityStoreService
     public TalentSlotDocument? Slot(int talentId) =>
         slotsByTalent.TryGetValue(talentId, out var slot) ? slot : null;
 
-    private static readonly EntityType[] GrantedPowers =
-        [EntityType.RelicPower, EntityType.WeaponPower, EntityType.LegendaryPower, EntityType.Talent];
-
-    public (EntityType Type, int Id)? GrantedPower(int id)
-    {
-        foreach (var type in GrantedPowers)
-        {
-            if (All(type, id).Count > 0) return (type, id);
-        }
-
-        return null;
-    }
-
     public Lookup Resolve(
         EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero)
     {
@@ -261,6 +250,18 @@ public sealed class EntityStoreService : IEntityStoreService
         Plateau(document is ItemDocument { Rarity: Fellowship.SDK.Rarity.Legendary }
             ? LegendaryDropRow
             : DefaultDropRow);
+
+    public int Difficulty(string? asked) =>
+        Difficulties.Asked(asked, Settings)
+        ?? Settings.DifficultyScaling.Health.Keys.DefaultIfEmpty(1).Min();
+
+    public CreatureDocument? Menacing(EntityDocument? document) => document switch
+    {
+        CreatureDocument creature => creature,
+        AbilityDocument { Owner: { Type: EntityType.Creature } owner } =>
+            All(EntityType.Creature, owner.Id).OfType<CreatureDocument>().FirstOrDefault(),
+        _ => null,
+    };
 
     private int Plateau(string row) =>
         Settings.DropItemLevels.FirstOrDefault(

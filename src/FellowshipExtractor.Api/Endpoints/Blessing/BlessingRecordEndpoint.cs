@@ -23,6 +23,6 @@ public static class BlessingRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] BlessingRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Blessing, request.Id, null, store, view);
+        [AsParameters] BlessingRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.Blessing, request.Id, null, http, store, view);
 }

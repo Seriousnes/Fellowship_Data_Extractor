@@ -78,8 +78,13 @@ public class CorpusTests : BunitContext
         Assert.Equal("Regal", cut.Find("span.rar").TextContent);
         Assert.Equal("315", cut.Find("span.power").TextContent);
 
-        Assert.Equal(3, cut.FindAll("ul.stats li.guaranteed").Count);
+        Assert.Equal(4, cut.FindAll("ul.stats li.guaranteed").Count);
         Assert.Equal(2, cut.FindAll("ul.stats li.random").Count);
+
+        var first = cut.FindAll("ul.stats li")[0];
+
+        Assert.Equal("Armor", first.QuerySelectorAll("span")[^1].TextContent);
+        Assert.Equal("+89", first.QuerySelector("span.v")!.TextContent);
     }
 
     [Fact]

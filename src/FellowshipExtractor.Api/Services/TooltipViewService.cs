@@ -160,7 +160,48 @@ public sealed class TooltipViewService(
             facts.Add(new TooltipView.Fact("Cost", resource is { } r ? $"{text} {r}" : text, null));
         }
 
+        facts.AddRange(Menacing(document, query));
+
         return facts;
+    }
+
+    private IEnumerable<TooltipView.Fact> Menacing(EntityDocument document, TooltipQuery query)
+    {
+        if (store.Menacing(document) is not { } creature) yield break;
+
+        var step = Difficulties.At(store.Settings, store.Difficulty(query.Difficulty?.ToString()));
+
+        if (step is null) yield break;
+
+        if (document is CreatureDocument &&
+            Difficulties.Health(creature, store.Settings, step.Difficulty) is { } health)
+        {
+            yield return new TooltipView.Fact(
+                "Health",
+                Codex.Magnitude((decimal)health),
+                $"{Codex.Number(creature.Health!.Value)} at the first difficulty, at {step.Label}");
+        }
+
+        if (document is not AbilityDocument { Coefficients: { Count: > 0 } stated }) yield break;
+
+        foreach (var coefficient in stated)
+        {
+            if (Difficulties.Damage(coefficient, creature, store.Settings, step.Difficulty) is not { } band)
+            {
+                continue;
+            }
+
+            var label = coefficient.Part is { Length: > 0 } part ? $"Damage ({part})" : "Damage";
+
+            var reading = band.Low == band.High
+                ? Codex.Magnitude(band.Mean)
+                : $"{Codex.Magnitude(band.Low)} to {Codex.Magnitude(band.High)}";
+
+            yield return new TooltipView.Fact(
+                label,
+                reading,
+                $"{Codex.Number(coefficient.Value * 100)}% of {coefficient.Attribute} at {step.Label}");
+        }
     }
 
     private static (double? Value, string? Title) Hastened(EntityDocument document, double? value, TooltipQuery query)
@@ -265,13 +306,12 @@ public sealed class TooltipViewService(
     public bool DrawsState(EntityDocument document) => document is BlessingDocument or TraitDocument;
 
     public EntityDocument? Granted(EntityDocument document) =>
-        document is ItemDocument { GrantsId: { } id } && store.GrantedPower(id) is { } found &&
-        store.All(found.Type, found.Id) is { Count: > 0 } readings
+        document is ItemDocument { Grants: { } power } && store.All(power.Type, power.Id) is { Count: > 0 } readings
             ? readings[0]
             : null;
 
     public IReadOnlyList<EntityDocument> LegendaryStats(EntityDocument document) =>
-        document is ItemDocument { LegendaryStatIds: { Count: > 0 } ids }
-            ? [.. ids.SelectMany(id => store.All(EntityType.LegendaryStat, id))]
+        document is ItemDocument { LegendaryStats: { Count: > 0 } rolls }
+            ? [.. rolls.SelectMany(roll => store.All(roll.Type, roll.Id))]
             : [];
 }

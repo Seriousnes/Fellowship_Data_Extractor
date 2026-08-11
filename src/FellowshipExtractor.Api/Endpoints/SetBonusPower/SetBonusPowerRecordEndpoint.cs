@@ -23,6 +23,6 @@ public static class SetBonusPowerRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] SetBonusPowerRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.SetBonusPower, request.Id, null, store, view);
+        [AsParameters] SetBonusPowerRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.SetBonusPower, request.Id, null, http, store, view);
 }

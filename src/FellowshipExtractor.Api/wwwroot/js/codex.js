@@ -241,6 +241,8 @@ window.addEventListener('resize', hide);
 function arrived() {
     hide();
     document.querySelector('.cx-entity-name')?.style.removeProperty('--cx-rung');
+
+    if (document.querySelector('[data-stage][data-restage]')) stage();
 }
 
 if (document.readyState === 'loading') {

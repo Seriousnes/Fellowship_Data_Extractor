@@ -65,5 +65,9 @@ public sealed record SettingsFile
 
     public BlessingEntry Blessings { get; init; } = new(string.Empty, string.Empty, string.Empty, 0);
 
+    public DifficultyScaling DifficultyScaling { get; init; } = new();
+
+    public IReadOnlyList<LeagueEntry> Leagues { get; init; } = [];
+
     public StatCalculationFile StatCalculation { get; init; } = new();
 }

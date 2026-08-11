@@ -25,6 +25,37 @@ public class PlaceholderReadingTests(Export export)
     }
 
     [Fact]
+    public void A_delta_constant_reads_as_the_signed_excess_it_carries_over_1()
+    {
+        Assert.Equal("+2%", Read(new Placeholder { Value = 1.02, Format = "delta" }).Text);
+        Assert.Equal("+5%", Read(new Placeholder { Value = 1.05, Format = "delta" }).Text);
+        Assert.Equal("+0.6%", Read(new Placeholder { Value = 1.006, Format = "delta" }).Text);
+    }
+
+    [Fact]
+    public void A_delta_constant_below_1_reads_as_the_reduction_it_carries()
+    {
+        Assert.Equal("-8%", Read(new Placeholder { Value = 0.92, Format = "delta" }).Text);
+    }
+
+    [Fact]
+    public void Gem_trait_332_reads_the_crit_chance_it_grants_rather_than_its_multiplier()
+    {
+        var instinct = Assert.Single(export.Store.All(EntityType.GemTrait, 332));
+        var token = Assert.Single(CodexView.PlaceholdersOf(instinct));
+
+        Assert.Equal("+2%", Read(token).Text);
+    }
+
+    [Fact]
+    public void The_substitutions_panel_reads_the_same_grant_gem_trait_332_speaks()
+    {
+        var instinct = Assert.Single(export.Store.All(EntityType.GemTrait, 332));
+
+        Assert.Equal("+2%", Assert.Single(export.View.Substitutions(instinct)).Reading);
+    }
+
+    [Fact]
     public void Trait_power_684_reads_the_armor_it_adds_rather_than_the_armor_it_leaves()
     {
         var oak = Assert.Single(export.Store.All(EntityType.TraitPower, 684));

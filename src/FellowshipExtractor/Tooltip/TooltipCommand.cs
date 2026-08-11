@@ -116,7 +116,10 @@ public static class TooltipCommand
         if (reading.Any()) Console.WriteLine($"{indent}{string.Join(" / ", reading)}");
 
         if (entity.Heroes is { } wearers) Console.WriteLine($"{indent}for: {string.Join(", ", wearers)}");
-        if (entity.SetBonus is { } set) Console.WriteLine($"{indent}set: {string.Join(", ", set)}");
+        if (entity.SetBonus is { } set)
+        {
+            Console.WriteLine($"{indent}set: {string.Join(", ", set.Select(bonus => bonus.Name))}");
+        }
         if (entity.SetCount is { } pieces) Console.WriteLine($"{indent}pieces: {pieces}");
         if (entity.AllowedRoles is { } roles) Console.WriteLine($"{indent}roles: {string.Join(", ", roles)}");
         if (entity.AllowedAttributes is { } gates) Console.WriteLine($"{indent}attributes: {string.Join(", ", gates)}");

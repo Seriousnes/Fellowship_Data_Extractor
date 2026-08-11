@@ -116,8 +116,8 @@ public class TooltipDumpTests : BunitContext
 
         int?[] picks =
         [
-            First(row => row is ItemDocument { GrantsId: not null }),
-            First(row => row is ItemDocument { LegendaryStatIds.Count: > 0 }),
+            First(row => row is ItemDocument { Grants: not null }),
+            First(row => row is ItemDocument { LegendaryStats.Count: > 0 }),
             First(row => row is ItemDocument { SetBonus.Count: > 0 }),
             First(row => row is ItemDocument { GemSlot: true }),
             First(row => row is ItemDocument { UniqueEquipped: true }),

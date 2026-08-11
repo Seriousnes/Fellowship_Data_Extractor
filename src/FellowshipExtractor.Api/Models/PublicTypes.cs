@@ -28,6 +28,7 @@ public static class PublicTypes
         (EntityType.Talent, "Talents", "talent", "Characters"),
         (EntityType.TalentSlot, "Talent Slots", "talent slot", "Characters"),
         (EntityType.Creature, "Creatures", "creature", "Characters"),
+        (EntityType.Dungeon, "Dungeons", "dungeon", "Characters"),
         (EntityType.CompanionPet, "Companion Pets", "companion pet", "Characters"),
         (EntityType.Mount, "Mounts", "mount", "Characters"),
         (EntityType.MountPower, "Mount Powers", "mount power", "Characters"),
@@ -37,7 +38,7 @@ public static class PublicTypes
     [
         EntityType.Item, EntityType.Ability, EntityType.Effect, EntityType.Talent,
         EntityType.Blessing, EntityType.GemTrait, EntityType.Trait, EntityType.SetBonus,
-        EntityType.GemType, EntityType.Creature, EntityType.Mount, EntityType.CompanionPet,
+        EntityType.GemType, EntityType.Creature, EntityType.Dungeon, EntityType.Mount, EntityType.CompanionPet,
         EntityType.Currency, EntityType.LegendaryPower, EntityType.WeaponPower,
         EntityType.RelicPower, EntityType.TraitPower, EntityType.SetBonusPower,
     ];

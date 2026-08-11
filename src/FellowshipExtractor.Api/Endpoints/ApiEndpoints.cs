@@ -16,6 +16,7 @@ public static class ApiEndpoints
         app.MapCompanionPet();
         app.MapCreature();
         app.MapCurrency();
+        app.MapDungeon();
         app.MapEffect();
         app.MapGem();
         app.MapGemTrait();

@@ -141,7 +141,7 @@ public sealed class CodexViewService(
     }
 
     public string Href(EntityType type, int id) =>
-        $"/entity/{EntityTypes.Slug(type)}/{id.ToString(CultureInfo.InvariantCulture)}";
+        $"/{EntityTypes.Slug(type)}/{id.ToString(CultureInfo.InvariantCulture)}";
 
     public string Tip(EntityDocument document)
     {
@@ -206,28 +206,11 @@ public sealed class CodexViewService(
 
             if (text.Length == 0) continue;
 
-            var points = Points(document, property.Name, value);
-
-            facts.Add((Heading(document, property.Name), text, Unit(property.Name), points?.Href, points?.Tip));
+            facts.Add((Models.Codex.Spaced(property.Name), text, Unit(property.Name), null, null));
         }
 
         return facts;
     }
-
-    private (string Href, string? Tip)? Points(EntityDocument document, string property, object value) =>
-        document switch
-        {
-            TraitDocument when property == nameof(TraitDocument.PowerId) && value is int id => Addresses(EntityType.TraitPower, id),
-            SetBonusDocument when property == nameof(SetBonusDocument.PowerId) && value is int id =>
-                Addresses(EntityType.SetBonusPower, id),
-            TalentSlotDocument when property == nameof(TalentSlotDocument.TalentId) && value is int id =>
-                Addresses(EntityType.Talent, id),
-            GemTraitDocument when property == nameof(GemTraitDocument.ReplacesId) && value is int id =>
-                Addresses(EntityType.GemTrait, id),
-            ItemDocument when property == nameof(ItemDocument.GrantsId) && value is int id &&
-                store.GrantedPower(id) is { } found => Addresses(found.Type, found.Id),
-            _ => null,
-        };
 
     public (string Href, string? Tip)? Addresses(EntityType type, int id) =>
         store.All(type, id) is { Count: > 0 } readings ? (Href(type, id), Tip(readings[0])) : null;
@@ -248,10 +231,15 @@ public sealed class CodexViewService(
     {
         nameof(EntityDocument.Id), nameof(EntityDocument.Name),
         nameof(AbilityDocument.Description), nameof(ItemDocument.Icon), nameof(GemTypeDocument.OverflowDescription),
+        nameof(DungeonDocument.Background),
     };
 
     private static bool Hidden(EntityDocument document, string property) => document switch
     {
+        CreatureDocument => property is nameof(CreatureDocument.Health) or nameof(CreatureDocument.Scaling)
+            or nameof(CreatureDocument.Armor) or nameof(CreatureDocument.Resist)
+            or nameof(CreatureDocument.Intellect) or nameof(CreatureDocument.Strength)
+            or nameof(CreatureDocument.Agility),
         GemTypeDocument => property == nameof(GemTypeDocument.Attribute),
         ItemDocument => property is nameof(ItemDocument.Rarity) or nameof(ItemDocument.Rarities)
             or nameof(ItemDocument.RuleSet),
@@ -260,19 +248,11 @@ public sealed class CodexViewService(
         _ => false,
     };
 
-    private static string Heading(EntityDocument document, string property) => document switch
-    {
-        TraitDocument when property == nameof(TraitDocument.PowerId) => PublicTypes.Label(EntityType.TraitPower),
-        SetBonusDocument when property == nameof(SetBonusDocument.PowerId) => PublicTypes.Label(EntityType.SetBonusPower),
-        TalentSlotDocument when property == nameof(TalentSlotDocument.TalentId) => PublicTypes.Label(EntityType.Talent),
-        GemTraitDocument when property == nameof(GemTraitDocument.ReplacesId) => PublicTypes.Label(EntityType.GemTrait),
-        _ => Models.Codex.Spaced(property),
-    };
-
     private static string? Unit(string property) => property switch
     {
         nameof(AbilityDocument.CastTime) or nameof(AbilityDocument.ChannelTime) or nameof(AbilityDocument.ChannelTick)
-            or nameof(AbilityDocument.Cooldown) or nameof(AbilityDocument.Duration) or nameof(AbilityDocument.Period) => "s",
+            or nameof(AbilityDocument.Cooldown) or nameof(AbilityDocument.Duration) or nameof(AbilityDocument.Period)
+            or nameof(DungeonDocument.QualifierTime) => "s",
         _ => null,
     };
 
@@ -448,6 +428,14 @@ public sealed class CodexViewService(
 
         if (token.Value is { } value)
         {
+            if (token.Format == Excess)
+            {
+                var excess = (decimal)value - 1m;
+                var printed = (excess * 100m).Normalize().ToString(CultureInfo.InvariantCulture) + "%";
+
+                return (excess < 0 ? printed : "+" + printed, true);
+            }
+
             if (token.Percent == true || token.Format == Share)
             {
                 var share = token.Multiplies == true ? (decimal)value - 1m : (decimal)value;

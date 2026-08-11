@@ -85,6 +85,34 @@ public static class StatQuery
         return new TooltipQuery { Stats = values, Attributes = attributes };
     }
 
+    public static IReadOnlyList<string> Rolled(
+        RolledStats? given, StatParameters stats, IReadOnlyList<string> pool, out string? error)
+    {
+        error = null;
+
+        if (given is not { Values.Count: > 0 }) return [];
+
+        var rollable = new HashSet<string>(pool, StringComparer.OrdinalIgnoreCase);
+        var resolved = new List<string>(given.Values.Count);
+
+        foreach (var name in given.Values)
+        {
+            var stat = stats.Resolve(name) ?? (rollable.Contains(name) ? name : null);
+
+            if (stat is null || !rollable.Contains(stat))
+            {
+                error =
+                    $"'{name}' is not a stat a random slot rolls. " +
+                    $"The pool is {string.Join(", ", pool)}.";
+                return [];
+            }
+
+            resolved.Add(rollable.TryGetValue(stat, out var filed) ? filed : stat);
+        }
+
+        return resolved;
+    }
+
     public static IResult Unreadable(string error, StatParameters stats) => Results.Problem(
         title: "The request parameters could not be read.",
         detail: $"{error} Stat parameters are {string.Join(", ", stats.Names)}.",

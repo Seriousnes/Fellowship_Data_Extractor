@@ -1,4 +1,4 @@
-@page "/entity/{slug}/{id:int}"
+@page "/{slug}/{id:int}"
 @inject ICodexViewService Ui
 @inject ICodexService Catalog
 @inject IEntityStoreService Store
@@ -15,7 +15,7 @@
     <CascadingValue Value="Here">
         <div class="cx-entity">
             <div class="cx-entity-top">
-                <div class="cx-entity-tip" data-stage="@Address" aria-live="polite">
+                <div class="cx-entity-tip" data-stage="@Address" data-restage="@Restage" aria-live="polite">
                     <Tooltip Entity="Shown" Query="Asking" Hero="Wearer" />
                 </div>
 
@@ -54,19 +54,45 @@
 
     private string Under => $"/browse?type={EntityTypes.Slug(type)}";
 
+    private static readonly string[] Own = ["hero", "state"];
+
+    private IReadOnlyDictionary<string, string> Asked_
+    {
+        get
+        {
+            var asked = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (key, values) in Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(
+                new Uri(Nav.Uri).Query))
+            {
+                if (values.FirstOrDefault() is { Length: > 0 } value) asked[key] = value;
+            }
+
+            return asked;
+        }
+    }
+
+    private IReadOnlyDictionary<string, string> Forwarded =>
+        Asked_.Where(pair => !Own.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
+            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
+
+    private string? Restage => Forwarded.Count > 0 ? string.Empty : null;
+
     private string Address
     {
         get
         {
             var where = Ui.Tip(Shown);
 
-            return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(
-                where,
-                new Dictionary<string, string?>(StringComparer.Ordinal)
-                {
-                    ["hero"] = where.Contains('?') ? null : Drawn,
-                    ["state"] = Cards.DrawsState(Shown) && !string.IsNullOrWhiteSpace(State) ? State : null,
-                });
+            var carried = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["hero"] = where.Contains('?') ? null : Drawn,
+                ["state"] = Cards.DrawsState(Shown) && !string.IsNullOrWhiteSpace(State) ? State : null,
+            };
+
+            foreach (var (key, value) in Forwarded) carried[key] = value;
+
+            return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(where, carried);
         }
     }
 
@@ -120,6 +146,7 @@
             Noun = PublicTypes.Noun(type),
             Id = Id,
             Related = Nearby(),
+            Asked = Asked_,
         };
     }
 

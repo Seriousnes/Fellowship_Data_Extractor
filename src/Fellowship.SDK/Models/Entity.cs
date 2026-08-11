@@ -25,7 +25,7 @@ public sealed record Entity
 
     public IReadOnlyList<string>? Heroes { get; init; }
 
-    public IReadOnlyList<string>? SetBonus { get; init; }
+    public IReadOnlyList<IconSource>? SetBonus { get; init; }
 
     public int? SetCount { get; init; }
 
@@ -147,11 +147,53 @@ public sealed record Entity
 
     public IReadOnlyList<string>? ApplierTags { get; init; }
 
+    public CreatureRank? Rank { get; init; }
+
+    public double? Health { get; init; }
+
+    public double? Armor { get; init; }
+
+    public double? Resist { get; init; }
+
+    public int? KillScore { get; init; }
+
+    public int? SpiritPoints { get; init; }
+
+    public bool? CountsTowardScore { get; init; }
+
+    public double? Intellect { get; init; }
+
+    public double? Strength { get; init; }
+
+    public double? Agility { get; init; }
+
+    public string? Scaling { get; init; }
+
+    public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
+
+    public IReadOnlyList<PhaseAbility>? Abilities { get; init; }
+
+    public IReadOnlyList<PhaseAbility>? Passives { get; init; }
+
+    public IReadOnlyList<IconSource>? FoundIn { get; init; }
+
+    public string? Background { get; init; }
+
+    public int? MaxPlayers { get; init; }
+
+    public double? QualifierTime { get; init; }
+
+    public int? RequiredScore { get; init; }
+
+    public int? MinimumHeroRank { get; init; }
+
     [JsonIgnore]
     public IReadOnlyList<Variant>? Variants { get; init; }
 }
 
 public sealed record IconSource(string Table, int NetId, string Name);
+
+public sealed record PhaseAbility(IconSource Ability, string Phase, bool Shown);
 
 public sealed record GemOverflow(string Description)
 {

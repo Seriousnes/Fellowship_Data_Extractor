@@ -28,7 +28,7 @@ public class ScopedTests : BunitContext
         var slug = EntityTypes.Slug(EntityType.Item);
         var markup =
             "<p class=\"cx-note\">belongs to " +
-            $"<a href=\"/entity/{slug}/12\" data-tip=\"/api/{slug}/12/tooltip\">Old Boots</a>" +
+            $"<a href=\"/{slug}/12\" data-tip=\"/api/{slug}/12/tooltip\">Old Boots</a>" +
             ", which is where it was taken from.</p>";
 
         Assert.Equal(markup, markup.Bare());

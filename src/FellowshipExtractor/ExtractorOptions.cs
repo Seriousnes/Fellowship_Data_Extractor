@@ -6,6 +6,8 @@ public sealed class ExtractorOptions
 {
     public const string DefaultInstallDir = @"C:\Program Files (x86)\Steam\steamapps\common\Fellowship";
 
+    public const string MappingsName = "fellowship.usmap";
+
     public string InstallDir { get; init; } = DefaultInstallDir;
 
     public EGame Game { get; init; } = EGame.GAME_UE5_5;
@@ -24,6 +26,13 @@ public sealed class ExtractorOptions
     }
 
     public string? MappingsFile { get; init; }
+
+    public string GeneratedMappingsFile => Path.Combine(ResolvedOutputDir, MappingsName);
+
+    public string? ResolvedMappingsFile =>
+        MappingsFile is { Length: > 0 } named ? named
+            : File.Exists(GeneratedMappingsFile) ? GeneratedMappingsFile
+                : null;
 
     public string OutputDir { get; init; } =
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "output");

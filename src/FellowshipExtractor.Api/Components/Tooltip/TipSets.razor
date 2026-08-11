@@ -4,7 +4,7 @@
 {
     <div class="grp">
         <div class="sec setbonus"><img class="gi" alt="" src="@Ui.Chrome.SetBonusBadge.Url"><span>Set Bonus</span></div>
-        <p class="desc">@string.Join(", ", sets)</p>
+        <p class="desc">@string.Join(", ", sets.Select(set => set.Name))</p>
     </div>
 }
 

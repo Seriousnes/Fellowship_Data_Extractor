@@ -1,19 +1,28 @@
 @inject ICodexViewService Ui
 
-<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+<Table Items="Drawn" T="CreatureDocument" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<CreatureDocument>(View, Ui.Codex)">
     <Columns>
-        <Column T="CreatureDocument" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row"><Art Entity="row" /></Content>
         </Column>
-        <Column T="CreatureDocument" Head="Name" Key="name">
+        <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column T="CreatureDocument" Head="Scales off" Class="cx-tags">
+        <Column Head="Rank" Key="rank" Class="cx-tags">
             <Content Context="row">
-                @foreach (var stat in Ui.Codex.Scaling(row.ScalesOff))
+                @if (row.Rank is { } rank)
                 {
-                    <Chip>@stat</Chip>
+                    <Chip>@rank</Chip>
+                }
+            </Content>
+        </Column>
+        <Column Head="Health" Key="health" Numeric Value="row => row.Health" />
+        <Column Head="Location" Key="location" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var dungeon in row.FoundIn ?? [])
+                {
+                    <Chip><Ref Entity="dungeon" /></Chip>
                 }
             </Content>
         </Column>

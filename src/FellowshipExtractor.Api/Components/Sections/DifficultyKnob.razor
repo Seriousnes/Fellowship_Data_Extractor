@@ -1,0 +1,25 @@
+@rendermode InteractiveServer
+@inject IEntityStoreService Store
+@inject NavigationManager Nav
+
+<select data-difficulty @onchange="Chose">
+    @foreach (var step in Difficulties.Ladder(Store.Settings))
+    {
+        <option value="@step.Difficulty" selected="@(step.Difficulty == Difficulty)">
+            @step.Label (@step.Difficulty)
+        </option>
+    }
+</select>
+
+@code {
+    [Parameter] public int Difficulty { get; set; }
+
+    private void Chose(ChangeEventArgs asked)
+    {
+        if (asked.Value is not string value || !int.TryParse(value, out var chosen)) return;
+
+        Nav.NavigateTo(Nav.GetUriWithQueryParameter(Asked, chosen));
+    }
+
+    public const string Asked = "difficulty";
+}

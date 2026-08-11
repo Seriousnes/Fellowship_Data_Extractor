@@ -50,7 +50,7 @@ public static class UsmapGenerateCommand
         }
 
         var ordered = schemas.Values.OrderBy(s => s.Name, StringComparer.Ordinal).ToArray();
-        var target = Path.Combine(options.ResolvedOutputDir, "fellowship.usmap");
+        var target = options.GeneratedMappingsFile;
         new UsmapWriter().Write(target, ordered, []);
 
         var size = new FileInfo(target).Length;

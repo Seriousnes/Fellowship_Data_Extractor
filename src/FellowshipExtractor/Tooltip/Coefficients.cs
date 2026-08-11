@@ -2,9 +2,63 @@ namespace FellowshipExtractor.Tooltip;
 
 public readonly record struct ResolvedCoefficient(string Key, string? Attribute, double Value);
 
+public readonly record struct NamedCoefficient(string Key, string Attribute, string? Part, double Value);
+
 public static class Coefficients
 {
     private const string Marker = "Coefficient";
+
+    public static IReadOnlyList<NamedCoefficient> All(
+        IReadOnlyDictionary<string, object?> constants,
+        IReadOnlySet<string> own,
+        IReadOnlySet<string> accountedFor)
+    {
+        var found = new List<NamedCoefficient>();
+
+        foreach (var (key, value) in constants)
+        {
+            if (value is not double number || number == 0) continue;
+            if (!own.Contains(key) || accountedFor.Contains(key)) continue;
+
+            var leaf = key[(key.LastIndexOf('.') + 1)..];
+            if (!leaf.EndsWith(Marker, StringComparison.Ordinal) || leaf.Length == Marker.Length) continue;
+
+            var prefix = leaf[..^Marker.Length];
+
+            if (Attributed(prefix) is not { } named) continue;
+
+            var path = key.Length > leaf.Length ? key[..^(leaf.Length + 1)] : null;
+
+            var part = (path, named.Qualifier) switch
+            {
+                (null, "") => null,
+                (null, { } qualifier) => qualifier,
+                ({ } under, "") => under,
+                ({ } under, { } qualifier) => $"{under}.{qualifier}",
+            };
+
+            found.Add(new NamedCoefficient(key, named.Attribute, part, number));
+        }
+
+        found.Sort((left, right) =>
+            string.CompareOrdinal(left.Part ?? string.Empty, right.Part ?? string.Empty) is var order && order != 0
+                ? order
+                : string.CompareOrdinal(left.Attribute, right.Attribute));
+
+        return found;
+    }
+
+    private static (string Attribute, string Qualifier)? Attributed(string prefix)
+    {
+        if (NamedByShippedText.GetValueOrDefault(prefix + Marker) is { } shipped) return (shipped, string.Empty);
+
+        foreach (var (row, named) in Attributes)
+        {
+            if (prefix.EndsWith(row, StringComparison.Ordinal)) return (named, prefix[..^row.Length]);
+        }
+
+        return null;
+    }
 
     private static readonly string[] Qualifiers =
         ["PerTick", "PerHit", "PerPulse", "PerStack", "PerSpeed", "Party"];
@@ -85,4 +139,15 @@ public static class Coefficients
 
     private static readonly HashSet<string> Known =
         new(Attributes.Select(a => a.Named), StringComparer.Ordinal);
+
+    private static readonly string[] Primary = ["Intellect", "Strength", "Agility"];
+
+    public static string Captured(string named, IReadOnlyList<string>? capturedAttributes)
+    {
+        if (!Primary.Contains(named, StringComparer.Ordinal)) return named;
+
+        var only = capturedAttributes?.Where(a => Primary.Contains(a, StringComparer.Ordinal)).ToArray() ?? [];
+
+        return only.Length == 1 ? only[0] : named;
+    }
 }

@@ -131,6 +131,41 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public async Task The_random_stats_the_caller_names_reach_the_card_as_named_lines()
+    {
+        const int EldrinSignet = 5220;
+
+        var response = await client.GetAsync(
+            $"/api/item/{EldrinSignet}/tooltip?hero=Rime&itemLevel=360&randomStats=Haste,Haste",
+            Xunit.TestContext.Current.CancellationToken);
+
+        var drawn = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+
+        Assert.True(response.IsSuccessStatusCode, drawn);
+
+        var at = drawn.IndexOf("<ul class=\"stats\">", StringComparison.Ordinal);
+        var stats = drawn[at..drawn.IndexOf("</ul>", at, StringComparison.Ordinal)];
+
+        Assert.Contains("16</span><span>Haste</span>", stats, StringComparison.Ordinal);
+        Assert.Contains("class=\"v random\"", stats, StringComparison.Ordinal);
+        Assert.DoesNotContain("[Random Stat]", stats, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_random_stat_no_slot_rolls_is_refused()
+    {
+        var (id, _) = Sample(EntityType.Item);
+
+        var response = await client.GetAsync(
+            $"/api/item/{id}/tooltip?randomStats=Armor", Xunit.TestContext.Current.CancellationToken);
+
+        var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("is not a stat a random slot rolls", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_hero_the_roster_does_not_carry_is_refused_by_the_record()
     {
         var (id, _) = Sample(EntityType.Item);
@@ -237,7 +272,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task An_entity_page_serves_its_name_colour_as_a_custom_property()
     {
-        var page = await client.GetStringAsync("/entity/item/5250", Xunit.TestContext.Current.CancellationToken);
+        var page = await client.GetStringAsync("/item/5250", Xunit.TestContext.Current.CancellationToken);
 
         Assert.Contains("--cx-name:#", page, StringComparison.Ordinal);
         Assert.Contains("var(--cx-rung, var(--cx-name))", page, StringComparison.Ordinal);
@@ -246,7 +281,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task An_entity_page_offers_more_like_this_and_the_browse_it_points_at_answers()
     {
-        var page = await client.GetStringAsync("/entity/item/5191", Xunit.TestContext.Current.CancellationToken);
+        var page = await client.GetStringAsync("/item/5191", Xunit.TestContext.Current.CancellationToken);
 
         Assert.Contains("More like this", page, StringComparison.Ordinal);
 
@@ -262,7 +297,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     public async Task An_entity_page_draws_the_node_state_its_url_asks_for()
     {
         var trait = Factory.Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null);
-        var where = $"/entity/{EntityTypes.Slug(EntityType.Trait)}/{trait.Id}";
+        var where = $"/{EntityTypes.Slug(EntityType.Trait)}/{trait.Id}";
 
         var asked = await client.GetStringAsync(
             $"{where}?state=unavailable", Xunit.TestContext.Current.CancellationToken);
@@ -282,10 +317,41 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var wearer = Uri.EscapeDataString(hero);
 
         var page = await client.GetStringAsync(
-            $"/entity/{slug}/{id}?hero={wearer}", Xunit.TestContext.Current.CancellationToken);
+            $"/{slug}/{id}?hero={wearer}", Xunit.TestContext.Current.CancellationToken);
 
         Assert.Contains(
             $"data-stage=\"/api/{slug}/{id}/tooltip?hero={wearer}\"", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_entity_page_carries_every_other_parameter_into_its_refetch_address()
+    {
+        var (id, hero) = Shared();
+        var slug = EntityTypes.Slug(EntityType.Item);
+        var wearer = Uri.EscapeDataString(hero);
+
+        var page = await client.GetStringAsync(
+            $"/{slug}/{id}?hero={wearer}&itemLevel=360&randomStats=Haste%2CHaste",
+            Xunit.TestContext.Current.CancellationToken);
+
+        var at = page.IndexOf("data-stage=\"", StringComparison.Ordinal) + "data-stage=\"".Length;
+        var address = page[at..page.IndexOf('"', at)];
+
+        Assert.Contains("itemLevel=360", address, StringComparison.Ordinal);
+        Assert.True(address.Contains("randomStats=Haste", StringComparison.Ordinal), address);
+        Assert.Contains("data-restage", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_entity_page_asked_for_nothing_extra_does_not_restage()
+    {
+        var (id, hero) = Shared();
+        var slug = EntityTypes.Slug(EntityType.Item);
+
+        var page = await client.GetStringAsync(
+            $"/{slug}/{id}?hero={Uri.EscapeDataString(hero)}", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain("data-restage", page, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -295,7 +361,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var slug = EntityTypes.Slug(EntityType.Trait);
 
         var page = await client.GetStringAsync(
-            $"/entity/{slug}/{trait.Id}?state=unavailable", Xunit.TestContext.Current.CancellationToken);
+            $"/{slug}/{trait.Id}?state=unavailable", Xunit.TestContext.Current.CancellationToken);
 
         Assert.Contains(
             $"data-stage=\"/api/{slug}/{trait.Id}/tooltip?state=unavailable\"", page, StringComparison.Ordinal);

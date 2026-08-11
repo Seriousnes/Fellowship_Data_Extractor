@@ -16,7 +16,19 @@ public sealed class TypeResolverTests
         ExportAllCommand.NotWritten(Resolver.Resolve(tag, icons: null).Single(), Branches);
 
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(22, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(23, Enum.GetValues<EntityType>().Length);
+
+    [Fact]
+    public void ALevelTagWithARowIsADungeonAndOneWithoutIsNothing()
+    {
+        var named = Tag(TypeResolver.LevelTable, "Level.ID.FrozenKingdom");
+
+        Assert.Equal(EntityType.Dungeon, Resolver.Types.Of(named, new Entity(), null));
+
+        var unnamed = new TagRecord(TypeResolver.LevelTable, "Level.ID.NoSuchLevel", 999_999, 0);
+
+        Assert.Null(Resolver.Types.Of(unnamed, new Entity(), null));
+    }
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
@@ -138,7 +150,7 @@ public sealed class TypeResolverTests
             .ToArray();
 
         Assert.Equal(338, creatures.Length);
-        Assert.Equal(106, empty.Length);
+        Assert.Equal(97, empty.Length);
         Assert.All(empty, row => Assert.Equal(EntityType.Creature, row.Type));
 
         Assert.Equal(
@@ -194,7 +206,8 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.Item, 5744)]
     [InlineData(EntityType.Effect, 3261)]
     [InlineData(EntityType.Ability, 2307)]
-    [InlineData(EntityType.Creature, 232)]
+    [InlineData(EntityType.Creature, 241)]
+    [InlineData(EntityType.Dungeon, 19)]
     [InlineData(EntityType.Talent, 216)]
     [InlineData(EntityType.TalentSlot, 216)]
     [InlineData(EntityType.Mount, 96)]
@@ -252,15 +265,15 @@ public sealed class TypeResolverTests
         var ids = Export.Loaded.Documents.Select(d => d.Id).ToHashSet();
 
         var legendary = Export.Loaded.Documents
-            .Where(d => d.Type == EntityType.Item && d.Body["legendaryStatIds"] is not null)
+            .Where(d => d.Type == EntityType.Item && d.Body["legendaryStats"] is not null)
             .ToArray();
 
         Assert.Equal(37, legendary.Length);
         Assert.All(legendary, item => Assert.All(
-            item.Body["legendaryStatIds"]!.AsArray(),
-            stat => Assert.Contains(stat!.GetValue<int>(), ids)));
+            item.Body["legendaryStats"]!.AsArray(),
+            stat => Assert.Contains(stat!["id"]!.GetValue<int>(), ids)));
 
-        Assert.All(legendary, item => Assert.Equal(3, item.Body["legendaryStatIds"]!.AsArray().Count));
+        Assert.All(legendary, item => Assert.Equal(3, item.Body["legendaryStats"]!.AsArray().Count));
     }
 
     [Fact]
@@ -271,6 +284,6 @@ public sealed class TypeResolverTests
 
         Assert.Equal(37, stated.Length);
         Assert.All(stated, item => Assert.Equal("Legendary", item.Body["rarity"]!.GetValue<string>()));
-        Assert.All(stated, item => Assert.NotNull(item.Body["legendaryStatIds"]));
+        Assert.All(stated, item => Assert.NotNull(item.Body["legendaryStats"]));
     }
 }

@@ -35,8 +35,13 @@ public sealed record ItemTooltipRequest
     [Description("The power potential to print.")]
     public decimal? PotentialPower { get; init; }
 
-    [Description("The armour to print above the stats the tooltip computes.")]
+    [Description("The armour to print in place of the one the tooltip computes from the item level.")]
     public decimal? Armor { get; init; }
+
+    [Description(
+        "The stats a random slot rolled, comma separated, named once per roll and without a magnitude, " +
+        "which the tooltip computes. Rolling a stat the item already declares aggregates into that line.")]
+    public RolledStats? RandomStats { get; init; }
 
     [Description(
         "A modifier the item carries as a kind token, an id and an amount separated by colons, " +
@@ -52,12 +57,16 @@ public sealed record ItemTooltipRequest
     [Description("Given as true when the imbued traits line is to be drawn whatever slot the item sits in.")]
     public bool? HasImbuedTraits { get; init; }
 
-    public TooltipQuery ToQuery(IQueryCollection raw, StatParameters stats, out string? error)
+    public TooltipQuery ToQuery(
+        IQueryCollection raw, StatParameters stats, IReadOnlyList<string> rollable, out string? error)
     {
         var read = StatQuery.Read(this, raw, stats, out error);
 
+        var rolled = error is null ? StatQuery.Rolled(RandomStats, stats, rollable, out error) : [];
+
         return read with
         {
+            RandomStats = rolled,
             Hero = StatQuery.Given(Hero),
             Rarity = StatQuery.Given(Rarity),
             ItemLevel = ItemLevel,
@@ -91,7 +100,8 @@ public static class ItemTooltipEndpoint
         ITooltipService tooltips,
         IEntityStoreService store)
     {
-        var query = request.ToQuery(http.Request.Query, store.Stats, out var error);
+        var query = request.ToQuery(
+            http.Request.Query, store.Stats, store.Settings.StatCalculation.RandomStatPool, out var error);
 
         return error is null
             ? tooltips.Get(EntityType.Item, request.Id, query)

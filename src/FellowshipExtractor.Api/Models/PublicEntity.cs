@@ -18,7 +18,7 @@ public sealed record PublicEntity
     public string? ArmorType { get; init; }
     public string? PrimaryStat { get; init; }
     public IReadOnlyList<string>? Heroes { get; init; }
-    public IReadOnlyList<string>? SetBonus { get; init; }
+    public IReadOnlyList<PublicReference>? SetBonus { get; init; }
     public int? SetCount { get; init; }
     public bool? UniqueEquipped { get; init; }
 
@@ -32,11 +32,17 @@ public sealed record PublicEntity
 
     public string? IconUrl { get; init; }
 
+    public string? BackgroundUrl { get; init; }
+
     public IReadOnlyDictionary<string, string>? IconUrlByRarity { get; init; }
 
     public PublicReference? ArtBorrowedFrom { get; init; }
 
     public PublicReference? NameBorrowedFrom { get; init; }
+
+    public PublicReference? Owner { get; init; }
+
+    public PublicReference? AppliedBy { get; init; }
 
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
@@ -52,6 +58,8 @@ public sealed record PublicEntity
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
+    public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
+
     public IReadOnlyList<PublicPlaceholder>? Placeholders { get; init; }
 
     public int? TalentRow { get; init; }
@@ -65,7 +73,7 @@ public sealed record PublicEntity
     public int? GemNode { get; init; }
     public int? RequiredGemPower { get; init; }
 
-    public int? Replaces { get; init; }
+    public PublicReference? Replaces { get; init; }
 
     public string? TraitCategory { get; init; }
     public int? MaxRank { get; init; }
@@ -74,11 +82,40 @@ public sealed record PublicEntity
     public IReadOnlyList<string>? AllowedRoles { get; init; }
     public IReadOnlyList<string>? AllowedAttributes { get; init; }
 
-    public PublicEntity? Grants { get; init; }
+    public PublicReference? Grants { get; init; }
 
-    public IReadOnlyList<PublicEntity>? LegendaryStats { get; init; }
+    public IReadOnlyList<PublicReference>? LegendaryStats { get; init; }
 
-    public static PublicEntity From(EntityDocument document, ICodexViewService view)
+    public PublicReference? Power { get; init; }
+
+    public PublicReference? Talent { get; init; }
+
+    public string? Rank { get; init; }
+    public double? Health { get; init; }
+    public double? Armor { get; init; }
+    public double? Resist { get; init; }
+    public int? KillScore { get; init; }
+    public int? SpiritPoints { get; init; }
+    public bool? CountsTowardScore { get; init; }
+    public double? Intellect { get; init; }
+    public double? Strength { get; init; }
+    public double? Agility { get; init; }
+    public string? Scaling { get; init; }
+
+    public IReadOnlyList<PublicCreatureAbility>? Abilities { get; init; }
+
+    public IReadOnlyList<PublicCreatureAbility>? Passives { get; init; }
+
+    public IReadOnlyList<PublicReference>? FoundIn { get; init; }
+
+    public int? MaxPlayers { get; init; }
+    public double? QualifierTime { get; init; }
+    public int? RequiredScore { get; init; }
+    public int? MinimumHeroRank { get; init; }
+
+    public IReadOnlyList<PublicReference>? Creatures { get; init; }
+
+    public static PublicEntity From(EntityDocument document, ICodexViewService view, string origin)
     {
         var tokens = CodexView.PlaceholdersOf(document);
         var tags = Codex.Schools(document);
@@ -93,7 +130,7 @@ public sealed record PublicEntity
             ArmorType = (document as ItemDocument)?.ArmorType?.ToString(),
             PrimaryStat = (document as ItemDocument)?.PrimaryStat?.ToString(),
             Heroes = HeroesOf(document),
-            SetBonus = (document as ItemDocument)?.SetBonus,
+            SetBonus = References((document as ItemDocument)?.SetBonus, view, origin),
             SetCount = (document as SetBonusDocument)?.Pieces,
             UniqueEquipped = (document as ItemDocument)?.UniqueEquipped,
 
@@ -105,9 +142,12 @@ public sealed record PublicEntity
                 ? [.. lines.Select(line => view.PlainText(line, tokens, tags)!)]
                 : null,
             IconUrl = DocumentFields.Text(document, nameof(ItemDocument.Icon)) is { } icon ? view.Icon(icon) : null,
+            BackgroundUrl = (document as DungeonDocument)?.Background is { } behind ? view.Icon(behind) : null,
             IconUrlByRarity = Art(document, view),
-            ArtBorrowedFrom = PublicReference.From((document as EffectDocument)?.ArtBorrowedFrom, view),
-            NameBorrowedFrom = PublicReference.From((document as EffectDocument)?.NameBorrowedFrom, view),
+            ArtBorrowedFrom = PublicReference.From((document as EffectDocument)?.ArtBorrowedFrom, view, origin),
+            NameBorrowedFrom = PublicReference.From((document as EffectDocument)?.NameBorrowedFrom, view, origin),
+            Owner = PublicReference.From(OwnerOf(document), view, origin),
+            AppliedBy = PublicReference.From((document as EffectDocument)?.AppliedBy, view, origin),
             CastTime = DocumentFields.Number(document, nameof(AbilityDocument.CastTime)),
             ChannelTime = DocumentFields.Number(document, nameof(AbilityDocument.ChannelTime)),
             ChannelTick = DocumentFields.Number(document, nameof(AbilityDocument.ChannelTick)),
@@ -120,6 +160,7 @@ public sealed record PublicEntity
             Duration = DocumentFields.Number(document, nameof(AbilityDocument.Duration)),
             Period = DocumentFields.Number(document, nameof(AbilityDocument.Period)),
             ScalesOff = Named(view.Codex.Scaling(DocumentFields.Words(document, nameof(AbilityDocument.ScalesOff)))),
+            Coefficients = (document as AbilityDocument)?.Coefficients,
             Placeholders = Tokens(tokens, tags, view),
             TalentRow = (document as TalentSlotDocument)?.Row,
             TalentColumn = (document as TalentSlotDocument)?.Column,
@@ -130,7 +171,7 @@ public sealed record PublicEntity
             Rarity = view.Rarity(document),
             GemNode = (document as GemTraitDocument)?.Node,
             RequiredGemPower = (document as GemTraitDocument)?.RequiredPower,
-            Replaces = (document as GemTraitDocument)?.ReplacesId,
+            Replaces = PublicReference.From((document as GemTraitDocument)?.Replaces, view, origin),
             TraitCategory = (document as TraitDocument)?.Category,
             MaxRank = (document as TraitDocument)?.MaxRank,
             RandomChance = (document as TraitDocument)?.RandomChance,
@@ -139,12 +180,72 @@ public sealed record PublicEntity
             AllowedAttributes = document is SetBonusDocument { AllowedAttributes: { } attributes }
                 ? [.. attributes.Select(attribute => attribute.ToString())]
                 : null,
-            Grants = Granted(document, view),
-            LegendaryStats = document is ItemDocument { LegendaryStatIds: { Count: > 0 } ids }
-                ? [.. ids.SelectMany(id => view.Store.All(EntityType.LegendaryStat, id)).Select(stat => From(stat, view))]
-                : null,
+            Grants = PublicReference.From((document as ItemDocument)?.Grants, view, origin),
+            LegendaryStats = References((document as ItemDocument)?.LegendaryStats, view, origin),
+            Power = PublicReference.From(PowerOf(document), view, origin),
+            Talent = PublicReference.From((document as TalentSlotDocument)?.Talent, view, origin),
+
+            Rank = (document as CreatureDocument)?.Rank?.ToString(),
+            Health = (document as CreatureDocument)?.Health,
+            Armor = (document as CreatureDocument)?.Armor,
+            Resist = (document as CreatureDocument)?.Resist,
+            KillScore = (document as CreatureDocument)?.KillScore,
+            SpiritPoints = (document as CreatureDocument)?.SpiritPoints,
+            CountsTowardScore = (document as CreatureDocument)?.CountsTowardScore,
+            Intellect = (document as CreatureDocument)?.Intellect,
+            Strength = (document as CreatureDocument)?.Strength,
+            Agility = (document as CreatureDocument)?.Agility,
+            Scaling = (document as CreatureDocument)?.Scaling,
+            Abilities = Wielded((document as CreatureDocument)?.Abilities, view, origin),
+            Passives = Wielded((document as CreatureDocument)?.Passives, view, origin),
+            FoundIn = References((document as CreatureDocument)?.FoundIn, view, origin),
+
+            MaxPlayers = (document as DungeonDocument)?.MaxPlayers,
+            QualifierTime = (document as DungeonDocument)?.QualifierTime,
+            RequiredScore = (document as DungeonDocument)?.RequiredScore,
+            MinimumHeroRank = (document as DungeonDocument)?.MinimumHeroRank,
+            Creatures = document is DungeonDocument dungeon ? Found(dungeon, view, origin) : null,
         };
     }
+
+    private static EntityReference? OwnerOf(EntityDocument document) => document switch
+    {
+        AbilityDocument ability => ability.Owner,
+        EffectDocument effect => effect.Owner,
+        _ => null,
+    };
+
+    private static EntityReference? PowerOf(EntityDocument document) => document switch
+    {
+        TraitDocument trait => trait.Power,
+        SetBonusDocument bonus => bonus.Power,
+        _ => null,
+    };
+
+    private static IReadOnlyList<PublicReference>? References(
+        IReadOnlyList<EntityReference>? sources, ICodexViewService view, string origin) =>
+        sources?.Select(source => PublicReference.From(source, view, origin)).OfType<PublicReference>().ToArray()
+            is { Length: > 0 } named
+            ? named
+            : null;
+
+    private static IReadOnlyList<PublicCreatureAbility>? Wielded(
+        IReadOnlyList<CreatureAbility>? held, ICodexViewService view, string origin) =>
+        held?.Select(slot => new PublicCreatureAbility(
+                PublicReference.From(slot.Ability, view, origin)!, slot.Phase, slot.Shown))
+            .ToArray() is { Length: > 0 } wielded
+            ? wielded
+            : null;
+
+    private static IReadOnlyList<PublicReference>? Found(
+        DungeonDocument dungeon, ICodexViewService view, string origin) =>
+        view.Store.Entities
+            .OfType<CreatureDocument>()
+            .Where(creature => creature.FoundIn?.Any(level => level.Id == dungeon.Id) is true)
+            .Select(creature => PublicReference.Of(EntityType.Creature, creature.Id, view, origin))
+            .ToArray() is { Length: > 0 } dwelling
+            ? dwelling
+            : null;
 
     private static IReadOnlyList<string>? HeroesOf(EntityDocument document) => document switch
     {
@@ -152,22 +253,6 @@ public sealed record PublicEntity
         TalentSlotDocument slot => [slot.Hero.ToString()],
         _ => null,
     };
-
-    private static PublicEntity? Granted(EntityDocument document, ICodexViewService view)
-    {
-        (EntityType Type, int Id)? address = document switch
-        {
-            ItemDocument { GrantsId: { } id } => view.Store.GrantedPower(id),
-            TraitDocument { PowerId: { } id } => (EntityType.TraitPower, id),
-            SetBonusDocument { PowerId: { } id } => (EntityType.SetBonusPower, id),
-            TalentSlotDocument slot => (EntityType.Talent, slot.TalentId),
-            _ => null,
-        };
-
-        if (address is not { } found) return null;
-
-        return view.Store.All(found.Type, found.Id) is { Count: > 0 } readings ? From(readings[0], view) : null;
-    }
 
     private static string? GemTypeName(EntityDocument document) => document switch
     {
@@ -211,12 +296,24 @@ public sealed record PublicEntity
 
 public sealed record PublicStatSlot(string Stat, int Weight, string Kind);
 
-public sealed record PublicReference(string Type, int Id, string Name)
+public sealed record PublicReference(string Type, int Id, string Name, string Resource)
 {
-    public static PublicReference? From(EntityReference? source, ICodexViewService view) =>
-        source is null ? null : new PublicReference(
-            EntityTypes.Slug(source.Type), source.Id, view.Name(source.Type, source.Id));
+    public static PublicReference? From(EntityReference? source, ICodexViewService view, string origin) =>
+        source is null ? null : Of(source.Type, source.Id, view, origin);
+
+    public static PublicReference Of(EntityType type, int id, ICodexViewService view, string origin)
+    {
+        var slug = EntityTypes.Slug(type);
+
+        return new PublicReference(
+            slug,
+            id,
+            view.Name(type, id),
+            $"{origin}/api/{slug}/{id.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+    }
 }
+
+public sealed record PublicCreatureAbility(PublicReference Ability, string Phase, bool Shown);
 
 public sealed record PublicPlaceholder
 {

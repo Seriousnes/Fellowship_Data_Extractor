@@ -4,6 +4,10 @@
 {
     <BlessingCrest Entity="blessing" Width="PlateWidth" />
 }
+else if (Entity is DungeonDocument dungeon)
+{
+    <img class="cx-banner-art" alt="" loading="lazy" src="@Ui.Icon(dungeon.Icon)" />
+}
 else
 {
     <Icon Src="@Ui.Icon(DocumentFields.Text(Entity, nameof(ItemDocument.Icon)))"

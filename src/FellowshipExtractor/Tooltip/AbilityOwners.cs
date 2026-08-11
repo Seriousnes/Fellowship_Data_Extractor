@@ -6,6 +6,8 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Tooltip;
 
+public readonly record struct CreatureSlot(string Ability, string Phase, bool Shown, bool Passive);
+
 public sealed class AbilityOwners
 {
     private const string AbilitySetClass = "CRGameplayAbilitySet";
@@ -39,6 +41,7 @@ public sealed class AbilityOwners
     private const string PhaseAbilityField = "AbilityClass";
     private const string PhaseEffectsField = "Effects";
     private const string PhaseEffectField = "Effect";
+    private const string ShowOnUiField = "ShowOnUI";
     private const string LifetimeAbilitiesField = "LifetimePassiveAbilities";
     private const string LifetimeEffectsField = "LifetimePassiveEffects";
     private const string PassiveEffectsField = "PassiveGameplayEffects";
@@ -55,6 +58,10 @@ public sealed class AbilityOwners
         new(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<string, string> _creatures = new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly Dictionary<string, List<CreatureSlot>> _wielded =
+        new(StringComparer.OrdinalIgnoreCase);
+
     private readonly Dictionary<string, string> _outsiders = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _appliers = new(StringComparer.OrdinalIgnoreCase);
 
@@ -105,6 +112,9 @@ public sealed class AbilityOwners
         _heroes.TryGetValue(name, out var owners) ? [.. owners] : [];
 
     public string? CreatureOf(string name) => _creatures.GetValueOrDefault(name);
+
+    public IReadOnlyList<CreatureSlot> WieldedBy(string creature) =>
+        _wielded.TryGetValue(creature, out var slots) ? slots : [];
 
     public string? ApplierOf(string name) => _appliers.GetValueOrDefault(name);
 
@@ -257,15 +267,31 @@ public sealed class AbilityOwners
             if (!_byName.TryGetValue(tag.Name, out var asset)) continue;
             if (DungeonNames.Load(_provider, asset.ObjectPath) is not { } creature) continue;
 
-            foreach (var named in Owned(creature)) Owns(_creatures, named, tag.Name, wanted);
+            var slots = new List<CreatureSlot>();
+
+            foreach (var slot in Owned(creature))
+            {
+                Owns(_creatures, slot.Ability, tag.Name, wanted);
+
+                if (!wanted.Contains(slot.Ability)) continue;
+                if (slots.Any(held => held.Ability.Equals(slot.Ability, StringComparison.OrdinalIgnoreCase) &&
+                    held.Phase.Equals(slot.Phase, StringComparison.Ordinal))) continue;
+
+                slots.Add(slot);
+            }
+
+            if (slots.Count > 0) _wielded[tag.Name] = slots;
         }
     }
 
-    private IEnumerable<string> Owned(UObject creature)
+    private IEnumerable<CreatureSlot> Owned(UObject creature)
     {
         foreach (var field in (string[])[AbilitiesField, PassiveEffectsField])
         {
-            foreach (var named in Paths(creature, field)) yield return named;
+            foreach (var named in Paths(creature, field))
+            {
+                yield return new CreatureSlot(named, field, true, Passive: true);
+            }
         }
 
         if (PropertyWalk.GetString(creature, BehaviourField) is not { } behaviour) yield break;
@@ -274,21 +300,29 @@ public sealed class AbilityOwners
 
         foreach (var field in (string[])[LifetimeAbilitiesField, LifetimeEffectsField])
         {
-            foreach (var named in Paths(component, field)) yield return named;
+            foreach (var named in Paths(component, field))
+            {
+                yield return new CreatureSlot(named, field, true, Passive: true);
+            }
         }
 
         if (PropertyWalk.Get(component, PhasesField)?.GenericValue is not UScriptMap phases) yield break;
 
-        foreach (var (_, value) in phases.Properties)
+        foreach (var (key, value) in phases.Properties)
         {
             if (value?.GenericValue is not FScriptStruct { StructType: IPropertyHolder phase }) continue;
 
-            foreach (var named in Slotted(phase, AbilitiesField, PhaseAbilityField)) yield return named;
-            foreach (var named in Slotted(phase, PhaseEffectsField, PhaseEffectField)) yield return named;
+            var named = PropertyWalk.AsString(key?.GenericValue) is { } tag
+                ? HeroNames.LastSegment(tag)
+                : PhasesField;
+
+            foreach (var slot in Slotted(phase, AbilitiesField, PhaseAbilityField, named)) yield return slot;
+            foreach (var slot in Slotted(phase, PhaseEffectsField, PhaseEffectField, named)) yield return slot;
         }
     }
 
-    private static IEnumerable<string> Slotted(IPropertyHolder holder, string field, string member)
+    private static IEnumerable<CreatureSlot> Slotted(
+        IPropertyHolder holder, string field, string member, string phase)
     {
         if (PropertyWalk.Get(holder, field)?.GenericValue is not UScriptArray listed) yield break;
 
@@ -298,7 +332,8 @@ public sealed class AbilityOwners
             if (PropertyWalk.GetString(slot, member) is not { } path) continue;
             if (!path.Contains('/')) continue;
 
-            yield return Leaf(path);
+            yield return new CreatureSlot(
+                Leaf(path), phase, PropertyWalk.Get(slot, ShowOnUiField)?.GenericValue is not false, Passive: false);
         }
     }
 

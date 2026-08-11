@@ -12,7 +12,7 @@ public class DetailTests : BunitContext
     [Fact]
     public void A_nested_detail_draws_the_granted_power_and_not_the_record_that_grants_it()
     {
-        var outer = new ItemDocument { Id = 5246, GrantsId = 432 };
+        var outer = new ItemDocument { Id = 5246, Grants = new Fellowship.SDK.Models.EntityReference(EntityType.RelicPower, 432, "Conjure Portal") };
 
         var cut = Render<Detail>(p => p.Add(x => x.Entity, outer));
         var markup = cut.Markup;
@@ -46,7 +46,7 @@ public class DetailTests : BunitContext
     [Fact]
     public void Each_legendary_roll_draws_its_own_text_under_its_own_sub_head_and_survives_a_re_render()
     {
-        var entity = new ItemDocument { Id = 5216, LegendaryStatIds = [696, 695, 694] };
+        var entity = new ItemDocument { Id = 5216, LegendaryStats = [.. new[] { 696, 695, 694 }.Select(id => new Fellowship.SDK.Models.EntityReference(EntityType.LegendaryStat, id, null))] };
 
         var cut = Render<Detail>(p => p.Add(x => x.Entity, entity));
 

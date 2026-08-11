@@ -18,9 +18,14 @@ var storage = builder.AddAzureStorage("storage")
 
 var icons = storage.AddBlobContainer("icons", "icons");
 
-builder.AddProject<Projects.FellowshipExtractor>("extractor")
+var extractor = builder.AddProject<Projects.FellowshipExtractor>("extractor")
     .WithReference(icons)
     .WaitFor(icons)
     .WithArgs("export-all");
+
+if (Environment.GetEnvironmentVariable("FELLOWSHIP_USMAP") is { Length: > 0 } mappings)
+{
+    extractor.WithEnvironment("FELLOWSHIP_USMAP", Path.GetFullPath(mappings));
+}
 
 builder.InComposeStack(stack.Project, stack.Root).Build().Run();
