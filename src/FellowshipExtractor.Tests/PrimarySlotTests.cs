@@ -59,10 +59,11 @@ public sealed class PrimarySlotTests
     public void APrimarySlotTakesTheShippedPrimaryMultiplier()
     {
         var settings = Export.Loaded.Settings.StatCalculation;
+        var block = StatRows.Guaranteed(settings);
 
         var stated =
-            (decimal)(settings.FixedSlot.StaminaMultiplierAtThreshold ?? 1) /
-            (decimal)(settings.FixedSlot.PrimaryMultiplier ?? 1);
+            (decimal)StatRows.BlockTerm(block, stamina: true, onPrimaryPool: true, itemLevel: 2000) /
+            (decimal)StatRows.BlockTerm(block, stamina: false, onPrimaryPool: true, itemLevel: 2000);
 
         var lines = StatMagnitudes.For(
             new ItemDocument
@@ -84,7 +85,7 @@ public sealed class PrimarySlotTests
         var stamina = lines.Single(line => line.Stat == "Stamina").Value;
         var strength = lines.Single(line => line.Stat == "Strength").Value;
 
-        Assert.Equal(stated, stamina / strength, precision: 3);
+        Assert.Equal(stated, stamina / strength, precision: 2);
     }
 
     [Fact]

@@ -71,7 +71,54 @@ gives 1.5, nowhere near.
 
 A multiplier a block leaves at its default now reads the fixed-slot block's shipped value.
 
-## The stat magnitude, solved
+## The stat magnitude, read out of the binary
+
+Superseding everything below it in this file. The whole calculation was recovered by disassembling
+`UCRDynamicHeroItem`'s virtual at **0x1455D33F0**, reached through vtable slot +0x2D0. Per stat row,
+in float, in this order:
+
+```
+pool      = Stamina, Strength, Intellect, Agility or Power
+              ? PrimaryAndStaminaMultiplier x PrimaryPowerBase ^ (itemLevel / PrimaryDivisible) x sqrt(itemLevel)
+              : SecondaryMultiplier x sqrt(itemLevel x SecondaryBaseMultiplier)
+blockTerm = Stamina        ? StaminaWeight x (itemLevel >= Threshold ? AtThreshold : 1) / WeightMultiplier x PrimaryMultiplier
+          : primary group  ? PrimaryWeight / WeightMultiplier x PrimaryMultiplier
+          :                  SecondaryWeight / WeightMultiplier x SecondaryMultiplier
+m         = pow(StatRarityBase, -StatRarityExponents[rarity]) x pool x DT_SlotWeights.StatWeight x blockTerm
+m         = m x weights[min(rowOrdinal, weights.Length - 1)]
+m         = max(m, 1)
+m         = m + (the row is a declared slot ? TimesUpgraded : 0)
+printed   = roundHalfToEven(m)
+```
+
+`weights` is each declared weight over 100 with one trailing `max(100 - sum, 0) / 100`, so `22.22.40`
+gives `[0.22, 0.22, 0.40, 0.16]` and every roll past the end repeats the 0.16. The integer division in
+the primary pool is integer, then cast.
+
+For this build: primary pool `10 x 1.03^(L/15) x sqrt(L)`, secondary `2.4 x sqrt(72L)`; declared rows
+take `BaseItemSlotCalculationSettings` and rolled rows `FixedSlotCalculationSettings`; the rarity term
+is exactly 1 at every tier because the asset sets `StatRarityBase` to 1.
+
+**Tempering adds exactly the temper count, once, to a declared row.** The instructions are
+`0x1455D37EB cmp byte [r14],0`, `0x1455D380A jne`, `0x1455D3813 movd xmm1,[rax+30h]`, `cvtdq2ps`,
+`0x1455D381B addss xmm0,xmm1`, with +0x30 confirmed as `TimesUpgraded` against the reflection records.
+`MaxAllowedUpgrades` is never read. A slot emits no row at all unless its `ContentType` is 0.
+
+Everything the reconstruction below got wrong was three compensating errors at once: the pools came
+from `HeroItemStatCalculation`'s Blueprint functions, which the magnitude path never calls, instead of
+the natives `PrimaryStatPowerFromItemLevel` and `SecondaryStatPowerFromItemLevel`; weights were
+normalised against the declared sum instead of 100; and the multipliers came from the fixed block
+rather than the base block. For a rating those cancel to within 1 per cent, for the wearer's attribute
+6 per cent and for Stamina 12 per cent, which was the entire residual.
+
+The block fields the asset omits are C++ constructor defaults, not zero: `PrimaryWeight` 0.25,
+`SecondaryWeight` 0.3, `StaminaWeight` 0.5, `PrimaryMultiplier` 0.7, `WeightMultiplier` 0.15,
+`StaminaMultiplierItemLevelThreshold` 315, and `SecondaryMultiplier` 0.6 on the base block and 1.5 on
+the fixed block. They live in `StatRows` because no shipped file carries them.
+
+`GroundTruthTests` pins all fifteen in-game readings, tempered and untempered.
+
+## The stat magnitude, as it was reconstructed before the disassembly
 
 ```
 share            = a stat on the primary pool takes weight / (the item's own weight total)
@@ -194,19 +241,63 @@ Witchslayer's pants read 617 at 0 of 8 and again at 8 of 8.
 `CRDynamicItemStatSettings` has no temper field, and `GetAverageItemTemperTier` is the only
 temper-named function in all 7,715 Blueprint classes, so the arithmetic is native.
 
-The pants pair does not settle it and no factor is fitted from it. Read as a uniform multiplier its
-Intellect asks for 2.33 while its Stamina asks for about 1.24, and one factor cannot be both. Three
-confounds sit on that pair: which lines carry rolls, what the modifier each instance holds
-contributes, and a white-name against turned-magnitude distinction that is a pixel or two wide at
-that resolution.
+Now that the untempered magnitude is exact, every tempered reading states its own surplus. Against a
+flat **+1 per temper** applied to the untempered value:
 
-One hypothesis remains open. Taking each printed line of the two 8 of 8 items minus what is computed,
-the surplus splits across stamina, the hero attribute and the secondary stat as 0.557 : 0.135 : 0.307
-on Darkfrost Arms and 0.585 : 0.161 : 0.254 on the pants, near the shipped 0.5 stamina and 0.3
-secondary. That is the shape of a temper adding a budget rather than scaling one, and it is
-falsifiable: **an additive temper predicts that two items differing only in declared weight converge
-in their tempered stamina-to-primary ratio, while a multiplicative one preserves the untempered ratio
-exactly.**
+| Reading | Level, tempers | Base | Base + n | Prints |
+| --- | --- | --- | --- | --- |
+| Betrayer's Icy Veil, Critical Strike | 195, 3 | 4.84 | 8 | 8 |
+| Baneful Web Shroud, Intellect | 285, 4 | 2.51 | 7 | 7 |
+| Baneful Web Shroud, Haste | 285, 4 | 5.64 | 10 | 10 |
+| Witchslayer's pants, Intellect | 315, 8 | 5.54 | 14 | 14 |
+| Darkfrost Arms, Strength | 315, 8 | 8.76 | 17 | 17 |
+| Darkfrost Arms, Haste | 315, 8 | 19.32 | 27 | 27 |
+| Sinbinding Stone, Intellect | 315, 8 | 6.08 | 14 | 14 |
+| Sinbinding Stone, Critical Strike | 315, 8 | 7.38 | 15 | 15 |
+| Vaultbinder's helm, Strength | 315, 8 | 8.11 | 16 | 17 |
+
+**Eight of the nine land exactly**, across three item levels, four slots and three temper counts, and
+the ninth is the one reading supplied as prose rather than a screenshot.
+
+**Stamina does not follow it, and the stamina readings do not agree with each other.** Their surplus
+per temper is 1.28 at 195, **0.29** at 285, and 1.60, 1.36 and 1.37 at 315, so the Baneful Web Shroud
+would need a temper to give a stamina line barely a quarter of what every other item's gives. No
+single rule covers all five, and a rule fitted to four of them contradicts the fifth.
+
+Nothing is written into the code, because the rule that fits the primary attribute and the ratings
+does not fit Stamina, and a tooltip that tempered two of its three lines would be wrong in a way that
+is harder to see than one that tempers none.
+
+### The effect is in no shipped file, and this is the search that establishes it
+
+`CRDynamicItemSettings` names the complete input set of the dynamic item stat system, and every one
+has been read:
+
+| Input | Holds |
+| --- | --- |
+| `DT_StatWeightConfiguration` | three weight rows, `22.22.40`, `40.17.27`, `28.28.28` |
+| `DT_DynamicHeroItemSlotDefinition` | which stat each slot is and the random stat pool |
+| `DT_DynamicHeroItemLootRarityRuleSets` | how many slots each rung grants |
+| `CT_DynamicHeroItemLootRarityDropChance` | drop weighting by difficulty |
+| `CT_ItemRarityAndLevelToMaxTempers` | the tempering **ceiling** only |
+| `DT_DynamicItemGemSocketMapping` | gem sockets |
+| `DA_StatCalculationSettings` | the pools' multipliers, and no temper field |
+| `HeroItemStatCalculation_C` | the two pool formulas, which take item level and nothing else |
+
+Beyond that set: the 32 item tables under `Content/Items` hold nothing keyed by tempers except
+`CT_DungeonRewardItemTimesUpgraded` and `CT_DungeonRewardMaxItemUpgrades`, which state how many
+tempers a dungeon reward **drops with** by difficulty. None of the 140 shipped `.ini` files carries a
+tempering magnitude; what `CRItemSettings` does carry is entirely cost-side - `TemperRarityMod`,
+`TemperTierMod`, `TemperItemSlotMod`, `TemperItemLevelCostExponentialFactor` and `ItemBaseCosts` -
+and `CRBackendSharedVars` mirrors exactly those four and nothing more. No Blueprint function computes
+an upgraded magnitude: `UW_ItemUpgradeStatRow` is handed `StatValueText` and `StatValueTextNew` as
+finished text, and `GetAverageItemTemperTier` is the only temper-named function in all 7,715
+Blueprint classes. `CRHeroItemInstance` stores `TimesUpgraded` as a bare integer beside `Level` and
+`ItemRarity`, and carries no magnitude, so the client computes the printed number from those three.
+
+The effect is therefore compiled into `DynamicLootSystemRuntime`. Recovering it means disassembling
+`fellowship-Win64-Shipping.exe`, which ships stripped: the reflection tables this repo already reads
+give property names and types, never function bodies.
 
 ## Line order
 

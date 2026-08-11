@@ -19,12 +19,6 @@ public static class StatMagnitudes
 
     private const string RandomStatLabel = "[Random Stat]";
 
-    private const decimal NativeFactor = 1.08m;
-
-    private const decimal StaminaRollShare = 0.375m;
-
-    private const decimal PrimaryRollShare = 0.125m;
-
     public static IReadOnlyList<StatLine> For(
         ItemDocument item,
         StatCalculationFile calculation,
@@ -41,18 +35,38 @@ public static class StatMagnitudes
         if (item.Stats is not { Count: > 0 } && rolledSlots == 0 && armor is null) return [];
 
         var slotWeight = item.Slot is { } slot && calculation.SlotWeights.TryGetValue(slot, out var weights)
-            ? (decimal)weights.StatWeight
-            : 0m;
+            ? (float)weights.StatWeight
+            : 0f;
 
-        var primaryPool = Pool(calculation.PrimaryPool, itemLevel) * slotWeight;
-        var secondaryPool = Pool(calculation.SecondaryPool, itemLevel) * slotWeight;
+        var primaryPool = StatRows.PrimaryPool(calculation, itemLevel);
+        var secondaryPool = StatRows.SecondaryPool(itemLevel);
+
+        var declaredWeights = StatRows.Weights([.. (item.Stats ?? []).Select(slot => slot.Weight)]);
+        var guaranteedBlock = StatRows.Guaranteed(calculation);
+        var rolledBlock = StatRows.Rolled(calculation);
+        var tempers = Math.Max(0, query.Upgrades ?? 0);
+        var ordinal = 0;
+
+        decimal Row(string stat, bool guaranteed)
+        {
+            var onPrimaryPool = OnPrimaryPool(stat, primaryAttributes);
+            var stamina = stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase);
+
+            var magnitude = StatRows.Magnitude(
+                onPrimaryPool ? primaryPool : secondaryPool,
+                slotWeight,
+                StatRows.BlockTerm(guaranteed ? guaranteedBlock : rolledBlock, stamina, onPrimaryPool, itemLevel),
+                StatRows.Share(declaredWeights, ordinal++),
+                tempers,
+                guaranteed);
+
+            return StatRows.RoundHalfToEven(magnitude);
+        }
 
         var lines = new List<StatLine>();
         var taken = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         if (armor is { } worth) lines.Add(worth);
-
-        var budget = (item.Stats ?? []).Sum(slot => slot.Weight);
 
         foreach (var declared in item.Stats ?? [])
         {
@@ -62,51 +76,47 @@ public static class StatMagnitudes
             var named = query.Stats.TryGetValue(declared.Stat, out var values);
             var sent = named ? at < values!.Count ? values[at] : 0m : (decimal?)null;
 
-            var onPrimaryPool = OnPrimaryPool(declared.Stat, primaryAttributes);
-            var settings = declared.Kind == SlotKinds.Primary ? calculation.BaseSlot : calculation.FixedSlot;
-
-            var share = onPrimaryPool && budget > 0
-                ? (decimal)declared.Weight / budget
-                : declared.Weight / 100m;
-
-            var value = sent
-                ?? (onPrimaryPool ? primaryPool : secondaryPool)
-                    * share
-                    * Multiplier(settings, calculation.FixedSlot, declared.Stat, onPrimaryPool, primaryAttributes)
-                    * NativeFactor;
+            var value = sent is { } given
+                ? Round(given, calculation, declared.Stat)
+                : Row(declared.Stat, guaranteed: true);
 
             lines.Add(new StatLine(
-                declared.Stat,
-                Label(calculation, declared.Stat),
-                Round(value, calculation, declared.Stat),
-                declared.Kind,
-                Rolled: false));
+                declared.Stat, Label(calculation, declared.Stat), value, declared.Kind, Rolled: false));
         }
 
         var spare = Spare(item, query, taken);
+        var drawn = Math.Max(rolledSlots, spare.Count + query.RandomStats.Count);
 
-        foreach (var stat in query.RandomStats)
+        for (var index = 0; index < drawn; index++)
         {
-            spare.Add((stat, Roll(calculation, stat, primaryAttributes, primaryPool, secondaryPool)));
-        }
-
-        var spareAt = 0;
-
-        for (var index = 0; index < Math.Max(rolledSlots, spare.Count); index++)
-        {
-            if (spareAt < spare.Count)
+            if (index < spare.Count)
             {
-                var (stat, value) = spare[spareAt++];
+                var (stat, value) = spare[index];
                 lines.Add(new StatLine(
                     stat, Label(calculation, stat), Round(value, calculation, stat),
                     SlotKinds.Random, Rolled: true));
+                ordinal++;
+                continue;
+            }
+
+            if (index - spare.Count < query.RandomStats.Count)
+            {
+                var stat = query.RandomStats[index - spare.Count];
+                lines.Add(new StatLine(
+                    stat, Label(calculation, stat), Row(stat, guaranteed: false), SlotKinds.Random, Rolled: true));
                 continue;
             }
 
             lines.Add(new StatLine(
                 null,
                 RandomStatLabel,
-                Math.Round(Expected(calculation, primaryPool, secondaryPool), MidpointRounding.AwayFromZero),
+                StatRows.RoundHalfToEven(StatRows.Magnitude(
+                    secondaryPool,
+                    slotWeight,
+                    StatRows.BlockTerm(rolledBlock, stamina: false, onPrimaryPool: false, itemLevel),
+                    StatRows.Share(declaredWeights, ordinal++),
+                    tempers: 0,
+                    guaranteed: false)),
                 SlotKinds.Random,
                 Rolled: true));
         }
@@ -168,6 +178,9 @@ public static class StatMagnitudes
             slot.Equals(RandomStatSlot, StringComparison.OrdinalIgnoreCase));
     }
 
+    private static bool OnPrimaryPool(string stat, IReadOnlySet<string> primaryAttributes) =>
+        stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase) || primaryAttributes.Contains(stat);
+
     private static List<(string Stat, decimal Value)> Spare(
         ItemDocument item, TooltipQuery query, IReadOnlyDictionary<string, int> taken)
     {
@@ -180,80 +193,6 @@ public static class StatMagnitudes
 
         return spare;
     }
-
-    private static decimal Roll(
-        StatCalculationFile calculation,
-        string stat,
-        IReadOnlySet<string> primaryAttributes,
-        decimal primaryPool,
-        decimal secondaryPool)
-    {
-        var settings = calculation.DynamicSlot;
-
-        var onPrimaryPool = OnPrimaryPool(stat, primaryAttributes);
-
-        var share = stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase) ? StaminaRollShare
-            : onPrimaryPool ? PrimaryRollShare
-            : (decimal)(settings.SecondaryWeight ?? 0);
-
-        return (onPrimaryPool ? primaryPool : secondaryPool)
-            * share
-            * Multiplier(settings, calculation.FixedSlot, stat, onPrimaryPool, primaryAttributes)
-            * NativeFactor;
-    }
-
-    private static decimal Expected(StatCalculationFile calculation, decimal primaryPool, decimal secondaryPool)
-    {
-        var settings = calculation.DynamicSlot;
-
-        var stamina = (decimal)(settings.StaminaWeight ?? 0);
-        var secondary = (decimal)(settings.SecondaryWeight ?? 0);
-        var primary = Math.Max(0m, 1m - stamina - secondary);
-
-        var expected =
-            stamina * primaryPool * (decimal)(settings.StaminaMultiplierAtThreshold ?? 1) +
-            secondary * secondaryPool * (decimal)(settings.SecondaryMultiplier ?? 1) +
-            primary * primaryPool * (decimal)(settings.PrimaryMultiplier ?? 1);
-
-        return expected * (decimal)(settings.WeightMultiplier ?? 0) * NativeFactor;
-    }
-
-    private static bool OnPrimaryPool(string stat, IReadOnlySet<string> primaryAttributes) =>
-        stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase) || primaryAttributes.Contains(stat);
-
-    private static decimal Multiplier(
-        SlotStatSettings settings,
-        SlotStatSettings fallback,
-        string stat,
-        bool onPrimaryPool,
-        IReadOnlySet<string> primaryAttributes)
-    {
-        if (stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase))
-        {
-            return Shipped(settings.StaminaMultiplierAtThreshold, fallback.StaminaMultiplierAtThreshold);
-        }
-
-        if (onPrimaryPool && primaryAttributes.Contains(stat))
-        {
-            return Shipped(settings.PrimaryMultiplier, fallback.PrimaryMultiplier);
-        }
-
-        return Shipped(settings.SecondaryMultiplier, fallback.SecondaryMultiplier);
-    }
-
-    private static decimal Shipped(double? own, double? fallback) => (decimal)(own ?? fallback ?? 1);
-
-    private static decimal Pool(PrimaryStatPool? pool, int itemLevel) =>
-        pool is null || itemLevel < pool.MinimumItemLevel
-            ? 0m
-            : (decimal)(pool.Multiplier
-                * Math.Pow(pool.GrowthBase, itemLevel / pool.LevelDivisor)
-                * Math.Sqrt(itemLevel));
-
-    private static decimal Pool(SecondaryStatPool? pool, int itemLevel) =>
-        pool is null || itemLevel < pool.MinimumItemLevel
-            ? 0m
-            : (decimal)(pool.Multiplier * Math.Sqrt(itemLevel * pool.LevelMultiplier));
 
     private static string Label(StatCalculationFile calculation, string stat) =>
         calculation.Attributes.TryGetValue(stat, out var attribute) ? attribute.DisplayName : stat;
