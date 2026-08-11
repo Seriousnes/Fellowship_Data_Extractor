@@ -45,7 +45,7 @@
             <Content Context="row">
                 @foreach (var set in row.SetBonus ?? [])
                 {
-                    <Ref Entity="set" />
+                    <Chip><Ref Entity="set" /></Chip>
                 }
             </Content>
         </Column>

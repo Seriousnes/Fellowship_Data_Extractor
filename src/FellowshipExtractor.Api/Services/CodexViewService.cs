@@ -247,7 +247,8 @@ public sealed class CodexViewService(
     private static string? Unit(string property) => property switch
     {
         nameof(AbilityDocument.CastTime) or nameof(AbilityDocument.ChannelTime) or nameof(AbilityDocument.ChannelTick)
-            or nameof(AbilityDocument.Cooldown) or nameof(AbilityDocument.Duration) or nameof(AbilityDocument.Period) => "s",
+            or nameof(AbilityDocument.Cooldown) or nameof(AbilityDocument.Duration) or nameof(AbilityDocument.Period)
+            or nameof(DungeonDocument.QualifierTime) => "s",
         _ => null,
     };
 

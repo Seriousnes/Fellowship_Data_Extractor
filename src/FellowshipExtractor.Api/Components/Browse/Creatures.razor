@@ -22,7 +22,7 @@
             <Content Context="row">
                 @foreach (var dungeon in row.FoundIn ?? [])
                 {
-                    <Ref Entity="dungeon" />
+                    <Chip><Ref Entity="dungeon" /></Chip>
                 }
             </Content>
         </Column>

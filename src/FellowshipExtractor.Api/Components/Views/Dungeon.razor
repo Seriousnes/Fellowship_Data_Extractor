@@ -2,6 +2,13 @@
 @inject ICodexViewService Ui
 
 <EntityView Entity="Entity">
+    @if (Drawn.Background is { } behind)
+    {
+        <Panel Head="Loading screen">
+            <img class="cx-loading-screen" alt="" loading="lazy" src="@Ui.Icon(behind)" />
+        </Panel>
+    }
+
     @if (Dwelling.Count > 0)
     {
         <Panel Head="Creatures" Badge="@Dwelling.Count.ToString()">
@@ -31,6 +38,8 @@
 
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    private DungeonDocument Drawn => (DungeonDocument)Entity;
 
     private IReadOnlyList<CreatureDocument> Dwelling = [];
 
