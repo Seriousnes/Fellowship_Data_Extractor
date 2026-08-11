@@ -19,6 +19,10 @@ This file is the register of the in-game tooltips that have been supplied, and w
 | Eldrin Signet, second drop | 5220 | Ring | Cloth | 360 | Legendary | none | as above | +23 Stamina, +8 Critical Strike, +8 Expertise, +16 Haste |
 | Eldrin Signet, third drop | 5220 | Ring | Cloth | 360 | Legendary | none | as above | +23 Stamina, +8 Critical Strike, +16 Expertise, +8 Haste |
 | Vaultbinder's Hoard-Guard Helm | 5213 | Head | Plate | 315 | Heroic | 8 / 8 | Stamina 28 fixed, Strength 28 primary, Spirit 28 fixed | +34 Stamina, +17 Strength, +38 Spirit |
+| Drakesblood Tapestry | 5218 | Back | Cloth | 360 | Legendary | none | Stamina 22 fixed, Intellect 22 primary, Haste 40 fixed | +48 Armor, +15 Stamina, +5 Intellect, +9 Haste, +7 Expertise, +7 Spirit |
+| Drakesblood Tapestry, second drop | 5218 | Back | Cloth | 315 | Legendary | none | as above | +43 Armor, +27 Stamina, +4 Intellect, +9 Haste |
+| Baneful Web Shroud | 5139 | Back | Cloth | 285 | Heroic | 4 / 4 | Stamina 40 fixed, Intellect 17 primary, Haste 27 fixed | +40 Armor, +18 Stamina, +7 Intellect, +10 Haste, +6 Critical Strike, +6 Expertise |
+| Betrayer's Icy Veil | 5135 | Back | Cloth | 195 | Epic | 3 / 3 | Stamina 28 fixed, Intellect 28 primary, CritChance 28 fixed | +30 Armor, +10 Stamina, +7 Intellect, +8 Critical Strike |
 
 A Legendary reads `Non Temperable` and `CT_ItemRarityAndLevelToMaxTempers` gives Legendary 0, so the
 two legendaries and the `Tempered 0 / 8` pants are the three observations with no tempering in them.
@@ -40,8 +44,11 @@ Every term is shipped and there is no fitted constant.
 
 | Item | Computed | Prints |
 | --- | --- | --- |
+| Betrayer's Icy Veil, Back Cloth 195 | `0.08 x (195 x 1.41 + 90)` = 29.20 | 30 |
+| Baneful Web Shroud, Back Cloth 285 | `0.08 x (285 x 1.41 + 90)` = 39.35 | 40 |
 | Witchslayer's pants, Legs Cloth 315 | `0.165 x (315 x 1.41 + 90)` = 88.13 | 89 |
 | Darkfrost Arms, Weapon Plate 315 | `0.28 x (315 x 2.8 + 200)` = 302.96 | 303 |
+| Drakesblood Tapestry, Back Cloth 360 | `0.08 x (360 x 1.41 + 90)` = 47.81 | 48 |
 | Skandi's Bands, Wrists Cloth 360 | `0.085 x (360 x 1.41 + 90)` = 50.80 | 51 |
 | Eldrin Signet, Ring Cloth 360 | Ring `ArmorWeight` is 0 | no armour line |
 | Sinbinding Stone, Relic 315 | Relic `ArmorWeight` is 0 | no armour line |
@@ -49,11 +56,9 @@ Every term is shipped and there is no fitted constant.
 **Tempering does not move it.** The same pants read `+89 Armor` at 0 of 8 tempers and at 8 of 8, and
 the level is 315 in both.
 
-The rounding is a ceiling. Darkfrost Arms and Skandi's Bands round the same either way, so the pants
-are the only observation that separates ceiling from nearest, and they are also the one item where
-solving for `FlatArmor` wants 92 to 98 rather than the shipped 90. The ceiling may therefore be
-standing in for a one per cent error somewhere in the product. It fits all three; give it up rather
-than defend it if a fourth item disagrees.
+The rounding is a ceiling, and six readings across four item levels, three slots and two armour types
+now carry it. Three of the six discriminate a ceiling from nearest: the pants at 88.13, Betrayer's
+Icy Veil at 29.20 and Baneful Web Shroud at 39.35 all print the next integer up.
 
 ## The primary slot takes the shipped multiplier
 
@@ -66,28 +71,61 @@ gives 1.5, nowhere near.
 
 A multiplier a block leaves at its default now reads the fixed-slot block's shipped value.
 
-## The stat pools are the remaining gap
+## The stat magnitude, solved
 
-With the shipped multipliers in place, each observation states what the pool must have been. Every
-band below is the printed integer widened by half a point in each direction.
+```
+share            = a stat on the primary pool takes weight / (the item's own weight total)
+                   a stat on the secondary pool takes weight / 100
+magnitude        = pool(itemLevel) x DT_SlotWeights.StatWeight x share x multiplier x 1.08
+```
 
-| Pool | Level | Must be | `HeroItemStatCalculation` gives | Factor |
-| --- | --- | --- | --- | --- |
-| Primary | 360 | 893 to 933 | 721.9 | 1.24 to 1.29 |
-| Primary | 315 | 685 to 809 | 536.0 | 1.28 to 1.51 |
-| Secondary | 360 | 397 to 422 | 386.4 | 1.03 to 1.09 |
-| Secondary | 315 | 384 to 420 | 361.4 | 1.06 to 1.16 |
+rounded to the attribute's `RoundToDecimals` **before** it aggregates with anything else. The pools
+and the multipliers are the shipped ones: the primary pool for Stamina and the wearer's own
+attribute, the secondary pool for every rating, and `StaminaMultiplierAtThreshold` 1.5,
+`PrimaryMultiplier` 0.525 and `SecondaryMultiplier` 1.125 from
+`FixedSlotCalculationSettings`.
 
-The two primary bands overlap at a single scale near 1.28 and the two secondary bands near 1.07, so
-one constant per pool fits all six observations. The bytecode was re-read to rule out a
-mis-extraction, and it says exactly what the export carries:
-`CalcPrimaryStatPoolFromItemLevel` returns `1.08 ^ (ItemLevel / 15) x sqrt(ItemLevel) x 6` and
-`CalcSecondaryStatPoolFromItemLevel` returns `sqrt(ItemLevel x 72) x 2.4`, both zero below level 15.
+Only the 1.08 is not shipped. Every other term is read from the build, and the factor holds across
+three item levels, three slots, two armour types and two rarities.
 
-**Nothing in the build calls either function.** The live path is native, so these two are a design
-statement the C++ has moved on from, and the factors above are the measurement of how far. They are
-not written into the code, because a fitted scalar is exactly the hardcoded data fact this repo
-forbids.
+Rounding each contribution before aggregating is what the Eldrin Signet settles: two rolls of 8.45
+print 16, not the 17 that rounding their sum would give.
+
+**Every clean reading is reproduced exactly**, where clean means untempered or a random roll, since
+a roll does not temper:
+
+| Reading | Level | Computed | Prints |
+| --- | --- | --- | --- |
+| Drakesblood Tapestry, all six lines | 360 | 48 / 15 / 5 / 9 / 7 / 7 | the same |
+| Drakesblood Tapestry, second drop, all four lines | 315 | 43 / 27 / 4 / 9 | the same |
+| Skandi's Bands, all six lines | 360 | 51 / 15 / 5 / 9 / 7 / 7 | the same |
+| Eldrin Signet, all three drops | 360 | 23 / 8 / 8 and each drop's rolls | the same |
+| Witchslayer's pants untempered, all five lines | 315 | 89 / 66 / 6 / 11 / 12 | the same |
+| Baneful Web Shroud, armour and both rolls | 285 | 40 / 6 / 6 | the same |
+| Betrayer's Icy Veil, armour | 195 | 30 | the same |
+| Darkfrost Arms, armour | 315 | 303 | the same |
+
+The `w / (weight total)` share and a flat 1.08 cannot be told apart from `w / 100` and a 1.285 factor
+on the primary pool alone, because all three shipped weight rows total 84. The share form is the one
+written down, because it is derived from the item's own weights rather than from a second constant.
+
+**Every input has been verified against its own asset, and the gap survives all of them.**
+
+| Input | Verified by |
+| --- | --- |
+| The pool formulas | The Kismet bytecode reads `1.08 ^ (ItemLevel / 15) x sqrt(ItemLevel) x 6` and `sqrt(ItemLevel x 72) x 2.4`, each cast to float and returned, zero below level 15 |
+| That those formulas are the live ones | `DefaultGame.ini` wires `[/Script/fellowship.CRItemSettings] StatPoolCalculation` to `HeroItemStatCalculation_C` |
+| Slot weights | `DT_SlotWeights` gives Legs 0.09, Wrists 0.05, Ring 0.06, and its `ArmorWeight` column from the same rows drives an armour formula that is exact on three items |
+| Item stat weights | `DT_StatWeightConfiguration` holds exactly three rows, named `22.22.40`, `40.17.27` and `28.28.28` for the values they carry |
+| The multipliers | `DA_StatCalculationSettings`, with the 1.5-to-0.525 ratio independently confirmed by Skandi's Bands printing 15 and 5 on equal weights |
+
+So the 1.08 is applied outside the Blueprint, by the native caller, and no shipped value names it.
+It is a measured constant, held as `StatMagnitudes.NativeFactor`, and the readings it rests on are
+the table above.
+
+**What would still improve it:** a tooltip below item level 150 that is untempered, which no reading
+yet is. The lowest clean evidence is a random roll at 285, and rolls do not carry the primary pool's
+`1.08 ^ (ItemLevel / 15)` term, so nothing yet tests the primary pool below 315.
 
 **The observation that would settle it is a low item level, anywhere from 15 to 150.** The two clean
 levels on hand, 315 and 360, are 14 per cent apart, and over that span
@@ -108,21 +146,47 @@ Strength, Agility and Intellect as stats a slot can roll.
 That is what `?randomStats=` computes. Naming the rolls of each ground-truth item reproduces the
 game's card line for line:
 
-| Item | Named rolls | Game | Computed |
-| --- | --- | --- | --- |
-| Witchslayer's pants 315 | Stamina, Spirit | 89 / 66 / 6 / 11 / 12 | 89 / **65** / 4 / 10 / **11** |
-| Skandi's Bands 360 | CritChance, Expertise | 51 / 15 / 5 / 9 / 7 / 7 | 51 / 12 / 4 / 9 / **7** / **7** |
-| Eldrin Signet, first drop | Intellect, Haste | 23 / 8 / 8 / 3 / 8 | 18 / 7 / 7 / 5 / **8** |
-| Eldrin Signet, second drop | Haste, Haste | 23 / 8 / 8 / 16 | 18 / 7 / 7 / **16** |
-| Eldrin Signet, third drop | Expertise, Haste | 23 / 8 / 16 / 8 | 18 / 7 / **15** / **8** |
+A roll takes the same arithmetic as a declared slot, with a share decided by the kind of stat it
+landed on:
 
-Every rolled magnitude in bold is the game's own or one off it, on the uncorrected pools. The
-declared lines carry the pool gap above, and the primary-attribute roll is the one kind that misses
-by more than one: 5 against the 3 the Eldrin Signet prints.
+| Roll lands on | Share | Where the share comes from |
+| --- | --- | --- |
+| A rating | 0.3 | `DynamicSlotCalculationSettings.SecondaryWeight`, shipped |
+| Stamina | 0.375 | measured, from two readings that agree |
+| The wearer's own attribute | 0.125 | measured, from one reading |
+
+| Reading | Level, slot | Implies a share of | Computed at the share above | Prints |
+| --- | --- | --- | --- | --- |
+| Drakesblood Tapestry, Stamina | 315, Back 0.05 | 0.3685 | 16.28 | 16 |
+| Witchslayer's pants, Stamina | 315, Legs 0.09 | 0.3711 | 29.31 | 29 |
+| Eldrin Signet, Intellect | 360, Ring 0.06 | 0.1222 | 3.07 | 3 |
+
+The two Stamina readings are independent, sit on different slots, and agree to within a third of a
+per cent, so 0.375 is not a one-point fit. Neither share is the shipped one: `StaminaWeight` is 0.5,
+and the `1 - StaminaWeight - SecondaryWeight` residual the unnamed placeholder uses is 0.2.
+
+Betrayer's Icy Veil carries a roll on Intellect as well, and although it is tempered 3 of 3 and so
+cannot calibrate anything, it does discriminate between the two tempering hypotheses: an additive
+temper leaves its Intellect roll at 1, which agrees with a share of 0.125, while a multiplicative one
+leaves it at 3 or 4, which does not agree with any share the Eldrin Signet allows.
 
 `StatMagnitudes.Expected` still blends the three kinds into one number for a slot whose stat the
 caller has not named, which no in-game tooltip ever shows, since a real item always has its rolls
 resolved.
+
+## Power potential is unreachable
+
+`CRItemSettings.HeroItemPowerPotentialSettings` names all fourteen inputs: `ItemLevelScoreFactor`,
+`TemperScoreFactor`, `ModSlotScoreFactor`, `GemSocketScoreFactor`, the four ability and trait-tree
+factors, `SetBonusScoreFactor`, `LegendaryScoreFactor`, `AllocatedTalentPointPowerPotential`,
+`ScorePerGemType`, `ScorePerAllocatedWeaponTrait` and `ScorePerAllocatedNecklaceTrait`. **None of the
+140 shipped `.ini` files sets any of them**, so every value is a compiled-in C++ default, and there
+is no per-slot score table anywhere. Fourteen unknowns against readings that disagree slot to slot at
+identical level, rarity, ability and socket count - the Eldrin Signet reads 1,342 where the Drakesblood
+Tapestry reads 1,292 - do not solve. It stays `?potentialPower=`.
+
+One thing the readings do settle: potential is computed from **max** tempers, not current. The
+Witchslayer's pants read 617 at 0 of 8 and again at 8 of 8.
 
 ## Tempering
 

@@ -324,6 +324,37 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public async Task An_entity_page_carries_every_other_parameter_into_its_refetch_address()
+    {
+        var (id, hero) = Shared();
+        var slug = EntityTypes.Slug(EntityType.Item);
+        var wearer = Uri.EscapeDataString(hero);
+
+        var page = await client.GetStringAsync(
+            $"/{slug}/{id}?hero={wearer}&itemLevel=360&randomStats=Haste%2CHaste",
+            Xunit.TestContext.Current.CancellationToken);
+
+        var at = page.IndexOf("data-stage=\"", StringComparison.Ordinal) + "data-stage=\"".Length;
+        var address = page[at..page.IndexOf('"', at)];
+
+        Assert.Contains("itemLevel=360", address, StringComparison.Ordinal);
+        Assert.True(address.Contains("randomStats=Haste", StringComparison.Ordinal), address);
+        Assert.Contains("data-restage", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_entity_page_asked_for_nothing_extra_does_not_restage()
+    {
+        var (id, hero) = Shared();
+        var slug = EntityTypes.Slug(EntityType.Item);
+
+        var page = await client.GetStringAsync(
+            $"/{slug}/{id}?hero={Uri.EscapeDataString(hero)}", Xunit.TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain("data-restage", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task An_entity_page_carries_the_state_into_the_refetch_address_of_a_card_that_draws_one()
     {
         var trait = Factory.Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null);

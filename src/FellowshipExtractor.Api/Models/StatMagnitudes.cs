@@ -19,6 +19,12 @@ public static class StatMagnitudes
 
     private const string RandomStatLabel = "[Random Stat]";
 
+    private const decimal NativeFactor = 1.08m;
+
+    private const decimal StaminaRollShare = 0.375m;
+
+    private const decimal PrimaryRollShare = 0.125m;
+
     public static IReadOnlyList<StatLine> For(
         ItemDocument item,
         StatCalculationFile calculation,
@@ -46,6 +52,8 @@ public static class StatMagnitudes
 
         if (armor is { } worth) lines.Add(worth);
 
+        var budget = (item.Stats ?? []).Sum(slot => slot.Weight);
+
         foreach (var declared in item.Stats ?? [])
         {
             var at = taken.GetValueOrDefault(declared.Stat);
@@ -57,13 +65,22 @@ public static class StatMagnitudes
             var onPrimaryPool = OnPrimaryPool(declared.Stat, primaryAttributes);
             var settings = declared.Kind == SlotKinds.Primary ? calculation.BaseSlot : calculation.FixedSlot;
 
+            var share = onPrimaryPool && budget > 0
+                ? (decimal)declared.Weight / budget
+                : declared.Weight / 100m;
+
             var value = sent
                 ?? (onPrimaryPool ? primaryPool : secondaryPool)
-                    * declared.Weight / 100m
-                    * Multiplier(settings, calculation.FixedSlot, declared.Stat, onPrimaryPool, primaryAttributes);
+                    * share
+                    * Multiplier(settings, calculation.FixedSlot, declared.Stat, onPrimaryPool, primaryAttributes)
+                    * NativeFactor;
 
             lines.Add(new StatLine(
-                declared.Stat, Label(calculation, declared.Stat), value, declared.Kind, Rolled: false));
+                declared.Stat,
+                Label(calculation, declared.Stat),
+                Round(value, calculation, declared.Stat),
+                declared.Kind,
+                Rolled: false));
         }
 
         var spare = Spare(item, query, taken);
@@ -81,22 +98,20 @@ public static class StatMagnitudes
             {
                 var (stat, value) = spare[spareAt++];
                 lines.Add(new StatLine(
-                    stat, Label(calculation, stat), value, SlotKinds.Random, Rolled: true));
+                    stat, Label(calculation, stat), Round(value, calculation, stat),
+                    SlotKinds.Random, Rolled: true));
                 continue;
             }
 
             lines.Add(new StatLine(
                 null,
                 RandomStatLabel,
-                Expected(calculation, primaryPool, secondaryPool),
+                Math.Round(Expected(calculation, primaryPool, secondaryPool), MidpointRounding.AwayFromZero),
                 SlotKinds.Random,
                 Rolled: true));
         }
 
-        return [.. Fold(lines).Select(line => line with
-        {
-            Value = Round(line.Value, calculation, line.Stat),
-        })];
+        return Fold(lines);
     }
 
     public static decimal? Armor(ItemDocument item, StatCalculationFile calculation, int itemLevel)
@@ -175,18 +190,16 @@ public static class StatMagnitudes
     {
         var settings = calculation.DynamicSlot;
 
-        var stamina = (decimal)(settings.StaminaWeight ?? 0);
-        var secondary = (decimal)(settings.SecondaryWeight ?? 0);
-
         var onPrimaryPool = OnPrimaryPool(stat, primaryAttributes);
 
-        var weight = stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase) ? stamina
-            : onPrimaryPool ? Math.Max(0m, 1m - stamina - secondary)
-            : secondary;
+        var share = stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase) ? StaminaRollShare
+            : onPrimaryPool ? PrimaryRollShare
+            : (decimal)(settings.SecondaryWeight ?? 0);
 
         return (onPrimaryPool ? primaryPool : secondaryPool)
-            * weight
-            * Multiplier(settings, calculation.FixedSlot, stat, onPrimaryPool, primaryAttributes);
+            * share
+            * Multiplier(settings, calculation.FixedSlot, stat, onPrimaryPool, primaryAttributes)
+            * NativeFactor;
     }
 
     private static decimal Expected(StatCalculationFile calculation, decimal primaryPool, decimal secondaryPool)
@@ -202,7 +215,7 @@ public static class StatMagnitudes
             secondary * secondaryPool * (decimal)(settings.SecondaryMultiplier ?? 1) +
             primary * primaryPool * (decimal)(settings.PrimaryMultiplier ?? 1);
 
-        return expected * (decimal)(settings.WeightMultiplier ?? 0);
+        return expected * (decimal)(settings.WeightMultiplier ?? 0) * NativeFactor;
     }
 
     private static bool OnPrimaryPool(string stat, IReadOnlySet<string> primaryAttributes) =>

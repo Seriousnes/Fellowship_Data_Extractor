@@ -23,4 +23,7 @@ public sealed record Bearings
     public int Id { get; init; }
 
     public IReadOnlyList<(string Label, string Href, int Count)> Related { get; init; } = [];
+
+    public IReadOnlyDictionary<string, string> Asked { get; init; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }
