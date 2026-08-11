@@ -17,7 +17,7 @@ public static class Coefficients
 
         foreach (var (key, value) in constants)
         {
-            if (value is not double number) continue;
+            if (value is not double number || number == 0) continue;
             if (!own.Contains(key) || accountedFor.Contains(key)) continue;
 
             var leaf = key[(key.LastIndexOf('.') + 1)..];
@@ -139,4 +139,15 @@ public static class Coefficients
 
     private static readonly HashSet<string> Known =
         new(Attributes.Select(a => a.Named), StringComparer.Ordinal);
+
+    private static readonly string[] Primary = ["Intellect", "Strength", "Agility"];
+
+    public static string Captured(string named, IReadOnlyList<string>? capturedAttributes)
+    {
+        if (!Primary.Contains(named, StringComparer.Ordinal)) return named;
+
+        var only = capturedAttributes?.Where(a => Primary.Contains(a, StringComparer.Ordinal)).ToArray() ?? [];
+
+        return only.Length == 1 ? only[0] : named;
+    }
 }

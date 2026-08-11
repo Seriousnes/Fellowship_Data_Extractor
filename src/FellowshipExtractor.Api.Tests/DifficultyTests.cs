@@ -30,7 +30,7 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
         RouteTests.Factory.Store.Entities.OfType<CreatureDocument>().Single(row => row.Id == NoorTheBetrayer);
 
     [Fact]
-    public void Noor_at_Eternal_44_reads_the_health_the_game_shows()
+    public void Noor_at_Eternal_44_reads_within_a_hundredth_of_a_percent_of_the_figure_the_game_showed()
     {
         var difficulty = Eternal.MinimumDifficulty + 44;
 
@@ -38,6 +38,25 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
 
         Assert.NotNull(health);
         Assert.Equal(NoorAtEternal44, health.Value, NoorAtEternal44 * 0.0001);
+        Assert.Equal(12_364_857d, health.Value, 1d);
+    }
+
+    [Fact]
+    public async Task A_creature_tooltip_states_its_health_at_the_difficulty_it_is_asked_for()
+    {
+        var opening = await client.GetStringAsync(
+            $"/api/creature/{NoorTheBetrayer}/tooltip", Xunit.TestContext.Current.CancellationToken);
+
+        var deep = await client.GetStringAsync(
+            $"/api/creature/{NoorTheBetrayer}/tooltip?difficulty={Eternal.MinimumDifficulty + 44}",
+            Xunit.TestContext.Current.CancellationToken);
+
+        var health = Difficulties.Health(Noor, Settings, Eternal.MinimumDifficulty + 44);
+
+        Assert.NotNull(health);
+        Assert.Contains("Health", opening, StringComparison.Ordinal);
+        Assert.Contains(Codex.Magnitude((decimal)Noor.Health!.Value), opening, StringComparison.Ordinal);
+        Assert.Contains(Codex.Magnitude((decimal)health.Value), deep, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -26,7 +26,7 @@ public sealed class AbilityCoefficientTests
     }
 
     [Fact]
-    public void EveryCoefficientNamesAnAttributeAndAMagnitudeAbovNothing()
+    public void EveryCoefficientNamesAnAttributeAndAMagnitudeAboveNothing()
     {
         var stated = Every().ToArray();
 
@@ -35,8 +35,28 @@ public sealed class AbilityCoefficientTests
         Assert.All(stated, coefficient =>
         {
             Assert.False(string.IsNullOrWhiteSpace((string?)coefficient["attribute"]));
-            Assert.NotNull((double?)coefficient["value"]);
+
+            var value = (double?)coefficient["value"];
+
+            Assert.NotNull(value);
+            Assert.NotEqual(0, value.Value);
         });
+    }
+
+    [Fact]
+    public void ACoefficientNamesTheAttributeItsEffectCapturesWhereTheTwoDisagree()
+    {
+        var melee = Abilities.Single(row => row.Id == 751);
+
+        var stated = Assert.IsType<JsonArray>(Stated(melee.Body));
+        var only = Assert.IsType<JsonObject>(Assert.Single(stated));
+
+        Assert.Equal(2.9, (double?)only["value"]);
+        Assert.Equal("Strength", (string?)only["attribute"]);
+
+        var scaling = melee.Body["scalesOff"]!.AsArray().Select(word => (string?)word).ToArray();
+
+        Assert.Contains("Strength", scaling);
     }
 
     [Fact]

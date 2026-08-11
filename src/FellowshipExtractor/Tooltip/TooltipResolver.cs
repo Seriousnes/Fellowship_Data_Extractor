@@ -777,7 +777,7 @@ public sealed class TooltipResolver
             ScalesWithHaste = ScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
-            Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand),
+            Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand, [.. scaling]),
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Constants = baseline.Count == 0 ? null : baseline,
             Talents = talents.Count == 0
@@ -844,7 +844,8 @@ public sealed class TooltipResolver
         IReadOnlySet<string> taken,
         string? tuning,
         EffectSpreads bands,
-        double? ownBand)
+        double? ownBand,
+        IReadOnlyList<string> capturedAttributes)
     {
         var stated = Coefficients.All(reachable, own, taken);
 
@@ -854,7 +855,8 @@ public sealed class TooltipResolver
 
         return
         [
-            .. stated.Select(coefficient => new AbilityCoefficient(coefficient.Attribute, coefficient.Value)
+            .. stated.Select(coefficient => new AbilityCoefficient(
+                Coefficients.Captured(coefficient.Attribute, capturedAttributes), coefficient.Value)
             {
                 Part = coefficient.Part,
                 Spread = Stated(reachable, coefficient.Key)

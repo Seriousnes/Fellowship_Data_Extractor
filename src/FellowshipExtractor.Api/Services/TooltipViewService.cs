@@ -167,12 +167,22 @@ public sealed class TooltipViewService(
 
     private IEnumerable<TooltipView.Fact> Menacing(EntityDocument document, TooltipQuery query)
     {
-        if (document is not AbilityDocument { Coefficients: { Count: > 0 } stated }) yield break;
         if (store.Menacing(document) is not { } creature) yield break;
 
         var step = Difficulties.At(store.Settings, store.Difficulty(query.Difficulty?.ToString()));
 
         if (step is null) yield break;
+
+        if (document is CreatureDocument &&
+            Difficulties.Health(creature, store.Settings, step.Difficulty) is { } health)
+        {
+            yield return new TooltipView.Fact(
+                "Health",
+                Codex.Magnitude((decimal)health),
+                $"{Codex.Number(creature.Health!.Value)} at the first difficulty, at {step.Label}");
+        }
+
+        if (document is not AbilityDocument { Coefficients: { Count: > 0 } stated }) yield break;
 
         foreach (var coefficient in stated)
         {
