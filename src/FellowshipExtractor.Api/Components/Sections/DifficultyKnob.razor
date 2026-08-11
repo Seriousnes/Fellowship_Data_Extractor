@@ -2,7 +2,7 @@
 @inject IEntityStoreService Store
 @inject NavigationManager Nav
 
-<select data-difficulty value="@Difficulty" @onchange="Chose">
+<select data-difficulty @onchange="Chose">
     @foreach (var step in Difficulties.Ladder(Store.Settings))
     {
         <option value="@step.Difficulty" selected="@(step.Difficulty == Difficulty)">
