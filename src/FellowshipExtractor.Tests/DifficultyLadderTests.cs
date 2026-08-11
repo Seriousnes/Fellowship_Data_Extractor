@@ -69,7 +69,7 @@ public sealed class DifficultyLadderTests
     }
 
     [Fact]
-    public void EveryCreatureTheTableStatesAnythingAboutStatesAPrimaryAttribute()
+    public void EveryCreatureTheTableStatesAnythingAboutStatesEveryPrimaryAttribute()
     {
         var boss = Stats.For("FK_BossRangerCaptain");
 
@@ -82,8 +82,16 @@ public sealed class DifficultyLadderTests
 
         Assert.NotEmpty(creatures);
 
-        Assert.All(creatures, row => Assert.NotNull(
-            row.Body["intellect"] ?? row.Body["strength"] ?? row.Body["agility"]));
+        var attributes = new[] { "intellect", "strength", "agility" };
+
+        var stating = creatures.Where(row => row.Body["health"] is not null).ToArray();
+
+        Assert.NotEmpty(stating);
+        Assert.All(stating, row => Assert.All(attributes, name => Assert.NotNull(row.Body[name])));
+
+        var silent = creatures.Where(row => row.Body["health"] is null).ToArray();
+
+        Assert.All(silent, row => Assert.All(attributes, name => Assert.Null(row.Body[name])));
     }
 
     [Fact]

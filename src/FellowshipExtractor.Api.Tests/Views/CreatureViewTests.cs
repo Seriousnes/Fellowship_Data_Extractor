@@ -10,6 +10,7 @@ public class CreatureViewTests : BunitContext
         this.export = export;
         Services.AddSingleton(export.View);
         Services.AddSingleton(export.Tooltip);
+        Services.AddSingleton(export.Store);
     }
 
     private CreatureDocument Wielding => export.Store.Entities
@@ -55,7 +56,8 @@ public class CreatureViewTests : BunitContext
         var panel = cut.FindAll("div.cx-panel")
             .Single(element => Head(element).StartsWith("Abilities", StringComparison.Ordinal));
 
-        var marked = panel.QuerySelectorAll("ul.cx-pills > li").Count(item => item.TextContent.Contains("hidden"));
+        var marked = panel.QuerySelectorAll("tbody tr")
+            .Count(row => row.TextContent.Contains("hidden", StringComparison.Ordinal));
 
         Assert.Equal(creature.Abilities!.Count(slot => !slot.Shown), marked);
     }
@@ -86,13 +88,10 @@ public class CreatureViewTests : BunitContext
 
         var cut = Draw(excluded);
 
-        var facts = cut.FindAll("table.cx-facts tr")
-            .ToDictionary(
-                row => row.QuerySelector("th")!.TextContent,
-                row => row.QuerySelector("td")!.TextContent.Trim(),
-                StringComparer.Ordinal);
+        var row = cut.FindAll("table.cx-facts tr")
+            .Single(fact => fact.QuerySelector("th")?.TextContent == "Counts Toward Score");
 
-        Assert.Equal("No", facts["Counts Toward Score"]);
+        Assert.Equal("No", row.QuerySelector("td")!.TextContent.Trim());
     }
 
     [Fact]
