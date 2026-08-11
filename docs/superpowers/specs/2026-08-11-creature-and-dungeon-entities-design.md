@@ -135,6 +135,47 @@ difficulty is computable from a creature's health and the curve together.
 A dungeon's creature list is derived in the Api by scanning the store, so the creature to dungeon
 fact is stored once, on the creature.
 
+## Every reference names an entity
+
+A document that points at another entity carries an `EntityReference`, which states the type, the
+id and the name. Nothing points at another entity by a name alone, and nothing points by an id
+whose type the reader has to work out.
+
+| Field | Carries |
+| --- | --- |
+| `AbilityDocument.Owner` | `EntityReference` |
+| `EffectDocument.Owner`, `AppliedBy`, `NameBorrowedFrom`, `ArtBorrowedFrom` | `EntityReference` |
+| `ItemDocument.SetBonus` | `IReadOnlyList<EntityReference>` |
+| `ItemDocument.Grants` | `EntityReference` |
+| `ItemDocument.LegendaryStats` | `IReadOnlyList<EntityReference>` |
+| `ItemDocument.Sources[].Dungeon` | `EntityReference` |
+| `TraitDocument.Power`, `SetBonusDocument.Power` | `EntityReference` |
+| `TalentSlotDocument.Talent` | `EntityReference` |
+| `GemTraitDocument.Replaces` | `EntityReference` |
+| `CreatureDocument.FoundIn`, `Abilities[].Ability`, `Passives[].Ability` | `EntityReference` |
+
+The extractor resolves each type, which it knows from the mapping that produced the reference.
+`DocumentProjection` already does this for an ability's and an effect's owner through its
+`TypeLookup`, and the same lookup answers the rest.
+
+`IEntityStoreService.GrantedPower` is retired: a granted power's type arrives on the document, so
+the Api reads it rather than trying `RelicPower`, `WeaponPower`, `LegendaryPower` and `Talent` in
+turn and taking whichever holds an id.
+
+Every reference the API emits is a `PublicReference` carrying `type`, `id`, `name` and `resource`,
+an absolute `{baseurl}/api/{slug}/{id}` built from the request:
+
+```json
+"appliedBy": {
+  "type": "ability", "id": 1273, "name": "Apocalypse",
+  "resource": "https://host/api/ability/1273"
+}
+```
+
+`PublicEntity` emits `owner`, `appliedBy`, `nameBorrowedFrom`, `artBorrowedFrom`, `setBonus`,
+`grants`, `legendaryStats`, `power`, `talent`, `replaces`, `foundIn`, `abilities` and `passives` in
+that shape.
+
 ## Extraction
 
 `Tooltip/CreatureStats.cs` loads `CT_CharacterBaseAttributes` and
@@ -157,24 +198,16 @@ ability's phase tag and `ShowOnUI` alongside the creature.
 `Tooltip/TypeResolver.cs` maps the `Level.ID` table to `EntityType.Dungeon`.
 `Tooltip/TooltipResolver.cs` fills the new `Entity` fields for `CRAICharacter` and `Level.ID` tags,
 and `Tooltip/ItemSources.cs` carries the dungeon's tag alongside the name it already resolves.
-`Tooltip/DocumentProjection.cs` projects both new documents.
+`Tooltip/DocumentProjection.cs` projects both new documents and turns every set bonus name, granted
+power, legendary stat, trait power, talent and replaced gem trait into an `EntityReference` through
+the `TypeLookup` it already holds.
 
 ## Api and UI
-
-`PublicReference` gains `Resource`, an absolute `{baseurl}/api/{slug}/{id}` built from the request,
-so every reference the API emits resolves:
-
-```json
-"foundIn": [
-  { "type": "dungeon", "id": 23, "name": "Ransack of Drakheim",
-    "resource": "https://host/api/dungeon/23" }
-]
-```
 
 `Endpoints/Dungeon/` gains `DungeonGroup`, `DungeonRecordEndpoint` and `DungeonTooltipEndpoint`
 matching the shape every other type uses, registered from `ApiEndpoints`. `PublicTypes` gains the
 `Dungeon` row in the `Characters` group and places it in `Tabbed`. `PublicEntity` carries the
-creature and dungeon fields, an item source's dungeon reference, and a dungeon's creature list.
+creature and dungeon fields and a dungeon's creature list.
 
 `Components/Browse/Dungeons.razor` lists dungeons with their qualifier time, required score and
 creature count. `Components/Browse/Creatures.razor` fills its Location column and gains a Rank
@@ -198,6 +231,8 @@ confirm:
 - Every `foundIn[].id` resolves to a dungeon document, and every dungeon document's name already
   appears among the item drop source names the previous export wrote.
 - `grep -c '/Game/\|/Script/' entities.jsonl` is 0.
+- Every reference in the export resolves: each `{ type, id }` pair names a document that exists, and
+  the type each one states matches what the previous export's Api resolved the bare id to.
 - The Icebite Reaver record reads health 12871, killScore 5, spiritPoints 5, rank Elite, three
   abilities with the melee auto attack marked hidden, and Ransack of Drakheim in `foundIn`.
 - The four existing export invariants hold: every tuning row still reachable, every captured
