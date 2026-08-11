@@ -14,7 +14,9 @@ public class CreatureViewTests : BunitContext
 
     private CreatureDocument Wielding => export.Store.Entities
         .OfType<CreatureDocument>()
-        .First(row => row.Abilities is { Count: > 0 } && row.FoundIn is { Count: > 0 });
+        .First(row => row.FoundIn is { Count: > 0 } &&
+            row.Abilities is { Count: > 0 } slots &&
+            slots.Select(slot => slot.Phase).Distinct(StringComparer.Ordinal).Count() > 1);
 
     private static string Head(IElement panel) =>
         panel.QuerySelector(":scope > div.cx-panel-head")?.TextContent ?? string.Empty;
@@ -73,6 +75,24 @@ public class CreatureViewTests : BunitContext
         Assert.Equal(
             creature.FoundIn!.Select(level => $"/dungeon/{level.Id}").Order(StringComparer.Ordinal),
             hrefs.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void A_creature_the_dungeon_score_leaves_out_says_so_among_its_facts()
+    {
+        var excluded = export.Store.Entities
+            .OfType<CreatureDocument>()
+            .First(row => row.CountsTowardScore is false);
+
+        var cut = Draw(excluded);
+
+        var facts = cut.FindAll("table.cx-facts tr")
+            .ToDictionary(
+                row => row.QuerySelector("th")!.TextContent,
+                row => row.QuerySelector("td")!.TextContent.Trim(),
+                StringComparer.Ordinal);
+
+        Assert.Equal("No", facts["Counts Toward Score"]);
     }
 
     [Fact]
