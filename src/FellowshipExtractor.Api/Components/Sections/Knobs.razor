@@ -7,15 +7,7 @@
         @if (PicksDifficulty)
         {
             <Knob Caption="Difficulty">
-                <select data-difficulty
-                        onchange="const u = new URL(location); u.searchParams.set('difficulty', this.value); location.href = u">
-                    @foreach (var step in Ladder)
-                    {
-                        <option value="@step.Difficulty" selected="@(step.Difficulty == Difficulty)">
-                            @step.Label (@step.Difficulty)
-                        </option>
-                    }
-                </select>
+                <DifficultyKnob Difficulty="Difficulty" />
             </Knob>
         }
 
@@ -91,9 +83,7 @@
 
     private bool PicksDifficulty => Here.Shown is CreatureDocument || Store.Menacing(Here.Shown) is not null;
 
-    private IReadOnlyList<DifficultyStep> Ladder => Difficulties.Ladder(Store.Settings);
-
-    private int Difficulty => Store.Difficulty(Given("difficulty"));
+    private int Difficulty => Store.Difficulty(Given(DifficultyKnob.Asked));
 
     private string? Given(string knob) => Here.Asked.GetValueOrDefault(knob);
 
