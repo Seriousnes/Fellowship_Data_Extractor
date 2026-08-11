@@ -1,32 +1,27 @@
 @inject ICodexViewService Ui
 
-<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+<Table Items="Drawn" T="EffectDocument" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<EffectDocument>(View, Ui.Codex)">
     <Columns>
-        <Column T="EffectDocument" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row"><Art Entity="row" /></Content>
         </Column>
-        <Column T="EffectDocument" Head="Name" Key="name">
+        <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column T="EffectDocument" Head="Source" Key="source" Class="cx-tags">
+        <Column Head="Applied by" Key="applier">
             <Content Context="row">
-                <Owner Type="EntityType.Effect" Owners="row.Heroes" Holder="row.Owner" />
+                <Owner Type="EntityType.Ability" Holder="row.AppliedBy" />
             </Content>
         </Column>
-        <Column T="EffectDocument" Head="Type" Key="school" Class="cx-tags">
+        <Column Head="Type" Key="school" Class="cx-tags">
             <Content Context="row">
                 @foreach (var school in row.Schools ?? [])
                 {
                     <Chip>@school</Chip>
                 }
             </Content>
-        </Column>
-        <Column T="EffectDocument" Head="Applied by" Key="applier">
-            <Content Context="row">
-                <Owner Type="EntityType.Ability" Holder="row.AppliedBy" />
-            </Content>
-        </Column>
+        </Column>        
     </Columns>
 </Table>
 

@@ -46,23 +46,9 @@ public class ColumnTests : BunitContext
     }
 
     [Fact]
-    public void The_effects_list_heads_the_source_school_and_applier_columns()
+    public void The_effects_list_heads_the_applier_and_school_columns()
     {
-        Assert.Equal(["", "Name", "Source", "Type", "Applied by"], Dispatched(EntityType.Effect));
-    }
-
-    [Fact]
-    public void Every_hero_an_effect_belongs_to_is_drawn_as_a_separable_owner()
-    {
-        var effect = Store.Entities.OfType<EffectDocument>().First(row => row.Heroes is { Count: > 1 });
-
-        var owners = Render<Effects>(p => p
-                .Add(x => x.Rows, (IReadOnlyList<EntityDocument>)[effect])
-                .Add(x => x.View, Viewing))
-            .FindAll("tbody tr:first-child td:nth-child(3) a");
-
-        Assert.Equal(effect.Heroes!.Count, owners.Count);
-        Assert.All(owners, owner => Assert.Contains("cx-owner", owner.ClassName ?? string.Empty));
+        Assert.Equal(["", "Name", "Applied by", "Type"], Dispatched(EntityType.Effect));
     }
 
     [Fact]
@@ -79,7 +65,7 @@ public class ColumnTests : BunitContext
             .Select(td => td.TextContent.Trim())
             .ToArray();
 
-        Assert.Equal(PublicTypes.NameOf(applier[0]), cells[4]);
+        Assert.Equal(PublicTypes.NameOf(applier[0]), cells[2]);
     }
 
     [Fact]

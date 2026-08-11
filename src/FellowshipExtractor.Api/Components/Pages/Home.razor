@@ -51,27 +51,6 @@
     </Panel>
 }
 
-@if (Showcase.Count > 0)
-{
-    <Panel Head="A sample of what is in there">
-        <div class="cx-cards">
-            @foreach (var entity in Showcase)
-            {
-                <EntityLink Entity="entity" Class="cx-card">
-                    <span class="cx-linked">
-                        <Icon Src="@Ui.Icon(DocumentFields.Text(entity, nameof(ItemDocument.Icon)))"
-                              Rarity="@Ui.RarityName(entity)" Width="CardPlateWidth" />
-                        <span>
-                            <span class="cx-card-name" style="color:@Ui.NameColour(entity)">@PublicTypes.NameOf(entity)</span><br />
-                            <span class="cx-card-count">@Codex.Label(EntityTypes.TypeOf(entity))</span>
-                        </span>
-                    </span>
-                </EntityLink>
-            }
-        </div>
-    </Panel>
-}
-
 @code {
     private const int CardPlateWidth = 30;
 
@@ -80,20 +59,4 @@
     private string Roster => $"{Store.Settings.Heroes.Count} heroes";
 
     private static readonly string ItemSlug = EntityTypes.Slug(EntityType.Item);
-
-    private IReadOnlyList<EntityDocument> Showcase =>
-    [
-        .. Store.Entities
-            .Where(e => PublicTypes.DisplayNameOf(e) is not null &&
-                DocumentFields.Text(e, nameof(ItemDocument.Icon)) is not null &&
-                DocumentFields.Text(e, nameof(AbilityDocument.Description)) is not null)
-            .DistinctBy(e => (EntityTypes.TypeOf(e), e.Id))
-            .GroupBy(EntityTypes.TypeOf)
-            .SelectMany(group => group
-                .OrderByDescending(e => DocumentFields.Text(e, nameof(AbilityDocument.Description))?.Length ?? 0)
-                .Take(2))
-            .OrderBy(e => Codex.Label(EntityTypes.TypeOf(e)), StringComparer.OrdinalIgnoreCase)
-            .ThenBy(e => PublicTypes.NameOf(e), StringComparer.OrdinalIgnoreCase)
-            .Take(8),
-    ];
 }
