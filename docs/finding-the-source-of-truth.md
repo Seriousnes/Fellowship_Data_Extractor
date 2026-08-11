@@ -1,95 +1,53 @@
 # Finding the source of truth for a computed number
 
-A number the game prints and no asset carries is not a mystery to be fitted. It is a value some code
-computes, and that code is in the build. This is the order to look in, and the traps that cost a
-session of screenshot fitting before the answer turned out to be four instructions.
+The method is the `datamining-unreal-builds` skill. This file is what that method resolves to in this
+build: the exact commands, the exact anchors, and the findings that are worth not rediscovering.
 
-## The ladder
+## The ladder, in this repository
 
-Work down it. Each rung tells you what the next one is, so skipping a rung means guessing at it.
+**1. Shipped `.ini` files.** `dotnet run --project src/FellowshipExtractor -- raw ".ini"` writes all
+140 under `output/raw`. `[/Script/fellowship.CRItemSettings]` in `DefaultGame.ini` is where
+`StatPoolCalculation`, `ItemLevelsPerUpgrade`, `MaxItemLevel` and the tempering cost mods live.
+`[/Script/fellowship.CRItemStaticDataSubsystem]` names `DT_SlotWeights`, `DT_AttributeProperties`,
+`DT_HeroItems` and the drop curves. `DynamicLootSystem.ini` names the loot plugin's seven assets.
 
-**1. The shipped `.ini` files name the implementation.** Extract them all with
-`dotnet run --project src/FellowshipExtractor -- raw ".ini"` and grep the 140 of them. A
-`UDeveloperSettings` subclass has a section named for it, and its entries hand you asset paths and
-class paths. `[/Script/fellowship.CRItemSettings] StatPoolCalculation=...HeroItemStatCalculation_C`
-is how you learn which class a system runs through. `CRItemStaticDataSubsystem` names every table it
-loads. Values that are not in any `.ini` are compiled in, which is a finding, not a dead end.
+**2. The reflection schema.** Parse `output/fellowship.usmap` with CUE4Parse's `UsmapParser` and read
+the settings class. `CRDynamicItemSettings` enumerates the complete input set of the dynamic item stat
+system: eight entries, no ninth.
 
-**2. The reflection schema enumerates the complete input set.** The usmap gives every property of
-every class. Read the settings class for the system and you have an exhaustive list: for the dynamic
-item stats, `CRDynamicItemSettings` names eight things and there is no ninth. That converts "I have
-looked in a lot of places" into "these are all the places". Do this before searching the asset tree,
-because it tells you when to stop.
+**3. The assets.** `dump <name>` writes one as JSON under `output/dump`.
 
-**3. The assets those two rungs point at.** `dump <name>` for a DataTable, CurveTable or DataAsset.
-Read the rows, not the file name.
+**4. The binary.** `C:\Program Files (x86)\Steam\steamapps\common\Fellowship\fellowship\Binaries\Win64\fellowship-Win64-Shipping.exe`,
+177 MB and stripped. `src/FellowshipExtractor/Usmap/PeImage.cs` maps sections and addresses and
+`ReflectionScanner.cs` walks property registration records, so a disassembler harness is
+`#:package Iced@1.21.0` plus those two files.
 
-**4. The binary, for anything the first three do not carry.** See below. This is ordinary work, not a
-last resort, and it is faster than fitting.
+## Anchors already recovered
 
-## When to stop fitting and go to the binary
+| What | Where |
+| --- | --- |
+| Item stat magnitude, the whole calculation | `UCRDynamicHeroItem` virtual at **0x1455D33F0**, vtable 0x148C8B230 slot +0x2D0 |
+| The pools it actually calls | natives `PrimaryStatPowerFromItemLevel` and `SecondaryStatPowerFromItemLevel`, bodies at 0x1455D4050 and 0x1455D4190 |
+| Tempering | `0x1455D3813 movd xmm1,[rax+30h]`, `cvtdq2ps`, `0x1455D381B addss`, gated by `0x1455D37EB cmp byte [r14],0` |
+| Round half to even, 1e-8 near-tie snap | helper at **0x1412922F0** |
+| Armour | one ceil after the slot multiply, at **0x14531AC8B** |
+| `FCRHeroItemInstance` offsets | Level 0x20, TimesUpgraded 0x30, MaxAllowedUpgrades 0x34, ItemRarity 0x38, DynamicSlots 0x40 |
+| Dynamic slot offsets, stride 0x18 | SlotType 0x00, ContentType 0x01, RerollableSlotIndex 0x04, ContentVariantData 0x08 |
+| `ECRItemStat` ordinals | enumerator table at 0x148B176D0, Stamina 1, Strength 2, Intellect 3, Agility 4, Power 18 |
 
-Two signals, either is sufficient:
+The resulting formula and every reading it reproduces are in `item-stat-calibration.md`.
 
-- You have read every input the schema enumerates and a residual remains. The residual is code.
-- The runtime struct carries the **inputs** but not the **output**. `CRHeroItemInstance` stores
-  `Level`, `ItemRarity`, `TimesUpgraded` and `DynamicSlots` and no magnitudes, so the client computes
-  the printed number and the arithmetic is in the client.
+## What this build taught about its own data
 
-A model fitted to observations will fit those observations and still be wrong. Compensating errors
-cancel: three independent mistakes agreed to within 1 per cent on ratings, 6 per cent on the wearer's
-attribute and 12 per cent on Stamina, and only the third was visible.
+`DA_StatCalculationSettings` omits most of each calculation block, and every omitted field is a live
+C++ constructor default: `PrimaryWeight` 0.25, `SecondaryWeight` 0.3, `StaminaWeight` 0.5,
+`PrimaryMultiplier` 0.7, `WeightMultiplier` 0.15, `StaminaMultiplierItemLevelThreshold` 315, and
+`SecondaryMultiplier` 0.6 on the base block and 1.5 on the fixed block. They are carried in `StatRows`
+because no shipped file has them.
 
-## Three traps that each cost hours
+`HeroItemStatCalculation`'s Blueprint functions are wired through `CRItemSettings.StatPoolCalculation`
+and the magnitude path never calls them. `output/blueprint-functions.jsonl` is how you check that: if
+no Blueprint function computes the number, it is native.
 
-**An omitted property is the C++ constructor default, not zero.** Unversioned serialization writes
-only what differs from the class default object, so a field absent from a cooked asset equals whatever
-the constructor set. `SecondaryBaseMultiplier` reads as absent and is 72. `PrimaryWeight` reads as
-absent and is 0.25. Treating absent as zero, or inventing a fallback of 1, produces a formula that
-cannot be right. When a block ships three of eight fields, the other five are live values you have not
-read yet.
-
-**A function that exists, is named correctly, and is wired by configuration may still never be
-called.** `HeroItemStatCalculation` defines `CalcPrimaryStatPoolFromItemLevel`, and
-`CRItemSettings.StatPoolCalculation` points at that very class. The magnitude path calls neither: it
-calls the natives `PrimaryStatPowerFromItemLevel` and `SecondaryStatPowerFromItemLevel` on the same
-object. Confirm the caller, never the name. `blueprint-functions.jsonl` shows which Blueprint functions
-call what; if nothing in it computes your number, the computation is native.
-
-**Ground truth is annotated by a human and the annotation can be wrong.** Two readings recorded as
-"declared plus one roll" were declared plus **two** rolls, and one line recorded as carrying a roll
-carried none. Let the recovered formula tell you the decomposition; only the printed total is observed.
-
-## Reading the binary
-
-`fellowship-Win64-Shipping.exe` is stripped, so there are no symbols, but UE leaves enough behind.
-
-Tooling already exists. `src/FellowshipExtractor/Usmap/PeImage.cs` maps sections and virtual
-addresses and `ReflectionScanner.cs` walks property registration records. Add `#:package Iced@1.21.0`
-to a file-based app for an x64 decoder. A harness that disassembles at a virtual address and finds
-cross references to one is an hour of work and pays for itself immediately.
-
-The anchor chain that works:
-
-1. Find the UTF-16 literal for a function or property name in `.rdata`.
-2. Find the `lea` that references it. It sits in a small stub that constructs an `FName` into a global.
-3. Find the sole reader of that global. That is the thunk which resolves the function by name.
-4. Find the thunk's callers. You are now inside the routine that wanted it.
-
-For a field rather than a function, take the offset straight from the reflection record and search for
-loads at that displacement. Four independent offsets from one record set matching one function's memory
-accesses is what turns "this looks like the item instance" into an identification.
-
-Verify a recovered routine by porting it to C# and running it against every reading at once. A port
-that reproduces all of them with no tuned constant is the proof; a port with a free parameter solved
-for is not, and the two must be reported differently.
-
-## Delegating it
-
-This suits parallel subagents well, because the anchor strategies are independent. What made it work:
-one agent building the disassembler harness while others chased anchors; one lead per agent with an
-explicit instruction that a dead end is an acceptable answer and that guessing a formula from the
-numbers would corrupt the evidence; then adversarial verification on separate lenses, where the
-fidelity lens re-decodes every cited address rather than trusting the summary. The refutation lens
-found a second gate the synthesis had missed, and the fidelity lens found a double rounding in the
-port. Neither would have surfaced from a single pass.
+Power potential remains unreachable. `CRItemSettings.HeroItemPowerPotentialSettings` names fourteen
+factors and no `.ini` sets any of them, so all fourteen are compiled-in defaults.
