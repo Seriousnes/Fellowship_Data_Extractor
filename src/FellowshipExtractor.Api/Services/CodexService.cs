@@ -218,6 +218,12 @@ public sealed class CodexService : ICodexService
                 _ => DocumentFields.Number(document, nameof(TraitDocument.MaxRank)),
             }),
 
+            new Sorting("health", "Health", document => (document as CreatureDocument)?.Health),
+
+            new Sorting("qualifier", "Qualifier", document => (document as DungeonDocument)?.QualifierTime),
+
+            new Sorting("score", "Required score", document => (document as DungeonDocument)?.RequiredScore),
+
             new Sorting("hero", "Hero", document => document switch
             {
                 ItemDocument { Heroes: [var wearer, ..] } => wearer.ToString(),

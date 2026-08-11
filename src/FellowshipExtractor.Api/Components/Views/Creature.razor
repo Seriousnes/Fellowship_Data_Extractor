@@ -7,7 +7,7 @@
             <Fact Label="Difficulty">@Step.Difficulty</Fact>
             @if (Difficulties.Health(Drawn, Store.Settings, Step.Difficulty) is { } health)
             {
-                <Fact Label="Health">@Codex.Number(health)</Fact>
+                <Fact Label="Health">@Codex.Magnitude((decimal)health)</Fact>
             }
             @if (Difficulties.HealthScale(Store.Settings, Drawn.Scaling, Step.Difficulty) is { } toughness)
             {
@@ -128,6 +128,6 @@
 
     private static string Printed(DamageBand band) =>
         band.Low == band.High
-            ? Codex.Number((double)band.Mean)
-            : $"{Codex.Number((double)band.Low)} to {Codex.Number((double)band.High)}";
+            ? Codex.Magnitude(band.Mean)
+            : $"{Codex.Magnitude(band.Low)} to {Codex.Magnitude(band.High)}";
 }

@@ -184,8 +184,8 @@ public sealed class TooltipViewService(
             var label = coefficient.Part is { Length: > 0 } part ? $"Damage ({part})" : "Damage";
 
             var reading = band.Low == band.High
-                ? Codex.Number((double)band.Mean)
-                : $"{Codex.Number((double)band.Low)} to {Codex.Number((double)band.High)}";
+                ? Codex.Magnitude(band.Mean)
+                : $"{Codex.Magnitude(band.Low)} to {Codex.Magnitude(band.High)}";
 
             yield return new TooltipView.Fact(
                 label,

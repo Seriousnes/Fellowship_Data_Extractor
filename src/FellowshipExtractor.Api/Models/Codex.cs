@@ -114,4 +114,7 @@ public static class Codex
 
     public static string Number(double value) =>
         Math.Round((decimal)value, 3).Normalize().ToString(CultureInfo.InvariantCulture);
+
+    public static string Magnitude(decimal value) =>
+        Math.Round(value, 0, MidpointRounding.AwayFromZero).ToString("N0", CultureInfo.InvariantCulture);
 }

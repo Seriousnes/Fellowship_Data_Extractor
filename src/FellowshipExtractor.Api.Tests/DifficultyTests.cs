@@ -190,7 +190,7 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
         var health = Difficulties.Health(Noor, Settings, difficulty);
 
         Assert.NotNull(health);
-        Assert.Equal(Codex.Number(health.Value), facts["Health"]);
+        Assert.Equal(Codex.Magnitude((decimal)health.Value), facts["Health"]);
         Assert.Equal(difficulty.ToString(), facts["Difficulty"]);
     }
 
@@ -216,9 +216,6 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
         var band = Difficulties.Damage(arrow.Coefficients![0], Noor, Settings, difficulty);
 
         Assert.NotNull(band);
-        Assert.Contains(
-            Codex.Number((double)band.Low),
-            panel.TextContent,
-            StringComparison.Ordinal);
+        Assert.Contains(Codex.Magnitude(band.Low), panel.TextContent, StringComparison.Ordinal);
     }
 }
