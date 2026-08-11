@@ -44,6 +44,8 @@ public sealed class Settings
 
     public DifficultyScaling DifficultyScaling { get; }
 
+    public IReadOnlyList<LeagueEntry> Leagues { get; }
+
     public Settings(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -59,9 +61,11 @@ public sealed class Settings
         TemperCeilings tempers,
         DropItemLevels drops,
         Blessings blessings,
-        CreatureStats creatures)
+        CreatureStats creatures,
+        Leagues leagues)
     {
         DifficultyScaling = creatures.Scaling;
+        Leagues = leagues.All;
 
         StatCalculation = statCalculation;
         RandomStatPool = randomStatPool;
@@ -121,6 +125,7 @@ public sealed class Settings
         DropItemLevels = DropItemLevels,
         Blessings = Blessings,
         DifficultyScaling = DifficultyScaling,
+        Leagues = Leagues,
         SlotIcons = SlotIcons,
         RarityOrnaments = RarityOrnaments,
         RarityColorRows = RarityColorRows,

@@ -14,6 +14,14 @@ public sealed record CreatureAttributes
     public int? KillScore { get; init; }
 
     public int? SpiritPoints { get; init; }
+
+    public double? Intellect { get; init; }
+
+    public double? Strength { get; init; }
+
+    public double? Agility { get; init; }
+
+    public string? Scaling { get; init; }
 }
 
 public sealed class CreatureStats
@@ -31,6 +39,9 @@ public sealed class CreatureStats
     private const string SpiritPoints = "CRNpcAttributeSet.SpiritPointValue";
     private const string HealthScale = "BasicAttributeSet.DifficultyHealthScale";
     private const string DamageScale = "BasicAttributeSet.DifficultyDamageScale";
+    private const string Intellect = "BasicAttributeSet.Intellect";
+    private const string Strength = "BasicAttributeSet.Strength";
+    private const string Agility = "BasicAttributeSet.Agility";
 
     private readonly Dictionary<string, double> _base = new(StringComparer.OrdinalIgnoreCase);
 
@@ -45,6 +56,10 @@ public sealed class CreatureStats
     private readonly HashSet<string> _healthless = new(StringComparer.OrdinalIgnoreCase);
 
     public int Healthless => _healthless.Count;
+
+    private HashSet<string> _scaled = [];
+
+    public int ScaledApart => _scaled.Count;
 
     public CreatureStats(AbstractFileProvider provider)
     {
@@ -77,22 +92,53 @@ public sealed class CreatureStats
         var scaling = CurveRows.Load(
             provider, ScalingTable, "how far a creature's health and damage climb with difficulty");
 
+        var scaled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (rowName, _) in scaling.RowMap)
+        {
+            var named = rowName.Text.IndexOf('.');
+            if (named > 0) scaled.Add(rowName.Text[..named]);
+        }
+
+        scaled.Remove(DefaultNamespace);
+
+        _scaled = scaled;
+
+        var apart = new Dictionary<string, DifficultyScaling>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var scope in scaled)
+        {
+            apart[scope] = new DifficultyScaling
+            {
+                Health = Ladder(scaling, scope, HealthScale, required: false),
+                Damage = Ladder(scaling, scope, DamageScale, required: false),
+            };
+        }
+
         Scaling = new DifficultyScaling
         {
-            Health = Ladder(scaling, HealthScale),
-            Damage = Ladder(scaling, DamageScale),
+            Health = Ladder(scaling, DefaultNamespace, HealthScale, required: true),
+            Damage = Ladder(scaling, DefaultNamespace, DamageScale, required: true),
+            Namespaces = apart,
         };
     }
 
-    private static IReadOnlyDictionary<int, double> Ladder(UCurveTable table, string attribute)
+    private static IReadOnlyDictionary<int, double> Ladder(
+        UCurveTable table, string scope, string attribute, bool required)
     {
-        var wanted = $"{DefaultNamespace}.{attribute}";
+        var wanted = $"{scope}.{attribute}";
 
         var row = table.RowMap.FirstOrDefault(entry =>
-            entry.Key.Text.Equals(wanted, StringComparison.OrdinalIgnoreCase)).Value
-            ?? throw new InvalidOperationException(
-                $"{ScalingTable} carries no {wanted} row, so a creature's reading at a difficulty other than the " +
-                "first has no curve behind it.");
+            entry.Key.Text.Equals(wanted, StringComparison.OrdinalIgnoreCase)).Value;
+
+        if (row is null)
+        {
+            return required
+                ? throw new InvalidOperationException(
+                    $"{ScalingTable} carries no {wanted} row, so a creature's reading at a difficulty other than " +
+                    "the first has no curve behind it.")
+                : new Dictionary<int, double>();
+        }
 
         var steps = CurveRows.Keys(row);
 
@@ -119,6 +165,10 @@ public sealed class CreatureStats
             Resist = Row(characterId, Resist),
             KillScore = Ordinal(characterId, KillScore),
             SpiritPoints = Ordinal(characterId, SpiritPoints),
+            Intellect = Shared(characterId, Intellect),
+            Strength = Shared(characterId, Strength),
+            Agility = Shared(characterId, Agility),
+            Scaling = _scaled.Contains(characterId) ? characterId : null,
         };
 
         if (attributes is { Health: null, Armor: null, Resist: null, KillScore: null, SpiritPoints: null })
@@ -137,6 +187,9 @@ public sealed class CreatureStats
 
     private double? Row(string characterId, string attribute) =>
         _base.TryGetValue($"{characterId}.{attribute}", out var value) ? value : null;
+
+    private double? Shared(string characterId, string attribute) =>
+        Row(characterId, attribute) ?? Row(DefaultNamespace, attribute);
 
     private int? Ordinal(string characterId, string attribute) =>
         Row(characterId, attribute) is { } value ? (int)value : null;

@@ -58,6 +58,8 @@ public sealed record PublicEntity
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
+    public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
+
     public IReadOnlyList<PublicPlaceholder>? Placeholders { get; init; }
 
     public int? TalentRow { get; init; }
@@ -95,6 +97,10 @@ public sealed record PublicEntity
     public int? KillScore { get; init; }
     public int? SpiritPoints { get; init; }
     public bool? CountsTowardScore { get; init; }
+    public double? Intellect { get; init; }
+    public double? Strength { get; init; }
+    public double? Agility { get; init; }
+    public string? Scaling { get; init; }
 
     public IReadOnlyList<PublicCreatureAbility>? Abilities { get; init; }
 
@@ -154,6 +160,7 @@ public sealed record PublicEntity
             Duration = DocumentFields.Number(document, nameof(AbilityDocument.Duration)),
             Period = DocumentFields.Number(document, nameof(AbilityDocument.Period)),
             ScalesOff = Named(view.Codex.Scaling(DocumentFields.Words(document, nameof(AbilityDocument.ScalesOff)))),
+            Coefficients = (document as AbilityDocument)?.Coefficients,
             Placeholders = Tokens(tokens, tags, view),
             TalentRow = (document as TalentSlotDocument)?.Row,
             TalentColumn = (document as TalentSlotDocument)?.Column,
@@ -185,6 +192,10 @@ public sealed record PublicEntity
             KillScore = (document as CreatureDocument)?.KillScore,
             SpiritPoints = (document as CreatureDocument)?.SpiritPoints,
             CountsTowardScore = (document as CreatureDocument)?.CountsTowardScore,
+            Intellect = (document as CreatureDocument)?.Intellect,
+            Strength = (document as CreatureDocument)?.Strength,
+            Agility = (document as CreatureDocument)?.Agility,
+            Scaling = (document as CreatureDocument)?.Scaling,
             Abilities = Wielded((document as CreatureDocument)?.Abilities, view, origin),
             Passives = Wielded((document as CreatureDocument)?.Passives, view, origin),
             FoundIn = References((document as CreatureDocument)?.FoundIn, view, origin),

@@ -18,8 +18,40 @@ public static class TuningNamespace
         var whole = string.Join('.', segments);
         if (constants.IsNamespace(whole)) return whole;
 
-        var withoutType = string.Join('.', segments[1..]);
-        return segments.Length > 2 && constants.IsNamespace(withoutType) ? withoutType : null;
+        var withoutType = segments[1..];
+
+        for (var kept = 1; kept < withoutType.Length; kept++)
+        {
+            var candidate = string.Join(
+                '.', (string[])[string.Join('_', withoutType[..kept]), .. withoutType[kept..]]);
+
+            if (constants.IsNamespace(candidate)) return candidate;
+        }
+
+        return null;
+    }
+
+    public static string? FromBindings(IEnumerable<CurveBinding> bindings, ConstantsTable constants)
+    {
+        var under = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var binding in bindings)
+        {
+            var separator = binding.RowName.LastIndexOf('.');
+            if (separator <= 0) continue;
+
+            var prefix = binding.RowName[..separator];
+            if (!constants.IsNamespace(prefix)) continue;
+
+            under[prefix] = under.GetValueOrDefault(prefix) + 1;
+        }
+
+        if (under.Count == 0) return null;
+
+        var most = under.Max(scope => scope.Value);
+        var leading = under.Where(scope => scope.Value == most).Select(scope => scope.Key).ToArray();
+
+        return leading.Length == 1 ? leading[0] : null;
     }
 
     public static string? ForTalentTag(string tag, ConstantsTable constants)

@@ -9,3 +9,10 @@ public enum CreatureRank
 }
 
 public sealed record CreatureAbility(EntityReference Ability, string Phase, bool Shown);
+
+public sealed record AbilityCoefficient(string Attribute, double Value)
+{
+    public string? Part { get; init; }
+
+    public double? Spread { get; init; }
+}

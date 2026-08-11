@@ -12,6 +12,10 @@ public sealed class CreatureDocument : EntityDocument
     public int? KillScore { get; init; }
     public int? SpiritPoints { get; init; }
     public bool? CountsTowardScore { get; init; }
+    public double? Intellect { get; init; }
+    public double? Strength { get; init; }
+    public double? Agility { get; init; }
+    public string? Scaling { get; init; }
     public IReadOnlyList<CreatureAbility>? Abilities { get; init; }
     public IReadOnlyList<CreatureAbility>? Passives { get; init; }
     public IReadOnlyList<EntityReference>? FoundIn { get; init; }

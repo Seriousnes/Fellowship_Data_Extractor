@@ -1,9 +1,24 @@
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
 
-@if (PicksHero || Wearable || IsGem)
+@if (PicksHero || Wearable || IsGem || PicksDifficulty)
 {
     <Panel>
+        @if (PicksDifficulty)
+        {
+            <Knob Caption="Difficulty">
+                <select data-difficulty
+                        onchange="const u = new URL(location); u.searchParams.set('difficulty', this.value); location.href = u">
+                    @foreach (var step in Ladder)
+                    {
+                        <option value="@step.Difficulty" selected="@(step.Difficulty == Difficulty)">
+                            @step.Label (@step.Difficulty)
+                        </option>
+                    }
+                </select>
+            </Knob>
+        }
+
         @if (PicksHero)
         {
             <Knob Caption="Hero">
@@ -73,6 +88,12 @@
     private int DropItemLevel => Here.Shown is { } shown ? Store.DropItemLevel(shown) : 0;
 
     private bool PicksHero => Here.Readings.Count > 1 || (Here.Shown as ItemDocument)?.Heroes is { Count: > 1 };
+
+    private bool PicksDifficulty => Here.Shown is CreatureDocument || Store.Menacing(Here.Shown) is not null;
+
+    private IReadOnlyList<DifficultyStep> Ladder => Difficulties.Ladder(Store.Settings);
+
+    private int Difficulty => Store.Difficulty(Given("difficulty"));
 
     private string? Given(string knob) => Here.Asked.GetValueOrDefault(knob);
 

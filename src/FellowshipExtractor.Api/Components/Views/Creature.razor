@@ -1,6 +1,25 @@
 @using Fellowship.SDK.Models
+@inject IEntityStoreService Store
 
 <EntityView Entity="Entity">
+    <Panel Head="@($"At {Step.Label}")">
+        <Facts>
+            <Fact Label="Difficulty">@Step.Difficulty</Fact>
+            @if (Difficulties.Health(Drawn, Store.Settings, Step.Difficulty) is { } health)
+            {
+                <Fact Label="Health">@Codex.Number(health)</Fact>
+            }
+            @if (Difficulties.HealthScale(Store.Settings, Drawn.Scaling, Step.Difficulty) is { } toughness)
+            {
+                <Fact Label="Health scale" Unit="x">@Codex.Number(toughness)</Fact>
+            }
+            @if (Difficulties.DamageScale(Store.Settings, Drawn.Scaling, Step.Difficulty) is { } hitting)
+            {
+                <Fact Label="Damage scale" Unit="x">@Codex.Number(hitting)</Fact>
+            }
+        </Facts>
+    </Panel>
+
     @if (Phases.Count > 0)
     {
         <Panel Head="Abilities" Badge="@Drawn.Abilities!.Count.ToString()">
@@ -8,14 +27,37 @@
             {
                 <Rule />
                 <SubHead>@phase.Key</SubHead>
-                <Pills>
-                    @foreach (var slot in phase)
-                    {
-                        <Pill Badge="@(slot.Shown ? null : Hidden)">
-                            <Ref Entity="slot.Ability" />
-                        </Pill>
-                    }
-                </Pills>
+                <Table Items="phase.ToArray()" T="CreatureAbility">
+                    <Columns>
+                        <Column Head="Name">
+                            <Content Context="slot"><Ref Entity="slot.Ability" /></Content>
+                        </Column>
+                        <Column Head="Scales off">
+                            <Content Context="slot">
+                                @foreach (var coefficient in Stated(slot))
+                                {
+                                    <Chip>@Wording(coefficient)</Chip>
+                                }
+                            </Content>
+                        </Column>
+                        <Column Head="@($"Damage at {Step.Label}")" Class="cx-numeric">
+                            <Content Context="slot">
+                                @foreach (var band in Bands(slot))
+                                {
+                                    <div>@band</div>
+                                }
+                            </Content>
+                        </Column>
+                        <Column Head="" Class="cx-tags">
+                            <Content Context="slot">
+                                @if (!slot.Shown)
+                                {
+                                    <Chip>@Hidden</Chip>
+                                }
+                            </Content>
+                        </Column>
+                    </Columns>
+                </Table>
             }
         </Panel>
     }
@@ -48,12 +90,44 @@
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+
     private const string Hidden = "hidden";
 
     private CreatureDocument Drawn => (CreatureDocument)Entity;
 
+    private DifficultyStep Step = new(1, string.Empty, 1, "1");
+
     private IReadOnlyList<IGrouping<string, CreatureAbility>> Phases = [];
 
-    protected override void OnParametersSet() =>
+    protected override void OnParametersSet()
+    {
         Phases = [.. (Drawn.Abilities ?? []).GroupBy(slot => slot.Phase, StringComparer.Ordinal)];
+
+        var difficulty = Store.Difficulty(Here.Asked.GetValueOrDefault("difficulty"));
+
+        Step = Difficulties.At(Store.Settings, difficulty)
+            ?? new DifficultyStep(difficulty, string.Empty, difficulty, difficulty.ToString());
+    }
+
+    private IReadOnlyList<AbilityCoefficient> Stated(CreatureAbility slot) =>
+        Store.All(slot.Ability.Type, slot.Ability.Id).OfType<AbilityDocument>().FirstOrDefault()?.Coefficients ?? [];
+
+    private string Wording(AbilityCoefficient coefficient) =>
+        coefficient.Part is { Length: > 0 } part
+            ? $"{part}: {Codex.Number(coefficient.Value * 100)}% {coefficient.Attribute}"
+            : $"{Codex.Number(coefficient.Value * 100)}% {coefficient.Attribute}";
+
+    private IReadOnlyList<string> Bands(CreatureAbility slot) =>
+    [
+        .. Stated(slot)
+            .Select(coefficient => Difficulties.Damage(coefficient, Drawn, Store.Settings, Step.Difficulty))
+            .OfType<DamageBand>()
+            .Select(Printed),
+    ];
+
+    private static string Printed(DamageBand band) =>
+        band.Low == band.High
+            ? Codex.Number((double)band.Mean)
+            : $"{Codex.Number((double)band.Low)} to {Codex.Number((double)band.High)}";
 }

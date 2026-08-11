@@ -42,6 +42,10 @@ public interface IEntityStoreService
 
     int DropItemLevel(EntityDocument document);
 
+    int Difficulty(string? asked);
+
+    CreatureDocument? Menacing(EntityDocument? document);
+
     RarityEntry? Rarity(string? word, bool gem);
 }
 
@@ -246,6 +250,18 @@ public sealed class EntityStoreService : IEntityStoreService
         Plateau(document is ItemDocument { Rarity: Fellowship.SDK.Rarity.Legendary }
             ? LegendaryDropRow
             : DefaultDropRow);
+
+    public int Difficulty(string? asked) =>
+        Difficulties.Asked(asked, Settings)
+        ?? Settings.DifficultyScaling.Health.Keys.DefaultIfEmpty(1).Min();
+
+    public CreatureDocument? Menacing(EntityDocument? document) => document switch
+    {
+        CreatureDocument creature => creature,
+        AbilityDocument { Owner: { Type: EntityType.Creature } owner } =>
+            All(EntityType.Creature, owner.Id).OfType<CreatureDocument>().FirstOrDefault(),
+        _ => null,
+    };
 
     private int Plateau(string row) =>
         Settings.DropItemLevels.FirstOrDefault(

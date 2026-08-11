@@ -82,6 +82,7 @@ public sealed class TooltipResolver
     public TypeResolver Types { get; }
     public CreatureStats CreatureStats { get; }
     public CreatureLocations Locations { get; }
+    public Leagues Leagues { get; }
 
     public int NamespaceSupplied { get; private set; }
 
@@ -160,6 +161,7 @@ public sealed class TooltipResolver
         Sources = new ItemSources(provider, _assets, Dungeons, Vendors, HeroItems, Drops, Heroes);
 
         CreatureStats = new CreatureStats(provider);
+        Leagues = new Leagues(provider, _assets);
 
         Locations = new CreatureLocations(
             provider,
@@ -171,7 +173,7 @@ public sealed class TooltipResolver
             provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types,
             SlotGlyphs, new RarityOrnaments(provider, rarities), new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
-            CreatureStats);
+            CreatureStats, Leagues);
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -501,6 +503,10 @@ public sealed class TooltipResolver
                 PropertyWalk.Get(cdo, CountsTowardScoreField)?.GenericValue is false
                 ? false
                 : null,
+            Intellect = attributes?.Intellect,
+            Strength = attributes?.Strength,
+            Agility = attributes?.Agility,
+            Scaling = attributes?.Scaling,
             Abilities = Empty(Sourced(slots.Where(slot => !slot.Passive))),
             Passives = Empty(Sourced(slots.Where(slot => slot.Passive))),
             FoundIn = Empty(found),
@@ -628,8 +634,15 @@ public sealed class TooltipResolver
         AbilityPresentation? presentation,
         IconWriter? icons)
     {
-        var tuning = TuningNamespace.For(assetName, _constants);
         var bindings = cdo is null ? [] : CurveBindings.Collect(cdo, _constants);
+
+        var tuning = TuningNamespace.For(assetName, _constants);
+
+        if (tuning is null && TuningNamespace.FromBindings(bindings, _constants) is { } shared)
+        {
+            tuning = shared;
+            NamespaceFromBindings++;
+        }
 
         var tokenHolder = (IPropertyHolder?)presentation?.Row ?? cdo;
 
@@ -764,6 +777,7 @@ public sealed class TooltipResolver
             ScalesWithHaste = ScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
+            Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand),
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Constants = baseline.Count == 0 ? null : baseline,
             Talents = talents.Count == 0
@@ -823,6 +837,54 @@ public sealed class TooltipResolver
     }
 
     private static string Leaf(string property) => property[(property.LastIndexOf('.') + 1)..];
+
+    private IReadOnlyList<AbilityCoefficient>? Stated(
+        IReadOnlyDictionary<string, object?> reachable,
+        IReadOnlySet<string> own,
+        IReadOnlySet<string> taken,
+        string? tuning,
+        EffectSpreads bands,
+        double? ownBand)
+    {
+        var stated = Coefficients.All(reachable, own, taken);
+
+        if (stated.Count == 0) return null;
+
+        StatedCoefficients += stated.Count;
+
+        return
+        [
+            .. stated.Select(coefficient => new AbilityCoefficient(coefficient.Attribute, coefficient.Value)
+            {
+                Part = coefficient.Part,
+                Spread = Stated(reachable, coefficient.Key)
+                    ?? Band(coefficient.Key, tuning, bands, ownBand, null),
+            }),
+        ];
+    }
+
+    private const string SpreadRow = "Spread";
+
+    private static double? Stated(IReadOnlyDictionary<string, object?> reachable, string coefficientKey)
+    {
+        var scope = coefficientKey;
+
+        while (scope.LastIndexOf('.') is var separator && separator > 0)
+        {
+            scope = scope[..separator];
+
+            if (reachable.GetValueOrDefault($"{scope}.{SpreadRow}") is double stated)
+            {
+                return stated == 0 ? null : stated;
+            }
+        }
+
+        return reachable.GetValueOrDefault(SpreadRow) is double band && band != 0 ? band : null;
+    }
+
+    public int StatedCoefficients { get; private set; }
+
+    public int NamespaceFromBindings { get; private set; }
 
     private double? Band(
         string coefficientKey, string? tuning, EffectSpreads bands, double? ownBand, double? tokenBand)
@@ -985,6 +1047,7 @@ public sealed class TooltipResolver
         Period = outer.Period ?? inner.Period,
         ScalesWithHaste = outer.ScalesWithHaste ?? inner.ScalesWithHaste,
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
+        Coefficients = Union(outer.Coefficients, inner.Coefficients),
         Placeholders = Union(outer.Placeholders, inner.Placeholders),
         Constants = Union(outer.Constants, inner.Constants),
         Talents = UnionTalents(outer.Talents, inner.Talents),
@@ -1019,6 +1082,13 @@ public sealed class TooltipResolver
     {
         if (first is null || second is null) return first ?? second;
         return [.. first.Concat(second).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+    }
+
+    private static IReadOnlyList<AbilityCoefficient>? Union(
+        IReadOnlyList<AbilityCoefficient>? first, IReadOnlyList<AbilityCoefficient>? second)
+    {
+        if (first is null || second is null) return first ?? second;
+        return [.. first.Concat(second).Distinct()];
     }
 
     private static IReadOnlyDictionary<string, T>? Union<T>(

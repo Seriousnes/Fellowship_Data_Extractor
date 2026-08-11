@@ -67,5 +67,7 @@ public sealed record SettingsFile
 
     public DifficultyScaling DifficultyScaling { get; init; } = new();
 
+    public IReadOnlyList<LeagueEntry> Leagues { get; init; } = [];
+
     public StatCalculationFile StatCalculation { get; init; } = new();
 }

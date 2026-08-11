@@ -215,7 +215,13 @@ public static class ExportAllCommand
             string.Join(", ", iconless.Select(entry => $"{entry.Key} {entry.Value}")));
         Console.WriteLine(
             $"  {resolver.CreatureStats.Namespaces} creature tuning namespaces, " +
-            $"{resolver.CreatureStats.Healthless} creatures resolving neither health row");
+            $"{resolver.CreatureStats.Healthless} creatures resolving neither health row, " +
+            $"{resolver.CreatureStats.ScaledApart} scaling apart from Default");
+
+        Console.WriteLine(
+            $"  {resolver.Leagues.Count} leagues covering difficulty 1 to {resolver.Leagues.Ceiling}, " +
+            $"{resolver.StatedCoefficients} coefficients stated outside a description, " +
+            $"{resolver.NamespaceFromBindings} namespaces taken from the rows an entity binds");
         Console.WriteLine($"  {resolver.NamespaceSupplied} tuning rows supplied by namespace that no asset names");
         Console.WriteLine(
             $"  {resolver.DeclaredByBlueprint} tokens bound by the ability's ResolveDynamicTextFloat, " +

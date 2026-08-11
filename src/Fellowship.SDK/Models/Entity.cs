@@ -161,6 +161,16 @@ public sealed record Entity
 
     public bool? CountsTowardScore { get; init; }
 
+    public double? Intellect { get; init; }
+
+    public double? Strength { get; init; }
+
+    public double? Agility { get; init; }
+
+    public string? Scaling { get; init; }
+
+    public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
+
     public IReadOnlyList<PhaseAbility>? Abilities { get; init; }
 
     public IReadOnlyList<PhaseAbility>? Passives { get; init; }
