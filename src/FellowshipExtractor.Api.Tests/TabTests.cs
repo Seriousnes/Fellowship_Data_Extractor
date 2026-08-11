@@ -128,7 +128,7 @@ public class TabRouteTests(RouteTests.Factory factory) : IClassFixture<RouteTest
     [Fact]
     public async Task An_entity_page_of_an_unlisted_type_is_not_found()
     {
-        var response = await client.GetAsync("/entity/talent-slot/1", Xunit.TestContext.Current.CancellationToken);
+        var response = await client.GetAsync("/talent-slot/1", Xunit.TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }

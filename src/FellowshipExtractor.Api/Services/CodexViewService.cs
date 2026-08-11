@@ -141,7 +141,7 @@ public sealed class CodexViewService(
     }
 
     public string Href(EntityType type, int id) =>
-        $"/entity/{EntityTypes.Slug(type)}/{id.ToString(CultureInfo.InvariantCulture)}";
+        $"/{EntityTypes.Slug(type)}/{id.ToString(CultureInfo.InvariantCulture)}";
 
     public string Tip(EntityDocument document)
     {

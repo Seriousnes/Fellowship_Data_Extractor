@@ -27,7 +27,7 @@ public static class StatMagnitudes
         int itemLevel,
         TooltipQuery query)
     {
-        var armor = query.Armor is { } worn
+        var armor = (query.Armor ?? Armor(item, calculation, itemLevel)) is { } worn
             ? new StatLine(ArmorStat, Label(calculation, ArmorStat), worn, SlotKinds.Fixed, Rolled: false)
             : null;
 
@@ -46,7 +46,7 @@ public static class StatMagnitudes
 
         if (armor is { } worth) lines.Add(worth);
 
-        foreach (var declared in (item.Stats ?? []).OrderBy(slot => slot.Kind == SlotKinds.Primary ? 0 : 1))
+        foreach (var declared in item.Stats ?? [])
         {
             var at = taken.GetValueOrDefault(declared.Stat);
             taken[declared.Stat] = at + 1;
@@ -60,16 +60,22 @@ public static class StatMagnitudes
             var value = sent
                 ?? (onPrimaryPool ? primaryPool : secondaryPool)
                     * declared.Weight / 100m
-                    * Multiplier(settings, declared.Stat, onPrimaryPool, primaryAttributes);
+                    * Multiplier(settings, calculation.FixedSlot, declared.Stat, onPrimaryPool, primaryAttributes);
 
             lines.Add(new StatLine(
                 declared.Stat, Label(calculation, declared.Stat), value, declared.Kind, Rolled: false));
         }
 
         var spare = Spare(item, query, taken);
+
+        foreach (var stat in query.RandomStats)
+        {
+            spare.Add((stat, Roll(calculation, stat, primaryAttributes, primaryPool, secondaryPool)));
+        }
+
         var spareAt = 0;
 
-        for (var index = 0; index < rolledSlots; index++)
+        for (var index = 0; index < Math.Max(rolledSlots, spare.Count); index++)
         {
             if (spareAt < spare.Count)
             {
@@ -91,6 +97,18 @@ public static class StatMagnitudes
         {
             Value = Round(line.Value, calculation, line.Stat),
         })];
+    }
+
+    public static decimal? Armor(ItemDocument item, StatCalculationFile calculation, int itemLevel)
+    {
+        if (item.Slot is not { } slot || !calculation.SlotWeights.TryGetValue(slot, out var worn)) return null;
+        if (worn.ArmorWeight <= 0) return null;
+
+        if (item.ArmorType?.ToString() is not { } armorType ||
+            !calculation.ArmorWeights.TryGetValue(armorType, out var kind)) return null;
+
+        return Math.Ceiling(
+            (decimal)worn.ArmorWeight * (itemLevel * (decimal)kind.ArmorWeight + (decimal)kind.FlatArmor));
     }
 
     private static List<StatLine> Fold(List<StatLine> lines)
@@ -148,6 +166,29 @@ public static class StatMagnitudes
         return spare;
     }
 
+    private static decimal Roll(
+        StatCalculationFile calculation,
+        string stat,
+        IReadOnlySet<string> primaryAttributes,
+        decimal primaryPool,
+        decimal secondaryPool)
+    {
+        var settings = calculation.DynamicSlot;
+
+        var stamina = (decimal)(settings.StaminaWeight ?? 0);
+        var secondary = (decimal)(settings.SecondaryWeight ?? 0);
+
+        var onPrimaryPool = OnPrimaryPool(stat, primaryAttributes);
+
+        var weight = stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase) ? stamina
+            : onPrimaryPool ? Math.Max(0m, 1m - stamina - secondary)
+            : secondary;
+
+        return (onPrimaryPool ? primaryPool : secondaryPool)
+            * weight
+            * Multiplier(settings, calculation.FixedSlot, stat, onPrimaryPool, primaryAttributes);
+    }
+
     private static decimal Expected(StatCalculationFile calculation, decimal primaryPool, decimal secondaryPool)
     {
         var settings = calculation.DynamicSlot;
@@ -168,20 +209,26 @@ public static class StatMagnitudes
         stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase) || primaryAttributes.Contains(stat);
 
     private static decimal Multiplier(
-        SlotStatSettings settings, string stat, bool onPrimaryPool, IReadOnlySet<string> primaryAttributes)
+        SlotStatSettings settings,
+        SlotStatSettings fallback,
+        string stat,
+        bool onPrimaryPool,
+        IReadOnlySet<string> primaryAttributes)
     {
         if (stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase))
         {
-            return (decimal)(settings.StaminaMultiplierAtThreshold ?? 1);
+            return Shipped(settings.StaminaMultiplierAtThreshold, fallback.StaminaMultiplierAtThreshold);
         }
 
         if (onPrimaryPool && primaryAttributes.Contains(stat))
         {
-            return (decimal)(settings.PrimaryMultiplier ?? 1);
+            return Shipped(settings.PrimaryMultiplier, fallback.PrimaryMultiplier);
         }
 
-        return (decimal)(settings.SecondaryMultiplier ?? 1);
+        return Shipped(settings.SecondaryMultiplier, fallback.SecondaryMultiplier);
     }
+
+    private static decimal Shipped(double? own, double? fallback) => (decimal)(own ?? fallback ?? 1);
 
     private static decimal Pool(PrimaryStatPool? pool, int itemLevel) =>
         pool is null || itemLevel < pool.MinimumItemLevel

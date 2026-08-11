@@ -99,7 +99,7 @@ public class VersionsTests : BunitContext
             Shown = cloth,
             Readings = [cloth, leather],
             Reading = "Aeona",
-            Page = $"/entity/{EntityTypes.Slug(EntityType.Item)}/1",
+            Page = $"/{EntityTypes.Slug(EntityType.Item)}/1",
             Noun = "item",
         };
 
@@ -118,7 +118,7 @@ public class VersionsTests : BunitContext
 
         var wearer = cut.Find("div.cx-roster a");
 
-        Assert.Equal($"/entity/{EntityTypes.Slug(EntityType.Item)}/1?hero=Aeona", wearer.GetAttribute("href"));
+        Assert.Equal($"/{EntityTypes.Slug(EntityType.Item)}/1?hero=Aeona", wearer.GetAttribute("href"));
         Assert.Equal("page", wearer.GetAttribute("aria-current"));
         Assert.Equal("Aeona", wearer.QuerySelector("span.cx-who")!.TextContent);
     }
@@ -135,7 +135,7 @@ public class VersionsTests : BunitContext
         var here = new Bearings
         {
             Shown = reading, Readings = [reading, reading],
-            Page = $"/entity/{EntityTypes.Slug(EntityType.Item)}/1", Noun = "item",
+            Page = $"/{EntityTypes.Slug(EntityType.Item)}/1", Noun = "item",
         };
 
         var cut = Render<Versions>(p => p.AddCascadingValue(here));
@@ -152,7 +152,7 @@ public class VersionsTests : BunitContext
         var here = new Bearings
         {
             Shown = first, Readings = [first, second],
-            Page = $"/entity/{EntityTypes.Slug(EntityType.Item)}/1", Noun = "item",
+            Page = $"/{EntityTypes.Slug(EntityType.Item)}/1", Noun = "item",
         };
 
         var cut = Render<Versions>(p => p.AddCascadingValue(here));

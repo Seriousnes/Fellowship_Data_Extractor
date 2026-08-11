@@ -54,7 +54,7 @@ public class ListingTests(Export export)
         var hero = export.Store.Wearer(row)!.Name;
         var wearer = Uri.EscapeDataString(hero);
 
-        Assert.Equal($"/entity/item/{Betrayers}?hero={wearer}", export.View.Href(row));
+        Assert.Equal($"/item/{Betrayers}?hero={wearer}", export.View.Href(row));
         Assert.Equal($"/api/item/{Betrayers}/tooltip?hero={wearer}", export.View.Tip(row));
     }
 
@@ -65,7 +65,7 @@ public class ListingTests(Export export)
             .First(row => EntityTypes.TypeOf(row) == EntityType.Item &&
                 export.Store.All(EntityType.Item, row.Id).Count == 1);
 
-        Assert.Equal($"/entity/item/{only.Id}", export.View.Href(only));
+        Assert.Equal($"/item/{only.Id}", export.View.Href(only));
     }
 
     [Fact]
