@@ -3,6 +3,8 @@ using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 
+using Fellowship.SDK.Models;
+
 using FellowshipExtractor.Commands;
 
 namespace FellowshipExtractor.Tooltip;
@@ -29,6 +31,9 @@ public sealed class TooltipResolver
     private const string CreatureTable = "CRAICharacter";
     private const string ItemTable = "ItemID";
     private const string AbilityTable = "GameplayAbility";
+    private const string CharacterIdField = "CharacterID";
+    private const string CharacterTagsField = "CharacterTags";
+    private const string CountsTowardScoreField = "CountTowardsDungeonScore";
 
     private readonly AbstractFileProvider _provider;
     private readonly FAssetData[] _assets;
@@ -75,6 +80,9 @@ public sealed class TooltipResolver
     public ItemTraits Traits { get; }
     public Settings Settings { get; }
     public TypeResolver Types { get; }
+    public CreatureStats CreatureStats { get; }
+    public CreatureLocations Locations { get; }
+    public Leagues Leagues { get; }
 
     public int NamespaceSupplied { get; private set; }
 
@@ -129,7 +137,7 @@ public sealed class TooltipResolver
         Tempers = new TemperCeilings(provider, rarities);
         Drops = new DropItemLevels(provider, _assets);
         Armor = new ArmorTypes(provider, _assets);
-        SetBonuses = new ItemSetBonuses(provider, _assets, _augmentationIds);
+        SetBonuses = new ItemSetBonuses(provider, _assets, _augmentationIds, _tags);
         TableNames = new ItemTableNames(provider, _assets, rarities);
         RuleSets = new DynamicItemRuleSets(provider, _assets);
         Gems = new GemDefinitions(provider, _assets, _constants, _augmentationIds, rarities);
@@ -152,10 +160,20 @@ public sealed class TooltipResolver
         Vendors = new VendorInventories(provider, _assets);
         Sources = new ItemSources(provider, _assets, Dungeons, Vendors, HeroItems, Drops, Heroes);
 
+        CreatureStats = new CreatureStats(provider);
+        Leagues = new Leagues(provider, _assets);
+
+        Locations = new CreatureLocations(
+            provider,
+            Dungeons,
+            [.. _tags.Where(tag => tag.Table.Equals(CreatureTable, StringComparison.OrdinalIgnoreCase))
+                .Select(tag => tag.Name)]);
+
         Settings = new Settings(
             provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types,
             SlotGlyphs, new RarityOrnaments(provider, rarities), new RarityColorRows(provider, rarities),
-            new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants));
+            new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
+            CreatureStats, Leagues);
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -163,7 +181,7 @@ public sealed class TooltipResolver
         EffectNames = new EffectNameSources(
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
 
-        Types = new TypeResolver(_tags, Talents, Gems, Traits, SetBonuses, Mappings);
+        Types = new TypeResolver(_tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons);
 
         Owners = new AbilityOwners(provider, _assets, _tags);
     }
@@ -259,6 +277,17 @@ public sealed class TooltipResolver
         {
             if (Talents.ForAugmentation(tag.Name) is { } talent) entity = WithTalent(entity, talent, icons);
             if (Gems.ForAugmentation(tag.Name) is { } node) entity = WithGemNode(entity, node, icons);
+        }
+
+        if (tag.Table.Equals(CreatureTable, StringComparison.OrdinalIgnoreCase))
+        {
+            entity = WithCreature(entity, tag, cdo);
+        }
+
+        if (tag.Table.Equals(TypeResolver.LevelTable, StringComparison.OrdinalIgnoreCase) &&
+            Dungeons.Find(tag.Name) is { } dungeon)
+        {
+            entity = WithDungeon(entity, dungeon, icons);
         }
 
         entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
@@ -445,6 +474,93 @@ public sealed class TooltipResolver
         };
     }
 
+    private Entity WithCreature(Entity entity, TagRecord tag, UObject? cdo)
+    {
+        var attributes = cdo is null
+            ? null
+            : PropertyWalk.GetString(cdo, CharacterIdField) is { } characterId
+                ? CreatureStats.For(characterId)
+                : null;
+
+        var slots = Owners.WieldedBy(tag.Name);
+
+        var found = Locations.For(tag.Name)
+            .Select(level => Dungeons.Find(level) is { } dungeon && FindTag(TypeResolver.LevelTable, level) is { } row
+                ? new IconSource(TypeResolver.LevelTable, row.NetId, dungeon.DisplayName)
+                : null)
+            .OfType<IconSource>()
+            .ToArray();
+
+        return entity with
+        {
+            Rank = cdo is null ? null : Ranked(PropertyWalk.GetTags(cdo, CharacterTagsField)),
+            Health = attributes?.Health,
+            Armor = attributes?.Armor,
+            Resist = attributes?.Resist,
+            KillScore = attributes?.KillScore,
+            SpiritPoints = attributes?.SpiritPoints,
+            CountsTowardScore = cdo is not null &&
+                PropertyWalk.Get(cdo, CountsTowardScoreField)?.GenericValue is false
+                ? false
+                : null,
+            Intellect = attributes?.Intellect,
+            Strength = attributes?.Strength,
+            Agility = attributes?.Agility,
+            Scaling = attributes?.Scaling,
+            Abilities = Empty(Sourced(slots.Where(slot => !slot.Passive))),
+            Passives = Empty(Sourced(slots.Where(slot => slot.Passive))),
+            FoundIn = Empty(found),
+        };
+    }
+
+    private IReadOnlyList<PhaseAbility> Sourced(IEnumerable<CreatureSlot> slots)
+    {
+        var held = new List<PhaseAbility>();
+
+        foreach (var slot in slots)
+        {
+            var source = Owned(slot.Ability, AbilityTable)
+                ?? Owned(slot.Ability, EffectTable)
+                ?? Owned(slot.Ability, TalentTrees.AugmentationTable);
+
+            if (source is null) continue;
+
+            held.Add(new PhaseAbility(source, DocumentProjection.Spaced(slot.Phase), slot.Shown));
+        }
+
+        return held;
+    }
+
+    private static CreatureRank? Ranked(IReadOnlyList<string>? tags)
+    {
+        foreach (var (tag, rank) in Ranks)
+        {
+            if (tags?.Contains(tag, StringComparer.OrdinalIgnoreCase) is true) return rank;
+        }
+
+        return null;
+    }
+
+    private static readonly (string Tag, CreatureRank Rank)[] Ranks =
+    [
+        ("ActorTypeTags.Boss", CreatureRank.Boss),
+        ("ActorTypeTags.Elite", CreatureRank.Elite),
+        ("ActorTypeTags.FriendlyNPC", CreatureRank.Friendly),
+        ("ActorTypeTags.Enemy", CreatureRank.Enemy),
+    ];
+
+    private static Entity WithDungeon(Entity entity, Dungeon dungeon, IconWriter? icons) => entity with
+    {
+        DisplayName = entity.DisplayName ?? dungeon.DisplayName,
+        Description = entity.Description ?? dungeon.Description,
+        Icon = entity.Icon ?? Written(dungeon.BannerPath, icons),
+        Background = Written(dungeon.BackgroundPath, icons),
+        MaxPlayers = dungeon.MaxPlayers,
+        QualifierTime = dungeon.QualifierTime,
+        RequiredScore = dungeon.RequiredScore,
+        MinimumHeroRank = dungeon.MinimumHeroRank,
+    };
+
     private IconSource? Owned(string? named, string table)
     {
         if (named is null or AbilityOwners.Contested) return null;
@@ -470,7 +586,7 @@ public sealed class TooltipResolver
 
         return entity with
         {
-            Sources = Empty(Sources.Dropped(DropsIn(cdo))),
+            Sources = Empty(Sources.Dropped(DropsIn(cdo), level => FindTag(TypeResolver.LevelTable, level)?.NetId)),
             ItemLevel = Sources.DropLevel(tiers.Count > 0 && tiers.All(tier => tier == top)),
         };
     }
@@ -518,8 +634,15 @@ public sealed class TooltipResolver
         AbilityPresentation? presentation,
         IconWriter? icons)
     {
-        var tuning = TuningNamespace.For(assetName, _constants);
         var bindings = cdo is null ? [] : CurveBindings.Collect(cdo, _constants);
+
+        var tuning = TuningNamespace.For(assetName, _constants);
+
+        if (tuning is null && TuningNamespace.FromBindings(bindings, _constants) is { } shared)
+        {
+            tuning = shared;
+            NamespaceFromBindings++;
+        }
 
         var tokenHolder = (IPropertyHolder?)presentation?.Row ?? cdo;
 
@@ -654,6 +777,7 @@ public sealed class TooltipResolver
             ScalesWithHaste = ScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
+            Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand, [.. scaling]),
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Constants = baseline.Count == 0 ? null : baseline,
             Talents = talents.Count == 0
@@ -713,6 +837,56 @@ public sealed class TooltipResolver
     }
 
     private static string Leaf(string property) => property[(property.LastIndexOf('.') + 1)..];
+
+    private IReadOnlyList<AbilityCoefficient>? Stated(
+        IReadOnlyDictionary<string, object?> reachable,
+        IReadOnlySet<string> own,
+        IReadOnlySet<string> taken,
+        string? tuning,
+        EffectSpreads bands,
+        double? ownBand,
+        IReadOnlyList<string> capturedAttributes)
+    {
+        var stated = Coefficients.All(reachable, own, taken);
+
+        if (stated.Count == 0) return null;
+
+        StatedCoefficients += stated.Count;
+
+        return
+        [
+            .. stated.Select(coefficient => new AbilityCoefficient(
+                Coefficients.Captured(coefficient.Attribute, capturedAttributes), coefficient.Value)
+            {
+                Part = coefficient.Part,
+                Spread = Stated(reachable, coefficient.Key)
+                    ?? Band(coefficient.Key, tuning, bands, ownBand, null),
+            }),
+        ];
+    }
+
+    private const string SpreadRow = "Spread";
+
+    private static double? Stated(IReadOnlyDictionary<string, object?> reachable, string coefficientKey)
+    {
+        var scope = coefficientKey;
+
+        while (scope.LastIndexOf('.') is var separator && separator > 0)
+        {
+            scope = scope[..separator];
+
+            if (reachable.GetValueOrDefault($"{scope}.{SpreadRow}") is double stated)
+            {
+                return stated == 0 ? null : stated;
+            }
+        }
+
+        return reachable.GetValueOrDefault(SpreadRow) is double band && band != 0 ? band : null;
+    }
+
+    public int StatedCoefficients { get; private set; }
+
+    public int NamespaceFromBindings { get; private set; }
 
     private double? Band(
         string coefficientKey, string? tuning, EffectSpreads bands, double? ownBand, double? tokenBand)
@@ -875,6 +1049,7 @@ public sealed class TooltipResolver
         Period = outer.Period ?? inner.Period,
         ScalesWithHaste = outer.ScalesWithHaste ?? inner.ScalesWithHaste,
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
+        Coefficients = Union(outer.Coefficients, inner.Coefficients),
         Placeholders = Union(outer.Placeholders, inner.Placeholders),
         Constants = Union(outer.Constants, inner.Constants),
         Talents = UnionTalents(outer.Talents, inner.Talents),
@@ -909,6 +1084,13 @@ public sealed class TooltipResolver
     {
         if (first is null || second is null) return first ?? second;
         return [.. first.Concat(second).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+    }
+
+    private static IReadOnlyList<AbilityCoefficient>? Union(
+        IReadOnlyList<AbilityCoefficient>? first, IReadOnlyList<AbilityCoefficient>? second)
+    {
+        if (first is null || second is null) return first ?? second;
+        return [.. first.Concat(second).Distinct()];
     }
 
     private static IReadOnlyDictionary<string, T>? Union<T>(

@@ -42,6 +42,10 @@ public sealed class Settings
 
     public BlessingEntry Blessings { get; }
 
+    public DifficultyScaling DifficultyScaling { get; }
+
+    public IReadOnlyList<LeagueEntry> Leagues { get; }
+
     public Settings(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -56,8 +60,13 @@ public sealed class Settings
         SectionHeadingRows headings,
         TemperCeilings tempers,
         DropItemLevels drops,
-        Blessings blessings)
+        Blessings blessings,
+        CreatureStats creatures,
+        Leagues leagues)
     {
+        DifficultyScaling = creatures.Scaling;
+        Leagues = leagues.All;
+
         StatCalculation = statCalculation;
         RandomStatPool = randomStatPool;
         GemTypes = gemTypes;
@@ -115,6 +124,8 @@ public sealed class Settings
         MaxTempers = MaxTempers,
         DropItemLevels = DropItemLevels,
         Blessings = Blessings,
+        DifficultyScaling = DifficultyScaling,
+        Leagues = Leagues,
         SlotIcons = SlotIcons,
         RarityOrnaments = RarityOrnaments,
         RarityColorRows = RarityColorRows,

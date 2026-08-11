@@ -74,6 +74,11 @@ public static class ExportAllCommand
             $"item traits:        {resolver.Traits.Count} rows, {resolver.Traits.BoundRuns} of " +
             $"{resolver.Traits.TotalRuns} rank runs bound to a curve");
         Console.WriteLine($"set bonuses:        {resolver.SetBonuses.Count} rows");
+        Console.WriteLine(
+            $"dungeons:           {resolver.Dungeons.Count} named, {resolver.Locations.Dungeons} with a map, " +
+            $"{resolver.Locations.Maps} umaps read, {resolver.Locations.Placed} creatures placed, " +
+            $"{resolver.Locations.Housed} of them by the folder they live in, " +
+            $"{resolver.Locations.Unplaced} placed in none");
         Console.WriteLine($"calculation presets:{resolver.PresetCount} rows carrying a default spread");
         Console.WriteLine(
             $"settings:           {resolver.Settings.Heroes.Count} heroes, {resolver.Settings.Rarities.Count} " +
@@ -154,11 +159,28 @@ public static class ExportAllCommand
             .GroupBy(row => (Table: row.Table!, NetId: row.NetId!.Value))
             .ToDictionary(group => group.Key, group => group.First().Type);
 
-        DocumentProjection.TypeLookup lookup = (table, netId) => types.GetValueOrDefault((table, netId));
+        var names = new Dictionary<(EntityType Type, int Id), string>();
 
         foreach (var record in resolved)
         {
-            await target.WriteDocumentAsync(DocumentProjection.From(record, lookup), default);
+            if (record.Type is not { } type) continue;
+            if (DocumentProjection.Name(record) is not { } named) continue;
+
+            names.TryAdd((type, record.NetId!.Value), named);
+
+            if (DocumentProjection.Implied(record) is { } implied && implied.Name is { } borne)
+            {
+                names.TryAdd((EntityTypes.TypeOf(implied), implied.Id), borne);
+            }
+        }
+
+        var references = new DocumentProjection.References(
+            (table, netId) => types.GetValueOrDefault((table, netId)),
+            (type, id) => names.GetValueOrDefault((type, id)));
+
+        foreach (var record in resolved)
+        {
+            await target.WriteDocumentAsync(DocumentProjection.From(record, references), default);
             written++;
 
             if (DocumentProjection.Implied(record) is { } implied)
@@ -192,6 +214,15 @@ public static class ExportAllCommand
         Console.WriteLine(
             $"  {iconless.Values.Sum()} named entries still with no icon: " +
             string.Join(", ", iconless.Select(entry => $"{entry.Key} {entry.Value}")));
+        Console.WriteLine(
+            $"  {resolver.CreatureStats.Namespaces} creature tuning namespaces, " +
+            $"{resolver.CreatureStats.Healthless} creatures resolving neither health row, " +
+            $"{resolver.CreatureStats.ScaledApart} scaling apart from Default");
+
+        Console.WriteLine(
+            $"  {resolver.Leagues.Count} leagues covering difficulty 1 to {resolver.Leagues.Ceiling}, " +
+            $"{resolver.StatedCoefficients} coefficients stated outside a description, " +
+            $"{resolver.NamespaceFromBindings} namespaces taken from the rows an entity binds");
         Console.WriteLine($"  {resolver.NamespaceSupplied} tuning rows supplied by namespace that no asset names");
         Console.WriteLine(
             $"  {resolver.DeclaredByBlueprint} tokens bound by the ability's ResolveDynamicTextFloat, " +

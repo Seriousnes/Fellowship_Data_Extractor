@@ -67,7 +67,7 @@ public class TooltipTests : BunitContext
             Id = 1,
             ArmorType = ArmorType.Cloth,
             Description = "burns",
-            SetBonus = ["Ironhide"],
+            SetBonus = [new Fellowship.SDK.Models.EntityReference(EntityType.SetBonus, 1769, "Draconic Deceit")],
         };
 
         var cut = Draw(entity);
@@ -127,7 +127,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Names_a_granted_ability_beside_its_badge()
     {
-        var entity = new ItemDocument { Id = 5246, GrantsId = 432 };
+        var entity = new ItemDocument { Id = 5246, Grants = new Fellowship.SDK.Models.EntityReference(EntityType.RelicPower, 432, "Conjure Portal") };
 
         var cut = Draw(entity);
 
@@ -220,7 +220,7 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Counts_the_legendary_rolls_it_draws()
     {
-        var entity = new ItemDocument { Id = 5216, LegendaryStatIds = [696, 695, 694] };
+        var entity = new ItemDocument { Id = 5216, LegendaryStats = [.. new[] { 696, 695, 694 }.Select(id => new Fellowship.SDK.Models.EntityReference(EntityType.LegendaryStat, id, null))] };
 
         var cut = Draw(entity);
 
@@ -231,12 +231,20 @@ public class TooltipTests : BunitContext
     [Fact]
     public void Names_the_sets_a_piece_counts_towards_with_no_piece_count()
     {
-        var entity = new ItemDocument { Id = 1, SetBonus = ["Ironhide", "Emberweave"] };
+        var entity = new ItemDocument
+        {
+            Id = 1,
+            SetBonus =
+            [
+                new Fellowship.SDK.Models.EntityReference(EntityType.SetBonus, 1769, "Draconic Deceit"),
+                new Fellowship.SDK.Models.EntityReference(EntityType.SetBonus, 1770, "Draconic Fury"),
+            ],
+        };
 
         var cut = Draw(entity);
 
         Assert.Equal("Set Bonus", cut.Find("div.sec.setbonus span").TextContent);
-        Assert.Equal("Ironhide, Emberweave", cut.Find("div.grp p.desc").TextContent);
+        Assert.Equal("Draconic Deceit, Draconic Fury", cut.Find("div.grp p.desc").TextContent);
     }
 
     [Fact]

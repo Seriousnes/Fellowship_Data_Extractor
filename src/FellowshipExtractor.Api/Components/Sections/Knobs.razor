@@ -1,9 +1,16 @@
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
 
-@if (PicksHero || Wearable || IsGem)
+@if (PicksHero || Wearable || IsGem || PicksDifficulty)
 {
     <Panel>
+        @if (PicksDifficulty)
+        {
+            <Knob Caption="Difficulty">
+                <DifficultyKnob Difficulty="Difficulty" />
+            </Knob>
+        }
+
         @if (PicksHero)
         {
             <Knob Caption="Hero">
@@ -73,6 +80,10 @@
     private int DropItemLevel => Here.Shown is { } shown ? Store.DropItemLevel(shown) : 0;
 
     private bool PicksHero => Here.Readings.Count > 1 || (Here.Shown as ItemDocument)?.Heroes is { Count: > 1 };
+
+    private bool PicksDifficulty => Here.Shown is CreatureDocument || Store.Menacing(Here.Shown) is not null;
+
+    private int Difficulty => Store.Difficulty(Given(DifficultyKnob.Asked));
 
     private string? Given(string knob) => Here.Asked.GetValueOrDefault(knob);
 

@@ -1,10 +1,13 @@
 using FellowshipExtractor.Tooltip;
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Models;
 
 namespace FellowshipExtractor.Tests;
 
 public sealed class DocumentTests
 {
+    private static readonly DocumentProjection.References Nothing = new((_, _) => null, (_, _) => null);
+
     [Fact]
     public void ADocumentClassIsNamedForItsType()
     {
@@ -28,7 +31,7 @@ public sealed class DocumentTests
             name => Assert.True(IsRequired(typeof(GemDocument).GetProperty(name)!)));
 
         Assert.All(
-            new[] { "Hero", "Row", "Column", "Cost", "TalentId" },
+            new[] { "Hero", "Row", "Column", "Cost", "Talent" },
             name => Assert.True(IsRequired(typeof(TalentSlotDocument).GetProperty(name)!)));
     }
 
@@ -69,7 +72,7 @@ public sealed class DocumentTests
         Assert.Equal(EntityType.GemType, EntityTypes.TypeOf(
             new GemTypeDocument { Id = 1, Type = GemType.Ruby, Attribute = "RubyPower" }));
         Assert.Equal(EntityType.TalentSlot, EntityTypes.TypeOf(
-            new TalentSlotDocument { Id = 8, Hero = Hero.Mara, Row = 4, Column = 1, Cost = 1, TalentId = 8 }));
+            new TalentSlotDocument { Id = 8, Hero = Hero.Mara, Row = 4, Column = 1, Cost = 1, Talent = new EntityReference(EntityType.Talent, 8, null) }));
     }
 
     [Fact]
@@ -87,7 +90,7 @@ public sealed class DocumentTests
             },
         };
 
-        var ability = (AbilityDocument)DocumentProjection.From(entity, (_, _) => null);
+        var ability = (AbilityDocument)DocumentProjection.From(entity, Nothing);
 
         Assert.Equal(["Bravo", "Alpha"], ability.Placeholders?.Select(token => token.Key));
     }
@@ -115,7 +118,7 @@ public sealed class DocumentTests
     {
         var entity = new Entity { Type = EntityType.Ability, NetId = 1, DisplayName = label };
 
-        var ability = (AbilityDocument)DocumentProjection.From(entity, (_, _) => null);
+        var ability = (AbilityDocument)DocumentProjection.From(entity, Nothing);
 
         Assert.Null(ability.Name);
     }
@@ -125,7 +128,7 @@ public sealed class DocumentTests
     {
         var entity = new Entity { Type = EntityType.Ability, NetId = 1, DisplayName = "Searing Blaze" };
 
-        var ability = (AbilityDocument)DocumentProjection.From(entity, (_, _) => null);
+        var ability = (AbilityDocument)DocumentProjection.From(entity, Nothing);
 
         Assert.Equal("Searing Blaze", ability.Name);
     }

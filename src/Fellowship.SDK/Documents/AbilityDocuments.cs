@@ -25,6 +25,7 @@ public sealed class AbilityDocument : EntityDocument
     public bool? ScalesWithHaste { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
+    public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }
 

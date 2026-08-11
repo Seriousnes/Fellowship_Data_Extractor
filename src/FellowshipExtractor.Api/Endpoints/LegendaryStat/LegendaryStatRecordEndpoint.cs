@@ -23,6 +23,6 @@ public static class LegendaryStatRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] LegendaryStatRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.LegendaryStat, request.Id, null, store, view);
+        [AsParameters] LegendaryStatRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.LegendaryStat, request.Id, null, http, store, view);
 }

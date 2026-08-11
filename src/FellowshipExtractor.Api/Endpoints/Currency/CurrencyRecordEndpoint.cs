@@ -23,6 +23,6 @@ public static class CurrencyRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] CurrencyRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Currency, request.Id, null, store, view);
+        [AsParameters] CurrencyRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.Currency, request.Id, null, http, store, view);
 }

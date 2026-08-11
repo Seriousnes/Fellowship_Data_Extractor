@@ -1,55 +1,21 @@
-@using Fellowship.SDK.Models
-@inject ICodexViewService Ui
+@using FellowshipExtractor.Api.Components.Views
 
-<CascadingValue Value="Entity">
-    <Wording />
-    <Particulars Facts="Facts" Schools="Schools" Scaling="Scaling" />
-    <StatSlots />
-    <Substitutions Tokens="Tokens" />
-    <Ranks />
-    <Overflow />
-    <BorrowedName Href="@(Namer?.Href)" Tip="@(Namer?.Tip)" Name="@(Namer?.Name)" />
-    <BorrowedArt Href="@(Lender?.Href)" Tip="@(Lender?.Tip)" Name="@(Lender?.Name)" />
-    <Grants />
-    <Legendaries />
-</CascadingValue>
+<DynamicComponent Type="Component(EntityTypes.TypeOf(Entity))" Parameters="Knobs" />
 
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
-    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts = [];
+    private Dictionary<string, object?> Knobs => new(StringComparer.Ordinal) { ["Entity"] = Entity };
 
-    private IReadOnlyList<(string Label, string Href)> Schools = [];
-
-    private IReadOnlyList<string> Scaling = [];
-
-    private IReadOnlyList<TokenReading> Tokens = [];
-
-    private (string Href, string? Tip, string Name)? Namer;
-
-    private (string Href, string? Tip, string Name)? Lender;
-
-    private const string SchoolFacet = "school";
-
-    protected override void OnParametersSet()
+    private static System.Type Component(EntityType type) => type switch
     {
-        Facts = Ui.Facts(Entity);
-        Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(AbilityDocument.ScalesOff)))];
-        Tokens = Ui.Substitutions(Entity);
-
-        IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
-
-        Schools = [.. schools.Select(school => (school, Filter(school)))];
-
-        Namer = Borrowed((Entity as EffectDocument)?.NameBorrowedFrom);
-        Lender = Borrowed((Entity as EffectDocument)?.ArtBorrowedFrom);
-    }
-
-    private (string Href, string? Tip, string Name)? Borrowed(EntityReference? source) =>
-        source is not null && Ui.Addresses(source.Type, source.Id) is { } found
-            ? (found.Href, found.Tip, Ui.Name(source.Type, source.Id))
-            : null;
-
-    private string Filter(string school) =>
-        $"/browse?type={EntityTypes.Slug(EntityTypes.TypeOf(Entity))}&{SchoolFacet}={Uri.EscapeDataString(school)}";
+        EntityType.Item => typeof(Views.Item),
+        EntityType.Creature => typeof(Views.Creature),
+        EntityType.Dungeon => typeof(Views.Dungeon),
+        EntityType.Trait => typeof(Views.Trait),
+        EntityType.SetBonus => typeof(Views.SetBonus),
+        EntityType.TalentSlot => typeof(Views.TalentSlot),
+        EntityType.GemTrait => typeof(Views.GemTrait),
+        _ => typeof(EntityView),
+    };
 }

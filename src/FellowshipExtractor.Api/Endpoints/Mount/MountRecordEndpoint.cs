@@ -23,6 +23,6 @@ public static class MountRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] MountRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Mount, request.Id, null, store, view);
+        [AsParameters] MountRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.Mount, request.Id, null, http, store, view);
 }

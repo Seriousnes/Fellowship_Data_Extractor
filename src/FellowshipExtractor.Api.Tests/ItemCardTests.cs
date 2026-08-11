@@ -52,7 +52,7 @@ public class ItemCardTests : BunitContext
     public void A_granted_power_draws_the_ability_group_under_its_name()
     {
         var granting = Items.First(row =>
-            row.GrantsId is not null && export.Tooltip.Granted(row) is not null);
+            row.Grants is not null && export.Tooltip.Granted(row) is not null);
 
         var drawn = Draw(granting, new TooltipQuery());
 
@@ -96,7 +96,7 @@ public class ItemCardTests : BunitContext
 
         ItemDocument[] shapes =
         [
-            Items.First(row => row.GrantsId is not null && export.Tooltip.Granted(row) is not null),
+            Items.First(row => row.Grants is not null && export.Tooltip.Granted(row) is not null),
             Items.First(row => export.Tooltip.LegendaryStats(row).Count > 0),
             Items.First(row => row.SetBonus is { Count: > 0 }),
             Items.First(row => row.Stats is { Count: > 0 }),

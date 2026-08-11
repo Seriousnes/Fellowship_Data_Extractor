@@ -115,12 +115,17 @@ public class ParticularsTests : BunitContext
     }
 
     [Fact]
-    public void Names_the_sets_an_item_counts_towards_with_no_piece_count()
+    public void Names_the_sets_an_item_counts_towards_and_links_each_to_its_record()
     {
-        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1, SetBonus = ["Ironhide"] }));
+        var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument
+        {
+            Id = 1,
+            SetBonus = [new Fellowship.SDK.Models.EntityReference(EntityType.SetBonus, 1769, "Draconic Deceit")],
+        }));
 
         Assert.Equal("Set", cut.Find("p.cx-sub-head").TextContent);
-        Assert.Equal("/browse?set=Ironhide", cut.Find("ul.cx-pills a").GetAttribute("href"));
+        Assert.Equal("/set-bonus/1769", cut.Find("ul.cx-pills a").GetAttribute("href"));
+        Assert.Equal("Draconic Deceit", cut.Find("ul.cx-pills a").TextContent.Trim());
     }
 
     [Fact]

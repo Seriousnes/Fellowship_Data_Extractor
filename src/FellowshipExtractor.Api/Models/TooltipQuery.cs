@@ -133,6 +133,8 @@ public sealed record TooltipQuery
 
     public int? EquippedTier { get; init; }
 
+    public int? Difficulty { get; init; }
+
     public int? ItemLevel { get; init; }
     public int? Upgrades { get; init; }
     public int? MaxUpgrades { get; init; }

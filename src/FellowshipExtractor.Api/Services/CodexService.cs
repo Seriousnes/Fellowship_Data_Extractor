@@ -103,11 +103,18 @@ public sealed class CodexService : ICodexService
                 ItemDocument { Sources: { } sources } => sources.Select(source => source.Name),
                 AbilityDocument { Owner: { } owner } => One(Owner(store, owner)),
                 EffectDocument { Owner: { } owner } => One(Owner(store, owner)),
+                CreatureDocument { FoundIn: { } dungeons } => dungeons.Select(level => Owner(store, level)).OfType<string>(),
                 _ => [],
             }),
 
+            new Facet("rank", "Rank", document =>
+                One(document is CreatureDocument { Rank: { } rank } ? rank.ToString() : null)),
+
             new Facet("school", "School", Codex.Schools),
-            new Facet("set", "Set", document => document is ItemDocument { SetBonus: { } sets } ? sets : []),
+            new Facet("set", "Set", document =>
+                document is ItemDocument { SetBonus: { } sets }
+                    ? sets.Select(set => Owner(store, set)).OfType<string>()
+                    : []),
             new Facet("resource", "Resource", document =>
                 One(document is AbilityDocument { Resource: { } resource } ? resource : null)),
 
@@ -148,7 +155,7 @@ public sealed class CodexService : ICodexService
             new Flag("icon", "Has art", document => DocumentFields.Text(document, nameof(ItemDocument.Icon)) is not null),
             new Flag("described", "Has description text",
                 document => DocumentFields.Text(document, nameof(ItemDocument.Description)) is not null),
-            new Flag("grants", "Grants an ability", document => document is ItemDocument { GrantsId: not null }),
+            new Flag("grants", "Grants an ability", document => document is ItemDocument { Grants: not null }),
             new Flag("socket", "Rolls with a gem socket", document => document is ItemDocument { GemSlot: true }),
             new Flag("unique", "Unique equipped", document => document is ItemDocument { UniqueEquipped: true }),
             new Flag("scaling", "Scales off an attribute",
@@ -200,7 +207,22 @@ public sealed class CodexService : ICodexService
             }),
 
             new Sorting("set", "Set", document =>
-                document is ItemDocument { SetBonus: [var named, ..] } ? named : null),
+                document is ItemDocument { SetBonus: [var named, ..] } ? Owner(store, named) : null),
+
+            new Sorting("location", "Location", document =>
+                document is CreatureDocument { FoundIn: [var dungeon, ..] } ? Owner(store, dungeon) : null),
+
+            new Sorting("rank", "Rank", document => document switch
+            {
+                CreatureDocument { Rank: { } rank } => (int)rank,
+                _ => DocumentFields.Number(document, nameof(TraitDocument.MaxRank)),
+            }),
+
+            new Sorting("health", "Health", document => (document as CreatureDocument)?.Health),
+
+            new Sorting("qualifier", "Qualifier", document => (document as DungeonDocument)?.QualifierTime),
+
+            new Sorting("score", "Required score", document => (document as DungeonDocument)?.RequiredScore),
 
             new Sorting("hero", "Hero", document => document switch
             {

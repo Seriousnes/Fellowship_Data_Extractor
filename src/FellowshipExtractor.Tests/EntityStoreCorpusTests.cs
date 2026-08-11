@@ -12,7 +12,7 @@ namespace FellowshipExtractor.Tests;
 
 public sealed class EntityStoreCorpusTests
 {
-    private static readonly EntityStoreService Store = Build();
+    internal static readonly EntityStoreService Store = Build();
 
     private static EntityStoreService Build()
     {
@@ -37,11 +37,11 @@ public sealed class EntityStoreCorpusTests
         Assert.Equal(expected, Store.Entities.Count(document => EntityTypes.TypeOf(document) == type));
 
     [Fact]
-    public void TheStoreHolds12473Entities() => Assert.Equal(12473, Store.Count);
+    public void TheStoreHolds12501Entities() => Assert.Equal(12501, Store.Count);
 
     private static readonly IReadOnlySet<int> Granted = Store.Entities
         .OfType<ItemDocument>()
-        .Select(item => item.GrantsId)
+        .Select(item => item.Grants?.Id)
         .OfType<int>()
         .ToHashSet();
 
@@ -55,7 +55,7 @@ public sealed class EntityStoreCorpusTests
     [Theory]
     [InlineData(EntityType.WeaponPower)]
     [InlineData(EntityType.RelicPower)]
-    public void EveryPowerAnItemCarriesIsReachedByAnItemsGrantsId(EntityType type) =>
+    public void EveryPowerAnItemCarriesIsReachedByAnItemsGrant(EntityType type) =>
         Assert.Empty(Ungranted(type).Select(document => $"{document.Id} {document.Name}"));
 
     [Fact]
@@ -70,12 +70,12 @@ public sealed class EntityStoreCorpusTests
     }
 
     [Fact]
-    public void EveryGrantsIdNamesAPowerTheStoreHolds()
+    public void EveryGrantNamesAPowerTheStoreHolds()
     {
         var unreachable = Store.Entities
             .OfType<ItemDocument>()
-            .Where(item => item.GrantsId is { } id && Store.GrantedPower(id) is null)
-            .Select(item => $"{item.Id} {item.Name} grants {item.GrantsId}")
+            .Where(item => item.Grants is { } power && Store.All(power.Type, power.Id).Count == 0)
+            .Select(item => $"{item.Id} {item.Name} grants {item.Grants!.Type} {item.Grants!.Id}")
             .Distinct(StringComparer.Ordinal)
             .ToArray();
 

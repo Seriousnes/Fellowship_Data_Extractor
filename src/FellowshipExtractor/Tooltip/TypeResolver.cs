@@ -6,8 +6,11 @@ public sealed class TypeResolver(
     GemDefinitions gems,
     ItemTraits traits,
     ItemSetBonuses setBonuses,
-    GrantedAbilityMappings mappings)
+    GrantedAbilityMappings mappings,
+    DungeonNames dungeons)
 {
+    public const string LevelTable = "Level.ID";
+
     private readonly HashSet<string> _augmentations = new(
         tags.Where(tag => tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
             .Select(tag => tag.Name),
@@ -52,6 +55,11 @@ public sealed class TypeResolver(
         if (tag.Table.Equals(TalentTrees.SlotTable, StringComparison.OrdinalIgnoreCase))
         {
             return talents.InSlot(tag.NetId).Count > 0 ? EntityType.TalentSlot : null;
+        }
+
+        if (tag.Table.Equals(LevelTable, StringComparison.OrdinalIgnoreCase))
+        {
+            return dungeons.Find(tag.Name) is not null ? EntityType.Dungeon : null;
         }
 
         return Tables.TryGetValue(tag.Table, out var table) ? table : null;

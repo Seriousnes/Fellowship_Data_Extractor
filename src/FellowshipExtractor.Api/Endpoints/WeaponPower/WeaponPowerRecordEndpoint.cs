@@ -23,6 +23,6 @@ public static class WeaponPowerRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] WeaponPowerRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.WeaponPower, request.Id, null, store, view);
+        [AsParameters] WeaponPowerRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.WeaponPower, request.Id, null, http, store, view);
 }

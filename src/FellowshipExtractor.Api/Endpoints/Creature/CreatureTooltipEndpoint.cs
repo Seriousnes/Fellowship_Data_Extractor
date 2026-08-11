@@ -12,8 +12,11 @@ public sealed record CreatureTooltipRequest
     [Description("The id to draw.")]
     public int Id { get; init; }
 
+    [Description("The dungeon difficulty to read the creature's health at.")]
+    public int? Difficulty { get; init; }
+
     public TooltipQuery ToQuery(IQueryCollection raw, StatParameters stats, out string? error) =>
-        StatQuery.Read(this, raw, stats, out error);
+        StatQuery.Read(this, raw, stats, out error) with { Difficulty = Difficulty };
 }
 
 public static class CreatureTooltipEndpoint

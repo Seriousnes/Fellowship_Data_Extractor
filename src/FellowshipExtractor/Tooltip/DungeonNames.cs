@@ -5,6 +5,25 @@ using CUE4Parse.UE4.Assets.Exports.Engine;
 
 namespace FellowshipExtractor.Tooltip;
 
+public sealed record Dungeon(string Tag, string DisplayName)
+{
+    public string? Description { get; init; }
+
+    public string? LevelName { get; init; }
+
+    public string? BannerPath { get; init; }
+
+    public string? BackgroundPath { get; init; }
+
+    public int? MaxPlayers { get; init; }
+
+    public double? QualifierTime { get; init; }
+
+    public int? RequiredScore { get; init; }
+
+    public int? MinimumHeroRank { get; init; }
+}
+
 public sealed class DungeonNames
 {
     public const string RowStructure = "/Script/fellowship.CRLevelInfoRow";
@@ -13,10 +32,21 @@ public sealed class DungeonNames
     private const string DisplayNameField = "DisplayName";
     private const string LevelIdField = "LevelID";
     private const string InfoField = "Info";
+    private const string DescriptionField = "LevelDescription";
+    private const string LevelNameField = "LevelName";
+    private const string BannerField = "BannerTexture";
+    private const string BackgroundField = "BackgroundTexture";
+    private const string MaxPlayersField = "MaxPlayers";
+    private const string QualifierTimeField = "DungeonQualifierTime";
+    private const string RequiredScoreField = "RequiredDungeonScoreToComplete";
+    private const string MinimumHeroRankField = "MinimumHeroRankRequired";
 
-    private readonly Dictionary<string, string> _byTag = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Dungeon> _byTag = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Dungeon> _byLevelName = new(StringComparer.OrdinalIgnoreCase);
 
     public int Count => _byTag.Count;
+
+    public IReadOnlyCollection<Dungeon> All => _byTag.Values;
 
     public DungeonNames(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
@@ -27,10 +57,7 @@ public sealed class DungeonNames
 
             foreach (var (rowName, row) in table.RowMap)
             {
-                if (PropertyWalk.GetText(row, DisplayNameField) is { Length: > 0 } printed)
-                {
-                    _byTag.TryAdd(rowName.Text, printed);
-                }
+                if (Read(rowName.Text, row) is { } dungeon) Keep(dungeon);
             }
         }
 
@@ -40,13 +67,39 @@ public sealed class DungeonNames
             if (Load(provider, asset.ObjectPath) is not { } level) continue;
             if (PropertyWalk.GetString(level, LevelIdField) is not { } tag) continue;
             if (PropertyWalk.GetStruct(level, InfoField) is not { } info) continue;
-            if (PropertyWalk.GetText(info, DisplayNameField) is not { Length: > 0 } printed) continue;
 
-            _byTag.TryAdd(tag, printed);
+            if (Read(tag, info) is { } dungeon) Keep(dungeon);
         }
     }
 
-    public string? For(string levelTag) => _byTag.GetValueOrDefault(levelTag);
+    private void Keep(Dungeon dungeon)
+    {
+        if (!_byTag.TryAdd(dungeon.Tag, dungeon)) return;
+        if (dungeon.LevelName is { Length: > 0 } level) _byLevelName.TryAdd(level, dungeon);
+    }
+
+    private static Dungeon? Read(string tag, IPropertyHolder row)
+    {
+        if (PropertyWalk.GetText(row, DisplayNameField) is not { Length: > 0 } printed) return null;
+
+        return new Dungeon(tag, printed)
+        {
+            Description = PropertyWalk.GetText(row, DescriptionField),
+            LevelName = PropertyWalk.GetString(row, LevelNameField),
+            BannerPath = PropertyWalk.GetString(row, BannerField),
+            BackgroundPath = PropertyWalk.GetString(row, BackgroundField),
+            MaxPlayers = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, MaxPlayersField)?.GenericValue),
+            QualifierTime = PropertyWalk.AsNumber(PropertyWalk.Get(row, QualifierTimeField)?.GenericValue),
+            RequiredScore = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, RequiredScoreField)?.GenericValue),
+            MinimumHeroRank = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, MinimumHeroRankField)?.GenericValue),
+        };
+    }
+
+    public string? For(string levelTag) => Find(levelTag)?.DisplayName;
+
+    public Dungeon? Find(string levelTag) => _byTag.GetValueOrDefault(levelTag);
+
+    public Dungeon? ByLevelName(string levelName) => _byLevelName.GetValueOrDefault(levelName);
 
     public static UObject? Load(AbstractFileProvider provider, string objectPath)
     {

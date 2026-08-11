@@ -15,8 +15,15 @@ public sealed record AbilityTooltipRequest
     [Description("The hero whose stat a PrimaryAttribute coefficient scales off.")]
     public string? Hero { get; init; }
 
+    [Description("The dungeon difficulty to compute a creature ability's damage at.")]
+    public int? Difficulty { get; init; }
+
     public TooltipQuery ToQuery(IQueryCollection raw, StatParameters stats, out string? error) =>
-        StatQuery.Read(this, raw, stats, out error) with { Hero = StatQuery.Given(Hero) };
+        StatQuery.Read(this, raw, stats, out error) with
+        {
+            Hero = StatQuery.Given(Hero),
+            Difficulty = Difficulty,
+        };
 }
 
 public static class AbilityTooltipEndpoint

@@ -70,7 +70,7 @@ public class TabTests(Export export)
         var slots = export.Store.Entities.OfType<TalentSlotDocument>().ToArray();
 
         Assert.Equal(216, slots.Length);
-        Assert.NotNull(export.Store.Slot(slots[0].TalentId));
+        Assert.NotNull(export.Store.Slot(slots[0].Talent.Id));
     }
 
     [Fact]

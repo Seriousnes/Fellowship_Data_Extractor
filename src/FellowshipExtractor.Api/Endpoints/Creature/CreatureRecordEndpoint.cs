@@ -23,6 +23,6 @@ public static class CreatureRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] CreatureRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Creature, request.Id, null, store, view);
+        [AsParameters] CreatureRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.Creature, request.Id, null, http, store, view);
 }

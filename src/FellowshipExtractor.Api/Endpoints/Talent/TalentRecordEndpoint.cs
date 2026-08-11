@@ -23,6 +23,6 @@ public static class TalentRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] TalentRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Talent, request.Id, null, store, view);
+        [AsParameters] TalentRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.Talent, request.Id, null, http, store, view);
 }

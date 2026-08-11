@@ -23,6 +23,7 @@ public sealed class ItemSetBonuses
     public const string MappingRowStructure = "/Script/fellowship.CRDynamicItemSetBonusMapping";
 
     private const string TagPrefix = "ItemID.SetBonus.";
+    private const string ItemTable = "ItemID";
     private const string DisplayNameField = "DisplayName";
     private const string DescriptionField = "Description";
     private const string SetCountField = "SetCount";
@@ -38,12 +39,24 @@ public sealed class ItemSetBonuses
     private readonly Dictionary<string, Dictionary<string, string>> _byMappingKey =
         new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<int> _augmentations = [];
+    private readonly Dictionary<string, int> _netIds = new(StringComparer.OrdinalIgnoreCase);
 
     public int Count => _byRow.Count;
 
     public ItemSetBonuses(
-        AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, AugmentationIds augmentations)
+        AbstractFileProvider provider,
+        IReadOnlyList<FAssetData> assets,
+        AugmentationIds augmentations,
+        IReadOnlyList<TagRecord> tags)
     {
+        foreach (var tag in tags)
+        {
+            if (!tag.Table.Equals(ItemTable, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!tag.Name.StartsWith(TagPrefix, StringComparison.OrdinalIgnoreCase)) continue;
+
+            _netIds.TryAdd(tag.Name[TagPrefix.Length..], tag.NetId);
+        }
+
         foreach (var objectPath in TableFinder.ByRowStructure(assets, RowStructure))
         {
             if (!provider.TryLoadPackageObject<UDataTable>(
@@ -98,25 +111,30 @@ public sealed class ItemSetBonuses
 
     public bool PointsAt(int netId) => _augmentations.Contains(netId);
 
-    public IReadOnlyList<string>? ForRow(string? rowName) =>
-        rowName is not null && _byRow.TryGetValue(rowName, out var bonus) ? [bonus.DisplayName] : null;
+    public IReadOnlyList<IconSource>? ForRow(string? rowName) =>
+        rowName is not null && Source(rowName) is { } source ? [source] : null;
 
-    public IReadOnlyList<string>? ForHeroes(string? mappingKey, IEnumerable<string> heroCodenames)
+    public IReadOnlyList<IconSource>? ForHeroes(string? mappingKey, IEnumerable<string> heroCodenames)
     {
         if (mappingKey is null) return null;
         if (!_byMappingKey.TryGetValue(mappingKey, out var byHero)) return null;
 
-        var names = new List<string>();
+        var named = new List<IconSource>();
 
         foreach (var codename in heroCodenames)
         {
             if (!byHero.TryGetValue(codename, out var rowName)) continue;
-            if (!_byRow.TryGetValue(rowName, out var bonus)) continue;
-            if (!names.Contains(bonus.DisplayName, StringComparer.Ordinal)) names.Add(bonus.DisplayName);
+            if (Source(rowName) is not { } source) continue;
+            if (!named.Contains(source)) named.Add(source);
         }
 
-        return names.Count == 0 ? null : names;
+        return named.Count == 0 ? null : named;
     }
+
+    private IconSource? Source(string rowName) =>
+        _byRow.TryGetValue(rowName, out var bonus) && _netIds.TryGetValue(rowName, out var netId)
+            ? new IconSource(ItemTable, netId, bonus.DisplayName)
+            : null;
 
     private static IReadOnlyList<string>? Gate(IPropertyHolder row, string field)
     {

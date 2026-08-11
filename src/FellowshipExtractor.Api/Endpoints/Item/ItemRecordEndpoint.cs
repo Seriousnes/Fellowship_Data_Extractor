@@ -27,6 +27,6 @@ public static class ItemRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] ItemRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Item, request.Id, request.Hero, store, view);
+        [AsParameters] ItemRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.Item, request.Id, request.Hero, http, store, view);
 }

@@ -23,6 +23,6 @@ public static class EffectRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] EffectRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Effect, request.Id, null, store, view);
+        [AsParameters] EffectRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.Effect, request.Id, null, http, store, view);
 }

@@ -8,4 +8,7 @@ public enum SourceKind
     Character,
 }
 
-public sealed record ItemSource(SourceKind Kind, string Name);
+public sealed record ItemSource(SourceKind Kind, string Name)
+{
+    public EntityReference? Dungeon { get; init; }
+}

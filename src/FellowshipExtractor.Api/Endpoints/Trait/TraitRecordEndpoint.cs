@@ -23,6 +23,6 @@ public static class TraitRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] TraitRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Trait, request.Id, null, store, view);
+        [AsParameters] TraitRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.Trait, request.Id, null, http, store, view);
 }
