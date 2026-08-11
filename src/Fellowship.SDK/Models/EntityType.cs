@@ -13,6 +13,7 @@ public enum EntityType
     CompanionPet,
     Creature,
     Currency,
+    Dungeon,
     Effect,
     Gem,
     GemTrait,

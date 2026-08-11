@@ -11,7 +11,8 @@ public static class DumpCommand
         var provider = await ProviderFactory.CreateAsync(options);
 
         var matches = provider.Files.Values
-            .Where(f => f.Path.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
+            .Where(f => f.Path.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase)
+                || f.Path.EndsWith(".umap", StringComparison.OrdinalIgnoreCase))
             .Where(f => f.Path.Contains(filter, StringComparison.OrdinalIgnoreCase))
             .OrderBy(f => f.Path, StringComparer.OrdinalIgnoreCase)
             .Take(limit)

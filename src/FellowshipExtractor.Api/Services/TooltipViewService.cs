@@ -265,13 +265,12 @@ public sealed class TooltipViewService(
     public bool DrawsState(EntityDocument document) => document is BlessingDocument or TraitDocument;
 
     public EntityDocument? Granted(EntityDocument document) =>
-        document is ItemDocument { GrantsId: { } id } && store.GrantedPower(id) is { } found &&
-        store.All(found.Type, found.Id) is { Count: > 0 } readings
+        document is ItemDocument { Grants: { } power } && store.All(power.Type, power.Id) is { Count: > 0 } readings
             ? readings[0]
             : null;
 
     public IReadOnlyList<EntityDocument> LegendaryStats(EntityDocument document) =>
-        document is ItemDocument { LegendaryStatIds: { Count: > 0 } ids }
-            ? [.. ids.SelectMany(id => store.All(EntityType.LegendaryStat, id))]
+        document is ItemDocument { LegendaryStats: { Count: > 0 } rolls }
+            ? [.. rolls.SelectMany(roll => store.All(roll.Type, roll.Id))]
             : [];
 }

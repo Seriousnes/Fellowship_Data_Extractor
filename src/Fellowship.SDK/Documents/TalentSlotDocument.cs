@@ -1,3 +1,5 @@
+using Fellowship.SDK.Models;
+
 namespace Fellowship.SDK.Documents;
 
 public sealed class TalentSlotDocument : EntityDocument
@@ -10,5 +12,5 @@ public sealed class TalentSlotDocument : EntityDocument
 
     public required int Cost { get; init; }
 
-    public required int TalentId { get; init; }
+    public required EntityReference Talent { get; init; }
 }

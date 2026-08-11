@@ -36,8 +36,6 @@ public interface IEntityStoreService
 
     TalentSlotDocument? Slot(int talentId);
 
-    (EntityType Type, int Id)? GrantedPower(int id);
-
     Lookup Resolve(EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero);
 
     HeroEntry? Wearer(EntityDocument document);
@@ -129,7 +127,7 @@ public sealed class EntityStoreService : IEntityStoreService
             if (!groups.TryGetValue(key, out var list)) groups[key] = list = [];
             list.Add(document);
 
-            if (document is TalentSlotDocument slot) slotsByTalent.TryAdd(slot.TalentId, slot);
+            if (document is TalentSlotDocument slot) slotsByTalent.TryAdd(slot.Talent.Id, slot);
 
             Census(document, stats, spelled);
 
@@ -214,19 +212,6 @@ public sealed class EntityStoreService : IEntityStoreService
 
     public TalentSlotDocument? Slot(int talentId) =>
         slotsByTalent.TryGetValue(talentId, out var slot) ? slot : null;
-
-    private static readonly EntityType[] GrantedPowers =
-        [EntityType.RelicPower, EntityType.WeaponPower, EntityType.LegendaryPower, EntityType.Talent];
-
-    public (EntityType Type, int Id)? GrantedPower(int id)
-    {
-        foreach (var type in GrantedPowers)
-        {
-            if (All(type, id).Count > 0) return (type, id);
-        }
-
-        return null;
-    }
 
     public Lookup Resolve(
         EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero)

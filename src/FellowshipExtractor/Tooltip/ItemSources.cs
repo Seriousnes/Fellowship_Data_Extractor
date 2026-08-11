@@ -129,7 +129,7 @@ public sealed class ItemSources
         return sources;
     }
 
-    public IReadOnlyList<ItemSource> Dropped(IReadOnlyList<string> dungeonTags)
+    public IReadOnlyList<ItemSource> Dropped(IReadOnlyList<string> dungeonTags, Func<string, int?> netIds)
     {
         if (dungeonTags.Count == 0) return [new ItemSource(SourceKind.Dungeon, AnyDungeon)];
 
@@ -137,9 +137,14 @@ public sealed class ItemSources
 
         foreach (var tag in dungeonTags)
         {
-            if (_dungeons.For(tag) is not { } named) continue;
+            if (_dungeons.Find(tag) is not { } dungeon) continue;
 
-            sources.Add(new ItemSource(SourceKind.Dungeon, named));
+            sources.Add(new ItemSource(SourceKind.Dungeon, dungeon.DisplayName)
+            {
+                Dungeon = netIds(tag) is { } netId
+                    ? new EntityReference(EntityType.Dungeon, netId, dungeon.DisplayName)
+                    : null,
+            });
         }
 
         return sources;

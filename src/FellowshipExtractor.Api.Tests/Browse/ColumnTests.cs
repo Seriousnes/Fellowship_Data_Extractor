@@ -116,6 +116,15 @@ public class ColumnTests : BunitContext
     }
 
     [Fact]
+    public void The_creatures_list_heads_the_rank_health_and_location_columns() =>
+        Assert.Equal(["", "Name", "Rank", "Health", "Location"], Dispatched(EntityType.Creature));
+
+    [Fact]
+    public void The_dungeons_list_heads_the_qualifier_score_and_creature_count_columns() =>
+        Assert.Equal(
+            ["", "Name", "Qualifier", "Required score", "Creatures"], Dispatched(EntityType.Dungeon));
+
+    [Fact]
     public void Every_listed_type_draws_a_table_that_opens_with_its_art_and_name()
     {
         foreach (var type in PublicTypes.All.Where(type => type.Listed))

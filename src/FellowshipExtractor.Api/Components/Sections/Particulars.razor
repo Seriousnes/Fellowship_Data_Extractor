@@ -64,8 +64,7 @@
             <Pills>
                 @foreach (var set in SetBonus)
                 {
-                    var where = $"/browse?set={Uri.EscapeDataString(set)}";
-                    <Pill Href="@where">@set</Pill>
+                    <Pill><Ref Entity="set" /></Pill>
                 }
             </Pills>
         }
@@ -113,7 +112,8 @@
 
     private IReadOnlyList<string> Heroes => [.. Ui.Codex.Facet("hero")?.Values(Entity) ?? []];
 
-    private IReadOnlyList<string> SetBonus => (Entity as ItemDocument)?.SetBonus ?? [];
+    private IReadOnlyList<Fellowship.SDK.Models.EntityReference> SetBonus =>
+        (Entity as ItemDocument)?.SetBonus ?? [];
 
     private IReadOnlyList<string> AllowedRoles => (Entity as Fellowship.SDK.Documents.SetBonusDocument)?.AllowedRoles ?? [];
 

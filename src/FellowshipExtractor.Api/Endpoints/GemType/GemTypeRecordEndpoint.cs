@@ -23,6 +23,6 @@ public static class GemTypeRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] GemTypeRecordRequest request, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.GemType, request.Id, null, store, view);
+        [AsParameters] GemTypeRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One(EntityType.GemType, request.Id, null, http, store, view);
 }

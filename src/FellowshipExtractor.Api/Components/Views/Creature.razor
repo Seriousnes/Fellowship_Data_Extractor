@@ -1,0 +1,59 @@
+@using Fellowship.SDK.Models
+
+<EntityView Entity="Entity">
+    @if (Phases.Count > 0)
+    {
+        <Panel Head="Abilities" Badge="@Drawn.Abilities!.Count.ToString()">
+            @foreach (var phase in Phases)
+            {
+                <Rule />
+                <SubHead>@phase.Key</SubHead>
+                <Pills>
+                    @foreach (var slot in phase)
+                    {
+                        <Pill Badge="@(slot.Shown ? null : Hidden)">
+                            <Ref Entity="slot.Ability" />
+                        </Pill>
+                    }
+                </Pills>
+            }
+        </Panel>
+    }
+
+    @if (Drawn.Passives is { Count: > 0 } passives)
+    {
+        <Panel Head="Passives" Badge="@passives.Count.ToString()">
+            <Pills>
+                @foreach (var slot in passives)
+                {
+                    <Pill><Ref Entity="slot.Ability" /></Pill>
+                }
+            </Pills>
+        </Panel>
+    }
+
+    @if (Drawn.FoundIn is { Count: > 0 } dungeons)
+    {
+        <Panel Head="Found in" Badge="@dungeons.Count.ToString()">
+            <Pills>
+                @foreach (var dungeon in dungeons)
+                {
+                    <Pill><Ref Entity="dungeon" /></Pill>
+                }
+            </Pills>
+        </Panel>
+    }
+</EntityView>
+
+@code {
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    private const string Hidden = "hidden";
+
+    private CreatureDocument Drawn => (CreatureDocument)Entity;
+
+    private IReadOnlyList<IGrouping<string, CreatureAbility>> Phases = [];
+
+    protected override void OnParametersSet() =>
+        Phases = [.. (Drawn.Abilities ?? []).GroupBy(slot => slot.Phase, StringComparer.Ordinal)];
+}

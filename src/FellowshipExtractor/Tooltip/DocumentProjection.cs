@@ -7,9 +7,22 @@ public static class DocumentProjection
 {
     public delegate EntityType? TypeLookup(string table, int netId);
 
+    public delegate string? NameLookup(EntityType type, int id);
+
+    public sealed class References(TypeLookup types, NameLookup names)
+    {
+        public EntityReference? At(IconSource? source) =>
+            source is null || types(source.Table, source.NetId) is not { } type
+                ? null
+                : Of(type, source.NetId);
+
+        public EntityReference? Of(EntityType type, int? id) =>
+            id is { } found ? new EntityReference(type, found, names(type, found)) : null;
+    }
+
 #pragma warning disable CS8524
 
-    public static EntityDocument From(Entity entity, TypeLookup lookup) => entity.Type switch
+    public static EntityDocument From(Entity entity, References references) => entity.Type switch
     {
         EntityType.Ability => new AbilityDocument
         {
@@ -34,7 +47,7 @@ public static class DocumentProjection
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Schools = Schools(entity.Tags),
             Heroes = Owning(entity),
-            Owner = Reference(entity.Owner, lookup),
+            Owner = references.At(entity.Owner),
         },
 
         EntityType.Item => new ItemDocument
@@ -54,14 +67,15 @@ public static class DocumentProjection
             Rarities = entity.Rarities?.Select(Enum.Parse<Rarity>).Order().ToArray(),
 
             RuleSet = entity.RuleSet,
-            SetBonus = entity.SetBonus,
+            SetBonus = Referenced(entity.SetBonus, references),
             Stats = entity.Stats,
             Description = entity.Description,
             Icon = entity.Icon,
             IconByRarity = entity.IconByRarity,
-            GrantsId = entity.GrantsId,
-            LegendaryStatIds = entity.LegendaryStatIds,
-            Sources = entity.Sources,
+            Grants = references.At(Augmentation(entity.GrantsId)),
+            LegendaryStats = Referenced(
+                entity.LegendaryStatIds?.Select(id => Augmentation(id)).OfType<IconSource>().ToArray(), references),
+            Sources = Sourced(entity.Sources, references),
             ItemLevel = entity.ItemLevel,
         },
 
@@ -86,7 +100,7 @@ public static class DocumentProjection
             Column = entity.TalentColumn!.Value,
             Cost = entity.TalentCost!.Value,
 
-            TalentId = entity.Augmentation ?? entity.NetId!.Value,
+            Talent = references.Of(EntityType.Talent, entity.Augmentation ?? entity.NetId!.Value)!,
         },
 
         EntityType.Effect => new EffectDocument
@@ -105,11 +119,11 @@ public static class DocumentProjection
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Schools = Schools(entity.Tags) ?? Schools(entity.ApplierTags),
-            NameBorrowedFrom = Reference(entity.NameInheritedFrom, lookup),
-            ArtBorrowedFrom = Reference(entity.IconInheritedFrom, lookup),
+            NameBorrowedFrom = references.At(entity.NameInheritedFrom),
+            ArtBorrowedFrom = references.At(entity.IconInheritedFrom),
             Heroes = Owning(entity),
-            Owner = Reference(entity.Owner, lookup),
-            AppliedBy = Reference(entity.AppliedBy, lookup),
+            Owner = references.At(entity.Owner),
+            AppliedBy = references.At(entity.AppliedBy),
         },
 
         EntityType.Creature => new CreatureDocument
@@ -117,7 +131,29 @@ public static class DocumentProjection
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Icon = entity.Icon,
-            ScalesOff = entity.ScalesOff,
+            Rank = entity.Rank,
+            Health = entity.Health,
+            Armor = entity.Armor,
+            Resist = entity.Resist,
+            KillScore = entity.KillScore,
+            SpiritPoints = entity.SpiritPoints,
+            CountsTowardScore = entity.CountsTowardScore,
+            Abilities = Wielded(entity.Abilities, references),
+            Passives = Wielded(entity.Passives, references),
+            FoundIn = Referenced(entity.FoundIn, references),
+        },
+
+        EntityType.Dungeon => new DungeonDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Description = entity.Description,
+            Icon = entity.Icon,
+            Background = entity.Background,
+            MaxPlayers = entity.MaxPlayers,
+            QualifierTime = entity.QualifierTime,
+            RequiredScore = entity.RequiredScore,
+            MinimumHeroRank = entity.MinimumHeroRank,
         },
 
         EntityType.Mount => new MountDocument
@@ -160,7 +196,7 @@ public static class DocumentProjection
             Pieces = entity.SetCount,
             Description = entity.Description,
             Icon = entity.Icon,
-            PowerId = entity.Augmentation,
+            Power = references.At(Augmentation(entity.Augmentation)),
             AllowedRoles = entity.AllowedRoles,
             AllowedAttributes = entity.AllowedAttributes?.Select(Enum.Parse<PrimaryStat>).ToArray(),
         },
@@ -183,7 +219,7 @@ public static class DocumentProjection
             Gem = Enum.Parse<GemType>(entity.GemType!),
             Node = entity.GemNode!.Value,
             RequiredPower = entity.RequiredGemPower!.Value,
-            ReplacesId = entity.Replaces,
+            Replaces = references.Of(EntityType.GemTrait, entity.Replaces),
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
@@ -222,7 +258,7 @@ public static class DocumentProjection
             Category = entity.TraitCategory,
             MaxRank = entity.MaxRank,
             RandomChance = entity.RandomChance,
-            PowerId = entity.Augmentation,
+            Power = references.At(Augmentation(entity.Augmentation)),
             Description = entity.Description,
             Icon = entity.Icon,
             RankRuns = entity.RankRuns,
@@ -319,8 +355,33 @@ public static class DocumentProjection
             }
             : null;
 
-    private static string? Name(Entity entity) =>
+    public static string? Name(Entity entity) =>
         entity.DisplayName is { } name && WrittenAsWords(name) ? name : null;
+
+    private static IconSource? Augmentation(int? netId) =>
+        netId is { } id ? new IconSource(TalentTrees.AugmentationTable, id, string.Empty) : null;
+
+    private static IReadOnlyList<EntityReference>? Referenced(
+        IReadOnlyList<IconSource>? sources, References references) =>
+        sources?.Select(references.At).OfType<EntityReference>().ToArray() is { Length: > 0 } named ? named : null;
+
+    private static IReadOnlyList<CreatureAbility>? Wielded(
+        IReadOnlyList<PhaseAbility>? held, References references) =>
+        held?.Select(slot => references.At(slot.Ability) is { } ability
+                ? new CreatureAbility(ability, slot.Phase, slot.Shown)
+                : null)
+            .OfType<CreatureAbility>()
+            .ToArray() is { Length: > 0 } wielded
+            ? wielded
+            : null;
+
+    private static IReadOnlyList<ItemSource>? Sourced(IReadOnlyList<ItemSource>? sources, References references) =>
+        sources?.Select(source => source.Dungeon is { } dungeon
+                ? source with { Dungeon = references.Of(dungeon.Type, dungeon.Id) }
+                : source)
+            .ToArray() is { Length: > 0 } carried
+            ? carried
+            : null;
 
     private static bool WrittenAsWords(string name)
     {
@@ -389,9 +450,4 @@ public static class DocumentProjection
 
         return [.. claimed.Select(Enum.Parse<Hero>).Distinct().Order()];
     }
-
-    private static EntityReference? Reference(IconSource? source, TypeLookup lookup) =>
-        source is null || lookup(source.Table, source.NetId) is not { } type
-            ? null
-            : new EntityReference(type, source.NetId, null);
 }

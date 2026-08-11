@@ -1,0 +1,56 @@
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+
+<CascadingValue Value="Entity">
+    <Wording />
+    <Particulars Facts="Facts" Schools="Schools" Scaling="Scaling" />
+    <StatSlots />
+    <Substitutions Tokens="Tokens" />
+    <Ranks />
+    <Overflow />
+    <BorrowedName Href="@(Namer?.Href)" Tip="@(Namer?.Tip)" Name="@(Namer?.Name)" />
+    <BorrowedArt Href="@(Lender?.Href)" Tip="@(Lender?.Tip)" Name="@(Lender?.Name)" />
+    @ChildContent
+</CascadingValue>
+
+@code {
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts = [];
+
+    private IReadOnlyList<(string Label, string Href)> Schools = [];
+
+    private IReadOnlyList<string> Scaling = [];
+
+    private IReadOnlyList<TokenReading> Tokens = [];
+
+    private (string Href, string? Tip, string Name)? Namer;
+
+    private (string Href, string? Tip, string Name)? Lender;
+
+    private const string SchoolFacet = "school";
+
+    protected override void OnParametersSet()
+    {
+        Facts = Ui.Facts(Entity);
+        Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(AbilityDocument.ScalesOff)))];
+        Tokens = Ui.Substitutions(Entity);
+
+        IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
+
+        Schools = [.. schools.Select(school => (school, Filter(school)))];
+
+        Namer = Borrowed((Entity as EffectDocument)?.NameBorrowedFrom);
+        Lender = Borrowed((Entity as EffectDocument)?.ArtBorrowedFrom);
+    }
+
+    private (string Href, string? Tip, string Name)? Borrowed(EntityReference? source) =>
+        source is not null && Ui.Addresses(source.Type, source.Id) is { } found
+            ? (found.Href, found.Tip, Ui.Name(source.Type, source.Id))
+            : null;
+
+    private string Filter(string school) =>
+        $"/browse?type={EntityTypes.Slug(EntityTypes.TypeOf(Entity))}&{SchoolFacet}={Uri.EscapeDataString(school)}";
+}

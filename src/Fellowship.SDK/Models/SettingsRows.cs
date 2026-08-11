@@ -12,3 +12,10 @@ public sealed record TemperCeiling(int ItemLevel, int MaxTempers);
 public sealed record DropPlateau(string Row, int Difficulty, int ItemLevel);
 
 public sealed record BlessingEntry(string Name, string HeroBlessing, string TierLevel, int Tiers);
+
+public sealed record DifficultyScaling
+{
+    public IReadOnlyDictionary<int, double> Health { get; init; } = new Dictionary<int, double>();
+
+    public IReadOnlyDictionary<int, double> Damage { get; init; } = new Dictionary<int, double>();
+}

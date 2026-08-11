@@ -206,28 +206,11 @@ public sealed class CodexViewService(
 
             if (text.Length == 0) continue;
 
-            var points = Points(document, property.Name, value);
-
-            facts.Add((Heading(document, property.Name), text, Unit(property.Name), points?.Href, points?.Tip));
+            facts.Add((Models.Codex.Spaced(property.Name), text, Unit(property.Name), null, null));
         }
 
         return facts;
     }
-
-    private (string Href, string? Tip)? Points(EntityDocument document, string property, object value) =>
-        document switch
-        {
-            TraitDocument when property == nameof(TraitDocument.PowerId) && value is int id => Addresses(EntityType.TraitPower, id),
-            SetBonusDocument when property == nameof(SetBonusDocument.PowerId) && value is int id =>
-                Addresses(EntityType.SetBonusPower, id),
-            TalentSlotDocument when property == nameof(TalentSlotDocument.TalentId) && value is int id =>
-                Addresses(EntityType.Talent, id),
-            GemTraitDocument when property == nameof(GemTraitDocument.ReplacesId) && value is int id =>
-                Addresses(EntityType.GemTrait, id),
-            ItemDocument when property == nameof(ItemDocument.GrantsId) && value is int id &&
-                store.GrantedPower(id) is { } found => Addresses(found.Type, found.Id),
-            _ => null,
-        };
 
     public (string Href, string? Tip)? Addresses(EntityType type, int id) =>
         store.All(type, id) is { Count: > 0 } readings ? (Href(type, id), Tip(readings[0])) : null;
@@ -248,6 +231,7 @@ public sealed class CodexViewService(
     {
         nameof(EntityDocument.Id), nameof(EntityDocument.Name),
         nameof(AbilityDocument.Description), nameof(ItemDocument.Icon), nameof(GemTypeDocument.OverflowDescription),
+        nameof(DungeonDocument.Background),
     };
 
     private static bool Hidden(EntityDocument document, string property) => document switch
@@ -258,15 +242,6 @@ public sealed class CodexViewService(
         CurrencyDocument => property == nameof(CurrencyDocument.Rarity),
         GemDocument => property == nameof(GemDocument.Rarity),
         _ => false,
-    };
-
-    private static string Heading(EntityDocument document, string property) => document switch
-    {
-        TraitDocument when property == nameof(TraitDocument.PowerId) => PublicTypes.Label(EntityType.TraitPower),
-        SetBonusDocument when property == nameof(SetBonusDocument.PowerId) => PublicTypes.Label(EntityType.SetBonusPower),
-        TalentSlotDocument when property == nameof(TalentSlotDocument.TalentId) => PublicTypes.Label(EntityType.Talent),
-        GemTraitDocument when property == nameof(GemTraitDocument.ReplacesId) => PublicTypes.Label(EntityType.GemTrait),
-        _ => Models.Codex.Spaced(property),
     };
 
     private static string? Unit(string property) => property switch

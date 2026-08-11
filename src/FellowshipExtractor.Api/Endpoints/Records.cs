@@ -8,7 +8,12 @@ namespace FellowshipExtractor.Api.Endpoints;
 public static class Records
 {
     public static IResult One(
-        EntityType type, int id, string? hero, IEntityStoreService store, ICodexViewService view)
+        EntityType type,
+        int id,
+        string? hero,
+        HttpContext http,
+        IEntityStoreService store,
+        ICodexViewService view)
     {
         var asked = StatQuery.Given(hero);
 
@@ -20,7 +25,7 @@ public static class Records
         var outcome = store.Resolve(type, id, asked, out var document, out var wearer);
 
         return outcome == Lookup.Found
-            ? Results.Ok(PublicEntity.From(document!, view))
+            ? Results.Ok(PublicEntity.From(document!, view, Origins.Of(http)))
             : Lookups.Problem(outcome, type, id, wearer, store.All(type, id));
     }
 }
