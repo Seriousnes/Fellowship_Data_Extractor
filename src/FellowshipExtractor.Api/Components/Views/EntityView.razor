@@ -18,6 +18,9 @@
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
+    [Parameter]
+    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Extra { get; set; } = [];
+
     private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts = [];
 
     private IReadOnlyList<(string Label, string Href)> Schools = [];
@@ -34,7 +37,7 @@
 
     protected override void OnParametersSet()
     {
-        Facts = Ui.Facts(Entity);
+        Facts = [.. Extra, .. Ui.Facts(Entity)];
         Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(AbilityDocument.ScalesOff)))];
         Tokens = Ui.Substitutions(Entity);
 

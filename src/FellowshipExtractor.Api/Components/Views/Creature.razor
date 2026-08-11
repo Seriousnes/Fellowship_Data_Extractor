@@ -1,25 +1,7 @@
 @using Fellowship.SDK.Models
 @inject IEntityStoreService Store
 
-<EntityView Entity="Entity">
-    <Panel Head="@($"At {Step.Label}")">
-        <Facts>
-            <Fact Label="Difficulty">@Step.Difficulty</Fact>
-            @if (Difficulties.Health(Drawn, Store.Settings, Step.Difficulty) is { } health)
-            {
-                <Fact Label="Health">@Codex.Magnitude((decimal)health)</Fact>
-            }
-            @if (Difficulties.HealthScale(Store.Settings, Drawn.Scaling, Step.Difficulty) is { } toughness)
-            {
-                <Fact Label="Health scale" Unit="x">@Codex.Number(toughness)</Fact>
-            }
-            @if (Difficulties.DamageScale(Store.Settings, Drawn.Scaling, Step.Difficulty) is { } hitting)
-            {
-                <Fact Label="Damage scale" Unit="x">@Codex.Number(hitting)</Fact>
-            }
-        </Facts>
-    </Panel>
-
+<EntityView Entity="Entity" Extra="Reading">
     @if (Phases.Count > 0)
     {
         <Panel Head="Abilities" Badge="@Drawn.Abilities!.Count.ToString()">
@@ -29,25 +11,36 @@
                 <SubHead>@phase.Key</SubHead>
                 <Table Items="phase.ToArray()" T="CreatureAbility">
                     <Columns>
+                        <Column Head="" Class="cx-art">
+                            <Content Context="slot">
+                                @if (Wielded(slot) is { } ability)
+                                {
+                                    <Art Entity="ability" />
+                                }
+                            </Content>
+                        </Column>
                         <Column Head="Name">
-                            <Content Context="slot"><Ref Entity="slot.Ability" /></Content>
-                        </Column>
-                        <Column Head="Scales off">
                             <Content Context="slot">
-                                @foreach (var coefficient in Stated(slot))
+                                @if (Wielded(slot) is { } ability)
                                 {
-                                    <Chip>@Wording(coefficient)</Chip>
+                                    <EntityLink Entity="ability" Class="cx-nm" />
+                                }
+                                else
+                                {
+                                    <Ref Entity="slot.Ability" />
                                 }
                             </Content>
                         </Column>
-                        <Column Head="@($"Damage at {Step.Label}")" Class="cx-numeric">
+                        <Column Head="Damage" Class="cx-numeric">
                             <Content Context="slot">
-                                @foreach (var band in Bands(slot))
+                                @foreach (var struck in Bands(slot))
                                 {
-                                    <div>@band</div>
+                                    <div>@struck</div>
                                 }
                             </Content>
                         </Column>
+                        <Column Head="Range" Numeric Value="slot => Wielded(slot)?.Range" />
+                        <Column Head="Cooldown" Numeric Unit="s" Value="slot => Wielded(slot)?.Cooldown" />
                         <Column Head="" Class="cx-tags">
                             <Content Context="slot">
                                 @if (!slot.Shown)
@@ -100,31 +93,86 @@
 
     private IReadOnlyList<IGrouping<string, CreatureAbility>> Phases = [];
 
+    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Reading = [];
+
+    private readonly Dictionary<(EntityType Type, int Id), AbilityDocument> wielded = [];
+
     protected override void OnParametersSet()
     {
         Phases = [.. (Drawn.Abilities ?? []).GroupBy(slot => slot.Phase, StringComparer.Ordinal)];
 
-        var difficulty = Store.Difficulty(Here.Asked.GetValueOrDefault("difficulty"));
+        var difficulty = Store.Difficulty(Here.Asked.GetValueOrDefault(DifficultyKnob.Asked));
 
         Step = Difficulties.At(Store.Settings, difficulty)
             ?? new DifficultyStep(difficulty, string.Empty, difficulty, difficulty.ToString());
+
+        wielded.Clear();
+
+        foreach (var slot in Drawn.Abilities ?? [])
+        {
+            var named = (slot.Ability.Type, slot.Ability.Id);
+
+            if (wielded.ContainsKey(named)) continue;
+
+            if (Store.All(named.Type, named.Id).OfType<AbilityDocument>().FirstOrDefault() is { } found)
+            {
+                wielded[named] = found;
+            }
+        }
+
+        Reading = Read();
     }
 
-    private IReadOnlyList<AbilityCoefficient> Stated(CreatureAbility slot) =>
-        Store.All(slot.Ability.Type, slot.Ability.Id).OfType<AbilityDocument>().FirstOrDefault()?.Coefficients ?? [];
+    private AbilityDocument? Wielded(CreatureAbility slot) =>
+        wielded.GetValueOrDefault((slot.Ability.Type, slot.Ability.Id));
 
-    private string Wording(AbilityCoefficient coefficient) =>
-        coefficient.Part is { Length: > 0 } part
-            ? $"{part}: {Codex.Number(coefficient.Value * 100)}% {coefficient.Attribute}"
-            : $"{Codex.Number(coefficient.Value * 100)}% {coefficient.Attribute}";
+    private IReadOnlyList<AbilityCoefficient> Stated(CreatureAbility slot) => Wielded(slot)?.Coefficients ?? [];
 
-    private IReadOnlyList<string> Bands(CreatureAbility slot) =>
-    [
-        .. Stated(slot)
-            .Select(coefficient => Difficulties.Damage(coefficient, Drawn, Store.Settings, Step.Difficulty))
-            .OfType<DamageBand>()
-            .Select(Printed),
-    ];
+    private IReadOnlyList<(string, string, string?, string?, string?)> Read()
+    {
+        var read = new List<(string, string, string?, string?, string?)>(4);
+
+        if (Difficulties.Health(Drawn, Store.Settings, Step.Difficulty) is { } health)
+        {
+            read.Add(("Health", Codex.Magnitude((decimal)health), null, null, null));
+        }
+
+        if (Difficulties.HealthScale(Store.Settings, Drawn.Scaling, Step.Difficulty) is { } toughness)
+        {
+            read.Add(("Health scale", Codex.Number(toughness), "x", null, null));
+        }
+
+        if (Difficulties.DamageScale(Store.Settings, Drawn.Scaling, Step.Difficulty) is { } hitting)
+        {
+            read.Add(("Damage scale", Codex.Number(hitting), "x", null, null));
+        }
+
+        if (Drawn.FoundIn is { Count: > 0 } dungeons)
+        {
+            read.Add(("Location", string.Join(", ", dungeons.Select(Named)), null, null, null));
+        }
+
+        return read;
+    }
+
+    private string Named(EntityReference dungeon) =>
+        Store.All(dungeon.Type, dungeon.Id) is [var found, ..] ? PublicTypes.NameOf(found) : dungeon.Name ?? string.Empty;
+
+    private IReadOnlyList<string> Bands(CreatureAbility slot)
+    {
+        var stated = Stated(slot);
+
+        return
+        [
+            .. stated
+                .Select(coefficient =>
+                    (coefficient.Part, Struck: Difficulties.Damage(coefficient, Drawn, Store.Settings, Step.Difficulty)))
+                .Where(reading => reading.Struck is not null)
+                .Select(reading => stated.Count > 1 && reading.Part is { Length: > 0 } part
+                    ? $"{part}: {Printed(reading.Struck!)}"
+                    : Printed(reading.Struck!)),
+        ];
+    }
 
     private static string Printed(DamageBand band) =>
         band.Low == band.High

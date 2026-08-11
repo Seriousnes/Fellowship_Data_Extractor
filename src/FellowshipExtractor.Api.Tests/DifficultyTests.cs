@@ -196,21 +196,89 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
 
         var page = await Page($"/creature/{NoorTheBetrayer}?difficulty={difficulty}");
 
-        var panel = page.QuerySelectorAll("div.cx-panel")
-            .Single(element => element.QuerySelector(":scope > div.cx-panel-head")
-                ?.TextContent.StartsWith($"At {Eternal.Name} +44", StringComparison.Ordinal) is true);
+        var facts = Named(page, "Details");
 
-        var facts = panel.QuerySelectorAll("table.cx-facts tr")
+        var health = Difficulties.Health(Noor, Settings, difficulty);
+        var scale = Difficulties.HealthScale(Settings, Noor.Scaling, difficulty);
+
+        Assert.NotNull(health);
+        Assert.NotNull(scale);
+        Assert.Equal(Codex.Magnitude((decimal)health.Value), facts["Health"]);
+        Assert.StartsWith(Codex.Number(scale.Value), facts["Health scale"], StringComparison.Ordinal);
+        Assert.EndsWith("x", facts["Health scale"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_creature_states_where_it_is_found_among_its_particulars()
+    {
+        var page = await Page($"/creature/{NoorTheBetrayer}");
+
+        var facts = Named(page, "Details");
+
+        Assert.Equal(
+            string.Join(", ", Noor.FoundIn!.Select(level => RouteTests.Factory.Store.All(level.Type, level.Id)[0])
+                .Select(PublicTypes.NameOf)),
+            facts["Location"]);
+    }
+
+    [Fact]
+    public async Task A_creature_leaves_the_attributes_its_damage_is_worked_out_from_off_its_particulars()
+    {
+        var page = await Page($"/creature/{NoorTheBetrayer}");
+
+        var facts = Named(page, "Details");
+
+        Assert.DoesNotContain("Armor", facts.Keys);
+        Assert.DoesNotContain("Resist", facts.Keys);
+        Assert.DoesNotContain("Intellect", facts.Keys);
+        Assert.DoesNotContain("Strength", facts.Keys);
+        Assert.DoesNotContain("Agility", facts.Keys);
+        Assert.Contains("Rank", facts.Keys);
+    }
+
+    private static IElement Panel(IDocument page, string head) =>
+        page.QuerySelectorAll("div.cx-panel")
+            .Single(element => element.QuerySelector(":scope > div.cx-panel-head")
+                ?.TextContent.StartsWith(head, StringComparison.Ordinal) is true);
+
+    private static IReadOnlyDictionary<string, string> Named(IDocument page, string head) =>
+        Panel(page, head).QuerySelectorAll("table.cx-facts tr")
             .ToDictionary(
                 row => row.QuerySelector("th")!.TextContent,
                 row => row.QuerySelector("td")!.TextContent.Trim(),
                 StringComparer.Ordinal);
 
-        var health = Difficulties.Health(Noor, Settings, difficulty);
+    private static string[] Struck(IElement panel, string head)
+    {
+        var heads = panel.QuerySelectorAll("thead th").Select(cell => cell.TextContent).ToArray();
+        var at = Array.IndexOf(heads, head);
 
-        Assert.NotNull(health);
-        Assert.Equal(Codex.Magnitude((decimal)health.Value), facts["Health"]);
-        Assert.Equal(difficulty.ToString(), facts["Difficulty"]);
+        Assert.InRange(at, 0, heads.Length - 1);
+
+        return
+        [
+            .. panel.QuerySelectorAll("tbody tr")
+                .Select(row => row.QuerySelectorAll("td").ElementAtOrDefault(at)?.TextContent.Trim())
+                .OfType<string>(),
+        ];
+    }
+
+    [Fact]
+    public async Task A_creature_page_hits_harder_the_deeper_the_difficulty_it_is_read_at()
+    {
+        var opening = Panel(
+            await Page($"/creature/{NoorTheBetrayer}?difficulty={Eternal.MinimumDifficulty}"), "Abilities");
+
+        var deep = Panel(
+            await Page($"/creature/{NoorTheBetrayer}?difficulty={Eternal.MinimumDifficulty + 44}"), "Abilities");
+
+        var pairs = Struck(opening, "Damage")
+            .Zip(Struck(deep, "Damage"))
+            .Where(pair => pair.First.Length > 0)
+            .ToArray();
+
+        Assert.NotEmpty(pairs);
+        Assert.All(pairs, pair => Assert.NotEqual(pair.First, pair.Second));
     }
 
     [Fact]
@@ -220,13 +288,11 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
 
         var page = await Page($"/creature/{NoorTheBetrayer}?difficulty={difficulty}");
 
-        var panel = page.QuerySelectorAll("div.cx-panel")
-            .Single(element => element.QuerySelector(":scope > div.cx-panel-head")
-                ?.TextContent.StartsWith("Abilities", StringComparison.Ordinal) is true);
+        var panel = Panel(page, "Abilities");
 
         var heads = panel.QuerySelectorAll("thead th").Select(cell => cell.TextContent).ToArray();
 
-        Assert.Contains($"Damage at {Eternal.Name} +44", heads);
+        Assert.Equal(["", "Name", "Damage", "Range", "Cooldown", ""], heads);
 
         var arrow = RouteTests.Factory.Store.Entities
             .OfType<AbilityDocument>()
