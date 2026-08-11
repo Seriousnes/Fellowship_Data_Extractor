@@ -77,6 +77,7 @@ public static class ExportAllCommand
         Console.WriteLine(
             $"dungeons:           {resolver.Dungeons.Count} named, {resolver.Locations.Dungeons} with a map, " +
             $"{resolver.Locations.Maps} umaps read, {resolver.Locations.Placed} creatures placed, " +
+            $"{resolver.Locations.Housed} of them by the folder they live in, " +
             $"{resolver.Locations.Unplaced} placed in none");
         Console.WriteLine($"calculation presets:{resolver.PresetCount} rows carrying a default spread");
         Console.WriteLine(

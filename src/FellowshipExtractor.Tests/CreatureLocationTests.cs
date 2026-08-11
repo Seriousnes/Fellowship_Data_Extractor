@@ -33,4 +33,42 @@ public sealed class CreatureLocationTests
         Assert.True(locations.Maps >= locations.Dungeons, "Fewer umaps were read than there are dungeons.");
         Assert.True(locations.Placed > 0, "No creature was placed in any dungeon.");
     }
+
+    private static readonly Dictionary<string, string> Folders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["FrozenKingdom"] = "fellowship/Content/dungeons/FrozenKingdom/Sublevels/",
+        ["PirateRaid"] = "fellowship/Content/dungeons/PirateRaid/Sublevels/",
+        ["SnowPeak"] = "fellowship/Plugins/GameFeatures/Adventures/SnowPeak/Content/Levels/",
+    };
+
+    [Fact]
+    public void OnlyTheFolderSegmentASingleDungeonSitsUnderNamesThatDungeon()
+    {
+        var naming = CreatureLocations.Naming(Folders);
+
+        Assert.Equal("FrozenKingdom", naming["FrozenKingdom"]);
+        Assert.Equal("SnowPeak", naming["SnowPeak"]);
+
+        Assert.DoesNotContain("fellowship", naming.Keys);
+        Assert.DoesNotContain("Content", naming.Keys);
+        Assert.DoesNotContain("dungeons", naming.Keys);
+        Assert.DoesNotContain("Sublevels", naming.Keys);
+    }
+
+    [Theory]
+    [InlineData("fellowship/Content/Characters/NPC/FrozenKingdom/BossRangerCaptain/BP_X.uasset", "FrozenKingdom")]
+    [InlineData("fellowship/Content/Characters/NPC/SnowPeak/Ancient/BP_Y.uasset", "SnowPeak")]
+    [InlineData("fellowship/Content/Characters/NPC/Shared/BP_Z.uasset", null)]
+    public void ACreatureIsHousedByTheDungeonFolderItsOwnAssetLivesUnder(string path, string? expected) =>
+        Assert.Equal(expected, CreatureLocations.Housing(path, CreatureLocations.Naming(Folders)));
+
+    [Fact]
+    public void ABossNoMapPlacesIsStillHousedByTheDungeonItBelongsTo()
+    {
+        var placed = Export.Resolver.Locations.For("BP_NPC_FK_BossRangerCaptain");
+
+        var named = placed.Select(tag => Export.Resolver.Dungeons.For(tag)).ToArray();
+
+        Assert.Contains("Cithrel's Fall", named);
+    }
 }

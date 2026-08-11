@@ -150,7 +150,7 @@ public sealed class TypeResolverTests
             .ToArray();
 
         Assert.Equal(338, creatures.Length);
-        Assert.Equal(98, empty.Length);
+        Assert.Equal(97, empty.Length);
         Assert.All(empty, row => Assert.Equal(EntityType.Creature, row.Type));
 
         Assert.Equal(
@@ -206,7 +206,7 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.Item, 5744)]
     [InlineData(EntityType.Effect, 3261)]
     [InlineData(EntityType.Ability, 2307)]
-    [InlineData(EntityType.Creature, 240)]
+    [InlineData(EntityType.Creature, 241)]
     [InlineData(EntityType.Dungeon, 19)]
     [InlineData(EntityType.Talent, 216)]
     [InlineData(EntityType.TalentSlot, 216)]
