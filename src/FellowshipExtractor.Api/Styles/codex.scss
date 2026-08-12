@@ -24,7 +24,11 @@
   --wide: 1440px;
 }
 
-html { scrollbar-gutter: stable; }
+html {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-deep) var(--sunken);
+}
 
 body {
   margin: 0;
@@ -43,6 +47,8 @@ body {
   @include crest.slot-chrome;
 
   *, *::before, *::after { box-sizing: border-box; }
+
+  * { scrollbar-width: thin; }
 
   a { color: var(--gold-bright); text-decoration: none; }
   a:hover { text-decoration: underline; }

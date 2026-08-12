@@ -80,6 +80,7 @@ public class OmniboxTests : BunitContext
 
         cut.Find("input").KeyDown(new KeyboardEventArgs { Key = "ArrowUp" });
 
-        Assert.Equal("on", cut.Find(".cx-omnibox-all").GetAttribute("data-active"));
+        cut.WaitForAssertion(
+            () => Assert.Equal("on", cut.Find(".cx-omnibox-all").GetAttribute("data-active")));
     }
 }

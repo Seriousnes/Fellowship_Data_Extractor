@@ -171,22 +171,19 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
             Xunit.TestContext.Current.CancellationToken);
 
     [Fact]
-    public async Task A_creature_page_offers_every_difficulty_the_ladder_carries()
+    public async Task A_creature_page_carries_a_picker_reading_the_difficulty_it_stands_at()
     {
-        var page = await Page($"/creature/{NoorTheBetrayer}");
+        var difficulty = Eternal.MinimumDifficulty + 44;
 
-        var picker = page.QuerySelector("select[data-difficulty]");
+        var page = await Page($"/creature/{NoorTheBetrayer}?difficulty={difficulty}");
+
+        var picker = page.QuerySelector("button[data-difficulty]");
 
         Assert.NotNull(picker);
-
-        var offered = picker.QuerySelectorAll("option").ToArray();
-
-        Assert.Equal(Settings.DifficultyScaling.Health.Count, offered.Length);
-
-        var deep = offered.Single(
-            option => option.GetAttribute("value") == (Eternal.MinimumDifficulty + 44).ToString());
-
-        Assert.Contains($"{Eternal.Name} +44", deep.TextContent, StringComparison.Ordinal);
+        Assert.Equal("combobox", picker.GetAttribute("role"));
+        Assert.Equal("false", picker.GetAttribute("aria-expanded"));
+        Assert.Contains($"{Eternal.Name} +44", picker.TextContent, StringComparison.Ordinal);
+        Assert.Contains(difficulty.ToString(), picker.TextContent, StringComparison.Ordinal);
     }
 
     [Fact]

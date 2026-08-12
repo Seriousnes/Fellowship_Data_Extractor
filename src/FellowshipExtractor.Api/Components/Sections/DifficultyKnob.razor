@@ -2,24 +2,210 @@
 @inject IEntityStoreService Store
 @inject NavigationManager Nav
 
-<select data-difficulty @onchange="Chose">
-    @foreach (var step in Difficulties.Ladder(Store.Settings))
+<div class="cx-picker" @onfocusin="Focus" @onfocusout="Blur">
+    <button type="button" class="cx-picker-face" data-difficulty @ref="face"
+            role="combobox" aria-haspopup="listbox" aria-controls="cx-difficulty-drop"
+            aria-label="Difficulty" aria-expanded="@(showing ? "true" : "false")"
+            @onclick="Toggle" @onkeydown="Key">
+        <span class="cx-nm">@Standing.Label</span>
+        <span class="cx-ty">@Standing.Difficulty</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+    </button>
+
+    @if (showing)
     {
-        <option value="@step.Difficulty" selected="@(step.Difficulty == Difficulty)">
-            @step.Label (@step.Difficulty)
-        </option>
+        <div class="cx-picker-drop" id="cx-difficulty-drop" role="listbox" aria-label="Difficulty"
+             @onkeydown="Key">
+            <div class="cx-picker-chips">
+                <button type="button" class="cx-picker-chip" aria-pressed="@Held(null)"
+                        @onclick="() => Scope(null)">
+                    All (@ladder.Count)
+                </button>
+                @foreach (var (league, steps) in leagues)
+                {
+                    <button type="button" class="cx-picker-chip" aria-pressed="@Held(league)"
+                            @onclick="() => Scope(league)">
+                        @league (@steps)
+                    </button>
+                }
+            </div>
+
+            @for (var at = 0; at < shown.Count; at++)
+            {
+                var step = shown[at];
+                var mine = at;
+
+                <a class="cx-picker-step" role="option" href="@Href(step)"
+                   @key="step.Difficulty" @ref="rows[step.Difficulty]"
+                   aria-selected="@(step.Difficulty == Difficulty ? "true" : "false")"
+                   data-active="@On(active == mine)">
+                    <span class="cx-nm">@step.Label</span>
+                    <span class="cx-ty">@step.Difficulty</span>
+                </a>
+            }
+        </div>
     }
-</select>
+</div>
 
 @code {
     [Parameter] public int Difficulty { get; set; }
 
-    private void Chose(ChangeEventArgs asked)
-    {
-        if (asked.Value is not string value || !int.TryParse(value, out var chosen)) return;
+    public const string Asked = "difficulty";
 
-        Nav.NavigateTo(Nav.GetUriWithQueryParameter(Asked, chosen));
+    private int? applied;
+
+    private IReadOnlyList<DifficultyStep> ladder = [];
+    private IReadOnlyList<DifficultyStep> shown = [];
+    private IReadOnlyList<(string League, int Steps)> leagues = [];
+
+    private ElementReference face;
+
+    private readonly Dictionary<int, ElementReference> rows = [];
+
+    private string? scope;
+    private bool showing;
+    private bool revealing;
+    private int active = -1;
+    private int touches;
+
+    private DifficultyStep Standing =>
+        Difficulties.At(Store.Settings, Difficulty)
+            ?? new DifficultyStep(Difficulty, string.Empty, Difficulty, Difficulty.ToString());
+
+    private static string? On(bool set) => set ? "on" : null;
+
+    private string Held(string? league) => scope == league ? "true" : "false";
+
+    private string Href(DifficultyStep step) => Nav.GetUriWithQueryParameter(Asked, step.Difficulty);
+
+    protected override void OnParametersSet()
+    {
+        if (Difficulty == applied) return;
+
+        applied = Difficulty;
+
+        ladder = Difficulties.Ladder(Store.Settings);
+
+        leagues =
+        [
+            .. ladder
+                .Where(step => step.League.Length > 0)
+                .GroupBy(step => step.League, StringComparer.Ordinal)
+                .Select(league => (league.Key, league.Count())),
+        ];
+
+        scope = Standing.League is { Length: > 0 } named ? named : null;
+
+        Shut();
+        Settle();
     }
 
-    public const string Asked = "difficulty";
+    private void Settle()
+    {
+        shown = scope is null ? ladder : [.. ladder.Where(step => step.League == scope)];
+        active = Marked();
+    }
+
+    private void Shut()
+    {
+        showing = false;
+        rows.Clear();
+    }
+
+    private int Marked()
+    {
+        for (var at = 0; at < shown.Count; at++)
+        {
+            if (shown[at].Difficulty == Difficulty) return at;
+        }
+
+        return shown.Count > 0 ? 0 : -1;
+    }
+
+    private void Toggle()
+    {
+        touches++;
+
+        if (showing)
+        {
+            Shut();
+            return;
+        }
+
+        showing = true;
+        active = Marked();
+        revealing = true;
+    }
+
+    private void Scope(string? league)
+    {
+        touches++;
+        scope = league;
+        revealing = true;
+        Settle();
+    }
+
+    private void Focus() => touches++;
+
+    private async Task Blur()
+    {
+        var mine = ++touches;
+        await Task.Delay(200);
+
+        if (mine != touches) return;
+
+        Shut();
+        StateHasChanged();
+    }
+
+    private async Task Key(KeyboardEventArgs key)
+    {
+        switch (key.Key)
+        {
+            case "Escape":
+                Shut();
+                await face.FocusAsync();
+                return;
+
+            case "ArrowDown" or "ArrowUp" or "Home" or "End" when !showing:
+                showing = true;
+                active = Marked();
+                revealing = true;
+                return;
+
+            case "ArrowDown":
+                active = active >= shown.Count - 1 ? 0 : active + 1;
+                revealing = true;
+                return;
+
+            case "ArrowUp":
+                active = active <= 0 ? shown.Count - 1 : active - 1;
+                revealing = true;
+                return;
+
+            case "Home":
+                active = 0;
+                revealing = true;
+                return;
+
+            case "End":
+                active = shown.Count - 1;
+                revealing = true;
+                return;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (!revealing) return;
+
+        revealing = false;
+
+        if (!showing || active < 0 || active >= shown.Count) return;
+
+        if (rows.TryGetValue(shown[active].Difficulty, out var row)) await row.FocusAsync();
+    }
 }
