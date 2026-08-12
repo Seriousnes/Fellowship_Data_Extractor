@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-using FellowshipExtractor.Api.Models;
+using Fellowship.Codex.Models;
 
 namespace FellowshipExtractor.Tests;
 

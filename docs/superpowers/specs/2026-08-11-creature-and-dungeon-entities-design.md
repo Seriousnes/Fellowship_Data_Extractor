@@ -241,5 +241,5 @@ confirm:
 
 Tests: `FellowshipExtractor.Tests` covers the health branch on both shapes, the umap object name
 read, the phase and `ShowOnUI` walk, and the `Level.ID` type resolution.
-`FellowshipExtractor.Api.Tests` covers the dungeon endpoints, the `resource` link on every reference
+`Fellowship.Codex.Tests` covers the dungeon endpoints, the `resource` link on every reference
 shape, and the creature and dungeon pages rendering their lists.

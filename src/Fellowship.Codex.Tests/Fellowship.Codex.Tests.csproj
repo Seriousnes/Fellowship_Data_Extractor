@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\Fellowship.Codex\Fellowship.Codex.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Fellowship.SDK" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="bunit" Version="2.8.6" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.10" />
+  </ItemGroup>
+
+</Project>

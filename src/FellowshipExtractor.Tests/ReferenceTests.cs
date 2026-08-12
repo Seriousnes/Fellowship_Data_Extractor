@@ -3,7 +3,7 @@ using System.Reflection;
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
 
-using FellowshipExtractor.Api.Services;
+using Fellowship.Codex.Services;
 
 namespace FellowshipExtractor.Tests;
 

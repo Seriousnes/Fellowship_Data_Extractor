@@ -1,4 +1,4 @@
-using FellowshipExtractor.Api.Models;
+using Fellowship.Codex.Models;
 
 namespace FellowshipExtractor.Tests;
 

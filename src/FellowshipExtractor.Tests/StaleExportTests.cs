@@ -1,7 +1,7 @@
 using System.Text.Json;
 
-using FellowshipExtractor.Api.Models;
-using FellowshipExtractor.Api.Services;
+using Fellowship.Codex.Models;
+using Fellowship.Codex.Services;
 
 using Microsoft.Extensions.Logging.Abstractions;
 

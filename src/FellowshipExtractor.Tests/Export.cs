@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 
 using CUE4Parse.FileProvider;
 
-using FellowshipExtractor.Api.Services;
+using Fellowship.Codex.Services;
 using FellowshipExtractor.Tooltip;
 
 using Fellowship.SDK.Documents;

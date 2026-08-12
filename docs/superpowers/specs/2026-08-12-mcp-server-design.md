@@ -66,7 +66,7 @@ answer `/api/catalog` with 200, held by two processes:
 
 | Port | Process | Comes from |
 | --- | --- | --- |
-| 5320 | `FellowshipExtractor.Api` | `Port(builder, "Ports:Codex", stack.Offset, 5280)`, `isProxied: false`, offset 40 for this checkout |
+| 5320 | `Fellowship.Codex` | `Port(builder, "Ports:Codex", stack.Offset, 5280)`, `isProxied: false`, offset 40 for this checkout |
 | 5488 | `dcp` | the `applicationUrl` of the `http` profile in `Properties/launchSettings.json` |
 | 7346 | `dcp` | the `applicationUrl` of the `https` profile in the same file |
 
@@ -77,7 +77,7 @@ AppHost declares, and `FELLOWSHIP_PORT_OFFSET=0` pins it to 5280 by making `stac
 
 ## The tools
 
-`src/FellowshipExtractor.Api/Mcp/CodexTools.cs`:
+`src/Fellowship.Codex/Mcp/CodexTools.cs`:
 
 ```csharp
 [McpServerToolType]
@@ -173,7 +173,7 @@ recoverable turn.
 
 ## Registration
 
-`src/FellowshipExtractor.Api/Mcp/McpServer.cs` holds the server's identity and its registration
+`src/Fellowship.Codex/Mcp/McpServer.cs` holds the server's identity and its registration
 pair, in the shape `ApiDocument.cs` and `ApiEndpoints.cs` already use:
 
 ```csharp
@@ -234,7 +234,7 @@ a permanently registered server should have.
 
 ## Verification
 
-`src/FellowshipExtractor.Api.Tests/McpTests.cs` takes `RouteTests.Factory` through
+`src/Fellowship.Codex.Tests/McpTests.cs` takes `RouteTests.Factory` through
 `IClassFixture<RouteTests.Factory>` and drives a real client over the in-memory handler:
 
 ```csharp
@@ -269,7 +269,7 @@ The tests confirm:
   prefix, honours `type`, and clamps `limit` above 100 and below 1.
 - `find_entity` results carry no icon, href or tooltip field.
 
-Run with `dotnet test src/FellowshipExtractor.Api.Tests/FellowshipExtractor.Api.Tests.csproj`, which
+Run with `dotnet test src/Fellowship.Codex.Tests/Fellowship.Codex.Tests.csproj`, which
 needs `output/export` seeded and runs in Debug.
 
 Manual confirmation, with the AppHost running:

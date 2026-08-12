@@ -2,9 +2,9 @@ using System.Reflection;
 
 using Fellowship.SDK.Documents;
 
-using FellowshipExtractor.Api;
-using FellowshipExtractor.Api.Models;
-using FellowshipExtractor.Api.Services;
+using Fellowship.Codex;
+using Fellowship.Codex.Models;
+using Fellowship.Codex.Services;
 
 using Microsoft.Extensions.Logging.Abstractions;
 

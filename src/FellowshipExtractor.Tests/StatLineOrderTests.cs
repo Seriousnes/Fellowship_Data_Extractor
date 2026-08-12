@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-using FellowshipExtractor.Api.Models;
+using Fellowship.Codex.Models;
 
 using Fellowship.SDK.Documents;
 

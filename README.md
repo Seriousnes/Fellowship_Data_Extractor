@@ -730,7 +730,7 @@ Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` t
 
 ## The codex
 
-`src/FellowshipExtractor.Api` serves the export as a website and as an API from one process. It
+`src/Fellowship.Codex` serves the export as a website and as an API from one process. It
 reads everything it draws out of the `icons` blob container, so the container has to be filled
 before the app will start:
 
@@ -969,14 +969,14 @@ back at the same path.
   an effect for its scaling, `DescriptionTokens` follows a `{Token}` to the effect behind it,
   `Spread` works out the band a coefficient rolls in from the ability's own tuning or the effect's
   calculation preset, and `Settings` writes the shared lookup tables beside the entity stream.
-- `src/FellowshipExtractor.Api/` - the codex. `EntityStore` reads the export once; `Codex` declares
+- `src/Fellowship.Codex/` - the codex. `EntityStore` reads the export once; `Codex` declares
   the facets, flags and measures the whole browser is driven by and counts them off that; `SearchIndex`
   is the name index behind the omnibox and `Suggestions` is the one answer both it and `/api/search`
   give; `CodexQuery` parses a query string against the facets, `CodexSearch` runs it and `BrowseView`
   turns the result into the links the results page draws; `TooltipRenderer` draws one entity the way
   the game draws it, and `CodexView` is what the pages ask for a URL, a colour, a tooltip address or
   a piece of the game's own text so no page spells any of those out twice.
-- `src/FellowshipExtractor.Api/Components/` - the pages. `App.razor` is the document and writes the
+- `src/Fellowship.Codex/Components/` - the pages. `App.razor` is the document and writes the
   design system out as custom properties; `Layout/` holds the masthead, the mega menu and the one
   interactive component; `Pages/` holds the four routes; `Shared/Detail.razor` is every field of an
   entity, recursive so a granted ability and a legendary roll are drawn by the same component, and

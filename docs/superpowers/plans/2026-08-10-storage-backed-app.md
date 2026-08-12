@@ -29,7 +29,7 @@ These bind every task and every reviewer.
    mask; it is the inverted mask the compose formula consumes. Never treat it as transparency.
 8. **The icon compose runs in linear colour space**, exactly:
    `out = srgbEncode( lerp( srgbDecode(icon.rgb), srgbDecode(rarityColour), icon.a ) )`.
-9. **Test frameworks differ**: `FellowshipExtractor.Tests` is xunit v2, `FellowshipExtractor.Api.Tests`
+9. **Test frameworks differ**: `FellowshipExtractor.Tests` is xunit v2, `Fellowship.Codex.Tests`
    is xunit v3 with bunit. Fixture code cannot be shared verbatim between them.
 10. **Never run `git stash`** in any form. Work only inside your assigned worktree and only on the
     files your task owns.
@@ -108,7 +108,7 @@ Complete rename surface (enumerated from the current tree):
   calls; `TooltipCommand` log text; `EnumsCommand` parameters and `Settings.FileName` use;
   `Program.cs` help text. `Tooltip/ItemSlotNames.cs` uses `_vocabulary` for an unrelated local
   meaning and is NOT part of this rename.
-- **FellowshipExtractor.Api**: `IEntityStoreService.Vocabulary` -> `.Settings` (and the property,
+- **Fellowship.Codex**: `IEntityStoreService.Vocabulary` -> `.Settings` (and the property,
   parsing, error text in `EntityStoreService`); `ExportPathService.Vocabulary` -> `.Settings` with
   the `"settings.json"` literal; `DesignTokenService` ctor parameter; every `store.Vocabulary` /
   `Vocabulary` identifier in `TooltipViewService`, `TooltipService`, `PlaceholderService`,
@@ -119,7 +119,7 @@ Complete rename surface (enumerated from the current tree):
   error text), `StaleExportTests.cs` (two literals), `EnumDriftTests.cs` (including the test method
   name), `StatPoolTests.cs`, `StatParameterTests.cs`, `RollLineTests.cs`, `RarityTests.cs`,
   `AttributeTableTests.cs`.
-- **FellowshipExtractor.Api.Tests**: `Export.cs`, `ColourTests.cs`, `TooltipTests.cs`,
+- **Fellowship.Codex.Tests**: `Export.cs`, `ColourTests.cs`, `TooltipTests.cs`,
   `BlessingCardTests.cs`, `AbilityScalingTests.cs`, `TooltipDumpTests.cs`, `Cx/IconTests.cs`,
   `TemperingTests.cs`, `StatParameterTests.cs`, `StateChromeTests.cs`,
   `PlaceholderReadingTests.cs`, `Sections/KnobsTests.cs`.
@@ -261,10 +261,10 @@ Build, on top of A1 and A2:
 
 ## Stream B (worktree `sba-api`): the codex reads a snapshot
 
-Owns: `src/FellowshipExtractor.Api/**`, `src/FellowshipExtractor.Api.Tests/**`,
+Owns: `src/Fellowship.Codex/**`, `src/Fellowship.Codex.Tests/**`,
 `src/FellowshipExtractor.Tests/StaleExportTests.cs`, the `EntityStoreService` construction inside
 `src/FellowshipExtractor.Tests/EntityStoreCorpusTests.Build()`, which the removal of
-`ExportPathService` reaches through the `ProjectReference` to `FellowshipExtractor.Api` that
+`ExportPathService` reaches through the `ProjectReference` to `Fellowship.Codex` that
 `FellowshipExtractor.Tests.csproj` already carries, and may add new files (not existing ones) to
 `FellowshipExtractor.Tests` for migrated pixel assertions. Does not touch
 `src/FellowshipExtractor/**`, README, SDK, AppHost, slnx, or any other existing
@@ -327,8 +327,8 @@ Build:
   `ui/` is applied in one place).
 - `DesignTokenService.Rarity()` reads `settings.RarityColorRows` instead of guessing two key
   patterns.
-- `SixLabors.ImageSharp` leaves `FellowshipExtractor.Api.csproj`.
-- `FellowshipExtractor.Api.Tests/Export.cs` builds its fixture through `FolderExportSource` over
+- `SixLabors.ImageSharp` leaves `Fellowship.Codex.csproj`.
+- `Fellowship.Codex.Tests/Export.cs` builds its fixture through `FolderExportSource` over
   the discovered folder (walk gates on `data/entities.jsonl`), constructs the snapshot store, and
   wires `ChromeAssetService` without paths. Per the spec tests: "that `ChromeAssets` answers the
   texture each rarity's ornament, colour row and section heading name; that every slot URL resolves

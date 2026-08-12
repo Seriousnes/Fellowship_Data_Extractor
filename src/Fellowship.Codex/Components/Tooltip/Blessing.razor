@@ -1,0 +1,40 @@
+@inject ITooltipViewService Ui
+
+<div class="@TooltipView.Root plain fx-blessing" style="@Ui.Variables(null)">
+    <style>@Sheet</style>
+    <div class="card">
+        <header class="head">
+            <p class="eyebrow">@Wording.Name</p>
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+        </header>
+        <BlessingCrest Entity="Entity" State="@Query.State" />
+        <div class="band">
+            <span class="kind">@Wording.HeroBlessing</span>
+            <span class="tier">@Wording.TierLevel <span class="count">@Equipped / @Tiers</span></span>
+        </div>
+        @if (Entity.Description is { } description)
+        {
+            <p class="prose">@Ui.Text(description, Entity.Placeholders, Query, Hero, FellowshipCodex.Schools(Entity))</p>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public EntityDocument Shown { get; set; } = default!;
+
+    private BlessingDocument Entity => (BlessingDocument)Shown;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    private MarkupString Sheet;
+
+    private BlessingEntry Wording => Ui.Blessings;
+
+    private string Equipped => (Query.EquippedTier ?? 0).ToString(CultureInfo.InvariantCulture);
+
+    private string Tiers => Wording.Tiers.ToString(CultureInfo.InvariantCulture);
+
+    protected override void OnParametersSet() => Sheet = new MarkupString(Ui.Style());
+}

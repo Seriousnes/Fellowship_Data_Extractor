@@ -1,0 +1,121 @@
+namespace Fellowship.Codex.Tests;
+
+[Collection(Corpus.Name)]
+public class CreatureViewTests : BunitContext
+{
+    private readonly Export export;
+
+    public CreatureViewTests(Export export)
+    {
+        this.export = export;
+        Services.AddSingleton(export.View);
+        Services.AddSingleton(export.Tooltip);
+        Services.AddSingleton(export.Store);
+    }
+
+    private CreatureDocument Wielding => export.Store.Entities
+        .OfType<CreatureDocument>()
+        .First(row => row.FoundIn is { Count: > 0 } &&
+            row.Abilities is { Count: > 0 } slots &&
+            slots.Select(slot => slot.Phase).Distinct(StringComparer.Ordinal).Count() > 1);
+
+    private static string Head(IElement panel) =>
+        panel.QuerySelector(":scope > div.cx-panel-head")?.TextContent ?? string.Empty;
+
+    private IRenderedComponent<Detail> Draw(EntityDocument document) =>
+        Render<Detail>(p => p.Add(x => x.Entity, document));
+
+    [Fact]
+    public void A_creature_draws_its_abilities_grouped_by_the_phase_that_slots_them()
+    {
+        var creature = Wielding;
+
+        var cut = Draw(creature);
+
+        var panel = cut.FindAll("div.cx-panel")
+            .Single(element => Head(element).StartsWith("Abilities", StringComparison.Ordinal));
+
+        var phases = panel.QuerySelectorAll("p.cx-sub-head").Select(head => head.TextContent).ToArray();
+
+        Assert.Equal(
+            creature.Abilities!.Select(slot => slot.Phase).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal),
+            phases.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void An_ability_the_game_hides_is_marked_and_a_shown_one_is_not()
+    {
+        var creature = export.Store.Entities
+            .OfType<CreatureDocument>()
+            .First(row => row.Abilities is { Count: > 0 } &&
+                row.Abilities.Any(slot => !slot.Shown) &&
+                row.Abilities.Any(slot => slot.Shown));
+
+        var cut = Draw(creature);
+
+        var panel = cut.FindAll("div.cx-panel")
+            .Single(element => Head(element).StartsWith("Abilities", StringComparison.Ordinal));
+
+        var marked = panel.QuerySelectorAll("tbody tr")
+            .Count(row => row.TextContent.Contains("hidden", StringComparison.Ordinal));
+
+        Assert.Equal(creature.Abilities!.Count(slot => !slot.Shown), marked);
+    }
+
+    [Fact]
+    public void A_creature_names_every_dungeon_it_is_found_in_among_its_facts()
+    {
+        var creature = Wielding;
+
+        var cut = Draw(creature);
+
+        var row = cut.FindAll("table.cx-facts tr")
+            .Single(fact => fact.QuerySelector("th")?.TextContent == "Location");
+
+        var named = creature.FoundIn!.Select(level =>
+            export.Store.All(level.Type, level.Id) is [var found, ..]
+                ? PublicTypes.NameOf(found)
+                : level.Name ?? string.Empty);
+
+        Assert.Equal(string.Join(", ", named), row.QuerySelector("td")!.TextContent.Trim());
+    }
+
+    [Fact]
+    public void A_creature_the_dungeon_score_leaves_out_says_so_among_its_facts()
+    {
+        var excluded = export.Store.Entities
+            .OfType<CreatureDocument>()
+            .First(row => row.CountsTowardScore is false);
+
+        var cut = Draw(excluded);
+
+        var row = cut.FindAll("table.cx-facts tr")
+            .Single(fact => fact.QuerySelector("th")?.TextContent == "Counts Toward Score");
+
+        Assert.Equal("No", row.QuerySelector("td")!.TextContent.Trim());
+    }
+
+    [Fact]
+    public void A_dungeon_lists_every_creature_found_there_with_its_rank_and_kill_score()
+    {
+        var dungeon = export.Store.Entities
+            .OfType<DungeonDocument>()
+            .First(level => export.Store.Entities
+                .OfType<CreatureDocument>()
+                .Any(creature => creature.FoundIn?.Any(found => found.Id == level.Id) is true));
+
+        var expected = export.Store.Entities
+            .OfType<CreatureDocument>()
+            .Count(creature => creature.FoundIn?.Any(found => found.Id == dungeon.Id) is true);
+
+        var cut = Draw(dungeon);
+
+        var panel = cut.FindAll("div.cx-panel")
+            .Single(element => Head(element).StartsWith("Creatures", StringComparison.Ordinal));
+
+        var heads = panel.QuerySelectorAll("thead th").Select(cell => cell.TextContent).ToArray();
+
+        Assert.Equal(["", "Name", "Rank", "Health", "Kill score"], heads);
+        Assert.Equal(expected, panel.QuerySelectorAll("tbody tr").Length);
+    }
+}

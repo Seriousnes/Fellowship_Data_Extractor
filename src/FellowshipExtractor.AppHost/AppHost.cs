@@ -19,11 +19,13 @@ var storage = builder.AddAzureStorage("storage")
 
 var icons = storage.AddBlobContainer("icons", "icons");
 
-builder.AddProject<Projects.FellowshipExtractor_Api>("codex")
+builder.AddProject<Projects.Fellowship_Codex>("codex")
     .WithReference(icons)
     .WaitFor(icons)
     .WithHttpEndpoint(port: codexPort, name: "codex-http", isProxied: false)
     .WithHttpHealthCheck("/health")
     .WithExternalHttpEndpoints();
+
+builder.AddProject<Projects.Fellowship_Codex_Api>("codex-api");
 
 builder.InComposeStack(stack.Project, stack.Root).Build().Run();

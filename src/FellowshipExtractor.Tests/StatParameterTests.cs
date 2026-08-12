@@ -1,5 +1,5 @@
-using FellowshipExtractor.Api.Endpoints;
-using FellowshipExtractor.Api.Models;
+using Fellowship.Codex.Endpoints;
+using Fellowship.Codex.Models;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;

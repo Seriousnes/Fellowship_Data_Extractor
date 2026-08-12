@@ -1,7 +1,7 @@
 using System.Text.Json;
 
-using FellowshipExtractor.Api.Endpoints;
-using FellowshipExtractor.Api.Models;
+using Fellowship.Codex.Endpoints;
+using Fellowship.Codex.Models;
 
 using Fellowship.SDK.Documents;
 

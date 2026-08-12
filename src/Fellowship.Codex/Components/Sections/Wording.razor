@@ -1,0 +1,28 @@
+@inject ICodexViewService Ui
+
+@if (Description is not null || Detail.Count > 0)
+{
+    <Panel Head="Text">
+        @if (Description is not null)
+        {
+            <Prose>@Ui.Text(Description, Tokens, Schools)</Prose>
+        }
+        @foreach (var line in Detail)
+        {
+            <Rule />
+            <Prose>@Ui.Text(line, Tokens, Schools)</Prose>
+        }
+    </Panel>
+}
+
+@code {
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
+
+    private string? Description => DocumentFields.Text(Entity, nameof(AbilityDocument.Description));
+
+    private IReadOnlyList<string> Detail => DocumentFields.Words(Entity, nameof(AbilityDocument.Detail));
+
+    private IReadOnlyList<Placeholder> Tokens => CodexView.PlaceholdersOf(Entity);
+
+    private IReadOnlyList<string> Schools => FellowshipCodex.Schools(Entity);
+}

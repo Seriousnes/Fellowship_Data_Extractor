@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FellowshipExtractor\FellowshipExtractor.csproj" />
-    <ProjectReference Include="..\FellowshipExtractor.Api\FellowshipExtractor.Api.csproj" />
+    <ProjectReference Include="..\Fellowship.Codex\Fellowship.Codex.csproj" />
     <ProjectReference Include="..\Fellowship.SDK\Fellowship.SDK.csproj" />
   </ItemGroup>
 

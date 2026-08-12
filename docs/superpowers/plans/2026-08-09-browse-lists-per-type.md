@@ -29,7 +29,7 @@ owner and an effect's owner. Each is read from the asset that declares it and wr
 document, so the Api reads a field instead of guessing.
 
 **Tech Stack:** .NET 10, C# 14, Blazor static server rendering, xunit.v3 with bunit in
-`src/FellowshipExtractor.Api.Tests`, xunit 2 in `src/FellowshipExtractor.Tests`, SCSS compiled to
+`src/Fellowship.Codex.Tests`, xunit 2 in `src/FellowshipExtractor.Tests`, SCSS compiled to
 CSS by AspNetCore.SassCompiler, CUE4Parse in the extractor.
 
 ## Global constraints
@@ -46,7 +46,7 @@ CSS by AspNetCore.SassCompiler, CUE4Parse in the extractor.
 - Match the surrounding idiom: expression-bodied members, collection expressions, pattern matching,
   `StringComparer` named explicitly, `IReadOnlyList<T>` on document properties.
 - Stylesheets are written as `.razor.scss`. `*.css` is generated and gitignored.
-- Test naming: snake_case sentences in `FellowshipExtractor.Api.Tests` with `[Fact]` only,
+- Test naming: snake_case sentences in `Fellowship.Codex.Tests` with `[Fact]` only,
   PascalCase sentences in `FellowshipExtractor.Tests`.
 - The Api tests find the export by walking up from the test binary for `output/export`. This
   worktree has no `output/`, so run them with
@@ -205,23 +205,23 @@ Measured on 2026-08-09 against `output/export/entities.jsonl` (12,473 documents 
 | `src/FellowshipExtractor/Tooltip/GameplayEffects.cs` | Exposes its reference walk to the graph. |
 | `src/FellowshipExtractor/Tooltip/TooltipResolver.cs` | Builds the new indexes and sets the new fields. |
 | `src/FellowshipExtractor/Tooltip/DocumentProjection.cs` | Projects the new fields onto the documents. |
-| `src/FellowshipExtractor.Api/Models/PublicTypes.cs` | States tab order and which types the codex lists. |
-| `src/FellowshipExtractor.Api/Models/Codex.cs` | `Tabs`, `Sortings`, document-count facets, hero and source facets over abilities and effects. |
-| `src/FellowshipExtractor.Api/Models/CodexQuery.cs` | One row per document, a default type, sort over `Sortings`. |
-| `src/FellowshipExtractor.Api/Models/CodexView.cs` | A hero-aware `Href`, and the item type word. |
-| `src/FellowshipExtractor.Api/Models/EntityStore.cs` | Answers a talent's slot; drops `DropItemLevel`. |
-| `src/FellowshipExtractor.Api/Models/BrowseView.cs` | Sort links over the new keys. |
-| `src/FellowshipExtractor.Api/Models/SearchIndex.cs` | Indexes only the types the codex lists. |
-| `src/FellowshipExtractor.Api/Components/Cx/Table.razor` | New. `Table<T>`, the shared table. |
-| `src/FellowshipExtractor.Api/Components/Cx/Table.razor.scss` | New. The `cx-rows` chrome, moved off the Browse page. |
-| `src/FellowshipExtractor.Api/Components/Cx/Column.razor` | New. `Column<T>`, bound or templated. |
-| `src/FellowshipExtractor.Api/Components/Browse/*.razor` | New. One component per listed type, plus the dispatcher. |
-| `src/FellowshipExtractor.Api/Components/Pages/Browse.razor` | Tabs without an All tab, and the dispatcher in place of the table. |
-| `src/FellowshipExtractor.Api/Components/Pages/Browse.razor.scss` | Keeps the rail, tabs, head and pager; loses the table chrome. |
-| `src/FellowshipExtractor.Api/Components/Pages/EntityPage.razor` | Its more-like-this badge counts rows. |
-| `src/FellowshipExtractor.Api/Components/Layout/Omnibox.razor` | The view-results button is always drawn and carries no count. |
-| `src/FellowshipExtractor.Api/Program.cs` | `/api/catalog` publishes tabs and sortings. |
-| `src/FellowshipExtractor.Api.Tests/**` | Covers the table, the per-type columns, the unfolded counts and the new fields. |
+| `src/Fellowship.Codex/Models/PublicTypes.cs` | States tab order and which types the codex lists. |
+| `src/Fellowship.Codex/Models/Codex.cs` | `Tabs`, `Sortings`, document-count facets, hero and source facets over abilities and effects. |
+| `src/Fellowship.Codex/Models/CodexQuery.cs` | One row per document, a default type, sort over `Sortings`. |
+| `src/Fellowship.Codex/Models/CodexView.cs` | A hero-aware `Href`, and the item type word. |
+| `src/Fellowship.Codex/Models/EntityStore.cs` | Answers a talent's slot; drops `DropItemLevel`. |
+| `src/Fellowship.Codex/Models/BrowseView.cs` | Sort links over the new keys. |
+| `src/Fellowship.Codex/Models/SearchIndex.cs` | Indexes only the types the codex lists. |
+| `src/Fellowship.Codex/Components/Cx/Table.razor` | New. `Table<T>`, the shared table. |
+| `src/Fellowship.Codex/Components/Cx/Table.razor.scss` | New. The `cx-rows` chrome, moved off the Browse page. |
+| `src/Fellowship.Codex/Components/Cx/Column.razor` | New. `Column<T>`, bound or templated. |
+| `src/Fellowship.Codex/Components/Browse/*.razor` | New. One component per listed type, plus the dispatcher. |
+| `src/Fellowship.Codex/Components/Pages/Browse.razor` | Tabs without an All tab, and the dispatcher in place of the table. |
+| `src/Fellowship.Codex/Components/Pages/Browse.razor.scss` | Keeps the rail, tabs, head and pager; loses the table chrome. |
+| `src/Fellowship.Codex/Components/Pages/EntityPage.razor` | Its more-like-this badge counts rows. |
+| `src/Fellowship.Codex/Components/Layout/Omnibox.razor` | The view-results button is always drawn and carries no count. |
+| `src/Fellowship.Codex/Program.cs` | `/api/catalog` publishes tabs and sortings. |
+| `src/Fellowship.Codex.Tests/**` | Covers the table, the per-type columns, the unfolded counts and the new fields. |
 | `src/FellowshipExtractor.Tests/**` | Covers the source, level and ownership readers. |
 
 ---
@@ -229,8 +229,8 @@ Measured on 2026-08-09 against `output/export/entities.jsonl` (12,473 documents 
 ### Task 1: The view-results button stays on screen
 
 **Files:**
-- Modify: `src/FellowshipExtractor.Api/Components/Layout/Omnibox.razor:76-81,182-185`
-- Modify: `src/FellowshipExtractor.Api.Tests/SuggestionsTests.cs`
+- Modify: `src/Fellowship.Codex/Components/Layout/Omnibox.razor:76-81,182-185`
+- Modify: `src/Fellowship.Codex.Tests/SuggestionsTests.cs`
 
 **Step 1: Draw the button unconditionally.**
 
@@ -427,12 +427,12 @@ owners carries none.
 ### Task 4: The types the codex lists, in the order it lists them
 
 **Files:**
-- Modify: `src/FellowshipExtractor.Api/Models/PublicTypes.cs`
-- Modify: `src/FellowshipExtractor.Api/Models/Codex.cs:193-211`
-- Modify: `src/FellowshipExtractor.Api/Models/CodexQuery.cs:76-88`
-- Modify: `src/FellowshipExtractor.Api/Models/SearchIndex.cs:19-45`
-- Modify: `src/FellowshipExtractor.Api/Program.cs:163-194`
-- Create: `src/FellowshipExtractor.Api.Tests/TabTests.cs`
+- Modify: `src/Fellowship.Codex/Models/PublicTypes.cs`
+- Modify: `src/Fellowship.Codex/Models/Codex.cs:193-211`
+- Modify: `src/Fellowship.Codex/Models/CodexQuery.cs:76-88`
+- Modify: `src/Fellowship.Codex/Models/SearchIndex.cs:19-45`
+- Modify: `src/Fellowship.Codex/Program.cs:163-194`
+- Create: `src/Fellowship.Codex.Tests/TabTests.cs`
 
 **Interfaces:**
 
@@ -544,11 +544,11 @@ typing an id into the omnibox answers the documents carrying it, named or not.
 ### Task 5: The shared table
 
 **Files:**
-- Create: `src/FellowshipExtractor.Api/Components/Cx/Table.razor`
-- Create: `src/FellowshipExtractor.Api/Components/Cx/Table.razor.scss`
-- Create: `src/FellowshipExtractor.Api/Components/Cx/Column.razor`
-- Modify: `src/FellowshipExtractor.Api/Components/Pages/Browse.razor.scss:79-106`
-- Create: `src/FellowshipExtractor.Api.Tests/Cx/TableTests.cs`
+- Create: `src/Fellowship.Codex/Components/Cx/Table.razor`
+- Create: `src/Fellowship.Codex/Components/Cx/Table.razor.scss`
+- Create: `src/Fellowship.Codex/Components/Cx/Column.razor`
+- Modify: `src/Fellowship.Codex/Components/Pages/Browse.razor.scss:79-106`
+- Create: `src/Fellowship.Codex.Tests/Cx/TableTests.cs`
 
 **Interfaces:**
 
@@ -639,12 +639,12 @@ the column count; and an empty item list draws a header and no body rows.
 ### Task 6: One row per reading
 
 **Files:**
-- Modify: `src/FellowshipExtractor.Api/Models/CodexQuery.cs:352-517`
-- Modify: `src/FellowshipExtractor.Api/Models/Codex.cs:86,193-248,270-309`
-- Modify: `src/FellowshipExtractor.Api/Models/CodexView.cs:112-127`
-- Modify: `src/FellowshipExtractor.Api/Components/Pages/EntityPage.razor:123-159`
-- Modify: `src/FellowshipExtractor.Api/Models/Suggestions.cs:28-37`
-- Modify: `src/FellowshipExtractor.Api.Tests/CountTests.cs`, `ListingTests.cs`, `NearbyAudit.cs`,
+- Modify: `src/Fellowship.Codex/Models/CodexQuery.cs:352-517`
+- Modify: `src/Fellowship.Codex/Models/Codex.cs:86,193-248,270-309`
+- Modify: `src/Fellowship.Codex/Models/CodexView.cs:112-127`
+- Modify: `src/Fellowship.Codex/Components/Pages/EntityPage.razor:123-159`
+- Modify: `src/Fellowship.Codex/Models/Suggestions.cs:28-37`
+- Modify: `src/Fellowship.Codex.Tests/CountTests.cs`, `ListingTests.cs`, `NearbyAudit.cs`,
   `EntityLinkTests.cs`
 
 **Step 1: Stop folding, and drop what the fold existed to draw.**
@@ -715,11 +715,11 @@ count equals the total of filtering by it.
 ### Task 7: Sorting by any column a list draws
 
 **Files:**
-- Modify: `src/FellowshipExtractor.Api/Models/Codex.cs`
-- Modify: `src/FellowshipExtractor.Api/Models/CodexQuery.cs:164-169,469-506`
-- Modify: `src/FellowshipExtractor.Api/Models/EntityStore.cs`
-- Modify: `src/FellowshipExtractor.Api/Program.cs:163-194`
-- Create: `src/FellowshipExtractor.Api.Tests/SortingTests.cs`
+- Modify: `src/Fellowship.Codex/Models/Codex.cs`
+- Modify: `src/Fellowship.Codex/Models/CodexQuery.cs:164-169,469-506`
+- Modify: `src/Fellowship.Codex/Models/EntityStore.cs`
+- Modify: `src/Fellowship.Codex/Program.cs:163-194`
+- Create: `src/Fellowship.Codex.Tests/SortingTests.cs`
 
 **Interfaces:**
 
@@ -762,15 +762,15 @@ slot's row; and an unknown sort key answers a problem that names the legal keys.
 ### Task 8: A component per type
 
 **Files:**
-- Create: `src/FellowshipExtractor.Api/Components/Browse/Rows.razor`
-- Create: `src/FellowshipExtractor.Api/Components/Browse/Items.razor`, `Abilities.razor`,
+- Create: `src/Fellowship.Codex/Components/Browse/Rows.razor`
+- Create: `src/Fellowship.Codex/Components/Browse/Items.razor`, `Abilities.razor`,
   `Effects.razor`, `Talents.razor`, `Blessings.razor`, `GemTraits.razor`, `Traits.razor`,
   `SetBonuses.razor`, `Gems.razor`, `GemTypes.razor`, `Creatures.razor`, `Mounts.razor`,
   `CompanionPets.razor`, `Currencies.razor`, `LegendaryPowers.razor`, `LegendaryStats.razor`,
   `WeaponPowers.razor`, `RelicPowers.razor`, `TraitPowers.razor`, `SetBonusPowers.razor`
-- Create: `src/FellowshipExtractor.Api/Components/Browse/Art.razor`
-- Modify: `src/FellowshipExtractor.Api/Components/_Imports.razor`
-- Create: `src/FellowshipExtractor.Api.Tests/Browse/ColumnTests.cs`
+- Create: `src/Fellowship.Codex/Components/Browse/Art.razor`
+- Modify: `src/Fellowship.Codex/Components/_Imports.razor`
+- Create: `src/Fellowship.Codex.Tests/Browse/ColumnTests.cs`
 
 **Interfaces:**
 
@@ -870,10 +870,10 @@ columns.
 ### Task 9: The browse page shows one type
 
 **Files:**
-- Modify: `src/FellowshipExtractor.Api/Components/Pages/Browse.razor`
-- Modify: `src/FellowshipExtractor.Api/Components/Pages/Browse.razor.scss`
-- Modify: `src/FellowshipExtractor.Api.Tests/RouteTests.cs`
-- Create: `src/FellowshipExtractor.Api.Tests/BrowsePageTests.cs`
+- Modify: `src/Fellowship.Codex/Components/Pages/Browse.razor`
+- Modify: `src/Fellowship.Codex/Components/Pages/Browse.razor.scss`
+- Modify: `src/Fellowship.Codex.Tests/RouteTests.cs`
+- Create: `src/Fellowship.Codex.Tests/BrowsePageTests.cs`
 
 **Step 1: Draw the tabs.**
 
@@ -902,8 +902,8 @@ no page draws a tab labelled All.
 ### Task 10: The whole surface, checked
 
 **Files:**
-- Modify: `src/FellowshipExtractor.Api.Tests/CorpusTests.cs`
-- Modify: `src/FellowshipExtractor.Api.Tests/IsolationTests.cs`
+- Modify: `src/Fellowship.Codex.Tests/CorpusTests.cs`
+- Modify: `src/Fellowship.Codex.Tests/IsolationTests.cs`
 
 **Step 1: Assert the chrome landed on the table.**
 
@@ -922,7 +922,7 @@ table with a header row and no unhandled type.
 dotnet build src/FellowshipExtractor.slnx
 dotnet test src/FellowshipExtractor.Tests
 $env:FELLOWSHIP_EXPORT = "G:/source/Fellowship_Data_Extractor.browse-lists-per-type/output/export"
-dotnet test src/FellowshipExtractor.Api.Tests
+dotnet test src/Fellowship.Codex.Tests
 ```
 
 **Step 4: Look at it.**
