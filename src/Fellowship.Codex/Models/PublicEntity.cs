@@ -30,11 +30,11 @@ public sealed record PublicEntity
 
     public IReadOnlyList<string>? Detail { get; init; }
 
-    public string? IconUrl { get; init; }
+    public string? Icon { get; init; }
 
-    public string? BackgroundUrl { get; init; }
+    public string? Background { get; init; }
 
-    public IReadOnlyDictionary<string, string>? IconUrlByRarity { get; init; }
+    public IReadOnlyDictionary<string, string>? IconByRarity { get; init; }
 
     public PublicReference? ArtBorrowedFrom { get; init; }
 
@@ -141,9 +141,9 @@ public sealed record PublicEntity
             Detail = DocumentFields.Words(document, nameof(AbilityDocument.Detail)) is { Count: > 0 } lines
                 ? [.. lines.Select(line => view.PlainText(line, tokens, tags)!)]
                 : null,
-            IconUrl = DocumentFields.Text(document, nameof(ItemDocument.Icon)) is { } icon ? view.Icon(icon) : null,
-            BackgroundUrl = (document as DungeonDocument)?.Background is { } behind ? view.Icon(behind) : null,
-            IconUrlByRarity = Art(document, view),
+            Icon = DocumentFields.Text(document, nameof(ItemDocument.Icon)) is { } icon ? view.Icon(icon) : null,
+            Background = (document as DungeonDocument)?.Background is { } behind ? view.Icon(behind) : null,
+            IconByRarity = Art(document, view),
             ArtBorrowedFrom = PublicReference.From((document as EffectDocument)?.ArtBorrowedFrom, view, origin),
             NameBorrowedFrom = PublicReference.From((document as EffectDocument)?.NameBorrowedFrom, view, origin),
             Owner = PublicReference.From(OwnerOf(document), view, origin),
@@ -372,7 +372,7 @@ public sealed record PublicGemOverflow(string Description)
 {
     public IReadOnlyList<PublicPlaceholder>? Placeholders { get; init; }
 
-    public string? IconUrl { get; init; }
+    public string? Icon { get; init; }
 
     public static PublicGemOverflow? From(GemTypeDocument gem, ICodexViewService view)
     {
@@ -386,7 +386,7 @@ public sealed record PublicGemOverflow(string Description)
                 is { Length: > 0 } spent
                 ? spent
                 : null,
-            IconUrl = gem.Icon is null ? null : view.Icon(gem.Icon),
+            Icon = gem.Icon is null ? null : view.Icon(gem.Icon),
         };
     }
 }

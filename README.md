@@ -948,6 +948,49 @@ Each checkout also gets its own `fellowship-azurite-<hash>` data volume, which n
 the worktree goes: `docker volume rm` it, or leave it and it will be reused if the worktree comes
 back at the same path.
 
+## The MCP server
+
+`src/Fellowship.Codex.Mcp` gives an AI agent the same export over MCP, with three tools:
+`list_types` says what the build carries, `find_entity` turns a name into a type and an id, and
+`get_entity` returns that entity's record. It speaks stdio, reads `output/export` off disk through
+`FolderExportSource`, and shares every reading service with the codex through
+`CodexServices.AddCodexServices`. Neither the AppHost, Azurite nor the codex needs to be running.
+
+`.mcp.json` at the repository root registers it as a stdio server the client launches itself. It
+needs two things in place:
+
+```powershell
+dotnet build src/Fellowship.Codex.Mcp
+
+dotnet run --project src/FellowshipExtractor -- export-all --output output/export
+```
+
+The registered command carries `--no-build`, so the server has to be built before a client can
+start it and has to be rebuilt after a change. That is deliberate: `dotnet run` writes MSBuild
+diagnostics to stdout, and stdout is the JSON-RPC wire. A build that cannot write its output,
+which is what happens while the codex holds this checkout's `bin`, would put MSB3026 warnings
+where the client expects protocol. With `--no-build` nothing is written to `bin`, a missing build
+fails on stderr with stdout empty, and the client reports a connection failure instead of a parse
+error.
+
+The server finds its export in this order: an `--export <folder>` argument, then
+`FELLOWSHIP_EXPORT`, then the nearest `output/export` above the working directory, then the nearest
+one above its own binary. The last two make the registered entry portable across checkouts as long
+as the client launches it with the repository as its working directory; `--export` and
+`FELLOWSHIP_EXPORT` are there for when it does not.
+
+Two things read differently over MCP than over HTTP. A reference's `resource` is the codex API's
+own path with no host, `/api/{slug}/{id}`, because a stdio server has no request to take a scheme
+and an authority from. And every art field names an image file, `Icon_Warmaster_FkPlate_Chest.png`,
+rather than addressing one in the blob container, because there is no container to address. Both
+fall out of what the host registers: `NamedArtSource` in place of `BlobArtSource`, and an empty
+origin in place of `Origins.Of(http)`.
+
+Errors are results rather than protocol faults. Every tool answers a bad slug, an unknown hero, a
+missing id or an id that reads differently per hero with `isError` and the same sentence the HTTP
+route puts in its problem detail, which `Lookups.Trouble` and `Lookups.NoHero` now state once for
+both. `McpTests` holds the two wordings equal.
+
 ## Layout
 
 - `src/FellowshipExtractor/ProviderFactory.cs` - the single place that knows about the install path,
@@ -981,6 +1024,9 @@ back at the same path.
   interactive component; `Pages/` holds the four routes; `Shared/Detail.razor` is every field of an
   entity, recursive so a granted ability and a legendary roll are drawn by the same component, and
   `Shared/EntityLink.razor` is the only place a link to an entity is built.
+- `src/Fellowship.Codex.Mcp/` - the MCP server. `Entry` builds a plain host with no web pipeline,
+  `CodexMcp` registers the codex's reading services over a folder export and names the server, and
+  `CodexTools` is the three tools an agent calls.
 - `src/FellowshipExtractor.AppHost/` and `src/FellowshipExtractor.Publisher/` - the two app hosts.
   `StackIdentity.cs` sits in the first and is compiled into the second as a linked item, so the
   stack name, the port offset, the data volume, the compose project and the container name have one

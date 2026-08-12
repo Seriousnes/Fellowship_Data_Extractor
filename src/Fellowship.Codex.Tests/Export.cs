@@ -57,24 +57,16 @@ public sealed class Export
         var substitutions = new PlaceholderService(Store, richText);
 
         var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
-        var chrome = Chrome = new ChromeAssetService(icons, Store, tokens);
+        var chrome = Chrome = new ChromeAssetService(new BlobArtSource(icons), Store, tokens);
 
         View = new CodexViewService(Store, new CodexService(Store, tokens), tokens, chrome, richText, substitutions);
 
         Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, new ApiWebRoot());
     }
 
-    public static string Found()
-    {
-        for (var here = new DirectoryInfo(AppContext.BaseDirectory); here is not null; here = here.Parent)
-        {
-            var export = Path.Combine(here.FullName, "output", "export");
-
-            if (File.Exists(Path.Combine(export, ExportReader.Data, ExportReader.EntitiesName))) return export;
-        }
-
-        throw new InvalidOperationException(
+    public static string Found() =>
+        FolderExportSource.Above(AppContext.BaseDirectory)
+        ?? throw new InvalidOperationException(
             "No output/export above the test binary and FELLOWSHIP_EXPORT is not set. It names the " +
             "folder the extractor's export-all command wrote, which is the same layout the container holds.");
-    }
 }

@@ -1,7 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 
-using Azure.Storage.Blobs;
-
 using Fellowship.SDK.Documents;
 
 using Fellowship.Codex.Models;
@@ -70,7 +68,7 @@ public interface IChromeAssetService
     string SlotGlyph(string? slot);
 }
 public sealed class ChromeAssetService(
-    BlobContainerClient container,
+    IArtSource art,
     IEntityStoreService store,
     IDesignTokenService tokens) : IChromeAssetService
 {
@@ -242,7 +240,7 @@ public sealed class ChromeAssetService(
     private static string Name(string texture, string rarity) =>
         $"{Prefix}/{texture}-{rarity.ToLowerInvariant()}.png";
 
-    private string Url(string blob) => $"{container.Uri}/{blob}";
+    private string Url(string blob) => art.Address(blob);
 
     private static string Chosen(IReadOnlyList<string> states, string? state) =>
         states.FirstOrDefault(known => string.Equals(known, state, StringComparison.OrdinalIgnoreCase))

@@ -10,6 +10,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\Fellowship.Codex\Fellowship.Codex.csproj" />
+    <ProjectReference Include="..\Fellowship.Codex.Mcp\Fellowship.Codex.Mcp.csproj" />
   </ItemGroup>
 
   <ItemGroup>

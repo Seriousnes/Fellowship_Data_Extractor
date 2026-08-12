@@ -9,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Fellowship.Codex.Api\Fellowship.Codex.Api.csproj" />
     <ProjectReference Include="..\Fellowship.Codex\Fellowship.Codex.csproj" />
   </ItemGroup>
 

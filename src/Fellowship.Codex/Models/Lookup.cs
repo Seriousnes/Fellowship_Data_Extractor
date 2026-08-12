@@ -32,41 +32,56 @@ public static class EntityStore
         name is null ? null : ParseEnum<T>(name);
 }
 
+public sealed record Fault(string Title, string Detail, int Status);
+
 public static class Lookups
 {
-    public static IResult Problem(
+    public static Fault Trouble(
         Lookup outcome, EntityType type, int id, HeroEntry? hero, IReadOnlyList<EntityDocument> readings)
     {
         var noun = PublicTypes.Noun(type);
 
         return outcome switch
         {
-            Lookup.NoSuchId => Results.Problem(
-                title: "No such id.",
-                detail: $"The build has no {noun} {id}.",
-                statusCode: StatusCodes.Status404NotFound),
+            Lookup.NoSuchId => new Fault(
+                "No such id.",
+                $"The build has no {noun} {id}.",
+                StatusCodes.Status404NotFound),
 
-            Lookup.NeedsHero => Results.Problem(
-                title: "This id reads differently per hero.",
-                detail: $"The build has {readings.Count} readings of {noun} {id} and no hero was given. " +
+            Lookup.NeedsHero => new Fault(
+                "This id reads differently per hero.",
+                $"The build has {readings.Count} readings of {noun} {id} and no hero was given. " +
                     "Add hero=<name> to pick one. The readings are " +
                     string.Join("; ", readings.Select(Describe)) + ".",
-                statusCode: StatusCodes.Status400BadRequest),
+                StatusCodes.Status400BadRequest),
 
-            Lookup.NotForThatHero => Results.Problem(
-                title: "Not for that hero.",
-                detail: $"The build has no reading of {noun} {id} for {hero!.Name}.",
-                statusCode: StatusCodes.Status404NotFound),
+            Lookup.NotForThatHero => new Fault(
+                "Not for that hero.",
+                $"The build has no reading of {noun} {id} for {hero!.Name}.",
+                StatusCodes.Status404NotFound),
 
-            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+            _ => new Fault(
+                "Unreadable.",
+                $"The build could not read {noun} {id}.",
+                StatusCodes.Status500InternalServerError),
         };
     }
 
-    public static IResult NoSuchHero(string named, IReadOnlyList<HeroEntry> roster) => Results.Problem(
-        title: "No such hero.",
-        detail: $"'{named}' is not a hero. The roster is " +
+    public static Fault NoHero(string named, IReadOnlyList<HeroEntry> roster) => new(
+        "No such hero.",
+        $"'{named}' is not a hero. The roster is " +
             string.Join(", ", roster.Select(hero => hero.Name).Order()) + ".",
-        statusCode: StatusCodes.Status400BadRequest);
+        StatusCodes.Status400BadRequest);
+
+    public static IResult Problem(
+        Lookup outcome, EntityType type, int id, HeroEntry? hero, IReadOnlyList<EntityDocument> readings) =>
+        Raised(Trouble(outcome, type, id, hero, readings));
+
+    public static IResult NoSuchHero(string named, IReadOnlyList<HeroEntry> roster) =>
+        Raised(NoHero(named, roster));
+
+    private static IResult Raised(Fault fault) =>
+        Results.Problem(title: fault.Title, detail: fault.Detail, statusCode: fault.Status);
 
     private static string Describe(EntityDocument document) => document switch
     {

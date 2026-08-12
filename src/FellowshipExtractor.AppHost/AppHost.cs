@@ -26,6 +26,4 @@ builder.AddProject<Projects.Fellowship_Codex>("codex")
     .WithHttpHealthCheck("/health")
     .WithExternalHttpEndpoints();
 
-builder.AddProject<Projects.Fellowship_Codex_Api>("codex-api");
-
 builder.InComposeStack(stack.Project, stack.Root).Build().Run();

@@ -34,7 +34,7 @@ public sealed class ChromePixelTests
         return new Reading(
             store,
             new ChromeAssetService(
-                new BlobContainerClient(new Uri("http://localhost/icons")),
+                new BlobArtSource(new BlobContainerClient(new Uri("http://localhost/icons"))),
                 store,
                 new DesignTokenService(store.Settings)));
     }

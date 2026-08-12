@@ -2,7 +2,24 @@ namespace Fellowship.Codex.Services;
 
 public sealed class FolderExportSource(string folder) : IExportSource
 {
+    public const string Variable = "FELLOWSHIP_EXPORT";
+
     public string Folder { get; } = folder;
+
+    public static bool Carries(string folder) =>
+        File.Exists(Path.Combine(folder, ExportReader.Data, ExportReader.EntitiesName));
+
+    public static string? Above(string start)
+    {
+        for (var here = new DirectoryInfo(start); here is not null; here = here.Parent)
+        {
+            var export = Path.Combine(here.FullName, "output", "export");
+
+            if (Carries(export)) return export;
+        }
+
+        return null;
+    }
 
     public async Task<ExportSnapshot> LoadAsync(CancellationToken cancellationToken)
     {

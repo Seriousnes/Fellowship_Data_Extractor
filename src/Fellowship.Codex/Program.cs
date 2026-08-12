@@ -25,35 +25,17 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.AddAzureBlobContainerClient("icons");
 builder.Services.AddSingleton<IExportSource, BlobExportSource>();
-builder.Services.AddSingleton<ExportSnapshotHolder>();
+builder.Services.AddSingleton<IArtSource, BlobArtSource>();
 
-builder.Services.AddSingleton<IEntityStoreService>(s => new EntityStoreService(
-    s.GetRequiredService<ExportSnapshotHolder>().Snapshot,
-    s.GetRequiredService<ILogger<EntityStoreService>>()));
-builder.Services.AddSingleton<IDesignTokenService>(s =>
-    new DesignTokenService(s.GetRequiredService<IEntityStoreService>().Settings));
-builder.Services.AddSingleton<IRichTextService>(s =>
-    new RichTextService(s.GetRequiredService<IEntityStoreService>().Settings.TextStyles));
-
-builder.Services.AddSingleton<IChromeAssetService, ChromeAssetService>();
-builder.Services.AddSingleton<IPlaceholderService, PlaceholderService>();
-builder.Services.AddSingleton<ITooltipViewService, TooltipViewService>();
-builder.Services.AddSingleton<IFragmentService, FragmentService>();
-builder.Services.AddSingleton<ITooltipService, TooltipService>();
-
-builder.Services.AddSingleton<ICodexService, CodexService>();
-builder.Services.AddSingleton<ISearchIndexService, SearchIndexService>();
-builder.Services.AddSingleton<ICodexSearchService, CodexSearchService>();
-builder.Services.AddSingleton<ICodexViewService, CodexViewService>();
-builder.Services.AddSingleton<ISuggestionService, SuggestionService>();
+builder.Services.AddCodexServices();
+builder.Services.AddTooltipServices();
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
 
 var app = builder.Build();
 
-app.Services.GetRequiredService<ExportSnapshotHolder>().Snapshot =
-    await app.Services.GetRequiredService<IExportSource>().LoadAsync(app.Lifetime.ApplicationStopping);
+await app.Services.LoadExportAsync(app.Lifetime.ApplicationStopping);
 
 app.MapDefaultEndpoints();
 app.MapOpenApi();

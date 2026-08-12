@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "fellowship-codex": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": ["run", "--project", "src/Fellowship.Codex.Mcp", "--no-build", "-v", "q", "--nologo"]
+    }
+  }
+}
