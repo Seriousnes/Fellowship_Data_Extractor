@@ -63,20 +63,21 @@ public class CreatureViewTests : BunitContext
     }
 
     [Fact]
-    public void A_creature_links_every_dungeon_it_is_found_in()
+    public void A_creature_names_every_dungeon_it_is_found_in_among_its_facts()
     {
         var creature = Wielding;
 
         var cut = Draw(creature);
 
-        var panel = cut.FindAll("div.cx-panel")
-            .Single(element => Head(element).StartsWith("Found in", StringComparison.Ordinal));
+        var row = cut.FindAll("table.cx-facts tr")
+            .Single(fact => fact.QuerySelector("th")?.TextContent == "Location");
 
-        var hrefs = panel.QuerySelectorAll("ul.cx-pills a").Select(link => link.GetAttribute("href")).ToArray();
+        var named = creature.FoundIn!.Select(level =>
+            export.Store.All(level.Type, level.Id) is [var found, ..]
+                ? PublicTypes.NameOf(found)
+                : level.Name ?? string.Empty);
 
-        Assert.Equal(
-            creature.FoundIn!.Select(level => $"/dungeon/{level.Id}").Order(StringComparer.Ordinal),
-            hrefs.Order(StringComparer.Ordinal));
+        Assert.Equal(string.Join(", ", named), row.QuerySelector("td")!.TextContent.Trim());
     }
 
     [Fact]

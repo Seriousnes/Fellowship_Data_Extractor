@@ -1,11 +1,9 @@
 <EntityView Entity="Entity">
     <Panel Head="@PublicTypes.Label(EntityType.Talent)">
-        <Ref Entity="Drawn.Talent" />
+        <Ref Entity="Entity.Talent" />
     </Panel>
 </EntityView>
 
 @code {
-    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
-
-    private TalentSlotDocument Drawn => (TalentSlotDocument)Entity;
+    [Parameter, EditorRequired] public TalentSlotDocument Entity { get; set; } = default!;
 }

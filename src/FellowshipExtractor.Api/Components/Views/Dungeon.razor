@@ -2,7 +2,7 @@
 @inject ICodexViewService Ui
 
 <EntityView Entity="Entity">
-    @if (Drawn.Background is { } behind)
+    @if (Entity.Background is { } behind)
     {
         <Panel Head="Loading screen">
             <img class="cx-loading-screen" alt="" loading="lazy" src="@Ui.Icon(behind)" />
@@ -12,7 +12,7 @@
     @if (Dwelling.Count > 0)
     {
         <Panel Head="Creatures" Badge="@Dwelling.Count.ToString()">
-            <Table Items="Dwelling" T="CreatureDocument">
+            <Table Items="Dwelling">
                 <Columns>
                     <Column Head="" Class="cx-art">
                         <Content Context="row"><Art Entity="row" /></Content>
@@ -37,9 +37,7 @@
 </EntityView>
 
 @code {
-    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
-
-    private DungeonDocument Drawn => (DungeonDocument)Entity;
+    [Parameter, EditorRequired] public DungeonDocument Entity { get; set; } = default!;
 
     private IReadOnlyList<CreatureDocument> Dwelling = [];
 

@@ -1,13 +1,13 @@
 <Table Items="Rows" Group="Grouped" SortLink="Link" SortState="State">
     <Columns>
-        <Column T="Probe" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row">
                 <i>@row.Art</i>
             </Content>
         </Column>
-        <Column T="Probe" Head="Name" Key="name" Value="row => row.Name" />
-        <Column T="Probe" Head="ILvl" Key="ilvl" Numeric Value="row => row.Level" />
-        <Column T="Probe" Head="Cast" Unit="s" Value="row => row.Cast" />
+        <Column Head="Name" Key="name" Value="row => row.Name" />
+        <Column Head="ILvl" Key="ilvl" Numeric Value="row => row.Level" />
+        <Column Head="Cast" Unit="s" Value="row => row.Cast" />
     </Columns>
 </Table>
 

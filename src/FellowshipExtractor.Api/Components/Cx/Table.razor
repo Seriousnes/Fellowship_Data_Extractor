@@ -72,7 +72,7 @@
 </CascadingValue>
 
 @code {
-    [Parameter, EditorRequired] public IReadOnlyList<T> Items { get; set; } = [];
+    [Parameter, EditorRequired] public IEnumerable<T> Items { get; set; } = [];
 
     [Parameter] public RenderFragment? Columns { get; set; }
 

@@ -3,18 +3,18 @@
 <Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<GemTypeDocument>(View, Ui.Codex)">
     <Columns>
-        <Column T="GemTypeDocument" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row"><Art Entity="row" /></Content>
         </Column>
-        <Column T="GemTypeDocument" Head="Name" Key="name">
+        <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column T="GemTypeDocument" Head="Type" Key="gem">
+        <Column Head="Type" Key="gem">
             <Content Context="row">
                 <span style="color:@CodexView.Readable(Ui.Tokens.Gem(row.Type.ToString()))">@row.Type</span>
             </Content>
         </Column>
-        <Column T="GemTypeDocument" Head="Attribute" Key="attribute" Value="row => Ui.Store.StatName(row.Attribute)" />
+        <Column Head="Attribute" Key="attribute" Value="row => Ui.Store.StatName(row.Attribute)" />
     </Columns>
 </Table>
 

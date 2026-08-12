@@ -3,14 +3,14 @@
 <Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<GemTraitDocument>(View, Ui.Codex)">
     <Columns>
-        <Column T="GemTraitDocument" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row"><Art Entity="row" /></Content>
         </Column>
-        <Column T="GemTraitDocument" Head="Name" Key="name">
+        <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column T="GemTraitDocument" Head="Power Required" Key="power" Numeric Value="row => row.RequiredPower" />
-        <Column T="GemTraitDocument" Head="Type" Key="gem">
+        <Column Head="Power Required" Key="power" Numeric Value="row => row.RequiredPower" />
+        <Column Head="Type" Key="gem">
             <Content Context="row">
                 <span style="color:@CodexView.Readable(Ui.Tokens.Gem(row.Gem.ToString()))">@row.Gem</span>
             </Content>

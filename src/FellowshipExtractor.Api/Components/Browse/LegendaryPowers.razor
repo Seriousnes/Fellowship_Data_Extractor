@@ -3,13 +3,13 @@
 <Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<LegendaryPowerDocument>(View, Ui.Codex)">
     <Columns>
-        <Column T="LegendaryPowerDocument" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row"><Art Entity="row" /></Content>
         </Column>
-        <Column T="LegendaryPowerDocument" Head="Name" Key="name">
+        <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column T="LegendaryPowerDocument" Head="Cooldown" Key="cooldown" Unit="s" Numeric
+        <Column Head="Cooldown" Key="cooldown" Unit="s" Numeric
                 Value="row => row.Cooldown" />
     </Columns>
 </Table>

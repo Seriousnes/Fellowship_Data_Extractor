@@ -3,13 +3,13 @@
 <Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<TraitPowerDocument>(View, Ui.Codex)">
     <Columns>
-        <Column T="TraitPowerDocument" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row"><Art Entity="row" /></Content>
         </Column>
-        <Column T="TraitPowerDocument" Head="Name" Key="name">
+        <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column T="TraitPowerDocument" Head="Duration" Key="duration" Unit="s" Numeric Value="row => row.Duration" />
+        <Column Head="Duration" Key="duration" Unit="s" Numeric Value="row => row.Duration" />
     </Columns>
 </Table>
 

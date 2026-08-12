@@ -3,16 +3,16 @@
 <Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<RelicPowerDocument>(View, Ui.Codex)">
     <Columns>
-        <Column T="RelicPowerDocument" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row"><Art Entity="row" /></Content>
         </Column>
-        <Column T="RelicPowerDocument" Head="Name" Key="name">
+        <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column T="RelicPowerDocument" Head="Cooldown" Key="cooldown" Unit="s" Numeric Value="row => row.Cooldown" />
-        <Column T="RelicPowerDocument" Head="Cast" Key="cast" Unit="s" Numeric Value="row => row.CastTime" />
-        <Column T="RelicPowerDocument" Head="Range" Key="range" Numeric Value="row => row.Range" />
-        <Column T="RelicPowerDocument" Head="Duration" Key="duration" Unit="s" Numeric Value="row => row.Duration" />
+        <Column Head="Cooldown" Key="cooldown" Unit="s" Numeric Value="row => row.Cooldown" />
+        <Column Head="Cast" Key="cast" Unit="s" Numeric Value="row => row.CastTime" />
+        <Column Head="Range" Key="range" Numeric Value="row => row.Range" />
+        <Column Head="Duration" Key="duration" Unit="s" Numeric Value="row => row.Duration" />
     </Columns>
 </Table>
 

@@ -1,5 +1,5 @@
 <EntityView Entity="Entity">
-    @if (Drawn.Replaces is { } superseded)
+    @if (Entity.Replaces is { } superseded)
     {
         <Panel Head="Replaces">
             <Ref Entity="superseded" />
@@ -8,7 +8,5 @@
 </EntityView>
 
 @code {
-    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
-
-    private GemTraitDocument Drawn => (GemTraitDocument)Entity;
+    [Parameter, EditorRequired] public GemTraitDocument Entity { get; set; } = default!;
 }

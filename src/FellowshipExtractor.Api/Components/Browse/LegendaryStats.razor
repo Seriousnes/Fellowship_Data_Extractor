@@ -3,13 +3,13 @@
 <Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<LegendaryStatDocument>(View, Ui.Codex)">
     <Columns>
-        <Column T="LegendaryStatDocument" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row"><Art Entity="row" /></Content>
         </Column>
-        <Column T="LegendaryStatDocument" Head="Name" Key="name">
+        <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column T="LegendaryStatDocument" Head="Scales off" Class="cx-tags">
+        <Column Head="Scales off" Class="cx-tags">
             <Content Context="row">
                 @foreach (var stat in Ui.Codex.Scaling(row.ScalesOff))
                 {

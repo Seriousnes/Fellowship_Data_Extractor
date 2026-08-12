@@ -4,12 +4,12 @@
 <EntityView Entity="Entity" Extra="Reading">
     @if (Phases.Count > 0)
     {
-        <Panel Head="Abilities" Badge="@Drawn.Abilities!.Count.ToString()">
+        <Panel Head="Abilities" Badge="@Entity.Abilities!.Count.ToString()">
             @foreach (var phase in Phases)
             {
                 <Rule />
                 <SubHead>@phase.Key</SubHead>
-                <Table Items="phase.ToArray()" T="CreatureAbility">
+                <Table Items="phase">
                     <Columns>
                         <Column Head="" Class="cx-art">
                             <Content Context="slot">
@@ -55,7 +55,7 @@
         </Panel>
     }
 
-    @if (Drawn.Passives is { Count: > 0 } passives)
+    @if (Entity.Passives is { Count: > 0 } passives)
     {
         <Panel Head="Passives" Badge="@passives.Count.ToString()">
             <Pills>
@@ -66,28 +66,14 @@
             </Pills>
         </Panel>
     }
-
-    @if (Drawn.FoundIn is { Count: > 0 } dungeons)
-    {
-        <Panel Head="Found in" Badge="@dungeons.Count.ToString()">
-            <Pills>
-                @foreach (var dungeon in dungeons)
-                {
-                    <Pill><Ref Entity="dungeon" /></Pill>
-                }
-            </Pills>
-        </Panel>
-    }
 </EntityView>
 
 @code {
-    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+    [Parameter, EditorRequired] public CreatureDocument Entity { get; set; } = default!;
 
     [CascadingParameter] private Bearings Here { get; set; } = new();
 
     private const string Hidden = "hidden";
-
-    private CreatureDocument Drawn => (CreatureDocument)Entity;
 
     private DifficultyStep Step = new(1, string.Empty, 1, "1");
 
@@ -99,7 +85,7 @@
 
     protected override void OnParametersSet()
     {
-        Phases = [.. (Drawn.Abilities ?? []).GroupBy(slot => slot.Phase, StringComparer.Ordinal)];
+        Phases = [.. (Entity.Abilities ?? []).GroupBy(slot => slot.Phase, StringComparer.Ordinal)];
 
         var difficulty = Store.Difficulty(Here.Asked.GetValueOrDefault(DifficultyKnob.Asked));
 
@@ -108,7 +94,7 @@
 
         wielded.Clear();
 
-        foreach (var slot in Drawn.Abilities ?? [])
+        foreach (var slot in Entity.Abilities ?? [])
         {
             var named = (slot.Ability.Type, slot.Ability.Id);
 
@@ -132,22 +118,22 @@
     {
         var read = new List<(string, string, string?, string?, string?)>(4);
 
-        if (Difficulties.Health(Drawn, Store.Settings, Step.Difficulty) is { } health)
+        if (Difficulties.Health(Entity, Store.Settings, Step.Difficulty) is { } health)
         {
             read.Add(("Health", Codex.Magnitude((decimal)health), null, null, null));
         }
 
-        if (Difficulties.HealthScale(Store.Settings, Drawn.Scaling, Step.Difficulty) is { } toughness)
+        if (Difficulties.HealthScale(Store.Settings, Entity.Scaling, Step.Difficulty) is { } toughness)
         {
             read.Add(("Health scale", Codex.Number(toughness), "x", null, null));
         }
 
-        if (Difficulties.DamageScale(Store.Settings, Drawn.Scaling, Step.Difficulty) is { } hitting)
+        if (Difficulties.DamageScale(Store.Settings, Entity.Scaling, Step.Difficulty) is { } hitting)
         {
             read.Add(("Damage scale", Codex.Number(hitting), "x", null, null));
         }
 
-        if (Drawn.FoundIn is { Count: > 0 } dungeons)
+        if (Entity.FoundIn is { Count: > 0 } dungeons)
         {
             read.Add(("Location", string.Join(", ", dungeons.Select(Named)), null, null, null));
         }
@@ -166,7 +152,7 @@
         [
             .. stated
                 .Select(coefficient =>
-                    (coefficient.Part, Struck: Difficulties.Damage(coefficient, Drawn, Store.Settings, Step.Difficulty)))
+                    (coefficient.Part, Struck: Difficulties.Damage(coefficient, Entity, Store.Settings, Step.Difficulty)))
                 .Where(reading => reading.Struck is not null)
                 .Select(reading => stated.Count > 1 && reading.Part is { Length: > 0 } part
                     ? $"{part}: {Printed(reading.Struck!)}"

@@ -3,18 +3,18 @@
 <Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<WeaponPowerDocument>(View, Ui.Codex)">
     <Columns>
-        <Column T="WeaponPowerDocument" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row"><Art Entity="row" /></Content>
         </Column>
-        <Column T="WeaponPowerDocument" Head="Name" Key="name">
+        <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column T="WeaponPowerDocument" Head="Cooldown" Key="cooldown" Unit="s" Numeric Value="row => row.Cooldown" />
-        <Column T="WeaponPowerDocument" Head="Cast" Key="cast" Unit="s" Numeric Value="row => row.CastTime" />
-        <Column T="WeaponPowerDocument" Head="Channel" Key="channel" Unit="s" Numeric Value="row => row.ChannelTime" />
-        <Column T="WeaponPowerDocument" Head="Range" Key="range" Numeric Value="row => row.Range" />
-        <Column T="WeaponPowerDocument" Head="Duration" Key="duration" Unit="s" Numeric Value="row => row.Duration" />
-        <Column T="WeaponPowerDocument" Head="School" Key="school" Class="cx-tags">
+        <Column Head="Cooldown" Key="cooldown" Unit="s" Numeric Value="row => row.Cooldown" />
+        <Column Head="Cast" Key="cast" Unit="s" Numeric Value="row => row.CastTime" />
+        <Column Head="Channel" Key="channel" Unit="s" Numeric Value="row => row.ChannelTime" />
+        <Column Head="Range" Key="range" Numeric Value="row => row.Range" />
+        <Column Head="Duration" Key="duration" Unit="s" Numeric Value="row => row.Duration" />
+        <Column Head="School" Key="school" Class="cx-tags">
             <Content Context="row">
                 @foreach (var school in row.Schools ?? [])
                 {

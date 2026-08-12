@@ -3,13 +3,13 @@
 <Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<TalentDocument>(View, Ui.Codex)">
     <Columns>
-        <Column T="TalentDocument" Head="" Class="cx-art">
+        <Column Head="" Class="cx-art">
             <Content Context="row"><Art Entity="row" /></Content>
         </Column>
-        <Column T="TalentDocument" Head="Name" Key="name">
+        <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column T="TalentDocument" Head="Hero" Key="hero">
+        <Column Head="Hero" Key="hero">
             <Content Context="row">
                 @if (Slot(row.Id)?.Hero is { } hero)
                 {
@@ -17,8 +17,8 @@
                 }
             </Content>
         </Column>
-        <Column T="TalentDocument" Head="Cost" Key="cost" Numeric Value="row => Slot(row.Id)?.Cost" />
-        <Column T="TalentDocument" Head="Tier" Key="tier" Numeric Value="row => Slot(row.Id)?.Row" />
+        <Column Head="Cost" Key="cost" Numeric Value="row => Slot(row.Id)?.Cost" />
+        <Column Head="Tier" Key="tier" Numeric Value="row => Slot(row.Id)?.Row" />
     </Columns>
 </Table>
 
