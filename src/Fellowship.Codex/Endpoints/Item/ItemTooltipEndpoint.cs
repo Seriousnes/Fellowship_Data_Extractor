@@ -32,6 +32,9 @@ public sealed record ItemTooltipRequest
     [Description("Given as true when the item's gem socket is to read as empty.")]
     public bool? NoSocket { get; init; }
 
+    [Description("The gem id filling the item's socket.")]
+    public int? Gem { get; init; }
+
     [Description("The power potential to print.")]
     public decimal? PotentialPower { get; init; }
 
@@ -73,6 +76,7 @@ public sealed record ItemTooltipRequest
             Upgrades = Upgrades,
             MaxUpgrades = MaxUpgrades,
             NoSocket = NoSocket == true,
+            Gem = Gem,
             PotentialPower = PotentialPower,
             Armor = Armor,
             Modifiers = Modifiers?.Values ?? [],

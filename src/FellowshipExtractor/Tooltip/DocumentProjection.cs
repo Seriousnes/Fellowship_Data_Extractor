@@ -254,6 +254,9 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
+            MaxRank = entity.AbilityMaxRank,
+            Slots = entity.PoolSlots,
+            AbilityRanks = entity.AbilityRanks,
         },
 
         EntityType.Trait => new TraitDocument

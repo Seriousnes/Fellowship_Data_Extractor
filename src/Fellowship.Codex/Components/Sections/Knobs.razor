@@ -14,8 +14,7 @@
         @if (PicksHero)
         {
             <Knob Caption="Hero">
-                <select data-knob="hero"
-                        onchange="location.search = '?hero=' + encodeURIComponent(this.value)">
+                <select data-knob="hero" value="@(Here.Reading ?? string.Empty)" @onchange="Wearer">
                     @if (Here.Readings.Count == 1)
                     {
                         <option value="">Any</option>
@@ -42,7 +41,8 @@
                         <button type="button" data-knob="rarity" data-choice="@rung.Tier"
                                 aria-pressed="@(Chosen("rarity", rung) ? "true" : "false")"
                                 data-value="@(Chosen("rarity", rung) ? rung.Tier.ToString() : null)"
-                                style="@(colour is null ? null : $"color:{colour}")">
+                                style="@(colour is null ? null : $"color:{colour}")"
+                                @onclick="() => Rung(rung)">
                             @(IsGem ? rung.GemDisplayName : rung.DisplayName)
                         </button>
                     }
@@ -53,18 +53,18 @@
         @if (Wearable)
         {
             <Knob Caption="Item level">
-                <input type="number" min="1" max="1000" step="1"
-                       value="@(Given("itemLevel") ?? DropItemLevel.ToString())" data-knob="itemLevel" />
+                <input type="number" min="1" max="1000" step="1" data-knob="itemLevel"
+                       value="@(Given("itemLevel") ?? DropItemLevel.ToString())" @onchange="Level" />
             </Knob>
 
             <Knob Caption="Tempered">
-                <input type="number" min="0" max="20" step="1" placeholder="none"
-                       value="@Given("upgrades")" data-knob="upgrades" />
+                <input type="number" min="0" max="20" step="1" placeholder="none" data-knob="upgrades"
+                       value="@Given("upgrades")" @onchange="Temper" />
             </Knob>
 
             <Knob Caption="Random stats">
-                <input type="text" placeholder="@RollablePlaceholder"
-                       value="@Given("randomStats")" data-knob="randomStats" />
+                <input type="text" placeholder="@RollablePlaceholder" data-knob="randomStats"
+                       value="@Given("randomStats")" @onchange="Rolled" />
             </Knob>
         }
     </Panel>
@@ -72,6 +72,21 @@
 
 @code {
     [CascadingParameter] private Bearings Here { get; set; } = new();
+
+    [Parameter] public EventCallback<KnobTurn> OnTurn { get; set; }
+
+    private Task Turn(string key, string? value) => OnTurn.InvokeAsync(new KnobTurn(key, value));
+
+    private Task Wearer(ChangeEventArgs who) => Turn("hero", who.Value?.ToString());
+
+    private Task Rung(RarityEntry rung) =>
+        Turn("rarity", Chosen("rarity", rung) ? null : rung.Tier.ToString());
+
+    private Task Level(ChangeEventArgs level) => Turn("itemLevel", level.Value?.ToString());
+
+    private Task Temper(ChangeEventArgs temper) => Turn("upgrades", temper.Value?.ToString());
+
+    private Task Rolled(ChangeEventArgs rolled) => Turn("randomStats", rolled.Value?.ToString());
 
     private bool IsGem => Here.Shown is GemDocument;
 

@@ -12,6 +12,7 @@ public class TraitCardTests : BunitContext
         this.export = export;
         Services.AddSingleton(export.Tooltip);
         Services.AddSingleton(export.View);
+        Services.AddSingleton(export.Store);
     }
 
     private IEnumerable<TraitDocument> Traits => export.Store.Entities.OfType<TraitDocument>();

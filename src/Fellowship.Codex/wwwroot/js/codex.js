@@ -122,32 +122,6 @@ function open(group) {
     group.querySelector('.cx-mega-open')?.setAttribute('aria-expanded', 'true');
 }
 
-async function stage() {
-    const box = document.querySelector('[data-stage]');
-    if (!box) return;
-
-    const [address, carried] = box.dataset.stage.split('?');
-    const asked = new URLSearchParams();
-
-    for (const knob of document.querySelectorAll('[data-knob]')) {
-        const value = knob.dataset.value ?? knob.value;
-        if (value) asked.set(knob.dataset.knob, value);
-    }
-
-    for (const [key, value] of new URLSearchParams(carried ?? '')) {
-        if (!asked.has(key)) asked.set(key, value);
-    }
-
-    const where = address + (asked.size ? '?' + asked : '');
-    box.setAttribute('aria-busy', 'true');
-
-    const answer = await fragment(where);
-
-    if (answer?.ok) box.innerHTML = answer.body;
-
-    box.removeAttribute('aria-busy');
-}
-
 document.addEventListener('pointerover', event => {
     if (event.pointerType && event.pointerType !== 'mouse') return;
 
@@ -182,37 +156,6 @@ document.addEventListener('click', event => {
     }
 
     if (!event.target.closest?.('.cx-mega')) shut(null);
-
-    const rung = event.target.closest?.('button[data-knob]');
-    if (!rung) return;
-
-    const family = [...document.querySelectorAll(`[data-knob="${rung.dataset.knob}"]`)];
-    const already = rung.getAttribute('aria-pressed') === 'true';
-
-    for (const other of family) {
-        other.setAttribute('aria-pressed', 'false');
-        other.dataset.value = '';
-    }
-
-    if (!already) {
-        rung.setAttribute('aria-pressed', 'true');
-        rung.dataset.value = rung.dataset.choice;
-    }
-
-    const heading = document.querySelector('.cx-entity-name');
-    if (heading && rung.dataset.knob === 'rarity') {
-        if (rung.getAttribute('aria-pressed') === 'true') {
-            heading.style.setProperty('--cx-rung', getComputedStyle(rung).color);
-        } else {
-            heading.style.removeProperty('--cx-rung');
-        }
-    }
-
-    stage();
-});
-
-document.addEventListener('change', event => {
-    if (event.target.closest?.('[data-knob]')) stage();
 });
 
 document.addEventListener('keydown', event => {
@@ -240,9 +183,6 @@ window.addEventListener('resize', hide);
 
 function arrived() {
     hide();
-    document.querySelector('.cx-entity-name')?.style.removeProperty('--cx-rung');
-
-    if (document.querySelector('[data-stage][data-restage]')) stage();
 }
 
 if (document.readyState === 'loading') {

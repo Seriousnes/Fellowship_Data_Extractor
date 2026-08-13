@@ -7,6 +7,7 @@ public class DetailTests : BunitContext
     {
         Services.AddSingleton(export.View);
         Services.AddSingleton(export.Tooltip);
+        Services.AddSingleton(export.Store);
     }
 
     [Fact]

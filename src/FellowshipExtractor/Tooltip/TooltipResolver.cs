@@ -75,6 +75,7 @@ public sealed class TooltipResolver
     public ItemSetBonuses SetBonuses { get; }
     public ItemTableNames TableNames { get; }
     public DynamicItemRuleSets RuleSets { get; }
+    public DynamicAbilityRanks AbilityRanks { get; }
     public TalentTrees Talents { get; }
     public GemDefinitions Gems { get; }
     public ItemTraits Traits { get; }
@@ -143,6 +144,8 @@ public sealed class TooltipResolver
         Gems = new GemDefinitions(provider, _assets, _constants, _augmentationIds, rarities);
         Traits = new ItemTraits(
             provider, _assets, _constants, _augmentationIds, new TraitCategoryNames(provider, _assets));
+
+        AbilityRanks = new DynamicAbilityRanks(provider, _assets, _tags, _augmentationIds, SlotNames);
 
         StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor);
 
@@ -267,6 +270,7 @@ public sealed class TooltipResolver
         };
 
         entity = WithTableText(entity, tag.Name, icons);
+        entity = WithAbilityRank(entity);
 
         if (HeroItems.Find(tag.Name) is { } fixedItem) entity = WithFixedItem(entity, fixedItem, icons);
 
@@ -345,6 +349,19 @@ public sealed class TooltipResolver
                 .Where(entry => entry.Image is not null)
                 .Select(entry => new RarityImage(entry.Rarity, entry.Image!)),
         ];
+    }
+
+    private Entity WithAbilityRank(Entity entity)
+    {
+        if (entity.NetId is not { } netId) return entity;
+        if (AbilityRanks.For(netId) is not { } row) return entity;
+
+        return entity with
+        {
+            AbilityMaxRank = row.MaxRank,
+            PoolSlots = row.Slots,
+            AbilityRanks = row.NetIdByHero,
+        };
     }
 
     private Entity WithTableText(Entity entity, string tagName, IconWriter? icons)

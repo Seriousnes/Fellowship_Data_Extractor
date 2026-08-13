@@ -12,6 +12,7 @@ public class InsetArtTests : BunitContext
         Store = export.Store;
         Services.AddSingleton(export.Tooltip);
         Services.AddSingleton(export.View);
+        Services.AddSingleton(export.Store);
     }
 
     private IRenderedComponent<Tooltip> Draw(EntityDocument document) =>

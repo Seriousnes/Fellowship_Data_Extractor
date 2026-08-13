@@ -10,19 +10,16 @@
     <PageTitle>@Name - Fellowship Codex</PageTitle>
     <Crumbs Trail="@(new List<(string, string?)> { (PublicTypes.Label(type), Under), (Name, null) })" />
 
-    <h1 class="cx-entity-name" style="--cx-name:@Ui.NameColour(Shown);color:var(--cx-rung, var(--cx-name))">@Name</h1>
+    <h1 class="cx-entity-name"
+        style="--cx-name:@Ui.NameColour(Shown);@(Rung is null ? null : $"--cx-rung:{Rung};")color:var(--cx-rung, var(--cx-name))">@Name</h1>
 
     <CascadingValue Value="Here">
         <div class="cx-entity">
             <div class="cx-entity-top">
-                <div class="cx-entity-tip" data-stage="@Address" data-restage="@Restage" aria-live="polite">
-                    <Tooltip Entity="Shown" Query="Asking" Hero="Wearer" />
-                </div>
+                <Craft Slug="@Slug" Id="Id" Search="@Search" Hero="@Drawn" />
 
                 <div class="cx-entity-side">
-                    <Knobs />
                     <Versions />
-                    <Identity />
                 </div>
             </div>
 
@@ -76,7 +73,13 @@
         Asked_.Where(pair => !Own.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
-    private string? Restage => Forwarded.Count > 0 ? string.Empty : null;
+    private string Search => new Uri(Nav.Uri).Query;
+
+    private string? Rung =>
+        Asked_.GetValueOrDefault("rarity") is { Length: > 0 } asked &&
+        Store.Rarity(asked, Shown is GemDocument) is { } rung
+            ? CodexView.Readable(Ui.Tokens.Rarity(rung.Name))
+            : null;
 
     private string Address
     {

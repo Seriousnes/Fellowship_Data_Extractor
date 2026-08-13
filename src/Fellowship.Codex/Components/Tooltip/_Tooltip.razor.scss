@@ -175,6 +175,14 @@ $modifier-row-inset: 6px;
     .alloc { color: var(--core-primary-200); }
   }
 
+  .sock {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .gn { color: var(--core-text-secondary); }
+  }
+
   .ability { color: var(--fx-ability); }
 
   .legendary { color: var(--fx-legendary); }

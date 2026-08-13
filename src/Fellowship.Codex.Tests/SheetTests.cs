@@ -24,7 +24,8 @@ public partial class SheetTests(Export export)
     private async Task<string> Served()
     {
         var services = new ServiceCollection()
-            .AddSingleton(export.Tooltip).AddSingleton(export.View).BuildServiceProvider();
+            .AddSingleton(export.Tooltip).AddSingleton(export.View).AddSingleton(export.Store)
+            .BuildServiceProvider();
 
         await using var renderer = new HtmlRenderer(services, NullLoggerFactory.Instance);
 

@@ -1,0 +1,65 @@
+@use "../../Styles/shared" as *;
+
+.cx-sel {
+  border: 1px solid var(--line); border-top-color: var(--gold-deep); background: #0d1721;
+  color: var(--ink); padding: 0; width: min(560px, 92vw);
+  max-height: min(80vh, 640px); box-shadow: 0 26px 40px -22px #000;
+
+  &::backdrop { background: rgb(0 0 0 / 55%); }
+}
+
+.cx-sel-body { display: flex; flex-direction: column; max-height: min(80vh, 640px); overflow-y: auto; }
+
+.cx-sel-head {
+  position: sticky; top: 0; z-index: 1; background: #0d1721;
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-bottom: 1px solid var(--line-soft);
+
+  h2 { flex: 1 1 auto; margin: 0; font: 600 13px/1 var(--sans); letter-spacing: .04em; }
+}
+
+.cx-sel-close {
+  appearance: none; cursor: pointer; border: 1px solid transparent; border-radius: 2px;
+  background: var(--raised); color: var(--muted); font: 600 14px/1 var(--sans); padding: 5px 9px;
+
+  &:hover { color: var(--ink); }
+}
+
+.cx-sel-search {
+  position: sticky; top: 33px; z-index: 1; background: #0d1721;
+  padding: 8px 12px; border-bottom: 1px solid var(--line-soft);
+}
+
+.cx-sel-find {
+  width: 100%; appearance: none;
+  @include sunken;
+  border-radius: 3px; font: 400 13px/1 var(--sans); padding: 8px 10px;
+
+  &:focus { @include edged; }
+}
+
+.cx-sel-kind {
+  margin: 0; padding: 8px 12px 4px; font: 600 11px/1 var(--sans);
+  letter-spacing: .04em; color: var(--muted);
+}
+
+.cx-sel-list { list-style: none; margin: 0; padding: 0; }
+
+.cx-sel-choice {
+  display: flex; align-items: center; gap: 10px; width: 100%; appearance: none; cursor: pointer;
+  background: none; border: 0; border-bottom: 1px solid var(--line-soft); color: var(--ink);
+  font: 400 13px/1 var(--sans); padding: 5px 12px; text-align: left; min-height: 44px;
+
+  &:hover, &:focus-visible, &[data-active] { background: var(--raised); }
+  &:focus-visible { @include edged; }
+
+  &[disabled] { cursor: not-allowed; opacity: .45; }
+}
+
+.cx-sel-art { flex: 0 0 auto; display: flex; align-items: center; }
+
+.cx-sel-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cx-sel-value { flex: 0 0 auto; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+.cx-sel-none { margin: 0; padding: 14px 12px; color: var(--muted); font-size: 12px; }

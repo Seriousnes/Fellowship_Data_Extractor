@@ -16,6 +16,8 @@ public static class TooltipView
 
     public const string RandomModifierLabel = "[Random Modifier]";
 
+    public const string GemSocketLabel = "Gem Socket";
+
     public static readonly IReadOnlyDictionary<string, int> ImbuedTraitCapacities =
         new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {

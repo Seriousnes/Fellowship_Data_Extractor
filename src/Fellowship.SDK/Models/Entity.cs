@@ -117,6 +117,12 @@ public sealed record Entity
 
     public int? MaxRank { get; init; }
 
+    public int? AbilityMaxRank { get; init; }
+
+    public IReadOnlyList<string>? PoolSlots { get; init; }
+
+    public IReadOnlyDictionary<string, int>? AbilityRanks { get; init; }
+
     public int? RandomChance { get; init; }
 
     public IReadOnlyList<RankRun>? RankRuns { get; init; }

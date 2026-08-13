@@ -1,0 +1,247 @@
+using Fellowship.Codex.Services;
+
+using Fellowship.SDK.Documents;
+
+namespace Fellowship.Codex.Models;
+
+public static class CraftSlots
+{
+    public const string RandomStat = "RandomStat";
+    public const string GemSocket = "GemSocket";
+    public const string TraitTree = "TraitTree";
+    public const string SetBonus = "SetBonus";
+    public const string GrantedAbility = "GrantedAbility";
+    public const string RandomRolls = "RandomRolls";
+
+    public const string GemPower = "GemPower";
+    public const string ItemTrait = "ItemTrait";
+    public const string AbilityRank = "AbilityRank";
+}
+
+public readonly record struct KnobTurn(string Key, string? Value);
+
+public sealed record CraftSlot(string SlotName, int Ordinal, IReadOnlyList<string> Accepts)
+{
+    public int Capacity { get; init; } = 1;
+
+    public string Key => $"{SlotName}:{Ordinal}";
+}
+
+public static class ItemCraft
+{
+    public static IReadOnlyList<CraftSlot> Slots(
+        ItemDocument item, SettingsFile settings, RarityEntry? rarity)
+    {
+        if (rarity is null || item.RuleSet is not { } ruleSet) return [];
+        if (!settings.StatCalculation.RarityAdditions.TryGetValue(ruleSet, out var byTier)) return [];
+        if (!byTier.TryGetValue(rarity.Tier, out var added)) return [];
+
+        var slots = new List<CraftSlot>();
+        var ordinals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        int Next(string name)
+        {
+            var at = ordinals.GetValueOrDefault(name);
+            ordinals[name] = at + 1;
+            return at;
+        }
+
+        void Add(string name)
+        {
+            var ordinal = Next(name);
+
+            slots.Add(name switch
+            {
+                CraftSlots.TraitTree => new CraftSlot(name, ordinal, [CraftSlots.ItemTrait])
+                {
+                    Capacity = Capacity(item),
+                },
+                CraftSlots.RandomStat => new CraftSlot(name, ordinal, [CraftSlots.RandomStat]),
+                CraftSlots.GemSocket => new CraftSlot(name, ordinal, [CraftSlots.GemSocket]),
+                _ => new CraftSlot(name, ordinal, []),
+            });
+        }
+
+        foreach (var name in added.GuaranteedSlots) Add(name);
+        foreach (var special in added.SpecialSlots) Add(special.SlotName);
+
+        IReadOnlyList<string> accepts =
+            [.. added.RandomizedSlots.Distinct(StringComparer.OrdinalIgnoreCase)];
+
+        for (var roll = 0; roll < added.RandomRolls; roll++)
+        {
+            slots.Add(new CraftSlot(CraftSlots.RandomRolls, Next(CraftSlots.RandomRolls), accepts));
+        }
+
+        return slots;
+    }
+
+    public static int Capacity(ItemDocument item) =>
+        item.Slot is { } worn && TooltipView.ImbuedTraitCapacities.TryGetValue(worn, out var carried)
+            ? carried
+            : 0;
+
+    public static ModifierKind? KindOf(string accepted) => accepted switch
+    {
+        CraftSlots.ItemTrait => ModifierKind.Trait,
+        CraftSlots.AbilityRank => ModifierKind.Blessing,
+        CraftSlots.GemPower => ModifierKind.Essence,
+        _ => null,
+    };
+
+    public const int SameIdentity = 2;
+
+    public const int Blessings = 2;
+
+    public static int MaxRank(CraftCandidate candidate, IEntityStoreService store) =>
+        KindOf(candidate.Accepts) switch
+        {
+            ModifierKind.Blessing => Found<BlessingDocument>(store, EntityType.Blessing, candidate.Id)?.MaxRank ?? 1,
+            ModifierKind.Trait => Found<TraitDocument>(store, TooltipView.TraitType, candidate.Id)?.MaxRank ?? 1,
+            _ => int.MaxValue,
+        };
+
+    public static string? Forbids(
+        ItemDocument item,
+        TooltipQuery query,
+        CraftSlot slot,
+        CraftCandidate candidate,
+        IEntityStoreService store)
+    {
+        if (slot.SlotName == CraftSlots.TraitTree)
+        {
+            if (query.ImbuedTraits.Any(trait => trait.Id == candidate.Id)) return CraftReasons.AlreadyImbued;
+            if (query.ImbuedTraits.Count >= slot.Capacity) return CraftReasons.NoRoom;
+
+            var ceiling = MaxRank(candidate, store);
+            return candidate.Amount < 1 || candidate.Amount > ceiling ? CraftReasons.PastRank(ceiling) : null;
+        }
+
+        if (candidate.Accepts == CraftSlots.RandomStat)
+        {
+            return query.RandomStats.Count(
+                stat => stat.Equals(candidate.Name, StringComparison.OrdinalIgnoreCase)) >= SameIdentity
+                ? CraftReasons.TwoOfAKind
+                : null;
+        }
+
+        if (KindOf(candidate.Accepts) is not { } kind) return null;
+
+        if (kind == ModifierKind.Blessing)
+        {
+            if (Found<BlessingDocument>(store, EntityType.Blessing, candidate.Id) is { } blessing &&
+                item.Slot is { } worn &&
+                !(blessing.Slots ?? []).Contains(worn, StringComparer.OrdinalIgnoreCase))
+            {
+                return CraftReasons.NotInPool(worn);
+            }
+
+            if (query.Modifiers.Count(modifier => modifier.Kind == ModifierKind.Blessing) >= Blessings)
+            {
+                return CraftReasons.TwoBlessings;
+            }
+        }
+
+        if (query.Modifiers.Count(
+            modifier => modifier.Kind == kind && modifier.Id == candidate.Id) >= SameIdentity)
+        {
+            return CraftReasons.TwoOfAKind;
+        }
+
+        var max = MaxRank(candidate, store);
+
+        return candidate.Amount < 1 || candidate.Amount > max ? CraftReasons.PastRank(max) : null;
+    }
+
+    public static TooltipQuery Without(TooltipQuery query, CraftSlot slot) => slot.SlotName switch
+    {
+        CraftSlots.RandomStat => query with
+        {
+            RandomStats = slot.Ordinal < query.RandomStats.Count
+                ? [.. query.RandomStats.Take(slot.Ordinal), .. query.RandomStats.Skip(slot.Ordinal + 1)]
+                : query.RandomStats,
+        },
+
+        CraftSlots.GemSocket => query with { Gem = null },
+
+        CraftSlots.TraitTree => query,
+
+        _ => query with
+        {
+            Modifiers = slot.Ordinal < query.Modifiers.Count
+                ? [.. query.Modifiers.Take(slot.Ordinal), .. query.Modifiers.Skip(slot.Ordinal + 1)]
+                : query.Modifiers,
+        },
+    };
+
+    public static int StatAt(TooltipQuery query, CraftSlot slot) =>
+        slot.SlotName == CraftSlots.RandomStat ? slot.Ordinal : query.RandomStats.Count;
+
+    public static TooltipQuery With(TooltipQuery query, CraftSlot slot, CraftCandidate candidate)
+    {
+        if (slot.SlotName == CraftSlots.TraitTree)
+        {
+            return query with
+            {
+                ImbuedTraits = [.. query.ImbuedTraits, new ImbuedTrait(candidate.Id, candidate.Amount)],
+            };
+        }
+
+        if (candidate.Accepts == CraftSlots.GemSocket) return query with { Gem = candidate.Id };
+
+        if (candidate.Accepts == CraftSlots.RandomStat)
+        {
+            return query with
+            {
+                RandomStats = Set([.. query.RandomStats], StatAt(query, slot), candidate.Name),
+            };
+        }
+
+        return query with
+        {
+            Modifiers = Set(
+                [.. query.Modifiers],
+                slot.Ordinal,
+                new ItemModifier(KindOf(candidate.Accepts)!.Value, candidate.Id, candidate.Amount)),
+        };
+    }
+
+    public static string Writes(CraftSlot slot, CraftCandidate candidate) => slot.SlotName switch
+    {
+        CraftSlots.TraitTree => CraftSlots.TraitTree,
+        _ => candidate.Accepts switch
+        {
+            CraftSlots.GemSocket => CraftSlots.GemSocket,
+            CraftSlots.RandomStat => CraftSlots.RandomStat,
+            _ => CraftSlots.RandomRolls,
+        },
+    };
+
+    public static List<TValue> Set<TValue>(List<TValue> carried, int at, TValue value)
+    {
+        if (at >= carried.Count) carried.Add(value); else carried[at] = value;
+
+        return carried;
+    }
+
+    private static TDocument? Found<TDocument>(IEntityStoreService store, EntityType type, int id)
+        where TDocument : EntityDocument =>
+        store.All(type, id).OfType<TDocument>().FirstOrDefault();
+}
+
+public sealed record CraftCandidate(string Accepts, int Id, string Name, int Amount);
+
+public static class CraftReasons
+{
+    public const string TwoOfAKind = "Two of one is the most an item rolls.";
+
+    public const string TwoBlessings = "Two blessings is the most an item carries.";
+
+    public const string AlreadyImbued = "Already imbued.";
+
+    public const string NoRoom = "Every imbued trait slot is filled.";
+
+    public static string NotInPool(string slot) => $"Does not roll on a {slot}.";
+
+    public static string PastRank(int max) => $"Ranks 1 to {max} only.";
+}
