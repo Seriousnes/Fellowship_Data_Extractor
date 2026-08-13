@@ -121,6 +121,8 @@ $modifier-row-inset: 6px;
     color: var(--core-text-primary);
   }
 
+  .mod.unresolved .mn { color: var(--core-text-secondary); }
+
   .mv {
     font-weight: 600;
     color: var(--core-text-primary);

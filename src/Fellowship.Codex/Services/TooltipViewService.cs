@@ -32,7 +32,8 @@ public interface ITooltipViewService
 
     string? Potential(TooltipQuery query);
 
-    IReadOnlyList<TooltipView.ModifierLine> Modifiers(TooltipQuery query);
+    IReadOnlyList<TooltipView.ModifierLine> Modifiers(
+        ItemDocument document, TooltipQuery query, RarityEntry? rarity);
 
     IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity);
 
@@ -230,14 +231,35 @@ public sealed class TooltipViewService(
             ? power.Normalize().ToString(CultureInfo.InvariantCulture)
             : null;
 
-    public IReadOnlyList<TooltipView.ModifierLine> Modifiers(TooltipQuery query) =>
-    [
-        .. query.Modifiers.Select(modifier => new TooltipView.ModifierLine(
-            modifier.Kind,
-            store.All(TooltipView.TypeOf(modifier.Kind), modifier.Id).Select(PublicTypes.NameOf).FirstOrDefault()
-                ?? modifier.Id.ToString(CultureInfo.InvariantCulture),
-            modifier.Amount)),
-    ];
+    public IReadOnlyList<TooltipView.ModifierLine> Modifiers(
+        ItemDocument document, TooltipQuery query, RarityEntry? rarity)
+    {
+        var lines = new List<TooltipView.ModifierLine>(query.Modifiers.Count);
+
+        foreach (var modifier in query.Modifiers)
+        {
+            lines.Add(new TooltipView.ModifierLine(
+                modifier.Kind,
+                store.All(TooltipView.TypeOf(modifier.Kind), modifier.Id).Select(PublicTypes.NameOf).FirstOrDefault()
+                    ?? modifier.Id.ToString(CultureInfo.InvariantCulture),
+                modifier.Amount));
+        }
+
+        for (var rolled = lines.Count; rolled < RandomRolls(document, rarity); rolled++)
+        {
+            lines.Add(TooltipView.ModifierLine.Random);
+        }
+
+        return lines;
+    }
+
+    private int RandomRolls(ItemDocument document, RarityEntry? rarity)
+    {
+        if (rarity is null || document.RuleSet is not { } ruleSet) return 0;
+        if (!store.Settings.StatCalculation.RarityAdditions.TryGetValue(ruleSet, out var byTier)) return 0;
+
+        return byTier.TryGetValue(rarity.Tier, out var added) ? added.RandomRolls : 0;
+    }
 
     public IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity) =>
         StatMagnitudes.For(

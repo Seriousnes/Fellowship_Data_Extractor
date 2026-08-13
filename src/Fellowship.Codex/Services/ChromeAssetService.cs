@@ -34,7 +34,7 @@ public interface IChromeAssetService
 
     string ModifierDecor { get; }
 
-    string ModifierGlyph(ModifierKind kind);
+    string ModifierGlyph(ModifierKind? kind);
 
     Badge AbilityBadge { get; }
 
@@ -103,6 +103,7 @@ public sealed class ChromeAssetService(
     private const string TraitModifierTexture = "T_Icons_Generic_WeaponSkill";
     private const string BlessingModifierTexture = "T_Icons_Generic_TooltipSlot";
     private const string EssenceModifierTexture = "T_Icons_Generic_Gem";
+    private const string RandomModifierTexture = BlessingModifierTexture;
 
     private const string NodeFamily = "T_Buttons_TraitNode_";
     private const string NodeSuffix = "Default";
@@ -219,7 +220,8 @@ public sealed class ChromeAssetService(
 
     public string ModifierDecor => Url(Tinted(ModifierDecorTexture));
 
-    public string ModifierGlyph(ModifierKind kind) => Url(Tinted(ModifierGlyphs[kind]));
+    public string ModifierGlyph(ModifierKind? kind) =>
+        kind is { } named ? Url(Tinted(ModifierGlyphs[named])) : Url(Name(RandomModifierTexture));
 
     private static string Tinted(string texture) =>
         Name(texture, DesignTokenService.Variable(ModifierTinted[texture]));

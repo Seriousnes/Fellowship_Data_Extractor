@@ -68,7 +68,7 @@
         Sheet = new MarkupString(Ui.Style());
         facts = Ui.Facts(Entity, Query);
         rolls = Ui.Rolls(Entity, Query, Rung);
-        modifiers = Ui.Modifiers(Query);
+        modifiers = Ui.Modifiers(Entity, Query, Rung);
         granted = Ui.Granted(Entity);
         Named = granted is null ? null : PublicTypes.DisplayNameOf(granted);
 

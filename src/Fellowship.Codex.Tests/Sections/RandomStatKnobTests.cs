@@ -13,7 +13,12 @@ public class RandomStatKnobTests : BunitContext
     }
 
     private static ItemDocument Wearable() =>
-        new() { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = SlotKinds.Fixed }] };
+        new()
+        {
+            Id = 1,
+            Stats = [new StatSlot("Stamina", 40) { Kind = SlotKinds.Fixed }],
+            Rarities = [Rarity.Uncommon, Rarity.Rare, Rarity.Epic, Rarity.Champion, Rarity.Heroic],
+        };
 
     private IRenderedComponent<Knobs> Panel(params (string Key, string Value)[] asked)
     {

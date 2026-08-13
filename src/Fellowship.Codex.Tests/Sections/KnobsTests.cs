@@ -44,23 +44,68 @@ public class KnobsTests : BunitContext
             select.GetAttribute("onchange"));
     }
 
-    [Fact]
-    public void Renders_every_rarity_rung_as_an_unpressed_button()
+    private static readonly Rarity[] Droppable =
+        [Rarity.Uncommon, Rarity.Rare, Rarity.Epic, Rarity.Champion, Rarity.Heroic];
+
+    private static ItemDocument Wearable(params Rarity[] rarities) => new()
     {
-        var wearable = new ItemDocument { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
+        Id = 1,
+        Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }],
+        Rarities = rarities.Length == 0 ? null : rarities,
+    };
+
+    [Fact]
+    public void Renders_a_rung_for_every_rarity_the_item_drops_at_and_no_other()
+    {
+        var wearable = Wearable(Droppable);
         var here = new Bearings { Shown = wearable, Readings = [wearable] };
 
         var cut = Render<Knobs>(p => p.AddCascadingValue(here));
 
         var rungs = cut.FindAll("button[data-knob=rarity]");
 
-        Assert.Equal(export.Store.Settings.Rarities.Count, rungs.Count);
+        Assert.Equal(
+            [.. export.Store.Settings.Rarities
+                .Where(rung => Droppable.Any(carry => (int)carry == rung.Tier))
+                .Select(rung => rung.DisplayName)],
+            [.. rungs.Select(rung => rung.TextContent.Trim())]);
+
         Assert.All(rungs, rung =>
         {
             Assert.Equal("button", rung.GetAttribute("type"));
             Assert.False(string.IsNullOrEmpty(rung.GetAttribute("data-choice")));
             Assert.Equal("false", rung.GetAttribute("aria-pressed"));
         });
+    }
+
+    [Fact]
+    public void Turns_no_rarity_knob_for_an_item_that_exists_at_one_rarity_only()
+    {
+        foreach (var only in new[] { Rarity.Legendary, Rarity.Common })
+        {
+            var wearable = Wearable(only);
+
+            var cut = Render<Knobs>(p => p.AddCascadingValue(
+                new Bearings { Shown = wearable, Readings = [wearable] }));
+
+            Assert.Empty(cut.FindAll("button[data-knob=rarity]"));
+            Assert.NotNull(cut.Find("input[data-knob=itemLevel]"));
+        }
+    }
+
+    [Fact]
+    public void Never_offers_legendary_beside_the_rarities_an_ordinary_item_drops_at()
+    {
+        var wearable = Wearable(Droppable);
+
+        var cut = Render<Knobs>(p => p.AddCascadingValue(
+            new Bearings { Shown = wearable, Readings = [wearable] }));
+
+        var legendary = export.Store.Settings.Rarities.Single(rung => rung.Tier == (int)Rarity.Legendary);
+
+        Assert.DoesNotContain(
+            cut.FindAll("button[data-knob=rarity]"),
+            rung => rung.TextContent.Trim() == legendary.DisplayName);
     }
 
     [Fact]
@@ -120,16 +165,17 @@ public class KnobsTests : BunitContext
     public void Names_the_gem_ladder_for_a_gem_and_the_item_ladder_otherwise()
     {
         var gem = new GemDocument { Id = 1, Type = GemType.Amethyst, Power = 1, Rarity = Rarity.Champion };
-        var wearable = new ItemDocument { Id = 2, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
+        var wearable = Wearable(Droppable);
 
         var asGem = Render<Knobs>(p => p.AddCascadingValue(
             new Bearings { Shown = gem, Readings = [gem] }));
         var asItem = Render<Knobs>(p => p.AddCascadingValue(
             new Bearings { Shown = wearable, Readings = [wearable] }));
 
-        var rung = export.Store.Settings.Rarities[0];
+        var ladder = export.Store.Settings.Rarities;
+        var lowest = ladder.Single(rung => rung.Tier == (int)Droppable[0]);
 
-        Assert.Equal(rung.GemDisplayName, asGem.FindAll("button[data-knob=rarity]")[0].TextContent.Trim());
-        Assert.Equal(rung.DisplayName, asItem.FindAll("button[data-knob=rarity]")[0].TextContent.Trim());
+        Assert.Equal(ladder[0].GemDisplayName, asGem.FindAll("button[data-knob=rarity]")[0].TextContent.Trim());
+        Assert.Equal(lowest.DisplayName, asItem.FindAll("button[data-knob=rarity]")[0].TextContent.Trim());
     }
 }

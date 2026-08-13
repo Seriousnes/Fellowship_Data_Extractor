@@ -956,28 +956,36 @@ back at the same path.
 `FolderExportSource`, and shares every reading service with the codex through
 `CodexServices.AddCodexServices`. Neither the AppHost, Azurite nor the codex needs to be running.
 
-`.mcp.json` at the repository root registers it as a stdio server the client launches itself. It
-needs two things in place:
+`.mcp.json` at the repository root registers the built executable itself,
+`src/Fellowship.Codex.Mcp/bin/Release/net10.0/Fellowship.Codex.Mcp.exe`, with no arguments. It needs
+two things in place:
 
 ```powershell
-dotnet build src/Fellowship.Codex.Mcp
+dotnet build src/FellowshipExtractor.slnx
 
 dotnet run --project src/FellowshipExtractor -- export-all --output output/export
 ```
 
-The registered command carries `--no-build`, so the server has to be built before a client can
-start it and has to be rebuilt after a change. That is deliberate: `dotnet run` writes MSBuild
-diagnostics to stdout, and stdout is the JSON-RPC wire. A build that cannot write its output,
-which is what happens while the codex holds this checkout's `bin`, would put MSB3026 warnings
-where the client expects protocol. With `--no-build` nothing is written to `bin`, a missing build
-fails on stderr with stdout empty, and the client reports a connection failure instead of a parse
-error.
+The solution is what to build, not the project: `FellowshipExtractor.slnx` carries
+`<BuildType Project="Release" />` on this one project, so a Debug solution build still writes the
+`bin/Release/net10.0` the entry names. `dotnet build src/Fellowship.Codex.Mcp` on its own writes
+Debug and leaves the registered executable at whatever it last was.
+
+Naming the executable rather than `dotnet run` keeps the wire clean. `dotnet run` builds first and
+MSBuild writes its diagnostics to stdout, which is the JSON-RPC wire, so a build that cannot write
+its output - what happens while the codex holds this checkout's `bin` - puts MSB3026 warnings where
+the client expects protocol. An executable builds nothing: stdout carries protocol from the first
+byte, every log line goes to stderr, and a server that was never built fails to launch instead of
+answering with a parse error. The cost is that a change reaches the client only after a rebuild.
+
+The registered path is relative, so a client launched from a worktree runs that worktree's own build
+against that worktree's own export rather than another checkout's.
 
 The server finds its export in this order: an `--export <folder>` argument, then
 `FELLOWSHIP_EXPORT`, then the nearest `output/export` above the working directory, then the nearest
-one above its own binary. The last two make the registered entry portable across checkouts as long
-as the client launches it with the repository as its working directory; `--export` and
-`FELLOWSHIP_EXPORT` are there for when it does not.
+one above its own binary. The last two make the registered entry portable across checkouts: the
+working directory covers a client started at the repository root, and the binary's own location
+covers one started anywhere else. `--export` and `FELLOWSHIP_EXPORT` name a folder outside both.
 
 Two things read differently over MCP than over HTTP. A reference's `resource` is the codex API's
 own path with no host, `/api/{slug}/{id}`, because a stdio server has no request to take a scheme

@@ -1,5 +1,7 @@
 <Solution>
-  <Project Path="Fellowship.Codex.Mcp/Fellowship.Codex.Mcp.csproj" />
+  <Project Path="Fellowship.Codex.Mcp/Fellowship.Codex.Mcp.csproj">
+    <BuildType Project="Release" />
+  </Project>
   <Project Path="Fellowship.Codex.Tests/Fellowship.Codex.Tests.csproj" />
   <Project Path="Fellowship.Codex/Fellowship.Codex.csproj" />
   <Project Path="Fellowship.SDK.Generators/Fellowship.SDK.Generators.csproj" />

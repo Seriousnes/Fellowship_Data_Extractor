@@ -220,7 +220,7 @@ public sealed class McpTests(McpHost mcp, RouteTests.Factory factory)
         var named = RouteTests.Factory.Store.Entities.First(row => row.Name is { Length: > 6 });
 
         Assert.Contains(mcp.Tools.FindEntity(named.Name!).Results, hit => hit.Name == named.Name);
-        Assert.Empty(mcp.Tools.FindEntity(named.Name![3..]).Results.Where(hit => hit.Name == named.Name));
+        Assert.DoesNotContain(mcp.Tools.FindEntity(named.Name![3..]).Results, hit => hit.Name == named.Name);
     }
 
     [Fact]

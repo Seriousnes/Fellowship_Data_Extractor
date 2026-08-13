@@ -102,4 +102,50 @@ public class ListingTests(Export export)
         Assert.True(badge >= 2);
         Assert.Equal(badge, Run(("type", "item"), ("slot", slot)).Total);
     }
+
+    [Fact]
+    public void The_legendary_flag_divides_the_items_in_two()
+    {
+        var legendary = Run(("type", "item"), ("legendary", "1"));
+        var ordinary = Run(("type", "item"), ("legendary", "0"));
+
+        Assert.True(legendary.Total > 0);
+        Assert.Equal(Run(("type", "item")).Total, legendary.Total + ordinary.Total);
+
+        Assert.All(legendary.Rows, row =>
+            Assert.Contains(Rarity.Legendary, ((ItemDocument)row).Rarities ?? []));
+
+        Assert.All(ordinary.Rows, row =>
+            Assert.DoesNotContain(Rarity.Legendary, ((ItemDocument)row).Rarities ?? []));
+    }
+
+    [Fact]
+    public void The_rarity_facet_names_every_rarity_an_item_drops_at()
+    {
+        var facet = export.View.Codex.Facet("rarity")!;
+
+        var carried = Run(("type", "item")).Rows
+            .Select(row => facet.Values(row).ToArray())
+            .ToArray();
+
+        Assert.All(carried, values => Assert.NotEmpty(values));
+        Assert.Contains(carried, values => values.Length > 1);
+    }
+
+    [Fact]
+    public void Legendary_is_the_only_rarity_a_legendary_item_names()
+    {
+        var facet = export.View.Codex.Facet("rarity")!;
+
+        var legendary = export.Store.Settings.Rarities
+            .Single(rung => rung.Tier == (int)Rarity.Legendary)
+            .DisplayName;
+
+        foreach (var row in Run(("type", "item")).Rows)
+        {
+            var values = facet.Values(row).ToArray();
+
+            if (values.Contains(legendary, StringComparer.Ordinal)) Assert.Single(values);
+        }
+    }
 }

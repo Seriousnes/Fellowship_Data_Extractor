@@ -12,6 +12,10 @@ public static class TooltipView
 
     public const int SlotWidth = 48;
 
+    public const string Unresolved = "unresolved";
+
+    public const string RandomModifierLabel = "[Random Modifier]";
+
     public static readonly IReadOnlyDictionary<string, int> ImbuedTraitCapacities =
         new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
@@ -35,7 +39,7 @@ public static class TooltipView
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, $"{kind} names no label."),
     };
 
-    public static string Token(ModifierKind kind) => kind.ToString().ToLowerInvariant();
+    public static string Token(ModifierKind? kind) => kind?.ToString().ToLowerInvariant() ?? Unresolved;
 
     public static string Magnitude(StatLine line) =>
         (line.Value < 0 ? string.Empty : "+") +
@@ -43,5 +47,10 @@ public static class TooltipView
 
     public sealed record Fact(string Label, string Value, string? Title);
 
-    public sealed record ModifierLine(ModifierKind Kind, string Name, int Amount);
+    public sealed record ModifierLine(ModifierKind? Kind, string Name, int Amount)
+    {
+        public static readonly ModifierLine Random = new(null, RandomModifierLabel, 0);
+
+        public bool Unresolved => Kind is null;
+    }
 }

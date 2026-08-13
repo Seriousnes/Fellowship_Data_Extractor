@@ -1,7 +1,7 @@
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
 
-@if (PicksHero || Wearable || IsGem || PicksDifficulty)
+@if (PicksHero || Wearable || IsGem || Rungs.Count > 1 || PicksDifficulty)
 {
     <Panel>
         @if (PicksDifficulty)
@@ -32,11 +32,11 @@
             </Knob>
         }
 
-        @if (Wearable || IsGem)
+        @if (Rungs.Count > 1)
         {
             <Knob Caption="Rarity" As="div">
                 <div class="cx-rungs">
-                    @foreach (var rung in Store.Settings.Rarities)
+                    @foreach (var rung in Rungs)
                     {
                         var colour = CodexView.Readable(Ui.Tokens.Rarity(rung.Name));
                         <button type="button" data-knob="rarity" data-choice="@rung.Tier"
@@ -76,6 +76,13 @@
     private bool IsGem => Here.Shown is GemDocument;
 
     private bool Wearable => (Here.Shown as ItemDocument)?.Stats is { Count: > 0 };
+
+    private IReadOnlyList<RarityEntry> Rungs =>
+        IsGem
+            ? Store.Settings.Rarities
+            : Here.Shown is ItemDocument { Rarities: { Count: > 0 } carried }
+                ? [.. Store.Settings.Rarities.Where(rung => carried.Any(carry => (int)carry == rung.Tier))]
+                : [];
 
     private int DropItemLevel => Here.Shown is { } shown ? Store.DropItemLevel(shown) : 0;
 

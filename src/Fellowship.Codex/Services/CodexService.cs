@@ -137,13 +137,15 @@ public sealed class CodexService : ICodexService
                 Colour = (t, value) => t.Role(value),
             },
 
-            new Facet("rarity", "Rarity", document => One(document switch
+            new Facet("rarity", "Rarity", document => document switch
             {
-                ItemDocument { Rarity: { } rarity } => RarityWord(store, rarity, gem: false),
-                CurrencyDocument { Rarity: { } coin } => RarityWord(store, coin, gem: false),
-                GemDocument stone => RarityWord(store, stone.Rarity, gem: true),
-                _ => null,
-            }))
+                ItemDocument { Rarities: { Count: > 0 } carried } =>
+                    carried.Select(rung => RarityWord(store, rung, gem: false)),
+                ItemDocument { Rarity: { } rarity } => One(RarityWord(store, rarity, gem: false)),
+                CurrencyDocument { Rarity: { } coin } => One(RarityWord(store, coin, gem: false)),
+                GemDocument stone => One(RarityWord(store, stone.Rarity, gem: true)),
+                _ => [],
+            })
             {
                 Colour = (t, value) => t.Rarity(Filed(store, value)),
             },
@@ -155,6 +157,9 @@ public sealed class CodexService : ICodexService
             new Flag("icon", "Has art", document => DocumentFields.Text(document, nameof(ItemDocument.Icon)) is not null),
             new Flag("described", "Has description text",
                 document => DocumentFields.Text(document, nameof(ItemDocument.Description)) is not null),
+            new Flag("legendary", "Is legendary",
+                document => document is ItemDocument { Rarities: { } carried } &&
+                            carried.Contains(Rarity.Legendary)),
             new Flag("grants", "Grants an ability", document => document is ItemDocument { Grants: not null }),
             new Flag("socket", "Rolls with a gem socket", document => document is ItemDocument { GemSlot: true }),
             new Flag("unique", "Unique equipped", document => document is ItemDocument { UniqueEquipped: true }),

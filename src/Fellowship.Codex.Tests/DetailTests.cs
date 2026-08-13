@@ -79,7 +79,7 @@ public class DetailTests : BunitContext
         {
             Id = 1,
             Description = "some words",
-            Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }],
+            Slot = "Back",
         };
 
         var cut = Render<Detail>(p => p.Add(x => x.Entity, entity));

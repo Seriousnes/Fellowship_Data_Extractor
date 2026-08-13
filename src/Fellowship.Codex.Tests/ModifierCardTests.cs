@@ -17,9 +17,21 @@ public class ModifierCardTests : BunitContext
     }
 
     private IRenderedComponent<TipModifiers> Draw(params ItemModifier[] modifiers) =>
+        Draw(new ItemDocument { Id = 1 }, rarity: null, modifiers);
+
+    private IRenderedComponent<TipModifiers> Draw(
+        ItemDocument document, RarityEntry? rarity, params ItemModifier[] modifiers) =>
         Render<TipModifiers>(p => p.Add(
             x => x.Lines,
-            export.Tooltip.Modifiers(new TooltipQuery { Modifiers = modifiers })));
+            export.Tooltip.Modifiers(document, new TooltipQuery { Modifiers = modifiers }, rarity)));
+
+    private (ItemDocument Item, RarityEntry Rung, int Rolls) Rolling(string ruleSet, int tier)
+    {
+        var rung = export.Store.Settings.Rarities.Single(entry => entry.Tier == tier);
+        var rolls = export.Store.Settings.StatCalculation.RarityAdditions[ruleSet][tier].RandomRolls;
+
+        return (new ItemDocument { Id = 1, RuleSet = ruleSet }, rung, rolls);
+    }
 
     private int Lowest(ModifierKind kind) => export.Store.Entities
         .Where(row => EntityTypes.TypeOf(row) == TooltipView.TypeOf(kind))
@@ -63,7 +75,10 @@ public class ModifierCardTests : BunitContext
 
         Assert.Equal(
             Enum.GetValues<ModifierKind>().Length,
-            Enum.GetValues<ModifierKind>().Select(export.Chrome.ModifierGlyph).Distinct(StringComparer.Ordinal).Count());
+            Enum.GetValues<ModifierKind>()
+                .Select(kind => export.Chrome.ModifierGlyph(kind))
+                .Distinct(StringComparer.Ordinal)
+                .Count());
     }
 
     [Fact]
@@ -118,8 +133,80 @@ public class ModifierCardTests : BunitContext
 
         Under(export.Chrome.ModifierPlate);
         Under(export.Chrome.ModifierDecor);
+        Under(export.Chrome.ModifierGlyph(null));
 
         foreach (var kind in Enum.GetValues<ModifierKind>()) Under(export.Chrome.ModifierGlyph(kind));
+
+        Assert.DoesNotContain(
+            export.Chrome.ModifierGlyph(null),
+            [.. Enum.GetValues<ModifierKind>().Select(kind => export.Chrome.ModifierGlyph(kind))],
+            StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void A_row_stands_for_every_random_modifier_the_rarity_rolls()
+    {
+        var (item, rung, rolls) = Rolling("Default_NoGemSlot", 5);
+
+        Assert.True(rolls > 0);
+
+        var rows = Draw(item, rung).FindAll(".grp.mods > .mod");
+
+        Assert.Equal(rolls, rows.Count);
+        Assert.All(rows, row =>
+        {
+            Assert.Contains(TooltipView.Unresolved, row.ClassList, StringComparer.Ordinal);
+            Assert.Equal(TooltipView.RandomModifierLabel, row.QuerySelector(".mn")!.TextContent);
+            Assert.Equal(
+                export.Chrome.ModifierGlyph(null),
+                row.QuerySelector("img.mi")!.GetAttribute("src"));
+            Assert.Null(row.QuerySelector(".mk"));
+            Assert.Null(row.QuerySelector(".mv"));
+        });
+    }
+
+    [Fact]
+    public void A_stated_modifier_fills_a_roll_rather_than_standing_beside_it()
+    {
+        var (item, rung, rolls) = Rolling("Default_NoGemSlot", 5);
+        var id = Lowest(ModifierKind.Trait);
+
+        var rows = Draw(item, rung, new ItemModifier(ModifierKind.Trait, id, 1)).FindAll(".grp.mods > .mod");
+
+        Assert.Equal(rolls, rows.Count);
+        Assert.Equal(Named(ModifierKind.Trait, id), rows[0].QuerySelector(".mn")!.TextContent);
+
+        Assert.All(rows.Skip(1), row =>
+            Assert.Equal(TooltipView.RandomModifierLabel, row.QuerySelector(".mn")!.TextContent));
+    }
+
+    [Fact]
+    public void The_rule_set_the_item_names_decides_how_many_rolls_it_carries()
+    {
+        var (plain, rung, plainRolls) = Rolling("Default_NoGemSlot", 3);
+        var (relic, _, relicRolls) = Rolling("Relic", 3);
+
+        Assert.NotEqual(plainRolls, relicRolls);
+
+        Assert.Equal(plainRolls, Draw(plain, rung).FindAll(".grp.mods > .mod").Count);
+        Assert.Equal(relicRolls, Draw(relic, rung).FindAll(".grp.mods > .mod").Count);
+    }
+
+    [Fact]
+    public void A_rarity_that_rolls_nothing_draws_no_row_at_all()
+    {
+        var (item, rung, rolls) = Rolling("Default_NoGemSlot", 1);
+
+        Assert.Equal(0, rolls);
+        Assert.Empty(Draw(item, rung).FindAll(".grp.mods > .mod"));
+    }
+
+    [Fact]
+    public void An_item_naming_no_rule_set_draws_only_what_the_query_states()
+    {
+        var rung = export.Store.Settings.Rarities.Single(entry => entry.Tier == 5);
+
+        Assert.Empty(Draw(new ItemDocument { Id = 1 }, rung).FindAll(".grp.mods > .mod"));
     }
 
     [Fact]
