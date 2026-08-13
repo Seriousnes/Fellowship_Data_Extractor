@@ -31,17 +31,10 @@
             }
         </div>
     }
-    @if (GemSlot == true || UniqueEquipped == true)
+    @if (UniqueEquipped == true)
     {
         <div class="row">
-            @if (GemSlot == true)
-            {
-                <span><span class="k">@(Query.NoSocket ? "No gem socket" : "Gem socket")</span></span>
-            }
-            @if (UniqueEquipped == true)
-            {
-                <span><span class="k">Unique Equipped</span></span>
-            }
+            <span><span class="k">Unique Equipped</span></span>
         </div>
     }
 </div>
@@ -67,8 +60,6 @@
     };
 
     private string? Slot => (Entity as ItemDocument)?.Slot;
-
-    private bool? GemSlot => (Entity as ItemDocument)?.GemSlot;
 
     private bool? UniqueEquipped => (Entity as ItemDocument)?.UniqueEquipped;
 }

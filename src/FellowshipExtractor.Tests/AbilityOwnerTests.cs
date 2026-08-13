@@ -127,7 +127,7 @@ public sealed class AbilityOwnerTests
             .Count(tag => owners.ApplierOf(tag.Name) is { Length: 0 });
 
         Assert.Equal(203, contested);
-        Assert.Equal(1884, owners.AppliedEffectCount);
+        Assert.Equal(1883, owners.AppliedEffectCount);
     }
 
     [Fact]

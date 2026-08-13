@@ -17,6 +17,7 @@ public class BlessingCardTests : BunitContext
         this.export = export;
         Services.AddSingleton(export.Tooltip);
         Services.AddSingleton(export.View);
+        Services.AddSingleton(export.Store);
     }
 
     private BlessingDocument Mystic =>

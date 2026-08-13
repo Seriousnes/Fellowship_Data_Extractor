@@ -1,33 +1,5 @@
 namespace Fellowship.Codex.Tests;
 
-public class IdentityTests : BunitContext
-{
-    [Fact]
-    public void Names_the_type_the_id_and_the_tooltip_address()
-    {
-        var slug = EntityTypes.Slug(EntityType.Item);
-        var here = new Bearings
-        {
-            Under = $"/browse?type={slug}",
-            Label = "Items",
-            Id = 5208,
-            Address = $"/api/{slug}/5208/tooltip",
-        };
-
-        var cut = Render<Identity>(p => p.AddCascadingValue(here));
-
-        Assert.Equal("Address", cut.Find("div.cx-panel-head").TextContent);
-
-        var rows = cut.FindAll("table.cx-facts tr");
-
-        Assert.Equal(3, rows.Count);
-        Assert.Equal($"/browse?type={slug}", rows[0].QuerySelector("a")!.GetAttribute("href"));
-        Assert.Equal("Items", rows[0].QuerySelector("a")!.TextContent);
-        Assert.Equal("5208", rows[1].QuerySelector("td")!.TextContent);
-        Assert.Equal($"/api/{slug}/5208/tooltip", rows[2].QuerySelector("a")!.GetAttribute("href"));
-    }
-}
-
 public class NearbyTests : BunitContext
 {
     [Fact]

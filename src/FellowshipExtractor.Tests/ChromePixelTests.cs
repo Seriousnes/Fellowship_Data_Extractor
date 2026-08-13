@@ -290,7 +290,7 @@ public sealed class ChromePixelTests
         [
             Read.Chrome.ModifierPlate,
             Read.Chrome.ModifierDecor,
-            .. Enum.GetValues<ModifierKind>().Select(Read.Chrome.ModifierGlyph),
+            .. Enum.GetValues<ModifierKind>().Select(kind => Read.Chrome.ModifierGlyph(kind)),
         ];
 
         Assert.All(named, url =>

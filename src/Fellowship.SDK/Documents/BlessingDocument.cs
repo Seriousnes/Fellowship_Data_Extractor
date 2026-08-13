@@ -6,4 +6,10 @@ public sealed class BlessingDocument : EntityDocument
     public string? Icon { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
+
+    public int? MaxRank { get; init; }
+
+    public IReadOnlyList<string>? Slots { get; init; }
+
+    public IReadOnlyDictionary<string, int>? AbilityRanks { get; init; }
 }

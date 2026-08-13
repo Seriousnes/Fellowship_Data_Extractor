@@ -14,6 +14,7 @@ public class ItemCardTests : BunitContext
         this.export = export;
         Services.AddSingleton(export.Tooltip);
         Services.AddSingleton(export.View);
+        Services.AddSingleton(export.Store);
     }
 
     private IEnumerable<ItemDocument> Items => export.Store.Entities.OfType<ItemDocument>();

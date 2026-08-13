@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Components;
+
 namespace Fellowship.Codex.Tests;
 
 [Collection(Corpus.Name)]
@@ -30,18 +32,27 @@ public class KnobsTests : BunitContext
         Assert.Empty(cut.Markup);
     }
 
-    [Fact]
-    public void Navigates_the_whole_page_when_the_hero_changes()
+    private (IRenderedComponent<Knobs> Panel, List<KnobTurn> Turned) Panel(Bearings here)
     {
-        var here = new Bearings { Shown = AnyHero(), Readings = [AnyHero(), AnyHero()] };
+        var turned = new List<KnobTurn>();
 
-        var cut = Render<Knobs>(p => p.AddCascadingValue(here));
+        var panel = Render<Knobs>(p => p
+            .AddCascadingValue(here)
+            .Add(knob => knob.OnTurn, EventCallback.Factory.Create<KnobTurn>(this, turned.Add)));
 
-        var select = cut.Find("select[data-knob=hero]");
+        return (panel, turned);
+    }
 
-        Assert.Equal(
-            "location.search = '?hero=' + encodeURIComponent(this.value)",
-            select.GetAttribute("onchange"));
+    [Fact]
+    public void Turns_the_hero_knob_into_a_hero_parameter()
+    {
+        var (panel, turned) = Panel(new Bearings { Shown = AnyHero(), Readings = [AnyHero(), AnyHero()] });
+
+        var who = export.Store.Settings.Heroes[0].Name;
+
+        panel.Find("select[data-knob=hero]").Change(who);
+
+        Assert.Equal(new KnobTurn("hero", who), Assert.Single(turned));
     }
 
     private static readonly Rarity[] Droppable =

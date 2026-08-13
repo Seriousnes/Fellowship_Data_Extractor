@@ -56,6 +56,8 @@ public interface IChromeAssetService
 
     string SlotPlate { get; }
 
+    string GemSocketPlate { get; }
+
     [return: NotNullIfNotNull(nameof(icon))]
     string? Art(string? icon);
 
@@ -93,6 +95,7 @@ public sealed class ChromeAssetService(
     private const string SlotBackingTexture = "T_Borders_EmptyWithoutFrame";
     private const string SlotBevelTexture = "T_Borders_GlassFrame";
     private const string SlotPlateTexture = "T_Borders_EmptySlot";
+    private const string GemSocketTexture = "T_Icons_Gems_EmptySlot";
     private const string PlainSlotBackingTexture = "T_Buttons_AbilityBarBackground_Small";
     private const string PlainSlotFrameTexture = "T_Buttons_SmallAbilityButton_Default";
     private const string TraitTexture = "T_Icons_StatTooltip_TraitSlot";
@@ -169,6 +172,8 @@ public sealed class ChromeAssetService(
     public string? SlotBevel(string? rarity) => rarity is null ? null : Url(Name(SlotBevelTexture));
 
     public string SlotPlate => Url(Name(SlotPlateTexture));
+
+    public string GemSocketPlate => Url(Name(GemSocketTexture));
 
     [return: NotNullIfNotNull(nameof(icon))]
     public string? Art(string? icon) => icon is null ? null : Url($"{Prefix}/{icon}");

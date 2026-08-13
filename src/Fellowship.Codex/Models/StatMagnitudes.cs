@@ -4,6 +4,10 @@ namespace Fellowship.Codex.Models;
 
 public sealed record StatLine(string? Stat, string DisplayName, decimal Value, string Kind, bool Rolled)
 {
+    private static readonly int[] None = [];
+
+    public IReadOnlyList<int> Rolls { get; init; } = None;
+
     public bool Guaranteed => Kind != SlotKinds.Random;
 
     public bool Unresolved => Stat is null;
@@ -99,11 +103,16 @@ public static class StatMagnitudes
                 continue;
             }
 
-            if (index - spare.Count < query.RandomStats.Count)
+            var roll = index - spare.Count;
+
+            if (roll < query.RandomStats.Count)
             {
-                var stat = query.RandomStats[index - spare.Count];
+                var stat = query.RandomStats[roll];
                 lines.Add(new StatLine(
-                    stat, Label(calculation, stat), Row(stat, guaranteed: false), SlotKinds.Random, Rolled: true));
+                    stat, Label(calculation, stat), Row(stat, guaranteed: false), SlotKinds.Random, Rolled: true)
+                {
+                    Rolls = [roll],
+                });
                 continue;
             }
 
@@ -118,7 +127,10 @@ public static class StatMagnitudes
                     tempers: 0,
                     guaranteed: false)),
                 SlotKinds.Random,
-                Rolled: true));
+                Rolled: true)
+            {
+                Rolls = [roll],
+            });
         }
 
         return Fold(lines);
@@ -156,6 +168,7 @@ public static class StatMagnitudes
                         ? SlotKinds.Primary
                         : running.Kind,
                     Rolled = running.Rolled || line.Rolled,
+                    Rolls = line.Rolls.Count == 0 ? running.Rolls : [.. running.Rolls, .. line.Rolls],
                 };
 
                 continue;
