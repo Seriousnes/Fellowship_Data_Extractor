@@ -80,6 +80,7 @@ public sealed class TooltipResolver
     public GemDefinitions Gems { get; }
     public ItemTraits Traits { get; }
     public Settings Settings { get; }
+    public AbilityCategories Categories { get; }
     public TypeResolver Types { get; }
     public CreatureStats CreatureStats { get; }
     public CreatureLocations Locations { get; }
@@ -172,8 +173,10 @@ public sealed class TooltipResolver
             [.. _tags.Where(tag => tag.Table.Equals(CreatureTable, StringComparison.OrdinalIgnoreCase))
                 .Select(tag => tag.Name)]);
 
+        Categories = new AbilityCategories(provider);
+
         Settings = new Settings(
-            provider, _assets, Heroes, rarities, StatCalculation, Slots.RandomStatPool, Gems.Types,
+            provider, _assets, Heroes, rarities, Categories, StatCalculation, Slots.RandomStatPool, Gems.Types,
             SlotGlyphs, new RarityOrnaments(provider, rarities), new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
             CreatureStats, Leagues);
@@ -777,6 +780,7 @@ public sealed class TooltipResolver
         {
             DisplayName = display.Name,
             Tags = cdo is null ? null : Empty(AbilityTypes(cdo)),
+            Category = Categories.Of(cdo),
             Description = display.Description,
             Detail = Empty(detail),
             Icon = Written(display.Icon, icons),
@@ -1053,6 +1057,7 @@ public sealed class TooltipResolver
         Detail = outer.Detail ?? inner.Detail,
         Icon = outer.Icon ?? inner.Icon,
         Tags = outer.Tags ?? inner.Tags,
+        Category = outer.Category ?? inner.Category,
         CastTime = outer.CastTime ?? inner.CastTime,
         ChannelTime = outer.ChannelTime ?? inner.ChannelTime,
         ChannelTick = outer.ChannelTick ?? inner.ChannelTick,

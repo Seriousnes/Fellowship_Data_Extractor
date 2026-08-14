@@ -111,7 +111,8 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
             ("PrimaryStat", Bare(heroes.Select(hero => Text(Member(hero, "primaryStat"))))),
             ("Hero", Bare(heroes.Select(hero => Text(Member(hero, "name"))))),
             ("GemType", Bare(Items(Member(root, "gemTypes")).Select(gemType => Text(gemType)))),
-            ("Rarity", Ladder(Items(Member(root, "rarities")), context)),
+            ("Rarity", Ladder(Items(Member(root, "rarities")), "tier", context)),
+            ("AbilityCategory", Ladder(Items(Member(root, "abilityCategories")), "value", context)),
         ];
     }
 
@@ -123,14 +124,16 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
             .Select(member => (member, (int?)null))];
 
     private static List<(string Member, int? Value)> Ladder(
-        IReadOnlyList<JsonElement> rarities,
+        IReadOnlyList<JsonElement> members,
+        string ordinal,
         SourceProductionContext? context)
     {
         var ladder = new List<(string Member, int? Value)>();
-        foreach (var rarity in rarities)
+        foreach (var member in members)
         {
-            var name = Text(Member(rarity, "name"));
-            if (Member(rarity, "tier") is { ValueKind: JsonValueKind.Number } tier && tier.TryGetInt32(out var value))
+            var name = Text(Member(member, "name"));
+            if (Member(member, ordinal) is { ValueKind: JsonValueKind.Number } stated
+                && stated.TryGetInt32(out var value))
             {
                 ladder.Add((name, value));
                 continue;
@@ -140,7 +143,7 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
                 UnreadableSettings,
                 Location.None,
                 SettingsName,
-                $"the rarity \"{name}\" states no whole-number tier"));
+                $"\"{name}\" states no whole-number {ordinal}"));
         }
 
         return [.. ladder.OrderBy(rung => rung.Value)];

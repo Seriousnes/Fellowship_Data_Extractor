@@ -20,6 +20,11 @@ public static class EnumsCommand
     public static IReadOnlyList<(string Name, int Tier)> Rarities(SettingsFile settings) =>
         [.. settings.Rarities.OrderBy(rarity => rarity.Tier).Select(rarity => (rarity.Name, rarity.Tier))];
 
+    public static IReadOnlyList<(string Name, int Value)> Categories(SettingsFile settings) =>
+        [.. settings.AbilityCategories
+            .OrderBy(category => category.Value)
+            .Select(category => (category.Name, category.Value))];
+
     private static IReadOnlyList<string> Sorted(IEnumerable<string> members) =>
         [.. members.Where(member => member.Length > 0).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
 
@@ -43,6 +48,10 @@ public static class EnumsCommand
         sql.AppendLine(
             $"CREATE TYPE rarity AS ENUM ({string.Join(", ", rarities.Select(r => $"'{r.Name}'"))});");
 
+        var categories = Categories(settings);
+        sql.AppendLine(
+            $"CREATE TYPE ability_category AS ENUM ({string.Join(", ", categories.Select(c => $"'{c.Name}'"))});");
+
         var committed = Path.Combine(RepositoryRoot(), "src", "Fellowship.SDK", Settings.FileName);
         File.Copy(exported, committed, overwrite: true);
 
@@ -53,6 +62,7 @@ public static class EnumsCommand
         Console.WriteLine($"wrote {sqlTarget}");
         foreach (var (name, values) in members) Console.WriteLine($"  {name}: {values.Count} members");
         Console.WriteLine($"  Rarity: {rarities.Count} members");
+        Console.WriteLine($"  AbilityCategory: {categories.Count} members");
     }
 
     private static string RepositoryRoot()

@@ -129,6 +129,56 @@
       "gemDisplayName": "Legendary"
     }
   ],
+  "abilityCategories": [
+    {
+      "name": "None",
+      "value": 0
+    },
+    {
+      "name": "Basic",
+      "value": 1
+    },
+    {
+      "name": "Core",
+      "value": 2
+    },
+    {
+      "name": "Power",
+      "value": 3
+    },
+    {
+      "name": "Major",
+      "value": 4
+    },
+    {
+      "name": "Spirit",
+      "value": 5
+    },
+    {
+      "name": "Movement",
+      "value": 6
+    },
+    {
+      "name": "Control",
+      "value": 7
+    },
+    {
+      "name": "Defensive",
+      "value": 8
+    },
+    {
+      "name": "Utility",
+      "value": 9
+    },
+    {
+      "name": "Weapon",
+      "value": 10
+    },
+    {
+      "name": "Relic",
+      "value": 11
+    }
+  ],
   "printFormats": {
     "Damage": "{0}",
     "DamageMagic": "\u003Crt.warning\u003E{0}\u003C/\u003E magic damage",

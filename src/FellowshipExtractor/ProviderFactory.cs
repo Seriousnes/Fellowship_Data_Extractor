@@ -35,6 +35,7 @@ public static class ProviderFactory
         if (mappings is not null)
         {
             provider.MappingsContainer = new FileUsmapTypeMappingsProvider(mappings);
+            EnumOrdinals.Read(provider.MappingsContainer.MappingsForGame);
         }
 
         provider.ReadScriptData = true;

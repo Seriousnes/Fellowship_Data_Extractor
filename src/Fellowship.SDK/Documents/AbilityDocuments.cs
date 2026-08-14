@@ -8,6 +8,8 @@ public sealed class AbilityDocument : EntityDocument
     public IReadOnlyList<string>? Detail { get; init; }
     public string? Icon { get; init; }
 
+    public AbilityCategory? Category { get; init; }
+
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }

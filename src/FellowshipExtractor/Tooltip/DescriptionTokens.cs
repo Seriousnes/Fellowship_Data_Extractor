@@ -93,7 +93,7 @@ public static class DescriptionTokens
         var objectPath = PropertyWalk.GetString(token, "Object");
         var self = objectPath is not null && IsSelf(objectPath, ownAsset);
 
-        var quantity = TokenCalculations.Of(PropertyWalk.GetString(token, "Calculation"));
+        var quantity = TokenCalculations.Of(Ordinal(token, "Calculation"));
         if (self && quantity == TokenQuantity.Unsettled) quantity = TokenCalculations.Named(name);
 
         var declared = new Placeholder
@@ -133,7 +133,7 @@ public static class DescriptionTokens
             IgnoresHaste = effect.TickrateIgnoresHaste ? true : null,
         };
 
-        var selected = PropertyWalk.GetString(token, "Type") == TokenCalculations.EffectType
+        var selected = Ordinal(token, "Type") == TokenCalculations.EffectType
             ? TokenCalculations.Select(effect.Constants ?? [], quantity)
             : effect.Constants ?? [];
 
@@ -144,6 +144,9 @@ public static class DescriptionTokens
 
     private static bool Flag(IPropertyHolder token, string name) =>
         PropertyWalk.Get(token, name)?.GenericValue is true;
+
+    private static int? Ordinal(IPropertyHolder token, string name) =>
+        PropertyWalk.AsOrdinal(PropertyWalk.Get(token, name)?.GenericValue);
 
     private static bool Multiplied(IPropertyHolder token) =>
         PropertyWalk.AsOrdinal(PropertyWalk.Get(token, "ModifierOp")?.GenericValue)

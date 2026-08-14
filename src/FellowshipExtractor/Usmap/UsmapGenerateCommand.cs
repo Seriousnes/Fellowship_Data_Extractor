@@ -9,6 +9,7 @@ public static class UsmapGenerateCommand
         var image = new PeImage(UsmapScanCommand.ShippingExe(options));
         var records = new ReflectionScanner(image).ScanProperties();
         var structs = new OwnerScanner(image, records).ScanStructs();
+        var enums = new EnumScanner(image).Scan();
 
         var classScanner = new ClassScanner(image, records);
         var registrations = classScanner.ScanRegistrations();
@@ -16,6 +17,7 @@ public static class UsmapGenerateCommand
         var classes = classScanner.ScanClasses(registrations, claimed);
 
         var paramsByVa = structs.ToDictionary(s => s.Va, s => s.Name);
+        foreach (var declaring in enums) paramsByVa.TryAdd(declaring.Va, declaring.Name);
         var decoded = TypeFuncResolver.Resolve(
             image,
             records.Select(r => r.TypeFuncVa)
@@ -50,12 +52,27 @@ public static class UsmapGenerateCommand
         }
 
         var ordered = schemas.Values.OrderBy(s => s.Name, StringComparer.Ordinal).ToArray();
+
+        var tables = enums
+            .GroupBy(declaring => declaring.Name, StringComparer.Ordinal)
+            .Select(named => named.MaxBy(declaring => declaring.Members.Count)!)
+            .Select(EnumScanner.ByOrdinal)
+            .OfType<UsmapEnum>()
+            .OrderBy(table => table.Name, StringComparer.Ordinal)
+            .ToArray();
+
         var target = options.GeneratedMappingsFile;
-        new UsmapWriter().Write(target, ordered, []);
+        new UsmapWriter().Write(target, ordered, tables);
 
         var size = new FileInfo(target).Length;
         Console.WriteLine($"structs {structs.Count}, classes {classes.Count} -> {ordered.Length} schemas");
         Console.WriteLine($"  with a super: {ordered.Count(s => s.SuperName is not null)}");
+
+        var declared = enums.Sum(declaring => EnumScanner.Declared(declaring).Count);
+        var written = enums.Sum(declaring => EnumScanner.Declared(declaring).Count(EnumScanner.Fits));
+        Console.WriteLine($"enums {enums.Count} -> {tables.Length} tables, {declared} members");
+        Console.WriteLine($"  outside the ordinals a usmap can carry: {declared - written}");
+        Console.WriteLine($"  properties naming an enum: {ordered.Sum(s => s.Properties.Count(NamesAnEnum))}");
         Console.WriteLine($"wrote {target} ({size / 1024} KB)");
 
         try
@@ -83,6 +100,10 @@ public static class UsmapGenerateCommand
         Console.WriteLine($"\nTo use it:  $env:FELLOWSHIP_USMAP = \"{target}\"");
         return Task.CompletedTask;
     }
+
+    private static bool NamesAnEnum(SchemaProperty property) =>
+        (property.Type == EPropertyGenFlags.Enum && property.StructOrEnumName is not null)
+        || property.Inners.Any(NamesAnEnum);
 
     private static void Keep(Dictionary<string, UsmapSchema> schemas, UsmapSchema candidate)
     {

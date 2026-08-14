@@ -31,6 +31,7 @@ public static class DocumentProjection
             Description = entity.Description,
             Detail = entity.Detail,
             Icon = entity.Icon,
+            Category = entity.Category is { } category ? Enum.Parse<AbilityCategory>(category) : null,
             CastTime = entity.CastTime,
             ChannelTime = entity.ChannelTime,
             ChannelTick = entity.ChannelTick,

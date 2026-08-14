@@ -85,7 +85,8 @@ public static class ExportAllCommand
             $"rarities, {resolver.Settings.PrintFormats.Count} print formats, " +
             $"{resolver.Settings.Colors.Count} colours, {resolver.Settings.TextStyles.Count} text styles, " +
             $"{resolver.Settings.SlotIcons.Count} slot glyphs, " +
-            $"{resolver.Settings.MaxTempers.Count} tempering ladders");
+            $"{resolver.Settings.MaxTempers.Count} tempering ladders, " +
+            $"{resolver.Settings.AbilityCategories.Count} ability categories");
 
         var wanted = new HashSet<string>(tables, StringComparer.OrdinalIgnoreCase);
         var selected = resolver.Tags

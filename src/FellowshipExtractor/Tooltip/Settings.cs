@@ -16,6 +16,8 @@ public sealed class Settings
     public IReadOnlyList<HeroEntry> Heroes { get; }
     public IReadOnlyList<RarityEntry> Rarities { get; }
 
+    public IReadOnlyList<AbilityCategoryEntry> AbilityCategories { get; }
+
     public IReadOnlyDictionary<string, string> PrintFormats { get; }
 
     public IReadOnlyDictionary<string, string> Colors { get; }
@@ -51,6 +53,7 @@ public sealed class Settings
         IReadOnlyList<FAssetData> assets,
         HeroNames heroes,
         RarityNames rarities,
+        AbilityCategories categories,
         StatCalculation statCalculation,
         IReadOnlyList<string> randomStatPool,
         IReadOnlyList<string> gemTypes,
@@ -102,6 +105,8 @@ public sealed class Settings
         Rarities = [.. rarities.Tiers.Select(tier => new RarityEntry(
             tier, rarities.Label(tier)!, rarities.Printed(tier), rarities.GemLabel(tier)!))];
 
+        AbilityCategories = categories.Members;
+
         PrintFormats = Rows(provider, assets, FormatRowStructure, TextField);
         Colors = colours;
         TextStyles = new RichTextStyles(provider, assets).Styles;
@@ -120,6 +125,7 @@ public sealed class Settings
     {
         Heroes = Heroes,
         Rarities = Rarities,
+        AbilityCategories = AbilityCategories,
         GemTypes = GemTypes,
         MaxTempers = MaxTempers,
         DropItemLevels = DropItemLevels,

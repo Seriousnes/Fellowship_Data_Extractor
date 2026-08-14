@@ -35,6 +35,8 @@ public sealed record SettingsFile
 
     public IReadOnlyList<RarityEntry> Rarities { get; init; } = [];
 
+    public IReadOnlyList<AbilityCategoryEntry> AbilityCategories { get; init; } = [];
+
     public IReadOnlyDictionary<string, string> PrintFormats { get; init; } =
         new Dictionary<string, string>(StringComparer.Ordinal);
 

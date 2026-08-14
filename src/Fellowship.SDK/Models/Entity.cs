@@ -51,6 +51,8 @@ public sealed record Entity
 
     public IconSource? NameInheritedFrom { get; init; }
 
+    public string? Category { get; init; }
+
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }

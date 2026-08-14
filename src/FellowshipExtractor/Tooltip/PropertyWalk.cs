@@ -134,7 +134,12 @@ public static class PropertyWalk
     public static int? AsOrdinal(object? value)
     {
         if (AsNumber(value) is { } number) return (int)number;
-        return int.TryParse(AsString(value), out var parsed) ? parsed : null;
+        if (AsString(value) is not { } text) return null;
+        if (int.TryParse(text, out var parsed)) return parsed;
+
+        return EnumOrdinals.For(text) is { } ordinal and >= int.MinValue and <= int.MaxValue
+            ? (int)ordinal
+            : null;
     }
 
     public static double? AsNumber(object? value) => value switch

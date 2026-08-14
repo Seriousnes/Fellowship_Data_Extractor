@@ -7,6 +7,8 @@ public sealed record HeroEntry(string Codename, string Name, string? ArmorType, 
 
 public sealed record RarityEntry(int Tier, string Name, string DisplayName, string GemDisplayName);
 
+public sealed record AbilityCategoryEntry(string Name, int Value);
+
 public sealed record TemperCeiling(int ItemLevel, int MaxTempers);
 
 public sealed record DropPlateau(string Row, int Difficulty, int ItemLevel);

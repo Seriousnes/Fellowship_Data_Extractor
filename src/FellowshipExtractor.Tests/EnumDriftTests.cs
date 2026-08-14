@@ -25,6 +25,21 @@ public sealed class EnumDriftTests
     }
 
     [Fact]
+    public void AnAbilityCategoryMemberCarriesItsShippedOrdinal()
+    {
+        var categories = EnumsCommand.Categories(Export.Loaded.Settings);
+
+        Assert.NotEmpty(categories);
+
+        foreach (var (name, value) in categories)
+        {
+            Assert.Equal(value, (int)Enum.Parse<AbilityCategory>(name));
+        }
+
+        Assert.Equal(categories.Select(category => category.Name), Enum.GetNames<AbilityCategory>());
+    }
+
+    [Fact]
     public void HeroesAreNamedAsThePlayerReadsThem()
     {
         var names = Export.Loaded.Settings.Heroes.Select(hero => hero.Name).ToHashSet(StringComparer.Ordinal);

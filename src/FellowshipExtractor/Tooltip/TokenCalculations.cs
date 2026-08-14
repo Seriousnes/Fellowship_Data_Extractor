@@ -7,21 +7,21 @@ public static class TokenCalculations
     private const string ExecutionPath = "Executions[";
     private const string ScalableMagnitude = "ModifierMagnitude.ScalableFloatMagnitude";
 
-    public const string EffectType = "0";
+    public const int EffectType = 0;
 
-    private static readonly Dictionary<string, TokenQuantity> Quantities = new(StringComparer.Ordinal)
+    private static readonly Dictionary<int, TokenQuantity> Quantities = new()
     {
-        ["6"] = TokenQuantity.Period,
-        ["13"] = TokenQuantity.Period,
-        ["7"] = TokenQuantity.Duration,
-        ["1"] = TokenQuantity.ExecutionMagnitude,
-        ["9"] = TokenQuantity.ExecutionMagnitude,
-        ["10"] = TokenQuantity.ExecutionMagnitude,
-        ["11"] = TokenQuantity.ExecutionMagnitude,
+        [6] = TokenQuantity.Period,
+        [13] = TokenQuantity.Period,
+        [7] = TokenQuantity.Duration,
+        [1] = TokenQuantity.ExecutionMagnitude,
+        [9] = TokenQuantity.ExecutionMagnitude,
+        [10] = TokenQuantity.ExecutionMagnitude,
+        [11] = TokenQuantity.ExecutionMagnitude,
     };
 
-    public static TokenQuantity Of(string? calculation) =>
-        calculation is not null && Quantities.TryGetValue(calculation, out var quantity)
+    public static TokenQuantity Of(int? calculation) =>
+        calculation is { } ordinal && Quantities.TryGetValue(ordinal, out var quantity)
             ? quantity
             : TokenQuantity.Unsettled;
 

@@ -139,6 +139,12 @@ Layouts established empirically against this binary, not assumed:
   `PropPointers[]` array, so the scan has no gaps.
 - `FStructParams` in `.data`, 56 bytes: `+0x00` outer, `+0x08` super, `+0x10` struct ops,
   `+0x18` name, `+0x20` property array, `+0x28` u16 count, `+0x2A` u16 sizeof, `+0x30` object flags.
+- `FEnumParams` in `.rdata`, 48 bytes: `+0x00` outer, `+0x08` display-name func, `+0x10` name,
+  `+0x18` C++ type, `+0x20` enumerator array, `+0x28` object flags, `+0x2C` **u16** count,
+  `+0x2E` enum flags, `+0x2F` cpp form. The count is two bytes where `FStructParams` puts four,
+  so reading it as a u32 finds nothing at all. Each enumerator is 16 bytes: a UTF-8 name and an
+  `int64` value, and the name is scoped (`ECRAbilityCategory::Major`), which is what confirms a
+  candidate record belongs to the enum whose name sits at `+0x10`.
 - `FClassParams`: `+0x00` NoRegister func, `+0x08` config name, `+0x18` dependency singletons
   (first entry is the base class), `+0x28` property array. It has no name field; class names live
   in a separate registration table as UTF-16 holding the C++ identifier, linked by the NoRegister
@@ -193,10 +199,12 @@ Note that `probe` is only a gate, not a validation: CUE4Parse checks that a mapp
 present, so any syntactically valid usmap passes it. The comparisons above are what actually
 demonstrate correctness.
 
-Outstanding: enums are written as an empty table, so enum-typed properties deserialize to the
-correct numeric value under a wrong type name (`CompressionSettings` reads as
-`KTaperedCapsuleElem::7` where the value 7 is right and the enum name is not). Extracting
-`FEnumParams` and populating the enum table is the remaining work.
+The enum table carries **2,276 enums and 12,333 members**, read from the `FEnumParams` records the
+same way the structs are, so an enum-typed property deserializes to `ECRAbilityCategory::Major`
+rather than to a bare `4` under whatever type name a mis-resolved constructor happened to land on.
+2,789 properties name an enum, 751 of them `TEnumAsByte` bytes that now spell as an `EnumProperty`
+with a `ByteProperty` inner. `EnumOrdinals` reads the same table back the other way, so a reader
+that wants the ordinal still gets it.
 
 ## Images
 
@@ -261,6 +269,7 @@ dotnet run --project src/FellowshipExtractor -- tooltip GameplayAbility 1273
   "tags": ["Aoe", "Casted", "Magic.Fire", "Major", "Ranged", "Skill.Offensive"],
   "description": "Conjure a major eruption of fire in the targeted area, dealing <rt.warning>{ApocDirect}</> fire damage and applying <rt.absorb>Searing Blaze</> to all enemies in a large radius.",
   "icon": "Firemage_Apocalypse.png",
+  "category": "Major",
   "castTime": 3,
   "cooldown": 45,
   "range": 3000,
@@ -287,8 +296,8 @@ The rule is everything the tooltip needs and nothing else. **A reference to anot
 emitted as a path**, because a class name reconstructs nothing: either the value behind it is read
 and folded in, or it is left out. So the five gameplay effect classes Apocalypse names are gone and
 the one number among them is `Damage.IntellectCoefficient`; the `{ CurveTable, RowName }` handles
-are gone and the rows they point at are the constants; the byte-enum ordinals are gone because the
-usmap carries no enum table and an index names nothing. `dump <filter>` still writes the raw asset
+are gone and the rows they point at are the constants; an enum-valued field is the member's name,
+which is what the usmap's enum table is for. `dump <filter>` still writes the raw asset
 when that is what is wanted.
 
 Scaling comes out as the attribute and the coefficient, checkable against the ability's own text.
