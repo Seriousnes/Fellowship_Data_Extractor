@@ -147,6 +147,9 @@ public sealed class HasteScalingTests
         Assert.Equal("Intellect", damage.Attribute);
     }
 
+    private static bool FromACustomizationRow(Entity entity) =>
+        entity.Name is { } name && Export.Resolver.Customizations.Find(name) is not null;
+
     [Fact]
     public void EveryTokenWrittenInADescriptionHasAPlaceholder()
     {
@@ -155,6 +158,7 @@ public sealed class HasteScalingTests
         foreach (var entity in Corpus())
         {
             if (entity.Description is not { } description) continue;
+            if (FromACustomizationRow(entity)) continue;
 
             foreach (var token in Tooltip.DescriptionTokens.Tokens(description))
             {
@@ -165,6 +169,51 @@ public sealed class HasteScalingTests
 
         Assert.True(orphans.Count == 0, $"Tokens with no placeholder entry:\n{string.Join("\n", orphans.Take(20))}");
     }
+
+    [Fact]
+    public void ACustomizationRowPrintsTokensOnlyThePlayersOwnContextCanFill()
+    {
+        var rows = Corpus().Where(FromACustomizationRow).ToArray();
+
+        var described = rows
+            .Select(entity => entity.Description)
+            .OfType<string>()
+            .Select(description => Tooltip.DescriptionTokens.Tokens(description).ToArray())
+            .Where(tokens => tokens.Length > 0)
+            .ToArray();
+
+        var acquired = rows
+            .Select(entity => entity.Acquire)
+            .OfType<string>()
+            .Select(acquire => Tooltip.DescriptionTokens.Tokens(acquire).ToArray())
+            .Where(tokens => tokens.Length > 0)
+            .ToArray();
+
+        Assert.Equal(78, described.Length);
+        Assert.Equal(82, acquired.Length);
+
+        Assert.Equal(
+            new Dictionary<string, int>
+            {
+                ["dungeonName"] = 29, ["dungeonScore"] = 1, ["heroName"] = 48, ["seasonNumber"] = 1,
+            },
+            Counted(described));
+
+        Assert.Equal(
+            new Dictionary<string, int>
+            {
+                ["dungeonName"] = 29, ["dungeonScore"] = 25, ["heroName"] = 48,
+                ["numberOfChallenges"] = 3, ["seasonNumber"] = 5,
+            },
+            Counted(acquired));
+
+        Assert.All(rows, entity => Assert.Null(entity.Placeholders));
+    }
+
+    private static Dictionary<string, int> Counted(IEnumerable<string[]> written) =>
+        written.SelectMany(tokens => tokens)
+            .GroupBy(token => token, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
 
     [Fact]
     public void ResolvedTickratesAreMarkedAsSuch()

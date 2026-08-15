@@ -60,13 +60,26 @@ public sealed class RarityTests
     public void AnItemFixedAtARungComesInThatRungAlone()
     {
         var fixedRung = Items()
-            .Where(item => item.Body["rarity"] is not null)
+            .Where(item => item.Body["rarity"] is not null && item.Body["ruleSet"] is not null)
             .ToArray();
 
         Assert.NotEmpty(fixedRung);
 
         Assert.All(fixedRung, item =>
             Assert.Equal([item.Body["rarity"]!.GetValue<string>()], Rungs(item.Body)));
+    }
+
+    [Fact]
+    public void AnItemWhoseOwnRowStatesItsRungDropsInNoRungAtAll()
+    {
+        var stated = Items()
+            .Where(item => item.Body["rarity"] is not null && item.Body["ruleSet"] is null)
+            .ToArray();
+
+        Assert.Equal(105, stated.Length);
+
+        Assert.All(stated, item => Assert.Empty(Rungs(item.Body)));
+        Assert.All(stated, item => Assert.Null(item.Body["stats"]));
     }
 
     [Fact]

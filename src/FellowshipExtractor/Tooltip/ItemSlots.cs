@@ -99,11 +99,33 @@ public sealed class ItemSlots
 
 public static class TableFinder
 {
+    private const string RowStructureKey = "RowStructure";
+
     public static IEnumerable<string> ByRowStructure(IReadOnlyList<FAssetData> assets, string rowStructure) =>
         assets
             .Where(a => a.TagsAndValues.Any(kv =>
-                kv.Key.Text.Equals("RowStructure", StringComparison.OrdinalIgnoreCase) &&
+                kv.Key.Text.Equals(RowStructureKey, StringComparison.OrdinalIgnoreCase) &&
                 kv.Value == rowStructure))
             .Select(a => a.ObjectPath)
             .Distinct(StringComparer.OrdinalIgnoreCase);
+
+    public static IEnumerable<(string ObjectPath, string RowStructure)> ByRowStructureAround(
+        IReadOnlyList<FAssetData> assets, string prefix, string suffix)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var asset in assets)
+        {
+            foreach (var (key, value) in asset.TagsAndValues)
+            {
+                if (!key.Text.Equals(RowStructureKey, StringComparison.OrdinalIgnoreCase)) continue;
+                if (value is not { } structure) continue;
+                if (!structure.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!structure.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!seen.Add(asset.ObjectPath)) continue;
+
+                yield return (asset.ObjectPath, structure);
+            }
+        }
+    }
 }

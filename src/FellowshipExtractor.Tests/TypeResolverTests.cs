@@ -73,7 +73,10 @@ public sealed class TypeResolverTests
     [InlineData("ItemID.SetBonus.SetA_Percentage_HDT", EntityType.SetBonus)]
     [InlineData("ItemID.CompanionPet.Cat.Base", EntityType.CompanionPet)]
     [InlineData("ItemID.VisualCollection.Naked", null)]
-    [InlineData("ItemID.PlayerCustomization.Avatar.ChiefRebel", null)]
+    [InlineData("ItemID.PlayerCustomization.Avatar.ChiefRebel", EntityType.Item)]
+    [InlineData("ItemID.PlayerCustomization.Avatar.Debuff.Stunned", null)]
+    [InlineData("ItemID.Progression.TalentPoints", EntityType.Item)]
+    [InlineData("ItemID.Progression.NoSuchCounter", null)]
     [InlineData("ItemID.HeroSkin.Warmaster_Default_Black_Back", null)]
     public void AnItemTagsSecondSegmentNamesItsType(string name, EntityType? expected)
     {
@@ -176,7 +179,7 @@ public sealed class TypeResolverTests
     }
 
     [Fact]
-    public void ATagNamingAnEnumerationsNullMemberIsNotWritten()
+    public void ATagNamingAnEnumerationsNullMemberIsNotWrittenUnlessARowStatesIt()
     {
         string[] shipped =
         [
@@ -193,17 +196,29 @@ public sealed class TypeResolverTests
             .ToArray();
 
         Assert.Equal(shipped, nullMembers.Select(tag => tag.Name).Order(StringComparer.Ordinal).ToArray());
-        Assert.All(nullMembers, tag => Assert.Equal("a null enum member", NotWritten(tag)));
+
+        var bare = nullMembers.Where(tag => Resolver.Customizations.Find(tag.Name) is null).ToArray();
+        var stated = nullMembers.Where(tag => Resolver.Customizations.Find(tag.Name) is not null).ToArray();
+
+        Assert.Equal(2, bare.Length);
+        Assert.Equal(3, stated.Length);
+
+        Assert.All(bare, tag => Assert.Equal("a null enum member", NotWritten(tag)));
+        Assert.All(stated, tag => Assert.Null(NotWritten(tag)));
 
         var pet = Tag("ItemID", "ItemID.CompanionPet.None");
 
         Assert.Equal(EntityType.CompanionPet, Resolver.Resolve(pet, icons: null).Single().Type);
         Assert.DoesNotContain(
             Export.Loaded.Documents, d => d.Type == EntityType.CompanionPet && d.Id == pet.NetId);
+
+        Assert.All(
+            stated,
+            tag => Assert.Contains(Export.Loaded.Documents, d => d.Type == EntityType.Item && d.Id == tag.NetId));
     }
 
     [Theory]
-    [InlineData(EntityType.Item, 5744)]
+    [InlineData(EntityType.Item, 5849)]
     [InlineData(EntityType.Effect, 3261)]
     [InlineData(EntityType.Ability, 2307)]
     [InlineData(EntityType.Creature, 241)]
@@ -283,8 +298,22 @@ public sealed class TypeResolverTests
         var items = Export.Loaded.Documents.Where(d => d.Type == EntityType.Item).ToArray();
         var stated = items.Where(d => d.Body["rarity"] is not null).ToArray();
 
-        Assert.Equal(37, stated.Length);
-        Assert.All(stated, item => Assert.Equal("Legendary", item.Body["rarity"]!.GetValue<string>()));
-        Assert.All(stated, item => Assert.NotNull(item.Body["legendaryStats"]));
+        var legendary = stated.Where(d => d.Body["legendaryStats"] is not null).ToArray();
+
+        Assert.Equal(37, legendary.Length);
+        Assert.All(legendary, item => Assert.Equal("Legendary", item.Body["rarity"]!.GetValue<string>()));
+
+        var rows = stated.Except(legendary).ToArray();
+
+        Assert.Equal(105, rows.Length);
+        Assert.All(rows, item => Assert.Null(item.Body["ruleSet"]));
+
+        Assert.All(
+            rows,
+            item => Assert.True(
+                Resolver.Progression.Find(item.Body["tag"]!.GetValue<string>()) is not null ||
+                Resolver.Customizations.Find(item.Body["tag"]!.GetValue<string>()) is not null));
+
+        Assert.Equal(142, stated.Length);
     }
 }

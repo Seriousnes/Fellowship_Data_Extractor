@@ -93,6 +93,20 @@ public static class ExportAllCommand
         Console.WriteLine(
             $"modifiers:          {resolver.Modifiers.Count} rows across {resolver.Modifiers.TableCount} tables, " +
             $"{resolver.Modifiers.WithIcon} with an icon");
+        Console.WriteLine(
+            $"progression items:  {resolver.Progression.Count} rows across {resolver.Progression.TableCount} tables");
+        Console.WriteLine(
+            $"customizations:     {resolver.Customizations.Count} rows across " +
+            $"{resolver.Customizations.TableCount} tables, {resolver.Customizations.Unnamed} naming nothing");
+
+        foreach (var (kind, source) in resolver.Customizations.NameSourceByKind)
+        {
+            Console.WriteLine(
+                $"  {kind}: {resolver.Customizations.RowsByKind[kind]} rows named from {source}");
+        }
+        Console.WriteLine(
+            $"localized strings:  {resolver.Localized.Count} in {resolver.Localized.Culture}, " +
+            $"{resolver.Localized.Contested.Count} keys two namespaces disagree on");
         Console.WriteLine($"calculation presets:{resolver.PresetCount} rows carrying a default spread");
         Console.WriteLine(
             $"settings:           {resolver.Settings.Heroes.Count} heroes, {resolver.Settings.Rarities.Count} " +
@@ -213,6 +227,9 @@ public static class ExportAllCommand
         Console.WriteLine(
             $"  {icons.Written} entity icon images and {chrome} chrome images written, " +
             $"{icons.Composed} of the icons composed against a rarity colour");
+        Console.WriteLine(
+            $"  {resolver.Lore.Count} mounts whose lore the localization table keys by their own tag: " +
+            string.Join(", ", resolver.Lore.KeyByTag.Select(entry => $"{entry.Key} from {entry.Value}")));
         Console.WriteLine(
             $"  {resolver.NamesInherited} names inherited from the entity that applies them, " +
             $"{resolver.NamesContested} withheld because two entities that apply them disagree");

@@ -7,7 +7,9 @@ public sealed class TypeResolver(
     ItemTraits traits,
     ItemSetBonuses setBonuses,
     GrantedAbilityMappings mappings,
-    DungeonNames dungeons)
+    DungeonNames dungeons,
+    ProgressionItems progression,
+    CustomizationItems customizations)
 {
     public const string LevelTable = "Level.ID";
 
@@ -89,6 +91,16 @@ public sealed class TypeResolver(
         if (segments[1].Equals("GemType", StringComparison.OrdinalIgnoreCase))
         {
             return entity.GemTier is not null ? EntityType.Gem : EntityType.GemType;
+        }
+
+        if (segments[1].Equals(ProgressionItems.Segment, StringComparison.OrdinalIgnoreCase))
+        {
+            return progression.Find(tag.Name) is not null ? EntityType.Item : null;
+        }
+
+        if (segments[1].Equals(CustomizationItems.Segment, StringComparison.OrdinalIgnoreCase))
+        {
+            return customizations.Find(tag.Name) is not null ? EntityType.Item : null;
         }
 
         if (!ItemSegments.TryGetValue(segments[1], out var type)) return null;

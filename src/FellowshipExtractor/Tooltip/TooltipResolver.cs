@@ -33,6 +33,7 @@ public sealed class TooltipResolver
     private const string CharacterIdField = "CharacterID";
     private const string CharacterTagsField = "CharacterTags";
     private const string CountsTowardScoreField = "CountTowardsDungeonScore";
+    private const string UnlockCriteriaField = "UnlockCriteria";
 
     private readonly AbstractFileProvider _provider;
     private readonly TypeMappings _mappings;
@@ -77,6 +78,10 @@ public sealed class TooltipResolver
     public DynamicItemVisuals DynamicVisuals { get; }
     public ItemSetBonuses SetBonuses { get; }
     public ItemTableNames TableNames { get; }
+    public ProgressionItems Progression { get; }
+    public CustomizationItems Customizations { get; }
+    public LocalizedText Localized { get; }
+    public MountLore Lore { get; }
     public DynamicItemRuleSets RuleSets { get; }
     public DynamicAbilityRanks AbilityRanks { get; }
     public TalentTrees Talents { get; }
@@ -149,6 +154,10 @@ public sealed class TooltipResolver
         Armor = new ArmorTypes(provider, _assets);
         SetBonuses = new ItemSetBonuses(provider, _assets, _augmentationIds, _tags);
         TableNames = new ItemTableNames(provider, _assets, rarities);
+        Progression = new ProgressionItems(provider, _assets, rarities);
+        Customizations = new CustomizationItems(provider, _assets, rarities);
+        Localized = new LocalizedText(provider);
+        Lore = new MountLore(Localized);
         RuleSets = new DynamicItemRuleSets(provider, _assets);
         Gems = new GemDefinitions(provider, _assets, _constants, _augmentationIds, rarities);
         Traits = new ItemTraits(
@@ -195,7 +204,8 @@ public sealed class TooltipResolver
         EffectNames = new EffectNameSources(
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
 
-        Types = new TypeResolver(_tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons);
+        Types = new TypeResolver(
+            _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations);
 
         Owners = new AbilityOwners(provider, _assets, _tags);
     }
@@ -331,6 +341,13 @@ public sealed class TooltipResolver
 
         entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
 
+        if (entity.Type is EntityType.CompanionPet &&
+            LoadDefaultObject(_petsByTag.GetValueOrDefault(tag.Name)) is { } pet)
+        {
+            entity = entity with { Acquire = PropertyWalk.GetText(pet, UnlockCriteriaField) };
+        }
+
+        if (entity.Type is EntityType.Mount) entity = entity with { Lore = Lore.For(tag.Name) };
 
         if (entity.DisplayName is null)
         {
@@ -456,7 +473,7 @@ public sealed class TooltipResolver
             };
         }
 
-        if (TableNames.Find(tagName) is { } row)
+        if ((TableNames.Find(tagName) ?? Progression.Find(tagName)) is { } row)
         {
             return entity with
             {
@@ -465,6 +482,20 @@ public sealed class TooltipResolver
                 Rarity = entity.Rarity ?? row.Rarity,
                 RarityTier = entity.RarityTier ?? row.RarityTier,
                 Icon = entity.Icon ?? Written(row.IconPath, icons),
+            };
+        }
+
+        if (Customizations.Find(tagName) is { } customization)
+        {
+            return entity with
+            {
+                DisplayName = entity.DisplayName ?? customization.DisplayName,
+                Description = entity.Description ?? customization.Description,
+                Acquire = customization.Acquire,
+                TitleText = customization.TitleText,
+                Rarity = entity.Rarity ?? customization.Rarity,
+                RarityTier = entity.RarityTier ?? customization.RarityTier,
+                Icon = entity.Icon ?? Written(customization.IconPath, icons),
             };
         }
 

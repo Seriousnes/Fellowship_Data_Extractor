@@ -69,7 +69,9 @@ public static class DocumentProjection
             GemSlot = entity.GemSlot,
             UniqueEquipped = entity.UniqueEquipped,
 
-            Rarity = Enum.TryParse<Rarity>(entity.RuleSet, out var fixedRarity) ? fixedRarity : null,
+            Rarity = Enum.TryParse<Rarity>(entity.RuleSet, out var fixedRarity)
+                ? fixedRarity
+                : entity.RarityTier is { } statedTier ? (Rarity)statedTier : null,
 
             Rarities = entity.Rarities?.Select(Enum.Parse<Rarity>).Order().ToArray(),
 
@@ -77,6 +79,8 @@ public static class DocumentProjection
             SetBonus = Referenced(entity.SetBonus, references),
             Stats = entity.Stats,
             Description = entity.Description,
+            Acquire = entity.Acquire,
+            TitleText = entity.TitleText,
             Icon = entity.Icon,
             IconByRarity = entity.IconByRarity,
             Grants = references.At(Augmentation(entity.GrantsId)),
@@ -193,6 +197,7 @@ public static class DocumentProjection
             Name = Name(entity),
             Tag = entity.Name,
             Description = entity.Description,
+            Lore = entity.Lore,
             Icon = entity.Icon,
         },
 
@@ -212,6 +217,7 @@ public static class DocumentProjection
             Name = Name(entity),
             Tag = entity.Name,
             Description = entity.Description,
+            Acquire = entity.Acquire,
             Icon = entity.Icon,
         },
 

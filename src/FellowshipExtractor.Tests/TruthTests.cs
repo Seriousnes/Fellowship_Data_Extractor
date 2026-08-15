@@ -341,4 +341,125 @@ public sealed class TruthTests
             document => Assert.StartsWith(
                 "Modifiers.", (string?)document.Body["tag"], StringComparison.Ordinal));
     }
+
+    private static (EntityType Type, int Id, string? Name, JsonObject Body)[] Under(string prefix) =>
+        [.. Export.Loaded.Documents.Where(document =>
+            ((string?)document.Body["tag"])?.StartsWith(prefix, StringComparison.Ordinal) is true)];
+
+    [Theory]
+    [InlineData("ItemID.Progression.TalentPoints", "Talent Points", "Epic")]
+    [InlineData("ItemID.Progression.MasteryPoints", "Mastery Points", "Epic")]
+    [InlineData("ItemID.Progression.NumLegendaryEquipable", "Max number of Equippable Legendaries", "Legendary")]
+    [InlineData("ItemID.Progression.RankedLeagueLevel", "League Level", "Epic")]
+    public void AProgressionItemCarriesTheNameAndRarityItsRowStates(string tag, string name, string rarity)
+    {
+        var record = Record(tag);
+
+        Assert.Equal(name, (string?)record["name"]);
+        Assert.Equal(rarity, (string?)record["rarity"]);
+        Assert.NotNull((string?)record["icon"]);
+    }
+
+    [Fact]
+    public void AProgressionItemCarriesTheSentenceItsRowStates() =>
+        Assert.Contains(
+            "allocated within the Hero Sheet",
+            (string?)Record("ItemID.Progression.TalentPoints")["description"],
+            StringComparison.Ordinal);
+
+    [Fact]
+    public void TheFiveProgressionRowsAreWrittenAndTheBranchIsNot()
+    {
+        var written = Under("ItemID.Progression");
+
+        Assert.Equal(5, written.Length);
+        Assert.All(written, document => Assert.Equal(EntityType.Item, document.Type));
+        Assert.DoesNotContain(written, document => (string?)document.Body["tag"] == "ItemID.Progression");
+    }
+
+    [Fact]
+    public void ATitleTakesBothItsNameAndItsTitleTextFromTheOneProperty()
+    {
+        var record = Record("ItemID.PlayerCustomization.Title.DefaultFellow");
+
+        Assert.Equal("Fellow", (string?)record["name"]);
+        Assert.Equal("Fellow", (string?)record["titleText"]);
+        Assert.Equal("Unlocked by reaching Adept League with Any Hero.", (string?)record["acquire"]);
+        Assert.Contains("Fellowship community", (string?)record["description"], StringComparison.Ordinal);
+        Assert.Equal("Uncommon", (string?)record["rarity"]);
+    }
+
+    [Theory]
+    [InlineData("ItemID.PlayerCustomization.Avatar.ChiefRebel", "Chief Rebel")]
+    [InlineData("ItemID.PlayerCustomization.Banner.ChiefRebel", "Chief Rebel")]
+    [InlineData("ItemID.PlayerCustomization.AvatarFrame.ChiefRebel", "Chief Rebel Avatar Frame")]
+    [InlineData("ItemID.PlayerCustomization.NameColor.ChiefRebel", "Chief Rebel Name Color")]
+    public void TheOtherFourCustomizationTablesNameTheirRowsWithDisplayName(string tag, string name)
+    {
+        var record = Record(tag);
+
+        Assert.Equal(name, (string?)record["name"]);
+        Assert.Null(record["titleText"]);
+        Assert.Equal("Legendary", (string?)record["rarity"]);
+    }
+
+    [Theory]
+    [InlineData("ItemID.PlayerCustomization.AvatarFrame.ChiefRebel")]
+    [InlineData("ItemID.PlayerCustomization.NameColor.ChiefRebel")]
+    public void ACustomizationRowStatesHowItIsAcquired(string tag) =>
+        Assert.Equal("Become an employee at Chief Rebel", (string?)Record(tag)["acquire"]);
+
+    [Fact]
+    public void TheHundredCustomizationRowsAreWrittenAndTheTagsWithNoRowAreNot()
+    {
+        var written = Under("ItemID.PlayerCustomization.");
+
+        Assert.Equal(100, written.Length);
+        Assert.All(written, document => Assert.Equal(EntityType.Item, document.Type));
+
+        Assert.DoesNotContain(
+            written,
+            document => (string?)document.Body["tag"] == "ItemID.PlayerCustomization.Avatar.Debuff.Stunned");
+    }
+
+    [Theory]
+    [InlineData("ItemID.CompanionPet.Beetle.Blue", "Complete Paragon league as a Tank hero.")]
+    [InlineData("ItemID.CompanionPet.Cat.Munchkin.Black", "This can be purchased in the Store.")]
+    public void ACompanionPetStatesHowItIsAcquired(string tag, string acquire) =>
+        Assert.Equal(acquire, (string?)Record(tag)["acquire"]);
+
+    [Fact]
+    public void TheSixPetsWithAnAssetStateHowTheyAreAcquired()
+    {
+        var pets = Export.Loaded.Documents.Where(document => document.Type == EntityType.CompanionPet).ToArray();
+
+        Assert.Equal(9, pets.Length);
+        Assert.Equal(6, pets.Count(pet => pet.Body["acquire"] is not null));
+    }
+
+    [Fact]
+    public void AMountWhoseLoreOnlyTheLocalizationTableCarriesShipsIt() =>
+        Assert.Contains(
+            "spirit-bear",
+            (string?)Record("ItemID.Mount.BearMagic.ArmoredGhostBlue")["lore"],
+            StringComparison.Ordinal);
+
+    [Fact]
+    public void OnlyTheThreeMountsTheLocalizationTableKeysByTagCarryLore()
+    {
+        var mounts = Export.Loaded.Documents.Where(document => document.Type == EntityType.Mount).ToArray();
+
+        Assert.Equal(96, mounts.Length);
+
+        Assert.Equal(
+            [
+                "ItemID.Mount.BearMagic.ArmoredGhostBlue",
+                "ItemID.Mount.CatMagic.ArmoredGhostGold",
+                "ItemID.Mount.RatMagic.ArmoredGhostRed",
+            ],
+            mounts.Where(mount => mount.Body["lore"] is not null)
+                .Select(mount => mount.Body["tag"]!.GetValue<string>())
+                .Order(StringComparer.Ordinal)
+                .ToArray());
+    }
 }

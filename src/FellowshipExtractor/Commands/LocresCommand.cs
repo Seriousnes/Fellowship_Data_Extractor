@@ -1,7 +1,6 @@
 using System.Text.Json;
 
-using CUE4Parse.UE4.Localization;
-using CUE4Parse.UE4.Readers;
+using FellowshipExtractor.Tooltip;
 
 namespace FellowshipExtractor.Commands;
 
@@ -10,34 +9,27 @@ public static class LocresCommand
     public static async Task RunAsync(ExtractorOptions options, string culture)
     {
         var provider = await ProviderFactory.CreateAsync(options);
-        var path = $"fellowship/Content/Localization/Game/{culture}/Game.locres";
 
-        if (!provider.Files.TryGetValue(path, out var file))
+        if (!provider.Files.ContainsKey(LocalizedText.PathFor(culture)))
         {
-            Console.Error.WriteLine($"Not found: {path}");
+            Console.Error.WriteLine($"Not found: {LocalizedText.PathFor(culture)}");
             return;
         }
-
-        using var archive = new FByteArchive(file.Path, file.Read(), provider.Versions);
-        var locres = new FTextLocalizationResource(archive);
 
         var target = Path.Combine(options.ResolvedOutputDir, $"locres-{culture}.jsonl");
         var count = 0;
 
         await using var writer = new StreamWriter(target);
-        foreach (var (ns, entries) in locres.Entries)
+        foreach (var entry in LocalizedText.Read(provider, culture))
         {
-            foreach (var (key, entry) in entries)
+            var record = new
             {
-                var record = new
-                {
-                    ns = ns.Str,
-                    key = key.Str,
-                    text = entry.LocalizedString,
-                };
-                await writer.WriteLineAsync(JsonSerializer.Serialize(record));
-                count++;
-            }
+                ns = entry.Namespace,
+                key = entry.Key,
+                text = entry.Text,
+            };
+            await writer.WriteLineAsync(JsonSerializer.Serialize(record));
+            count++;
         }
 
         Console.WriteLine($"Wrote {count} localized strings to {target}");
