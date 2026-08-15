@@ -74,6 +74,7 @@ public sealed class TypeResolverTests
     [InlineData("ItemID.CompanionPet.Cat.Base", EntityType.CompanionPet)]
     [InlineData("ItemID.VisualCollection.Naked", null)]
     [InlineData("ItemID.PlayerCustomization.Avatar.ChiefRebel", EntityType.Item)]
+    [InlineData("ItemID.PlayerCustomization.Avatar.Debuff.Enraged", EntityType.Item)]
     [InlineData("ItemID.PlayerCustomization.Avatar.Debuff.Stunned", null)]
     [InlineData("ItemID.Progression.TalentPoints", EntityType.Item)]
     [InlineData("ItemID.Progression.NoSuchCounter", null)]
