@@ -81,6 +81,7 @@ public sealed class TooltipResolver
     public TalentTrees Talents { get; }
     public GemDefinitions Gems { get; }
     public ItemTraits Traits { get; }
+    public DynamicTextRows DynamicText { get; }
     public Settings Settings { get; }
     public AbilityCategories Categories { get; }
     public TypeResolver Types { get; }
@@ -159,6 +160,7 @@ public sealed class TooltipResolver
         Collections = new VisualCollections(provider, _assets);
         HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, Collections, rarities);
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
+        DynamicText = new DynamicTextRows(provider, _assets, _constants, Heroes);
 
         DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities);
 
@@ -290,6 +292,11 @@ public sealed class TooltipResolver
 
         if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
         {
+            if (DynamicText.ForTag(tag.Name) is { } sentences)
+            {
+                entity = entity with { DescriptionsByHero = sentences };
+            }
+
             if (Talents.ForAugmentation(tag.Name) is { } talent) entity = WithTalent(entity, talent, icons);
             if (Gems.ForAugmentation(tag.Name) is { } node) entity = WithGemNode(entity, node, icons);
             if (Traits.ForAugmentation(tag.NetId) is { } grantingTrait)

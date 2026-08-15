@@ -303,6 +303,7 @@ public static class DocumentProjection
             Name = Name(entity),
             Tag = entity.Name,
             Description = entity.Description,
+            DescriptionsByHero = entity.DescriptionsByHero,
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             Duration = entity.Duration,

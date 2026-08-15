@@ -41,6 +41,8 @@ public sealed record Entity
 
     public string? Description { get; init; }
 
+    public IReadOnlyDictionary<string, string>? DescriptionsByHero { get; init; }
+
     public IReadOnlyList<string>? Detail { get; init; }
 
     public string? Icon { get; init; }

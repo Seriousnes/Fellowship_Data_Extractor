@@ -75,6 +75,17 @@ public static class ExportAllCommand
             $"{resolver.Traits.TotalRuns} rank runs bound to a curve");
         Console.WriteLine($"set bonuses:        {resolver.SetBonuses.Count} rows");
         Console.WriteLine(
+            $"hero dynamic text:  {resolver.DynamicText.SentenceCount} sentences across " +
+            $"{resolver.DynamicText.RowCount} row keys, {resolver.DynamicText.Substituted} tokens substituted, " +
+            $"left literal: {Literal(resolver.DynamicText.Literal)}");
+
+        foreach (var table in resolver.DynamicText.Unresolved)
+        {
+            Console.WriteLine(
+                $"  {table} declares the dynamic text row structure but is not a " +
+                "DT_DynamicText_Hero_<codename> table the roster can key");
+        }
+        Console.WriteLine(
             $"dungeons:           {resolver.Dungeons.Count} named, {resolver.Locations.Dungeons} with a map, " +
             $"{resolver.Locations.Maps} umaps read, {resolver.Locations.Placed} creatures placed, " +
             $"{resolver.Locations.Housed} of them by the folder they live in, " +
@@ -247,4 +258,13 @@ public static class ExportAllCommand
         }
         Console.WriteLine("wrote the settings the documents are read against");
     }
+
+    private static string Literal(IReadOnlyDictionary<string, int> counts) =>
+        counts.Count == 0
+            ? "none"
+            : string.Join(
+                ", ",
+                counts.OrderByDescending(entry => entry.Value)
+                    .ThenBy(entry => entry.Key, StringComparer.Ordinal)
+                    .Select(entry => $"{entry.Key} x{entry.Value}"));
 }

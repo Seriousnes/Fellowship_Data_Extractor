@@ -261,4 +261,26 @@ public sealed class TruthTests
     [InlineData("GE_ST_BossGatekeeper_PullAndCastedAoe_Imobalize", 0.4)]
     public void ADurationTheApplierSetsByCallerIsRecoveredFromItsBytecode(string tag, double expected) =>
         Assert.Equal(expected, (double?)Record(tag)["duration"]);
+
+    [Fact]
+    public void APerkWritesEachHeroTheSentenceTheirOwnDynamicTextTableCarries()
+    {
+        var record = Record("CAA_Perk_IncreasedDurationOrReducedCooldown");
+        var bowguy = (string?)record["descriptionsByHero"]?["Bowguy"];
+
+        Assert.Equal("{uniqueHeroDescription}", (string?)record["description"]);
+        Assert.NotNull(bowguy);
+        Assert.Contains("duration is increased", bowguy, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EveryPerkWhoseDescriptionIsTheSharedTokenCarriesTwelveHeroSentences()
+    {
+        var filled = Export.Loaded.Documents
+            .Where(document => document.Body["descriptionsByHero"] is not null)
+            .ToArray();
+
+        Assert.Equal(6, filled.Length);
+        Assert.All(filled, document => Assert.Equal(12, document.Body["descriptionsByHero"]!.AsObject().Count));
+    }
 }
