@@ -40,6 +40,7 @@ public static class DocumentProjection
             Charges = entity.Charges,
             ChargesByLevelType = entity.ChargesByLevelType,
             Cost = entity.Cost,
+            CostIsFraction = entity.CostIsFraction,
             Resource = entity.Resource,
             Range = entity.Range,
             Radius = entity.Radius,

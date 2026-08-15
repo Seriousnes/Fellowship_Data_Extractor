@@ -53,7 +53,7 @@ public static class CurveBindings
 
             if (rowName is null)
             {
-                if (owner is null || Numbers.Field(reported) is not { } field || field == "cost") continue;
+                if (owner is null || Numbers.Field(reported) is null) continue;
                 if (!seen.Add($"{reported}|None")) continue;
                 if (!structs.TryGetValue(owner, out var bare)) continue;
                 if (PropertyWalk.AsNumber(PropertyWalk.Get(bare, "Value")?.GenericValue) is not { } literal) continue;

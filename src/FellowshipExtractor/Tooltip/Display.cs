@@ -4,8 +4,15 @@ using CUE4Parse.UE4.Assets.Objects;
 namespace FellowshipExtractor.Tooltip;
 
 public sealed record Display(
-    string? Name, string? Description, string? Icon, IReadOnlyList<string> Detail, string? Resource)
+    string? Name,
+    string? Description,
+    string? Icon,
+    IReadOnlyList<string> Detail,
+    string? Resource,
+    bool CostIsFraction)
 {
+    private const string FractionField = "ShowResourceAsPercentage";
+
     public static Display From(IPropertyHolder? row, UObject? asset)
     {
         var name = row is null ? null : PropertyWalk.GetString(row, "Name");
@@ -13,6 +20,7 @@ public sealed record Display(
         var icon = row is null ? null : IconOf(row);
         var detail = row is null ? [] : DetailOf(row);
         var resource = row is null ? null : Text(row, "DetailedDescription3");
+        var fraction = row is not null && PropertyWalk.Get(row, FractionField)?.GenericValue is true;
 
         if (asset is not null)
         {
@@ -26,7 +34,7 @@ public sealed record Display(
             }
         }
 
-        return new Display(name, description, icon, detail, resource);
+        return new Display(name, description, icon, detail, resource, fraction);
     }
 
     private static string? DescriptionOf(IPropertyHolder row) =>

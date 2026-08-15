@@ -25,8 +25,25 @@ public sealed class TruthTests
     [InlineData("GA_Vigor_SingleTargetChargedHot", 1)]
     [InlineData("GA_Vigor_SingleTargetDot", 1)]
     [InlineData("GA_Lisa_InstantSingleTargetDamageAndDot", 9)]
+    [InlineData("GA_Sune_DroppedPulseAoe", 218)]
+    [InlineData("GA_Meiko_DurationalMultipleTeleportDamage_New", 100)]
+    [InlineData("GA_Ink_AoeAttack", 0.5)]
     public void ACostIsTheCastCostNotATalentRow(string tag, double expected) =>
         Assert.Equal(expected, (double?)Record(tag)["cost"]);
+
+    [Theory]
+    [InlineData("GA_Ink_AoeAttack")]
+    [InlineData("GA_Ink_HeavySingleTargetAttack")]
+    [InlineData("GA_Lisa_InstantDamageSpender")]
+    public void AFractionOfTheResourceSaysSoOnTheRow(string tag) =>
+        Assert.True((bool?)Record(tag)["costIsFraction"]);
+
+    [Theory]
+    [InlineData("GA_Sune_DroppedPulseAoe")]
+    [InlineData("GA_Lisa_InstantSingleTargetDamageAndDot")]
+    [InlineData("GA_Vigor_SingleTargetAbsorb")]
+    public void AnAbsoluteCostCarriesNoFractionFlag(string tag) =>
+        Assert.Null(Record(tag)["costIsFraction"]);
 
     [Theory]
     [InlineData("GE_Bowguy_CastedProjectileDamage_Buff", "Steady Hands")]

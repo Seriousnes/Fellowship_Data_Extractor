@@ -61,6 +61,8 @@ public sealed record Entity
     public IReadOnlyDictionary<string, double>? ChargesByLevelType { get; init; }
     public double? Cost { get; init; }
 
+    public bool? CostIsFraction { get; init; }
+
     public string? Resource { get; init; }
 
     public double? Range { get; init; }
