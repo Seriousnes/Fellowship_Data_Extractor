@@ -211,12 +211,25 @@ public sealed class TruthTests
     }
 
     [Theory]
-    [InlineData("GE_Vigor_SingleTargetAbsorb_Absorb", "IncreasedDuration", 15)]
-    [InlineData("GE_Vigor_SingleTargetDot_Dot", "IncreasedDuration", 30)]
-    [InlineData("GE_Meiko_TauntTotem_SelfBuff", "IncreasedHealthAndDuration", 30)]
-    [InlineData("GE_Rime_SelfDefenceBuff_SelfBuff", "DurationBoostAndHealFromDamage", 8)]
-    public void ATalentTheCalculationGatesOnCarriesItsOwnDuration(string tag, string talent, double expected) =>
-        Assert.Equal(expected, (double?)Record(tag)["talents"]?[talent]?["duration"]);
+    [InlineData("GE_Vigor_SingleTargetAbsorb_Absorb", "IncreasedDuration", 12, 15)]
+    [InlineData("GE_Vigor_SingleTargetDot_Dot", "IncreasedDuration", 24, 30)]
+    [InlineData("GE_Vigor_SingleTargetEchoProccer_Buff", "IncreasedDuration", 30, 37.5)]
+    [InlineData("GE_Vigor_InstantResourceGain_Buff", "DurationAndCost", 8, 14)]
+    [InlineData("GE_Meiko_TauntTotem_SelfBuff", "IncreasedHealthAndDuration", 20, 30)]
+    [InlineData("GE_Rime_SelfDefenceBuff_SelfBuff", "DurationBoostAndHealFromDamage", 4, 8)]
+    [InlineData("GE_Ink_SelfDefenceBuff_SelfBuff_First", "IncreasedDurationAndTaunt", 4, 8)]
+    [InlineData("GE_Mosse_PinkButterfly_Double_Hot", "IncreasedHotDuration", 15, 24)]
+    [InlineData("GE_Firemage_CastedSingleHeavyDot_Dot", "ExtendedDuration", 9, 12)]
+    [InlineData("GE_Lisa_CastedProjectileDamageIncreaseDebuff_Debuff", "AbilityDamageIncrease", 20, 15)]
+    [InlineData("GE_Bowguy_SelfBuffForAoeProjectile_SelfBuff", "ChargesCooldownAndDuration", 4, 15)]
+    public void ATalentTheCalculationGatesOnCarriesItsOwnDuration(
+        string tag, string talent, double bare, double held)
+    {
+        var record = Record(tag);
+
+        Assert.Equal(bare, (double?)record["duration"]);
+        Assert.Equal(held, (double?)record["talents"]?[talent]?["duration"]);
+    }
 
     [Fact]
     public void ATokenTheUiDataDoesNotDeclareComesFromTheSoleModifier()
