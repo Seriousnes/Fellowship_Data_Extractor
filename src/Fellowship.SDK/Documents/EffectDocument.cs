@@ -24,6 +24,10 @@ public sealed class EffectDocument : EntityDocument
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }
 
+    public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
+
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
+
     public EntityReference? NameBorrowedFrom { get; init; }
     public EntityReference? ArtBorrowedFrom { get; init; }
 

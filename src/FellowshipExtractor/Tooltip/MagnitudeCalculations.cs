@@ -10,6 +10,13 @@ public sealed record CustomMagnitudes(CurveBinding? Duration, IReadOnlyList<stri
     public static readonly CustomMagnitudes None = new(null, []);
 }
 
+public sealed record MagnitudeReading(double? Value, double? Low, double? High)
+{
+    public static readonly MagnitudeReading None = new(null, null, null);
+
+    public bool Answered => Value is not null || Low is not null;
+}
+
 public static class MagnitudeCalculations
 {
     private const string Function = "CalculateBaseMagnitude";
@@ -58,14 +65,42 @@ public static class MagnitudeCalculations
     }
 
     public static double? Custom(
-        IPropertyHolder magnitude, AbstractFileProvider provider, ConstantsTable constants)
-    {
-        if (PropertyWalk.GetStruct(magnitude, CustomField) is not { } custom) return null;
-        if (PropertyWalk.GetString(custom, ClassField) is not { } classPath) return null;
-        if (Calculation(provider, classPath) is not { } calculation) return null;
-        if (Reduce(calculation, constants) is not { } computed) return null;
+        IPropertyHolder magnitude, AbstractFileProvider provider, ConstantsTable constants) =>
+        Reduced(magnitude, provider, constants, null, null).Value;
 
-        return Folded(custom, computed, constants);
+    public static MagnitudeReading Reduced(
+        IPropertyHolder magnitude,
+        AbstractFileProvider provider,
+        ConstantsTable constants,
+        IReadOnlySet<string>? assumed,
+        ICollection<string>? gates)
+    {
+        if (PropertyWalk.GetStruct(magnitude, CustomField) is not { } custom) return MagnitudeReading.None;
+        if (PropertyWalk.GetString(custom, ClassField) is not { } classPath) return MagnitudeReading.None;
+        if (Calculation(provider, classPath) is not { } calculation) return MagnitudeReading.None;
+
+        if (BareStateWalk.Compiled(calculation, Function) is not { ScriptBytecode.Length: > 0 } body)
+        {
+            return MagnitudeReading.None;
+        }
+
+        var walk = new BareStateWalk(body, calculation, constants, null)
+        {
+            AssumedTags = assumed ?? new HashSet<string>(StringComparer.Ordinal),
+        };
+
+        var computed = walk.Answer();
+
+        if (gates is not null)
+        {
+            foreach (var gate in walk.Gates) gates.Add(gate);
+        }
+
+        if (computed is { } answer) return new MagnitudeReading(Folded(custom, answer, constants), null, null);
+        if (walk.Range is not { } range) return MagnitudeReading.None;
+
+        return new MagnitudeReading(
+            null, Folded(custom, range.Low, constants), Folded(custom, range.High, constants));
     }
 
     private static double Folded(IPropertyHolder custom, double computed, ConstantsTable constants) =>
@@ -83,21 +118,21 @@ public static class MagnitudeCalculations
             .FirstOrDefault(e => e.Name.StartsWith("Default__", StringComparison.Ordinal));
     }
 
-    private static double Scaled(IPropertyHolder custom, string field, double fallback, ConstantsTable constants)
-    {
-        if (PropertyWalk.GetStruct(custom, field) is not { } scalable) return fallback;
+    private static double Scaled(IPropertyHolder custom, string field, double fallback, ConstantsTable constants) =>
+        PropertyWalk.GetStruct(custom, field) is { } scalable
+            ? Scalable(scalable, constants) ?? fallback
+            : fallback;
 
+    public static double? Scalable(IPropertyHolder scalable, ConstantsTable constants)
+    {
         var value = PropertyWalk.AsNumber(PropertyWalk.Get(scalable, "Value")?.GenericValue);
         var row = PropertyWalk.GetStruct(scalable, "Curve") is { } curve
             ? PropertyWalk.GetString(curve, "RowName")
             : null;
 
-        if (row is null || row.Length == 0 || row.Equals("None", StringComparison.Ordinal))
-        {
-            return value ?? fallback;
-        }
+        if (row is null || row.Length == 0 || row.Equals("None", StringComparison.Ordinal)) return value;
 
-        return constants.Lookup(row).Record?.Value is { } resolved ? (value ?? 1) * resolved : fallback;
+        return constants.Lookup(row).Record?.Value is { } resolved ? (value ?? 1) * resolved : null;
     }
 
     public static double? Reduce(UObject calculation, ConstantsTable constants) =>

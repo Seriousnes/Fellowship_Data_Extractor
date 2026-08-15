@@ -220,7 +220,18 @@ public static class ExportAllCommand
         Console.WriteLine($"  {resolver.NamespaceSupplied} tuning rows supplied by namespace that no asset names");
         Console.WriteLine(
             $"  {resolver.DeclaredByBlueprint} tokens bound by the ability's ResolveDynamicTextFloat, " +
-            $"{resolver.NamedByToken} by the quantity their name states");
+            $"{resolver.NamedByToken} by the quantity their name states, " +
+            $"{resolver.SynthesizedFromModifier} from the sole modifier their description leaves undeclared");
+        Console.WriteLine(
+            $"  {resolver.ModifiersRead} effect modifier magnitudes read");
+        Console.WriteLine(
+            $"  {resolver.DurationsFromSetByCaller} of {resolver.SetByCallerDurationsScanned} durations the " +
+            "applier sets by caller recovered from its bytecode");
+
+        foreach (var recovered in resolver.SetByCallerDurationsRecovered)
+        {
+            Console.WriteLine($"    {recovered}");
+        }
         Console.WriteLine(
             $"  {resolver.SpreadOverrides} coefficient rows banded by the Spread row their effect overrides " +
             $"with, {resolver.SpreadPresetDefaults} by an effect's calculation preset");

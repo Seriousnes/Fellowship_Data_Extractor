@@ -286,6 +286,7 @@ public sealed class TooltipResolver
 
         entity = WithProvenance(entity, tag, asset, cdo);
         entity = WithOwners(entity, tag);
+        entity = WithSuppliedDuration(entity, cdo, tag);
 
         if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
         {
@@ -508,6 +509,32 @@ public sealed class TooltipResolver
             AppliedBy = appliedBy,
             ApplierTags = appliedBy is null ? null : Empty(Owners.AbilityTagsOf(applier!)),
         };
+    }
+
+    public int SetByCallerDurationsScanned { get; private set; }
+
+    private readonly List<string> _suppliedDurations = [];
+
+    public IReadOnlyCollection<string> SetByCallerDurationsRecovered => _suppliedDurations;
+
+    private Entity WithSuppliedDuration(Entity entity, UObject? cdo, TagRecord tag)
+    {
+        if (entity.Duration is not null) return entity;
+        if (!tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) return entity;
+        if (SetByCallerDurations.DeclaredTag(cdo, _mappings) is not { } supplied) return entity;
+
+        SetByCallerDurationsScanned++;
+
+        var applier = Owners.ApplierOf(tag.Name);
+        if (applier is null or AbilityOwners.Contested) return entity;
+        if (LoadDefaultObject(FindAsset(applier)) is not { } ability) return entity;
+
+        if (SetByCallerDurations.From(ability, supplied, _constants).Duration is not { } duration) return entity;
+
+        _suppliedDurations.Add($"{tag.Name} {duration} from {applier} assigning {supplied}");
+        DurationsFromSetByCaller++;
+
+        return entity with { Duration = duration };
     }
 
     private Entity WithCreature(Entity entity, TagRecord tag, UObject? cdo)
@@ -773,6 +800,16 @@ public sealed class TooltipResolver
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
         var (baseline, talents) = Numbers.SplitTalents(split.Rest);
 
+        var magnitudes = EffectModifiers.Of(cdo, _provider, _constants, _mappings);
+        ModifiersRead += magnitudes.Modifiers.Count;
+
+        foreach (var (name, fields) in magnitudes.Talents)
+        {
+            if (!talents.TryGetValue(name, out var varied)) talents[name] = varied = new(StringComparer.Ordinal);
+
+            foreach (var (field, value) in fields) varied[field] = value;
+        }
+
         var reachable = Rejoined(baseline, claimed, split.Promoted);
         var taken = new HashSet<string>(claimed.Keys, StringComparer.Ordinal);
 
@@ -844,6 +881,17 @@ public sealed class TooltipResolver
             }
         }
 
+        var undeclared = DescriptionTokens.Tokens(display.Description ?? string.Empty)
+            .Where(written => !placeholders.ContainsKey(written))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (undeclared is [var only] && SoleMagnitude(magnitudes.Modifiers) is { } stated)
+        {
+            placeholders[only] = new Placeholder { Value = stated };
+            SynthesizedFromModifier++;
+        }
+
         return new Entity
         {
             DisplayName = display.Name,
@@ -872,6 +920,7 @@ public sealed class TooltipResolver
             Infinite = Infinite(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
             Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand, [.. scaling]),
+            Modifiers = magnitudes.Modifiers.Count == 0 ? null : magnitudes.Modifiers,
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Constants = baseline.Count == 0 ? null : baseline,
             Talents = talents.Count == 0
@@ -925,6 +974,15 @@ public sealed class TooltipResolver
     public int DeclaredByBlueprint { get; private set; }
 
     public int NamedByToken { get; private set; }
+
+    public int SynthesizedFromModifier { get; private set; }
+
+    public int ModifiersRead { get; private set; }
+
+    public int DurationsFromSetByCaller { get; private set; }
+
+    private static double? SoleMagnitude(IReadOnlyList<EffectModifier> modifiers) =>
+        modifiers.Count == 1 ? modifiers[0].Value : null;
 
     private Placeholder? Declared(
         Placeholder placeholder,

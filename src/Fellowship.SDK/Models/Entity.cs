@@ -187,6 +187,8 @@ public sealed record Entity
 
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
 
+    public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
+
     public IReadOnlyList<PhaseAbility>? Abilities { get; init; }
 
     public IReadOnlyList<PhaseAbility>? Passives { get; init; }

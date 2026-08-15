@@ -14,12 +14,15 @@ public sealed class BareStateWalk(
     private const string CurveField = "Curve";
     private const string RowField = "RowName";
     private const string NoRow = "None";
+    private const string TagStruct = "GameplayTag";
+    private const string TagNameField = "TagName";
     private const int Budget = 1024;
     private const int MaxDepth = 32;
 
     private readonly KismetExpression[] _bytecode = function.ScriptBytecode ?? [];
     private readonly Dictionary<string, KismetExpression> _locals = new(StringComparer.Ordinal);
     private readonly Dictionary<string, double> _returned = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _gates = new(StringComparer.Ordinal);
 
     public static UStruct? Compiled(UObject cdo, string function)
     {
@@ -34,6 +37,12 @@ public sealed class BareStateWalk(
     public Func<string, InvalidOperationException>? Unreadable { get; init; }
 
     private bool Inlined { get; init; }
+
+    public IReadOnlySet<string> AssumedTags { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+
+    public IReadOnlySet<string> Gates => _gates;
+
+    public (double Low, double High)? Range { get; private set; }
 
     public IReadOnlyDictionary<string, double>? ByLevelType { get; private set; }
 
@@ -79,8 +88,15 @@ public sealed class BareStateWalk(
         if (statement is not EX_LocalVirtualFunction call) return;
         if (Compiled(cdo, call.VirtualFunctionName.Text) is not { ScriptBytecode.Length: > 0 } body) return;
 
-        var inside = new BareStateWalk(body, cdo, constants, mappings) { Inlined = true };
+        var inside = new BareStateWalk(body, cdo, constants, mappings)
+        {
+            Inlined = true,
+            AssumedTags = AssumedTags,
+        };
+
         foreach (var _ in inside.Reached()) { }
+
+        foreach (var gate in inside._gates) _gates.Add(gate);
 
         var at = 0;
 
@@ -102,6 +118,11 @@ public sealed class BareStateWalk(
         }
     }
 
+    public void BindEach()
+    {
+        foreach (var statement in _bytecode) Bind(statement);
+    }
+
     public double? Answer()
     {
         var at = 0;
@@ -112,7 +133,7 @@ public sealed class BareStateWalk(
             {
                 case EX_Return returned:
                     if (Number(returned.ReturnExpression) is { } answer) return answer;
-                    if (ByLevelType is not null) return null;
+                    if (ByLevelType is not null || Range is not null) return null;
 
                     return Refuse($"returns {Shape(returned.ReturnExpression)}, which is no number");
 
@@ -202,32 +223,61 @@ public sealed class BareStateWalk(
 
             case EX_CallMath call: return CalledTruth(call, depth);
 
-            case EX_LocalVirtualFunction call: return NamedTruth(call.VirtualFunctionName.Text);
-            case EX_VirtualFunction call: return NamedTruth(call.VirtualFunctionName.Text);
-            case EX_LocalFinalFunction call: return NamedTruth(call.StackNode.Name);
-            case EX_FinalFunction call: return NamedTruth(call.StackNode.Name);
+            case EX_LocalVirtualFunction call: return NamedTruth(call.VirtualFunctionName.Text, call.Parameters);
+            case EX_VirtualFunction call: return NamedTruth(call.VirtualFunctionName.Text, call.Parameters);
+            case EX_LocalFinalFunction call: return NamedTruth(call.StackNode.Name, call.Parameters);
+            case EX_FinalFunction call: return NamedTruth(call.StackNode.Name, call.Parameters);
         }
 
         return Bound(expression) is { } assigned ? Truth(assigned, depth + 1) : null;
     }
 
-    private static bool? NamedTruth(string invoked) => invoked switch
+    private static readonly string[] TagTests =
+    [
+        "HasMatchingGameplayTag",
+        "HasAnyMatchingGameplayTags",
+        "HasAllMatchingGameplayTags",
+        "HasTag",
+        "HasAnyTags",
+        "HasAllTags",
+    ];
+
+    private bool? NamedTruth(string invoked, IReadOnlyList<KismetExpression> parameters)
     {
-        "HasMatchingGameplayTag" => false,
-        "HasAnyMatchingGameplayTags" => false,
-        "HasAllMatchingGameplayTags" => false,
-        "HasTag" => false,
-        "HasAnyTags" => false,
-        "HasAllTags" => false,
-        _ => null,
-    };
+        if (!TagTests.Contains(invoked, StringComparer.Ordinal)) return null;
+
+        var held = false;
+
+        foreach (var parameter in parameters)
+        {
+            if (Tested(parameter) is not { } tag) continue;
+
+            _gates.Add(tag);
+            if (AssumedTags.Contains(tag)) held = true;
+        }
+
+        return held;
+    }
+
+    private string? Tested(KismetExpression? expression)
+    {
+        if (expression is EX_StructConst { Struct.Name: TagStruct } inline)
+        {
+            return Named(inline.Properties.OfType<EX_NameConst>().FirstOrDefault()?.Value.Text);
+        }
+
+        if (DynamicTextFloats.Name(expression) is not { } property) return null;
+        if (PropertyWalk.GetStruct(cdo, property) is not { } held) return null;
+
+        return Named(PropertyWalk.GetString(held, TagNameField));
+    }
 
     private bool? CalledTruth(EX_CallMath call, int depth)
     {
         var invoked = call.StackNode.Name;
 
         if (invoked.Equals("IsValid", StringComparison.Ordinal)) return true;
-        if (NamedTruth(invoked) is { } known) return known;
+        if (NamedTruth(invoked, call.Parameters) is { } known) return known;
 
         if (invoked.Equals("Not_PreBool", StringComparison.Ordinal))
         {
@@ -330,7 +380,19 @@ public sealed class BareStateWalk(
 
         if (invoked.StartsWith("Divide_", StringComparison.Ordinal))
         {
-            return Argument(0) is { } left && Argument(1) is { } right and not 0 ? left / right : null;
+            var divisor = Argument(1);
+            if (divisor is 0) return null;
+            if (Argument(0) is not { } dividend) return null;
+
+            return dividend == 0 ? 0 : divisor is { } by ? dividend / by : null;
+        }
+
+        if (invoked is "RandomFloatInRange" or "RandomIntegerInRange")
+        {
+            if (Argument(0) is not { } least || Argument(1) is not { } most) return null;
+
+            Range = (least, most);
+            return null;
         }
 
         if (invoked is "SelectFloat" or "SelectInt" or "SelectDouble")

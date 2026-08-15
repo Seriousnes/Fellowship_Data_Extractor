@@ -131,6 +131,8 @@ public static class DocumentProjection
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Schools = Schools(entity.Tags) ?? Schools(entity.ApplierTags),
+            Modifiers = entity.Modifiers,
+            Talents = entity.Talents,
             NameBorrowedFrom = references.At(entity.NameInheritedFrom),
             ArtBorrowedFrom = references.At(entity.IconInheritedFrom),
             Heroes = Owning(entity),

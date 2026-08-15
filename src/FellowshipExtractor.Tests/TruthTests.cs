@@ -175,4 +175,72 @@ public sealed class TruthTests
         Assert.Equal(0.2, (double?)token["spread"]);
         Assert.Equal(expertise ? true : null, (bool?)token["scalesWithExpertise"]);
     }
+
+    private static JsonObject Modifier(string tag, string attribute) =>
+        Record(tag)["modifiers"]?.AsArray()
+            .OfType<JsonObject>()
+            .FirstOrDefault(modifier => (string?)modifier["attribute"] == attribute)
+        ?? throw new InvalidOperationException($"{tag} carries no modifier on {attribute}.");
+
+    [Fact]
+    public void AnAbsorbConsumptionScalerIsWhatItsCalculationClampsTo()
+    {
+        var modifier = Modifier("GE_Vigor_SingleTargetAbsorb_Absorb", "AbsorbConsumptionScaler");
+
+        Assert.Equal(0.5, (double?)modifier["value"]);
+        Assert.Null(modifier["op"]);
+    }
+
+    [Fact]
+    public void ABlockMultiplierIsTheRowItsCalculationReads()
+    {
+        var modifier = Modifier("GE_HeroAttributesBase", "BlockDamageReductionMultiplier");
+
+        Assert.Equal(0.8, (double?)modifier["value"]);
+        Assert.Equal("Multiplicitive", (string?)modifier["op"]);
+    }
+
+    [Fact]
+    public void AMagnitudeMultiplyingACapturedAttributeIsACoefficient()
+    {
+        var modifier = Modifier("GE_Ink_MaxRage", "MaxResources");
+
+        Assert.Equal(200, (double?)modifier["coefficient"]);
+        Assert.Null(modifier["value"]);
+        Assert.Equal(["Strength"], modifier["scalesOff"]?.AsArray().Select(scale => (string?)scale));
+    }
+
+    [Theory]
+    [InlineData("GE_Vigor_SingleTargetAbsorb_Absorb", "IncreasedDuration", 15)]
+    [InlineData("GE_Vigor_SingleTargetDot_Dot", "IncreasedDuration", 30)]
+    [InlineData("GE_Meiko_TauntTotem_SelfBuff", "IncreasedHealthAndDuration", 30)]
+    [InlineData("GE_Rime_SelfDefenceBuff_SelfBuff", "DurationBoostAndHealFromDamage", 8)]
+    public void ATalentTheCalculationGatesOnCarriesItsOwnDuration(string tag, string talent, double expected) =>
+        Assert.Equal(expected, (double?)Record(tag)["talents"]?[talent]?["duration"]);
+
+    [Fact]
+    public void ATokenTheUiDataDoesNotDeclareComesFromTheSoleModifier()
+    {
+        var token = Token("GE_DungeonModifier_AnomalousOrbs_Buff_Amethyst", "Increase");
+
+        Assert.Equal(480, (double?)token["value"]);
+        Assert.Equal(480, (double?)Modifier("GE_DungeonModifier_AnomalousOrbs_Buff_Amethyst", "AmethystPower")["value"]);
+    }
+
+    [Fact]
+    public void TheOneCalculationAnsweringARangeStatesBothEnds()
+    {
+        var modifier = Modifier("GE_Mara_AoeAttackBuilder_Poison", "DurationMagnitude");
+
+        Assert.Equal(6, (double?)modifier["valueLow"]);
+        Assert.Equal(8, (double?)modifier["valueHigh"]);
+        Assert.Null(modifier["value"]);
+    }
+
+    [Theory]
+    [InlineData("GE_Mara_StunSpender_Stun", 4)]
+    [InlineData("GE_Ink_SwingTimerHitWindow", 0.6)]
+    [InlineData("GE_Rime_TargetedPeriodicProjectileAoe_AoeBuff", 20)]
+    public void ADurationTheApplierSetsByCallerIsRecoveredFromItsBytecode(string tag, double expected) =>
+        Assert.Equal(expected, (double?)Record(tag)["duration"]);
 }

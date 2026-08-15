@@ -1,0 +1,116 @@
+using CUE4Parse.MappingsProvider;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Kismet;
+using CUE4Parse.UE4.Objects.UObject;
+
+namespace FellowshipExtractor.Tooltip;
+
+public static class SetByCallerDurations
+{
+    private const string DurationField = "DurationMagnitude";
+    private const string CalculationTypeField = "MagnitudeCalculationType";
+    private const string SetByCallerField = "SetByCallerMagnitude";
+    private const string DataTagField = "DataTag";
+    private const string TagNameField = "TagName";
+    private const string TagStruct = "GameplayTag";
+    private const string KindEnum = "EGameplayEffectMagnitudeCalculation";
+    private const string SetByCaller = "SetByCaller";
+    private const string Assignment = "AssignTagSetByCallerMagnitude";
+    private const int MagnitudeParameter = 2;
+    private const int MaxDepth = 24;
+
+    public static string? DeclaredTag(UObject? effect, TypeMappings mappings)
+    {
+        if (effect is null) return null;
+        if (PropertyWalk.GetStruct(effect, DurationField) is not { } duration) return null;
+
+        var written = PropertyWalk.GetString(duration, CalculationTypeField);
+        if (EnumOrdinals.Member(mappings, KindEnum, written) != SetByCaller) return null;
+        if (PropertyWalk.GetStruct(duration, SetByCallerField) is not { } supplied) return null;
+        if (PropertyWalk.GetStruct(supplied, DataTagField) is not { } tag) return null;
+
+        return PropertyWalk.GetString(tag, TagNameField);
+    }
+
+    public static (double? Duration, int Assignments) From(UObject? applier, string tag, ConstantsTable constants)
+    {
+        if (applier is null) return (null, 0);
+
+        var answered = new List<double>();
+        var assignments = 0;
+
+        foreach (var export in applier.Owner?.GetExports() ?? [])
+        {
+            if (export is not UStruct { ScriptBytecode: { Length: > 0 } bytecode } body) continue;
+
+            var walk = new BareStateWalk(body, applier, constants, null);
+            walk.BindEach();
+
+            var calls = new List<KismetExpression[]>();
+            foreach (var statement in bytecode) Assignments(statement, tag, applier, calls, 0);
+
+            foreach (var parameters in calls)
+            {
+                assignments++;
+
+                if (walk.Number(parameters.ElementAtOrDefault(MagnitudeParameter)) is { } magnitude)
+                {
+                    answered.Add(magnitude);
+                }
+            }
+        }
+
+        var distinct = answered.Distinct().ToArray();
+
+        return (distinct.Length == 1 ? distinct[0] : null, assignments);
+    }
+
+    private static void Assignments(
+        KismetExpression? expression,
+        string tag,
+        UObject applier,
+        ICollection<KismetExpression[]> found,
+        int depth)
+    {
+        if (expression is null || depth > MaxDepth) return;
+
+        if (expression is EX_CallMath call && call.StackNode.Name.Equals(Assignment, StringComparison.Ordinal))
+        {
+            if (call.Parameters.Any(parameter => Tagged(parameter, applier) == tag)) found.Add(call.Parameters);
+        }
+
+        foreach (var child in Children(expression)) Assignments(child, tag, applier, found, depth + 1);
+    }
+
+    private static string? Tagged(KismetExpression? expression, UObject applier)
+    {
+        if (expression is EX_StructConst { Struct.Name: TagStruct } inline)
+        {
+            return inline.Properties.OfType<EX_NameConst>().FirstOrDefault()?.Value.Text;
+        }
+
+        if (DynamicTextFloats.Name(expression) is not { } property) return null;
+        if (PropertyWalk.GetStruct(applier, property) is not { } held) return null;
+
+        return PropertyWalk.GetString(held, TagNameField);
+    }
+
+    private static IEnumerable<KismetExpression?> Children(KismetExpression expression) => expression switch
+    {
+        EX_Let let => [let.Variable, let.Assignment],
+        EX_LetObj let => [let.Variable, let.Assignment],
+        EX_LetBool let => [let.Variable, let.Assignment],
+        EX_Context context => [context.ObjectExpression, context.ContextExpression],
+        EX_Cast cast => [cast.Target],
+        EX_Return returned => [returned.ReturnExpression],
+        EX_JumpIfNot jump => [jump.BooleanExpression],
+        EX_CallMath call => call.Parameters,
+        EX_LocalFinalFunction call => call.Parameters,
+        EX_FinalFunction call => call.Parameters,
+        EX_LocalVirtualFunction call => call.Parameters,
+        EX_VirtualFunction call => call.Parameters,
+        EX_StructConst constant => constant.Properties,
+        EX_StructMemberContext member => [member.StructExpression],
+        _ => [],
+    };
+}
