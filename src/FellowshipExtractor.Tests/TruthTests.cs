@@ -83,15 +83,19 @@ public sealed class TruthTests
     }
 
     [Fact]
-    public void ABodyCombiningReadsAcrossAttributesShipsItsTerms()
+    public void ABodyCombiningReadsAcrossAttributesShipsItsBracket()
     {
         var token = Token("GA_Meiko_DamageSoakBuff", "StoneShieldHealth");
 
         Assert.Equal(8.624, (double?)token["coefficient"]);
         Assert.Equal("Agility", (string?)token["attribute"]);
-        Assert.Equal(-1, (double?)token["addend"]);
 
-        var terms = token["terms"]?.AsArray().OfType<JsonObject>()
+        var bracket = token["bracket"]?.AsObject();
+
+        Assert.NotNull(bracket);
+        Assert.Equal(-1, (double?)bracket!["addend"]);
+
+        var terms = bracket["terms"]?.AsArray().OfType<JsonObject>()
             .ToDictionary(term => (string)term["attribute"]!, term => (double)term["coefficient"]!);
 
         Assert.NotNull(terms);
@@ -137,6 +141,7 @@ public sealed class TruthTests
         Assert.Equal("Agility", (string?)token["attribute"]);
         Assert.Equal(0.2, (double?)token["spread"]);
         Assert.True((bool?)token["scalesWithExpertise"]);
+        Assert.Null(token["bracket"]);
     }
 
     [Theory]

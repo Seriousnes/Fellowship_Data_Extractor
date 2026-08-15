@@ -136,10 +136,11 @@ public sealed class HasteScalingTests
         Assert.Null(strength!.Value);
         Assert.Equal(8.624, strength.Coefficient);
         Assert.Equal("Agility", strength.Attribute);
-        Assert.Equal(-1, strength.Addend);
+        Assert.NotNull(strength.Bracket);
+        Assert.Equal(-1, strength.Bracket!.Addend);
         Assert.Equal(
             new[] { "CritChance", "Expertise", "Haste", "Spirit" },
-            strength.Terms?.Select(term => term.Attribute).ToArray());
+            strength.Bracket.Terms.Select(term => term.Attribute).ToArray());
 
         Assert.Null(damage!.Value);
         Assert.Equal(1.91, damage.Coefficient);

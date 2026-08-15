@@ -942,8 +942,8 @@ public sealed class TooltipResolver
                     Coefficient = reading.Coefficient,
                     Attribute = reading.Attribute ?? placeholder.Attribute,
                     ScalesWithExpertise = reading.ScalesWithExpertise ? true : null,
-                    Terms = Written(reading.Terms),
-                    Addend = reading.Terms is null ? null : reading.Addend,
+                    Bracket = Written(reading),
+                    Tickrate = reading.ScalesWithHaste ? true : null,
                 };
         }
 
@@ -961,8 +961,7 @@ public sealed class TooltipResolver
             Attribute = range.Attribute ?? placeholder.Attribute,
             Spread = range.Spread,
             ScalesWithExpertise = range.ScalesWithExpertise ? true : null,
-            Terms = Written(range.Terms),
-            Addend = range.Terms is null ? null : range.Addend,
+            Bracket = Written(range),
         };
     }
 
@@ -987,10 +986,12 @@ public sealed class TooltipResolver
                     : Scalable(CurveBindings.Collect(referenced, _constants), property)?.Value;
             };
 
-    private static IReadOnlyList<PlaceholderTerm>? Written(IReadOnlyList<DynamicTextTerm>? terms) =>
-        terms is not { Count: > 0 }
+    private static PlaceholderBracket? Written(DynamicTextReading reading) =>
+        reading.Terms is not { Count: > 0 } terms
             ? null
-            : [.. terms.Select(term => new PlaceholderTerm(term.Attribute, term.Coefficient))];
+            : new PlaceholderBracket(
+                [.. terms.Select(term => new PlaceholderTerm(term.Attribute, term.Coefficient))],
+                reading.Addend ?? 0);
 
     private static Func<string, double?> Reader(IReadOnlyList<CurveBinding> bindings, ICollection<string> read) =>
         property =>
