@@ -42,15 +42,11 @@ public static class MagnitudeCalculations
             if (body?.ScriptBytecode is not { Length: > 0 } bytecode) continue;
             if (new BareStateWalk(body, calculation, constants, null).Answer() is not { } computed) continue;
 
-            var value = Scaled(custom, "Coefficient", 1, constants)
-                * (computed + Scaled(custom, "PreMultiplyAdditiveValue", 0, constants))
-                + Scaled(custom, "PostMultiplyAdditiveValue", 0, constants);
-
             duration = new CurveBinding(
                 "DurationMagnitude.ScalableFloatMagnitude",
                 AbilityPresentationIndex.AssetName(classPath))
             {
-                Value = Math.Round(value, 10),
+                Value = Folded(custom, computed, constants),
                 Computed = true,
                 ComputedFrom = Rows(bytecode, calculation, constants),
             };
@@ -60,6 +56,24 @@ public static class MagnitudeCalculations
             ? CustomMagnitudes.None
             : new CustomMagnitudes(duration, captures ?? []);
     }
+
+    public static double? Custom(
+        IPropertyHolder magnitude, AbstractFileProvider provider, ConstantsTable constants)
+    {
+        if (PropertyWalk.GetStruct(magnitude, CustomField) is not { } custom) return null;
+        if (PropertyWalk.GetString(custom, ClassField) is not { } classPath) return null;
+        if (Calculation(provider, classPath) is not { } calculation) return null;
+        if (Reduce(calculation, constants) is not { } computed) return null;
+
+        return Folded(custom, computed, constants);
+    }
+
+    private static double Folded(IPropertyHolder custom, double computed, ConstantsTable constants) =>
+        Math.Round(
+            Scaled(custom, "Coefficient", 1, constants)
+            * (computed + Scaled(custom, "PreMultiplyAdditiveValue", 0, constants))
+            + Scaled(custom, "PostMultiplyAdditiveValue", 0, constants),
+            10);
 
     private static UObject? Calculation(AbstractFileProvider provider, string classPath)
     {

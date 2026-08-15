@@ -750,6 +750,12 @@ public sealed class TooltipResolver
             split.Named[Numbers.Duration] = supersedes[0];
         }
 
+        if (AbilityCosts.Of(cdo, _provider, _constants, tuning) is { } cost &&
+            !split.Named.ContainsKey(Numbers.Cost))
+        {
+            split.Named[Numbers.Cost] = cost;
+        }
+
         Supplement(split, tuning);
 
         var grantedTags = cdo is null ? [] : PropertyWalk.GetTags(cdo, GrantedTagsField) ?? [];
@@ -1144,10 +1150,41 @@ public sealed class TooltipResolver
         _ => null,
     };
 
-    private static Entity FillFrom(Entity outer, IEnumerable<Entity> inner)
+    private static Entity FillFrom(Entity outer, IReadOnlyList<Entity> inner)
     {
-        foreach (var ability in inner) outer = Fill(outer, ability);
-        return outer;
+        var filled = outer;
+        foreach (var ability in inner) filled = Fill(filled, ability);
+
+        return filled with
+        {
+            CastTime = Agreed(outer.CastTime, inner, ability => ability.CastTime),
+            ChannelTime = Agreed(outer.ChannelTime, inner, ability => ability.ChannelTime),
+            ChannelTick = Agreed(outer.ChannelTick, inner, ability => ability.ChannelTick),
+            Cooldown = Agreed(outer.Cooldown, inner, ability => ability.Cooldown),
+            Charges = Agreed(outer.Charges, inner, ability => ability.Charges),
+            Cost = Agreed(outer.Cost, inner, ability => ability.Cost),
+            Range = Agreed(outer.Range, inner, ability => ability.Range),
+            Radius = Agreed(outer.Radius, inner, ability => ability.Radius),
+            Duration = Agreed(outer.Duration, inner, ability => ability.Duration),
+            Period = Agreed(outer.Period, inner, ability => ability.Period),
+        };
+    }
+
+    private static double? Agreed(double? own, IReadOnlyList<Entity> granted, Func<Entity, double?> read)
+    {
+        if (own is not null) return own;
+
+        double? agreed = null;
+
+        foreach (var ability in granted)
+        {
+            if (read(ability) is not { } value) continue;
+            if (agreed is { } first && first != value) return null;
+
+            agreed = value;
+        }
+
+        return agreed;
     }
 
     private static Entity Fill(Entity outer, Entity inner) => outer with
@@ -1158,18 +1195,8 @@ public sealed class TooltipResolver
         Icon = outer.Icon ?? inner.Icon,
         Tags = outer.Tags ?? inner.Tags,
         Category = outer.Category ?? inner.Category,
-        CastTime = outer.CastTime ?? inner.CastTime,
-        ChannelTime = outer.ChannelTime ?? inner.ChannelTime,
-        ChannelTick = outer.ChannelTick ?? inner.ChannelTick,
-        Cooldown = outer.Cooldown ?? inner.Cooldown,
-        Charges = outer.Charges ?? inner.Charges,
         ChargesByLevelType = outer.ChargesByLevelType ?? inner.ChargesByLevelType,
-        Cost = outer.Cost ?? inner.Cost,
         Resource = outer.Resource ?? inner.Resource,
-        Range = outer.Range ?? inner.Range,
-        Radius = outer.Radius ?? inner.Radius,
-        Duration = outer.Duration ?? inner.Duration,
-        Period = outer.Period ?? inner.Period,
         ScalesWithHaste = outer.ScalesWithHaste ?? inner.ScalesWithHaste,
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
         Coefficients = Union(outer.Coefficients, inner.Coefficients),
