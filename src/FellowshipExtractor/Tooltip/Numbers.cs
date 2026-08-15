@@ -22,11 +22,6 @@ public static class Numbers
         ["channelingdata.channelingtickinterval"] = "channelTick",
         ["cooldownduration"] = "cooldown",
         ["cooldown"] = "cooldown",
-        ["baselinechargecount"] = "charges",
-        ["maxcharges"] = "charges",
-        ["maxnumcharges"] = "charges",
-        ["numcharges"] = "charges",
-        ["numofcharges"] = "charges",
         ["maxrange"] = "range",
         ["rangehorizontal"] = "range",
         ["range"] = "range",
@@ -39,7 +34,6 @@ public static class Numbers
         ["tickinterval"] = "period",
     };
 
-    public const string Charges = "charges";
     public const string Period = "period";
     public const string Duration = "duration";
     public const string ChannelTick = "channelTick";
@@ -58,11 +52,7 @@ public static class Numbers
     private static string[] Spellings(string field) =>
         field == Period ? [Period, ChannelTick] : [field];
 
-    public static SplitNumbers Split(
-        IEnumerable<CurveBinding> bindings,
-        string? tuningNamespace,
-        bool usesCharges = true,
-        Func<string, bool>? chargeFromItem = null)
+    public static SplitNumbers Split(IEnumerable<CurveBinding> bindings, string? tuningNamespace)
     {
         var named = new Dictionary<string, double>(StringComparer.Ordinal);
         var rest = new Dictionary<string, object?>(StringComparer.Ordinal);
@@ -83,7 +73,7 @@ public static class Numbers
 
             var field = Field(binding.Property) ?? (shallow ? Field(relative) : null);
 
-            if (field is null || (field == Charges && !usesCharges)) continue;
+            if (field is null) continue;
             if (!claimed.TryAdd(field, binding)) continue;
 
             named[field] = binding.Value.Value;
@@ -92,25 +82,6 @@ public static class Numbers
             {
                 promoted[relative] = binding.Value.Value;
                 own.Add(relative);
-            }
-        }
-
-        if (usesCharges && !named.ContainsKey(Charges))
-        {
-            foreach (var binding in all)
-            {
-                if (binding.Values is not null || binding.Value is null) continue;
-
-                var relative = TuningNamespace.Relative(binding.RowName, tuningNamespace);
-                if (relative.Length >= binding.RowName.Length) continue;
-
-                var leaf = relative[(relative.LastIndexOf('.') + 1)..];
-                if (Field(leaf) != Charges) continue;
-                if (chargeFromItem?.Invoke(binding.RowName) == true) continue;
-
-                claimed[Charges] = binding;
-                named[Charges] = binding.Value.Value;
-                break;
             }
         }
 

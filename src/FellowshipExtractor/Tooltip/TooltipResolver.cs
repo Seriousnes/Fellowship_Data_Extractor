@@ -1,4 +1,5 @@
 using CUE4Parse.FileProvider;
+using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
@@ -24,8 +25,6 @@ public sealed class TooltipResolver
     private const string TalentTagPrefix = "Talents.";
     private const string TagSuffix = "Tag";
     private const string GrantedTagsField = "GrantedGameplayTags";
-    private const string ChargeEffectField = "ChargeGameplayEffectClass";
-    private const string NativeChargeEffect = "CRChargeEffect";
     private const string DynamicDefinitionClass = "CRDynamicHeroItemDefinition";
     private const string SpecificDungeonsField = "DropsInSpecificDungeons";
     private const string CreatureTable = "CRAICharacter";
@@ -36,6 +35,7 @@ public sealed class TooltipResolver
     private const string CountsTowardScoreField = "CountTowardsDungeonScore";
 
     private readonly AbstractFileProvider _provider;
+    private readonly TypeMappings _mappings;
     private readonly FAssetData[] _assets;
     private readonly ConstantsTable _constants;
     private readonly EffectCalculationPresets _presets;
@@ -71,7 +71,6 @@ public sealed class TooltipResolver
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
     public DynamicItemVisuals DynamicVisuals { get; }
-    public GrantedCharges Charges { get; }
     public ItemSetBonuses SetBonuses { get; }
     public ItemTableNames TableNames { get; }
     public DynamicItemRuleSets RuleSets { get; }
@@ -116,6 +115,7 @@ public sealed class TooltipResolver
         }
 
         _provider = provider;
+        _mappings = provider.MappingsContainer.MappingsForGame;
         _assets = [.. RegistryCommand.ReadAssets(provider)];
         _tags = [.. CsvExportCommands.ReadTags(provider)];
         _constants = new ConstantsTable(provider);
@@ -155,8 +155,6 @@ public sealed class TooltipResolver
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
 
         DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities);
-
-        Charges = new GrantedCharges(provider, _assets, Presentation);
 
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
@@ -672,8 +670,7 @@ public sealed class TooltipResolver
                 DescriptionTokens.Resolve(tokenHolder, _provider, _constants, _presets, tuning, assetName),
                 display.Description);
 
-        var split = Numbers.Split(
-            bindings, tuning, UsesCharges(cdo), row => Charges.Supplies(row, display.Name));
+        var split = Numbers.Split(bindings, tuning);
         var scaling = new SortedSet<string>(StringComparer.Ordinal);
 
         var bands = new EffectSpreads();
@@ -708,10 +705,12 @@ public sealed class TooltipResolver
             }
         }
 
-        Supplement(split, tuning, UsesCharges(cdo));
+        Supplement(split, tuning);
 
         var grantedTags = cdo is null ? [] : PropertyWalk.GetTags(cdo, GrantedTagsField) ?? [];
         foreach (var tag in grantedTags) SupplementTalent(split, tag);
+
+        var charges = Charged(cdo);
 
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
         var (baseline, talents) = Numbers.SplitTalents(split.Rest);
@@ -788,7 +787,8 @@ public sealed class TooltipResolver
             ChannelTime = Named(split, "channelTime"),
             ChannelTick = Named(split, "channelTick"),
             Cooldown = Named(split, "cooldown"),
-            Charges = Named(split, "charges"),
+            Charges = charges.Charges,
+            ChargesByLevelType = charges.ByLevelType,
             Cost = Named(split, "cost"),
             Resource = display.Resource,
             Range = Named(split, "range"),
@@ -919,10 +919,23 @@ public sealed class TooltipResolver
         return spread;
     }
 
-    private static bool UsesCharges(UObject? cdo) =>
-        cdo is not null &&
-        PropertyWalk.GetString(cdo, ChargeEffectField) is { } effect &&
-        effect.EndsWith(NativeChargeEffect, StringComparison.OrdinalIgnoreCase);
+    private const double SingleCast = 1;
+
+    private ChargeCounts Charged(UObject? cdo)
+    {
+        if (cdo is null) return ChargeCounts.None;
+
+        var counts = MaximumCharges.Of(cdo, _constants, _mappings);
+
+        if (counts.ByLevelType is not null) ChargesVaryByLevelType++;
+        if (counts.Charges is not null && counts.Charges != SingleCast) ChargesFromBlueprint++;
+
+        return counts.Charges == SingleCast ? counts with { Charges = null } : counts;
+    }
+
+    public int ChargesFromBlueprint { get; private set; }
+
+    public int ChargesVaryByLevelType { get; private set; }
 
     private static bool ScalesWithHaste(UObject? cdo) =>
         cdo is not null && PropertyWalk.Get(cdo, HasteScalingField)?.GenericValue is true;
@@ -963,7 +976,7 @@ public sealed class TooltipResolver
         }
     }
 
-    private void Supplement(SplitNumbers split, string? tuning, bool usesCharges)
+    private void Supplement(SplitNumbers split, string? tuning)
     {
         if (tuning is null) return;
 
@@ -979,7 +992,7 @@ public sealed class TooltipResolver
                 ConstantsTable = record.Table,
             };
 
-            var one = Numbers.Split([binding], tuning, usesCharges);
+            var one = Numbers.Split([binding], tuning);
             split.Rows.Add(record.Key);
 
             foreach (var (field, value) in one.Named)
@@ -1063,6 +1076,7 @@ public sealed class TooltipResolver
         ChannelTick = outer.ChannelTick ?? inner.ChannelTick,
         Cooldown = outer.Cooldown ?? inner.Cooldown,
         Charges = outer.Charges ?? inner.Charges,
+        ChargesByLevelType = outer.ChargesByLevelType ?? inner.ChargesByLevelType,
         Cost = outer.Cost ?? inner.Cost,
         Resource = outer.Resource ?? inner.Resource,
         Range = outer.Range ?? inner.Range,

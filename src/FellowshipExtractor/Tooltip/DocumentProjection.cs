@@ -38,6 +38,7 @@ public static class DocumentProjection
             ChannelTick = entity.ChannelTick,
             Cooldown = entity.Cooldown,
             Charges = entity.Charges,
+            ChargesByLevelType = entity.ChargesByLevelType,
             Cost = entity.Cost,
             Resource = entity.Resource,
             Range = entity.Range,

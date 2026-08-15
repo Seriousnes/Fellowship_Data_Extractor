@@ -25,7 +25,6 @@ public static class TooltipCommand
         Console.WriteLine($"granted abilities:  {resolver.Mappings.RowCount} mappings across {resolver.Mappings.TableCount} tables");
         Console.WriteLine($"item slot types:    {resolver.Slots.Count}");
         Console.WriteLine($"hero names:         {resolver.Heroes.Count} resolved from metadata assets");
-        Console.WriteLine($"named augmentations:{resolver.Charges.NamedAugmentations} searched for the charges they supply");
         Console.WriteLine($"talents:            {resolver.Talents.Count} across {resolver.Talents.HeroCount} trees");
         Console.WriteLine(
             $"gems:               {resolver.Gems.TypeCount} types, {resolver.Gems.SizeCount} sizes, " +
@@ -63,6 +62,9 @@ public static class TooltipCommand
         Console.WriteLine($"\n{records.Count} entr{(records.Count == 1 ? "y" : "ies")} for {tag.Value.Name}");
         foreach (var record in records) Report(record, "  ");
         Console.WriteLine($"\ntuning rows supplied by namespace: {resolver.NamespaceSupplied}");
+        Console.WriteLine(
+            $"charge counts read from GetMaximumCharges: {resolver.ChargesFromBlueprint}, " +
+            $"{resolver.ChargesVaryByLevelType} varying by level type");
         Console.WriteLine(
             $"tokens bound by ResolveDynamicTextFloat: {resolver.DeclaredByBlueprint}, " +
             $"by the quantity their name states: {resolver.NamedByToken}");
