@@ -11,6 +11,8 @@ public sealed record EffectRef
 
     public double? Spread { get; init; }
 
+    public bool SpreadOverridden { get; init; }
+
     public bool TickrateIgnoresHaste { get; init; }
 }
 
@@ -45,7 +47,8 @@ public static class GameplayEffects
         AbstractFileProvider provider,
         ConstantsTable constants,
         EffectCalculationPresets presets,
-        string objectPath)
+        string objectPath,
+        ICollection<string> unbindableSpreadRows)
     {
         if (!provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(objectPath), out var package))
         {
@@ -57,15 +60,70 @@ public static class GameplayEffects
         if (effect is null) return new EffectRef();
 
         var custom = MagnitudeCalculations.Of(effect, provider, constants);
+        var (band, unbindable) = SpreadOverride(effect, constants);
+
+        if (unbindable is not null) unbindableSpreadRows.Add(unbindable);
 
         return new EffectRef
         {
             CapturedAttributes = Combined(Captures(effect), custom.Captures),
             Constants = Prefixed(custom.Duration, Collected(effect, constants)),
-            Spread = presets.Of(effect),
+            Spread = band ?? presets.Of(effect),
+            SpreadOverridden = band is not null,
             TickrateIgnoresHaste = IgnoresHaste(effect),
         };
     }
+
+    private const string ScopedModifiersField = "CalculationModifiers";
+    private const string TransientIdentifierField = "TransientAggregatorIdentifier";
+    private const string TagNameField = "TagName";
+    private const string SpreadTag = "SetByCallerTags.Spread";
+    private const string AggregatorTypeField = "AggregatorType";
+    private const string TransientAggregator = "EGameplayEffectScopedModifierAggregatorType::Transient";
+    private const string OverrideOp = "EGameplayModOp::Override";
+    private const string MagnitudeField = "ModifierMagnitude";
+    private const string CalculationTypeField = "MagnitudeCalculationType";
+    private const string ScalableFloatCalculation = "EGameplayEffectMagnitudeCalculation::ScalableFloat";
+    private const string ScalableFloatField = "ScalableFloatMagnitude";
+    private const string CurveHandleField = "Curve";
+    private const string RowNameField = "RowName";
+    private const string ScaleField = "Value";
+
+    public static (double? Spread, string? Unbindable) SpreadOverride(UObject effect, ConstantsTable constants)
+    {
+        foreach (var property in PropertyWalk.Walk(effect))
+        {
+            if (!property.Name.Equals(ScopedModifiersField, StringComparison.Ordinal)) continue;
+            if (property.Value is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
+            if (Overriding(modifier) is not { } scalable) continue;
+
+            var scale = PropertyWalk.AsNumber(PropertyWalk.Get(scalable, ScaleField)?.GenericValue) ?? 0;
+
+            if (PropertyWalk.GetStruct(scalable, CurveHandleField) is not { } curve) return (scale, null);
+            if (PropertyWalk.GetString(curve, RowNameField) is not { } rowName) return (scale, null);
+
+            return constants.Lookup(rowName).Record?.Value is { } declared
+                ? (Math.Round(scale * declared, 10), null)
+                : (null, rowName);
+        }
+
+        return (null, null);
+    }
+
+    private static IPropertyHolder? Overriding(IPropertyHolder modifier)
+    {
+        if (PropertyWalk.GetStruct(modifier, TransientIdentifierField) is not { } identifier) return null;
+        if (PropertyWalk.GetString(identifier, TagNameField) != SpreadTag) return null;
+        if (Named(modifier, AggregatorTypeField) != TransientAggregator) return null;
+        if (Named(modifier, ModifierOpField) != OverrideOp) return null;
+        if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) return null;
+        if (Named(magnitude, CalculationTypeField) != ScalableFloatCalculation) return null;
+
+        return PropertyWalk.GetStruct(magnitude, ScalableFloatField);
+    }
+
+    private static string? Named(IPropertyHolder holder, string field) =>
+        PropertyWalk.AsString(PropertyWalk.Get(holder, field)?.GenericValue);
 
     private static IReadOnlyList<string>? Combined(IReadOnlyList<string>? own, IReadOnlyList<string> computed)
     {

@@ -5,32 +5,25 @@ using CUE4Parse.UE4.Assets.Exports.Engine;
 
 namespace FellowshipExtractor.Tooltip;
 
+public readonly record struct SpreadReading(double? Band, bool Overridden);
+
 public static class Spread
 {
-    private const string Leaf = ".Spread";
-
-    public static double? For(
+    public static SpreadReading For(
         string coefficientKey,
         string? tuning,
         ConstantsTable constants,
         EffectSpreads effects,
-        EffectCalculationPresets presets,
-        double? entityPreset,
-        double? tokenPreset,
-        out bool overridden)
+        EffectBand? entityBand,
+        EffectBand? tokenBand)
     {
         var row = Absolute(coefficientKey, tuning, constants);
-        overridden = false;
+        var band = effects.For(row) ?? tokenBand ?? entityBand;
 
-        if ((effects.For(row) ?? tokenPreset ?? entityPreset) is { } known) return known;
-
-        var separator = row.LastIndexOf('.');
-        if (separator < 0) return null;
-        if (constants.Lookup(row[..separator] + Leaf).Record?.Value is not { } declared) return null;
-
-        overridden = true;
-        return declared == 0 ? null : presets.Band;
+        return new SpreadReading(band is { } known ? Banded(known.Spread) : null, band?.Overridden ?? false);
     }
+
+    private static double? Banded(double? spread) => spread is { } band && band != 0 ? band : null;
 
     private static string Absolute(string key, string? tuning, ConstantsTable constants)
     {
@@ -41,29 +34,31 @@ public static class Spread
     }
 }
 
+public readonly record struct EffectBand(double Spread, bool Overridden);
+
 public sealed class EffectSpreads
 {
-    private readonly Dictionary<string, double> _byRow = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, EffectBand> _byRow = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _contested = new(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyCollection<string> Contested => _contested;
 
-    public void Add(IEnumerable<CurveBinding> bindings, double spread)
+    public void Add(IEnumerable<CurveBinding> bindings, double spread, bool overridden)
     {
         foreach (var binding in bindings)
         {
             if (_byRow.TryGetValue(binding.RowName, out var existing))
             {
-                if (existing != spread) _contested.Add(binding.RowName);
+                if (existing.Spread != spread) _contested.Add(binding.RowName);
                 continue;
             }
 
-            _byRow[binding.RowName] = spread;
+            _byRow[binding.RowName] = new EffectBand(spread, overridden);
         }
     }
 
-    public double? For(string rowName) =>
-        !_contested.Contains(rowName) && _byRow.TryGetValue(rowName, out var spread) ? spread : null;
+    public EffectBand? For(string rowName) =>
+        !_contested.Contains(rowName) && _byRow.TryGetValue(rowName, out var band) ? band : null;
 }
 
 public sealed class EffectCalculationPresets
@@ -100,20 +95,6 @@ public sealed class EffectCalculationPresets
         }
     }
 
-    public double Band
-    {
-        get
-        {
-            var banded = _byRow.Values.Where(spread => spread != 0).Distinct().ToArray();
-
-            if (banded.Length == 1) return banded[0];
-
-            throw new InvalidOperationException(
-                $"{RowStructure} declares {banded.Length} distinct bands ({string.Join(", ", banded)}), so there " +
-                "is no single band a coefficient rolls in and one has to be chosen per effect instead.");
-        }
-    }
-
     public double? DefaultSpread(string? rowName) =>
         rowName is not null && _byRow.TryGetValue(rowName, out var spread) ? spread : null;
 
@@ -121,4 +102,14 @@ public sealed class EffectCalculationPresets
         PropertyWalk.GetStruct(effect, PresetField) is { } handle
             ? DefaultSpread(PropertyWalk.GetString(handle, RowNameField))
             : null;
+
+    public EffectBand? Own(UObject asset, ConstantsTable constants, ICollection<string> unbindableSpreadRows)
+    {
+        var (band, unbindable) = GameplayEffects.SpreadOverride(asset, constants);
+
+        if (unbindable is not null) unbindableSpreadRows.Add(unbindable);
+        if (band is { } overridden) return new EffectBand(overridden, true);
+
+        return Of(asset) is { } preset ? new EffectBand(preset, false) : null;
+    }
 }

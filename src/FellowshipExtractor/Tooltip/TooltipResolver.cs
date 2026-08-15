@@ -44,6 +44,8 @@ public sealed class TooltipResolver
 
     private readonly HashSet<string> _contestedBands = new(StringComparer.OrdinalIgnoreCase);
 
+    private readonly HashSet<string> _unbindableSpreadRows = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly List<TagRecord> _tags;
     private readonly AugmentationIds _augmentationIds;
     private readonly RarityNames _rarities;
@@ -103,6 +105,8 @@ public sealed class TooltipResolver
     public int SpreadPresetDefaults => _spreadSources.Values.Count(fromRow => !fromRow);
 
     public IReadOnlyCollection<string> SpreadContested => _contestedBands;
+
+    public IReadOnlyCollection<string> SpreadRowsUnbindable => _unbindableSpreadRows;
 
     public TooltipResolver(AbstractFileProvider provider)
     {
@@ -694,7 +698,8 @@ public sealed class TooltipResolver
         var placeholders = tokenHolder is null
             ? []
             : DescriptionTokens.Align(
-                DescriptionTokens.Resolve(tokenHolder, _provider, _constants, _presets, tuning, assetName),
+                DescriptionTokens.Resolve(
+                    tokenHolder, _provider, _constants, _presets, tuning, assetName, _unbindableSpreadRows),
                 display.Description);
 
         var split = Numbers.Split(bindings, tuning);
@@ -702,7 +707,7 @@ public sealed class TooltipResolver
 
         var bands = new EffectSpreads();
 
-        var ownBand = cdo is null ? null : _presets.Of(cdo);
+        var ownBand = cdo is null ? null : _presets.Own(cdo, _constants, _unbindableSpreadRows);
 
         var appliedDurations = new List<CurveBinding>();
 
@@ -713,7 +718,7 @@ public sealed class TooltipResolver
 
             foreach (var effect in Effects(cdo))
             {
-                if (effect.Spread is { } band) bands.Add(effect.Constants ?? [], band);
+                if (effect.Spread is { } band) bands.Add(effect.Constants ?? [], band, effect.SpreadOverridden);
                 if (effect.Constants is null && effect.CapturedAttributes is null) continue;
 
                 foreach (var attribute in effect.CapturedAttributes ?? []) scaling.Add(attribute);
@@ -808,7 +813,14 @@ public sealed class TooltipResolver
                     {
                         Attribute = resolved.Attribute,
                         Coefficient = resolved.Value,
-                        Spread = Band(resolved.Key, tuning, bands, ownBand, placeholder.PresetSpread),
+                        Spread = Band(
+                            resolved.Key,
+                            tuning,
+                            bands,
+                            ownBand,
+                            placeholder.PresetSpread is { } tokenBand
+                                ? new EffectBand(tokenBand, placeholder.PresetSpreadOverridden)
+                                : null),
                     };
                     continue;
                 }
@@ -1022,7 +1034,7 @@ public sealed class TooltipResolver
         IReadOnlySet<string> taken,
         string? tuning,
         EffectSpreads bands,
-        double? ownBand,
+        EffectBand? ownBand,
         IReadOnlyList<string> capturedAttributes)
     {
         var stated = Coefficients.All(reachable, own, taken);
@@ -1037,29 +1049,9 @@ public sealed class TooltipResolver
                 Coefficients.Captured(coefficient.Attribute, capturedAttributes), coefficient.Value)
             {
                 Part = coefficient.Part,
-                Spread = Stated(reachable, coefficient.Key)
-                    ?? Band(coefficient.Key, tuning, bands, ownBand, null),
+                Spread = Band(coefficient.Key, tuning, bands, ownBand, null),
             }),
         ];
-    }
-
-    private const string SpreadRow = "Spread";
-
-    private static double? Stated(IReadOnlyDictionary<string, object?> reachable, string coefficientKey)
-    {
-        var scope = coefficientKey;
-
-        while (scope.LastIndexOf('.') is var separator && separator > 0)
-        {
-            scope = scope[..separator];
-
-            if (reachable.GetValueOrDefault($"{scope}.{SpreadRow}") is double stated)
-            {
-                return stated == 0 ? null : stated;
-            }
-        }
-
-        return reachable.GetValueOrDefault(SpreadRow) is double band && band != 0 ? band : null;
     }
 
     public int StatedCoefficients { get; private set; }
@@ -1067,13 +1059,16 @@ public sealed class TooltipResolver
     public int NamespaceFromBindings { get; private set; }
 
     private double? Band(
-        string coefficientKey, string? tuning, EffectSpreads bands, double? ownBand, double? tokenBand)
+        string coefficientKey,
+        string? tuning,
+        EffectSpreads bands,
+        EffectBand? ownBand,
+        EffectBand? tokenBand)
     {
-        var spread = Spread.For(
-            coefficientKey, tuning, _constants, bands, _presets, ownBand, tokenBand, out var overridden);
+        var reading = Spread.For(coefficientKey, tuning, _constants, bands, ownBand, tokenBand);
 
-        if (spread is not null) _spreadSources.TryAdd(coefficientKey, overridden);
-        return spread;
+        if (reading.Band is not null) _spreadSources.TryAdd(coefficientKey, reading.Overridden);
+        return reading.Band;
     }
 
     private const double SingleCast = 1;
@@ -1351,7 +1346,8 @@ public sealed class TooltipResolver
 
     private List<EffectRef> Effects(UObject asset) =>
         [.. GameplayEffects.ReferencedIn(asset, _effectNames)
-            .Select(reference => GameplayEffects.Resolve(_provider, _constants, _presets, reference.Path))];
+            .Select(reference => GameplayEffects.Resolve(
+                _provider, _constants, _presets, reference.Path, _unbindableSpreadRows))];
 
     private static List<string> AbilityTypes(UObject cdo) =>
         [.. (PropertyWalk.GetTags(cdo, "AbilityTags") ?? [])

@@ -222,8 +222,13 @@ public static class ExportAllCommand
             $"  {resolver.DeclaredByBlueprint} tokens bound by the ability's ResolveDynamicTextFloat, " +
             $"{resolver.NamedByToken} by the quantity their name states");
         Console.WriteLine(
-            $"  {resolver.SpreadOverrides} coefficient rows banded by their own Spread row, " +
-            $"{resolver.SpreadPresetDefaults} by their effect's calculation preset");
+            $"  {resolver.SpreadOverrides} coefficient rows banded by the Spread row their effect overrides " +
+            $"with, {resolver.SpreadPresetDefaults} by an effect's calculation preset");
+
+        foreach (var row in resolver.SpreadRowsUnbindable)
+        {
+            Console.WriteLine($"  {row} is overridden onto an effect but no constants table declares it");
+        }
 
         foreach (var row in resolver.SpreadContested)
         {

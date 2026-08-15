@@ -22,7 +22,7 @@ public sealed class AbilityCoefficientTests
 
         Assert.Equal("Intellect", (string?)only["attribute"]);
         Assert.Equal(4.84, (double?)only["value"]);
-        Assert.Equal(0.2, (double?)only["spread"]);
+        Assert.Equal(0.01, (double?)only["spread"]);
     }
 
     [Fact]

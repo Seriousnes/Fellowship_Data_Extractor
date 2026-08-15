@@ -283,6 +283,9 @@ public sealed record Placeholder
     public double? PresetSpread { get; init; }
 
     [JsonIgnore]
+    public bool PresetSpreadOverridden { get; init; }
+
+    [JsonIgnore]
     public int? DynamicTextFloatIdentifier { get; init; }
 }
 

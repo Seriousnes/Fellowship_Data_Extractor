@@ -145,6 +145,25 @@ public sealed class TruthTests
     }
 
     [Theory]
+    [InlineData("GA_Meiko_MeleeRight", "EarthFistDmg", 0.1)]
+    [InlineData("GA_Ink_HeavySingleTargetAttack", "SkullCrushDmg", 0.2)]
+    [InlineData("GA_Ink_HeavySingleTargetAttack", "SkullCrushLightnDmg", 0.2)]
+    public void ATokenBandsInWhatItsEffectOverridesWithOrTheDefaultItsPresetDeclares(
+        string tag, string key, double spread) =>
+        Assert.Equal(spread, (double?)Token(tag, key)["spread"]);
+
+    [Theory]
+    [InlineData("GA_UB_BossWarrior_RangedDotProjectile", 0.4)]
+    [InlineData("GA_UB_BossWarrior_MeleeAutoAttack", 0.2)]
+    public void TwoAbilitiesOfOneBossPartOnWhetherTheirEffectBindsASpreadRow(string tag, double spread)
+    {
+        var coefficient = Record(tag)["coefficients"]?.AsArray().OfType<JsonObject>().Single();
+
+        Assert.NotNull(coefficient);
+        Assert.Equal(spread, (double?)coefficient!["spread"]);
+    }
+
+    [Theory]
     [InlineData("GA_Rime_Talent_SpendersSwap_SingleTarget", 4.096, true)]
     [InlineData("GA_Rime_Talent_SpendersSwap_MultiTargets", 2.114, false)]
     public void ACoefficientOnTheAbilityAReferenceNamesIsRead(string tag, double coefficient, bool expertise)

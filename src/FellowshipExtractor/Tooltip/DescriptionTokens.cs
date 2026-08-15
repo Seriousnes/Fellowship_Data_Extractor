@@ -15,7 +15,8 @@ public static class DescriptionTokens
         ConstantsTable constants,
         EffectCalculationPresets presets,
         string? tuning,
-        string? ownAsset)
+        string? ownAsset,
+        ICollection<string> unbindableSpreadRows)
     {
         var resolved = new Dictionary<string, Placeholder>(StringComparer.Ordinal);
 
@@ -27,7 +28,8 @@ public static class DescriptionTokens
             if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder token }) continue;
             if (PropertyWalk.GetString(token, "TokenName") is not { } name) continue;
 
-            resolved[name] = ResolveOne(name, token, provider, constants, presets, tuning, ownAsset);
+            resolved[name] = ResolveOne(
+                name, token, provider, constants, presets, tuning, ownAsset, unbindableSpreadRows);
         }
 
         return resolved;
@@ -84,7 +86,8 @@ public static class DescriptionTokens
         ConstantsTable constants,
         EffectCalculationPresets presets,
         string? tuning,
-        string? ownAsset)
+        string? ownAsset,
+        ICollection<string> unbindableSpreadRows)
     {
         var direct = PropertyWalk.GetStruct(token, "Attribute") is { } attribute
             ? PropertyWalk.GetString(attribute, "AttributeName")
@@ -126,10 +129,11 @@ public static class DescriptionTokens
             };
         }
 
-        var effect = GameplayEffects.Resolve(provider, constants, presets, objectPath);
+        var effect = GameplayEffects.Resolve(provider, constants, presets, objectPath, unbindableSpreadRows);
         declared = declared with
         {
             PresetSpread = effect.Spread,
+            PresetSpreadOverridden = effect.SpreadOverridden,
             IgnoresHaste = effect.TickrateIgnoresHaste ? true : null,
         };
 
