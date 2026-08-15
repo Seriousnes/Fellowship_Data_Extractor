@@ -72,6 +72,10 @@ public sealed record Entity
 
     public bool? TickrateIgnoresHaste { get; init; }
 
+    public int? MaxStacks { get; init; }
+
+    public bool? Infinite { get; init; }
+
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
     public IReadOnlyDictionary<string, Placeholder>? Placeholders { get; init; }

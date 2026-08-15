@@ -30,7 +30,9 @@ public sealed record Display(
     }
 
     private static string? DescriptionOf(IPropertyHolder row) =>
-        DynamicText(row) ?? PropertyWalk.GetString(row, "DetailedDescription");
+        DynamicText(row)
+        ?? PropertyWalk.GetString(row, "DetailedDescription")
+        ?? PropertyWalk.GetString(row, "Description");
 
     private static string? DynamicText(IPropertyHolder holder) =>
         PropertyWalk.GetStruct(holder, "DynamicDescription") is { } dynamic
@@ -69,7 +71,7 @@ public sealed record Display(
             foreach (var property in asset.Properties)
             {
                 if (!property.Name.Text.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)) continue;
-                if (property.Tag?.GenericValue is FScriptStruct or UScriptArray or UScriptMap) continue;
+                if (property.TagData?.Type is not ("TextProperty" or "StrProperty" or "NameProperty")) continue;
                 if (PropertyWalk.AsString(property.Tag?.GenericValue) is { } text) return text;
             }
         }

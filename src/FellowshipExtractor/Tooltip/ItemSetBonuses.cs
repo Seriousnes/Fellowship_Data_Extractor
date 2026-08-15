@@ -39,6 +39,7 @@ public sealed class ItemSetBonuses
     private readonly Dictionary<string, Dictionary<string, string>> _byMappingKey =
         new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<int> _augmentations = [];
+    private readonly Dictionary<int, SetBonus> _byAugmentation = [];
     private readonly Dictionary<string, int> _netIds = new(StringComparer.OrdinalIgnoreCase);
 
     public int Count => _byRow.Count;
@@ -79,7 +80,10 @@ public sealed class ItemSetBonuses
                     IconPath = PropertyWalk.GetString(row, IconField),
                 })) continue;
 
-                if (augmentationId is not null) _augmentations.Add(augmentationId.Value);
+                if (augmentationId is not { } pointed) continue;
+
+                _augmentations.Add(pointed);
+                _byAugmentation.TryAdd(pointed, _byRow[rowName.Text]);
             }
         }
 
@@ -108,6 +112,8 @@ public sealed class ItemSetBonuses
         tagName.StartsWith(TagPrefix, StringComparison.OrdinalIgnoreCase)
             ? _byRow.GetValueOrDefault(tagName[TagPrefix.Length..])
             : null;
+
+    public SetBonus? ForAugmentation(int netId) => _byAugmentation.GetValueOrDefault(netId);
 
     public bool PointsAt(int netId) => _augmentations.Contains(netId);
 

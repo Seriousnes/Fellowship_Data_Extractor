@@ -124,6 +124,8 @@ public static class DocumentProjection
             Radius = entity.Radius,
             Cost = entity.Cost,
             TickrateIgnoresHaste = entity.TickrateIgnoresHaste,
+            MaxStacks = entity.MaxStacks,
+            Infinite = entity.Infinite,
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Schools = Schools(entity.Tags) ?? Schools(entity.ApplierTags),

@@ -92,6 +92,7 @@ public static class Numbers
         {
             rows.Add(binding.RowName);
             if (claimedRows.Contains(binding.RowName)) continue;
+            if (binding.RowName.Equals("None", StringComparison.Ordinal)) continue;
 
             Place(rest, own, binding.RowName, Value(binding), tuningNamespace);
         }

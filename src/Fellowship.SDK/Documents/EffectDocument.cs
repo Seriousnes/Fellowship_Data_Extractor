@@ -16,6 +16,10 @@ public sealed class EffectDocument : EntityDocument
 
     public bool? TickrateIgnoresHaste { get; init; }
 
+    public int? MaxStacks { get; init; }
+
+    public bool? Infinite { get; init; }
+
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }

@@ -56,13 +56,30 @@ public static class GameplayEffects
             .FirstOrDefault(e => e.Name.StartsWith("Default__", StringComparison.Ordinal));
         if (effect is null) return new EffectRef();
 
+        var custom = MagnitudeCalculations.Of(effect, provider, constants);
+
         return new EffectRef
         {
-            CapturedAttributes = Captures(effect),
-            Constants = Collected(effect, constants),
+            CapturedAttributes = Combined(Captures(effect), custom.Captures),
+            Constants = Prefixed(custom.Duration, Collected(effect, constants)),
             Spread = presets.Of(effect),
             TickrateIgnoresHaste = IgnoresHaste(effect),
         };
+    }
+
+    private static IReadOnlyList<string>? Combined(IReadOnlyList<string>? own, IReadOnlyList<string> computed)
+    {
+        if (computed.Count == 0) return own;
+        if (own is null) return computed;
+
+        return [.. own.Concat(computed).Distinct(StringComparer.Ordinal)];
+    }
+
+    private static IReadOnlyList<CurveBinding>? Prefixed(CurveBinding? computed, IReadOnlyList<CurveBinding>? own)
+    {
+        if (computed is null) return own;
+
+        return [computed, .. own ?? []];
     }
 
     public const int Multiplicitive = 1;
