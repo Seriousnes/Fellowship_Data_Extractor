@@ -127,4 +127,28 @@ public sealed class TruthTests
         Assert.Equal("Intellect", (string?)token["attribute"]);
         Assert.True((bool?)token["scalesWithExpertise"]);
     }
+
+    [Fact]
+    public void AStackCountIsNoneAtRestSoTheBaseHealRemains()
+    {
+        var token = Token("GA_Meiko_InstantSelfDefensive", "SerenityHeal");
+
+        Assert.Equal(2.2, (double?)token["coefficient"]);
+        Assert.Equal("Agility", (string?)token["attribute"]);
+        Assert.Equal(0.2, (double?)token["spread"]);
+        Assert.True((bool?)token["scalesWithExpertise"]);
+    }
+
+    [Theory]
+    [InlineData("GA_Rime_Talent_SpendersSwap_SingleTarget", 4.096, true)]
+    [InlineData("GA_Rime_Talent_SpendersSwap_MultiTargets", 2.114, false)]
+    public void ACoefficientOnTheAbilityAReferenceNamesIsRead(string tag, double coefficient, bool expertise)
+    {
+        var token = Token(tag, "Talons");
+
+        Assert.Equal(coefficient, (double?)token["coefficient"]);
+        Assert.Equal("Intellect", (string?)token["attribute"]);
+        Assert.Equal(0.2, (double?)token["spread"]);
+        Assert.Equal(expertise ? true : null, (bool?)token["scalesWithExpertise"]);
+    }
 }

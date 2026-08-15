@@ -914,7 +914,7 @@ public sealed class TooltipResolver
 
     public int NamedByToken { get; private set; }
 
-    private static Placeholder? Declared(
+    private Placeholder? Declared(
         Placeholder placeholder,
         UObject? cdo,
         DynamicTextFloatBody declared,
@@ -925,8 +925,9 @@ public sealed class TooltipResolver
         if (placeholder.DynamicTextFloatIdentifier is not { } identifier) return null;
 
         var read = new List<string>();
+        var borrowed = Borrowed(cdo);
 
-        if (declared.Read(identifier, Reader(bindings, read)) is { } reading)
+        if (declared.Read(identifier, Reader(bindings, read), borrowed) is { } reading)
         {
             foreach (var row in read) spent.Add(row);
 
@@ -950,7 +951,7 @@ public sealed class TooltipResolver
 
         read.Clear();
 
-        if (DynamicTextRanges.For(cdo, identifier, Reader(bindings, read)) is not { } range) return null;
+        if (DynamicTextRanges.For(cdo, identifier, Reader(bindings, read), borrowed) is not { } range) return null;
 
         foreach (var row in read) spent.Add(row);
 
@@ -964,6 +965,27 @@ public sealed class TooltipResolver
             Addend = range.Terms is null ? null : range.Addend,
         };
     }
+
+    private const string DefaultPrefix = "Default__";
+
+    private Func<string, string, double?>? Borrowed(UObject? cdo) =>
+        cdo is null
+            ? null
+            : (holder, property) =>
+            {
+                if (PropertyWalk.GetString(cdo, holder) is not { } classPath) return null;
+                if (!_provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(classPath), out var package))
+                {
+                    return null;
+                }
+
+                var referenced = package.GetExports()
+                    .FirstOrDefault(e => e.Name.StartsWith(DefaultPrefix, StringComparison.Ordinal));
+
+                return referenced is null
+                    ? null
+                    : Scalable(CurveBindings.Collect(referenced, _constants), property)?.Value;
+            };
 
     private static IReadOnlyList<PlaceholderTerm>? Written(IReadOnlyList<DynamicTextTerm>? terms) =>
         terms is not { Count: > 0 }

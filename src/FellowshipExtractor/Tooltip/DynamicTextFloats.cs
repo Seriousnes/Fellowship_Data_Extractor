@@ -47,11 +47,12 @@ public sealed class DynamicTextFloatBody
         _haste = haste;
     }
 
-    public DynamicTextReading? Read(int identifier, Func<string, double?> scalable)
+    public DynamicTextReading? Read(
+        int identifier, Func<string, double?> scalable, Func<string, string, double?>? referenced = null)
     {
         if (_returned is null) return null;
 
-        var reader = new DynamicTextArithmetic(_locals, identifier, scalable) { Unity = _unity };
+        var reader = new DynamicTextArithmetic(_locals, identifier, scalable, referenced) { Unity = _unity };
 
         return reader.Of(_returned) is not { } value
             ? null
@@ -65,7 +66,11 @@ public static class DynamicTextRanges
     private const string Minimum = "MinValue";
     private const string Maximum = "MaxValue";
 
-    public static DynamicTextReading? For(UObject cdo, int identifier, Func<string, double?> scalable)
+    public static DynamicTextReading? For(
+        UObject cdo,
+        int identifier,
+        Func<string, double?> scalable,
+        Func<string, string, double?>? referenced = null)
     {
         if (DynamicTextFloats.Body(cdo, Function) is not { Length: > 0 } bytecode) return null;
 
@@ -74,17 +79,17 @@ public static class DynamicTextRanges
 
         foreach (var statement in bytecode)
         {
-            if (statement is not EX_Let let) continue;
-            if (DynamicTextFloats.Name(let.Variable) is not { } name) continue;
+            if (DynamicTextFloats.Assigned(statement) is not var (variable, assignment)) continue;
+            if (DynamicTextFloats.Name(variable) is not { } name) continue;
 
-            if (name == Minimum) low = let.Assignment;
-            else if (name == Maximum) high = let.Assignment;
-            else locals[name] = let.Assignment;
+            if (name == Minimum) low = assignment;
+            else if (name == Maximum) high = assignment;
+            else locals[name] = assignment;
         }
 
         if (low is null || high is null) return null;
 
-        var reader = new DynamicTextArithmetic(locals, identifier, scalable);
+        var reader = new DynamicTextArithmetic(locals, identifier, scalable, referenced);
 
         if (reader.Of(low) is not { } least || reader.Of(high) is not { } most) return null;
         if (!string.Equals(least.Attribute, most.Attribute, StringComparison.Ordinal)) return null;
@@ -109,7 +114,8 @@ internal sealed record DynamicTextValue(double Scale, string? Attribute, Dynamic
 internal sealed class DynamicTextArithmetic(
     IReadOnlyDictionary<string, KismetExpression> locals,
     int identifier,
-    Func<string, double?> scalable)
+    Func<string, double?> scalable,
+    Func<string, string, double?>? referenced = null)
 {
     private const string Expertise = "Expertise";
     private const string ScalableRead = "GetScalableFloat";
@@ -121,6 +127,8 @@ internal sealed class DynamicTextArithmetic(
     private const string Divide = "Divide_";
     private const string Add = "Add_";
     private const string Subtract = "Subtract_";
+    private const string StackCount = "GetActiveGameplayEffectStackCount";
+    private const string DefaultObject = "GetDefaultObject";
     private const int Digits = 10;
 
     private static readonly string[] Rounding = ["Round", "FTrunc", "FCeil", "FFloor"];
@@ -220,7 +228,11 @@ internal sealed class DynamicTextArithmetic(
 
         if (function.StartsWith(ScalableRead, StringComparison.Ordinal))
         {
-            return Property(call.Parameters.FirstOrDefault(), depth) is { } property && scalable(property) is { } value
+            var argument = call.Parameters.FirstOrDefault();
+
+            if (Across(argument, depth) is { } borrowed) return borrowed;
+
+            return Property(argument, depth) is { } property && scalable(property) is { } value
                 ? Number(value)
                 : null;
         }
@@ -230,6 +242,8 @@ internal sealed class DynamicTextArithmetic(
         {
             return Attribute(call) is { } attribute ? new DynamicTextValue(1, attribute, null) : null;
         }
+
+        if (function.Equals(StackCount, StringComparison.Ordinal)) return Number(0);
 
         if (function.StartsWith(Convert, StringComparison.Ordinal) ||
             Array.Exists(Rounding, name => function.Equals(name, StringComparison.Ordinal)))
@@ -280,6 +294,42 @@ internal sealed class DynamicTextArithmetic(
             EX_CallMath call when call.Parameters.Length == 1 => Property(call.Parameters[0], depth + 1),
             _ => DynamicTextFloats.Name(argument),
         };
+    }
+
+    private DynamicTextValue? Across(KismetExpression? argument, int depth)
+    {
+        if (referenced is null) return null;
+        if (Unwrapped(argument, depth) is not EX_Context context) return null;
+        if (DynamicTextFloats.Name(context.ContextExpression) is not { } property) return null;
+        if (Holder(context.ObjectExpression, depth) is not { } holder) return null;
+
+        return referenced(holder, property) is { } value ? Number(value) : null;
+    }
+
+    private KismetExpression? Unwrapped(KismetExpression? expression, int depth) =>
+        expression is null || depth > 32
+            ? null
+            : expression switch
+            {
+                EX_Cast cast => Unwrapped(cast.Target, depth + 1),
+                EX_SwitchValue chosen => Unwrapped(Case(chosen), depth + 1),
+                _ => expression,
+            };
+
+    private string? Holder(KismetExpression? expression, int depth)
+    {
+        if (expression is null || depth > 32) return null;
+
+        if (expression is EX_LocalVariable or EX_LocalOutVariable or EX_InstanceVariable &&
+            DynamicTextFloats.Name(expression) is { } local &&
+            locals.TryGetValue(local, out var bound))
+        {
+            return Holder(bound, depth + 1);
+        }
+
+        return expression is EX_CallMath { StackNode.Name: DefaultObject } call
+            ? DynamicTextFloats.Name(call.Parameters.FirstOrDefault())
+            : null;
     }
 
     private static string? Attribute(EX_CallMath call)
@@ -404,16 +454,24 @@ public static class DynamicTextFloats
                 }
             }
 
-            if (statement is not EX_Let let) continue;
-            if (Name(let.Variable) is not { } local) continue;
+            if (Assigned(statement) is not var (variable, assignment)) continue;
+            if (Name(variable) is not { } local) continue;
 
-            locals[local] = let.Assignment;
+            locals[local] = assignment;
         }
 
         return locals.TryGetValue(Returned, out var returned)
             ? new DynamicTextFloatBody(returned, locals, unity, haste)
             : DynamicTextFloatBody.Empty;
     }
+
+    internal static (KismetExpression Variable, KismetExpression Assignment)? Assigned(
+        KismetExpression statement) => statement switch
+    {
+        EX_LetObj held => (held.Variable, held.Assignment),
+        EX_Let let => (let.Variable, let.Assignment),
+        _ => null,
+    };
 
     private static KismetExpression[] Parameters(KismetExpression expression) => expression switch
     {
