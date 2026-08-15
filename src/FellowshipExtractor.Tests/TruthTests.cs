@@ -274,6 +274,15 @@ public sealed class TruthTests
     }
 
     [Fact]
+    public void APerkSubstitutesTheConstantTheHerosOwnTokenNames()
+    {
+        var bowguy = (string?)Record("CAA_Perk_InstantHealDamageReductionBuff")["descriptionsByHero"]?["Bowguy"];
+
+        Assert.NotNull(bowguy);
+        Assert.Contains("20%", bowguy, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void EveryPerkWhoseDescriptionIsTheSharedTokenCarriesTwelveHeroSentences()
     {
         var filled = Export.Loaded.Documents
