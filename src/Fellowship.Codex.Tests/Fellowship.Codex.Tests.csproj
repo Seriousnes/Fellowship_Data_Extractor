@@ -18,6 +18,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\..\docs\combatant-info-events.json"
+             Link="FellowshipLogs\combatant-info-events.json"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="bunit" Version="2.8.6" />
     <PackageReference Include="xunit.v3" Version="3.2.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />

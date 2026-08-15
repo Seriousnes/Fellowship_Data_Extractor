@@ -128,6 +128,60 @@ public class CraftUrlTests : BunitContext
         Assert.Contains("Copy link", copy.TextContent, StringComparison.Ordinal);
     }
 
+    private static string Payload() =>
+        File.ReadAllText(Path.Combine(
+            AppContext.BaseDirectory, "FellowshipLogs", "combatant-info-events.json"));
+
+    [Fact]
+    public void Pasting_one_gear_entry_writes_the_parameters_it_states()
+    {
+        var island = Island();
+
+        island.Find("button.cx-craft-import").Click();
+
+        using var payload = System.Text.Json.JsonDocument.Parse(Payload());
+
+        var entry = FellowshipLogs.Gear(payload.RootElement)[0];
+
+        island.Find("textarea.cx-craft-paste").Change(entry.GetRawText());
+        island.Find("button.cx-craft-read").Click();
+
+        Assert.Contains("itemLevel=", Nav.Uri, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Pasting_a_whole_combatantinfo_lists_the_gear_so_one_piece_can_be_chosen()
+    {
+        var island = Island();
+
+        island.Find("button.cx-craft-import").Click();
+        island.Find("textarea.cx-craft-paste").Change(Payload());
+        island.Find("button.cx-craft-read").Click();
+
+        Assert.NotEmpty(island.FindAll("ul.cx-craft-pieces li button"));
+    }
+
+    [Fact]
+    public void Choosing_a_piece_navigates_to_the_item_that_piece_names()
+    {
+        var island = Island();
+
+        island.Find("button.cx-craft-import").Click();
+        island.Find("textarea.cx-craft-paste").Change(Payload());
+        island.Find("button.cx-craft-read").Click();
+
+        island.FindAll("ul.cx-craft-pieces li button")[0].Click();
+
+        using var payload = System.Text.Json.JsonDocument.Parse(Payload());
+
+        var first = FellowshipLogs.Gear(payload.RootElement)[0];
+
+        Assert.Contains(
+            $"/{EntityTypes.Slug(EntityType.Item)}/{first.GetProperty("id").GetInt32()}",
+            Nav.Uri,
+            StringComparison.Ordinal);
+    }
+
     [Fact]
     public void An_unreadable_paste_is_said_rather_than_dropped()
     {
