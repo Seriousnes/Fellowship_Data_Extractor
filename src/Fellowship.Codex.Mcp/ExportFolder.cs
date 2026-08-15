@@ -20,7 +20,7 @@ public static class ExportFolder
             ?? throw new InvalidOperationException(
                 $"No output/export above {Directory.GetCurrentDirectory()} or {AppContext.BaseDirectory}, " +
                 $"and neither {Option} nor {FolderExportSource.Variable} names one. Write it with " +
-                "'dotnet run --project src/FellowshipExtractor -- export-all --output output/export'.");
+                "'dotnet run --project src/FellowshipExtractor'.");
     }
 
     private static string? Given(IReadOnlyList<string> args)

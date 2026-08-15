@@ -268,7 +268,7 @@ public sealed class EntityStoreService : IEntityStoreService
             plateau => plateau.Row.Equals(row, StringComparison.OrdinalIgnoreCase))?.ItemLevel
         ?? throw new InvalidOperationException(
             $"The settings state no {row} drop plateau, so there is no item level to answer a request that " +
-            "names none. Write it again with 'dotnet run --project src/FellowshipExtractor -- export-all'.");
+            "names none. Write it again with 'dotnet run --project src/FellowshipExtractor'.");
 
     public RarityEntry? Rarity(string? word, bool gem)
     {

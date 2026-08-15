@@ -53,7 +53,7 @@ public static class ExportAllCommand
         return null;
     }
 
-    public static async Task RunAsync(ExtractorOptions options, string[] tables, IExportTarget target)
+    public static async Task RunAsync(ExtractorOptions options, IExportTarget target)
     {
         var provider = await ProviderFactory.CreateAsync(options);
         var resolver = new TooltipResolver(provider);
@@ -88,17 +88,10 @@ public static class ExportAllCommand
             $"{resolver.Settings.MaxTempers.Count} tempering ladders, " +
             $"{resolver.Settings.AbilityCategories.Count} ability categories");
 
-        var wanted = new HashSet<string>(tables, StringComparer.OrdinalIgnoreCase);
-        var selected = resolver.Tags
-            .Where(t => wanted.Count == 0 || wanted.Contains(t.Table))
-            .ToArray();
-
-        if (selected.Length == 0)
-        {
-            Console.Error.WriteLine($"No tags in table(s) {string.Join(", ", tables)}.");
-            Console.Error.WriteLine($"Known tables: {string.Join(", ", resolver.Tags.Select(t => t.Table).Distinct().Order())}");
-            return;
-        }
+        await CsvExportCommands.WriteTagsAsync(
+            resolver.Tags, Path.Combine(options.ResolvedOutputDir, CsvExportCommands.TagsName));
+        await CsvExportCommands.WriteConstantsAsync(
+            provider, Path.Combine(options.ResolvedOutputDir, CsvExportCommands.ConstantsName));
 
         var icons = new IconImages(
             provider, resolver.Collections.Renders, RarityImages.Ladder(resolver.Settings));
@@ -113,7 +106,7 @@ public static class ExportAllCommand
         var branches = Branches(resolver.Tags);
         var resolved = new List<Entity>();
 
-        foreach (var tag in selected)
+        foreach (var tag in resolver.Tags)
         {
             foreach (var record in resolver.Resolve(tag, icons.Writer))
             {
@@ -153,7 +146,7 @@ public static class ExportAllCommand
             await icons.FlushAsync(target, default);
 
             scanned++;
-            if (scanned % 500 == 0) Console.WriteLine($"  {scanned} of {selected.Length}...");
+            if (scanned % 500 == 0) Console.WriteLine($"  {scanned} of {resolver.Tags.Count}...");
         }
 
         var types = resolved

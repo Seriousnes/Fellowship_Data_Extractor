@@ -44,7 +44,7 @@ public sealed class StaleExportTests
 
         Assert.Contains("entities.jsonl", failure.Message, StringComparison.Ordinal);
         Assert.Contains("Line 1", failure.Message, StringComparison.Ordinal);
-        Assert.Contains("export-all", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("src/FellowshipExtractor", failure.Message, StringComparison.Ordinal);
         Assert.IsType<NotSupportedException>(failure.InnerException);
     }
 
@@ -73,7 +73,7 @@ public sealed class StaleExportTests
 
             Assert.Contains("data/settings.json", failure.Message, StringComparison.Ordinal);
             Assert.Contains("FellowshipExtractor.Publisher", failure.Message, StringComparison.Ordinal);
-            Assert.Contains("export-all", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("src/FellowshipExtractor", failure.Message, StringComparison.Ordinal);
         }
         finally
         {

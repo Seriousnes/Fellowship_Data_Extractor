@@ -68,5 +68,5 @@ public sealed class Export
         FolderExportSource.Above(AppContext.BaseDirectory)
         ?? throw new InvalidOperationException(
             "No output/export above the test binary and FELLOWSHIP_EXPORT is not set. It names the " +
-            "folder the extractor's export-all command wrote, which is the same layout the container holds.");
+            "folder the extractor wrote, which is the same layout the container holds.");
 }

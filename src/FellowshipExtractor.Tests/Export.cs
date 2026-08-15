@@ -94,8 +94,8 @@ public sealed class Export
         }
 
         throw new DirectoryNotFoundException(
-            "No export to test against. Run 'dotnet run --project src/FellowshipExtractor -- export-all " +
-            $"--output output/export' or point {Variable} at a folder holding " +
+            "No export to test against. Run 'dotnet run --project src/FellowshipExtractor' " +
+            $"or point {Variable} at a folder holding " +
             $"{ExportReader.Data}/{ExportReader.EntitiesName} and " +
             $"{ExportReader.Data}/{ExportReader.SettingsName}.");
     }

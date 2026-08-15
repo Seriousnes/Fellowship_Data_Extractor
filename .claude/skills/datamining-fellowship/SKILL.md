@@ -23,9 +23,9 @@ was four instructions in the binary.
 | 3. Assets | `dump <name>` | JSON under `output/dump`. Read rows, never file names. |
 | 4. Binary | see below | Everything the first three do not carry. |
 
-Supporting exports worth having: `constants` (13,156 tuning rows), `functions`
-(`blueprint-functions.jsonl`, every Blueprint function and its calls), `locres`, `index`, `list`
-(`output/files.txt`, every path in the build).
+Supporting exports worth having: `ability-constants.jsonl` (13,156 tuning rows) and `tags.jsonl`,
+both written by the default run, `functions` (`blueprint-functions.jsonl`, every Blueprint function
+and its calls), `locres`, `list` (`output/files.txt`, every path in the build).
 
 ## Reading the shipping binary
 

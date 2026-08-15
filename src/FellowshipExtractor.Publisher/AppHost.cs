@@ -20,8 +20,7 @@ var icons = storage.AddBlobContainer("icons", "icons");
 
 var extractor = builder.AddProject<Projects.FellowshipExtractor>("extractor")
     .WithReference(icons)
-    .WaitFor(icons)
-    .WithArgs("export-all");
+    .WaitFor(icons);
 
 if (Environment.GetEnvironmentVariable("FELLOWSHIP_USMAP") is { Length: > 0 } mappings)
 {

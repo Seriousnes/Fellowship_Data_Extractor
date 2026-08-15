@@ -48,7 +48,8 @@ public static class TooltipCommand
         if (tag is null)
         {
             Console.Error.WriteLine($"No entry in table '{table}' with id or name '{id}'.");
-            Console.Error.WriteLine("Run 'tags' and search tags.jsonl for the table and name you want.");
+            Console.Error.WriteLine(
+                $"Search output/{CsvExportCommands.TagsName} for the table and name you want.");
             return;
         }
 

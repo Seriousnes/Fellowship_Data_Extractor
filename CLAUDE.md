@@ -17,9 +17,9 @@ place that cannot see the assets, and every consumer of the export then goes wit
   projection first. Do not infer, guess or approximate the value in the Api layer.
 - Say what you are extracting and run it. Do not ask whether the extraction is worth it, and do not
   offer a no-extraction alternative as the safer option.
-- The command is `dotnet run --project src/FellowshipExtractor -- export-all --output output/export`.
-  It rewrites `output/export/data/entities.jsonl`, `output/export/data/settings.json` and the
-  composed art in `output/export/ui`.
+- The command is `dotnet run --project src/FellowshipExtractor`, with no arguments. It rewrites
+  `output/export/data/entities.jsonl`, `output/export/data/settings.json`, the composed art in
+  `output/export/ui`, `output/tags.jsonl`, `output/ability-constants.jsonl` and the enums.
 - Run it whenever the documents change, so the checked-out export always matches the document
   classes that read it back.
 
@@ -30,12 +30,13 @@ fixture's constructor. Seeding it is:
 
 ```powershell
 $env:FELLOWSHIP_USMAP = "<any checkout>/output/fellowship.usmap"
-dotnet run --project src/FellowshipExtractor -- export-all --output output/export
+dotnet run --project src/FellowshipExtractor
 ```
 
-**Why:** `export-all` names no destination of its own and fails asking for one, so `--output` is not
-optional. It writes both halves in the one pass: the documents under `data/`, and every composed
-image under `ui/`. `RouteTests` calls `Export.Found()` directly rather than reading
+**Why:** with no destination named the run writes `output/export`, and it writes both halves in the
+one pass: the documents under `data/`, and every composed image under `ui/`. A connection string in
+`ConnectionStrings__icons` replaces that folder with the blob container, which is what the Publisher
+app host does. `RouteTests` calls `Export.Found()` directly rather than reading
 `FELLOWSHIP_EXPORT`, so the tests that run through `WebApplicationFactory` read the worktree's own
 `output/export` whatever that variable says. A worktree can borrow another checkout's export by
 copying its `data/` folder, which is a few megabytes against the whole export's few hundred.

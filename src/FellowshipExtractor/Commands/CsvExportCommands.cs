@@ -22,14 +22,15 @@ public static partial class CsvExportCommands
 {
     private const string GuidTableDir = "Content/guid/";
 
-    public static async Task ExportTagsAsync(ExtractorOptions options)
-    {
-        var provider = await ProviderFactory.CreateAsync(options);
-        var target = Path.Combine(options.ResolvedOutputDir, "tags.jsonl");
+    public const string TagsName = "tags.jsonl";
 
+    public const string ConstantsName = "ability-constants.jsonl";
+
+    public static async Task WriteTagsAsync(IEnumerable<TagRecord> tags, string target)
+    {
         var records = 0;
         await using var writer = new StreamWriter(target);
-        foreach (var tag in ReadTags(provider))
+        foreach (var tag in tags)
         {
             await writer.WriteLineAsync(JsonSerializer.Serialize(tag));
             records++;
@@ -57,10 +58,8 @@ public static partial class CsvExportCommands
         }
     }
 
-    public static async Task ExportConstantsAsync(ExtractorOptions options)
+    public static async Task WriteConstantsAsync(AbstractFileProvider provider, string target)
     {
-        var provider = await ProviderFactory.CreateAsync(options);
-        var target = Path.Combine(options.ResolvedOutputDir, "ability-constants.jsonl");
         var json = new JsonSerializerOptions
         {
             DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,

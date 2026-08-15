@@ -3,17 +3,18 @@ using FellowshipExtractor;
 using FellowshipExtractor.Commands;
 using FellowshipExtractor.Output;
 using FellowshipExtractor.Textures;
+using FellowshipExtractor.Tooltip;
 using FellowshipExtractor.Usmap;
 
 ReadFailureLog.EnableIfRequested();
 
 const string OutputFlag = "--output";
 const string ConnectionStringFlag = "--connection-string";
+const string UsmapFlag = "--usmap";
 const string ConnectionStringVariable = "ConnectionStrings__icons";
+const string ExportFolderName = "export";
 
-string[] valuedFlags = [OutputFlag, ConnectionStringFlag];
-
-var command = args.Length > 0 ? args[0].ToLowerInvariant() : "list";
+var command = args.Length > 0 && !args[0].StartsWith('-') ? args[0].ToLowerInvariant() : "export";
 var options = new ExtractorOptions
 {
     MappingsFile = Environment.GetEnvironmentVariable("FELLOWSHIP_USMAP"),
@@ -31,8 +32,8 @@ catch (MappingException)
     Console.Error.WriteLine(
         """
         This package uses unversioned properties and no mappings are loaded.
-        Set FELLOWSHIP_USMAP to a .usmap file for this build, then retry.
-        Commands that need no mappings: list, cat, raw, registry, tags, constants, locres, webdb.
+        Run with --usmap to recover them, or set FELLOWSHIP_USMAP to a .usmap file for this build.
+        Commands that need no mappings: list, cat, raw, registry, locres.
         """);
     return 2;
 }
@@ -41,6 +42,38 @@ async Task<int> RunAsync()
 {
 switch (command)
 {
+    case "export":
+    {
+        var connectionString = Argument(args, ConnectionStringFlag)
+            ?? Environment.GetEnvironmentVariable(ConnectionStringVariable);
+
+        var folder = Argument(args, OutputFlag)
+            ?? (connectionString is null
+                ? Path.Combine(options.ResolvedOutputDir, ExportFolderName)
+                : null);
+
+        if (Array.Exists(args, a => a.Equals(UsmapFlag, StringComparison.OrdinalIgnoreCase)))
+        {
+            if (!await UsmapGenerateCommand.RunAsync(options)) return 1;
+
+            await FunctionsCommand.RunAsync(options);
+        }
+
+        List<IExportTarget> destinations = [];
+        if (folder is not null) destinations.Add(new FolderTarget(folder));
+        if (connectionString is not null) destinations.Add(new BlobTarget(connectionString));
+
+        await using (IExportTarget target = destinations.Count == 1
+            ? destinations[0]
+            : new CompositeTarget(destinations))
+        {
+            await ExportAllCommand.RunAsync(options, target);
+        }
+
+        if (folder is not null) await EnumsCommand.WriteAsync(folder);
+
+        break;
+    }
     case "list":
         await ListCommand.RunAsync(options);
         break;
@@ -56,32 +89,17 @@ switch (command)
     case "dump":
         await DumpCommand.RunAsync(options, args[1], args.Length > 2 ? int.Parse(args[2]) : 1);
         break;
-    case "tags":
-        await CsvExportCommands.ExportTagsAsync(options);
-        break;
-    case "constants":
-        await CsvExportCommands.ExportConstantsAsync(options);
-        break;
     case "locres":
         await LocresCommand.RunAsync(options, args.Length > 1 ? args[1] : "en");
         break;
-    case "index":
-        await IndexCommand.RunAsync(options);
+    case "usmap":
+        if (!await UsmapGenerateCommand.RunAsync(options)) return 1;
         break;
     case "usmap-scan":
         await UsmapScanCommand.RunAsync(options);
         break;
-    case "usmap":
-        await UsmapGenerateCommand.RunAsync(options);
-        break;
     case "usmap-diff":
         await UsmapDiffCommand.RunAsync(options, args[1]);
-        break;
-    case "usmap-array":
-        await UsmapArrayCommand.RunAsync(options, args[1]);
-        break;
-    case "usmap-count":
-        await UsmapCountProbeCommand.RunAsync(options, args[1]);
         break;
     case "usmap-debug":
         await UsmapDebugCommand.RunAsync(options, args[1]);
@@ -99,7 +117,7 @@ switch (command)
         await TextureCommand.RunAsync(options, args[1], args.Length > 2 ? args[2] : null);
         break;
     case "functions":
-        await FellowshipExtractor.Tooltip.FunctionsCommand.RunAsync(options);
+        await FunctionsCommand.RunAsync(options);
         break;
     case "tooltip":
         if (args.Length < 3)
@@ -107,71 +125,38 @@ switch (command)
             Console.Error.WriteLine("Usage: tooltip <table> <id|name>   e.g. tooltip ItemID 5224");
             return 1;
         }
-        await FellowshipExtractor.Tooltip.TooltipCommand.RunAsync(options, args[1], args[2]);
-        break;
-    case "export-all":
-    {
-        var rest = args[1..];
-
-        var connectionString = Argument(rest, ConnectionStringFlag)
-            ?? Environment.GetEnvironmentVariable(ConnectionStringVariable);
-        var folder = Argument(rest, OutputFlag);
-
-        if (connectionString is null && folder is null)
-        {
-            Console.Error.WriteLine(
-                $"""
-                 export-all needs somewhere to write.
-                   {OutputFlag} <path>              a folder laid out like the container
-                   {ConnectionStringFlag} <value>  blob storage, container '{BlobTarget.ContainerName}'
-                 Naming both writes both in one pass. The connection string is also read from the
-                 {ConnectionStringVariable} environment variable, which the Publisher app host injects.
-                 """);
-            return 1;
-        }
-
-        List<IExportTarget> destinations = [];
-        if (folder is not null) destinations.Add(new FolderTarget(folder));
-        if (connectionString is not null) destinations.Add(new BlobTarget(connectionString));
-
-        await using IExportTarget target = destinations.Count == 1
-            ? destinations[0]
-            : new CompositeTarget(destinations);
-
-        var tables = rest.Where((a, i) =>
-            !a.StartsWith('-') &&
-            (i == 0 || !Array.Exists(
-                valuedFlags, flag => rest[i - 1].Equals(flag, StringComparison.OrdinalIgnoreCase))));
-
-        await FellowshipExtractor.Tooltip.ExportAllCommand.RunAsync(options, [.. tables], target);
-        break;
-    }
-    case "enums":
-        await FellowshipExtractor.Tooltip.EnumsCommand.RunAsync(options);
-        break;
-    case "webdb":
-        await FellowshipExtractor.Tooltip.WebDbCommand.RunAsync(options);
+        await TooltipCommand.RunAsync(options, args[1], args[2]);
         break;
     default:
         Console.Error.WriteLine(
             $"""
-             Unknown command '{command}'. Available:
+             Unknown command '{command}'.
+
+             With no command, the extractor writes the whole export: every entity as its type's
+             document, the settings, every image, tags.jsonl, ability-constants.jsonl and the enums
+             the documents are read against.
+
+               --usmap                      recover the mappings and the Blueprint function index
+                                            first, and stop before exporting if they come back short
+               --output <path>              a folder laid out like the container, output/{ExportFolderName}
+                                            unless a connection string names blob storage
+               --connection-string <value>  blob storage, container '{BlobTarget.ContainerName}', also read from
+                                            the {ConnectionStringVariable} variable
+
+             Commands:
                list                  mount containers, write the file listing
                cat <filter> [lines]  print matching container files
                raw <filter>          extract matching container files verbatim
                registry              parse AssetRegistry.bin to JSONL
-               tags                  export Content/guid tag tables to JSONL
-               constants             export RawDataTables tuning constants to JSONL
                locres [culture]      export the localization table to JSONL
-               index                 join the tag tables to the asset registry
                dump <filter>         serialize a package's exports to JSON
                textures <filter> [f] decode matching textures to png (or jpeg, tga, dds)
                tooltip <table> <id>  reconstruct one entity's tooltip from name, text and constants
-               export-all [table...] [--output <path>] [--connection-string <value>]
-                                     every entity as its type's document, with the settings and every
-                                     image, into a folder, into blob storage, or into both
-               enums                 regenerate the enumerated types from the exported settings
-               webdb                 that export as one self-contained, searchable HTML page
+               functions             index every Blueprint function by name, signature and callers
+               usmap                 recover the mappings without exporting
+               usmap-scan            report what the scanner recovers
+               usmap-diff <ref>      grade recovered schemas against another UE5 game's usmap
+               usmap-debug <prop>    trace one property record back to its owning params record
                probe [sample]        report how many packages parse with current mappings
              """);
         return 1;

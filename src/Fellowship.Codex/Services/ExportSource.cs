@@ -38,8 +38,8 @@ public static class ExportReader
 
     public static InvalidOperationException Missing(string name) =>
         new($"The export carries no {Blob(name)}. Run the FellowshipExtractor.Publisher app host, which " +
-            "runs the extractor's export-all command into the icons container, or run 'dotnet run --project " +
-            "src/FellowshipExtractor -- export-all --output <folder>' to write the folder it reads instead.");
+            "runs the extractor into the icons container, or run 'dotnet run --project " +
+            "src/FellowshipExtractor -- --output <folder>' to write the folder it reads instead.");
 
     public static SettingsFile ReadSettings(string? json)
     {
@@ -85,8 +85,8 @@ public static class ExportReader
             throw new InvalidOperationException(
                 $"Line {number} of {Blob(EntitiesName)} does not read as a document: {failure.Message} An " +
                 $"export written before a document carried the '{EntityDocuments.Discriminator}' it is read " +
-                "back as reads this way. Write it again with 'dotnet run --project src/FellowshipExtractor " +
-                "-- export-all'.",
+                "back as reads this way. Write it again with 'dotnet run --project " +
+                "src/FellowshipExtractor'.",
                 failure);
         }
     }

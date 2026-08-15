@@ -21,7 +21,7 @@ public class SnapshotTests
             Assert.Contains(
                 $"{ExportReader.Data}/{ExportReader.SettingsName}", failure.Message, StringComparison.Ordinal);
             Assert.Contains("FellowshipExtractor.Publisher", failure.Message, StringComparison.Ordinal);
-            Assert.Contains("export-all", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("src/FellowshipExtractor", failure.Message, StringComparison.Ordinal);
         }
         finally
         {

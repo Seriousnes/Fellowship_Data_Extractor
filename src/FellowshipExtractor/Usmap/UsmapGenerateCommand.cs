@@ -4,7 +4,13 @@ namespace FellowshipExtractor.Usmap;
 
 public static class UsmapGenerateCommand
 {
-    public static Task RunAsync(ExtractorOptions options)
+    private static readonly string[] Required =
+    [
+        "GameplayTag", "ScalableFloat", "CRMountData", "CRTalentData", "DataTable", "Object",
+        "PrimaryDataAsset",
+    ];
+
+    public static Task<bool> RunAsync(ExtractorOptions options)
     {
         var image = new PeImage(UsmapScanCommand.ShippingExe(options));
         var records = new ReflectionScanner(image).ScanProperties();
@@ -81,7 +87,9 @@ public static class UsmapGenerateCommand
             var mappings = parsed.Mappings ?? throw new InvalidDataException("Round-trip produced no mappings.");
             Console.WriteLine($"round-trip OK: version={parsed.Version} schemas={mappings.Types.Count} enums={mappings.Enums.Count}");
 
-            foreach (var want in new[] { "GameplayTag", "ScalableFloat", "CRMountData", "CRTalentData", "DataTable", "Object", "PrimaryDataAsset" })
+            List<string> missing = [];
+
+            foreach (var want in Required)
             {
                 if (mappings.Types.TryGetValue(want, out var schema))
                 {
@@ -89,16 +97,31 @@ public static class UsmapGenerateCommand
                         .Select(i => schema.TryGetValue(i, out var p) ? p!.Name : "?");
                     Console.WriteLine($"  {want,-20} super={schema.SuperType ?? "(none)"} [{schema.PropertyCount}] {string.Join(", ", names)}");
                 }
-                else Console.WriteLine($"  {want,-20} missing");
+                else
+                {
+                    Console.WriteLine($"  {want,-20} missing");
+                    missing.Add(want);
+                }
+            }
+
+            if (missing.Count > 0)
+            {
+                Console.Error.WriteLine(
+                    $"{target} resolves no schema for {string.Join(", ", missing)}, so the tables those " +
+                    "types carry would read back empty. The mappings this run wrote are the ones on disk.");
+
+                return Task.FromResult(false);
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"round-trip FAILED: {ex.GetType().Name}: {ex.Message}");
+
+            return Task.FromResult(false);
         }
 
-        Console.WriteLine($"\nTo use it:  $env:FELLOWSHIP_USMAP = \"{target}\"");
-        return Task.CompletedTask;
+        Console.WriteLine($"\nWrote {target}, which the extractor reads with no environment set.");
+        return Task.FromResult(true);
     }
 
     private static bool NamesAnEnum(SchemaProperty property) =>
