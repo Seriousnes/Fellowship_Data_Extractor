@@ -4,42 +4,68 @@ using CUE4Parse.UE4.Objects.UObject;
 
 namespace FellowshipExtractor.Tooltip;
 
-public sealed record DynamicTextFloat(string Property, bool ScalesWithHaste);
+public sealed record DynamicTextTerm(string Attribute, double Coefficient);
 
-public sealed class DynamicTextFloatMap
+public sealed record DynamicTextReading
 {
-    public static readonly DynamicTextFloatMap Empty = new(new Dictionary<int, string>(), null, false);
+    public required double Coefficient { get; init; }
 
-    private readonly IReadOnlyDictionary<int, string> _cases;
-    private readonly string? _sole;
+    public string? Attribute { get; init; }
+
+    public bool ScalesWithExpertise { get; init; }
+
+    public IReadOnlyList<DynamicTextTerm>? Terms { get; init; }
+
+    public double? Addend { get; init; }
+
+    public double? Spread { get; init; }
+
+    public bool ScalesWithHaste { get; init; }
+
+    public bool IsNumber => Attribute is null && Terms is null && !ScalesWithExpertise;
+}
+
+public sealed class DynamicTextFloatBody
+{
+    public static readonly DynamicTextFloatBody Empty =
+        new(null, new Dictionary<string, KismetExpression>(), new HashSet<string>(), false);
+
+    private readonly KismetExpression? _returned;
+    private readonly IReadOnlyDictionary<string, KismetExpression> _locals;
+    private readonly IReadOnlySet<string> _unity;
     private readonly bool _haste;
 
-    internal DynamicTextFloatMap(IReadOnlyDictionary<int, string> cases, string? sole, bool haste)
+    internal DynamicTextFloatBody(
+        KismetExpression? returned,
+        IReadOnlyDictionary<string, KismetExpression> locals,
+        IReadOnlySet<string> unity,
+        bool haste)
     {
-        _cases = cases;
-        _sole = sole;
+        _returned = returned;
+        _locals = locals;
+        _unity = unity;
         _haste = haste;
     }
 
-    public DynamicTextFloat? For(int identifier)
+    public DynamicTextReading? Read(int identifier, Func<string, double?> scalable)
     {
-        if (_cases.TryGetValue(identifier, out var property)) return new DynamicTextFloat(property, _haste);
+        if (_returned is null) return null;
 
-        return _cases.Count == 0 && _sole is not null ? new DynamicTextFloat(_sole, _haste) : null;
+        var reader = new DynamicTextArithmetic(_locals, identifier, scalable) { Unity = _unity };
+
+        return reader.Of(_returned) is not { } value
+            ? null
+            : DynamicTextArithmetic.Published(value) with { ScalesWithHaste = _haste };
     }
 }
-
-public sealed record DynamicTextRange(
-    double Coefficient, string? Attribute, bool ScalesWithExpertise, double? Spread);
 
 public static class DynamicTextRanges
 {
     private const string Function = "ResolveDynamicTextFloatRange";
-    private const string Expertise = "Expertise";
     private const string Minimum = "MinValue";
     private const string Maximum = "MaxValue";
 
-    public static DynamicTextRange? For(UObject cdo, int identifier, Func<string, double?> scalable)
+    public static DynamicTextReading? For(UObject cdo, int identifier, Func<string, double?> scalable)
     {
         if (DynamicTextFloats.Body(cdo, Function) is not { Length: > 0 } bytecode) return null;
 
@@ -48,200 +74,355 @@ public static class DynamicTextRanges
 
         foreach (var statement in bytecode)
         {
-            if (Assignment(statement) is not var (name, value) || name is null) continue;
+            if (statement is not EX_Let let) continue;
+            if (DynamicTextFloats.Name(let.Variable) is not { } name) continue;
 
-            if (name == Minimum) low = value;
-            else if (name == Maximum) high = value;
-            else locals[name] = value;
+            if (name == Minimum) low = let.Assignment;
+            else if (name == Maximum) high = let.Assignment;
+            else locals[name] = let.Assignment;
         }
 
         if (low is null || high is null) return null;
 
-        var reader = new Terms(locals, identifier, scalable);
+        var reader = new DynamicTextArithmetic(locals, identifier, scalable);
 
         if (reader.Of(low) is not { } least || reader.Of(high) is not { } most) return null;
-        if (least.Attribute != most.Attribute || least.Expertise != most.Expertise) return null;
+        if (!string.Equals(least.Attribute, most.Attribute, StringComparison.Ordinal)) return null;
+        if (!DynamicTextArithmetic.Same(least.Bracket, most.Bracket)) return null;
 
-        var middle = (least.Factor + most.Factor) / 2;
+        var middle = (least.Scale + most.Scale) / 2;
         if (middle == 0) return null;
 
-        var spread = (most.Factor - least.Factor) / middle;
+        var spread = (most.Scale - least.Scale) / middle;
 
-        return new DynamicTextRange(
-            Math.Round(middle, 10),
-            least.Attribute,
-            least.Expertise,
-            spread > 0 ? Math.Round(spread, 10) : null);
-    }
-
-    private static (string? Name, KismetExpression Value)? Assignment(KismetExpression statement)
-    {
-        if (statement is not EX_Let let) return null;
-
-        return (DynamicTextFloats.Name(let.Variable), let.Assignment);
-    }
-
-    private readonly record struct Term(double Factor, string? Attribute, bool Expertise);
-
-    private sealed class Terms(
-        IReadOnlyDictionary<string, KismetExpression> locals,
-        int identifier,
-        Func<string, double?> scalable)
-    {
-        public Term? Of(KismetExpression? expression, int depth = 0)
+        return DynamicTextArithmetic.Published(least with { Scale = middle }) with
         {
-            if (expression is null || depth > 24) return null;
+            Spread = spread > 0 ? Math.Round(spread, 10) : null,
+        };
+    }
+}
 
-            switch (expression)
-            {
-                case EX_DoubleConst value: return new Term(value.Value, null, false);
-                case EX_FloatConst value: return new Term(value.Value, null, false);
-                case EX_IntConst value: return new Term(value.Value, null, false);
+internal sealed record DynamicTextBracket(double Constant, IReadOnlyDictionary<string, double> Parts);
 
-                case EX_Cast cast: return Of(cast.Target, depth + 1);
+internal sealed record DynamicTextValue(double Scale, string? Attribute, DynamicTextBracket? Bracket);
 
-                case EX_LocalVariable or EX_LocalOutVariable or EX_InstanceVariable
-                    when DynamicTextFloats.Name(expression) is { } name && locals.TryGetValue(name, out var bound):
-                    return Of(bound, depth + 1);
+internal sealed class DynamicTextArithmetic(
+    IReadOnlyDictionary<string, KismetExpression> locals,
+    int identifier,
+    Func<string, double?> scalable)
+{
+    private const string Expertise = "Expertise";
+    private const string ScalableRead = "GetScalableFloat";
+    private const string AttributeRead = "GetFloatAttribute";
+    private const string BaseAttributeRead = "GetFloatAttributeBase";
+    private const string Select = "SelectFloat";
+    private const string Convert = "Conv_";
+    private const string Multiply = "Multiply_";
+    private const string Divide = "Divide_";
+    private const string Add = "Add_";
+    private const string Subtract = "Subtract_";
+    private const int Digits = 10;
 
-                case EX_SwitchValue chosen: return Of(Case(chosen), depth + 1);
+    private static readonly string[] Rounding = ["Round", "FTrunc", "FCeil", "FFloor"];
 
-                case EX_CallMath call: return Called(call, depth);
-            }
+    public IReadOnlySet<string> Unity { get; init; } = new HashSet<string>();
 
-            return null;
+    public DynamicTextValue? Of(KismetExpression? expression, int depth = 0)
+    {
+        if (expression is null || depth > 32) return null;
+
+        switch (expression)
+        {
+            case EX_DoubleConst value: return Number(value.Value);
+            case EX_FloatConst value: return Number(value.Value);
+            case EX_IntConst value: return Number(value.Value);
+
+            case EX_Cast cast: return Of(cast.Target, depth + 1);
+
+            case EX_LocalVariable or EX_LocalOutVariable
+                when DynamicTextFloats.Name(expression) is { } scaler && Unity.Contains(scaler):
+                return Number(1);
+
+            case EX_LocalVariable or EX_LocalOutVariable or EX_InstanceVariable
+                when DynamicTextFloats.Name(expression) is { } name && locals.TryGetValue(name, out var bound):
+                return Of(bound, depth + 1);
+
+            case EX_SwitchValue chosen: return Of(Case(chosen), depth + 1);
+
+            case EX_CallMath call: return Called(call, depth);
         }
 
-        private KismetExpression? Case(EX_SwitchValue chosen)
-        {
-            foreach (var branch in chosen.Cases)
-            {
-                if (branch.CaseIndexValueTerm is EX_IntConst index && index.Value == identifier)
-                {
-                    return branch.CaseTerm;
-                }
-            }
+        return null;
+    }
 
-            return null;
+    public static bool Same(DynamicTextBracket? first, DynamicTextBracket? second)
+    {
+        if (first is null || second is null) return first is null && second is null;
+        if (first.Constant != second.Constant) return false;
+        if (first.Parts.Count != second.Parts.Count) return false;
+
+        foreach (var (attribute, coefficient) in first.Parts)
+        {
+            if (!second.Parts.TryGetValue(attribute, out var other) || other != coefficient) return false;
         }
 
-        private Term? Called(EX_CallMath call, int depth)
+        return true;
+    }
+
+    public static DynamicTextReading Published(DynamicTextValue value)
+    {
+        var reading = new DynamicTextReading
         {
-            var function = call.StackNode.Name;
+            Coefficient = Math.Round(value.Scale, Digits),
+            Attribute = value.Attribute,
+        };
 
-            if (function.StartsWith("GetScalableFloat", StringComparison.Ordinal))
+        if (value.Bracket is not { } bracket) return reading;
+
+        if (bracket.Constant == 1 &&
+            bracket.Parts.Count == 1 &&
+            bracket.Parts.TryGetValue(Expertise, out var unity) &&
+            unity == 1)
+        {
+            return reading with { ScalesWithExpertise = true };
+        }
+
+        return reading with
+        {
+            Terms =
+            [
+                .. bracket.Parts
+                    .OrderBy(part => part.Key, StringComparer.Ordinal)
+                    .Select(part => new DynamicTextTerm(part.Key, Math.Round(part.Value, Digits))),
+            ],
+            Addend = Math.Round(bracket.Constant, Digits),
+        };
+    }
+
+    private static DynamicTextValue Number(double value) => new(value, null, null);
+
+    private KismetExpression? Case(EX_SwitchValue chosen)
+    {
+        foreach (var branch in chosen.Cases)
+        {
+            if (branch.CaseIndexValueTerm is EX_IntConst index && index.Value == identifier)
             {
-                return DynamicTextFloats.Name(call.Parameters.FirstOrDefault()) is { } property &&
-                       scalable(property) is { } value
-                    ? new Term(value, null, false)
-                    : null;
+                return branch.CaseTerm;
             }
+        }
 
-            if (function.Equals("GetFloatAttribute", StringComparison.Ordinal))
-            {
-                return Attribute(call) is not { } attribute
-                    ? null
-                    : attribute.Equals(Expertise, StringComparison.Ordinal)
-                        ? new Term(1, null, true)
-                        : new Term(1, attribute, false);
-            }
+        return null;
+    }
 
-            if (function.StartsWith("Multiply_", StringComparison.Ordinal))
-            {
-                return Combine(Of(call.Parameters.ElementAtOrDefault(0), depth + 1),
-                               Of(call.Parameters.ElementAtOrDefault(1), depth + 1));
-            }
+    private DynamicTextValue? Called(EX_CallMath call, int depth)
+    {
+        var function = call.StackNode.Name;
 
-            if (function.StartsWith("Add_", StringComparison.Ordinal))
-            {
-                return Raised(Of(call.Parameters.ElementAtOrDefault(0), depth + 1),
+        if (function.StartsWith(ScalableRead, StringComparison.Ordinal))
+        {
+            return Property(call.Parameters.FirstOrDefault(), depth) is { } property && scalable(property) is { } value
+                ? Number(value)
+                : null;
+        }
+
+        if (function.Equals(AttributeRead, StringComparison.Ordinal) ||
+            function.Equals(BaseAttributeRead, StringComparison.Ordinal))
+        {
+            return Attribute(call) is { } attribute ? new DynamicTextValue(1, attribute, null) : null;
+        }
+
+        if (function.StartsWith(Convert, StringComparison.Ordinal) ||
+            Array.Exists(Rounding, name => function.Equals(name, StringComparison.Ordinal)))
+        {
+            return Of(call.Parameters.FirstOrDefault(), depth + 1);
+        }
+
+        if (function.StartsWith(Multiply, StringComparison.Ordinal))
+        {
+            return Multiplied(Of(call.Parameters.ElementAtOrDefault(0), depth + 1),
                               Of(call.Parameters.ElementAtOrDefault(1), depth + 1));
-            }
-
-            if (function.Equals("SelectFloat", StringComparison.Ordinal))
-            {
-                return Of(call.Parameters.ElementAtOrDefault(1), depth + 1);
-            }
-
-            return null;
         }
 
-        private static string? Attribute(EX_CallMath call)
+        if (function.StartsWith(Divide, StringComparison.Ordinal))
         {
-            foreach (var parameter in call.Parameters)
-            {
-                if (parameter is not EX_StructConst holder) continue;
-
-                foreach (var member in holder.Properties)
-                {
-                    if (member is EX_StringConst named) return named.Value;
-                }
-            }
-
-            return null;
+            return Divided(Of(call.Parameters.ElementAtOrDefault(0), depth + 1),
+                           Of(call.Parameters.ElementAtOrDefault(1), depth + 1));
         }
 
-        private static Term? Combine(Term? first, Term? second)
+        if (function.StartsWith(Add, StringComparison.Ordinal))
         {
-            if (first is not { } a || second is not { } b) return null;
-            if (a.Attribute is not null && b.Attribute is not null) return null;
-
-            return new Term(a.Factor * b.Factor, a.Attribute ?? b.Attribute, a.Expertise || b.Expertise);
+            return Combined(Of(call.Parameters.ElementAtOrDefault(0), depth + 1),
+                            Of(call.Parameters.ElementAtOrDefault(1), depth + 1), 1);
         }
 
-        private static Term? Raised(Term? first, Term? second)
+        if (function.StartsWith(Subtract, StringComparison.Ordinal))
         {
-            if (first is not { } a || second is not { } b) return null;
-
-            if (a.Expertise && b is { Factor: 1, Attribute: null, Expertise: false }) return a;
-            if (b.Expertise && a is { Factor: 1, Attribute: null, Expertise: false }) return b;
-
-            return null;
+            return Combined(Of(call.Parameters.ElementAtOrDefault(0), depth + 1),
+                            Of(call.Parameters.ElementAtOrDefault(1), depth + 1), -1);
         }
+
+        if (function.Equals(Select, StringComparison.Ordinal))
+        {
+            return Of(call.Parameters.ElementAtOrDefault(1), depth + 1);
+        }
+
+        return null;
     }
+
+    private string? Property(KismetExpression? argument, int depth)
+    {
+        if (argument is null || depth > 32) return null;
+
+        return argument switch
+        {
+            EX_Cast cast => Property(cast.Target, depth + 1),
+            EX_SwitchValue chosen => Property(Case(chosen), depth + 1),
+            EX_CallMath call when call.Parameters.Length == 1 => Property(call.Parameters[0], depth + 1),
+            _ => DynamicTextFloats.Name(argument),
+        };
+    }
+
+    private static string? Attribute(EX_CallMath call)
+    {
+        foreach (var parameter in call.Parameters)
+        {
+            if (parameter is not EX_StructConst holder) continue;
+
+            foreach (var member in holder.Properties)
+            {
+                if (member is EX_StringConst named) return named.Value;
+            }
+        }
+
+        return null;
+    }
+
+    private static DynamicTextBracket? Linear(DynamicTextValue value)
+    {
+        if (value.Attribute is not null)
+        {
+            return value.Bracket is not null
+                ? null
+                : new DynamicTextBracket(
+                    0,
+                    new Dictionary<string, double>(StringComparer.Ordinal) { [value.Attribute] = value.Scale });
+        }
+
+        if (value.Bracket is not { } bracket)
+        {
+            return new DynamicTextBracket(value.Scale, new Dictionary<string, double>(StringComparer.Ordinal));
+        }
+
+        var parts = new Dictionary<string, double>(StringComparer.Ordinal);
+
+        foreach (var (attribute, coefficient) in bracket.Parts) parts[attribute] = coefficient * value.Scale;
+
+        return new DynamicTextBracket(bracket.Constant * value.Scale, parts);
+    }
+
+    private static DynamicTextValue Collapsed(DynamicTextBracket bracket)
+    {
+        if (bracket.Parts.Count == 0) return Number(bracket.Constant);
+
+        if (bracket.Constant == 0 && bracket.Parts.Count == 1)
+        {
+            var (attribute, coefficient) = bracket.Parts.First();
+            return new DynamicTextValue(coefficient, attribute, null);
+        }
+
+        return new DynamicTextValue(1, null, bracket);
+    }
+
+    private static DynamicTextValue? Combined(DynamicTextValue? first, DynamicTextValue? second, double sign)
+    {
+        if (first is not { } a || second is not { } b) return null;
+        if (Linear(a) is not { } left || Linear(b) is not { } right) return null;
+
+        var parts = new Dictionary<string, double>(left.Parts, StringComparer.Ordinal);
+
+        foreach (var (attribute, coefficient) in right.Parts)
+        {
+            var added = parts.GetValueOrDefault(attribute) + (sign * coefficient);
+
+            if (added == 0) parts.Remove(attribute);
+            else parts[attribute] = added;
+        }
+
+        return Collapsed(new DynamicTextBracket(left.Constant + (sign * right.Constant), parts));
+    }
+
+    private static DynamicTextValue? Multiplied(DynamicTextValue? first, DynamicTextValue? second)
+    {
+        if (first is not { } a || second is not { } b) return null;
+
+        if (a is { Attribute: null, Bracket: null }) return Scaled(b, a.Scale);
+        if (b is { Attribute: null, Bracket: null }) return Scaled(a, b.Scale);
+
+        if (a.Attribute is not null && b.Attribute is not null) return null;
+        if (a.Bracket is not null && b.Bracket is not null) return null;
+
+        return new DynamicTextValue(a.Scale * b.Scale, a.Attribute ?? b.Attribute, a.Bracket ?? b.Bracket);
+    }
+
+    private static DynamicTextValue? Divided(DynamicTextValue? first, DynamicTextValue? second) =>
+        first is { } a && second is { Attribute: null, Bracket: null, Scale: not 0 } b
+            ? Scaled(a, 1 / b.Scale)
+            : null;
+
+    private static DynamicTextValue Scaled(DynamicTextValue value, double factor) =>
+        value with { Scale = value.Scale * factor };
 }
 
 public static class DynamicTextFloats
 {
     private const string Function = "ResolveDynamicTextFloat";
-    private const string ScalableRead = "GetScalableFloat";
     private const string HasteScaler = "GetDefaultTimingScalerBasedOnHaste";
+    private const string ScalerOutput = $"CallFunc_{HasteScaler}";
+    private const string Returned = "ReturnValue";
 
-    public static DynamicTextFloatMap Of(UObject cdo)
+    public static DynamicTextFloatBody Of(UObject cdo)
     {
-        if (Body(cdo) is not { Length: > 0 } bytecode) return DynamicTextFloatMap.Empty;
+        if (Body(cdo) is not { Length: > 0 } bytecode) return DynamicTextFloatBody.Empty;
 
-        var reads = new Dictionary<string, string>(StringComparer.Ordinal);
+        var locals = new Dictionary<string, KismetExpression>(StringComparer.Ordinal);
+        var unity = new HashSet<string>(StringComparer.Ordinal);
         var haste = false;
 
         foreach (var statement in bytecode)
         {
-            if (Named(statement) == HasteScaler) haste = true;
+            if (Named(statement) == HasteScaler)
+            {
+                haste = true;
+
+                foreach (var parameter in Parameters(statement))
+                {
+                    if (Name(parameter) is { } output &&
+                        output.StartsWith(ScalerOutput, StringComparison.Ordinal))
+                    {
+                        unity.Add(output);
+                    }
+                }
+            }
 
             if (statement is not EX_Let let) continue;
             if (Name(let.Variable) is not { } local) continue;
-            if (let.Assignment is not EX_CallMath call) continue;
-            if (!call.StackNode.Name.StartsWith(ScalableRead, StringComparison.Ordinal)) continue;
 
-            if (Name(call.Parameters.FirstOrDefault()) is { } property) reads[local] = property;
+            locals[local] = let.Assignment;
         }
 
-        if (reads.Count == 0) return DynamicTextFloatMap.Empty;
-
-        var cases = new Dictionary<int, string>();
-
-        foreach (var switched in bytecode.OfType<EX_Let>().Select(l => l.Assignment).OfType<EX_SwitchValue>())
-        {
-            foreach (var branch in switched.Cases)
-            {
-                if (branch.CaseIndexValueTerm is not EX_IntConst index) continue;
-                if (Name(branch.CaseTerm) is not { } local) continue;
-                if (reads.TryGetValue(local, out var property)) cases[index.Value] = property;
-            }
-        }
-
-        return new DynamicTextFloatMap(cases, reads.Count == 1 ? reads.Values.First() : null, haste);
+        return locals.TryGetValue(Returned, out var returned)
+            ? new DynamicTextFloatBody(returned, locals, unity, haste)
+            : DynamicTextFloatBody.Empty;
     }
+
+    private static KismetExpression[] Parameters(KismetExpression expression) => expression switch
+    {
+        EX_Context context => Parameters(context.ContextExpression),
+        EX_LocalVirtualFunction call => call.Parameters,
+        EX_LocalFinalFunction call => call.Parameters,
+        EX_CallMath call => call.Parameters,
+        _ => [],
+    };
 
     private static KismetExpression[]? Body(UObject cdo) => Body(cdo, Function);
 

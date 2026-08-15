@@ -60,4 +60,71 @@ public sealed class TruthTests
     [InlineData("GE_Perk_MaxHealthBasedAbsorb_Absorb", "The Dragon's Embrace")]
     public void AnEffectShipsItsOwnUiDataName(string tag, string expected) =>
         Assert.Equal(expected, (string?)Record(tag)["name"]);
+
+    private static JsonObject Token(string tag, string key) =>
+        Record(tag)["placeholders"]?.AsArray()
+            .OfType<JsonObject>()
+            .FirstOrDefault(token => (string?)token["key"] == key)
+        ?? throw new InvalidOperationException($"{tag} carries no {{{key}}} placeholder.");
+
+    [Theory]
+    [InlineData("GA_Weapon_InstantDamageAccumulativeDebuff", "VoidTouchDmg", 42.5, "PrimaryAttribute", true)]
+    [InlineData("GA_Ink_AoeFear", "IntimidateDmgBreak", 30, "Strength", false)]
+    [InlineData("GA_Sune_SingleTargetAbsorb", "SolarShldAbsrb", 22.998, "Strength", true)]
+    public void ATokenTheBodyMultipliesByAnAttributeIsACoefficientNotAValue(
+        string tag, string key, double coefficient, string attribute, bool expertise)
+    {
+        var token = Token(tag, key);
+
+        Assert.Equal(coefficient, (double?)token["coefficient"]);
+        Assert.Equal(attribute, (string?)token["attribute"]);
+        Assert.Null(token["value"]);
+        Assert.Equal(expertise ? true : null, (bool?)token["scalesWithExpertise"]);
+    }
+
+    [Fact]
+    public void ABodyCombiningReadsAcrossAttributesShipsItsTerms()
+    {
+        var token = Token("GA_Meiko_DamageSoakBuff", "StoneShieldHealth");
+
+        Assert.Equal(8.624, (double?)token["coefficient"]);
+        Assert.Equal("Agility", (string?)token["attribute"]);
+        Assert.Equal(-1, (double?)token["addend"]);
+
+        var terms = token["terms"]?.AsArray().OfType<JsonObject>()
+            .ToDictionary(term => (string)term["attribute"]!, term => (double)term["coefficient"]!);
+
+        Assert.NotNull(terms);
+        Assert.Equal(
+            new Dictionary<string, double>
+            {
+                ["CritChance"] = 2, ["Expertise"] = 2, ["Haste"] = 2, ["Spirit"] = 2,
+            },
+            terms);
+    }
+
+    [Theory]
+    [InlineData("GA_Lisa_ChanneledHealOrDamageProjectiles", "TemporBarrDmg", 1.91, "Intellect")]
+    [InlineData("GA_Lisa_ChanneledHealOrDamageProjectiles", "TemporBarrHeal", 5.22, "Intellect")]
+    [InlineData("GA_Weapon_InstantChargedProjectileHealOrDamage", "TwilSkyDmg", 9.552, "Intellect")]
+    [InlineData("GA_Weapon_InstantChargedProjectileHealOrDamage", "TwilSkyHeal", 19.104, "Intellect")]
+    public void ARangeBodyTheReaderUsedToRefuseNowCarriesItsCoefficient(
+        string tag, string key, double coefficient, string attribute)
+    {
+        var token = Token(tag, key);
+
+        Assert.Equal(coefficient, (double?)token["coefficient"]);
+        Assert.Equal(attribute, (string?)token["attribute"]);
+        Assert.True((bool?)token["scalesWithExpertise"]);
+    }
+
+    [Fact]
+    public void ARoundedRangeStillReadsItsExpertiseScaling()
+    {
+        var token = Token("GA_Rime_CastedProjectileDamageOrbSpender", "GlacialBlast");
+
+        Assert.Equal(10.24, (double?)token["coefficient"]);
+        Assert.Equal("Intellect", (string?)token["attribute"]);
+        Assert.True((bool?)token["scalesWithExpertise"]);
+    }
 }

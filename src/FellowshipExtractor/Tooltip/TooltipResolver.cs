@@ -771,7 +771,7 @@ public sealed class TooltipResolver
         var reachable = Rejoined(baseline, claimed, split.Promoted);
         var taken = new HashSet<string>(claimed.Keys, StringComparer.Ordinal);
 
-        var declared = cdo is null ? DynamicTextFloatMap.Empty : DynamicTextFloats.Of(cdo);
+        var declared = cdo is null ? DynamicTextFloatBody.Empty : DynamicTextFloats.Of(cdo);
 
         foreach (var name in placeholders.Keys.ToArray())
         {
@@ -779,8 +779,12 @@ public sealed class TooltipResolver
             var own = placeholder.Constants is not null;
             var source = placeholder.Constants ?? reachable;
 
-            if (Declared(placeholder, cdo, declared, bindings) is { } bound)
+            var spent = new List<string>();
+
+            if (Declared(placeholder, cdo, declared, bindings, spent) is { } bound)
             {
+                foreach (var row in spent) taken.Add(TuningNamespace.Relative(row, tuning));
+
                 placeholders[name] = bound;
                 DeclaredByBlueprint++;
                 continue;
@@ -913,23 +917,42 @@ public sealed class TooltipResolver
     private static Placeholder? Declared(
         Placeholder placeholder,
         UObject? cdo,
-        DynamicTextFloatMap declared,
-        IReadOnlyList<CurveBinding> bindings)
+        DynamicTextFloatBody declared,
+        IReadOnlyList<CurveBinding> bindings,
+        ICollection<string> spent)
     {
         if (placeholder.FromOwnConstants is not true) return null;
         if (placeholder.DynamicTextFloatIdentifier is not { } identifier) return null;
 
-        if (declared.For(identifier) is { } binding && Scalable(bindings, binding.Property) is { } number)
+        var read = new List<string>();
+
+        if (declared.Read(identifier, Reader(bindings, read)) is { } reading)
         {
-            return placeholder with
-            {
-                Value = number,
-                Tickrate = binding.ScalesWithHaste ? true : null,
-            };
+            foreach (var row in read) spent.Add(row);
+
+            return reading.IsNumber
+                ? placeholder with
+                {
+                    Value = reading.Coefficient,
+                    Tickrate = reading.ScalesWithHaste ? true : null,
+                }
+                : placeholder with
+                {
+                    Coefficient = reading.Coefficient,
+                    Attribute = reading.Attribute ?? placeholder.Attribute,
+                    ScalesWithExpertise = reading.ScalesWithExpertise ? true : null,
+                    Terms = Written(reading.Terms),
+                    Addend = reading.Terms is null ? null : reading.Addend,
+                };
         }
 
         if (cdo is null) return null;
-        if (DynamicTextRanges.For(cdo, identifier, name => Scalable(bindings, name)) is not { } range) return null;
+
+        read.Clear();
+
+        if (DynamicTextRanges.For(cdo, identifier, Reader(bindings, read)) is not { } range) return null;
+
+        foreach (var row in read) spent.Add(row);
 
         return placeholder with
         {
@@ -937,21 +960,35 @@ public sealed class TooltipResolver
             Attribute = range.Attribute ?? placeholder.Attribute,
             Spread = range.Spread,
             ScalesWithExpertise = range.ScalesWithExpertise ? true : null,
+            Terms = Written(range.Terms),
+            Addend = range.Terms is null ? null : range.Addend,
         };
     }
 
-    private static double? Scalable(IReadOnlyList<CurveBinding> bindings, string property)
+    private static IReadOnlyList<PlaceholderTerm>? Written(IReadOnlyList<DynamicTextTerm>? terms) =>
+        terms is not { Count: > 0 }
+            ? null
+            : [.. terms.Select(term => new PlaceholderTerm(term.Attribute, term.Coefficient))];
+
+    private static Func<string, double?> Reader(IReadOnlyList<CurveBinding> bindings, ICollection<string> read) =>
+        property =>
+        {
+            if (Scalable(bindings, property) is not { } binding) return null;
+
+            read.Add(binding.RowName);
+            return binding.Value;
+        };
+
+    private static CurveBinding? Scalable(IReadOnlyList<CurveBinding> bindings, string property)
     {
         var wanted = Numbers.Normalize(property);
 
         var matched = bindings
             .Where(b => b.Value is not null && b.Values is null)
             .Where(b => Numbers.Normalize(Leaf(b.Property)) == wanted)
-            .Select(b => b.Value!.Value)
-            .Distinct()
             .ToArray();
 
-        return matched.Length == 1 ? matched[0] : null;
+        return matched.Select(b => b.Value!.Value).Distinct().Count() == 1 ? matched[0] : null;
     }
 
     private static string Leaf(string property) => property[(property.LastIndexOf('.') + 1)..];

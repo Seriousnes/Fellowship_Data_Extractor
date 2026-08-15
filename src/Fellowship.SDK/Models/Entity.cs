@@ -274,6 +274,10 @@ public sealed record Placeholder
 
     public bool? ScalesWithExpertise { get; init; }
 
+    public IReadOnlyList<PlaceholderTerm>? Terms { get; init; }
+
+    public double? Addend { get; init; }
+
     [JsonIgnore]
     public TokenQuantity Quantity { get; init; }
 
@@ -283,6 +287,8 @@ public sealed record Placeholder
     [JsonIgnore]
     public int? DynamicTextFloatIdentifier { get; init; }
 }
+
+public sealed record PlaceholderTerm(string Attribute, double Coefficient);
 
 public static class SlotKinds
 {
