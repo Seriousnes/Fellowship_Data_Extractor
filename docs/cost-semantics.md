@@ -183,6 +183,13 @@ BaseCost)`.
 144FACC46  movzx r8d,dil
 144FACC4A  mov rdx,rsi
 144FACC4D  call qword [r10+4B8h]
+144FACC54  mov rbx,[rsp+60h]
+144FACC59  mov rbp,[rsp+68h]
+144FACC5E  mov rsi,[rsp+70h]
+144FACC63  movaps xmm6,[rsp+40h]
+144FACC68  add rsp,50h
+144FACC6C  pop rdi
+144FACC6D  ret
 ```
 
 This is the generated wrapper that resolves the function by name. `141560CF0` takes the object in
@@ -191,10 +198,16 @@ dispatch below. `141435950` derives a second object from that `UFunction`, and b
 its `+0D4h` picks the path: build the parameter block and dispatch through `[r10+278h]`, which runs
 a Blueprint override, or call the native implementation directly through `[r10+4B8h]`. Bit 7
 corresponds to `CLASS_Native` in the engine's `EClassFlags`, which is consistent with the branch:
-a native owner class takes the direct call and a Blueprint generated one takes the dispatch. The parameter block it builds at `rsp+20h`
-matches the reflection offsets exactly: the component at `+0`, the cost type byte at `+8`, `xmm6`
-holding `BaseCost` at `+0Ch`, and `ReturnValue` read back from `+10h`. Both paths return the float
-in `xmm0`.
+a native owner class takes the direct call and a Blueprint generated one takes the dispatch. The
+parameter block it builds at `rsp+20h` matches the reflection offsets exactly: the component at
+`+0`, the cost type byte at `+8`, `xmm6` holding `BaseCost` at `+0Ch`, and `ReturnValue` read back
+from `+10h`.
+
+Both paths return the float in `xmm0` untouched, which the listing above shows to the `ret`. The
+dispatch path loads it at `144FACC3B` and jumps to `144FACC54`; the native path leaves it in `xmm0`
+from the call at `144FACC4D` and falls into the same address. From `144FACC54` to the `ret` at
+`144FACC6D` the wrapper only restores `rbx`, `rbp`, `rsi` and `xmm6`, unwinds the frame and pops
+`rdi`. Nothing scales or replaces `xmm0` between the two calls and the return.
 
 **5. The wrapper's caller.** `144FACBC0` has exactly one caller in the image, `14509CB74`. It sits
 in a function whose entry is `14509C760` and whose body runs to `14509CE05` across four `.pdata`
