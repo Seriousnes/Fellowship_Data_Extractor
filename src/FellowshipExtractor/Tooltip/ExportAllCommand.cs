@@ -90,6 +90,9 @@ public static class ExportAllCommand
             $"{resolver.Locations.Maps} umaps read, {resolver.Locations.Placed} creatures placed, " +
             $"{resolver.Locations.Housed} of them by the folder they live in, " +
             $"{resolver.Locations.Unplaced} placed in none");
+        Console.WriteLine(
+            $"modifiers:          {resolver.Modifiers.Count} rows across {resolver.Modifiers.TableCount} tables, " +
+            $"{resolver.Modifiers.WithIcon} with an icon");
         Console.WriteLine($"calculation presets:{resolver.PresetCount} rows carrying a default spread");
         Console.WriteLine(
             $"settings:           {resolver.Settings.Heroes.Count} heroes, {resolver.Settings.Rarities.Count} " +

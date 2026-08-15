@@ -176,6 +176,17 @@ public static class DocumentProjection
             MinimumHeroRank = entity.MinimumHeroRank,
         },
 
+        EntityType.Modifier => new ModifierDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Tag = entity.Name,
+            Description = entity.Description,
+            Icon = entity.Icon,
+            Kind = entity.ModifierKind,
+            MinimumHeroRank = entity.MinimumHeroRank,
+        },
+
         EntityType.Mount => new MountDocument
         {
             Id = entity.NetId!.Value,

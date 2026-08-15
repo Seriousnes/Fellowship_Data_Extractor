@@ -292,4 +292,53 @@ public sealed class TruthTests
         Assert.Equal(6, filled.Length);
         Assert.All(filled, document => Assert.Equal(12, document.Body["descriptionsByHero"]!.AsObject().Count));
     }
+
+    [Theory]
+    [InlineData("Modifiers.Ascension.Ascension1", "Sahril's Madness", "Ascension", 2)]
+    [InlineData("Modifiers.Dungeon.MeteorRain", "Meteor Rain", "Dungeon", 3)]
+    [InlineData("Modifiers.Implicit.PromotedEnemies", "Promoted Enemies", "Implicit", 0)]
+    public void AModifierRowNamesItsKindAndTheRankItAsks(
+        string tag, string name, string kind, int minimumHeroRank)
+    {
+        var record = Record(tag);
+
+        Assert.Equal(name, (string?)record["name"]);
+        Assert.Equal(kind, (string?)record["kind"]);
+        Assert.Equal(minimumHeroRank, (int?)record["minimumHeroRank"]);
+    }
+
+    [Fact]
+    public void AModifierRowCarriesTheDescriptionAndIconTheTableStates()
+    {
+        var record = Record("Modifiers.Ascension.Ascension1");
+
+        Assert.Contains("Increased Threat", (string?)record["description"], StringComparison.Ordinal);
+        Assert.NotNull((string?)record["icon"]);
+    }
+
+    [Theory]
+    [InlineData("Modifiers.Implicit.ZoneBuffs")]
+    [InlineData("Modifiers.Implicit.HolyTrinityNerf")]
+    public void AModifierTagNoRowStatesExportsAsAStub(string tag)
+    {
+        var record = Record(tag);
+
+        Assert.Null(record["name"]);
+        Assert.Null(record["kind"]);
+        Assert.Null(record["description"]);
+    }
+
+    [Fact]
+    public void EveryModifierTagButTheThreeBranchesIsWritten()
+    {
+        var written = Export.Loaded.Documents.Where(document => document.Type == EntityType.Modifier).ToArray();
+
+        Assert.Equal(25, written.Length);
+        Assert.Equal(23, written.Count(document => document.Body["kind"] is not null));
+
+        Assert.All(
+            written,
+            document => Assert.StartsWith(
+                "Modifiers.", (string?)document.Body["tag"], StringComparison.Ordinal));
+    }
 }

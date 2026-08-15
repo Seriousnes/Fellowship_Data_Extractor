@@ -16,7 +16,7 @@ public sealed class TypeResolverTests
         ExportAllCommand.NotWritten(Resolver.Resolve(tag, icons: null).Single(), Branches);
 
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(23, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(24, Enum.GetValues<EntityType>().Length);
 
     [Fact]
     public void ALevelTagWithARowIsADungeonAndOneWithoutIsNothing()
@@ -217,6 +217,7 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.TraitPower, 40)]
     [InlineData(EntityType.LegendaryPower, 36)]
     [InlineData(EntityType.Currency, 32)]
+    [InlineData(EntityType.Modifier, 25)]
     [InlineData(EntityType.Gem, 24)]
     [InlineData(EntityType.SetBonus, 23)]
     [InlineData(EntityType.SetBonusPower, 15)]

@@ -41,6 +41,7 @@ public sealed class TypeResolver(
         ["GameplayEffect"] = EntityType.Effect,
         ["CRAICharacter"] = EntityType.Creature,
         [ItemTraits.Table] = EntityType.Trait,
+        [ModifierInfo.Table] = EntityType.Modifier,
     };
 
     public EntityType? Of(TagRecord tag, Entity entity, string? packageName)

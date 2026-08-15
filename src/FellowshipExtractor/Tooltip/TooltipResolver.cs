@@ -67,6 +67,7 @@ public sealed class TooltipResolver
     public TemperCeilings Tempers { get; }
     public DropItemLevels Drops { get; }
     public DungeonNames Dungeons { get; }
+    public ModifierInfo Modifiers { get; }
     public VendorInventories Vendors { get; }
     public ItemSources Sources { get; }
     public AbilityOwners Owners { get; }
@@ -111,7 +112,7 @@ public sealed class TooltipResolver
 
     public TooltipResolver(AbstractFileProvider provider)
     {
-        if (provider.MappingsContainer is null)
+        if (provider.MappingsContainer?.MappingsForGame is not { } mappings)
         {
             throw new InvalidOperationException(
                 "No mappings are loaded, so every cooked package reads back as nothing and every table looks " +
@@ -121,7 +122,7 @@ public sealed class TooltipResolver
         }
 
         _provider = provider;
-        _mappings = provider.MappingsContainer.MappingsForGame;
+        _mappings = mappings;
         _assets = [.. RegistryCommand.ReadAssets(provider)];
         _tags = [.. CsvExportCommands.ReadTags(provider)];
         _constants = new ConstantsTable(provider);
@@ -167,6 +168,7 @@ public sealed class TooltipResolver
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
         Dungeons = new DungeonNames(provider, _assets);
+        Modifiers = new ModifierInfo(provider, _assets);
         Vendors = new VendorInventories(provider, _assets);
         Sources = new ItemSources(provider, _assets, Dungeons, Vendors, HeroItems, Drops, Heroes);
 
@@ -319,6 +321,12 @@ public sealed class TooltipResolver
             Dungeons.Find(tag.Name) is { } dungeon)
         {
             entity = WithDungeon(entity, dungeon, icons);
+        }
+
+        if (tag.Table.Equals(ModifierInfo.Table, StringComparison.OrdinalIgnoreCase) &&
+            Modifiers.ForTag(tag.Name) is { } modifier)
+        {
+            entity = WithModifier(entity, modifier, icons);
         }
 
         entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
@@ -631,6 +639,15 @@ public sealed class TooltipResolver
         QualifierTime = dungeon.QualifierTime,
         RequiredScore = dungeon.RequiredScore,
         MinimumHeroRank = dungeon.MinimumHeroRank,
+    };
+
+    private static Entity WithModifier(Entity entity, Modifier modifier, IconWriter? icons) => entity with
+    {
+        DisplayName = entity.DisplayName ?? modifier.DisplayName,
+        Description = entity.Description ?? modifier.Description,
+        Icon = entity.Icon ?? Written(modifier.IconPath, icons),
+        ModifierKind = modifier.Kind,
+        MinimumHeroRank = modifier.MinimumHeroRank,
     };
 
     private IconSource? Owned(string? named, string table)

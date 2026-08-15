@@ -207,6 +207,8 @@ public sealed record Entity
 
     public int? MinimumHeroRank { get; init; }
 
+    public string? ModifierKind { get; init; }
+
     [JsonIgnore]
     public IReadOnlyList<Variant>? Variants { get; init; }
 }
