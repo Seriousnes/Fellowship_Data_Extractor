@@ -19,6 +19,7 @@ public sealed class BareStateWalk(
 
     private readonly KismetExpression[] _bytecode = function.ScriptBytecode ?? [];
     private readonly Dictionary<string, KismetExpression> _locals = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, double> _returned = new(StringComparer.Ordinal);
 
     public static UStruct? Compiled(UObject cdo, string function)
     {
@@ -32,7 +33,74 @@ public sealed class BareStateWalk(
 
     public Func<string, InvalidOperationException>? Unreadable { get; init; }
 
+    private bool Inlined { get; init; }
+
     public IReadOnlyDictionary<string, double>? ByLevelType { get; private set; }
+
+    public IEnumerable<KismetExpression> Reached()
+    {
+        var at = 0;
+
+        for (var step = 0; step < Budget && at < _bytecode.Length; step++)
+        {
+            var statement = _bytecode[at];
+
+            switch (statement)
+            {
+                case EX_Return or EX_EndOfScript:
+                    yield break;
+
+                case EX_JumpIfNot branch:
+                    if (Truth(branch.BooleanExpression) is not { } taken) yield break;
+
+                    at = taken ? at + 1 : At(branch.CodeOffset);
+                    if (at < 0) yield break;
+                    continue;
+
+                case EX_Jump jump:
+                    at = At(jump.CodeOffset);
+                    if (at < 0) yield break;
+                    continue;
+
+                default:
+                    yield return statement;
+
+                    Bind(statement);
+                    Inline(statement);
+                    at++;
+                    continue;
+            }
+        }
+    }
+
+    private void Inline(KismetExpression statement)
+    {
+        if (Inlined) return;
+        if (statement is not EX_LocalVirtualFunction call) return;
+        if (Compiled(cdo, call.VirtualFunctionName.Text) is not { ScriptBytecode.Length: > 0 } body) return;
+
+        var inside = new BareStateWalk(body, cdo, constants, mappings) { Inlined = true };
+        foreach (var _ in inside.Reached()) { }
+
+        var at = 0;
+
+        foreach (var child in body.ChildProperties ?? [])
+        {
+            if (child is not FProperty parameter) continue;
+            if (!parameter.PropertyFlags.HasFlag(EPropertyFlags.Parm)) continue;
+            if (parameter.PropertyFlags.HasFlag(EPropertyFlags.ReturnParm)) continue;
+
+            if (parameter.PropertyFlags.HasFlag(EPropertyFlags.OutParm) &&
+                DynamicTextFloats.Name(call.Parameters.ElementAtOrDefault(at)) is { } local &&
+                inside._locals.TryGetValue(parameter.Name.Text, out var written) &&
+                inside.Number(written) is { } answered)
+            {
+                _returned[local] = answered;
+            }
+
+            at++;
+        }
+    }
 
     public double? Answer()
     {
@@ -221,6 +289,11 @@ public sealed class BareStateWalk(
             case EX_Cast cast: return Number(cast.Target, depth + 1);
             case EX_CallMath call: return Called(call, depth);
             case EX_SwitchValue chosen: return Switched(chosen, depth);
+        }
+
+        if (DynamicTextFloats.Name(expression) is { } local && _returned.TryGetValue(local, out var written))
+        {
+            return written;
         }
 
         return Bound(expression) is { } assigned ? Number(assigned, depth + 1) : null;

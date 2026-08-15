@@ -43,6 +43,7 @@ public static class DocumentProjection
             CostIsFraction = entity.CostIsFraction,
             Resource = entity.Resource,
             Range = entity.Range,
+            MinRange = entity.MinRange,
             Radius = entity.Radius,
             Duration = entity.Duration,
             Period = entity.Period,

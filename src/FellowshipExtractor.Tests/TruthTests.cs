@@ -46,6 +46,15 @@ public sealed class TruthTests
         Assert.Null(Record(tag)["costIsFraction"]);
 
     [Theory]
+    [InlineData("GA_Gunde_Talent_DotTransfer_Aoe", "range", 1000)]
+    [InlineData("GA_Mount_MountUp_Base", "castTime", 1.5)]
+    [InlineData("GA_Warmaster_InstantMeleeCleave", "range", 500)]
+    [InlineData("GA_Bowguy_ChanneledMultiProjectileDebuff", "channelTime", 2)]
+    [InlineData("GA_Rime_ChanneledBeamSingleDamage", "channelTime", 2)]
+    public void TheTooltipHookArgumentIsTheDisplayedValue(string tag, string field, double expected) =>
+        Assert.Equal(expected, (double?)Record(tag)[field]);
+
+    [Theory]
     [InlineData("GE_Bowguy_CastedProjectileDamage_Buff", "Steady Hands")]
     [InlineData("GE_Finesse_CurrentSpiritToBuff_Buff", "The Philosopher")]
     [InlineData("GE_Perk_MaxHealthBasedAbsorb_Absorb", "The Dragon's Embrace")]

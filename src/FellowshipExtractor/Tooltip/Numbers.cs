@@ -24,6 +24,7 @@ public static class Numbers
         ["maxrange"] = "range",
         ["rangehorizontal"] = "range",
         ["range"] = "range",
+        ["minrange"] = "minRange",
         ["radius"] = "radius",
         ["aoeradius"] = "radius",
         ["maxradius"] = "radius",

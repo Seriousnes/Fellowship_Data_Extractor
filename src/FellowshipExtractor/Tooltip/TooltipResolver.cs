@@ -679,6 +679,8 @@ public sealed class TooltipResolver
         var custom = cdo is null ? CustomMagnitudes.None : MagnitudeCalculations.Of(cdo, _provider, _constants);
         if (custom.Duration is { } computedDuration) bindings.Insert(0, computedDuration);
 
+        if (cdo is not null) bindings.InsertRange(0, TooltipPayload.Bindings(cdo, _constants));
+
         var tuning = TuningNamespace.For(assetName, _constants);
 
         if (tuning is null && TuningNamespace.FromBindings(bindings, _constants) is { } shared)
@@ -844,6 +846,7 @@ public sealed class TooltipResolver
             CostIsFraction = display.CostIsFraction ? true : null,
             Resource = display.Resource,
             Range = Named(split, "range"),
+            MinRange = Named(split, "minRange"),
             Radius = Named(split, "radius"),
             Duration = Named(split, "duration"),
             Period = Named(split, "period"),
@@ -1165,6 +1168,7 @@ public sealed class TooltipResolver
             Charges = Agreed(outer.Charges, inner, ability => ability.Charges),
             Cost = Agreed(outer.Cost, inner, ability => ability.Cost),
             Range = Agreed(outer.Range, inner, ability => ability.Range),
+            MinRange = Agreed(outer.MinRange, inner, ability => ability.MinRange),
             Radius = Agreed(outer.Radius, inner, ability => ability.Radius),
             Duration = Agreed(outer.Duration, inner, ability => ability.Duration),
             Period = Agreed(outer.Period, inner, ability => ability.Period),

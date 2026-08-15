@@ -23,6 +23,7 @@ public sealed class AbilityDocument : EntityDocument
     public string? Resource { get; init; }
 
     public double? Range { get; init; }
+    public double? MinRange { get; init; }
     public double? Radius { get; init; }
     public double? Duration { get; init; }
     public double? Period { get; init; }
