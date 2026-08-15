@@ -250,10 +250,15 @@ public sealed class TruthTests
         Assert.Null(modifier["value"]);
     }
 
+    [Fact]
+    public void AnApplierWithAnAssignmentTheWalkCannotReadPublishesNoDuration() =>
+        Assert.Null(Record("GE_DR_BossCultLeader_Grip_SingleInstantPullNPC")["duration"]);
+
     [Theory]
     [InlineData("GE_Mara_StunSpender_Stun", 4)]
     [InlineData("GE_Ink_SwingTimerHitWindow", 0.6)]
     [InlineData("GE_Rime_TargetedPeriodicProjectileAoe_AoeBuff", 20)]
+    [InlineData("GE_ST_BossGatekeeper_PullAndCastedAoe_Imobalize", 0.4)]
     public void ADurationTheApplierSetsByCallerIsRecoveredFromItsBytecode(string tag, double expected) =>
         Assert.Equal(expected, (double?)Record(tag)["duration"]);
 }

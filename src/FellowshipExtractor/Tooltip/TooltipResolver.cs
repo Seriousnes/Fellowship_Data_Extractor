@@ -529,9 +529,11 @@ public sealed class TooltipResolver
         if (applier is null or AbilityOwners.Contested) return entity;
         if (LoadDefaultObject(FindAsset(applier)) is not { } ability) return entity;
 
-        if (SetByCallerDurations.From(ability, supplied, _constants).Duration is not { } duration) return entity;
+        var recovered = SetByCallerDurations.From(ability, supplied, _constants);
+        if (recovered.Duration is not { } duration) return entity;
 
-        _suppliedDurations.Add($"{tag.Name} {duration} from {applier} assigning {supplied}");
+        _suppliedDurations.Add(
+            $"{tag.Name} from {applier} assigning {supplied}: {recovered.Derivation}");
         DurationsFromSetByCaller++;
 
         return entity with { Duration = duration };

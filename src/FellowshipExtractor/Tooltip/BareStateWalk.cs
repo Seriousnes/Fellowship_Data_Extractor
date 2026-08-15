@@ -118,11 +118,6 @@ public sealed class BareStateWalk(
         }
     }
 
-    public void BindEach()
-    {
-        foreach (var statement in _bytecode) Bind(statement);
-    }
-
     public double? Answer()
     {
         var at = 0;
@@ -172,7 +167,7 @@ public sealed class BareStateWalk(
         return Refuse($"does not return within {Budget} statements");
     }
 
-    private bool Bind(KismetExpression statement)
+    public bool Bind(KismetExpression statement)
     {
         var assignment = statement switch
         {
@@ -347,6 +342,64 @@ public sealed class BareStateWalk(
         }
 
         return Bound(expression) is { } assigned ? Number(assigned, depth + 1) : null;
+    }
+
+    public string Written(KismetExpression? expression, int depth = 0)
+    {
+        if (expression is null) return "nothing";
+        if (depth > MaxDepth) return "too deep to write out";
+
+        switch (expression)
+        {
+            case EX_IntConst value: return value.Value.ToString();
+            case EX_Int64Const value: return value.Value.ToString();
+            case EX_ByteConst value: return value.Value.ToString();
+            case EX_IntConstByte value: return value.Value.ToString();
+            case EX_FloatConst value: return value.Value.ToString();
+            case EX_DoubleConst value: return value.Value.ToString();
+            case EX_IntOne: return "1";
+            case EX_IntZero: return "0";
+
+            case EX_Cast cast: return Written(cast.Target, depth + 1);
+            case EX_CallMath call: return WrittenCall(call, depth);
+            case EX_SwitchValue chosen: return $"a switch on {Shape(chosen.IndexTerm)}";
+        }
+
+        if (DynamicTextFloats.Name(expression) is { } local && _returned.TryGetValue(local, out var answered))
+        {
+            return $"{local} {answered}";
+        }
+
+        if (Bound(expression) is { } assigned) return Written(assigned, depth + 1);
+
+        return DynamicTextFloats.Name(expression) is { } unbound
+            ? $"{unbound} (nothing binds it)"
+            : expression.Token.ToString();
+    }
+
+    private string WrittenCall(EX_CallMath call, int depth)
+    {
+        var invoked = call.StackNode.Name;
+
+        if (invoked.StartsWith(ScalableRead, StringComparison.Ordinal))
+        {
+            var argument = call.Parameters.FirstOrDefault();
+            var named = DynamicTextFloats.Name(argument) ?? Shape(argument);
+
+            if (Struct(argument, depth + 1) is not { } read) return $"{named} (no scalable float)";
+
+            return read.Row is { } row
+                ? $"{named} -> {row} {constants.Lookup(row).Record?.Value} x {read.Multiplier}"
+                : $"{named} -> literal {read.Multiplier}";
+        }
+
+        if (invoked.StartsWith("Conv_", StringComparison.Ordinal) ||
+            invoked.StartsWith("MakeLiteral", StringComparison.Ordinal))
+        {
+            return Written(call.Parameters.FirstOrDefault(), depth + 1);
+        }
+
+        return $"{invoked}({string.Join(", ", call.Parameters.Select(p => Written(p, depth + 1)))})";
     }
 
     private double? Called(EX_CallMath call, int depth)

@@ -32,11 +32,13 @@ public static class SetByCallerDurations
         return PropertyWalk.GetString(tag, TagNameField);
     }
 
-    public static (double? Duration, int Assignments) From(UObject? applier, string tag, ConstantsTable constants)
+    public static (double? Duration, string? Derivation) From(
+        UObject? applier, string tag, ConstantsTable constants)
     {
-        if (applier is null) return (null, 0);
+        if (applier is null) return (null, null);
 
         var answered = new List<double>();
+        var written = new List<string>();
         var assignments = 0;
 
         foreach (var export in applier.Owner?.GetExports() ?? [])
@@ -44,25 +46,34 @@ public static class SetByCallerDurations
             if (export is not UStruct { ScriptBytecode: { Length: > 0 } bytecode } body) continue;
 
             var walk = new BareStateWalk(body, applier, constants, null);
-            walk.BindEach();
 
-            var calls = new List<KismetExpression[]>();
-            foreach (var statement in bytecode) Assignments(statement, tag, applier, calls, 0);
-
-            foreach (var parameters in calls)
+            foreach (var statement in bytecode)
             {
-                assignments++;
+                var calls = new List<KismetExpression[]>();
+                Assignments(statement, tag, applier, calls, 0);
 
-                if (walk.Number(parameters.ElementAtOrDefault(MagnitudeParameter)) is { } magnitude)
+                foreach (var parameters in calls)
                 {
-                    answered.Add(magnitude);
+                    assignments++;
+
+                    var magnitude = parameters.ElementAtOrDefault(MagnitudeParameter);
+                    if (walk.Number(magnitude) is not { } read) continue;
+
+                    answered.Add(read);
+                    written.Add($"{read} = {walk.Written(magnitude)}");
                 }
+
+                walk.Bind(statement);
             }
         }
 
+        if (assignments == 0 || answered.Count != assignments) return (null, null);
+
         var distinct = answered.Distinct().ToArray();
 
-        return (distinct.Length == 1 ? distinct[0] : null, assignments);
+        return distinct.Length == 1
+            ? (distinct[0], string.Join(" and ", written.Distinct(StringComparer.Ordinal)))
+            : (null, null);
     }
 
     private static void Assignments(
