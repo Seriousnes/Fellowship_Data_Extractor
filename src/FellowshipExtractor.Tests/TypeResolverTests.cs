@@ -220,8 +220,8 @@ public sealed class TypeResolverTests
 
     [Theory]
     [InlineData(EntityType.Item, 5849)]
-    [InlineData(EntityType.Effect, 3261)]
-    [InlineData(EntityType.Ability, 2307)]
+    [InlineData(EntityType.Effect, 3265)]
+    [InlineData(EntityType.Ability, 2309)]
     [InlineData(EntityType.Creature, 241)]
     [InlineData(EntityType.Dungeon, 19)]
     [InlineData(EntityType.Talent, 216)]
