@@ -186,6 +186,19 @@ public sealed class TruthTests
     }
 
     [Theory]
+    [InlineData("GE_Bowguy_RangedAutoAttack_Damage", "Shoot")]
+    [InlineData("GE_DR_BloodfangMauler_MarkedByJump", "Pounce")]
+    public void AnEffectAnAbilityOnlyComparesOrFiltersOnKeepsItsApplierName(string tag, string expected) =>
+        Assert.Equal(expected, (string?)Record(tag)["name"]);
+
+    [Theory]
+    [InlineData("GA_Ink_MeleeInterrupt", 4)]
+    [InlineData("GA_Gunde_SingleTargetInterrupt", 4)]
+    public void ARowAnAppliedEffectBindsToItsDeclaredValueStillReadsAsTheAbilityDuration(
+        string tag, double expected) =>
+        Assert.Equal(expected, (double?)Record(tag)["duration"]);
+
+    [Theory]
     [InlineData("GA_Rime_Talent_SpendersSwap_SingleTarget", 4.096, true)]
     [InlineData("GA_Rime_Talent_SpendersSwap_MultiTargets", 2.114, false)]
     public void ACoefficientOnTheAbilityAReferenceNamesIsRead(string tag, double coefficient, bool expertise)

@@ -795,6 +795,8 @@ public sealed class TooltipResolver
 
         var appliedDurations = new List<CurveBinding>();
 
+        var boundByEffect = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
         if (cdo is not null)
         {
             foreach (var attribute in GameplayEffects.Captures(cdo) ?? []) scaling.Add(attribute);
@@ -810,6 +812,8 @@ public sealed class TooltipResolver
                 foreach (var binding in effect.Constants ?? [])
                 {
                     Numbers.Add(split, binding, tuning);
+
+                    if (binding is { Values: null, Value: { } bound }) boundByEffect[binding.RowName] = bound;
 
                     if (binding is { Computed: true, Value: not null }) appliedDurations.Add(binding);
                 }
@@ -847,7 +851,7 @@ public sealed class TooltipResolver
             split.Named[Numbers.Cost] = cost;
         }
 
-        Supplement(split, tuning);
+        Supplement(split, tuning, boundByEffect);
 
         var grantedTags = cdo is null ? [] : PropertyWalk.GetTags(cdo, GrantedTagsField) ?? [];
         foreach (var tag in grantedTags) SupplementTalent(split, tag);
@@ -1243,15 +1247,25 @@ public sealed class TooltipResolver
         }
     }
 
-    private void Supplement(SplitNumbers split, string? tuning)
+    public int NamespaceCorroborated { get; private set; }
+
+    private static bool Corroborates(
+        IReadOnlyDictionary<string, double> bound, ConstantRecord record, string leaf) =>
+        Numbers.Field(leaf) is not null &&
+        record.Value is { } declared &&
+        bound.TryGetValue(record.Key, out var applied) &&
+        applied == declared;
+
+    private void Supplement(SplitNumbers split, string? tuning, IReadOnlyDictionary<string, double> bound)
     {
         if (tuning is null) return;
 
         foreach (var record in _constants.DirectlyUnder(tuning))
         {
-            if (split.Rows.Contains(record.Key)) continue;
-
             var leaf = record.Key[(tuning.Length + 1)..];
+
+            var claimed = split.Rows.Contains(record.Key);
+            if (claimed && !Corroborates(bound, record, leaf)) continue;
             var binding = new CurveBinding(leaf, record.Key)
             {
                 Value = record.Value,
@@ -1266,7 +1280,7 @@ public sealed class TooltipResolver
             {
                 if (!split.Named.TryAdd(field, value)) continue;
 
-                NamespaceSupplied++;
+                if (claimed) NamespaceCorroborated++; else NamespaceSupplied++;
 
                 foreach (var (key, row) in one.Promoted)
                 {

@@ -27,7 +27,7 @@ public sealed class EffectIconSources
             if (load(tag) is not { } cdo) continue;
             if (Display.From(presentation.Find(tag.Name)?.Row, cdo).Icon is not { } icon) continue;
 
-            foreach (var (name, _, widened) in GameplayEffects.Reached(cdo, effectNames))
+            foreach (var (name, _, widened) in GameplayEffects.Applying(cdo, effectNames))
             {
                 if (tag.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) continue;
 

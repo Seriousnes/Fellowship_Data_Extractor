@@ -1,4 +1,5 @@
 using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 
@@ -44,7 +45,17 @@ public static class GameplayEffects
     }
 
     public static IEnumerable<(string Name, string Path, bool Widened)> Reached(
-        UObject asset, IReadOnlySet<string> effectNames)
+        UObject asset, IReadOnlySet<string> effectNames) =>
+        Union(asset, effectNames, AppliedEffects.Referenced);
+
+    public static IEnumerable<(string Name, string Path, bool Widened)> Applying(
+        UObject asset, IReadOnlySet<string> effectNames) =>
+        Union(asset, effectNames, AppliedEffects.Applying);
+
+    private static IEnumerable<(string Name, string Path, bool Widened)> Union(
+        UObject asset,
+        IReadOnlySet<string> effectNames,
+        Func<IPackage, IReadOnlySet<string>, IReadOnlyList<(string Name, string Path)>> wider)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -57,7 +68,7 @@ public static class GameplayEffects
 
         if (asset.Owner is not { } package) yield break;
 
-        foreach (var (name, path) in AppliedEffects.Referenced(package, effectNames))
+        foreach (var (name, path) in wider(package, effectNames))
         {
             if (seen.Add(name)) yield return (name, path, true);
         }

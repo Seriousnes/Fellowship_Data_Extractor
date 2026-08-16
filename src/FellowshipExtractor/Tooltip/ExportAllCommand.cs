@@ -252,7 +252,9 @@ public static class ExportAllCommand
             $"  {resolver.Leagues.Count} leagues covering difficulty 1 to {resolver.Leagues.Ceiling}, " +
             $"{resolver.StatedCoefficients} coefficients stated outside a description, " +
             $"{resolver.NamespaceFromBindings} namespaces taken from the rows an entity binds");
-        Console.WriteLine($"  {resolver.NamespaceSupplied} tuning rows supplied by namespace that no asset names");
+        Console.WriteLine(
+            $"  {resolver.NamespaceSupplied} tuning rows supplied by namespace that no asset names, " +
+            $"{resolver.NamespaceCorroborated} named fields an applied effect binds to the value the row declares");
         Console.WriteLine(
             $"  {resolver.DeclaredByBlueprint} tokens bound by the ability's ResolveDynamicTextFloat, " +
             $"{resolver.NamedByToken} by the quantity their name states, " +

@@ -33,7 +33,7 @@ public sealed class EffectNameSources
 
             if (cdo.Owner is null) unpackaged++;
 
-            foreach (var (applied, _, widened) in GameplayEffects.Reached(cdo, effectNames))
+            foreach (var (applied, _, widened) in GameplayEffects.Applying(cdo, effectNames))
             {
                 if (tag.Name.Equals(applied, StringComparison.OrdinalIgnoreCase)) continue;
 

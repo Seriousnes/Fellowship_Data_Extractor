@@ -28,7 +28,13 @@ public static class AppliedEffects
     }
 
     public static IReadOnlyList<(string Name, string Path)> Referenced(
-        IPackage package, IReadOnlySet<string> wanted)
+        IPackage package, IReadOnlySet<string> wanted) => Walk(package, wanted, false);
+
+    public static IReadOnlyList<(string Name, string Path)> Applying(
+        IPackage package, IReadOnlySet<string> wanted) => Walk(package, wanted, true);
+
+    private static IReadOnlyList<(string Name, string Path)> Walk(
+        IPackage package, IReadOnlySet<string> wanted, bool applyingOnly)
     {
         UObject[] exports;
         try
@@ -54,7 +60,12 @@ public static class AppliedEffects
 
             foreach (var statement in bytecode)
             {
-                foreach (var constant in Constants(statement, 0)) Take(constant, wanted, seen, named);
+                foreach (var (constant, applied) in Constants(statement, 0, false))
+                {
+                    if (applyingOnly && !applied) continue;
+
+                    Take(constant, wanted, seen, named);
+                }
             }
         }
 
@@ -70,31 +81,91 @@ public static class AppliedEffects
         if (seen.Add(name)) named.Add((name, path));
     }
 
-    private static IEnumerable<string> Constants(KismetExpression? expression, int depth)
+    private static IEnumerable<(string Path, bool Applied)> Constants(
+        KismetExpression? expression, int depth, bool applied)
     {
         if (expression is null || depth > MaxDepth) yield break;
 
         if (expression is EX_ObjectConst named && PropertyWalk.AsString(named.Value) is { } path)
         {
-            yield return path;
+            yield return (path, applied);
         }
+
+        var under = applied || Applies(expression);
 
         foreach (var read in Reaching(expression.GetType()))
         {
             switch (read(expression))
             {
                 case KismetExpression nested:
-                    foreach (var found in Constants(nested, depth + 1)) yield return found;
+                    foreach (var found in Constants(nested, depth + 1, under)) yield return found;
                     break;
 
                 case KismetExpression[] many:
                     foreach (var nested in many)
                     {
-                        foreach (var found in Constants(nested, depth + 1)) yield return found;
+                        foreach (var found in Constants(nested, depth + 1, under)) yield return found;
                     }
 
                     break;
             }
+        }
+    }
+
+    private const string ApplyToken = "Apply";
+    private const string SpecToken = "Spec";
+
+    private static readonly string[] FunctionMembers = ["StackNode", "VirtualFunctionName"];
+
+    private static readonly Dictionary<Type, Func<object, object?>[]> Calling = [];
+
+    private static bool Applies(KismetExpression expression)
+    {
+        foreach (var read in Called(expression.GetType()))
+        {
+            var name = read(expression) switch
+            {
+                FPackageIndex index => index.ResolvedObject?.Name.Text,
+                FName function => function.Text,
+                _ => null,
+            };
+
+            if (name is null) continue;
+
+            if (name.Contains(ApplyToken, StringComparison.OrdinalIgnoreCase) ||
+                name.Contains(SpecToken, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Func<object, object?>[] Called(Type type)
+    {
+        lock (Calling)
+        {
+            if (Calling.TryGetValue(type, out var cached)) return cached;
+
+            var readers = new List<Func<object, object?>>();
+
+            foreach (var member in FunctionMembers)
+            {
+                if (type.GetField(member, BindingFlags.Public | BindingFlags.Instance) is { } field)
+                {
+                    readers.Add(field.GetValue);
+                    continue;
+                }
+
+                if (type.GetProperty(member, BindingFlags.Public | BindingFlags.Instance) is { } property &&
+                    property.GetIndexParameters().Length == 0)
+                {
+                    readers.Add(property.GetValue);
+                }
+            }
+
+            return Calling[type] = [.. readers];
         }
     }
 
