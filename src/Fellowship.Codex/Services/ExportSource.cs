@@ -6,19 +6,31 @@ namespace Fellowship.Codex.Services;
 
 public sealed record ExportSnapshot(SettingsFile Settings, IReadOnlyList<EntityDocument> Entities);
 
+public readonly record struct DocumentKey(string Slug, int Id);
+
+public sealed record ExportVersion(
+    string Build,
+    IReadOnlyDictionary<DocumentKey, IReadOnlyList<string>> Documents,
+    string Settings);
+
+public sealed record ExportHistory(
+    string Latest,
+    ExportSnapshot Snapshot,
+    IReadOnlyDictionary<string, ExportVersion> Older);
+
 public interface IExportSource
 {
-    Task<ExportSnapshot> LoadAsync(CancellationToken cancellationToken);
+    Task<ExportHistory> LoadAsync(CancellationToken cancellationToken);
 }
 
-public sealed class ExportSnapshotHolder
+public sealed class ExportHistoryHolder
 {
-    private ExportSnapshot? loaded;
+    private ExportHistory? loaded;
 
-    public ExportSnapshot Snapshot
+    public ExportHistory History
     {
         get => loaded ?? throw new InvalidOperationException(
-            "The export snapshot is not loaded yet. Program.cs awaits IExportSource.LoadAsync after " +
+            "The export history is not loaded yet. Program.cs awaits IExportSource.LoadAsync after " +
             "builder.Build() and before app.Run(), so everything the store is built from reads a loaded one.");
         set => loaded = value;
     }
@@ -34,7 +46,12 @@ public static class ExportReader
 
     private static readonly JsonSerializerOptions Options = EntityDocuments.Options;
 
+    private static readonly string IdName =
+        Options.PropertyNamingPolicy!.ConvertName(nameof(EntityDocument.Id));
+
     public static string Blob(string name) => $"{Data}/{name}";
+
+    public static string Blob(string build, string name) => $"{ExportFolders.Name(build)}/{Blob(name)}";
 
     public static InvalidOperationException Missing(string name) =>
         new($"The export carries no {Blob(name)}. Run the FellowshipExtractor.Publisher app host, which " +
@@ -63,6 +80,43 @@ public static class ExportReader
         }
 
         return documents;
+    }
+
+    public static IReadOnlyDictionary<DocumentKey, IReadOnlyList<string>> Group(IEnumerable<string> lines)
+    {
+        var grouped = new Dictionary<DocumentKey, List<string>>();
+
+        foreach (var line in lines)
+        {
+            if (line.Length == 0) continue;
+            if (Key(line) is not { } key) continue;
+
+            if (!grouped.TryGetValue(key, out var carried)) grouped[key] = carried = [];
+
+            carried.Add(line);
+        }
+
+        return grouped.ToDictionary(entry => entry.Key, entry => (IReadOnlyList<string>)entry.Value);
+    }
+
+    private static DocumentKey? Key(string line)
+    {
+        try
+        {
+            using var reading = JsonDocument.Parse(line);
+
+            return reading.RootElement is { ValueKind: JsonValueKind.Object } root &&
+                root.TryGetProperty(EntityDocuments.Discriminator, out var slug) &&
+                slug.ValueKind == JsonValueKind.String &&
+                root.TryGetProperty(IdName, out var id) &&
+                id.TryGetInt32(out var number)
+                ? new DocumentKey(slug.GetString()!, number)
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     public static IEnumerable<string> Lines(string text)

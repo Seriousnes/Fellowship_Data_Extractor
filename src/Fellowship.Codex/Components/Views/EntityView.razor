@@ -1,5 +1,6 @@
 @using Fellowship.SDK.Models
 @inject ICodexViewService Ui
+@inject IExportHistoryService History
 
 <CascadingValue Value="Entity">
     <Wording />
@@ -10,12 +11,20 @@
     <BorrowedName Href="@(Namer?.Href)" Tip="@(Namer?.Tip)" Name="@(Namer?.Name)" />
     <BorrowedArt Href="@(Lender?.Href)" Tip="@(Lender?.Tip)" Name="@(Lender?.Name)" />
     @ChildContent
+    @if (ByVersion.Count > 0)
+    {
+        <Panel Head="Changes">
+            <Changes ByVersion="ByVersion" />
+        </Panel>
+    }
 </CascadingValue>
 
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [CascadingParameter] private Bearings Here { get; set; } = new();
 
     [Parameter]
     public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Extra { get; set; } = [];
@@ -28,6 +37,8 @@
 
     private IReadOnlyList<TokenReading> Tokens = [];
 
+    private IReadOnlyList<VersionValue> ByVersion = [];
+
     private (string Href, string? Tip, string Name)? Namer;
 
     private (string Href, string? Tip, string Name)? Lender;
@@ -39,6 +50,7 @@
         Facts = [.. Extra, .. Ui.Facts(Entity)];
         Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(AbilityDocument.ScalesOff)))];
         Tokens = Ui.Substitutions(Entity);
+        ByVersion = ReferenceEquals(Entity, Here.Shown) ? History.Of(Entity) : [];
 
         IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
 

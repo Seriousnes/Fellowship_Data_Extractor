@@ -1,7 +1,7 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Versions;
 
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 
@@ -27,28 +27,42 @@ public sealed class MissingMappingsTests
     [Fact]
     public void AResolverBuiltWithoutMappingsNamesTheUsmapRatherThanTheTableItCouldNotRead() => InTempFolder(folder =>
     {
-        var failure = Assert.Throws<InvalidOperationException>(() => new TooltipResolver(Empty(folder)));
+        var failure = Assert.Throws<InvalidOperationException>(() => new EntityResolver(Empty(folder)));
 
         Assert.Contains("FELLOWSHIP_USMAP", failure.Message, StringComparison.Ordinal);
-        Assert.Contains(ExtractorOptions.MappingsName, failure.Message, StringComparison.Ordinal);
+        Assert.Contains(ExtractorOptions.MappingsPattern, failure.Message, StringComparison.Ordinal);
         Assert.Contains("usmap", failure.Message, StringComparison.Ordinal);
     });
 
     [Fact]
     public void AnEnvironmentNamingNoUsmapReadsTheOneTheUsmapCommandWrites() => InTempFolder(folder =>
     {
-        var generated = Path.Combine(folder, ExtractorOptions.MappingsName);
+        var generated = Path.Combine(folder, ExtractorOptions.MappingsName("24736527"));
         File.WriteAllBytes(generated, []);
 
-        var options = new ExtractorOptions { OutputDir = folder };
+        var options = new ExtractorOptions { MappingsDir = folder };
 
         Assert.Equal(generated, options.ResolvedMappingsFile);
     });
 
     [Fact]
-    public void AnOutputFolderWithNoUsmapInItResolvesToNone() => InTempFolder(folder =>
+    public void TheNewestBuildWinsWhenSeveralAreGenerated() => InTempFolder(folder =>
     {
-        var options = new ExtractorOptions { OutputDir = folder };
+        foreach (var build in new[] { "9", "24736527", "24556151" })
+        {
+            File.WriteAllBytes(Path.Combine(folder, ExtractorOptions.MappingsName(build)), []);
+        }
+
+        var options = new ExtractorOptions { MappingsDir = folder };
+
+        Assert.Equal(
+            Path.Combine(folder, ExtractorOptions.MappingsName("24736527")), options.ResolvedMappingsFile);
+    });
+
+    [Fact]
+    public void AMappingsFolderWithNoUsmapInItResolvesToNone() => InTempFolder(folder =>
+    {
+        var options = new ExtractorOptions { MappingsDir = folder };
 
         Assert.Null(options.ResolvedMappingsFile);
     });
@@ -56,12 +70,12 @@ public sealed class MissingMappingsTests
     [Fact]
     public void AUsmapNamedByTheEnvironmentWinsOverTheGeneratedOne() => InTempFolder(folder =>
     {
-        File.WriteAllBytes(Path.Combine(folder, ExtractorOptions.MappingsName), []);
+        File.WriteAllBytes(Path.Combine(folder, ExtractorOptions.MappingsName("24736527")), []);
 
         var named = Path.Combine(folder, "another.usmap");
         File.WriteAllBytes(named, []);
 
-        var options = new ExtractorOptions { OutputDir = folder, MappingsFile = named };
+        var options = new ExtractorOptions { MappingsDir = folder, MappingsFile = named };
 
         Assert.Equal(named, options.ResolvedMappingsFile);
     });
@@ -72,7 +86,7 @@ public sealed class MissingMappingsTests
         var named = Path.Combine(folder, "absent.usmap");
 
         var failure = await Assert.ThrowsAsync<FileNotFoundException>(() =>
-            ProviderFactory.CreateAsync(new ExtractorOptions { OutputDir = folder, MappingsFile = named }));
+            ProviderFactory.CreateAsync(new ExtractorOptions { MappingsDir = folder, MappingsFile = named }));
 
         Assert.Contains(named, failure.Message, StringComparison.Ordinal);
         Assert.Contains("FELLOWSHIP_USMAP", failure.Message, StringComparison.Ordinal);

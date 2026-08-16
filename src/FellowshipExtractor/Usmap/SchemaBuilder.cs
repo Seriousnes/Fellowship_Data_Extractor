@@ -68,41 +68,4 @@ public static class SchemaBuilder
         return new Schema(name, stack);
     }
 
-    public static string TypeName(EPropertyGenFlags type) => type switch
-    {
-        EPropertyGenFlags.Byte => "ByteProperty",
-        EPropertyGenFlags.Int8 => "Int8Property",
-        EPropertyGenFlags.Int16 => "Int16Property",
-        EPropertyGenFlags.Int => "IntProperty",
-        EPropertyGenFlags.Int64 => "Int64Property",
-        EPropertyGenFlags.UInt16 => "UInt16Property",
-        EPropertyGenFlags.UInt32 => "UInt32Property",
-        EPropertyGenFlags.UInt64 => "UInt64Property",
-        EPropertyGenFlags.Float => "FloatProperty",
-        EPropertyGenFlags.Double => "DoubleProperty",
-        EPropertyGenFlags.LargeWorldCoordinatesReal => "DoubleProperty",
-        EPropertyGenFlags.Bool => "BoolProperty",
-        EPropertyGenFlags.SoftClass => "SoftClassProperty",
-        EPropertyGenFlags.WeakObject => "WeakObjectProperty",
-        EPropertyGenFlags.LazyObject => "LazyObjectProperty",
-        EPropertyGenFlags.SoftObject => "SoftObjectProperty",
-        EPropertyGenFlags.Class => "ClassProperty",
-        EPropertyGenFlags.Object => "ObjectProperty",
-        EPropertyGenFlags.Interface => "InterfaceProperty",
-        EPropertyGenFlags.Name => "NameProperty",
-        EPropertyGenFlags.Str => "StrProperty",
-        EPropertyGenFlags.Array => "ArrayProperty",
-        EPropertyGenFlags.Map => "MapProperty",
-        EPropertyGenFlags.Set => "SetProperty",
-        EPropertyGenFlags.Struct => "StructProperty",
-        EPropertyGenFlags.Delegate => "DelegateProperty",
-        EPropertyGenFlags.InlineMulticastDelegate => "MulticastInlineDelegateProperty",
-        EPropertyGenFlags.SparseMulticastDelegate => "MulticastSparseDelegateProperty",
-        EPropertyGenFlags.Text => "TextProperty",
-        EPropertyGenFlags.Enum => "EnumProperty",
-        EPropertyGenFlags.FieldPath => "FieldPathProperty",
-        EPropertyGenFlags.Optional => "OptionalProperty",
-        EPropertyGenFlags.VerseValue => "VerseValueProperty",
-        _ => "UnknownProperty",
-    };
 }

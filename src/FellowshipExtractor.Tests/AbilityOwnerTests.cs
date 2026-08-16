@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 

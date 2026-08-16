@@ -327,6 +327,31 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public async Task An_entity_page_states_its_version_history_once_and_heads_it_with_the_build()
+    {
+        var page = await client.GetStringAsync("/item/5250?hero=Elarion", Xunit.TestContext.Current.CancellationToken);
+
+        var history = factory.Services.GetRequiredService<IExportHistoryService>();
+
+        Assert.Equal(1, Occurrences(page, "class=\"cx-changes\""));
+        Assert.Contains($">{history.Builds[0]}<", page, StringComparison.Ordinal);
+        Assert.Contains("cx-change-current", page, StringComparison.Ordinal);
+    }
+
+    private static int Occurrences(string haystack, string needle)
+    {
+        var count = 0;
+
+        for (var at = haystack.IndexOf(needle, StringComparison.Ordinal); at >= 0;
+             at = haystack.IndexOf(needle, at + needle.Length, StringComparison.Ordinal))
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    [Fact]
     public async Task A_page_whose_knobs_pick_a_difficulty_renders_inside_the_island()
     {
         var creature = Factory.Store.Entities.OfType<CreatureDocument>().First();
@@ -376,7 +401,8 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
 
         private static IEntityStoreService BuildStore() =>
             new EntityStoreService(
-                new FolderExportSource(Export.Found()).LoadAsync(CancellationToken.None).GetAwaiter().GetResult(),
+                new FolderExportSource(Export.Found())
+                    .LoadAsync(CancellationToken.None).GetAwaiter().GetResult().Snapshot,
                 Microsoft.Extensions.Logging.Abstractions.NullLogger<EntityStoreService>.Instance);
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)

@@ -1,4 +1,4 @@
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 
@@ -7,7 +7,7 @@ public sealed class EnumDriftTests
     [Fact]
     public void MembersAreTheSetTheSettingsState()
     {
-        var expected = EnumsCommand.Members(Export.Loaded.Settings);
+        var expected = SettingsEnums.Members(Export.Loaded.Settings);
 
         Assert.Equal(expected["ArmorType"], Enum.GetNames<ArmorType>());
         Assert.Equal(expected["PrimaryStat"], Enum.GetNames<PrimaryStat>());
@@ -18,7 +18,7 @@ public sealed class EnumDriftTests
     [Fact]
     public void ARarityMemberCarriesItsShippedOrdinal()
     {
-        foreach (var (name, tier) in EnumsCommand.Rarities(Export.Loaded.Settings))
+        foreach (var (name, tier) in SettingsEnums.Rarities(Export.Loaded.Settings))
         {
             Assert.Equal(tier, (int)Enum.Parse<Rarity>(name));
         }
@@ -27,7 +27,7 @@ public sealed class EnumDriftTests
     [Fact]
     public void AnAbilityCategoryMemberCarriesItsShippedOrdinal()
     {
-        var categories = EnumsCommand.Categories(Export.Loaded.Settings);
+        var categories = SettingsEnums.Categories(Export.Loaded.Settings);
 
         Assert.NotEmpty(categories);
 

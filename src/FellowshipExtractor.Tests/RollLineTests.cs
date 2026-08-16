@@ -61,7 +61,7 @@ public sealed class RollLineTests
             new HashSet<string>(["Strength", "Intellect", "Agility"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
             Export.Loaded.Settings.DropItemLevels
-                .Single(plateau => plateau.Row == FellowshipExtractor.Tooltip.DropItemLevels.DefaultRow).ItemLevel,
+                .Single(plateau => plateau.Row == FellowshipExtractor.Extraction.DropItemLevels.DefaultRow).ItemLevel,
             query);
     }
 

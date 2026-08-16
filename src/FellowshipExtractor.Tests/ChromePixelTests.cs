@@ -27,7 +27,8 @@ public sealed class ChromePixelTests
         var snapshot = new FolderExportSource(Export.Loaded.Folder)
             .LoadAsync(CancellationToken.None)
             .GetAwaiter()
-            .GetResult();
+            .GetResult()
+            .Snapshot;
 
         var store = new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
 

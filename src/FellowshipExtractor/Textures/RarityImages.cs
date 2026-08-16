@@ -1,4 +1,4 @@
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;

@@ -13,31 +13,24 @@ dotnet run --project src/FellowshipExtractor
 ```
 
 With no command that writes the whole export, described under [Everything at once](#everything-at-once):
-`output/export` unless a connection string names blob storage, plus `output/tags.jsonl`,
-`output/ability-constants.jsonl` and the enums the documents are read against.
+`output/export-<build>` unless a connection string names blob storage, where `<build>` is the Steam
+build id. The folder holds `data/` and `ui/` and nothing else, and `output/` holds the folder and
+nothing else.
 
 | Argument | What it does |
 | --- | --- |
-| `--usmap` | Recovers the mappings and the Blueprint function index first, and stops before exporting if they come back short |
-| `--output <path>` | Writes a folder laid out like the container, `output/export` by default |
+| `--usmap` | Recovers the mappings first, and stops before exporting if they come back short |
+| `--output <path>` | Writes a folder laid out like the container, `output/export-<build>` by default |
 | `--connection-string <value>` | Writes into the `icons` blob container, also read from `ConnectionStrings__icons` |
 
 | Command | What it does |
 | --- | --- |
-| `list` | Mounts the containers and writes `output/files.txt` plus an extension histogram |
-| `cat <filter> [lines]` | Prints the first N lines of every container file whose path contains `<filter>` |
-| `raw <filter>` | Extracts matching container files verbatim to `output/raw/` |
-| `registry` | Parses `AssetRegistry.bin` to `output/asset-registry.jsonl` and a class histogram |
-| `locres [culture]` | Exports the localization table to `output/locres-<culture>.jsonl` (default `en`) |
-| `dump <filter>` | Loads the first matching `.uasset` and writes its exports as JSON |
-| `textures <filter> [format]` | Decodes matching textures to `output/textures/` as png (default), jpeg, tga or dds |
-| `tooltip <table> <id>` | Reconstructs one entity's tooltip: name, description, icon and every constant behind it |
-| `functions` | Indexes every Blueprint function by name, signature and callers to `output/blueprint-functions.jsonl` |
-| `probe [sample]` | Samples packages and reports how many parse with the current mappings |
+| `usmap` | Recovers the mappings without exporting |
 
 | Environment variable | Effect |
 | --- | --- |
-| `FELLOWSHIP_USMAP` | Path to a `.usmap` supplying property mappings. Unset, the extractor reads `output/fellowship.usmap`, the file the `usmap` command writes |
+| `FELLOWSHIP_USMAP` | Path to a `.usmap` supplying property mappings. Unset, the extractor reads `mappings/fellowship-<build>.usmap`, the file the `usmap` command writes |
+| `FELLOWSHIP_BUILD` | Names the build the export folder is filed under. Unset, the Steam `appmanifest_*.acf` whose `installdir` matches the game install supplies it |
 | `FELLOWSHIP_UE_VERSION` | Engine version override, e.g. `5.6` or `GAME_UE5_6` |
 
 ## Container facts
@@ -54,35 +47,25 @@ Established by reading the shipped files directly:
 - Engine version is set to `EGame.GAME_UE5_5` in `ExtractorOptions`. The build string is
   `++depot+release-source-CL-112206`, an engine source fork, so there is no stock Epic version tag to read.
 
-## Exports that work today, with no mappings
+## The tables that read with no mappings
 
-`registry` and `locres`, and the tag and constant tables the export writes beside itself, all run
-against the shipped build:
+Four sources parse straight out of the containers without a `.usmap`, and the readers that hold
+them are what every later stage joins against. They stay in memory rather than reaching disk:
 
-| Output | Records | Source |
+| Reader | Records | Source |
 | --- | --- | --- |
-| `asset-registry.jsonl` | 55,433 | `AssetRegistry.bin` - package path, asset class, cooked tags. DataTable rows carry their `RowStructure`, so this is the index for locating content. |
-| `tags.jsonl` | 13,088 | `Content/guid/*.csv` - every item, ability, effect, talent and trait name with its network id, across 18 tables. |
-| `ability-constants.jsonl` | 13,156 | `RawDataTables/**/*.csv` plus the GameFeature plugin copies - per-hero, per-dungeon and per-item tuning values. |
-| `locres-en.jsonl` | 14,273 | `Game.locres` - display strings under namespaces including `ST_Items`, `ST_Abilities`, `ST_Gems`, `DT_HeroItems`. |
+| `AssetRegistry.ReadAssets` | 55,433 | `AssetRegistry.bin` - package path, asset class, cooked tags. DataTable rows carry their `RowStructure`, so this is the index for locating content. |
+| `CsvTables.ReadTags` | 13,088 | `Content/guid/*.csv` - every item, ability, effect, talent and trait name with its network id, across 18 tables. |
+| `CsvTables.ReadConstants` | 13,156 | `RawDataTables/**/*.csv` plus the GameFeature plugin copies - per-hero, per-dungeon and per-item tuning values. |
+| `LocalizedText` | 14,273 | `Game.locres` - display strings under namespaces including `ST_Items`, `ST_Abilities`, `ST_Gems`, `DT_HeroItems`. |
 
-`tags.jsonl` breaks down as 5,787 `ItemID`, 3,261 `GameplayEffect`, 2,307 `GameplayAbility`,
+The tag table breaks down as 5,787 `ItemID`, 3,261 `GameplayEffect`, 2,307 `GameplayAbility`,
 772 `CRCharacterAugmentationAsset`, 338 `CRAICharacter`, 63 `ItemTrait.ID`, 40 `Talent.ID` and
 the remainder across 11 smaller tables.
 
-Record shapes:
-
-```jsonc
-{"table":"GameplayAbility","name":"GA_Interact","netId":2,"flag":0}
-{"table":"AbilityConstants","key":"Global.DefaultCCCooldown","value":9,"comment":"Default CC cooldown used for all casted/channeled abilities"}
-{"table":"FinesseConstants","key":"Finesse.BasicToIncreasedPower.PowerMultiplier","value":0.015,
- "values":[0.015,0.025,0.04,0.06],"columns":["1","2","3","4"]}
-{"ns":"ST_Items","key":"A1B2...","text":"Thunderlord's Judgement"}
-```
-
 Constants CSVs use a `---,1,2,3,4` header to declare tier columns; rows with more than one value
-carry `values` and `columns`. Two rows in the whole set hold non-numeric text (`1.5s` and a `DR`
-placeholder) and keep it under `raw`.
+carry every column, keyed by its label. Two rows in the whole set hold non-numeric text (`1.5s` and
+a `DR` placeholder) and keep the raw string.
 
 ### Joining a tag to its asset
 
@@ -96,7 +79,7 @@ to `GameplayAbilityBlueprint`, `GameplayEffect` to `Blueprint` under `CRGameplay
 `ItemID.VisualCollection.*` to `CRVisualCollection`, and so on.
 
 The 5,200 unmatched `ItemID` tags are the DataTable-driven items - hero gear, gems, currencies -
-which live as table rows rather than standalone assets. `dump` now reads table rows, so these are
+which live as table rows rather than standalone assets. The readers walk table rows, so these are
 reachable through the tables that hold them.
 
 Localization is exported but not joined. `ST_Abilities` keys such as
@@ -106,12 +89,12 @@ assets. Joining display text to entities needs mappings.
 
 ## Property mappings
 
-Cooked packages use unversioned property serialization and the build ships no `.usmap`.
-`probe 300` sampled 302 packages spread across the whole content set: 0 parsed, 302 raised
-`MappingException`. Fellowship is not present in TheNaeem's Unreal-Mappings-Archive (checked 2026-08-01).
+Cooked packages use unversioned property serialization and the build ships no `.usmap`. A sample of
+302 packages spread across the whole content set parsed 0 and raised `MappingException` 302 times.
+Fellowship is not present in TheNaeem's Unreal-Mappings-Archive (checked 2026-08-01).
 
 Reading `.uasset` exports needs a mappings file. `FELLOWSHIP_USMAP` names one, and with it unset the
-extractor reads `output/fellowship.usmap`, which is where the `usmap` command writes the mappings it
+extractor reads `mappings/fellowship-<build>.usmap`, which is where the `usmap` command writes the mappings it
 recovers, so a checkout that has generated them needs no environment at all. A run that finds
 neither stops before it opens a package and names the command that writes them, rather than reading
 every table back empty. That mappings file is what gates the per-asset half of the database: `GameplayAbilityBlueprint` (1,602),
@@ -122,14 +105,9 @@ every table back empty. That mappings file is what gates the per-asset half of t
 ## Static usmap generator
 
 `src/FellowshipExtractor/Usmap/` recovers UnrealHeaderTool's generated reflection tables directly
-from `fellowship-Win64-Shipping.exe`, with no process involvement. Commands:
-
-| Command | What it does |
-| --- | --- |
-| `usmap-scan` | Reports what the scanner recovers, for measuring progress |
-| `usmap` | Writes `output/fellowship.usmap`, round-trips it through CUE4Parse, and fails if the round-trip resolves no schema for a type the export reads |
-| `usmap-diff <ref.usmap>` | Grades recovered schemas against another UE5 game's usmap |
-| `usmap-debug <property>` | Traces one property record back to its owning params record |
+from `fellowship-Win64-Shipping.exe`, with no process involvement. The `usmap` command, and the
+`--usmap` flag on an export run, writes `mappings/fellowship-<build>.usmap`, round-trips it through
+CUE4Parse, and fails if the round-trip resolves no schema for a type the export reads.
 
 Layouts established empirically against this binary, not assumed:
 
@@ -195,9 +173,9 @@ fixtures:
   holds for this build: every field of a decoded `UIIconTexture` carries a semantically right
   value, and `ResourceObject` resolves to the icon named after the ability that owns it.
 
-Note that `probe` is only a gate, not a validation: CUE4Parse checks that a mappings container is
-present, so any syntactically valid usmap passes it. The comparisons above are what actually
-demonstrate correctness.
+Note that a package parsing is only a gate, not a validation: CUE4Parse checks that a mappings
+container is present, so any syntactically valid usmap passes it. The comparisons above are what
+actually demonstrate correctness.
 
 The enum table carries **2,276 enums and 12,333 members**, read from the `FEnumParams` records the
 same way the structs are, so an enum-typed property deserializes to `ECRAbilityCategory::Major`
@@ -208,16 +186,12 @@ that wants the ordinal still gets it.
 
 ## Images
 
-A cooked texture is block-compressed GPU data, so the path an asset holds is not an image. `textures`
-decodes them:
-
-```powershell
-dotnet run --project src/FellowshipExtractor -- textures ui/icons/hero_abilities
-```
+A cooked texture is block-compressed GPU data, so the path an asset holds is not an image.
+`TextureExporter` decodes them, and the export run draws every one it needs. Across the 198 packages
+under `ui/icons/hero_abilities` the formats break down as:
 
 ```
 198 package(s) match 'ui/icons/hero_abilities'; writing Png
-wrote 198 image(s) to G:\source\Fellowship_Data_Extractor\output\textures
   packages holding no texture: 0
      184  PF_DXT1
       12  PF_DXT5
@@ -246,19 +220,14 @@ still images. Spot-checked visually rather than by count: the Apocalypse icon is
 it should be, and a 4096x2048 BC7 hero-select background decodes clean, which is the check that
 proves the native path rather than just exercising it.
 
-`tooltip` exports its own icon as a side effect, to `output/textures/tooltip/<texture>.png`, and
-records the file name under `icon`. Naming an icon after its own texture rather than after the
-entity that asked for it means a texture several entities share is decoded once and they all agree
-on the file.
+Every icon is written to `ui/` under its own texture name and recorded under `icon`. Naming an icon
+after its own texture rather than after the entity that asked for it means a texture several
+entities share is decoded once and they all agree on the file.
 
 ## Reconstructing a tooltip
 
-`tooltip <table> <id|name>` assembles everything the game shows for one entity. It takes a
-gameplay tag's table and network id, or its name:
-
-```powershell
-dotnet run --project src/FellowshipExtractor -- tooltip GameplayAbility 1273
-```
+`EntityResolver.Resolve` assembles everything the game shows for one entity from its gameplay tag.
+`GameplayAbility` 1273 comes back as:
 
 ```json
 {
@@ -297,8 +266,7 @@ emitted as a path**, because a class name reconstructs nothing: either the value
 and folded in, or it is left out. So the five gameplay effect classes Apocalypse names are gone and
 the one number among them is `Damage.IntellectCoefficient`; the `{ CurveTable, RowName }` handles
 are gone and the rows they point at are the constants; an enum-valued field is the member's name,
-which is what the usmap's enum table is for. `dump <filter>` still writes the raw asset
-when that is what is wanted.
+which is what the usmap's enum table is for.
 
 Scaling comes out as the attribute and the coefficient, checkable against the ability's own text.
 Raging Stomp says "56% Strength" and "1.5 seconds", and resolves to exactly that:
@@ -481,11 +449,7 @@ internal and never show a tooltip.
 ### Heroes and per-hero variants
 
 One item id can be several differently named things. Shared gear carries a `DisplayNameByHero` map
-keyed by a hero gameplay tag, so `ItemID 5224` is five items:
-
-```powershell
-dotnet run --project src/FellowshipExtractor -- tooltip ItemID 5224
-```
+keyed by a hero gameplay tag, so `ItemID` 5224 resolves to five items:
 
 ```json
 {
@@ -516,10 +480,10 @@ dotnet run --project src/FellowshipExtractor -- tooltip ItemID 5224
 }
 ```
 
-Every variant goes in the one file. An id names one item however many things the game shows for it,
-so `tooltip-ItemID-5224.json` carries all five with their own names, abilities and ability
-constants, and the item's own `DisplayName` stays the placeholder it is rather than one variant's
-name standing in for the rest.
+Every variant is resolved together. An id names one item however many things the game shows for it,
+so `ItemID` 5224 comes back as all five with their own names, abilities and ability constants, and
+the item's own `DisplayName` stays the placeholder it is rather than one variant's name standing in
+for the rest.
 
 A hero the item is allowed on counts as a variant even when no field differs, because the ability
 it grants still can.
@@ -560,11 +524,7 @@ everything but the player's own Intellect or Strength is there.
 ### Items with no hero dimension
 
 A relic is the other shape: usable by every hero, one name, one ability. `ItemID 5252` is
-`Ancient Poultry Fetish`:
-
-```powershell
-dotnet run --project src/FellowshipExtractor -- tooltip ItemID 5252
-```
+`Ancient Poultry Fetish`, which `ItemID` 5252 resolves to:
 
 ```json
 {
@@ -615,9 +575,9 @@ rarities it can drop in.
 
 ## Everything at once
 
-The default run writes one JSONL line per gameplay tag with every icon beside it, using the same
-resolution the `tooltip` command uses for one entity. Naming an icon after its own texture means a
-texture shared by many entities is decoded once:
+The default run writes one JSONL line per gameplay tag with every icon beside it, through the same
+`EntityResolver.Resolve` the section above walks through for one entity. Naming an icon after its
+own texture means a texture shared by many entities is decoded once:
 
 ```powershell
 dotnet run --project src/FellowshipExtractor
@@ -626,21 +586,20 @@ dotnet run --project src/FellowshipExtractor -- --usmap
 
 Every run covers the whole build, with or without the mappings step.
 
-Two arguments name the destination. `--output <path>` writes a folder, `output/export` when neither
-argument is given. `--connection-string <value>` writes every document, setting and image straight
-into the `icons` blob container instead, leaving only `tags.jsonl` and `ability-constants.jsonl` on
-disk; the value is taken from the `ConnectionStrings:icons` configuration key when the argument is
-absent, which is the key the Publisher app host injects, so a run under it needs no argument at all
-and writes no export folder. Naming both writes both in one pass over the build.
+Two arguments name the destination. `--output <path>` writes a folder, `output/export-<build>` when
+neither argument is given, where `<build>` is the Steam build id of the install the assets came
+from. `--connection-string <value>` writes every document, setting and image straight into the
+`icons` blob container instead, leaving nothing on disk; the value is taken from the
+`ConnectionStrings:icons` configuration key when the argument is absent, which is the key the
+Publisher app host injects, so a run under it needs no argument at all and writes no export folder.
+Naming both writes both in one pass over the build.
 
 `--usmap` recovers the mappings before the pass and stops the run if the round-trip resolves no
 schema for a type the export reads, so an export is never written from mappings that would read
-their tables back empty. It indexes the Blueprint functions with them, since that index is only as
-current as the mappings that read the bytecode.
+their tables back empty.
 
-A folder run finishes by regenerating the enums the documents are read against: `enums.sql` beside
-the export, and `settings.json` copied to `src/Fellowship.SDK/`, which is the copy the SDK's
-enumerated types are checked against.
+A folder run finishes by copying `data/settings.json` to `src/Fellowship.SDK/`, which is the copy
+the source generator turns into the enumerated types the documents are read against.
 
 A blob run uploads every image as it draws it, and publishes `data/entities.jsonl` and
 `data/settings.json` together once the pass has both. A pass that throws part way publishes neither,
@@ -654,6 +613,12 @@ Either destination is the same layout:
 <root>/ui/<texture>.png
 ```
 
+On disk `<root>` is `output/export-<build>`. In the container the two data blobs carry that folder as
+their prefix, `export-<build>/data/...`, and the images stay at `ui/<texture>.png` at the container
+root, so a container holds every build's documents side by side against one set of art. The codex
+loads all of them, builds the site from the highest build, and renders what changed between adjacent
+versions on every entity page.
+
 The run reports what it read: 12,473 documents from 12,472 entities across 13,088 tags, 6,522 with a
 display name and 5,871 with an icon; 1,288 names and 1,282 icons inherited from the entity that
 applies them, 70 and 10 withheld because two entities that apply them disagree; 1,713 tuning rows
@@ -666,7 +631,7 @@ multiplied by the colour row the row draws it in; and 4,367 entity icon images, 
 icon composed against a rarity colour. `ui/` ends at 4,494 files and 212 MB, the whole of the
 transform work done once so that no consumer composes anything at render time.
 
-Every line is the same record the `tooltip` command writes for one entity - one shape, 2.9 MB for
+Every line is the same record the resolver produces for one entity - one shape, 2.9 MB for
 the whole game, down from 22.5 MB.
 
 ### settings.json
@@ -765,7 +730,7 @@ aspire run
 
 `FellowshipExtractor.Publisher` is an app host of its own: it starts the same Azurite the codex uses
 and runs the extractor against it, so publishing is one command and needs no connection string on the
-line. The extractor resource reads the same `output/fellowship.usmap` the `usmap` command wrote, and
+line. The extractor resource reads the same `mappings/fellowship-<build>.usmap` the `usmap` command wrote, and
 a `FELLOWSHIP_USMAP` set in the shell that starts the host is passed to it as an absolute path, so a
 usmap named there is the one the run reads. The extractor resource runs once and finishes, and the host keeps running until it is stopped,
 so stop it once the dashboard shows the run has exited. `aspire run` then starts the codex against
@@ -973,7 +938,7 @@ back at the same path.
 
 `src/Fellowship.Codex.Mcp` gives an AI agent the same export over MCP, with three tools:
 `list_types` says what the build carries, `find_entity` turns a name into a type and an id, and
-`get_entity` returns that entity's record. It speaks stdio, reads `output/export` off disk through
+`get_entity` returns that entity's record. It speaks stdio, reads `output/export-<build>` off disk through
 `FolderExportSource`, and shares every reading service with the codex through
 `CodexServices.AddCodexServices`. Neither the AppHost, Azurite nor the codex needs to be running.
 
@@ -1003,10 +968,13 @@ The registered path is relative, so a client launched from a worktree runs that 
 against that worktree's own export rather than another checkout's.
 
 The server finds its export in this order: an `--export <folder>` argument, then
-`FELLOWSHIP_EXPORT`, then the nearest `output/export` above the working directory, then the nearest
-one above its own binary. The last two make the registered entry portable across checkouts: the
-working directory covers a client started at the repository root, and the binary's own location
-covers one started anywhere else. `--export` and `FELLOWSHIP_EXPORT` name a folder outside both.
+`FELLOWSHIP_EXPORT`, then the nearest `output/` above the working directory that holds an
+`export-*`, then the nearest one above its own binary. Within an `output/` it takes the highest
+build id carrying both `data/entities.jsonl` and `data/settings.json`, so several builds can sit
+side by side and the newest wins. The two ancestor walks make the registered entry portable across
+checkouts: the working directory covers a client started at the repository root, and the binary's
+own location covers one started anywhere else. `--export` and `FELLOWSHIP_EXPORT` name a folder
+outside both, and are the only way to read a build other than the newest.
 
 Two things read differently over MCP than over HTTP. A reference's `resource` is the codex API's
 own path with no host, `/api/{slug}/{id}`, because a stdio server has no request to take a scheme
@@ -1023,17 +991,13 @@ both. `McpTests` holds the two wordings equal.
 ## Layout
 
 - `src/FellowshipExtractor/ProviderFactory.cs` - the single place that knows about the install path,
-  engine version, Oodle and mappings. Commands take the provider it builds.
-- `src/FellowshipExtractor/UeJson.cs` - writes CUE4Parse's property model to `Utf8JsonWriter`.
-  CUE4Parse only ships Newtonsoft converters, so the export shape is defined here. It counts every
-  value that falls through to `ToString()` in `UeJson.StringifiedTypes` and `dump` reports the
-  tally, which is how native structs still needing real handling get identified. Data and curve
-  tables keep their rows in a map beside their properties, so those are written under `$rows`;
-  without that a table serializes to its config flags and nothing else.
-- `src/FellowshipExtractor/Tooltip/` - the `tooltip` command and the export. `TooltipResolver`
+  engine version, Oodle and mappings. Every reader takes the provider it builds.
+- `src/FellowshipExtractor/GameBuild.cs` - reads the Steam build id from the `appmanifest_*.acf`
+  whose `installdir` matches the game install, which is what names the export folder.
+- `src/FellowshipExtractor/Extraction/` - the readers and the export. `EntityResolver`
   builds the shared indexes once and turns a tag into an `Entity`, so resolving one entity and
   resolving the whole game are the same code, the same setup cost and the same record shape.
-  `Entity` is that shape and the only thing either command writes. `PropertyWalk` is the recursive
+  `Entity` is that shape and the only thing the export writes. `PropertyWalk` is the recursive
   property walk everything else is built on, `CurveBindings` turns `FScalableFloat` references into
   resolved constants, `Numbers` sorts those into the named tooltip fields and the rest,
   `TuningNamespace` decides which prefix a row belongs to, `AbilityPresentationIndex` holds the
@@ -1064,5 +1028,5 @@ both. `McpTests` holds the two wordings equal.
 ## Known limits
 
 Two lightmap `.ubulk` files exceed 2 GB (`SandTomb_Environment_BuiltData.ubulk`,
-`ForestMeadow_Environment_BuiltData.ubulk`) and overflow CUE4Parse's single-array read. `raw`
-reports them and continues.
+`ForestMeadow_Environment_BuiltData.ubulk`) and overflow CUE4Parse's single-array read. Nothing the
+export reads touches them.

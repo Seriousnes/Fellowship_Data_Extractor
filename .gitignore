@@ -1,6 +1,10 @@
 bin/
 obj/
-/output/
+/temp-*/
+/output/*
+!/output/export-*/
+/output/export-*/*
+!/output/export-*/data/
 *.user
 /src/.vs/FellowshipExtractor.slnx
 .vs/

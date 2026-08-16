@@ -1,19 +1,19 @@
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 
 public sealed class TypeResolverTests
 {
-    private static readonly TooltipResolver Resolver = Export.Resolver;
+    private static readonly EntityResolver Resolver = Export.Resolver;
 
-    private static readonly IReadOnlySet<string> Branches = ExportAllCommand.Branches(Resolver.Tags);
+    private static readonly IReadOnlySet<string> Branches = ExportRun.Branches(Resolver.Tags);
 
     private static TagRecord Tag(string table, string name) =>
         Resolver.FindTag(table, name)
         ?? throw new InvalidOperationException($"{name} is no longer a tag in {table}.");
 
     private static string? NotWritten(TagRecord tag) =>
-        ExportAllCommand.NotWritten(Resolver.Resolve(tag, icons: null).Single(), Branches);
+        ExportRun.NotWritten(Resolver.Resolve(tag, icons: null).Single(), Branches);
 
     [Fact]
     public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(25, Enum.GetValues<EntityType>().Length);
@@ -150,7 +150,7 @@ public sealed class TypeResolverTests
             .ToArray();
 
         var empty = creatures
-            .Where(row => ExportAllCommand.NotWritten(row, Branches) == "a creature carrying nothing")
+            .Where(row => ExportRun.NotWritten(row, Branches) == "a creature carrying nothing")
             .ToArray();
 
         Assert.Equal(338, creatures.Length);
@@ -159,7 +159,7 @@ public sealed class TypeResolverTests
 
         Assert.Equal(
             Export.Loaded.Documents.Count(d => d.Type == EntityType.Creature),
-            creatures.Count(row => ExportAllCommand.NotWritten(row, Branches) is null));
+            creatures.Count(row => ExportRun.NotWritten(row, Branches) is null));
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public sealed class TypeResolverTests
             .ToArray();
 
         var unpaired = mounts.Where(row => row.Type is null && !Branches.Contains(row.Name!)).ToArray();
-        var written = mounts.Where(row => ExportAllCommand.NotWritten(row, Branches) is null).ToArray();
+        var written = mounts.Where(row => ExportRun.NotWritten(row, Branches) is null).ToArray();
 
         Assert.Equal(43, unpaired.Length);
         Assert.Contains(unpaired, row => row.Name == "ItemID.Mount.DefaultHorse");

@@ -38,18 +38,22 @@ public sealed class Export
 
     public IChromeAssetService Chrome { get; }
 
+    public IExportHistoryService History { get; }
+
     public string Folder { get; }
 
     public Export()
     {
-        Folder = Environment.GetEnvironmentVariable("FELLOWSHIP_EXPORT") ?? Found();
+        Folder = Environment.GetEnvironmentVariable(FolderExportSource.Variable) ?? Found();
 
-        var snapshot = new FolderExportSource(Folder)
+        var history = new FolderExportSource(Folder)
             .LoadAsync(CancellationToken.None)
             .GetAwaiter()
             .GetResult();
 
-        Store = new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
+        History = new ExportHistoryService(history);
+
+        Store = new EntityStoreService(history.Snapshot, NullLogger<EntityStoreService>.Instance);
 
         var tokens = new DesignTokenService(Store.Settings);
         var richText = new RichTextService(Store.Settings.TextStyles);
@@ -67,6 +71,7 @@ public sealed class Export
     public static string Found() =>
         FolderExportSource.Above(AppContext.BaseDirectory)
         ?? throw new InvalidOperationException(
-            "No output/export above the test binary and FELLOWSHIP_EXPORT is not set. It names the " +
-            "folder the extractor wrote, which is the same layout the container holds.");
+            $"No output/{ExportFolders.Pattern} carrying both data files above the test binary, and " +
+            $"{FolderExportSource.Variable} is not set. It names the folder the extractor wrote, which " +
+            "is the same layout the container holds.");
 }

@@ -132,8 +132,8 @@ public sealed class RarityTests
     public void TheDropLadderPlateausAt315AndALegendaryDropAt360()
     {
         Assert.Equal(
-            new DropPlateau(FellowshipExtractor.Tooltip.DropItemLevels.DefaultRow, 21, 315),
-            Plateau(FellowshipExtractor.Tooltip.DropItemLevels.DefaultRow));
+            new DropPlateau(FellowshipExtractor.Extraction.DropItemLevels.DefaultRow, 21, 315),
+            Plateau(FellowshipExtractor.Extraction.DropItemLevels.DefaultRow));
 
         Assert.Equal(new DropPlateau("Legendary", 21, 360), Plateau("Legendary"));
     }

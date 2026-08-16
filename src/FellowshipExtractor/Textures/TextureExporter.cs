@@ -6,11 +6,6 @@ using SixLabors.ImageSharp.PixelFormats;
 
 namespace FellowshipExtractor.Textures;
 
-public readonly record struct TextureExport(string? File, int Width, int Height, string? PixelFormat, string? Error)
-{
-    public bool Written => File is not null;
-}
-
 public readonly record struct TextureBytes(
     byte[]? Content, string? Extension, int Width, int Height, string? PixelFormat, string? Error)
 {
@@ -19,15 +14,6 @@ public readonly record struct TextureBytes(
 
 public static class TextureExporter
 {
-    public static ETextureFormat ParseFormat(string? value) => value?.ToLowerInvariant() switch
-    {
-        null or "png" => ETextureFormat.Png,
-        "jpg" or "jpeg" => ETextureFormat.Jpeg,
-        "tga" => ETextureFormat.Tga,
-        "dds" => ETextureFormat.Dds,
-        _ => throw new ArgumentException($"Unknown image format '{value}'. Use png, jpeg, tga or dds."),
-    };
-
     public static TextureBytes Export(UTexture texture, ETextureFormat format, bool discardAlpha = false)
     {
         var pixelFormat = texture.Format.ToString();
@@ -54,30 +40,6 @@ public static class TextureExporter
         catch (Exception ex)
         {
             return new TextureBytes(null, null, 0, 0, pixelFormat, $"{ex.GetType().Name}: {ex.Message}");
-        }
-    }
-
-    public static TextureExport Export(
-        UTexture texture, string targetWithoutExtension, ETextureFormat format, bool discardAlpha = false)
-    {
-        var encoded = Export(texture, format, discardAlpha);
-        if (!encoded.Written)
-        {
-            return new TextureExport(null, encoded.Width, encoded.Height, encoded.PixelFormat, encoded.Error);
-        }
-
-        try
-        {
-            var target = $"{targetWithoutExtension}.{encoded.Extension}";
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.WriteAllBytes(target, encoded.Content!);
-
-            return new TextureExport(target, encoded.Width, encoded.Height, encoded.PixelFormat, null);
-        }
-        catch (Exception ex)
-        {
-            return new TextureExport(
-                null, encoded.Width, encoded.Height, encoded.PixelFormat, $"{ex.GetType().Name}: {ex.Message}");
         }
     }
 

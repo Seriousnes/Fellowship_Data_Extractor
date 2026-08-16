@@ -2,7 +2,7 @@ using CUE4Parse.FileProvider;
 using CUE4Parse_Conversion.Textures;
 
 using FellowshipExtractor.Output;
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
