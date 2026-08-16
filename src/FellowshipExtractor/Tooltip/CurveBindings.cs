@@ -17,6 +17,10 @@ public sealed record CurveBinding(string Property, string RowName)
 
     public bool Multiplies { get; init; }
 
+    public bool Computed { get; init; }
+
+    public string[]? ComputedFrom { get; init; }
+
     public string[]? AmbiguousIn { get; init; }
 }
 
@@ -42,11 +46,23 @@ public static class CurveBindings
 
         foreach (var (path, curve) in handles)
         {
-            var rowName = PropertyWalk.GetString(curve, "RowName");
-            if (rowName is null) continue;
-
             var owner = path.EndsWith(CurveField, StringComparison.Ordinal) ? path[..^CurveField.Length] : null;
             var reported = owner ?? path;
+
+            var rowName = PropertyWalk.GetString(curve, "RowName");
+
+            if (rowName is null)
+            {
+                if (owner is null || Numbers.Field(reported) is null) continue;
+                if (!seen.Add($"{reported}|None")) continue;
+                if (!structs.TryGetValue(owner, out var bare)) continue;
+                if (PropertyWalk.AsNumber(PropertyWalk.Get(bare, "Value")?.GenericValue) is not { } literal) continue;
+                if (literal <= 0) continue;
+
+                found.Add(new CurveBinding(reported, "None") { Value = literal });
+                continue;
+            }
+
             if (!seen.Add($"{reported}|{rowName}")) continue;
 
             var (record, tables) = constants.Lookup(rowName);

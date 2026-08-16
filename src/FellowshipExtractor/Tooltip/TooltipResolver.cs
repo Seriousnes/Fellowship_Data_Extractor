@@ -33,6 +33,7 @@ public sealed class TooltipResolver
     private const string CharacterIdField = "CharacterID";
     private const string CharacterTagsField = "CharacterTags";
     private const string CountsTowardScoreField = "CountTowardsDungeonScore";
+    private const string UnlockCriteriaField = "UnlockCriteria";
 
     private readonly AbstractFileProvider _provider;
     private readonly TypeMappings _mappings;
@@ -44,11 +45,14 @@ public sealed class TooltipResolver
 
     private readonly HashSet<string> _contestedBands = new(StringComparer.OrdinalIgnoreCase);
 
+    private readonly HashSet<string> _unbindableSpreadRows = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly List<TagRecord> _tags;
     private readonly AugmentationIds _augmentationIds;
     private readonly RarityNames _rarities;
     private readonly Dictionary<string, FAssetData> _byPrimaryAssetName = new(StringComparer.Ordinal);
     private readonly Dictionary<string, FAssetData> _byAssetName = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, FAssetData> _petsByTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
 
     public AbilityPresentationIndex Presentation { get; }
@@ -64,6 +68,7 @@ public sealed class TooltipResolver
     public TemperCeilings Tempers { get; }
     public DropItemLevels Drops { get; }
     public DungeonNames Dungeons { get; }
+    public ModifierInfo Modifiers { get; }
     public VendorInventories Vendors { get; }
     public ItemSources Sources { get; }
     public AbilityOwners Owners { get; }
@@ -73,11 +78,17 @@ public sealed class TooltipResolver
     public DynamicItemVisuals DynamicVisuals { get; }
     public ItemSetBonuses SetBonuses { get; }
     public ItemTableNames TableNames { get; }
+    public ProgressionItems Progression { get; }
+    public CustomizationItems Customizations { get; }
+    public LocalizedText Localized { get; }
+    public MountLore Lore { get; }
+    public HeroLocres HeroText { get; }
     public DynamicItemRuleSets RuleSets { get; }
     public DynamicAbilityRanks AbilityRanks { get; }
     public TalentTrees Talents { get; }
     public GemDefinitions Gems { get; }
     public ItemTraits Traits { get; }
+    public DynamicTextRows DynamicText { get; }
     public Settings Settings { get; }
     public AbilityCategories Categories { get; }
     public TypeResolver Types { get; }
@@ -103,9 +114,11 @@ public sealed class TooltipResolver
 
     public IReadOnlyCollection<string> SpreadContested => _contestedBands;
 
+    public IReadOnlyCollection<string> SpreadRowsUnbindable => _unbindableSpreadRows;
+
     public TooltipResolver(AbstractFileProvider provider)
     {
-        if (provider.MappingsContainer is null)
+        if (provider.MappingsContainer?.MappingsForGame is not { } mappings)
         {
             throw new InvalidOperationException(
                 "No mappings are loaded, so every cooked package reads back as nothing and every table looks " +
@@ -115,13 +128,14 @@ public sealed class TooltipResolver
         }
 
         _provider = provider;
-        _mappings = provider.MappingsContainer.MappingsForGame;
+        _mappings = mappings;
         _assets = [.. RegistryCommand.ReadAssets(provider)];
         _tags = [.. CsvExportCommands.ReadTags(provider)];
         _constants = new ConstantsTable(provider);
         _presets = new EffectCalculationPresets(provider, _assets);
 
         IndexAssets();
+        IndexPets();
 
         foreach (var tag in _tags)
         {
@@ -141,6 +155,10 @@ public sealed class TooltipResolver
         Armor = new ArmorTypes(provider, _assets);
         SetBonuses = new ItemSetBonuses(provider, _assets, _augmentationIds, _tags);
         TableNames = new ItemTableNames(provider, _assets, rarities);
+        Progression = new ProgressionItems(provider, _assets, rarities);
+        Customizations = new CustomizationItems(provider, _assets, rarities);
+        Localized = new LocalizedText(provider);
+        Lore = new MountLore(Localized);
         RuleSets = new DynamicItemRuleSets(provider, _assets);
         Gems = new GemDefinitions(provider, _assets, _constants, _augmentationIds, rarities);
         Traits = new ItemTraits(
@@ -153,12 +171,15 @@ public sealed class TooltipResolver
         Collections = new VisualCollections(provider, _assets);
         HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, Collections, rarities);
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
+        HeroText = new HeroLocres(Localized, Heroes);
+        DynamicText = new DynamicTextRows(provider, _assets, _constants, Heroes);
 
         DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities);
 
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
         Dungeons = new DungeonNames(provider, _assets);
+        Modifiers = new ModifierInfo(provider, _assets);
         Vendors = new VendorInventories(provider, _assets);
         Sources = new ItemSources(provider, _assets, Dungeons, Vendors, HeroItems, Drops, Heroes);
 
@@ -185,7 +206,8 @@ public sealed class TooltipResolver
         EffectNames = new EffectNameSources(
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
 
-        Types = new TypeResolver(_tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons);
+        Types = new TypeResolver(
+            _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations, Heroes);
 
         Owners = new AbilityOwners(provider, _assets, _tags);
     }
@@ -196,6 +218,8 @@ public sealed class TooltipResolver
         {
             if (Talents.ForAugmentation(tag.Name)?.DisplayName is { } talent) return talent;
             if (Gems.ForAugmentation(tag.Name)?.DisplayName is { } node) return node;
+            if (Traits.ForAugmentation(tag.NetId)?.DisplayName is { } trait) return trait;
+            if (SetBonuses.ForAugmentation(tag.NetId)?.DisplayName is { } bonus) return bonus;
         }
 
         return Display.From(Presentation.Find(tag.Name)?.Row, cdo).Name;
@@ -240,13 +264,14 @@ public sealed class TooltipResolver
         var asset = FindAsset(tag.Name);
         var cdo = LoadDefaultObject(asset);
         var presentation = Presentation.Find(tag.Name);
-        var display = Display.From(presentation?.Row, cdo);
+        var text = (IPropertyHolder?)presentation?.Row ?? EffectUiData.Find(cdo);
+        var display = Display.From(text, cdo);
 
         var variants = cdo is null ? [] : HeroVariants.Collect(cdo, Heroes);
 
         var restricted = variants.Count > 0;
 
-        var body = Body(cdo, asset?.AssetName.Text ?? tag.Name, display, presentation, icons);
+        var body = Body(cdo, asset?.AssetName.Text ?? tag.Name, display, text, icons);
         if (cdo is not null) body = FillFrom(body, GrantedAbilities(cdo, icons));
 
         var (granted, grantedPath) = ResolveGranted(cdo, variants, restricted, icons);
@@ -277,11 +302,26 @@ public sealed class TooltipResolver
 
         entity = WithProvenance(entity, tag, asset, cdo);
         entity = WithOwners(entity, tag);
+        entity = WithSuppliedDuration(entity, cdo, tag);
 
         if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
         {
+            if (DynamicText.ForTag(tag.Name) is { } sentences)
+            {
+                entity = entity with { DescriptionsByHero = sentences };
+            }
+
             if (Talents.ForAugmentation(tag.Name) is { } talent) entity = WithTalent(entity, talent, icons);
             if (Gems.ForAugmentation(tag.Name) is { } node) entity = WithGemNode(entity, node, icons);
+            if (Traits.ForAugmentation(tag.NetId) is { } grantingTrait)
+            {
+                entity = WithGrantorText(entity, grantingTrait.DisplayName, grantingTrait.Description, grantingTrait.IconPath, icons);
+            }
+
+            if (SetBonuses.ForAugmentation(tag.NetId) is { } grantingBonus)
+            {
+                entity = WithGrantorText(entity, grantingBonus.DisplayName, grantingBonus.Description, grantingBonus.IconPath, icons);
+            }
         }
 
         if (tag.Table.Equals(CreatureTable, StringComparison.OrdinalIgnoreCase))
@@ -295,8 +335,27 @@ public sealed class TooltipResolver
             entity = WithDungeon(entity, dungeon, icons);
         }
 
+        if (tag.Table.Equals(ModifierInfo.Table, StringComparison.OrdinalIgnoreCase) &&
+            Modifiers.ForTag(tag.Name) is { } modifier)
+        {
+            entity = WithModifier(entity, modifier, icons);
+        }
+
+        if (tag.Table.Equals(HeroNames.Table, StringComparison.OrdinalIgnoreCase) &&
+            Heroes.Rostered(tag.Name) is { } hero)
+        {
+            entity = WithHero(entity, hero);
+        }
+
         entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
 
+        if (entity.Type is EntityType.CompanionPet &&
+            LoadDefaultObject(_petsByTag.GetValueOrDefault(tag.Name)) is { } pet)
+        {
+            entity = entity with { Acquire = PropertyWalk.GetText(pet, UnlockCriteriaField) };
+        }
+
+        if (entity.Type is EntityType.Mount) entity = entity with { Lore = Lore.For(tag.Name) };
 
         if (entity.DisplayName is null)
         {
@@ -422,7 +481,7 @@ public sealed class TooltipResolver
             };
         }
 
-        if (TableNames.Find(tagName) is { } row)
+        if ((TableNames.Find(tagName) ?? Progression.Find(tagName)) is { } row)
         {
             return entity with
             {
@@ -431,6 +490,20 @@ public sealed class TooltipResolver
                 Rarity = entity.Rarity ?? row.Rarity,
                 RarityTier = entity.RarityTier ?? row.RarityTier,
                 Icon = entity.Icon ?? Written(row.IconPath, icons),
+            };
+        }
+
+        if (Customizations.Find(tagName) is { } customization)
+        {
+            return entity with
+            {
+                DisplayName = entity.DisplayName ?? customization.DisplayName,
+                Description = entity.Description ?? customization.Description,
+                Acquire = customization.Acquire,
+                TitleText = customization.TitleText,
+                Rarity = entity.Rarity ?? customization.Rarity,
+                RarityTier = entity.RarityTier ?? customization.RarityTier,
+                Icon = entity.Icon ?? Written(customization.IconPath, icons),
             };
         }
 
@@ -490,6 +563,34 @@ public sealed class TooltipResolver
             AppliedBy = appliedBy,
             ApplierTags = appliedBy is null ? null : Empty(Owners.AbilityTagsOf(applier!)),
         };
+    }
+
+    public int SetByCallerDurationsScanned { get; private set; }
+
+    private readonly List<string> _suppliedDurations = [];
+
+    public IReadOnlyCollection<string> SetByCallerDurationsRecovered => _suppliedDurations;
+
+    private Entity WithSuppliedDuration(Entity entity, UObject? cdo, TagRecord tag)
+    {
+        if (entity.Duration is not null) return entity;
+        if (!tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) return entity;
+        if (SetByCallerDurations.DeclaredTag(cdo, _mappings) is not { } supplied) return entity;
+
+        SetByCallerDurationsScanned++;
+
+        var applier = Owners.ApplierOf(tag.Name);
+        if (applier is null or AbilityOwners.Contested) return entity;
+        if (LoadDefaultObject(FindAsset(applier)) is not { } ability) return entity;
+
+        var recovered = SetByCallerDurations.From(ability, supplied, _constants);
+        if (recovered.Duration is not { } duration) return entity;
+
+        _suppliedDurations.Add(
+            $"{tag.Name} from {applier} assigning {supplied}: {recovered.Derivation}");
+        DurationsFromSetByCaller++;
+
+        return entity with { Duration = duration };
     }
 
     private Entity WithCreature(Entity entity, TagRecord tag, UObject? cdo)
@@ -579,6 +680,32 @@ public sealed class TooltipResolver
         MinimumHeroRank = dungeon.MinimumHeroRank,
     };
 
+    private Entity WithHero(Entity entity, HeroProfile hero)
+    {
+        var prose = HeroText.For(hero.Codename);
+
+        return entity with
+        {
+            DisplayName = entity.DisplayName ?? hero.ShippedName,
+            Codename = hero.Codename,
+            PrimaryStat = hero.PrimaryStat,
+            HeroColor = Settings.Hero(hero.Codename)?.Color,
+            HeroTitle = prose?.Title,
+            Biography = prose?.Biography,
+            Playstyle = prose?.Playstyle,
+            SpiritAbility = prose?.SpiritAbility,
+        };
+    }
+
+    private static Entity WithModifier(Entity entity, Modifier modifier, IconWriter? icons) => entity with
+    {
+        DisplayName = entity.DisplayName ?? modifier.DisplayName,
+        Description = entity.Description ?? modifier.Description,
+        Icon = entity.Icon ?? Written(modifier.IconPath, icons),
+        ModifierKind = modifier.Kind,
+        MinimumHeroRank = modifier.MinimumHeroRank,
+    };
+
     private IconSource? Owned(string? named, string table)
     {
         if (named is null or AbilityOwners.Contested) return null;
@@ -645,14 +772,27 @@ public sealed class TooltipResolver
         TalentCost = talent.Cost,
     };
 
+    private Entity WithGrantorText(
+        Entity entity, string name, string? description, string? iconPath, IconWriter? icons) => entity with
+    {
+        DisplayName = entity.DisplayName ?? name,
+        Description = entity.Description ?? description,
+        Icon = entity.Icon ?? Written(iconPath, icons),
+    };
+
     private Entity Body(
         UObject? cdo,
         string? assetName,
         Display display,
-        AbilityPresentation? presentation,
+        IPropertyHolder? tokenSource,
         IconWriter? icons)
     {
         var bindings = cdo is null ? [] : CurveBindings.Collect(cdo, _constants);
+
+        var custom = cdo is null ? CustomMagnitudes.None : MagnitudeCalculations.Of(cdo, _provider, _constants);
+        if (custom.Duration is { } computedDuration) bindings.Insert(0, computedDuration);
+
+        if (cdo is not null) bindings.InsertRange(0, TooltipPayload.Bindings(cdo, _constants));
 
         var tuning = TuningNamespace.For(assetName, _constants);
 
@@ -662,12 +802,13 @@ public sealed class TooltipResolver
             NamespaceFromBindings++;
         }
 
-        var tokenHolder = (IPropertyHolder?)presentation?.Row ?? cdo;
+        var tokenHolder = tokenSource ?? cdo;
 
         var placeholders = tokenHolder is null
             ? []
             : DescriptionTokens.Align(
-                DescriptionTokens.Resolve(tokenHolder, _provider, _constants, _presets, tuning, assetName),
+                DescriptionTokens.Resolve(
+                    tokenHolder, _provider, _constants, _presets, tuning, assetName, _unbindableSpreadRows),
                 display.Description);
 
         var split = Numbers.Split(bindings, tuning);
@@ -675,19 +816,32 @@ public sealed class TooltipResolver
 
         var bands = new EffectSpreads();
 
-        var ownBand = cdo is null ? null : _presets.Of(cdo);
+        var ownBand = cdo is null ? null : _presets.Own(cdo, _constants, _unbindableSpreadRows);
+
+        var appliedDurations = new List<CurveBinding>();
+
+        var boundByEffect = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
         if (cdo is not null)
         {
             foreach (var attribute in GameplayEffects.Captures(cdo) ?? []) scaling.Add(attribute);
+            foreach (var attribute in custom.Captures) scaling.Add(attribute);
 
             foreach (var effect in Effects(cdo))
             {
-                if (effect.Spread is { } band) bands.Add(effect.Constants ?? [], band);
+                if (effect.Spread is { } band) bands.Add(effect.Constants ?? [], band, effect.SpreadOverridden);
                 if (effect.Constants is null && effect.CapturedAttributes is null) continue;
 
                 foreach (var attribute in effect.CapturedAttributes ?? []) scaling.Add(attribute);
-                foreach (var binding in effect.Constants ?? []) Numbers.Add(split, binding, tuning);
+
+                foreach (var binding in effect.Constants ?? [])
+                {
+                    Numbers.Add(split, binding, tuning);
+
+                    if (binding is { Values: null, Value: { } bound }) boundByEffect[binding.RowName] = bound;
+
+                    if (binding is { Computed: true, Value: not null }) appliedDurations.Add(binding);
+                }
             }
 
             foreach (var row in bands.Contested) _contestedBands.Add(row);
@@ -705,7 +859,24 @@ public sealed class TooltipResolver
             }
         }
 
-        Supplement(split, tuning);
+        var supersedes = appliedDurations
+            .Where(binding => Supersedes(binding, tuning))
+            .Select(binding => binding.Value!.Value)
+            .Distinct()
+            .ToArray();
+
+        if (supersedes.Length == 1 && !split.Named.ContainsKey(Numbers.Duration))
+        {
+            split.Named[Numbers.Duration] = supersedes[0];
+        }
+
+        if (AbilityCosts.Of(cdo, _provider, _constants, tuning) is { } cost &&
+            !split.Named.ContainsKey(Numbers.Cost))
+        {
+            split.Named[Numbers.Cost] = cost;
+        }
+
+        Supplement(split, tuning, boundByEffect);
 
         var grantedTags = cdo is null ? [] : PropertyWalk.GetTags(cdo, GrantedTagsField) ?? [];
         foreach (var tag in grantedTags) SupplementTalent(split, tag);
@@ -715,10 +886,20 @@ public sealed class TooltipResolver
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
         var (baseline, talents) = Numbers.SplitTalents(split.Rest);
 
+        var magnitudes = EffectModifiers.Of(cdo, _provider, _constants, _mappings);
+        ModifiersRead += magnitudes.Modifiers.Count;
+
+        foreach (var (name, fields) in magnitudes.Talents)
+        {
+            if (!talents.TryGetValue(name, out var varied)) talents[name] = varied = new(StringComparer.Ordinal);
+
+            foreach (var (field, value) in fields) varied[field] = value;
+        }
+
         var reachable = Rejoined(baseline, claimed, split.Promoted);
         var taken = new HashSet<string>(claimed.Keys, StringComparer.Ordinal);
 
-        var declared = cdo is null ? DynamicTextFloatMap.Empty : DynamicTextFloats.Of(cdo);
+        var declared = cdo is null ? DynamicTextFloatBody.Empty : DynamicTextFloats.Of(cdo);
 
         foreach (var name in placeholders.Keys.ToArray())
         {
@@ -726,8 +907,12 @@ public sealed class TooltipResolver
             var own = placeholder.Constants is not null;
             var source = placeholder.Constants ?? reachable;
 
-            if (Declared(placeholder, cdo, declared, bindings) is { } bound)
+            var spent = new List<string>();
+
+            if (Declared(placeholder, cdo, declared, bindings, spent) is { } bound)
             {
+                foreach (var row in spent) taken.Add(TuningNamespace.Relative(row, tuning));
+
                 placeholders[name] = bound;
                 DeclaredByBlueprint++;
                 continue;
@@ -751,7 +936,14 @@ public sealed class TooltipResolver
                     {
                         Attribute = resolved.Attribute,
                         Coefficient = resolved.Value,
-                        Spread = Band(resolved.Key, tuning, bands, ownBand, placeholder.PresetSpread),
+                        Spread = Band(
+                            resolved.Key,
+                            tuning,
+                            bands,
+                            ownBand,
+                            placeholder.PresetSpread is { } tokenBand
+                                ? new EffectBand(tokenBand, placeholder.PresetSpreadOverridden)
+                                : null),
                     };
                     continue;
                 }
@@ -775,6 +967,17 @@ public sealed class TooltipResolver
             }
         }
 
+        var undeclared = DescriptionTokens.Tokens(display.Description ?? string.Empty)
+            .Where(written => !placeholders.ContainsKey(written))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (undeclared is [var only] && SoleMagnitude(magnitudes.Modifiers) is { } stated)
+        {
+            placeholders[only] = new Placeholder { Value = stated };
+            SynthesizedFromModifier++;
+        }
+
         return new Entity
         {
             DisplayName = display.Name,
@@ -790,15 +993,20 @@ public sealed class TooltipResolver
             Charges = charges.Charges,
             ChargesByLevelType = charges.ByLevelType,
             Cost = Named(split, "cost"),
+            CostIsFraction = display.CostIsFraction ? true : null,
             Resource = display.Resource,
             Range = Named(split, "range"),
+            MinRange = Named(split, "minRange"),
             Radius = Named(split, "radius"),
             Duration = Named(split, "duration"),
             Period = Named(split, "period"),
             ScalesWithHaste = ScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
+            MaxStacks = MaxStacks(cdo),
+            Infinite = Infinite(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
             Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand, [.. scaling]),
+            Modifiers = magnitudes.Modifiers.Count == 0 ? null : magnitudes.Modifiers,
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Constants = baseline.Count == 0 ? null : baseline,
             Talents = talents.Count == 0
@@ -809,30 +1017,99 @@ public sealed class TooltipResolver
         };
     }
 
+    private static bool Supersedes(CurveBinding binding, string? tuning)
+    {
+        if (tuning is null) return false;
+
+        foreach (var row in binding.ComputedFrom ?? [])
+        {
+            var relative = TuningNamespace.Relative(row, tuning);
+            if (relative.Length >= row.Length || relative.Contains('.')) continue;
+            if (Numbers.Field(relative) == Numbers.Duration) return true;
+        }
+
+        return false;
+    }
+
+    private int? MaxStacks(UObject? cdo)
+    {
+        if (cdo is null) return null;
+
+        var stacking = PropertyWalk.GetString(cdo, "StackingType");
+        if (stacking is null || stacking.EndsWith("::None", StringComparison.Ordinal)) return null;
+
+        if (PropertyWalk.GetStruct(cdo, "StackCountMax") is not { } stack) return null;
+
+        var value = PropertyWalk.AsNumber(PropertyWalk.Get(stack, "Value")?.GenericValue);
+        var row = PropertyWalk.GetStruct(stack, "Curve") is { } curve
+            ? PropertyWalk.GetString(curve, "RowName")
+            : null;
+
+        var count = row is { Length: > 0 } && !row.Equals("None", StringComparison.Ordinal) &&
+                    _constants.Lookup(row).Record?.Value is { } resolved
+            ? (value ?? 1) * resolved
+            : value;
+
+        return count is > 1 ? (int)count : null;
+    }
+
+    private static bool Infinite(UObject? cdo) =>
+        cdo is not null &&
+        PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::Infinite", StringComparison.Ordinal) == true;
+
     public int DeclaredByBlueprint { get; private set; }
 
     public int NamedByToken { get; private set; }
 
-    private static Placeholder? Declared(
+    public int SynthesizedFromModifier { get; private set; }
+
+    public int ModifiersRead { get; private set; }
+
+    public int DurationsFromSetByCaller { get; private set; }
+
+    private static double? SoleMagnitude(IReadOnlyList<EffectModifier> modifiers) =>
+        modifiers.Count == 1 ? modifiers[0].Value : null;
+
+    private Placeholder? Declared(
         Placeholder placeholder,
         UObject? cdo,
-        DynamicTextFloatMap declared,
-        IReadOnlyList<CurveBinding> bindings)
+        DynamicTextFloatBody declared,
+        IReadOnlyList<CurveBinding> bindings,
+        ICollection<string> spent)
     {
         if (placeholder.FromOwnConstants is not true) return null;
         if (placeholder.DynamicTextFloatIdentifier is not { } identifier) return null;
 
-        if (declared.For(identifier) is { } binding && Scalable(bindings, binding.Property) is { } number)
+        var read = new List<string>();
+        var borrowed = Borrowed(cdo);
+
+        if (declared.Read(identifier, Reader(bindings, read), borrowed) is { } reading)
         {
-            return placeholder with
-            {
-                Value = number,
-                Tickrate = binding.ScalesWithHaste ? true : null,
-            };
+            foreach (var row in read) spent.Add(row);
+
+            return reading.IsNumber
+                ? placeholder with
+                {
+                    Value = reading.Coefficient,
+                    Tickrate = reading.ScalesWithHaste ? true : null,
+                }
+                : placeholder with
+                {
+                    Coefficient = reading.Coefficient,
+                    Attribute = reading.Attribute ?? placeholder.Attribute,
+                    ScalesWithExpertise = reading.ScalesWithExpertise ? true : null,
+                    Bracket = Written(reading),
+                    Tickrate = reading.ScalesWithHaste ? true : null,
+                };
         }
 
         if (cdo is null) return null;
-        if (DynamicTextRanges.For(cdo, identifier, name => Scalable(bindings, name)) is not { } range) return null;
+
+        read.Clear();
+
+        if (DynamicTextRanges.For(cdo, identifier, Reader(bindings, read), borrowed) is not { } range) return null;
+
+        foreach (var row in read) spent.Add(row);
 
         return placeholder with
         {
@@ -840,21 +1117,57 @@ public sealed class TooltipResolver
             Attribute = range.Attribute ?? placeholder.Attribute,
             Spread = range.Spread,
             ScalesWithExpertise = range.ScalesWithExpertise ? true : null,
+            Bracket = Written(range),
         };
     }
 
-    private static double? Scalable(IReadOnlyList<CurveBinding> bindings, string property)
+    private const string DefaultPrefix = "Default__";
+
+    private Func<string, string, double?>? Borrowed(UObject? cdo) =>
+        cdo is null
+            ? null
+            : (holder, property) =>
+            {
+                if (PropertyWalk.GetString(cdo, holder) is not { } classPath) return null;
+                if (!_provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(classPath), out var package))
+                {
+                    return null;
+                }
+
+                var referenced = package.GetExports()
+                    .FirstOrDefault(e => e.Name.StartsWith(DefaultPrefix, StringComparison.Ordinal));
+
+                return referenced is null
+                    ? null
+                    : Scalable(CurveBindings.Collect(referenced, _constants), property)?.Value;
+            };
+
+    private static PlaceholderBracket? Written(DynamicTextReading reading) =>
+        reading.Terms is not { Count: > 0 } terms
+            ? null
+            : new PlaceholderBracket(
+                [.. terms.Select(term => new PlaceholderTerm(term.Attribute, term.Coefficient))],
+                reading.Addend ?? 0);
+
+    private static Func<string, double?> Reader(IReadOnlyList<CurveBinding> bindings, ICollection<string> read) =>
+        property =>
+        {
+            if (Scalable(bindings, property) is not { } binding) return null;
+
+            read.Add(binding.RowName);
+            return binding.Value;
+        };
+
+    private static CurveBinding? Scalable(IReadOnlyList<CurveBinding> bindings, string property)
     {
         var wanted = Numbers.Normalize(property);
 
         var matched = bindings
             .Where(b => b.Value is not null && b.Values is null)
             .Where(b => Numbers.Normalize(Leaf(b.Property)) == wanted)
-            .Select(b => b.Value!.Value)
-            .Distinct()
             .ToArray();
 
-        return matched.Length == 1 ? matched[0] : null;
+        return matched.Select(b => b.Value!.Value).Distinct().Count() == 1 ? matched[0] : null;
     }
 
     private static string Leaf(string property) => property[(property.LastIndexOf('.') + 1)..];
@@ -865,7 +1178,7 @@ public sealed class TooltipResolver
         IReadOnlySet<string> taken,
         string? tuning,
         EffectSpreads bands,
-        double? ownBand,
+        EffectBand? ownBand,
         IReadOnlyList<string> capturedAttributes)
     {
         var stated = Coefficients.All(reachable, own, taken);
@@ -880,29 +1193,9 @@ public sealed class TooltipResolver
                 Coefficients.Captured(coefficient.Attribute, capturedAttributes), coefficient.Value)
             {
                 Part = coefficient.Part,
-                Spread = Stated(reachable, coefficient.Key)
-                    ?? Band(coefficient.Key, tuning, bands, ownBand, null),
+                Spread = Band(coefficient.Key, tuning, bands, ownBand, null),
             }),
         ];
-    }
-
-    private const string SpreadRow = "Spread";
-
-    private static double? Stated(IReadOnlyDictionary<string, object?> reachable, string coefficientKey)
-    {
-        var scope = coefficientKey;
-
-        while (scope.LastIndexOf('.') is var separator && separator > 0)
-        {
-            scope = scope[..separator];
-
-            if (reachable.GetValueOrDefault($"{scope}.{SpreadRow}") is double stated)
-            {
-                return stated == 0 ? null : stated;
-            }
-        }
-
-        return reachable.GetValueOrDefault(SpreadRow) is double band && band != 0 ? band : null;
     }
 
     public int StatedCoefficients { get; private set; }
@@ -910,13 +1203,16 @@ public sealed class TooltipResolver
     public int NamespaceFromBindings { get; private set; }
 
     private double? Band(
-        string coefficientKey, string? tuning, EffectSpreads bands, double? ownBand, double? tokenBand)
+        string coefficientKey,
+        string? tuning,
+        EffectSpreads bands,
+        EffectBand? ownBand,
+        EffectBand? tokenBand)
     {
-        var spread = Spread.For(
-            coefficientKey, tuning, _constants, bands, _presets, ownBand, tokenBand, out var overridden);
+        var reading = Spread.For(coefficientKey, tuning, _constants, bands, ownBand, tokenBand);
 
-        if (spread is not null) _spreadSources.TryAdd(coefficientKey, overridden);
-        return spread;
+        if (reading.Band is not null) _spreadSources.TryAdd(coefficientKey, reading.Overridden);
+        return reading.Band;
     }
 
     private const double SingleCast = 1;
@@ -976,15 +1272,25 @@ public sealed class TooltipResolver
         }
     }
 
-    private void Supplement(SplitNumbers split, string? tuning)
+    public int NamespaceCorroborated { get; private set; }
+
+    private static bool Corroborates(
+        IReadOnlyDictionary<string, double> bound, ConstantRecord record, string leaf) =>
+        Numbers.Field(leaf) is not null &&
+        record.Value is { } declared &&
+        bound.TryGetValue(record.Key, out var applied) &&
+        applied == declared;
+
+    private void Supplement(SplitNumbers split, string? tuning, IReadOnlyDictionary<string, double> bound)
     {
         if (tuning is null) return;
 
         foreach (var record in _constants.DirectlyUnder(tuning))
         {
-            if (split.Rows.Contains(record.Key)) continue;
-
             var leaf = record.Key[(tuning.Length + 1)..];
+
+            var claimed = split.Rows.Contains(record.Key);
+            if (claimed && !Corroborates(bound, record, leaf)) continue;
             var binding = new CurveBinding(leaf, record.Key)
             {
                 Value = record.Value,
@@ -999,7 +1305,7 @@ public sealed class TooltipResolver
             {
                 if (!split.Named.TryAdd(field, value)) continue;
 
-                NamespaceSupplied++;
+                if (claimed) NamespaceCorroborated++; else NamespaceSupplied++;
 
                 foreach (var (key, row) in one.Promoted)
                 {
@@ -1057,10 +1363,42 @@ public sealed class TooltipResolver
         _ => null,
     };
 
-    private static Entity FillFrom(Entity outer, IEnumerable<Entity> inner)
+    private static Entity FillFrom(Entity outer, IReadOnlyList<Entity> inner)
     {
-        foreach (var ability in inner) outer = Fill(outer, ability);
-        return outer;
+        var filled = outer;
+        foreach (var ability in inner) filled = Fill(filled, ability);
+
+        return filled with
+        {
+            CastTime = Agreed(outer.CastTime, inner, ability => ability.CastTime),
+            ChannelTime = Agreed(outer.ChannelTime, inner, ability => ability.ChannelTime),
+            ChannelTick = Agreed(outer.ChannelTick, inner, ability => ability.ChannelTick),
+            Cooldown = Agreed(outer.Cooldown, inner, ability => ability.Cooldown),
+            Charges = Agreed(outer.Charges, inner, ability => ability.Charges),
+            Cost = Agreed(outer.Cost, inner, ability => ability.Cost),
+            Range = Agreed(outer.Range, inner, ability => ability.Range),
+            MinRange = Agreed(outer.MinRange, inner, ability => ability.MinRange),
+            Radius = Agreed(outer.Radius, inner, ability => ability.Radius),
+            Duration = Agreed(outer.Duration, inner, ability => ability.Duration),
+            Period = Agreed(outer.Period, inner, ability => ability.Period),
+        };
+    }
+
+    private static double? Agreed(double? own, IReadOnlyList<Entity> granted, Func<Entity, double?> read)
+    {
+        if (own is not null) return own;
+
+        double? agreed = null;
+
+        foreach (var ability in granted)
+        {
+            if (read(ability) is not { } value) continue;
+            if (agreed is { } first && first != value) return null;
+
+            agreed = value;
+        }
+
+        return agreed;
     }
 
     private static Entity Fill(Entity outer, Entity inner) => outer with
@@ -1071,18 +1409,9 @@ public sealed class TooltipResolver
         Icon = outer.Icon ?? inner.Icon,
         Tags = outer.Tags ?? inner.Tags,
         Category = outer.Category ?? inner.Category,
-        CastTime = outer.CastTime ?? inner.CastTime,
-        ChannelTime = outer.ChannelTime ?? inner.ChannelTime,
-        ChannelTick = outer.ChannelTick ?? inner.ChannelTick,
-        Cooldown = outer.Cooldown ?? inner.Cooldown,
-        Charges = outer.Charges ?? inner.Charges,
         ChargesByLevelType = outer.ChargesByLevelType ?? inner.ChargesByLevelType,
-        Cost = outer.Cost ?? inner.Cost,
+        CostIsFraction = outer.CostIsFraction ?? inner.CostIsFraction,
         Resource = outer.Resource ?? inner.Resource,
-        Range = outer.Range ?? inner.Range,
-        Radius = outer.Radius ?? inner.Radius,
-        Duration = outer.Duration ?? inner.Duration,
-        Period = outer.Period ?? inner.Period,
         ScalesWithHaste = outer.ScalesWithHaste ?? inner.ScalesWithHaste,
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
         Coefficients = Union(outer.Coefficients, inner.Coefficients),
@@ -1170,8 +1499,12 @@ public sealed class TooltipResolver
     }
 
     private List<EffectRef> Effects(UObject asset) =>
-        [.. GameplayEffects.ReferencedIn(asset, _effectNames)
-            .Select(reference => GameplayEffects.Resolve(_provider, _constants, _presets, reference.Path))];
+        [.. GameplayEffects.Reached(asset, _effectNames)
+            .Select(reference => GameplayEffects.Resolve(
+                _provider, _constants, _presets, Locate(reference.Name, reference.Path), _unbindableSpreadRows))];
+
+    private string Locate(string effectName, string path) =>
+        path.Contains('/') ? path : FindAsset(effectName)?.ObjectPath ?? path;
 
     private static List<string> AbilityTypes(UObject cdo) =>
         [.. (PropertyWalk.GetTags(cdo, "AbilityTags") ?? [])
@@ -1222,7 +1555,7 @@ public sealed class TooltipResolver
         var name = AbilityPresentationIndex.AssetName(assetPath);
         var presentation = Presentation.Find(name);
 
-        return Body(cdo, name, Display.From(presentation?.Row, cdo), presentation, icons);
+        return Body(cdo, name, Display.From(presentation?.Row, cdo), presentation?.Row, icons);
     }
 
     private UObject? Load(string assetPath)
@@ -1238,7 +1571,21 @@ public sealed class TooltipResolver
     private FAssetData? FindAsset(string name)
     {
         if (_byPrimaryAssetName.TryGetValue(name, out var primary)) return primary;
-        return _byAssetName.TryGetValue(name, out var byName) ? byName : null;
+        if (_byAssetName.TryGetValue(name, out var byName)) return byName;
+        return _petsByTag.GetValueOrDefault(name);
+    }
+
+    private void IndexPets()
+    {
+        foreach (var asset in _assets)
+        {
+            if (!asset.AssetClass.Text.Equals("CRCompanionPetAsset", StringComparison.Ordinal)) continue;
+            if (LoadDefaultObject(asset) is not { } pet) continue;
+            if (PropertyWalk.GetString(pet, "PetID") is not { } tag) continue;
+            if (tag.EndsWith(".None", StringComparison.OrdinalIgnoreCase)) continue;
+
+            _petsByTag.TryAdd(tag, asset);
+        }
     }
 
     private void IndexAssets()

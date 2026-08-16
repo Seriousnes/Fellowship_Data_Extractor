@@ -29,6 +29,8 @@ public static class PublicTypes
         (EntityType.TalentSlot, "Talent Slots", "talent slot", "Characters"),
         (EntityType.Creature, "Creatures", "creature", "Characters"),
         (EntityType.Dungeon, "Dungeons", "dungeon", "Characters"),
+        (EntityType.Modifier, "Modifiers", "modifier", "Characters"),
+        (EntityType.Hero, "Heroes", "hero", "Characters"),
         (EntityType.CompanionPet, "Companion Pets", "companion pet", "Characters"),
         (EntityType.Mount, "Mounts", "mount", "Characters"),
         (EntityType.MountPower, "Mount Powers", "mount power", "Characters"),
@@ -45,7 +47,8 @@ public static class PublicTypes
 
     private static readonly EntityType[] Untabbed = [EntityType.Gem, EntityType.LegendaryStat];
 
-    private static readonly EntityType[] Unlisted = [EntityType.TalentSlot, EntityType.MountPower];
+    private static readonly EntityType[] Unlisted =
+        [EntityType.TalentSlot, EntityType.MountPower, EntityType.Modifier, EntityType.Hero];
 
     private static readonly EntityType[] Ordered =
     [

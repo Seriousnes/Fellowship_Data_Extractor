@@ -15,7 +15,12 @@ public sealed class DisplayTests
     private static UObject Augmentation(params FPropertyTag[] properties) => new([.. properties]);
 
     private static FPropertyTag Named(string name, FPropertyTagType tag) =>
-        new() { Name = new FName(name), Tag = tag };
+        new()
+        {
+            Name = new FName(name),
+            Tag = tag,
+            TagData = new FPropertyTagData { Type = tag.GetType().Name },
+        };
 
     private static FPropertyTag DynamicDescription(string text) =>
         Named(

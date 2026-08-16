@@ -10,7 +10,6 @@ public sealed record SplitNumbers(
 public static class Numbers
 {
     private const string RefSuffix = "ref";
-    private const string CostSuffix = "cost";
 
     private static readonly Dictionary<string, string> Fields = new(StringComparer.Ordinal)
     {
@@ -25,6 +24,7 @@ public static class Numbers
         ["maxrange"] = "range",
         ["rangehorizontal"] = "range",
         ["range"] = "range",
+        ["minrange"] = "minRange",
         ["radius"] = "radius",
         ["aoeradius"] = "radius",
         ["maxradius"] = "radius",
@@ -37,6 +37,7 @@ public static class Numbers
     public const string Period = "period";
     public const string Duration = "duration";
     public const string ChannelTick = "channelTick";
+    public const string Cost = "cost";
 
     public static double? Own(SplitNumbers split, string field)
     {
@@ -92,6 +93,7 @@ public static class Numbers
         {
             rows.Add(binding.RowName);
             if (claimedRows.Contains(binding.RowName)) continue;
+            if (binding.RowName.Equals("None", StringComparison.Ordinal)) continue;
 
             Place(rest, own, binding.RowName, Value(binding), tuningNamespace);
         }
@@ -175,13 +177,7 @@ public static class Numbers
         return found;
     }
 
-    public static string? Field(string name)
-    {
-        var key = Normalize(name);
-        if (Fields.TryGetValue(key, out var field)) return field;
-
-        return key.EndsWith(CostSuffix, StringComparison.Ordinal) ? "cost" : null;
-    }
+    public static string? Field(string name) => Fields.GetValueOrDefault(Normalize(name));
 
     public static string Normalize(string name)
     {

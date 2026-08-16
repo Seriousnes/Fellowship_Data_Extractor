@@ -18,9 +18,12 @@ public sealed class AbilityDocument : EntityDocument
     public IReadOnlyDictionary<string, double>? ChargesByLevelType { get; init; }
     public double? Cost { get; init; }
 
+    public bool? CostIsFraction { get; init; }
+
     public string? Resource { get; init; }
 
     public double? Range { get; init; }
+    public double? MinRange { get; init; }
     public double? Radius { get; init; }
     public double? Duration { get; init; }
     public double? Period { get; init; }

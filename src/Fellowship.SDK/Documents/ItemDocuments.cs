@@ -25,6 +25,11 @@ public sealed class ItemDocument : EntityDocument
     public string? RuleSet { get; init; }
 
     public string? Description { get; init; }
+
+    public string? Acquire { get; init; }
+
+    public string? TitleText { get; init; }
+
     public string? Icon { get; init; }
 
     public IReadOnlyDictionary<string, string>? IconByRarity { get; init; }

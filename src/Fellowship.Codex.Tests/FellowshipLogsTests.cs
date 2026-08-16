@@ -5,14 +5,16 @@ namespace Fellowship.Codex.Tests;
 [Collection(Corpus.Name)]
 public class FellowshipLogsTests(Export export)
 {
-    private const string Payload = "combatant-info-events.json";
-
-    private static JsonDocument Load() =>
-        JsonDocument.Parse(File.ReadAllText(
-            Path.Combine(AppContext.BaseDirectory, "FellowshipLogs", Payload)));
+    private static JsonDocument Load() => JsonDocument.Parse(File.ReadAllText(CombatantInfo.Payload));
 
     public static IEnumerable<object[]> Combatants()
     {
+        if (!CombatantInfo.Present)
+        {
+            yield return [0];
+            yield break;
+        }
+
         using var payload = Load();
 
         for (var at = 0; at < FellowshipLogs.Combatants(payload.RootElement).Count; at++) yield return [at];
@@ -29,6 +31,8 @@ public class FellowshipLogsTests(Export export)
     [Fact]
     public void The_payload_carries_several_combatants_and_every_one_wears_gear()
     {
+        CombatantInfo.Require();
+
         using var payload = Load();
 
         var events = FellowshipLogs.Combatants(payload.RootElement);
@@ -41,6 +45,8 @@ public class FellowshipLogsTests(Export export)
     [MemberData(nameof(Combatants))]
     public void Every_gear_entry_resolves_to_an_item_the_store_carries(int combatant)
     {
+        CombatantInfo.Require();
+
         using var payload = Load();
 
         var worn = Worn(payload, combatant);
@@ -60,6 +66,8 @@ public class FellowshipLogsTests(Export export)
     [MemberData(nameof(Combatants))]
     public void Every_gear_entry_round_trips_through_import_and_export(int combatant)
     {
+        CombatantInfo.Require();
+
         using var payload = Load();
 
         foreach (var (entry, owner) in Worn(payload, combatant))
@@ -97,6 +105,8 @@ public class FellowshipLogsTests(Export export)
     [Fact]
     public void A_repeated_stat_keeps_one_entry_per_roll()
     {
+        CombatantInfo.Require();
+
         using var payload = Load();
 
         var repeated = Worn(payload)
@@ -109,6 +119,8 @@ public class FellowshipLogsTests(Export export)
     [Fact]
     public void A_weapon_takes_the_imbued_traits_the_combatant_allocated_points_to()
     {
+        CombatantInfo.Require();
+
         using var payload = Load();
 
         var imbued = Worn(payload)
@@ -142,6 +154,8 @@ public class FellowshipLogsTests(Export export)
     [Fact]
     public void An_id_that_resolves_to_nothing_is_named_rather_than_dropped()
     {
+        CombatantInfo.Require();
+
         using var payload = Load();
 
         var entry = Worn(payload).First(worn => worn.Entry.TryGetProperty("traits", out _)).Entry;

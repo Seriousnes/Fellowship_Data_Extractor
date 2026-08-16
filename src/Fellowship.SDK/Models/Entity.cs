@@ -41,6 +41,14 @@ public sealed record Entity
 
     public string? Description { get; init; }
 
+    public string? Acquire { get; init; }
+
+    public string? TitleText { get; init; }
+
+    public string? Lore { get; init; }
+
+    public IReadOnlyDictionary<string, string>? DescriptionsByHero { get; init; }
+
     public IReadOnlyList<string>? Detail { get; init; }
 
     public string? Icon { get; init; }
@@ -61,9 +69,12 @@ public sealed record Entity
     public IReadOnlyDictionary<string, double>? ChargesByLevelType { get; init; }
     public double? Cost { get; init; }
 
+    public bool? CostIsFraction { get; init; }
+
     public string? Resource { get; init; }
 
     public double? Range { get; init; }
+    public double? MinRange { get; init; }
     public double? Radius { get; init; }
     public double? Duration { get; init; }
     public double? Period { get; init; }
@@ -71,6 +82,10 @@ public sealed record Entity
     public bool? ScalesWithHaste { get; init; }
 
     public bool? TickrateIgnoresHaste { get; init; }
+
+    public int? MaxStacks { get; init; }
+
+    public bool? Infinite { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
@@ -180,6 +195,8 @@ public sealed record Entity
 
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
 
+    public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
+
     public IReadOnlyList<PhaseAbility>? Abilities { get; init; }
 
     public IReadOnlyList<PhaseAbility>? Passives { get; init; }
@@ -195,6 +212,20 @@ public sealed record Entity
     public int? RequiredScore { get; init; }
 
     public int? MinimumHeroRank { get; init; }
+
+    public string? ModifierKind { get; init; }
+
+    public string? Codename { get; init; }
+
+    public string? HeroTitle { get; init; }
+
+    public string? HeroColor { get; init; }
+
+    public string? Biography { get; init; }
+
+    public string? Playstyle { get; init; }
+
+    public string? SpiritAbility { get; init; }
 
     [JsonIgnore]
     public IReadOnlyList<Variant>? Variants { get; init; }
@@ -267,6 +298,8 @@ public sealed record Placeholder
 
     public bool? ScalesWithExpertise { get; init; }
 
+    public PlaceholderBracket? Bracket { get; init; }
+
     [JsonIgnore]
     public TokenQuantity Quantity { get; init; }
 
@@ -274,8 +307,15 @@ public sealed record Placeholder
     public double? PresetSpread { get; init; }
 
     [JsonIgnore]
+    public bool PresetSpreadOverridden { get; init; }
+
+    [JsonIgnore]
     public int? DynamicTextFloatIdentifier { get; init; }
 }
+
+public sealed record PlaceholderTerm(string Attribute, double Coefficient);
+
+public sealed record PlaceholderBracket(IReadOnlyList<PlaceholderTerm> Terms, double Addend);
 
 public static class SlotKinds
 {

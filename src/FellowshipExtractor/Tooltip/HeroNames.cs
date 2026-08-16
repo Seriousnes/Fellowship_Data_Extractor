@@ -16,6 +16,7 @@ public sealed record HeroProfile(string Codename, string ShippedName)
 public sealed class HeroNames
 {
     public const string CharacterInfoRowStructure = "/Script/fellowship.CRCharacterInfoDataRow";
+    public const string Table = "CharacterID";
 
     private const string MetaDataClass = "BP_HeroMetaDataAsset_C";
     private const string RowPrefix = "hero-";
@@ -148,6 +149,15 @@ public sealed class HeroNames
     {
         var marker = colourRow?.LastIndexOf(RowPrefix, StringComparison.OrdinalIgnoreCase) ?? -1;
         return marker < 0 ? null : colourRow![(marker + RowPrefix.Length)..];
+    }
+
+    public HeroProfile? Rostered(string tagName)
+    {
+        if (!tagName.StartsWith(HeroVariants.HeroTagPrefix, StringComparison.OrdinalIgnoreCase)) return null;
+
+        var codename = tagName[HeroVariants.HeroTagPrefix.Length..];
+
+        return codename.Contains('.') ? null : _byCodename.GetValueOrDefault(codename);
     }
 
     public string? Shipped(string codenameOrTag) => Profile(codenameOrTag)?.ShippedName;

@@ -40,8 +40,10 @@ public static class DocumentProjection
             Charges = entity.Charges,
             ChargesByLevelType = entity.ChargesByLevelType,
             Cost = entity.Cost,
+            CostIsFraction = entity.CostIsFraction,
             Resource = entity.Resource,
             Range = entity.Range,
+            MinRange = entity.MinRange,
             Radius = entity.Radius,
             Duration = entity.Duration,
             Period = entity.Period,
@@ -67,7 +69,9 @@ public static class DocumentProjection
             GemSlot = entity.GemSlot,
             UniqueEquipped = entity.UniqueEquipped,
 
-            Rarity = Enum.TryParse<Rarity>(entity.RuleSet, out var fixedRarity) ? fixedRarity : null,
+            Rarity = Enum.TryParse<Rarity>(entity.RuleSet, out var fixedRarity)
+                ? fixedRarity
+                : entity.RarityTier is { } statedTier ? (Rarity)statedTier : null,
 
             Rarities = entity.Rarities?.Select(Enum.Parse<Rarity>).Order().ToArray(),
 
@@ -75,6 +79,8 @@ public static class DocumentProjection
             SetBonus = Referenced(entity.SetBonus, references),
             Stats = entity.Stats,
             Description = entity.Description,
+            Acquire = entity.Acquire,
+            TitleText = entity.TitleText,
             Icon = entity.Icon,
             IconByRarity = entity.IconByRarity,
             Grants = references.At(Augmentation(entity.GrantsId)),
@@ -124,9 +130,13 @@ public static class DocumentProjection
             Radius = entity.Radius,
             Cost = entity.Cost,
             TickrateIgnoresHaste = entity.TickrateIgnoresHaste,
+            MaxStacks = entity.MaxStacks,
+            Infinite = entity.Infinite,
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Schools = Schools(entity.Tags) ?? Schools(entity.ApplierTags),
+            Modifiers = entity.Modifiers,
+            Talents = entity.Talents,
             NameBorrowedFrom = references.At(entity.NameInheritedFrom),
             ArtBorrowedFrom = references.At(entity.IconInheritedFrom),
             Heroes = Owning(entity),
@@ -170,12 +180,38 @@ public static class DocumentProjection
             MinimumHeroRank = entity.MinimumHeroRank,
         },
 
+        EntityType.Modifier => new ModifierDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Tag = entity.Name,
+            Description = entity.Description,
+            Icon = entity.Icon,
+            Kind = entity.ModifierKind,
+            MinimumHeroRank = entity.MinimumHeroRank,
+        },
+
+        EntityType.Hero => new HeroDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Tag = entity.Name,
+            Codename = entity.Codename,
+            Title = entity.HeroTitle,
+            MainStat = entity.PrimaryStat is { } mainStat ? Enum.Parse<PrimaryStat>(mainStat) : null,
+            Color = entity.HeroColor,
+            Biography = entity.Biography,
+            Playstyle = entity.Playstyle,
+            SpiritAbility = entity.SpiritAbility,
+        },
+
         EntityType.Mount => new MountDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Tag = entity.Name,
             Description = entity.Description,
+            Lore = entity.Lore,
             Icon = entity.Icon,
         },
 
@@ -195,6 +231,7 @@ public static class DocumentProjection
             Name = Name(entity),
             Tag = entity.Name,
             Description = entity.Description,
+            Acquire = entity.Acquire,
             Icon = entity.Icon,
         },
 
@@ -297,6 +334,7 @@ public static class DocumentProjection
             Name = Name(entity),
             Tag = entity.Name,
             Description = entity.Description,
+            DescriptionsByHero = entity.DescriptionsByHero,
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             Duration = entity.Duration,

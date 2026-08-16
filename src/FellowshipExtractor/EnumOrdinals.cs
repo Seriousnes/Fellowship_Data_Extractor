@@ -35,6 +35,20 @@ public static class EnumOrdinals
         return long.TryParse(value[(scoped + Scope.Length)..], out var unnamed) ? unnamed : null;
     }
 
+    public static string? Member(TypeMappings mappings, string name, string? written)
+    {
+        if (written is null || written.Length == 0) return null;
+
+        var members = Members(mappings, name);
+
+        var scoped = written.IndexOf(Scope, StringComparison.Ordinal);
+        var member = scoped < 0 ? written : written[(scoped + Scope.Length)..];
+
+        if (members.Values.Contains(member, StringComparer.Ordinal)) return member;
+
+        return long.TryParse(member, out var ordinal) && members.TryGetValue(ordinal, out var named) ? named : null;
+    }
+
     public static IReadOnlyDictionary<long, string> Members(TypeMappings mappings, string name) =>
         mappings.Enums.TryGetValue(name, out var members)
             ? members

@@ -126,8 +126,8 @@ public sealed class AbilityOwnerTests
             .Where(tag => tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
             .Count(tag => owners.ApplierOf(tag.Name) is { Length: 0 });
 
-        Assert.Equal(203, contested);
-        Assert.Equal(1883, owners.AppliedEffectCount);
+        Assert.Equal(205, contested);
+        Assert.Equal(1885, owners.AppliedEffectCount);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class AbilityOwnerTests
             .Where(applier => applier is { Length: > 0 })
             .Count(applier => owners.AbilityTagsOf(applier!).Any(Schooled));
 
-        Assert.Equal(1001, schooled);
+        Assert.Equal(999, schooled);
     }
 
     private const string EffectTable = "GameplayEffect";

@@ -128,13 +128,13 @@ public class CraftUrlTests : BunitContext
         Assert.Contains("Copy link", copy.TextContent, StringComparison.Ordinal);
     }
 
-    private static string Payload() =>
-        File.ReadAllText(Path.Combine(
-            AppContext.BaseDirectory, "FellowshipLogs", "combatant-info-events.json"));
+    private static string Payload() => File.ReadAllText(CombatantInfo.Payload);
 
     [Fact]
     public void Pasting_one_gear_entry_writes_the_parameters_it_states()
     {
+        CombatantInfo.Require();
+
         var island = Island();
 
         island.Find("button.cx-craft-import").Click();
@@ -152,6 +152,8 @@ public class CraftUrlTests : BunitContext
     [Fact]
     public void Pasting_a_whole_combatantinfo_lists_the_gear_so_one_piece_can_be_chosen()
     {
+        CombatantInfo.Require();
+
         var island = Island();
 
         island.Find("button.cx-craft-import").Click();
@@ -164,6 +166,8 @@ public class CraftUrlTests : BunitContext
     [Fact]
     public void Choosing_a_piece_navigates_to_the_item_that_piece_names()
     {
+        CombatantInfo.Require();
+
         var island = Island();
 
         island.Find("button.cx-craft-import").Click();

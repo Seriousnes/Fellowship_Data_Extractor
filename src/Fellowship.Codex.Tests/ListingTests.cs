@@ -16,7 +16,7 @@ public class ListingTests(Export export)
         var results = Run(("type", "item"));
 
         Assert.Equal(results.Rows.Count, results.Rows.Distinct().Count());
-        Assert.Equal(2684, results.Total);
+        Assert.Equal(2769, results.Total);
     }
 
     [Fact]

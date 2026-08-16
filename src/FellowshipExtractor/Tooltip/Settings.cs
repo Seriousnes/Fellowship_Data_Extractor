@@ -95,6 +95,8 @@ public sealed class Settings
             }),
         ];
 
+        _heroByCodename = Heroes.ToDictionary(hero => hero.Codename, StringComparer.OrdinalIgnoreCase);
+
         if (rarities.MissingRenames.ToArray() is { Length: > 0 } missing)
         {
             throw new InvalidOperationException(
@@ -120,6 +122,10 @@ public sealed class Settings
                 "A reader would silently resolve nothing.");
         }
     }
+
+    private readonly Dictionary<string, HeroEntry> _heroByCodename;
+
+    public HeroEntry? Hero(string codename) => _heroByCodename.GetValueOrDefault(codename);
 
     public SettingsFile ToFile() => new()
     {

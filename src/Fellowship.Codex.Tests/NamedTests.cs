@@ -9,7 +9,7 @@ public class NamedTests(Export export)
         var results = Searching.Run(export);
 
         Assert.Equal(EntityType.Item, results.Chosen);
-        Assert.Equal(2684, results.Total);
+        Assert.Equal(2769, results.Total);
         Assert.All(results.Rows, row => Assert.NotNull(PublicTypes.DisplayNameOf(row)));
     }
 
@@ -18,7 +18,7 @@ public class NamedTests(Export export)
     {
         var results = Searching.Run(export, ("type", "item"), ("named", "0"));
 
-        Assert.Equal(3060, results.Total);
+        Assert.Equal(3080, results.Total);
         Assert.All(results.Rows, row => Assert.Null(PublicTypes.DisplayNameOf(row)));
     }
 
@@ -28,7 +28,7 @@ public class NamedTests(Export export)
         var named = Searching.Run(export, ("type", "item")).Total;
         var unnamed = Searching.Run(export, ("type", "item"), ("named", "0")).Total;
 
-        Assert.Equal(5744, named + unnamed);
+        Assert.Equal(5849, named + unnamed);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public class NamedTests(Export export)
     {
         var listed = export.Store.Entities.Count(row => PublicTypes.Listed(EntityTypes.TypeOf(row)));
 
-        Assert.Equal(12231, listed);
+        Assert.Equal(12342, listed);
         Assert.Equal(listed, export.View.Codex.Count);
         Assert.Equal(listed, export.View.Codex.Types.Sum(type => type.Count));
     }

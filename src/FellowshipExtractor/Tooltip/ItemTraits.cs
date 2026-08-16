@@ -39,6 +39,7 @@ public sealed class ItemTraits
     private const string AugmentationField = "Augmentation";
 
     private readonly Dictionary<string, ItemTrait> _byTag = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<int, ItemTrait> _byAugmentation = [];
     private readonly HashSet<int> _augmentations = [];
 
     public int Count => _byTag.Count;
@@ -98,7 +99,10 @@ public sealed class ItemTraits
 
         foreach (var trait in _byTag.Values)
         {
-            if (trait.Augmentation is not null) _augmentations.Add(trait.Augmentation.Value);
+            if (trait.Augmentation is not { } pointed) continue;
+
+            _augmentations.Add(pointed);
+            _byAugmentation.TryAdd(pointed, trait);
         }
 
         if (_byTag.Count == 0)
@@ -110,6 +114,8 @@ public sealed class ItemTraits
     }
 
     public ItemTrait? ForTag(string tagName) => _byTag.GetValueOrDefault(tagName);
+
+    public ItemTrait? ForAugmentation(int netId) => _byAugmentation.GetValueOrDefault(netId);
 
     public bool PointsAt(int netId) => _augmentations.Contains(netId);
 

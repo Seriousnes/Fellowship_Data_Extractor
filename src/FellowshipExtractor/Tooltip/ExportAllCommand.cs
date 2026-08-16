@@ -65,6 +65,10 @@ public static class ExportAllCommand
             $"granted abilities:  {resolver.Mappings.RowCount} mappings naming " +
             $"{resolver.Mappings.GrantedCount} augmentations");
         Console.WriteLine($"hero names:         {resolver.Heroes.Count}");
+        Console.WriteLine(
+            $"hero prose:         {resolver.HeroText.Titled} of {resolver.HeroText.Count} titled, " +
+            $"{resolver.HeroText.WithBiography} with a biography, {resolver.HeroText.WithPlaystyle} with a " +
+            $"playstyle, {resolver.HeroText.WithSpiritAbility} with a spirit ability");
         Console.WriteLine($"fixed hero items:   {resolver.HeroItems.Count} rows");
         Console.WriteLine($"talents:            {resolver.Talents.Count} across {resolver.Talents.HeroCount} trees");
         Console.WriteLine(
@@ -75,10 +79,38 @@ public static class ExportAllCommand
             $"{resolver.Traits.TotalRuns} rank runs bound to a curve");
         Console.WriteLine($"set bonuses:        {resolver.SetBonuses.Count} rows");
         Console.WriteLine(
+            $"hero dynamic text:  {resolver.DynamicText.SentenceCount} sentences across " +
+            $"{resolver.DynamicText.RowCount} row keys, {resolver.DynamicText.Substituted} tokens substituted, " +
+            $"left literal: {Literal(resolver.DynamicText.Literal)}");
+
+        foreach (var table in resolver.DynamicText.Unresolved)
+        {
+            Console.WriteLine(
+                $"  {table} declares the dynamic text row structure but is not a " +
+                "DT_DynamicText_Hero_<codename> table the roster can key");
+        }
+        Console.WriteLine(
             $"dungeons:           {resolver.Dungeons.Count} named, {resolver.Locations.Dungeons} with a map, " +
             $"{resolver.Locations.Maps} umaps read, {resolver.Locations.Placed} creatures placed, " +
             $"{resolver.Locations.Housed} of them by the folder they live in, " +
             $"{resolver.Locations.Unplaced} placed in none");
+        Console.WriteLine(
+            $"modifiers:          {resolver.Modifiers.Count} rows across {resolver.Modifiers.TableCount} tables, " +
+            $"{resolver.Modifiers.WithIcon} with an icon");
+        Console.WriteLine(
+            $"progression items:  {resolver.Progression.Count} rows across {resolver.Progression.TableCount} tables");
+        Console.WriteLine(
+            $"customizations:     {resolver.Customizations.Count} rows across " +
+            $"{resolver.Customizations.TableCount} tables, {resolver.Customizations.Unnamed} naming nothing");
+
+        foreach (var (kind, source) in resolver.Customizations.NameSourceByKind)
+        {
+            Console.WriteLine(
+                $"  {kind}: {resolver.Customizations.RowsByKind[kind]} rows named from {source}");
+        }
+        Console.WriteLine(
+            $"localized strings:  {resolver.Localized.Count} in {resolver.Localized.Culture}, " +
+            $"{resolver.Localized.Contested.Count} keys two namespaces disagree on");
         Console.WriteLine($"calculation presets:{resolver.PresetCount} rows carrying a default spread");
         Console.WriteLine(
             $"settings:           {resolver.Settings.Heroes.Count} heroes, {resolver.Settings.Rarities.Count} " +
@@ -200,8 +232,15 @@ public static class ExportAllCommand
             $"  {icons.Written} entity icon images and {chrome} chrome images written, " +
             $"{icons.Composed} of the icons composed against a rarity colour");
         Console.WriteLine(
+            $"  {resolver.Lore.Count} mounts whose lore the localization table keys by their own tag: " +
+            string.Join(", ", resolver.Lore.KeyByTag.Select(entry => $"{entry.Key} from {entry.Value}")));
+        Console.WriteLine(
             $"  {resolver.NamesInherited} names inherited from the entity that applies them, " +
             $"{resolver.NamesContested} withheld because two entities that apply them disagree");
+        Console.WriteLine(
+            $"  {resolver.EffectNames.Widened} effects reached for a name and {resolver.EffectIcons.Widened} " +
+            $"for an icon only through the applier scan, {resolver.EffectNames.Unpackaged} named tags carrying " +
+            "no package to scan");
         Console.WriteLine(
             $"  {resolver.IconsInherited} icons inherited from the entity that applies them, " +
             $"{resolver.IconsContested} withheld because two entities that apply them disagree");
@@ -217,13 +256,31 @@ public static class ExportAllCommand
             $"  {resolver.Leagues.Count} leagues covering difficulty 1 to {resolver.Leagues.Ceiling}, " +
             $"{resolver.StatedCoefficients} coefficients stated outside a description, " +
             $"{resolver.NamespaceFromBindings} namespaces taken from the rows an entity binds");
-        Console.WriteLine($"  {resolver.NamespaceSupplied} tuning rows supplied by namespace that no asset names");
+        Console.WriteLine(
+            $"  {resolver.NamespaceSupplied} tuning rows supplied by namespace that no asset names, " +
+            $"{resolver.NamespaceCorroborated} named fields an applied effect binds to the value the row declares");
         Console.WriteLine(
             $"  {resolver.DeclaredByBlueprint} tokens bound by the ability's ResolveDynamicTextFloat, " +
-            $"{resolver.NamedByToken} by the quantity their name states");
+            $"{resolver.NamedByToken} by the quantity their name states, " +
+            $"{resolver.SynthesizedFromModifier} from the sole modifier their description leaves undeclared");
         Console.WriteLine(
-            $"  {resolver.SpreadOverrides} coefficient rows banded by their own Spread row, " +
-            $"{resolver.SpreadPresetDefaults} by their effect's calculation preset");
+            $"  {resolver.ModifiersRead} effect modifier magnitudes read");
+        Console.WriteLine(
+            $"  {resolver.DurationsFromSetByCaller} of {resolver.SetByCallerDurationsScanned} durations the " +
+            "applier sets by caller recovered from its bytecode");
+
+        foreach (var recovered in resolver.SetByCallerDurationsRecovered)
+        {
+            Console.WriteLine($"    {recovered}");
+        }
+        Console.WriteLine(
+            $"  {resolver.SpreadOverrides} coefficient rows banded by the Spread row their effect overrides " +
+            $"with, {resolver.SpreadPresetDefaults} by an effect's calculation preset");
+
+        foreach (var row in resolver.SpreadRowsUnbindable)
+        {
+            Console.WriteLine($"  {row} is overridden onto an effect but no constants table declares it");
+        }
 
         foreach (var row in resolver.SpreadContested)
         {
@@ -231,4 +288,13 @@ public static class ExportAllCommand
         }
         Console.WriteLine("wrote the settings the documents are read against");
     }
+
+    private static string Literal(IReadOnlyDictionary<string, int> counts) =>
+        counts.Count == 0
+            ? "none"
+            : string.Join(
+                ", ",
+                counts.OrderByDescending(entry => entry.Value)
+                    .ThenBy(entry => entry.Key, StringComparer.Ordinal)
+                    .Select(entry => $"{entry.Key} x{entry.Value}"));
 }

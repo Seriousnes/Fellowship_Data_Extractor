@@ -7,7 +7,10 @@ public sealed class TypeResolver(
     ItemTraits traits,
     ItemSetBonuses setBonuses,
     GrantedAbilityMappings mappings,
-    DungeonNames dungeons)
+    DungeonNames dungeons,
+    ProgressionItems progression,
+    CustomizationItems customizations,
+    HeroNames heroes)
 {
     public const string LevelTable = "Level.ID";
 
@@ -41,6 +44,7 @@ public sealed class TypeResolver(
         ["GameplayEffect"] = EntityType.Effect,
         ["CRAICharacter"] = EntityType.Creature,
         [ItemTraits.Table] = EntityType.Trait,
+        [ModifierInfo.Table] = EntityType.Modifier,
     };
 
     public EntityType? Of(TagRecord tag, Entity entity, string? packageName)
@@ -60,6 +64,11 @@ public sealed class TypeResolver(
         if (tag.Table.Equals(LevelTable, StringComparison.OrdinalIgnoreCase))
         {
             return dungeons.Find(tag.Name) is not null ? EntityType.Dungeon : null;
+        }
+
+        if (tag.Table.Equals(HeroNames.Table, StringComparison.OrdinalIgnoreCase))
+        {
+            return heroes.Rostered(tag.Name) is not null ? EntityType.Hero : null;
         }
 
         return Tables.TryGetValue(tag.Table, out var table) ? table : null;
@@ -88,6 +97,16 @@ public sealed class TypeResolver(
         if (segments[1].Equals("GemType", StringComparison.OrdinalIgnoreCase))
         {
             return entity.GemTier is not null ? EntityType.Gem : EntityType.GemType;
+        }
+
+        if (segments[1].Equals(ProgressionItems.Segment, StringComparison.OrdinalIgnoreCase))
+        {
+            return progression.Find(tag.Name) is not null ? EntityType.Item : null;
+        }
+
+        if (segments[1].Equals(CustomizationItems.Segment, StringComparison.OrdinalIgnoreCase))
+        {
+            return customizations.Find(tag.Name) is not null ? EntityType.Item : null;
         }
 
         if (!ItemSegments.TryGetValue(segments[1], out var type)) return null;

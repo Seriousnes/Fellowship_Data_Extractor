@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <Content Include="..\..\docs\combatant-info-events.json"
+             Condition="Exists('$(MSBuildThisFileDirectory)..\..\docs\combatant-info-events.json')"
              Link="FellowshipLogs\combatant-info-events.json"
              CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

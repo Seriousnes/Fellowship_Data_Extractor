@@ -27,7 +27,7 @@ public sealed class EntityDocumentJsonTests
     private static IReadOnlyList<(EntityType Type, string Line, EntityDocument Document)> Rows => Loaded.Value;
 
     [Fact]
-    public void EveryLineOfTheExportDeserialises() => Assert.Equal(12_501, Rows.Count);
+    public void EveryLineOfTheExportDeserialises() => Assert.Equal(12_649, Rows.Count);
 
     [Fact]
     public void ADocumentsRuntimeClassIsTheDocumentOfItsTypeField() =>
@@ -53,16 +53,9 @@ public sealed class EntityDocumentJsonTests
             Enum.GetValues<EntityType>(),
             type => Assert.Equal($"{type}Document", EntityTypes.Document(type).Name));
 
-    public static IEnumerable<object[]> Types() =>
-        Enum.GetValues<EntityType>().Select(type => new object[] { type });
-
-    [Theory]
-    [MemberData(nameof(Types))]
-    public void OneLineOfEachTypeWrittenBackEqualsTheLineThatWasRead(EntityType type)
-    {
-        var row = Rows.First(r => r.Type == type);
-        Assert.Equal(row.Line, JsonSerializer.Serialize(row.Document, Options));
-    }
+    [Fact]
+    public void EveryLineWrittenBackEqualsTheLineThatWasRead() =>
+        Assert.All(Rows, row => Assert.Equal(row.Line, JsonSerializer.Serialize(row.Document, Options)));
 
     [Fact]
     public void ANestedReferenceRoundTripsThroughTheDiscriminator()

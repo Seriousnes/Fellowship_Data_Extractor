@@ -217,7 +217,8 @@ public sealed class McpTests(McpHost mcp, RouteTests.Factory factory)
     [Fact]
     public void Find_entity_matches_a_name_by_prefix_and_not_by_substring()
     {
-        var named = RouteTests.Factory.Store.Entities.First(row => row.Name is { Length: > 6 });
+        var named = RouteTests.Factory.Store.Entities.First(row =>
+            row.Name is { Length: > 6 } && PublicTypes.Listed(EntityTypes.TypeOf(row)));
 
         Assert.Contains(mcp.Tools.FindEntity(named.Name!).Results, hit => hit.Name == named.Name);
         Assert.DoesNotContain(mcp.Tools.FindEntity(named.Name![3..]).Results, hit => hit.Name == named.Name);
