@@ -19,15 +19,15 @@ public sealed class Export
 
     public static Export Loaded => Instance.Value;
 
-    private static readonly Lazy<TooltipResolver> ResolverInstance = new(Build, isThreadSafe: true);
+    private static readonly Lazy<EntityResolver> ResolverInstance = new(Build, isThreadSafe: true);
 
-    public static TooltipResolver Resolver => ResolverInstance.Value;
+    public static EntityResolver Resolver => ResolverInstance.Value;
 
     private static readonly Lazy<AbstractFileProvider> ProviderInstance = new(Mount, isThreadSafe: true);
 
     public static AbstractFileProvider Provider => ProviderInstance.Value;
 
-    private static TooltipResolver Build() => new(Provider);
+    private static EntityResolver Build() => new(Provider);
 
     private static AbstractFileProvider Mount()
     {
@@ -41,7 +41,7 @@ public sealed class Export
         {
             throw new InvalidOperationException(
                 $"No mappings to read the build with. Set {Mappings} to a .usmap for this build, or write " +
-                $"mappings/{ExtractorOptions.MappingsName} with " +
+                $"mappings/{ExtractorOptions.MappingsPattern} with " +
                 "'dotnet run --project src/FellowshipExtractor -- usmap'.");
         }
 

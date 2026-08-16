@@ -5,7 +5,7 @@ using FellowshipExtractor.Textures;
 
 namespace FellowshipExtractor.Extraction;
 
-public static class ExportAllCommand
+public static class ExportRun
 {
     public static IReadOnlySet<string> Branches(IEnumerable<TagRecord> tags)
     {
@@ -56,7 +56,7 @@ public static class ExportAllCommand
     public static async Task RunAsync(ExtractorOptions options, IExportTarget target)
     {
         var provider = await ProviderFactory.CreateAsync(options);
-        var resolver = new TooltipResolver(provider);
+        var resolver = new EntityResolver(provider);
 
         Console.WriteLine(
             $"presentation index: {resolver.Presentation.RowCount} rows across {resolver.Presentation.TableCount} tables");

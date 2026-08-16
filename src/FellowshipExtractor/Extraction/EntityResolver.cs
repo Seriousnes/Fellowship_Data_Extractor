@@ -12,7 +12,7 @@ namespace FellowshipExtractor.Extraction;
 
 public delegate string? IconWriter(string iconObjectPath, string? rarity);
 
-public sealed class TooltipResolver
+public sealed class EntityResolver
 {
     private const string MappingKeyField = "GrantedAbilityMappingKey";
     private const string RuleSetField = "RuleSet";
@@ -116,14 +116,14 @@ public sealed class TooltipResolver
 
     public IReadOnlyCollection<string> SpreadRowsUnbindable => _unbindableSpreadRows;
 
-    public TooltipResolver(AbstractFileProvider provider)
+    public EntityResolver(AbstractFileProvider provider)
     {
         if (provider.MappingsContainer?.MappingsForGame is not { } mappings)
         {
             throw new InvalidOperationException(
                 "No mappings are loaded, so every cooked package reads back as nothing and every table looks " +
                 "absent. Set FELLOWSHIP_USMAP to a .usmap for this build, or write " +
-                $"mappings/{ExtractorOptions.MappingsName} with " +
+                $"mappings/{ExtractorOptions.MappingsPattern} with " +
                 "'dotnet run --project src/FellowshipExtractor -- usmap'.");
         }
 

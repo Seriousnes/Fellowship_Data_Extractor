@@ -1,6 +1,5 @@
 bin/
 obj/
-/mappings/
 /temp-*/
 /output/*
 !/output/export-*/

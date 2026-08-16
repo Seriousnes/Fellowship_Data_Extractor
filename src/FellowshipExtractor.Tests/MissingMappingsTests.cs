@@ -27,22 +27,36 @@ public sealed class MissingMappingsTests
     [Fact]
     public void AResolverBuiltWithoutMappingsNamesTheUsmapRatherThanTheTableItCouldNotRead() => InTempFolder(folder =>
     {
-        var failure = Assert.Throws<InvalidOperationException>(() => new TooltipResolver(Empty(folder)));
+        var failure = Assert.Throws<InvalidOperationException>(() => new EntityResolver(Empty(folder)));
 
         Assert.Contains("FELLOWSHIP_USMAP", failure.Message, StringComparison.Ordinal);
-        Assert.Contains(ExtractorOptions.MappingsName, failure.Message, StringComparison.Ordinal);
+        Assert.Contains(ExtractorOptions.MappingsPattern, failure.Message, StringComparison.Ordinal);
         Assert.Contains("usmap", failure.Message, StringComparison.Ordinal);
     });
 
     [Fact]
     public void AnEnvironmentNamingNoUsmapReadsTheOneTheUsmapCommandWrites() => InTempFolder(folder =>
     {
-        var generated = Path.Combine(folder, ExtractorOptions.MappingsName);
+        var generated = Path.Combine(folder, ExtractorOptions.MappingsName("24736527"));
         File.WriteAllBytes(generated, []);
 
         var options = new ExtractorOptions { MappingsDir = folder };
 
         Assert.Equal(generated, options.ResolvedMappingsFile);
+    });
+
+    [Fact]
+    public void TheNewestBuildWinsWhenSeveralAreGenerated() => InTempFolder(folder =>
+    {
+        foreach (var build in new[] { "9", "24736527", "24556151" })
+        {
+            File.WriteAllBytes(Path.Combine(folder, ExtractorOptions.MappingsName(build)), []);
+        }
+
+        var options = new ExtractorOptions { MappingsDir = folder };
+
+        Assert.Equal(
+            Path.Combine(folder, ExtractorOptions.MappingsName("24736527")), options.ResolvedMappingsFile);
     });
 
     [Fact]
@@ -56,7 +70,7 @@ public sealed class MissingMappingsTests
     [Fact]
     public void AUsmapNamedByTheEnvironmentWinsOverTheGeneratedOne() => InTempFolder(folder =>
     {
-        File.WriteAllBytes(Path.Combine(folder, ExtractorOptions.MappingsName), []);
+        File.WriteAllBytes(Path.Combine(folder, ExtractorOptions.MappingsName("24736527")), []);
 
         var named = Path.Combine(folder, "another.usmap");
         File.WriteAllBytes(named, []);

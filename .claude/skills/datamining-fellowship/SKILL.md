@@ -18,12 +18,12 @@ was four instructions in the binary.
 
 | Rung | Where | What it gives |
 | --- | --- | --- |
-| 1. Export | `output/export-<build>/data/entities.jsonl` | Every entity the readers already resolve, one document per line. Check here before anything else: the fact may already be extracted. |
-| 2. Schema | `UsmapParser` on `mappings/fellowship.usmap` | The **complete** input set of a system. `CRDynamicItemSettings` enumerates eight things and there is no ninth. Do this before searching the asset tree; it is what tells you when to stop. |
-| 3. Assets | a reader under `src/FellowshipExtractor/Extraction/` | `ProviderFactory.CreateAsync` mounts the containers; `AssetRegistry.ReadAssets` is the index and `provider.LoadPackageObject<T>` reads a package. Read rows, never file names. |
-| 4. Binary | see below | Everything the first three do not carry. |
+| 0. Already done? | `output/export-<build>/data/entities.jsonl` | Whether the value is already projected onto a document. This is the **output** of extraction, not a view of the build: it answers "does the export carry this entity's cast time", never "what fields does `DA_StatCalculationSettings` ship". A miss here means keep going, not that the asset lacks it. |
+| 1. Schema | `UsmapParser` on `mappings/fellowship-<build>.usmap` | The **complete** input set of a system. `CRDynamicItemSettings` enumerates eight things and there is no ninth. Do this before searching the asset tree; it is what tells you when to stop. |
+| 2. Config and assets | a reader under `src/FellowshipExtractor/Extraction/` | `ProviderFactory.CreateAsync` mounts the containers; `AssetRegistry.ReadAssets` is the index and `provider.LoadPackageObject<T>` reads a package. `.ini` files are container files like any other. Read rows, never file names. |
+| 3. Binary | see below | Everything the first three do not carry. |
 
-Config is on rung 3 rather than its own rung: `.ini` files are container files like any other.
+What the config already gave up, so nobody reads it twice:
 `[/Script/fellowship.CRItemSettings]` in `DefaultGame.ini` holds `StatPoolCalculation`,
 `ItemLevelsPerUpgrade`, `MaxItemLevel` and the tempering **cost** mods.
 `[/Script/fellowship.CRItemStaticDataSubsystem]` names `DT_SlotWeights`, `DT_AttributeProperties`,

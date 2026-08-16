@@ -6,7 +6,13 @@ public sealed class ExtractorOptions
 {
     public const string DefaultInstallDir = @"C:\Program Files (x86)\Steam\steamapps\common\Fellowship";
 
-    public const string MappingsName = "fellowship.usmap";
+    public const string MappingsPrefix = "fellowship-";
+
+    public const string MappingsSuffix = ".usmap";
+
+    public const string MappingsPattern = $"{MappingsPrefix}*{MappingsSuffix}";
+
+    public static string MappingsName(string build) => $"{MappingsPrefix}{build}{MappingsSuffix}";
 
     public string InstallDir { get; init; } = DefaultInstallDir;
 
@@ -32,12 +38,26 @@ public sealed class ExtractorOptions
 
     public string ResolvedMappingsDir => Path.GetFullPath(MappingsDir);
 
-    public string GeneratedMappingsFile => Path.Combine(ResolvedMappingsDir, MappingsName);
+    public string GeneratedMappingsFile(string build) => Path.Combine(ResolvedMappingsDir, MappingsName(build));
 
     public string? ResolvedMappingsFile =>
-        MappingsFile is { Length: > 0 } named ? named
-            : File.Exists(GeneratedMappingsFile) ? GeneratedMappingsFile
-                : null;
+        MappingsFile is { Length: > 0 } named ? named : NewestGenerated();
+
+    private string? NewestGenerated()
+    {
+        var here = new DirectoryInfo(ResolvedMappingsDir);
+
+        return here.Exists
+            ? here.EnumerateFiles(MappingsPattern)
+                .OrderByDescending(file => Build(file.Name))
+                .ThenByDescending(file => file.Name, StringComparer.Ordinal)
+                .FirstOrDefault()
+                ?.FullName
+            : null;
+    }
+
+    private static long Build(string name) =>
+        long.TryParse(name[MappingsPrefix.Length..^MappingsSuffix.Length], out var build) ? build : -1;
 
     public string OutputDir { get; init; } =
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "output");

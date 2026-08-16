@@ -33,8 +33,10 @@ reads an export back globs `output/export-*` and takes the highest build carryin
 newest wins. `FELLOWSHIP_EXPORT`, and `--export` on the MCP server, name one folder outright and are
 the only way to read a build other than the newest.
 
-Only `data/` is tracked. `ui/` is gitignored, along with `mappings/`, which is where a `--usmap` run
-writes `fellowship.usmap`.
+Only `data/` is tracked; `ui/` is gitignored. `mappings/fellowship-<build>.usmap`, which a `--usmap`
+run writes, is tracked in full, so a fresh clone reads the containers with no regeneration and the
+mappings stay pinned to the export filed under the same id. `ResolvedMappingsFile` picks the highest
+build present the same way, and `FELLOWSHIP_USMAP` names one outright.
 
 ## Seeding an empty output folder takes one command
 
@@ -42,12 +44,12 @@ writes `fellowship.usmap`.
 no art, and any test that reads an image fails. Filling it is:
 
 ```powershell
-$env:FELLOWSHIP_USMAP = "<any checkout>/mappings/fellowship.usmap"
 dotnet run --project src/FellowshipExtractor
 ```
 
 **Why:** with no destination named the run writes `output/export-<build>`, and it writes both halves
-in the one pass: the documents under `data/`, and every composed image under `ui/`. A connection
+in the one pass: the documents under `data/`, and every composed image under `ui/`. It needs no
+environment at all, because the committed `mappings/` carries the usmap. A connection
 string in `ConnectionStrings__icons` replaces that folder with the blob container, which is what the
 Publisher app host does. `RouteTests` calls `Export.Found()` directly rather than reading
 `FELLOWSHIP_EXPORT`, so the tests that run through `WebApplicationFactory` read the worktree's own

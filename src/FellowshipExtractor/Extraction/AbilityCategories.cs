@@ -54,7 +54,7 @@ public sealed class AbilityCategories
         throw new InvalidOperationException(
             named.Count == 0
                 ? $"No schema names the enum behind {Field}, so an ability's category reads back as a bare " +
-                  $"ordinal. Rewrite mappings/{ExtractorOptions.MappingsName} with " +
+                  $"ordinal. Rewrite mappings/{ExtractorOptions.MappingsPattern} with " +
                   "'dotnet run --project src/FellowshipExtractor -- usmap', which is what carries the enum table."
                 : $"{named.Count} enums are written in a property named {Field} ({string.Join(", ", named)}), so " +
                   "which one an ability states its category in is no longer decided by the mappings.");

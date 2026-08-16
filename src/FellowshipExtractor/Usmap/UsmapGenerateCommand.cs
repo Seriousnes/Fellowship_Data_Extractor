@@ -67,7 +67,7 @@ public static class UsmapGenerateCommand
             .OrderBy(table => table.Name, StringComparer.Ordinal)
             .ToArray();
 
-        var target = options.GeneratedMappingsFile;
+        var target = options.GeneratedMappingsFile(GameBuild.Read(options));
         Directory.CreateDirectory(options.ResolvedMappingsDir);
         new UsmapWriter().Write(target, ordered, tables);
 

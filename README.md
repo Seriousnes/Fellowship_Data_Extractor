@@ -29,7 +29,7 @@ nothing else.
 
 | Environment variable | Effect |
 | --- | --- |
-| `FELLOWSHIP_USMAP` | Path to a `.usmap` supplying property mappings. Unset, the extractor reads `mappings/fellowship.usmap`, the file the `usmap` command writes |
+| `FELLOWSHIP_USMAP` | Path to a `.usmap` supplying property mappings. Unset, the extractor reads `mappings/fellowship-<build>.usmap`, the file the `usmap` command writes |
 | `FELLOWSHIP_BUILD` | Names the build the export folder is filed under. Unset, the Steam `appmanifest_*.acf` whose `installdir` matches the game install supplies it |
 | `FELLOWSHIP_UE_VERSION` | Engine version override, e.g. `5.6` or `GAME_UE5_6` |
 
@@ -94,7 +94,7 @@ Cooked packages use unversioned property serialization and the build ships no `.
 Fellowship is not present in TheNaeem's Unreal-Mappings-Archive (checked 2026-08-01).
 
 Reading `.uasset` exports needs a mappings file. `FELLOWSHIP_USMAP` names one, and with it unset the
-extractor reads `mappings/fellowship.usmap`, which is where the `usmap` command writes the mappings it
+extractor reads `mappings/fellowship-<build>.usmap`, which is where the `usmap` command writes the mappings it
 recovers, so a checkout that has generated them needs no environment at all. A run that finds
 neither stops before it opens a package and names the command that writes them, rather than reading
 every table back empty. That mappings file is what gates the per-asset half of the database: `GameplayAbilityBlueprint` (1,602),
@@ -106,7 +106,7 @@ every table back empty. That mappings file is what gates the per-asset half of t
 
 `src/FellowshipExtractor/Usmap/` recovers UnrealHeaderTool's generated reflection tables directly
 from `fellowship-Win64-Shipping.exe`, with no process involvement. The `usmap` command, and the
-`--usmap` flag on an export run, writes `mappings/fellowship.usmap`, round-trips it through
+`--usmap` flag on an export run, writes `mappings/fellowship-<build>.usmap`, round-trips it through
 CUE4Parse, and fails if the round-trip resolves no schema for a type the export reads.
 
 Layouts established empirically against this binary, not assumed:
@@ -226,7 +226,7 @@ entities share is decoded once and they all agree on the file.
 
 ## Reconstructing a tooltip
 
-`TooltipResolver.Resolve` assembles everything the game shows for one entity from its gameplay tag.
+`EntityResolver.Resolve` assembles everything the game shows for one entity from its gameplay tag.
 `GameplayAbility` 1273 comes back as:
 
 ```json
@@ -576,7 +576,7 @@ rarities it can drop in.
 ## Everything at once
 
 The default run writes one JSONL line per gameplay tag with every icon beside it, through the same
-`TooltipResolver.Resolve` the section above walks through for one entity. Naming an icon after its
+`EntityResolver.Resolve` the section above walks through for one entity. Naming an icon after its
 own texture means a texture shared by many entities is decoded once:
 
 ```powershell
@@ -724,7 +724,7 @@ aspire run
 
 `FellowshipExtractor.Publisher` is an app host of its own: it starts the same Azurite the codex uses
 and runs the extractor against it, so publishing is one command and needs no connection string on the
-line. The extractor resource reads the same `mappings/fellowship.usmap` the `usmap` command wrote, and
+line. The extractor resource reads the same `mappings/fellowship-<build>.usmap` the `usmap` command wrote, and
 a `FELLOWSHIP_USMAP` set in the shell that starts the host is passed to it as an absolute path, so a
 usmap named there is the one the run reads. The extractor resource runs once and finishes, and the host keeps running until it is stopped,
 so stop it once the dashboard shows the run has exited. `aspire run` then starts the codex against
@@ -988,7 +988,7 @@ both. `McpTests` holds the two wordings equal.
   engine version, Oodle and mappings. Every reader takes the provider it builds.
 - `src/FellowshipExtractor/GameBuild.cs` - reads the Steam build id from the `appmanifest_*.acf`
   whose `installdir` matches the game install, which is what names the export folder.
-- `src/FellowshipExtractor/Extraction/` - the readers and the export. `TooltipResolver`
+- `src/FellowshipExtractor/Extraction/` - the readers and the export. `EntityResolver`
   builds the shared indexes once and turns a tag into an `Entity`, so resolving one entity and
   resolving the whole game are the same code, the same setup cost and the same record shape.
   `Entity` is that shape and the only thing the export writes. `PropertyWalk` is the recursive

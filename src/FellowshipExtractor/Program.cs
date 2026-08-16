@@ -59,7 +59,7 @@ switch (command)
             ? destinations[0]
             : new CompositeTarget(destinations))
         {
-            await ExportAllCommand.RunAsync(options, target);
+            await ExportRun.RunAsync(options, target);
         }
 
         if (folder is not null) SettingsEnums.Publish(folder);
