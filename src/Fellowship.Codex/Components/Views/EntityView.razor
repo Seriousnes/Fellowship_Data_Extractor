@@ -1,5 +1,6 @@
 @using Fellowship.SDK.Models
 @inject ICodexViewService Ui
+@inject IExportHistoryService History
 
 <CascadingValue Value="Entity">
     <Wording />
@@ -10,6 +11,9 @@
     <BorrowedName Href="@(Namer?.Href)" Tip="@(Namer?.Tip)" Name="@(Namer?.Name)" />
     <BorrowedArt Href="@(Lender?.Href)" Tip="@(Lender?.Tip)" Name="@(Lender?.Name)" />
     @ChildContent
+    <Panel Head="Changes">
+        <Changes ByVersion="ByVersion" />
+    </Panel>
 </CascadingValue>
 
 @code {
@@ -28,6 +32,8 @@
 
     private IReadOnlyList<TokenReading> Tokens = [];
 
+    private IReadOnlyList<VersionValue> ByVersion = [];
+
     private (string Href, string? Tip, string Name)? Namer;
 
     private (string Href, string? Tip, string Name)? Lender;
@@ -39,6 +45,7 @@
         Facts = [.. Extra, .. Ui.Facts(Entity)];
         Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(AbilityDocument.ScalesOff)))];
         Tokens = Ui.Substitutions(Entity);
+        ByVersion = History.Of(Entity);
 
         IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
 

@@ -11,6 +11,7 @@ public class CreatureViewTests : BunitContext
         Services.AddSingleton(export.View);
         Services.AddSingleton(export.Tooltip);
         Services.AddSingleton(export.Store);
+        Services.AddSingleton(export.History);
     }
 
     private CreatureDocument Wielding => export.Store.Entities

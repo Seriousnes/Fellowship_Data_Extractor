@@ -8,6 +8,7 @@ public class DetailTests : BunitContext
         Services.AddSingleton(export.View);
         Services.AddSingleton(export.Tooltip);
         Services.AddSingleton(export.Store);
+        Services.AddSingleton(export.History);
     }
 
     [Fact]
@@ -87,8 +88,9 @@ public class DetailTests : BunitContext
 
         var roots = cut.Nodes.OfType<IElement>().ToList();
 
-        Assert.Equal(2, roots.Count);
+        Assert.Equal(3, roots.Count);
         Assert.All(roots, root => Assert.Contains("cx-panel", root.ClassList));
+        Assert.Equal("Changes", roots[^1].QuerySelector("div.cx-panel-head")?.TextContent);
     }
 
     [Fact]

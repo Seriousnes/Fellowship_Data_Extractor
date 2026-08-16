@@ -1,0 +1,44 @@
+<div class="cx-changes">
+    @if (ByVersion.Count > 0)
+    {
+        <p class="cx-change-build">@ByVersion[0].Build<span class="cx-change-current">current</span></p>
+    }
+    @for (var at = 0; at + 1 < ByVersion.Count; at++)
+    {
+        var newer = ByVersion[at];
+        var older = ByVersion[at + 1];
+
+        <p class="cx-change-build">@older.Build</p>
+
+        @if (newer.Value is not null && older.Value is null)
+        {
+            <p class="cx-change-note">added in @newer.Build</p>
+        }
+        else if (newer.Value is null && older.Value is not null)
+        {
+            <p class="cx-change-note">removed in @newer.Build</p>
+        }
+        else if (Changed.Between(older.Value, newer.Value) is { Count: > 0 } leaves)
+        {
+            <ul class="cx-change-leaves">
+                @foreach (var leaf in leaves)
+                {
+                    <li>
+                        <span class="cx-change-path">@leaf.Path</span>
+                        <span class="cx-was">@leaf.Older</span>
+                        <span class="cx-change-arrow">-&gt;</span>
+                        <span class="cx-now">@leaf.Newer</span>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p class="cx-change-note">no change</p>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<VersionValue> ByVersion { get; set; } = [];
+}

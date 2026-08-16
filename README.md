@@ -613,6 +613,12 @@ Either destination is the same layout:
 <root>/ui/<texture>.png
 ```
 
+On disk `<root>` is `output/export-<build>`. In the container the two data blobs carry that folder as
+their prefix, `export-<build>/data/...`, and the images stay at `ui/<texture>.png` at the container
+root, so a container holds every build's documents side by side against one set of art. The codex
+loads all of them, builds the site from the highest build, and renders what changed between adjacent
+versions on every entity page.
+
 The run reports what it read: 12,473 documents from 12,472 entities across 13,088 tags, 6,522 with a
 display name and 5,871 with an icon; 1,288 names and 1,282 icons inherited from the entity that
 applies them, 70 and 10 withheld because two entities that apply them disagree; 1,713 tuning rows

@@ -33,6 +33,11 @@ reads an export back globs `output/export-*` and takes the highest build carryin
 newest wins. `FELLOWSHIP_EXPORT`, and `--export` on the MCP server, name one folder outright and are
 the only way to read a build other than the newest.
 
+The container carries the same shape: `export-<build>/data/entities.jsonl` and
+`export-<build>/data/settings.json`, with the images at `ui/<texture>.png` at the container root.
+The codex loads the newest build as its snapshot and every build beneath it as raw JSONL lines
+grouped by `$type` slug and id, so an entity page can state what changed between adjacent versions.
+
 Only `data/` is tracked; `ui/` is gitignored. `mappings/fellowship-<build>.usmap`, which a `--usmap`
 run writes, is tracked in full, so a fresh clone reads the containers with no regeneration and the
 mappings stay pinned to the export filed under the same id. `ResolvedMappingsFile` picks the highest
