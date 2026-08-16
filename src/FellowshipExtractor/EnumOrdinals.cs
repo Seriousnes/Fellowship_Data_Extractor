@@ -54,6 +54,6 @@ public static class EnumOrdinals
             ? members
             : throw new InvalidOperationException(
                 $"The mappings carry no enum named {name}, so its members cannot be read back. Rewrite " +
-                $"output/{ExtractorOptions.MappingsName} with " +
+                $"mappings/{ExtractorOptions.MappingsName} with " +
                 "'dotnet run --project src/FellowshipExtractor -- usmap'.");
 }

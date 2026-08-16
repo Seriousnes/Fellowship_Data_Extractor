@@ -48,8 +48,6 @@ public sealed record PropertyRecord(
     ushort ArrayDim,
     ulong TypeFuncVa);
 
-public sealed record PropertyArray(ulong Va, IReadOnlyList<PropertyRecord> Properties);
-
 public sealed class ReflectionScanner(PeImage image)
 {
     private const int NameOffset = 0x00;
@@ -97,33 +95,5 @@ public sealed class ReflectionScanner(PeImage image)
         }
 
         return records;
-    }
-
-    public List<PropertyArray> ScanPropertyArrays(IReadOnlyList<PropertyRecord> records)
-    {
-        var byVa = records.ToDictionary(r => r.Va);
-        var rdata = Image.Section(".rdata");
-        var end = rdata.RawOffset + Math.Min(rdata.RawSize, rdata.VirtualSize);
-        var arrays = new List<PropertyArray>();
-
-        var offset = (int)rdata.RawOffset;
-        while (offset + 8 <= end)
-        {
-            if (!byVa.TryGetValue(Image.ReadPointer(offset), out var first)) { offset += 8; continue; }
-
-            var run = new List<PropertyRecord> { first };
-            var runStart = offset;
-            offset += 8;
-
-            while (offset + 8 <= end && byVa.TryGetValue(Image.ReadPointer(offset), out var next))
-            {
-                run.Add(next);
-                offset += 8;
-            }
-
-            arrays.Add(new PropertyArray(Image.VirtualAddress(runStart), run));
-        }
-
-        return arrays;
     }
 }

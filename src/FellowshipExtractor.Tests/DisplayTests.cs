@@ -3,7 +3,7 @@ using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Objects.Properties;
 using CUE4Parse.UE4.Objects.UObject;
 
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 

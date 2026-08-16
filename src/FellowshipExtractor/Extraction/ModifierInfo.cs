@@ -1,0 +1,82 @@
+using CUE4Parse.FileProvider;
+using CUE4Parse.MappingsProvider;
+using CUE4Parse.UE4.AssetRegistry.Objects;
+using CUE4Parse.UE4.Assets.Exports.Engine;
+
+namespace FellowshipExtractor.Extraction;
+
+public sealed record Modifier(string Tag)
+{
+    public string? DisplayName { get; init; }
+
+    public string? Description { get; init; }
+
+    public string? IconPath { get; init; }
+
+    public string? Kind { get; init; }
+
+    public int? MinimumHeroRank { get; init; }
+}
+
+public sealed class ModifierInfo
+{
+    public const string RowStructure = "/Script/fellowship.CRModifierInfoDataRow";
+    public const string Table = "Modifiers";
+
+    private const string KindEnum = "ModifierType";
+
+    private const string TagField = "ModifierID";
+    private const string DisplayNameField = "DisplayName";
+    private const string DescriptionField = "Description";
+    private const string IconField = "UIIcon";
+    private const string KindField = "Type";
+    private const string MinimumHeroRankField = "MinimumHeroRankRequired";
+
+    private readonly Dictionary<string, Modifier> _byTag = new(StringComparer.OrdinalIgnoreCase);
+
+    public int Count => _byTag.Count;
+
+    public int TableCount { get; }
+
+    public int WithIcon => _byTag.Values.Count(modifier => modifier.IconPath is not null);
+
+    public ModifierInfo(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+    {
+        var mappings = provider.MappingsContainer?.MappingsForGame
+            ?? throw new InvalidOperationException(
+                $"No mappings are loaded, so nothing states which member of {KindEnum} a modifier's {KindField} " +
+                "names.");
+
+        foreach (var objectPath in TableFinder.ByRowStructure(assets, RowStructure))
+        {
+            if (!provider.TryLoadPackageObject<UDataTable>(
+                AbilityPresentationIndex.PackagePath(objectPath), out var table)) continue;
+
+            TableCount++;
+
+            foreach (var (_, row) in table.RowMap)
+            {
+                if (PropertyWalk.GetString(row, TagField) is not { } tag) continue;
+
+                _byTag[tag] = new Modifier(tag)
+                {
+                    DisplayName = PropertyWalk.GetText(row, DisplayNameField),
+                    Description = PropertyWalk.GetText(row, DescriptionField),
+                    IconPath = PropertyWalk.GetString(row, IconField),
+                    Kind = EnumOrdinals.Member(mappings, KindEnum, PropertyWalk.GetString(row, KindField)),
+                    MinimumHeroRank = PropertyWalk.AsOrdinal(
+                        PropertyWalk.Get(row, MinimumHeroRankField)?.GenericValue),
+                };
+            }
+        }
+
+        if (_byTag.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"No table declares {RowStructure}, so every {Table} tag exports as a bare id with no name, no " +
+                "text and no icon.");
+        }
+    }
+
+    public Modifier? ForTag(string tagName) => _byTag.GetValueOrDefault(tagName);
+}

@@ -106,7 +106,7 @@ public sealed class OutputFormatTests
 
         var settings = JsonSerializer.Deserialize<SettingsFile>(
             await File.ReadAllTextAsync(
-                Path.Combine(folder, ExportLayout.DataFolder, Tooltip.Settings.FileName)),
+                Path.Combine(folder, ExportLayout.DataFolder, Extraction.Settings.FileName)),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         Assert.Equal(["Ruby"], settings!.GemTypes);

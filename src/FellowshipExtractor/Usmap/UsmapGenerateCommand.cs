@@ -12,7 +12,7 @@ public static class UsmapGenerateCommand
 
     public static Task<bool> RunAsync(ExtractorOptions options)
     {
-        var image = new PeImage(UsmapScanCommand.ShippingExe(options));
+        var image = new PeImage(options.ShippingExe);
         var records = new ReflectionScanner(image).ScanProperties();
         var structs = new OwnerScanner(image, records).ScanStructs();
         var enums = new EnumScanner(image).Scan();
@@ -68,6 +68,7 @@ public static class UsmapGenerateCommand
             .ToArray();
 
         var target = options.GeneratedMappingsFile;
+        Directory.CreateDirectory(options.ResolvedMappingsDir);
         new UsmapWriter().Write(target, ordered, tables);
 
         var size = new FileInfo(target).Length;

@@ -27,7 +27,12 @@ public sealed class ExtractorOptions
 
     public string? MappingsFile { get; init; }
 
-    public string GeneratedMappingsFile => Path.Combine(ResolvedOutputDir, MappingsName);
+    public string MappingsDir { get; init; } =
+        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "mappings");
+
+    public string ResolvedMappingsDir => Path.GetFullPath(MappingsDir);
+
+    public string GeneratedMappingsFile => Path.Combine(ResolvedMappingsDir, MappingsName);
 
     public string? ResolvedMappingsFile =>
         MappingsFile is { Length: > 0 } named ? named
@@ -38,6 +43,9 @@ public sealed class ExtractorOptions
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "output");
 
     public string PaksDir => Path.Combine(InstallDir, "fellowship", "Content", "Paks");
+
+    public string ShippingExe =>
+        Path.Combine(InstallDir, "fellowship", "Binaries", "Win64", "fellowship-Win64-Shipping.exe");
 
     public string ResolvedOutputDir => Path.GetFullPath(OutputDir);
 }

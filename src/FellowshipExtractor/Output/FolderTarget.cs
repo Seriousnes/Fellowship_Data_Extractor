@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 using Fellowship.SDK.Documents;
 
@@ -28,7 +28,7 @@ public sealed class FolderTarget(string root) : IExportTarget
     public async Task WriteSettingsAsync(SettingsFile settings, CancellationToken cancellationToken) =>
         await File.WriteAllTextAsync(
             Path.Combine(Data(), Settings.FileName),
-            JsonSerializer.Serialize(settings, TooltipCommand.JsonOptions),
+            JsonSerializer.Serialize(settings, ExportLayout.SettingsJson),
             cancellationToken);
 
     public async Task WriteImageAsync(string name, byte[] png, CancellationToken cancellationToken)

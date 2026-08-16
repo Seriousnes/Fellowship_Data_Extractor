@@ -160,7 +160,7 @@ public sealed class HasteScalingTests
             if (entity.Description is not { } description) continue;
             if (FromACustomizationRow(entity)) continue;
 
-            foreach (var token in Tooltip.DescriptionTokens.Tokens(description))
+            foreach (var token in Extraction.DescriptionTokens.Tokens(description))
             {
                 if (entity.Placeholders?.ContainsKey(token) == true) continue;
                 orphans.Add($"{entity.Table}:{entity.NetId} {entity.Name} -> {{{token}}}");
@@ -178,14 +178,14 @@ public sealed class HasteScalingTests
         var described = rows
             .Select(entity => entity.Description)
             .OfType<string>()
-            .Select(description => Tooltip.DescriptionTokens.Tokens(description).ToArray())
+            .Select(description => Extraction.DescriptionTokens.Tokens(description).ToArray())
             .Where(tokens => tokens.Length > 0)
             .ToArray();
 
         var acquired = rows
             .Select(entity => entity.Acquire)
             .OfType<string>()
-            .Select(acquire => Tooltip.DescriptionTokens.Tokens(acquire).ToArray())
+            .Select(acquire => Extraction.DescriptionTokens.Tokens(acquire).ToArray())
             .Where(tokens => tokens.Length > 0)
             .ToArray();
 

@@ -1,4 +1,4 @@
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
 

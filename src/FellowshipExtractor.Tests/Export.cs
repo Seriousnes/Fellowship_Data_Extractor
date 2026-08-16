@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 using CUE4Parse.FileProvider;
 
 using Fellowship.Codex.Services;
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 using Fellowship.SDK.Documents;
 
@@ -12,7 +12,7 @@ namespace FellowshipExtractor.Tests;
 
 public sealed class Export
 {
-    private const string Variable = "FELLOWSHIP_EXPORT";
+    private const string Variable = FolderExportSource.Variable;
     private const string Mappings = "FELLOWSHIP_USMAP";
 
     private static readonly Lazy<Export> Instance = new(Load, isThreadSafe: true);
@@ -41,7 +41,7 @@ public sealed class Export
         {
             throw new InvalidOperationException(
                 $"No mappings to read the build with. Set {Mappings} to a .usmap for this build, or write " +
-                $"output/{ExtractorOptions.MappingsName} with " +
+                $"mappings/{ExtractorOptions.MappingsName} with " +
                 "'dotnet run --project src/FellowshipExtractor -- usmap'.");
         }
 
@@ -79,24 +79,18 @@ public sealed class Export
     {
         if (Environment.GetEnvironmentVariable(Variable) is { Length: > 0 } named)
         {
-            return Directory.Exists(named)
+            return FolderExportSource.Carries(named)
                 ? named
-                : throw new DirectoryNotFoundException($"{Variable} names {named}, which does not exist.");
+                : throw new DirectoryNotFoundException(
+                    $"{Variable} names {named}, which carries no " +
+                    $"{ExportReader.Data}/{ExportReader.EntitiesName}.");
         }
 
-        for (var at = new DirectoryInfo(AppContext.BaseDirectory); at is not null; at = at.Parent)
-        {
-            var candidate = Path.Combine(at.FullName, "output", "export");
-            if (File.Exists(Path.Combine(candidate, ExportReader.Data, ExportReader.EntitiesName)))
-            {
-                return candidate;
-            }
-        }
-
-        throw new DirectoryNotFoundException(
-            "No export to test against. Run 'dotnet run --project src/FellowshipExtractor' " +
-            $"or point {Variable} at a folder holding " +
-            $"{ExportReader.Data}/{ExportReader.EntitiesName} and " +
-            $"{ExportReader.Data}/{ExportReader.SettingsName}.");
+        return FolderExportSource.Above(AppContext.BaseDirectory)
+            ?? throw new DirectoryNotFoundException(
+                $"No output/{ExportFolders.Pattern} above the test binary carries " +
+                $"{ExportReader.Data}/{ExportReader.EntitiesName} and " +
+                $"{ExportReader.Data}/{ExportReader.SettingsName}. Run " +
+                $"'dotnet run --project src/FellowshipExtractor' or point {Variable} at one.");
     }
 }

@@ -1,7 +1,7 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Versions;
 
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 
@@ -40,15 +40,15 @@ public sealed class MissingMappingsTests
         var generated = Path.Combine(folder, ExtractorOptions.MappingsName);
         File.WriteAllBytes(generated, []);
 
-        var options = new ExtractorOptions { OutputDir = folder };
+        var options = new ExtractorOptions { MappingsDir = folder };
 
         Assert.Equal(generated, options.ResolvedMappingsFile);
     });
 
     [Fact]
-    public void AnOutputFolderWithNoUsmapInItResolvesToNone() => InTempFolder(folder =>
+    public void AMappingsFolderWithNoUsmapInItResolvesToNone() => InTempFolder(folder =>
     {
-        var options = new ExtractorOptions { OutputDir = folder };
+        var options = new ExtractorOptions { MappingsDir = folder };
 
         Assert.Null(options.ResolvedMappingsFile);
     });
@@ -61,7 +61,7 @@ public sealed class MissingMappingsTests
         var named = Path.Combine(folder, "another.usmap");
         File.WriteAllBytes(named, []);
 
-        var options = new ExtractorOptions { OutputDir = folder, MappingsFile = named };
+        var options = new ExtractorOptions { MappingsDir = folder, MappingsFile = named };
 
         Assert.Equal(named, options.ResolvedMappingsFile);
     });
@@ -72,7 +72,7 @@ public sealed class MissingMappingsTests
         var named = Path.Combine(folder, "absent.usmap");
 
         var failure = await Assert.ThrowsAsync<FileNotFoundException>(() =>
-            ProviderFactory.CreateAsync(new ExtractorOptions { OutputDir = folder, MappingsFile = named }));
+            ProviderFactory.CreateAsync(new ExtractorOptions { MappingsDir = folder, MappingsFile = named }));
 
         Assert.Contains(named, failure.Message, StringComparison.Ordinal);
         Assert.Contains("FELLOWSHIP_USMAP", failure.Message, StringComparison.Ordinal);

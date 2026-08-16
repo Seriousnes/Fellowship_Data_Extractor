@@ -3,7 +3,7 @@ using System.Text.Json;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 using Fellowship.SDK.Documents;
 
@@ -147,7 +147,7 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
 
             await PublishAsync(
                 $"{ExportLayout.DataFolder}/{Settings.FileName}",
-                JsonSerializer.SerializeToUtf8Bytes(_settings, TooltipCommand.JsonOptions),
+                JsonSerializer.SerializeToUtf8Bytes(_settings, ExportLayout.SettingsJson),
                 "application/json",
                 default);
         }

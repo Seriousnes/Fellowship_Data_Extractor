@@ -4,8 +4,7 @@ using CUE4Parse.UE4.Assets.Objects;
 
 using Fellowship.SDK.Models;
 
-using FellowshipExtractor.Commands;
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 
@@ -23,7 +22,7 @@ public sealed class ItemSourceTests
         var provider = Export.Provider;
         var named = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var asset in RegistryCommand.ReadAssets(provider))
+        foreach (var asset in AssetRegistry.ReadAssets(provider))
         {
             if (!asset.AssetClass.Text.Equals(DefinitionClass, StringComparison.OrdinalIgnoreCase)) continue;
             if (DungeonNames.Load(provider, asset.ObjectPath) is not { } definition) continue;

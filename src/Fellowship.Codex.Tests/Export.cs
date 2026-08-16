@@ -42,7 +42,7 @@ public sealed class Export
 
     public Export()
     {
-        Folder = Environment.GetEnvironmentVariable("FELLOWSHIP_EXPORT") ?? Found();
+        Folder = Environment.GetEnvironmentVariable(FolderExportSource.Variable) ?? Found();
 
         var snapshot = new FolderExportSource(Folder)
             .LoadAsync(CancellationToken.None)
@@ -67,6 +67,7 @@ public sealed class Export
     public static string Found() =>
         FolderExportSource.Above(AppContext.BaseDirectory)
         ?? throw new InvalidOperationException(
-            "No output/export above the test binary and FELLOWSHIP_EXPORT is not set. It names the " +
-            "folder the extractor wrote, which is the same layout the container holds.");
+            $"No output/{ExportFolders.Pattern} carrying both data files above the test binary, and " +
+            $"{FolderExportSource.Variable} is not set. It names the folder the extractor wrote, which " +
+            "is the same layout the container holds.");
 }

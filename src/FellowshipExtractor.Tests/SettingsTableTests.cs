@@ -1,5 +1,5 @@
 using FellowshipExtractor.Output;
-using FellowshipExtractor.Tooltip;
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 
