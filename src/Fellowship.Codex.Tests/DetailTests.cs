@@ -88,9 +88,34 @@ public class DetailTests : BunitContext
 
         var roots = cut.Nodes.OfType<IElement>().ToList();
 
-        Assert.Equal(3, roots.Count);
+        Assert.Equal(2, roots.Count);
         Assert.All(roots, root => Assert.Contains("cx-panel", root.ClassList));
+    }
+
+    [Fact]
+    public void A_detail_the_page_is_not_showing_states_no_version_history()
+    {
+        var entity = new ItemDocument { Id = 1, Description = "some words", Slot = "Back" };
+
+        var cut = Render<Detail>(p => p.Add(x => x.Entity, entity));
+
+        Assert.Empty(cut.FindAll("div.cx-changes"));
+    }
+
+    [Fact]
+    public void The_detail_the_page_is_showing_ends_on_its_version_history()
+    {
+        var entity = new ItemDocument { Id = 1, Description = "some words", Slot = "Back" };
+
+        var cut = Render<Detail>(p => p
+            .AddCascadingValue(new Bearings { Shown = entity })
+            .Add(x => x.Entity, entity));
+
+        var roots = cut.Nodes.OfType<IElement>().ToList();
+
+        Assert.Equal(3, roots.Count);
         Assert.Equal("Changes", roots[^1].QuerySelector("div.cx-panel-head")?.TextContent);
+        Assert.Single(cut.FindAll("div.cx-changes"));
     }
 
     [Fact]

@@ -11,15 +11,20 @@
     <BorrowedName Href="@(Namer?.Href)" Tip="@(Namer?.Tip)" Name="@(Namer?.Name)" />
     <BorrowedArt Href="@(Lender?.Href)" Tip="@(Lender?.Tip)" Name="@(Lender?.Name)" />
     @ChildContent
-    <Panel Head="Changes">
-        <Changes ByVersion="ByVersion" />
-    </Panel>
+    @if (ByVersion.Count > 0)
+    {
+        <Panel Head="Changes">
+            <Changes ByVersion="ByVersion" />
+        </Panel>
+    }
 </CascadingValue>
 
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [CascadingParameter] private Bearings Here { get; set; } = new();
 
     [Parameter]
     public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Extra { get; set; } = [];
@@ -45,7 +50,7 @@
         Facts = [.. Extra, .. Ui.Facts(Entity)];
         Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(AbilityDocument.ScalesOff)))];
         Tokens = Ui.Substitutions(Entity);
-        ByVersion = History.Of(Entity);
+        ByVersion = ReferenceEquals(Entity, Here.Shown) ? History.Of(Entity) : [];
 
         IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
 
