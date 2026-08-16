@@ -16,16 +16,23 @@ was four instructions in the binary.
 
 ## The ladder, resolved for this build
 
-| Rung | Command | What it gives |
+| Rung | Where | What it gives |
 | --- | --- | --- |
-| 1. Config | `dotnet run --project src/FellowshipExtractor -- raw ".ini"` | All 140 under `output/raw`. `[/Script/fellowship.CRItemSettings]` in `DefaultGame.ini` holds `StatPoolCalculation`, `ItemLevelsPerUpgrade`, `MaxItemLevel` and the tempering **cost** mods. `[/Script/fellowship.CRItemStaticDataSubsystem]` names `DT_SlotWeights`, `DT_AttributeProperties`, `DT_HeroItems` and the drop curves. `DynamicLootSystem.ini` names the loot plugin's seven assets. |
-| 2. Schema | `UsmapParser` on `output/fellowship.usmap` | The **complete** input set of a system. `CRDynamicItemSettings` enumerates eight things and there is no ninth. Do this before searching the asset tree; it is what tells you when to stop. |
-| 3. Assets | `dump <name>` | JSON under `output/dump`. Read rows, never file names. |
+| 1. Export | `output/export-<build>/data/entities.jsonl` | Every entity the readers already resolve, one document per line. Check here before anything else: the fact may already be extracted. |
+| 2. Schema | `UsmapParser` on `mappings/fellowship.usmap` | The **complete** input set of a system. `CRDynamicItemSettings` enumerates eight things and there is no ninth. Do this before searching the asset tree; it is what tells you when to stop. |
+| 3. Assets | a reader under `src/FellowshipExtractor/Extraction/` | `ProviderFactory.CreateAsync` mounts the containers; `AssetRegistry.ReadAssets` is the index and `provider.LoadPackageObject<T>` reads a package. Read rows, never file names. |
 | 4. Binary | see below | Everything the first three do not carry. |
 
-Supporting exports worth having: `ability-constants.jsonl` (13,156 tuning rows) and `tags.jsonl`,
-both written by the default run, `functions` (`blueprint-functions.jsonl`, every Blueprint function
-and its calls), `locres`, `list` (`output/files.txt`, every path in the build).
+Config is on rung 3 rather than its own rung: `.ini` files are container files like any other.
+`[/Script/fellowship.CRItemSettings]` in `DefaultGame.ini` holds `StatPoolCalculation`,
+`ItemLevelsPerUpgrade`, `MaxItemLevel` and the tempering **cost** mods.
+`[/Script/fellowship.CRItemStaticDataSubsystem]` names `DT_SlotWeights`, `DT_AttributeProperties`,
+`DT_HeroItems` and the drop curves. `DynamicLootSystem.ini` names the loot plugin's seven assets.
+
+The extractor ships no inspection commands: the only command is `usmap`, and a bare run writes the
+export. Looking at a raw asset, a locres table, the CSV tuning tables or the Blueprint function index
+means writing the reader that needs them, which is a standing approval under `CLAUDE.md`. The CSV
+tables are already parsed in memory by `CsvTables.ReadTags` and `CsvTables.ReadConstants`.
 
 ## Reading the shipping binary
 
@@ -69,8 +76,9 @@ fixed block. They live in `StatRows` because no shipped file carries them. `Seco
 
 **A Blueprint function can be named right, wired through config, and never called.**
 `HeroItemStatCalculation`'s `CalcPrimaryStatPoolFromItemLevel` is wired via
-`CRItemSettings.StatPoolCalculation` and the magnitude path calls the two natives instead. Check
-`blueprint-functions.jsonl`: if no Blueprint function computes your number, it is native.
+`CRItemSettings.StatPoolCalculation` and the magnitude path calls the two natives instead. Index the
+Blueprint functions yourself before believing one: if no Blueprint function computes your number, it
+is native.
 
 **A parser that raises no exception has told you nothing.** Cooked packages degrade silently. Verify
 values, never the absence of errors.
