@@ -9,7 +9,7 @@ using Fellowship.SDK.Documents;
 
 namespace FellowshipExtractor.Output;
 
-public sealed class BlobTarget(string connectionString) : IExportTarget
+public sealed class BlobTarget(string connectionString, string build) : IExportTarget
 {
     public const string ContainerName = "icons";
 
@@ -140,13 +140,13 @@ public sealed class BlobTarget(string connectionString) : IExportTarget
         if (_lines is not null && _settings is not null)
         {
             await PublishAsync(
-                $"{ExportLayout.DataFolder}/{ExportLayout.EntitiesFile}",
+                ExportLayout.Data(build, ExportLayout.EntitiesFile),
                 _entities.ToArray(),
                 "application/x-ndjson",
                 default);
 
             await PublishAsync(
-                $"{ExportLayout.DataFolder}/{Settings.FileName}",
+                ExportLayout.Data(build, Settings.FileName),
                 JsonSerializer.SerializeToUtf8Bytes(_settings, ExportLayout.SettingsJson),
                 "application/json",
                 default);

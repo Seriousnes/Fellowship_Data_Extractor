@@ -59,7 +59,8 @@ public sealed class Export
         var snapshot = new FolderExportSource(folder)
             .LoadAsync(CancellationToken.None)
             .GetAwaiter()
-            .GetResult();
+            .GetResult()
+            .Snapshot;
 
         return new Export
         {

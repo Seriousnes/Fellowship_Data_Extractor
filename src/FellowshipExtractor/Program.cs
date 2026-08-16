@@ -41,9 +41,12 @@ switch (command)
         var connectionString = Argument(args, ConnectionStringFlag)
             ?? Environment.GetEnvironmentVariable(ConnectionStringVariable);
 
+        string? read = null;
+        string Build() => read ??= GameBuild.Read(options);
+
         var folder = Argument(args, OutputFlag)
             ?? (connectionString is null
-                ? Path.Combine(options.ResolvedOutputDir, ExportFolders.Name(GameBuild.Read(options)))
+                ? Path.Combine(options.ResolvedOutputDir, ExportFolders.Name(Build()))
                 : null);
 
         if (Array.Exists(args, a => a.Equals(UsmapFlag, StringComparison.OrdinalIgnoreCase)))
@@ -53,7 +56,7 @@ switch (command)
 
         List<IExportTarget> destinations = [];
         if (folder is not null) destinations.Add(new FolderTarget(folder));
-        if (connectionString is not null) destinations.Add(new BlobTarget(connectionString));
+        if (connectionString is not null) destinations.Add(new BlobTarget(connectionString, Build()));
 
         await using (IExportTarget target = destinations.Count == 1
             ? destinations[0]

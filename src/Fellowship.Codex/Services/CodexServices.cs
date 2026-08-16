@@ -4,11 +4,13 @@ public static class CodexServices
 {
     public static IServiceCollection AddCodexServices(this IServiceCollection services)
     {
-        services.AddSingleton<ExportSnapshotHolder>();
+        services.AddSingleton<ExportHistoryHolder>();
 
         services.AddSingleton<IEntityStoreService>(s => new EntityStoreService(
-            s.GetRequiredService<ExportSnapshotHolder>().Snapshot,
+            s.GetRequiredService<ExportHistoryHolder>().History.Snapshot,
             s.GetRequiredService<ILogger<EntityStoreService>>()));
+        services.AddSingleton<IExportHistoryService>(s =>
+            new ExportHistoryService(s.GetRequiredService<ExportHistoryHolder>().History));
         services.AddSingleton<IDesignTokenService>(s =>
             new DesignTokenService(s.GetRequiredService<IEntityStoreService>().Settings));
         services.AddSingleton<IRichTextService>(s =>
@@ -37,7 +39,7 @@ public static class CodexServices
 
     public static async Task LoadExportAsync(this IServiceProvider services, CancellationToken cancellationToken)
     {
-        services.GetRequiredService<ExportSnapshotHolder>().Snapshot =
+        services.GetRequiredService<ExportHistoryHolder>().History =
             await services.GetRequiredService<IExportSource>().LoadAsync(cancellationToken);
     }
 }

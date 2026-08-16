@@ -376,7 +376,8 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
 
         private static IEntityStoreService BuildStore() =>
             new EntityStoreService(
-                new FolderExportSource(Export.Found()).LoadAsync(CancellationToken.None).GetAwaiter().GetResult(),
+                new FolderExportSource(Export.Found())
+                    .LoadAsync(CancellationToken.None).GetAwaiter().GetResult().Snapshot,
                 Microsoft.Extensions.Logging.Abstractions.NullLogger<EntityStoreService>.Instance);
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)

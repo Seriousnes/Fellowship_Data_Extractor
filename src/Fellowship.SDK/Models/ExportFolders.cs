@@ -8,9 +8,11 @@ public static class ExportFolders
 
     public static string Name(string build) => $"{Prefix}{build}";
 
+    public static string Id(string folder) =>
+        folder.StartsWith(Prefix, StringComparison.Ordinal) ? folder[Prefix.Length..] : folder;
+
+    public static long Number(string build) => long.TryParse(build, out var number) ? number : -1;
+
     public static long Build(string folder) =>
-        folder.StartsWith(Prefix, StringComparison.Ordinal) &&
-        long.TryParse(folder[Prefix.Length..], out var build)
-            ? build
-            : -1;
+        folder.StartsWith(Prefix, StringComparison.Ordinal) ? Number(Id(folder)) : -1;
 }

@@ -18,6 +18,9 @@ public static class ExportLayout
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
+    public static string Data(string build, string file) =>
+        $"{ExportFolders.Name(build)}/{DataFolder}/{file}";
+
     public static string Variant(string image, string rarity) =>
         $"{Path.GetFileNameWithoutExtension(image)}-{rarity.ToLowerInvariant()}{Path.GetExtension(image)}";
 }

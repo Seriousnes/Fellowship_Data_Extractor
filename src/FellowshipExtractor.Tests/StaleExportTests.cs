@@ -26,7 +26,8 @@ public sealed class StaleExportTests
             var snapshot = new FolderExportSource(folder)
                 .LoadAsync(CancellationToken.None)
                 .GetAwaiter()
-                .GetResult();
+                .GetResult()
+                .Snapshot;
 
             return new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
         }

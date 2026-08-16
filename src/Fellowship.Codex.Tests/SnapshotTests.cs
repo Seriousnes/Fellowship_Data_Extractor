@@ -32,11 +32,11 @@ public class SnapshotTests
     [Fact]
     public async Task A_snapshot_carrying_its_settings_reads_the_documents_beside_them()
     {
-        var snapshot = await new FolderExportSource(Export.Found())
+        var history = await new FolderExportSource(Export.Found())
             .LoadAsync(Xunit.TestContext.Current.CancellationToken);
 
-        Assert.NotEmpty(snapshot.Entities);
-        Assert.NotEmpty(snapshot.Settings.Rarities);
-        Assert.NotEmpty(snapshot.Settings.RarityColorRows);
+        Assert.NotEmpty(history.Snapshot.Entities);
+        Assert.NotEmpty(history.Snapshot.Settings.Rarities);
+        Assert.NotEmpty(history.Snapshot.Settings.RarityColorRows);
     }
 }

@@ -38,18 +38,22 @@ public sealed class Export
 
     public IChromeAssetService Chrome { get; }
 
+    public IExportHistoryService History { get; }
+
     public string Folder { get; }
 
     public Export()
     {
         Folder = Environment.GetEnvironmentVariable(FolderExportSource.Variable) ?? Found();
 
-        var snapshot = new FolderExportSource(Folder)
+        var history = new FolderExportSource(Folder)
             .LoadAsync(CancellationToken.None)
             .GetAwaiter()
             .GetResult();
 
-        Store = new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
+        History = new ExportHistoryService(history);
+
+        Store = new EntityStoreService(history.Snapshot, NullLogger<EntityStoreService>.Instance);
 
         var tokens = new DesignTokenService(Store.Settings);
         var richText = new RichTextService(Store.Settings.TextStyles);

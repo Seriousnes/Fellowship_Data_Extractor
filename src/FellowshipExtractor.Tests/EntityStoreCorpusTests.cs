@@ -19,7 +19,8 @@ public sealed class EntityStoreCorpusTests
         var snapshot = new FolderExportSource(Export.Loaded.Folder)
             .LoadAsync(CancellationToken.None)
             .GetAwaiter()
-            .GetResult();
+            .GetResult()
+            .Snapshot;
 
         return new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
     }

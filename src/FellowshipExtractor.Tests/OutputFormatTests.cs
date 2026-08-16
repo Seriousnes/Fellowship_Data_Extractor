@@ -1,4 +1,5 @@
 using System.Text.Json;
+using FellowshipExtractor.Extraction;
 using FellowshipExtractor.Output;
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
@@ -8,6 +9,8 @@ namespace FellowshipExtractor.Tests;
 public sealed class OutputFormatTests
 {
     private const string NoStorage = "nothing here parses as a connection string";
+
+    private const string Build = "19240315";
 
     private const string DevelopmentStorage =
         "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;" +
@@ -143,7 +146,7 @@ public sealed class OutputFormatTests
     [Fact]
     public async Task APassThatEndedWithoutItsSettingsPublishesNoDocumentsEither()
     {
-        var target = new BlobTarget(NoStorage);
+        var target = new BlobTarget(NoStorage, Build);
 
         await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
 
@@ -153,7 +156,7 @@ public sealed class OutputFormatTests
     [Fact]
     public async Task APassHoldingBothHalvesPublishesThem()
     {
-        var target = new BlobTarget(NoStorage);
+        var target = new BlobTarget(NoStorage, Build);
 
         await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
         await target.WriteSettingsAsync(new SettingsFile { GemTypes = ["Ruby"] }, default);
@@ -162,9 +165,19 @@ public sealed class OutputFormatTests
     }
 
     [Fact]
+    public void ABlobRunFilesItsDataUnderTheBuildItExported()
+    {
+        Assert.Equal(
+            $"{ExportFolders.Name(Build)}/{ExportLayout.DataFolder}/{ExportLayout.EntitiesFile}",
+            ExportLayout.Data(Build, ExportLayout.EntitiesFile));
+
+        Assert.Equal("export-19240315/data/settings.json", ExportLayout.Data(Build, Settings.FileName));
+    }
+
+    [Fact]
     public async Task AConnectionStringNamingItsContainerWritesThatContainer()
     {
-        await using var target = new BlobTarget($"{DevelopmentStorage};ContainerName=snapshots");
+        await using var target = new BlobTarget($"{DevelopmentStorage};ContainerName=snapshots", Build);
 
         Assert.Equal("snapshots", target.Name);
         Assert.Equal("http://localhost:10510/devstoreaccount1/snapshots", target.Container.Uri.AbsoluteUri);
@@ -173,7 +186,7 @@ public sealed class OutputFormatTests
     [Fact]
     public async Task AConnectionStringNamingNoContainerWritesIcons()
     {
-        await using var target = new BlobTarget(DevelopmentStorage);
+        await using var target = new BlobTarget(DevelopmentStorage, Build);
 
         Assert.Equal("icons", target.Name);
         Assert.Equal("http://localhost:10510/devstoreaccount1/icons", target.Container.Uri.AbsoluteUri);
