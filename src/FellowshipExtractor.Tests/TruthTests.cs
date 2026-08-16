@@ -548,8 +548,11 @@ public sealed class TruthTests
 
         Assert.All(
             heroes,
-            hero => Assert.Equal(
-                published[(string)hero.Body["codename"]!], (string?)hero.Body["color"]));
+            hero =>
+            {
+                Assert.NotNull((string?)hero.Body["color"]);
+                Assert.Equal(published[(string)hero.Body["codename"]!], (string?)hero.Body["color"]);
+            });
 
         Assert.Equal("5A1F20", (string?)Record("CharacterID.Hero.Gunde")["color"]);
     }
