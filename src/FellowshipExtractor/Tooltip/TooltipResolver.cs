@@ -82,6 +82,7 @@ public sealed class TooltipResolver
     public CustomizationItems Customizations { get; }
     public LocalizedText Localized { get; }
     public MountLore Lore { get; }
+    public HeroLocres HeroText { get; }
     public DynamicItemRuleSets RuleSets { get; }
     public DynamicAbilityRanks AbilityRanks { get; }
     public TalentTrees Talents { get; }
@@ -170,6 +171,7 @@ public sealed class TooltipResolver
         Collections = new VisualCollections(provider, _assets);
         HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, Collections, rarities);
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
+        HeroText = new HeroLocres(Localized, Heroes);
         DynamicText = new DynamicTextRows(provider, _assets, _constants, Heroes);
 
         DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities);
@@ -205,7 +207,7 @@ public sealed class TooltipResolver
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
 
         Types = new TypeResolver(
-            _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations);
+            _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations, Heroes);
 
         Owners = new AbilityOwners(provider, _assets, _tags);
     }
@@ -337,6 +339,12 @@ public sealed class TooltipResolver
             Modifiers.ForTag(tag.Name) is { } modifier)
         {
             entity = WithModifier(entity, modifier, icons);
+        }
+
+        if (tag.Table.Equals(HeroNames.Table, StringComparison.OrdinalIgnoreCase) &&
+            Heroes.Rostered(tag.Name) is { } hero)
+        {
+            entity = WithHero(entity, hero);
         }
 
         entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
@@ -671,6 +679,23 @@ public sealed class TooltipResolver
         RequiredScore = dungeon.RequiredScore,
         MinimumHeroRank = dungeon.MinimumHeroRank,
     };
+
+    private Entity WithHero(Entity entity, HeroProfile hero)
+    {
+        var prose = HeroText.For(hero.Codename);
+
+        return entity with
+        {
+            DisplayName = entity.DisplayName ?? hero.ShippedName,
+            Codename = hero.Codename,
+            PrimaryStat = hero.PrimaryStat,
+            HeroColor = Settings.Hero(hero.Codename)?.Color,
+            HeroTitle = prose?.Title,
+            Biography = prose?.Biography,
+            Playstyle = prose?.Playstyle,
+            SpiritAbility = prose?.SpiritAbility,
+        };
+    }
 
     private static Entity WithModifier(Entity entity, Modifier modifier, IconWriter? icons) => entity with
     {

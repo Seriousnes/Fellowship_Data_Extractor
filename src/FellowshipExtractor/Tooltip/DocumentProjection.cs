@@ -191,6 +191,20 @@ public static class DocumentProjection
             MinimumHeroRank = entity.MinimumHeroRank,
         },
 
+        EntityType.Hero => new HeroDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Tag = entity.Name,
+            Codename = entity.Codename,
+            Title = entity.HeroTitle,
+            MainStat = entity.PrimaryStat is { } mainStat ? Enum.Parse<PrimaryStat>(mainStat) : null,
+            Color = entity.HeroColor,
+            Biography = entity.Biography,
+            Playstyle = entity.Playstyle,
+            SpiritAbility = entity.SpiritAbility,
+        },
+
         EntityType.Mount => new MountDocument
         {
             Id = entity.NetId!.Value,

@@ -6,7 +6,7 @@ namespace Fellowship.Codex.Tests;
 public class TabTests(Export export)
 {
     private static readonly EntityType[] Unlisted =
-        [EntityType.TalentSlot, EntityType.MountPower, EntityType.Modifier];
+        [EntityType.TalentSlot, EntityType.MountPower, EntityType.Modifier, EntityType.Hero];
 
     private static readonly EntityType[] Untabbed = [EntityType.Gem, EntityType.LegendaryStat];
 

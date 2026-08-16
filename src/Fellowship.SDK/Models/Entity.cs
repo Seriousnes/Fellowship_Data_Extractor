@@ -215,6 +215,18 @@ public sealed record Entity
 
     public string? ModifierKind { get; init; }
 
+    public string? Codename { get; init; }
+
+    public string? HeroTitle { get; init; }
+
+    public string? HeroColor { get; init; }
+
+    public string? Biography { get; init; }
+
+    public string? Playstyle { get; init; }
+
+    public string? SpiritAbility { get; init; }
+
     [JsonIgnore]
     public IReadOnlyList<Variant>? Variants { get; init; }
 }

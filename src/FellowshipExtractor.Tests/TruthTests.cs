@@ -497,4 +497,89 @@ public sealed class TruthTests
                 .Order(StringComparer.Ordinal)
                 .ToArray());
     }
+
+    [Theory]
+    [InlineData("CharacterID.Hero.Gunde", "Gunde", "Gunde", "The Northlander", "Strength")]
+    [InlineData("CharacterID.Hero.Firemage", "Ardeos", "Firemage", "The Pyromancer", "Intellect")]
+    [InlineData("CharacterID.Hero.Mosse", "Sylvie", "Mosse", "The Daughter of the Forest", "Intellect")]
+    [InlineData("CharacterID.Hero.Bowguy", "Elarion", "Bowguy", "The Skystrider", "Agility")]
+    public void AHeroCarriesTheNameCodenameTitleAndMainStatTheBuildStates(
+        string tag, string name, string codename, string title, string mainStat)
+    {
+        var record = Record(tag);
+
+        Assert.Equal(name, (string?)record["name"]);
+        Assert.Equal(codename, (string?)record["codename"]);
+        Assert.Equal(title, (string?)record["title"]);
+        Assert.Equal(mainStat, (string?)record["mainStat"]);
+    }
+
+    [Fact]
+    public void TheHeroWhoseProseSitsUnderCleanKeysCarriesAllThreePassages()
+    {
+        var record = Record("CharacterID.Hero.Gunde");
+
+        Assert.Contains("blood-magic", (string?)record["biography"], StringComparison.Ordinal);
+        Assert.Contains("Rend is Gunde", (string?)record["playstyle"], StringComparison.Ordinal);
+        Assert.Contains("Spirit Refund", (string?)record["spiritAbility"], StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("CharacterID.Hero.Firemage")]
+    [InlineData("CharacterID.Hero.Rime")]
+    public void AHeroWhoseProseHasNoCleanKeyCarriesNoneOfIt(string tag)
+    {
+        var record = Record(tag);
+
+        Assert.Null(record["biography"]);
+        Assert.Null(record["playstyle"]);
+        Assert.Null(record["spiritAbility"]);
+
+        Assert.NotNull((string?)record["title"]);
+    }
+
+    [Fact]
+    public void EveryHeroColourIsTheHexTheSettingsPublishForTheSameCodename()
+    {
+        var heroes = Export.Loaded.Documents.Where(document => document.Type == EntityType.Hero).ToArray();
+
+        var published = Export.Loaded.Settings.Heroes.ToDictionary(
+            hero => hero.Codename, hero => hero.Color, StringComparer.OrdinalIgnoreCase);
+
+        Assert.All(
+            heroes,
+            hero => Assert.Equal(
+                published[(string)hero.Body["codename"]!], (string?)hero.Body["color"]));
+
+        Assert.Equal("5A1F20", (string?)Record("CharacterID.Hero.Gunde")["color"]);
+    }
+
+    [Fact]
+    public void TheTwelveRosterHeroesAreWrittenAndNoVariantOrUnbuiltCodenameIs()
+    {
+        var written = Under("CharacterID.");
+
+        Assert.Equal(12, written.Length);
+        Assert.All(written, document => Assert.Equal(EntityType.Hero, document.Type));
+        Assert.All(written, document => Assert.NotNull((string?)document.Body["title"]));
+
+        Assert.Equal(
+            [
+                "CharacterID.Hero.Bowguy",
+                "CharacterID.Hero.Firemage",
+                "CharacterID.Hero.Gunde",
+                "CharacterID.Hero.Ink",
+                "CharacterID.Hero.Lisa",
+                "CharacterID.Hero.Mara",
+                "CharacterID.Hero.Meiko",
+                "CharacterID.Hero.Mosse",
+                "CharacterID.Hero.Rime",
+                "CharacterID.Hero.Sune",
+                "CharacterID.Hero.Vigor",
+                "CharacterID.Hero.Warmaster",
+            ],
+            written.Select(document => document.Body["tag"]!.GetValue<string>())
+                .Order(StringComparer.Ordinal)
+                .ToArray());
+    }
 }

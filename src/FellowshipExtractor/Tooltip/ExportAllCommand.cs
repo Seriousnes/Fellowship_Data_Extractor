@@ -65,6 +65,10 @@ public static class ExportAllCommand
             $"granted abilities:  {resolver.Mappings.RowCount} mappings naming " +
             $"{resolver.Mappings.GrantedCount} augmentations");
         Console.WriteLine($"hero names:         {resolver.Heroes.Count}");
+        Console.WriteLine(
+            $"hero prose:         {resolver.HeroText.Titled} of {resolver.HeroText.Count} titled, " +
+            $"{resolver.HeroText.WithBiography} with a biography, {resolver.HeroText.WithPlaystyle} with a " +
+            $"playstyle, {resolver.HeroText.WithSpiritAbility} with a spirit ability");
         Console.WriteLine($"fixed hero items:   {resolver.HeroItems.Count} rows");
         Console.WriteLine($"talents:            {resolver.Talents.Count} across {resolver.Talents.HeroCount} trees");
         Console.WriteLine(

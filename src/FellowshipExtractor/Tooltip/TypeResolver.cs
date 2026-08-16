@@ -9,7 +9,8 @@ public sealed class TypeResolver(
     GrantedAbilityMappings mappings,
     DungeonNames dungeons,
     ProgressionItems progression,
-    CustomizationItems customizations)
+    CustomizationItems customizations,
+    HeroNames heroes)
 {
     public const string LevelTable = "Level.ID";
 
@@ -63,6 +64,11 @@ public sealed class TypeResolver(
         if (tag.Table.Equals(LevelTable, StringComparison.OrdinalIgnoreCase))
         {
             return dungeons.Find(tag.Name) is not null ? EntityType.Dungeon : null;
+        }
+
+        if (tag.Table.Equals(HeroNames.Table, StringComparison.OrdinalIgnoreCase))
+        {
+            return heroes.Rostered(tag.Name) is not null ? EntityType.Hero : null;
         }
 
         return Tables.TryGetValue(tag.Table, out var table) ? table : null;
