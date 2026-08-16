@@ -1460,9 +1460,12 @@ public sealed class TooltipResolver
     }
 
     private List<EffectRef> Effects(UObject asset) =>
-        [.. GameplayEffects.ReferencedIn(asset, _effectNames)
+        [.. GameplayEffects.Reached(asset, _effectNames)
             .Select(reference => GameplayEffects.Resolve(
-                _provider, _constants, _presets, reference.Path, _unbindableSpreadRows))];
+                _provider, _constants, _presets, Locate(reference.Name, reference.Path), _unbindableSpreadRows))];
+
+    private string Locate(string effectName, string path) =>
+        path.Contains('/') ? path : FindAsset(effectName)?.ObjectPath ?? path;
 
     private static List<string> AbilityTypes(UObject cdo) =>
         [.. (PropertyWalk.GetTags(cdo, "AbilityTags") ?? [])

@@ -1,6 +1,7 @@
 using System.Reflection;
 
 using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
@@ -23,6 +24,12 @@ public static class AppliedEffects
             return [];
         }
 
+        return [.. Referenced(package, wanted).Select(reference => reference.Name)];
+    }
+
+    public static IReadOnlyList<(string Name, string Path)> Referenced(
+        IPackage package, IReadOnlySet<string> wanted)
+    {
         UObject[] exports;
         try
         {
@@ -33,32 +40,34 @@ public static class AppliedEffects
             return [];
         }
 
-        var named = new List<string>();
+        var named = new List<(string Name, string Path)>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var export in exports)
         {
             foreach (var property in PropertyWalk.Walk(export))
             {
-                if (Leaf(PropertyWalk.AsString(property.Value)) is not { } name) continue;
-                if (!wanted.Contains(name)) continue;
-                if (seen.Add(name)) named.Add(name);
+                Take(PropertyWalk.AsString(property.Value), wanted, seen, named);
             }
 
             if (export is not UStruct { ScriptBytecode: { Length: > 0 } bytecode }) continue;
 
             foreach (var statement in bytecode)
             {
-                foreach (var constant in Constants(statement, 0))
-                {
-                    if (Leaf(constant) is not { } name) continue;
-                    if (!wanted.Contains(name)) continue;
-                    if (seen.Add(name)) named.Add(name);
-                }
+                foreach (var constant in Constants(statement, 0)) Take(constant, wanted, seen, named);
             }
         }
 
         return named;
+    }
+
+    private static void Take(
+        string? path, IReadOnlySet<string> wanted, HashSet<string> seen, List<(string Name, string Path)> named)
+    {
+        if (path is null) return;
+        if (Leaf(path) is not { } name) return;
+        if (!wanted.Contains(name)) return;
+        if (seen.Add(name)) named.Add((name, path));
     }
 
     private static IEnumerable<string> Constants(KismetExpression? expression, int depth)

@@ -8,9 +8,15 @@ public sealed class EffectNameSources
 {
     private readonly Dictionary<string, EffectNameSource?> _byEffect = new(StringComparer.OrdinalIgnoreCase);
 
+    private readonly HashSet<string> _lentByProperty = new(StringComparer.OrdinalIgnoreCase);
+
     public int Determined => _byEffect.Values.Count(source => source is not null);
 
     public int Contested => _byEffect.Values.Count(source => source is null);
+
+    public int Widened => _byEffect.Keys.Count(effect => !_lentByProperty.Contains(effect));
+
+    public int Unpackaged { get; }
 
     public EffectNameSources(
         IEnumerable<TagRecord> tags,
@@ -18,14 +24,20 @@ public sealed class EffectNameSources
         Func<TagRecord, UObject?> load,
         Func<TagRecord, UObject, string?> printedName)
     {
+        var unpackaged = 0;
+
         foreach (var tag in tags)
         {
             if (load(tag) is not { } cdo) continue;
             if (printedName(tag, cdo) is not { } name || string.IsNullOrWhiteSpace(name)) continue;
 
-            foreach (var (applied, _) in GameplayEffects.ReferencedIn(cdo, effectNames))
+            if (cdo.Owner is null) unpackaged++;
+
+            foreach (var (applied, _, widened) in GameplayEffects.Reached(cdo, effectNames))
             {
                 if (tag.Name.Equals(applied, StringComparison.OrdinalIgnoreCase)) continue;
+
+                if (!widened) _lentByProperty.Add(applied);
 
                 if (!_byEffect.TryGetValue(applied, out var agreed))
                 {
@@ -38,6 +50,8 @@ public sealed class EffectNameSources
                 _byEffect[applied] = null;
             }
         }
+
+        Unpackaged = unpackaged;
     }
 
     public EffectNameSource? For(string effectName) => _byEffect.GetValueOrDefault(effectName);

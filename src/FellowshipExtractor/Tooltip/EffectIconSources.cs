@@ -8,9 +8,13 @@ public sealed class EffectIconSources
 {
     private readonly Dictionary<string, EffectIconSource?> _byEffect = new(StringComparer.OrdinalIgnoreCase);
 
+    private readonly HashSet<string> _lentByProperty = new(StringComparer.OrdinalIgnoreCase);
+
     public int Determined => _byEffect.Values.Count(source => source is not null);
 
     public int Contested => _byEffect.Values.Count(source => source is null);
+
+    public int Widened => _byEffect.Keys.Count(effect => !_lentByProperty.Contains(effect));
 
     public EffectIconSources(
         IEnumerable<TagRecord> tags,
@@ -23,9 +27,11 @@ public sealed class EffectIconSources
             if (load(tag) is not { } cdo) continue;
             if (Display.From(presentation.Find(tag.Name)?.Row, cdo).Icon is not { } icon) continue;
 
-            foreach (var (name, _) in GameplayEffects.ReferencedIn(cdo, effectNames))
+            foreach (var (name, _, widened) in GameplayEffects.Reached(cdo, effectNames))
             {
                 if (tag.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) continue;
+
+                if (!widened) _lentByProperty.Add(name);
 
                 if (!_byEffect.TryGetValue(name, out var agreed))
                 {

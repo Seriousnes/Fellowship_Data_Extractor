@@ -234,6 +234,10 @@ public static class ExportAllCommand
             $"  {resolver.NamesInherited} names inherited from the entity that applies them, " +
             $"{resolver.NamesContested} withheld because two entities that apply them disagree");
         Console.WriteLine(
+            $"  {resolver.EffectNames.Widened} lenders of a name and {resolver.EffectIcons.Widened} of an icon " +
+            $"reached only through the applier scan, {resolver.EffectNames.Unpackaged} named tags carrying " +
+            "no package to scan");
+        Console.WriteLine(
             $"  {resolver.IconsInherited} icons inherited from the entity that applies them, " +
             $"{resolver.IconsContested} withheld because two entities that apply them disagree");
         Console.WriteLine(

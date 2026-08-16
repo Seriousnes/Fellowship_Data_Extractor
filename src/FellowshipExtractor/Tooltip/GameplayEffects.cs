@@ -43,6 +43,26 @@ public static class GameplayEffects
         }
     }
 
+    public static IEnumerable<(string Name, string Path, bool Widened)> Reached(
+        UObject asset, IReadOnlySet<string> effectNames)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (name, path) in ReferencedIn(asset, effectNames))
+        {
+            seen.Add(name);
+
+            yield return (name, path, false);
+        }
+
+        if (asset.Owner is not { } package) yield break;
+
+        foreach (var (name, path) in AppliedEffects.Referenced(package, effectNames))
+        {
+            if (seen.Add(name)) yield return (name, path, true);
+        }
+    }
+
     public static EffectRef Resolve(
         AbstractFileProvider provider,
         ConstantsTable constants,

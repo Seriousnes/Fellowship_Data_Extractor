@@ -163,6 +163,28 @@ public sealed class TruthTests
         Assert.Equal(spread, (double?)coefficient!["spread"]);
     }
 
+    [Fact]
+    public void ACreatureCoefficientBandsInTheEffectOnlyItsBytecodeNames()
+    {
+        var coefficient = Record("GA_CM_ElfEnforcer_AutoAttack")["coefficients"]?.AsArray()
+            .OfType<JsonObject>()
+            .Single();
+
+        Assert.NotNull(coefficient);
+        Assert.Equal("Strength", (string?)coefficient!["attribute"]);
+        Assert.Equal(2.89, (double?)coefficient["value"]);
+        Assert.Equal(0.2, (double?)coefficient["spread"]);
+    }
+
+    [Fact]
+    public void AnEffectBorrowsTheNameOfTheAbilityOnlyItsBytecodeNames()
+    {
+        var effect = Record("GE_CM_BlackburnMantrader_CastedRangedProjectile_Damage");
+
+        Assert.Equal("Frost Bolt", (string?)effect["name"]);
+        Assert.Equal(958, (int?)effect["nameBorrowedFrom"]?["id"]);
+    }
+
     [Theory]
     [InlineData("GA_Rime_Talent_SpendersSwap_SingleTarget", 4.096, true)]
     [InlineData("GA_Rime_Talent_SpendersSwap_MultiTargets", 2.114, false)]
