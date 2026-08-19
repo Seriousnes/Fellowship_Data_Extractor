@@ -12,11 +12,14 @@ public sealed record CreatureTooltipRequest
     [Description("The id to draw.")]
     public int Id { get; init; }
 
+    [Description("Given as true when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
     [Description("The dungeon difficulty to read the creature's health at.")]
     public int? Difficulty { get; init; }
 
     public TooltipQuery ToQuery(IQueryCollection raw, StatParameters stats, out string? error) =>
-        StatQuery.Read(this, raw, stats, out error) with { Difficulty = Difficulty };
+        StatQuery.Read(this, raw, stats, out error) with { ShowIcon = ShowIcon == true, Difficulty = Difficulty };
 }
 
 public static class CreatureTooltipEndpoint

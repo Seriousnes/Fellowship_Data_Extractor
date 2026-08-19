@@ -37,6 +37,8 @@ public sealed class EntityResolver
 
     private readonly AbstractFileProvider _provider;
     private readonly TypeMappings _mappings;
+
+    private readonly IReadOnlySet<string> _multiplyingOps;
     private readonly FAssetData[] _assets;
     private readonly ConstantsTable _constants;
     private readonly EffectCalculationPresets _presets;
@@ -133,6 +135,7 @@ public sealed class EntityResolver
         _tags = [.. CsvTables.ReadTags(provider)];
         _constants = new ConstantsTable(provider);
         _presets = new EffectCalculationPresets(provider, _assets);
+        _multiplyingOps = Reductions.MultiplyingOps(mappings);
 
         IndexAssets();
         IndexPets();
@@ -196,7 +199,8 @@ public sealed class EntityResolver
 
         Settings = new Settings(
             provider, _assets, Heroes, rarities, Categories, StatCalculation, Slots.RandomStatPool, Gems.Types,
-            SlotGlyphs, new RarityOrnaments(provider, rarities), new RarityColorRows(provider, rarities),
+            SlotGlyphs, new RarityOrnaments(provider, rarities), new TalentTierPlates(provider),
+            new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
             CreatureStats, Leagues);
 
@@ -906,6 +910,13 @@ public sealed class EntityResolver
                 continue;
             }
 
+            if (NativeTokenRows.Value(assetName, name, _constants) is { } linked)
+            {
+                placeholders[name] = placeholder with { Value = linked };
+                StatedByNativeLink++;
+                continue;
+            }
+
             var wanted = placeholder.Quantity switch
             {
                 TokenQuantity.Period => Numbers.Period,
@@ -953,6 +964,14 @@ public sealed class EntityResolver
             {
                 placeholders[name] = placeholder with { Value = value, Tickrate = tickrate };
             }
+        }
+
+        foreach (var name in placeholders.Keys.ToArray())
+        {
+            if (!Reductions.Prints(placeholders[name], magnitudes.Modifiers, _multiplyingOps)) continue;
+
+            placeholders[name] = placeholders[name] with { Format = Reductions.Format };
+            PrintedAsReduction++;
         }
 
         var undeclared = DescriptionTokens.Tokens(display.Description ?? string.Empty)
@@ -1048,6 +1067,10 @@ public sealed class EntityResolver
     public int DeclaredByBlueprint { get; private set; }
 
     public int NamedByToken { get; private set; }
+
+    public int StatedByNativeLink { get; private set; }
+
+    public int PrintedAsReduction { get; private set; }
 
     public int SynthesizedFromModifier { get; private set; }
 

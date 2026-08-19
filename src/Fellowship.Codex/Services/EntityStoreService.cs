@@ -36,6 +36,8 @@ public interface IEntityStoreService
 
     TalentSlotDocument? Slot(int talentId);
 
+    IReadOnlyList<TalentSlotDocument> Tree(Hero hero);
+
     Lookup Resolve(EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero);
 
     HeroEntry? Wearer(EntityDocument document);
@@ -66,6 +68,8 @@ public sealed class EntityStoreService : IEntityStoreService
     private readonly Dictionary<string, HeroEntry> heroesByName = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<int, TalentSlotDocument> slotsByTalent = [];
+
+    private readonly Dictionary<Hero, List<TalentSlotDocument>> treesByHero = [];
 
     public SettingsFile Settings { get; }
 
@@ -131,7 +135,14 @@ public sealed class EntityStoreService : IEntityStoreService
             if (!groups.TryGetValue(key, out var list)) groups[key] = list = [];
             list.Add(document);
 
-            if (document is TalentSlotDocument slot) slotsByTalent.TryAdd(slot.Talent.Id, slot);
+            if (document is TalentSlotDocument slot)
+            {
+                slotsByTalent.TryAdd(slot.Talent.Id, slot);
+
+                if (!treesByHero.TryGetValue(slot.Hero, out var tree)) treesByHero[slot.Hero] = tree = [];
+
+                tree.Add(slot);
+            }
 
             Census(document, stats, spelled);
 
@@ -216,6 +227,9 @@ public sealed class EntityStoreService : IEntityStoreService
 
     public TalentSlotDocument? Slot(int talentId) =>
         slotsByTalent.TryGetValue(talentId, out var slot) ? slot : null;
+
+    public IReadOnlyList<TalentSlotDocument> Tree(Hero hero) =>
+        treesByHero.TryGetValue(hero, out var tree) ? tree : [];
 
     public Lookup Resolve(
         EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero)

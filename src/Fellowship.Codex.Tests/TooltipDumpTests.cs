@@ -63,7 +63,7 @@ public class TooltipDumpTests : BunitContext
 
     private IEnumerable<(string Name, TooltipQuery Query)> Cases(EntityDocument document)
     {
-        yield return ("bare", new TooltipQuery());
+        yield return ("bare", new TooltipQuery { ShowIcon = true });
 
         var rung = export.Store.Settings.Rarities[^1];
         yield return ("rarity", new TooltipQuery { Rarity = rung.Tier.ToString(CultureInfo.InvariantCulture) });

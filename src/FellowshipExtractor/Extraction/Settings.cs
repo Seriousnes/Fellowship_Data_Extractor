@@ -34,6 +34,8 @@ public sealed class Settings
 
     public IReadOnlyDictionary<string, string> RarityOrnaments { get; }
 
+    public IReadOnlyDictionary<int, string> TalentTierPlates { get; }
+
     public IReadOnlyDictionary<string, string> RarityColorRows { get; }
 
     public IReadOnlyDictionary<string, string> SectionHeadingRows { get; }
@@ -59,6 +61,7 @@ public sealed class Settings
         IReadOnlyList<string> gemTypes,
         SlotIcons slotIcons,
         RarityOrnaments ornaments,
+        TalentTierPlates tierPlates,
         RarityColorRows colorRows,
         SectionHeadingRows headings,
         TemperCeilings tempers,
@@ -75,6 +78,7 @@ public sealed class Settings
         GemTypes = gemTypes;
         SlotIcons = slotIcons.BySlot;
         RarityOrnaments = ornaments.ByRarity;
+        TalentTierPlates = tierPlates.ByRow;
         RarityColorRows = colorRows.ByRarity;
         SectionHeadingRows = headings.BySection;
         MaxTempers = tempers.ByRarity;
@@ -140,6 +144,7 @@ public sealed class Settings
         Leagues = Leagues,
         SlotIcons = SlotIcons,
         RarityOrnaments = RarityOrnaments,
+        TalentTierPlates = TalentTierPlates,
         RarityColorRows = RarityColorRows,
         SectionHeadingRows = SectionHeadingRows,
         PrintFormats = PrintFormats,

@@ -63,6 +63,14 @@ public interface IChromeAssetService
 
     string TraitNode(string? state);
 
+    string TalentBand { get; }
+
+    string TalentTier(int row);
+
+    string TalentSlot(string? state);
+
+    string TalentCost { get; }
+
     string BlessingPlate(string? state);
 
     string? BlessingArt(string? icon, string? state);
@@ -98,6 +106,10 @@ public sealed class ChromeAssetService(
     private const string GemSocketTexture = "T_Icons_Gems_EmptySlot";
     private const string PlainSlotBackingTexture = "T_Buttons_AbilityBarBackground_Small";
     private const string PlainSlotFrameTexture = "T_Buttons_SmallAbilityButton_Default";
+    private const string TalentBandTexture = "T_Backgrounds_TalentTreeTierBackground_Unlocked";
+    private const string TalentCostTexture = "T_Borders_Frame_TalentTreeCost";
+    private const string TalentButtonFamily = "T_Buttons_TalentTreeButton_";
+
     private const string TraitTexture = "T_Icons_StatTooltip_TraitSlot";
     private const string ExpandTexture = "T_Icons_Generic_TooltipExpand";
 
@@ -155,6 +167,8 @@ public sealed class ChromeAssetService(
 
     public static readonly IReadOnlyList<string> BlessingStates = ["allocated", "unallocated"];
 
+    public static readonly IReadOnlyList<string> TalentStates = ["disabled", "selected", "default", "hover"];
+
     public string? Frame(string? rarity) => rarity is null ? null : Url(Name(FrameMask, rarity));
 
     public string Header(string? rarity) =>
@@ -180,6 +194,21 @@ public sealed class ChromeAssetService(
 
     public string TraitNode(string? state) =>
         Url(Name(NodeFamily + Chosen(NodeStates, state) + NodeSuffix));
+
+    public string TalentBand => Url(Name(TalentBandTexture));
+
+    public string TalentTier(int row) =>
+        store.Settings.TalentTierPlates.TryGetValue(row, out var plate)
+            ? Url(Name(plate))
+            : throw new InvalidOperationException(
+                $"The build ships no numbered plate for talent row {row}, only rows " +
+                $"{string.Join(", ", store.Settings.TalentTierPlates.Keys)}. A row draws its numeral from that " +
+                "plate, so the row would go unnumbered.");
+
+    public string TalentSlot(string? state) =>
+        Url(Name(TalentButtonFamily + Chosen(TalentStates, state)));
+
+    public string TalentCost => Url(Name(TalentCostTexture));
 
     public static bool Padlocked(string? state) =>
         string.Equals(Chosen(NodeStates, state), Unavailable, StringComparison.Ordinal);

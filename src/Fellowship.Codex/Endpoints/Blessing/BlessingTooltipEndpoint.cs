@@ -12,6 +12,9 @@ public sealed record BlessingTooltipRequest
     [Description("The id to draw.")]
     public int Id { get; init; }
 
+    [Description("Given as true when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
     [Description("The state to draw the row at: allocated or unallocated.")]
     public string? State { get; init; }
 
@@ -21,6 +24,7 @@ public sealed record BlessingTooltipRequest
     public TooltipQuery ToQuery(IQueryCollection raw, StatParameters stats, out string? error) =>
         StatQuery.Read(this, raw, stats, out error) with
         {
+            ShowIcon = ShowIcon == true,
             State = StatQuery.Given(State),
             EquippedTier = EquippedTier,
         };

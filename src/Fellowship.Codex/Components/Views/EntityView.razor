@@ -61,7 +61,7 @@
     }
 
     private (string Href, string? Tip, string Name)? Borrowed(EntityReference? source) =>
-        source is not null && Ui.Addresses(source.Type, source.Id) is { } found
+        source is not null && Ui.Addresses(source.Type, source.Id, ShowIcon: true) is { } found
             ? (found.Href, found.Tip, Ui.Name(source.Type, source.Id))
             : null;
 

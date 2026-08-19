@@ -78,11 +78,20 @@ public static class ChromeTextures
 
         "T_Borders_Modifier_Frame_Hexagon",
         "T_Icons_Locked",
+
+        "T_Backgrounds_TalentTreeTierBackground_Locked",
+        "T_Backgrounds_TalentTreeTierBackground_Unlocked",
+        "T_Borders_Frame_TalentTreeCost",
+
         GoldBand.Texture,
     ];
 
     private static readonly string[] Families =
-        ["T_Icons_BlessingRuneIcon_Allocated_", "T_Borders_ItemRomanNumerals_"];
+    [
+        "T_Icons_BlessingRuneIcon_Allocated_",
+        "T_Borders_ItemRomanNumerals_",
+        "T_Buttons_TalentTreeButton_",
+    ];
 
     private static readonly string[] Tinted =
     [
@@ -120,6 +129,7 @@ public static class ChromeTextures
         [
             .. Chrome,
             .. settings.RarityOrnaments.Values.Order(StringComparer.Ordinal),
+            .. settings.TalentTierPlates.Values.Order(StringComparer.Ordinal),
             .. kin,
             .. slotIcons.Values.Order(StringComparer.Ordinal),
         ];

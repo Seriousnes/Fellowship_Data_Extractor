@@ -29,7 +29,7 @@ public class ItemCardTests : BunitContext
     {
         var worn = Items.First(row => row.Icon is not null);
 
-        var drawn = Draw(worn, new TooltipQuery());
+        var drawn = Draw(worn, new TooltipQuery { ShowIcon = true });
 
         Assert.NotEmpty(drawn.FindAll($".{TooltipView.Root} > figure.fx-slot > img"));
         Assert.NotNull(drawn.Find($".{TooltipView.Root} > .card > .head > .title"));

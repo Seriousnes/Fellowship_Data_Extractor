@@ -5,7 +5,7 @@
 {
     @if (Ui.Store.All(reference.Type, reference.Id) is [var document, ..])
     {
-        <EntityLink Entity="document" Class="@Class" />
+        <EntityLink Entity="document" Class="@Class" ShowIcon />
     }
     else if (reference.Name is { Length: > 0 } named)
     {

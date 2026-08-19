@@ -141,6 +141,8 @@ public sealed record TooltipQuery
 
     public bool NoSocket { get; init; }
 
+    public bool ShowIcon { get; init; }
+
     public int? Gem { get; init; }
 
     public decimal? PotentialPower { get; init; }

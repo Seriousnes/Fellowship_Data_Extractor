@@ -225,6 +225,7 @@
         var request = new ItemTooltipRequest
         {
             Id = Id,
+            ShowIcon = true,
             Hero = asked.GetValueOrDefault("hero"),
             Rarity = asked.GetValueOrDefault("rarity"),
             ItemLevel = Number(asked, "itemLevel"),

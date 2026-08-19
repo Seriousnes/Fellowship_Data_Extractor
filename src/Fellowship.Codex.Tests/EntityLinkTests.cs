@@ -15,6 +15,31 @@ public class EntityLinkTests : BunitContext
         Render<EntityLink>(p => p.Add(x => x.Entity, document)).Find("a");
 
     [Fact]
+    public void A_link_asks_its_tooltip_for_no_art_by_default()
+    {
+        var document = Store.Entities.OfType<ItemDocument>().First(row => row.Icon is not null);
+
+        Assert.DoesNotContain(
+            nameof(TooltipQuery.ShowIcon),
+            Draw(document).GetAttribute("data-tip") ?? string.Empty,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_link_told_to_asks_its_tooltip_for_the_art()
+    {
+        var document = Store.Entities.OfType<ItemDocument>().First(row => row.Icon is not null);
+
+        var asked = Render<EntityLink>(p => p
+                .Add(x => x.Entity, document)
+                .Add(x => x.ShowIcon, true))
+            .Find("a")
+            .GetAttribute("data-tip") ?? string.Empty;
+
+        Assert.Contains($"{nameof(TooltipQuery.ShowIcon)}=true", asked, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_link_to_a_row_the_build_colours_carries_that_colour()
     {
         EntityDocument[] coloured =

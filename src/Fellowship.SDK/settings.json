@@ -503,6 +503,15 @@
     "Heroic": "T_Backgrounds_TooltipItemHeader_TopDecor_Clean_Eternal",
     "Legendary": "T_Backgrounds_TooltipItemHeader_TopDecor_Clean_Legendary"
   },
+  "talentTierPlates": {
+    "1": "T_Backgrounds_TalentTierUnlocked_1_2026",
+    "2": "T_Backgrounds_TalentTierUnlocked_2_2026",
+    "3": "T_Backgrounds_TalentTierUnlocked_3_2026",
+    "4": "T_Backgrounds_TalentTierUnlocked_4_2026",
+    "5": "T_Backgrounds_TalentTierUnlocked_5_2026",
+    "6": "T_Backgrounds_TalentTierUnlocked_6_2026",
+    "7": "T_Backgrounds_TalentTierUnlocked_7_2026"
+  },
   "rarityColorRows": {
     "Common": "game.rarity-common",
     "Uncommon": "game.rarity-uncommon",

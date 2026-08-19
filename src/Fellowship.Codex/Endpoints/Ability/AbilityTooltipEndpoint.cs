@@ -12,6 +12,9 @@ public sealed record AbilityTooltipRequest
     [Description("The id to draw.")]
     public int Id { get; init; }
 
+    [Description("Given as true when the entity's icon is to be shown beside the card. A card that shows its icon inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
     [Description("The hero whose stat a PrimaryAttribute coefficient scales off.")]
     public string? Hero { get; init; }
 
@@ -21,6 +24,7 @@ public sealed record AbilityTooltipRequest
     public TooltipQuery ToQuery(IQueryCollection raw, StatParameters stats, out string? error) =>
         StatQuery.Read(this, raw, stats, out error) with
         {
+            ShowIcon = ShowIcon == true,
             Hero = StatQuery.Given(Hero),
             Difficulty = Difficulty,
         };

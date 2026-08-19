@@ -147,6 +147,13 @@ document.addEventListener('focusout', event => {
 });
 
 document.addEventListener('click', event => {
+    const copier = event.target.closest?.('[data-copy]');
+
+    if (copier) {
+        navigator.clipboard?.writeText(copier.dataset.copy || window.location.href);
+        return;
+    }
+
     const opener = event.target.closest?.('.cx-mega-open');
 
     if (opener) {

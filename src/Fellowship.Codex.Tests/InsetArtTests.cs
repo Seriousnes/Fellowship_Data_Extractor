@@ -18,7 +18,7 @@ public class InsetArtTests : BunitContext
     private IRenderedComponent<Tooltip> Draw(EntityDocument document) =>
         Render<Tooltip>(p => p
             .Add(x => x.Entity, document)
-            .Add(x => x.Query, new TooltipQuery()));
+            .Add(x => x.Query, new TooltipQuery { ShowIcon = true }));
 
     [Fact]
     public void A_hero_trait_carries_its_art_inside_the_card()

@@ -13,6 +13,9 @@ public sealed record ItemTooltipRequest
     [Description("The id to draw.")]
     public int Id { get; init; }
 
+    [Description("Given as true when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
     [Description("The hero whose reading of the id to draw, where one id reads differently per hero.")]
     public string? Hero { get; init; }
 
@@ -69,6 +72,7 @@ public sealed record ItemTooltipRequest
 
         return read with
         {
+            ShowIcon = ShowIcon == true,
             RandomStats = rolled,
             Hero = StatQuery.Given(Hero),
             Rarity = StatQuery.Given(Rarity),

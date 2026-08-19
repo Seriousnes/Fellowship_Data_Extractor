@@ -171,7 +171,21 @@ public static class GameplayEffects
         return [computed, .. own ?? []];
     }
 
-    public const int Multiplicitive = 1;
+    public const string OpEnum = "EGameplayModOp";
+
+    public static readonly string[] MultiplyingOps = ["Multiplicitive", "MultiplyCompound"];
+
+    public static bool Multiplies(int? ordinal)
+    {
+        if (ordinal is not { } value) return false;
+
+        foreach (var member in MultiplyingOps)
+        {
+            if (EnumOrdinals.For($"{OpEnum}::{member}") == value) return true;
+        }
+
+        return false;
+    }
 
     private const string ModifiersField = "Modifiers";
     private const string ModifierOpField = "ModifierOp";
@@ -203,7 +217,7 @@ public static class GameplayEffects
                 continue;
             }
 
-            if (PropertyWalk.AsOrdinal(PropertyWalk.Get(modifier, ModifierOpField)?.GenericValue) == Multiplicitive)
+            if (Multiplies(PropertyWalk.AsOrdinal(PropertyWalk.Get(modifier, ModifierOpField)?.GenericValue)))
             {
                 scopes.Add($"{ModifiersField}[{at}].");
             }

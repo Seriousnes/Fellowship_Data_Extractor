@@ -153,8 +153,7 @@ public static class DescriptionTokens
         PropertyWalk.AsOrdinal(PropertyWalk.Get(token, name)?.GenericValue);
 
     private static bool Multiplied(IPropertyHolder token) =>
-        PropertyWalk.AsOrdinal(PropertyWalk.Get(token, "ModifierOp")?.GenericValue)
-            == GameplayEffects.Multiplicitive;
+        GameplayEffects.Multiplies(PropertyWalk.AsOrdinal(PropertyWalk.Get(token, "ModifierOp")?.GenericValue));
 
     private static int? Identifier(IPropertyHolder token) =>
         PropertyWalk.AsNumber(PropertyWalk.Get(token, "AbilityDynamicTextFloatIdentifier")?.GenericValue) is { } value

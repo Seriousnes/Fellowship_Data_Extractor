@@ -47,7 +47,7 @@ public interface ICodexViewService
 
     string Href(EntityType type, int id);
 
-    string Tip(EntityDocument document);
+    string Tip(EntityDocument document, bool ShowIcon = false);
 
     string? Reading(EntityDocument document);
 
@@ -62,7 +62,7 @@ public interface ICodexViewService
     IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts(
         EntityDocument document);
 
-    (string Href, string? Tip)? Addresses(EntityType type, int id);
+    (string Href, string? Tip)? Addresses(EntityType type, int id, bool ShowIcon = false);
 
     string? Rarity(EntityDocument document);
 
@@ -143,12 +143,18 @@ public sealed class CodexViewService(
     public string Href(EntityType type, int id) =>
         $"/{EntityTypes.Slug(type)}/{id.ToString(CultureInfo.InvariantCulture)}";
 
-    public string Tip(EntityDocument document)
+    public string Tip(EntityDocument document, bool ShowIcon = false)
     {
         var where = $"/api/{EntityTypes.Slug(EntityTypes.TypeOf(document))}/" +
             document.Id.ToString(CultureInfo.InvariantCulture) + "/tooltip";
 
-        return Reading(document) is { } hero ? $"{where}?hero={Uri.EscapeDataString(hero)}" : where;
+        var asked = new List<string>(2);
+
+        if (Reading(document) is { } hero) asked.Add($"hero={Uri.EscapeDataString(hero)}");
+
+        if (ShowIcon) asked.Add($"{nameof(TooltipQuery.ShowIcon)}=true");
+
+        return asked.Count == 0 ? where : $"{where}?{string.Join('&', asked)}";
     }
 
     public string? Reading(EntityDocument document) =>
@@ -212,8 +218,10 @@ public sealed class CodexViewService(
         return facts;
     }
 
-    public (string Href, string? Tip)? Addresses(EntityType type, int id) =>
-        store.All(type, id) is { Count: > 0 } readings ? (Href(type, id), Tip(readings[0])) : null;
+    public (string Href, string? Tip)? Addresses(EntityType type, int id, bool ShowIcon = false) =>
+        store.All(type, id) is { Count: > 0 } readings
+            ? (Href(type, id), Tip(readings[0], ShowIcon))
+            : null;
 
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> ScalarsByType = new();
 
@@ -436,6 +444,13 @@ public sealed class CodexViewService(
                 return (excess < 0 ? printed : "+" + printed, true);
             }
 
+            if (token.Format == Removed)
+            {
+                var removed = 1m - (decimal)value;
+
+                return ((removed * 100m).Normalize().ToString(CultureInfo.InvariantCulture) + "%", true);
+            }
+
             if (token.Percent == true || token.Format == Share)
             {
                 var share = token.Multiplies == true ? (decimal)value - 1m : (decimal)value;
@@ -487,6 +502,7 @@ public sealed class CodexViewService(
         Plain => "printed as it stands",
         Share => "printed as a share",
         Excess => "printed as its excess over 1",
+        Removed => "printed as the share its multiplier removes",
         _ => $"printed as {Models.FellowshipCodex.Spaced(format)}",
     };
 
@@ -495,4 +511,6 @@ public sealed class CodexViewService(
     private const string Share = "percent";
 
     private const string Excess = "delta";
+
+    private const string Removed = "reduction";
 }

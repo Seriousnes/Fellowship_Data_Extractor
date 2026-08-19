@@ -31,7 +31,7 @@ public static class EffectModifiers
     private const string CapturedField = "AttributeToCapture";
     private const string ComponentSuffix = "EffectComponent";
 
-    private const string OpEnum = "EGameplayModOp";
+    private const string OpEnum = GameplayEffects.OpEnum;
     private const string KindEnum = "EGameplayEffectMagnitudeCalculation";
 
     private const string ScalableFloat = "ScalableFloat";

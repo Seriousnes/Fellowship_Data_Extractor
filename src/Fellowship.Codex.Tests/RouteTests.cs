@@ -195,6 +195,42 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public async Task Every_tooltip_route_takes_the_art_flag_and_draws_no_art_without_it()
+    {
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        {
+            var (id, hero) = Sample(type);
+            var slug = EntityTypes.Slug(type);
+            var wearer = hero is null ? string.Empty : $"&hero={hero}";
+
+            var address = $"/api/{slug}/{id}/tooltip?{nameof(TooltipQuery.ShowIcon)}=true{wearer}";
+
+            var asked = await client.GetAsync(address, Xunit.TestContext.Current.CancellationToken);
+            var body = await asked.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+
+            Assert.True(
+                asked.StatusCode == HttpStatusCode.OK,
+                $"{address} answered {(int)asked.StatusCode}, not 200. Body: {body}");
+        }
+    }
+
+    [Fact]
+    public async Task The_art_flag_is_what_puts_the_slot_beside_a_card()
+    {
+        var ability = Factory.Store.Entities.OfType<AbilityDocument>().First(row => row.Icon is not null);
+
+        var bare = await client.GetStringAsync(
+            $"/api/ability/{ability.Id}/tooltip", Xunit.TestContext.Current.CancellationToken);
+
+        var asked = await client.GetStringAsync(
+            $"/api/ability/{ability.Id}/tooltip?{nameof(TooltipQuery.ShowIcon)}=true",
+            Xunit.TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain("<figure class=\"fx-slot", bare, StringComparison.Ordinal);
+        Assert.Contains("<figure class=\"fx-slot", asked, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_state_reaches_the_card_that_draws_one()
     {
         var trait = Factory.Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null);

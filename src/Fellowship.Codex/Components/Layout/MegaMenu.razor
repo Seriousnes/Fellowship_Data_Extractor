@@ -41,5 +41,35 @@
                 </div>
             </li>
         }
+
+        <li class="cx-mega-group">
+            <button type="button" class="cx-mega-open" aria-expanded="false">Tools</button>
+
+            <div class="cx-mega-panel">
+                <div class="cx-mega-cols">
+                    <a class="cx-mega-head" href="@Calculator">Talent Calculator</a>
+
+                    <div class="cx-mega-sec">
+                        <p class="cx-mega-sec-head">Hero</p>
+                        <ul>
+                            @foreach (var who in Roster)
+                            {
+                                <li>
+                                    <a href="@Calculator?hero=@Uri.EscapeDataString(who.Name)"
+                                       style="color:@(Ui.HeroColour(who.Name) ?? "var(--muted)")">@who.Name</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </li>
     </ul>
 </nav>
+
+@code {
+    private const string Calculator = "/tools/talents";
+
+    private IReadOnlyList<HeroEntry> Roster =>
+        [.. Ui.Store.Settings.Heroes.OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase)];
+}

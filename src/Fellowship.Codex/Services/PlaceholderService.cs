@@ -146,6 +146,15 @@ public sealed class PlaceholderService(IEntityStoreService store, IRichTextServi
             return new Substitution(excess < 0 ? percent : "+" + percent);
         }
 
+        if (placeholder.Format == "reduction")
+        {
+            var removed = 1m - (decimal)value;
+
+            return new Substitution(
+                Print("UnitPercent", Share(removed)) ?? Round(removed) + "%",
+                $"a multiplier of {Round((decimal)value, 4)}, printed as the share it removes");
+        }
+
         if (placeholder.Percent == true || placeholder.Format == "percent")
         {
             var share = placeholder.Multiplies == true ? (decimal)value - 1m : (decimal)value;

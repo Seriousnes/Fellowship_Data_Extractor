@@ -54,6 +54,8 @@ public sealed record SettingsFile
     public IReadOnlyDictionary<string, string> RarityOrnaments { get; init; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+    public IReadOnlyDictionary<int, string> TalentTierPlates { get; init; } = new Dictionary<int, string>();
+
     public IReadOnlyDictionary<string, string> RarityColorRows { get; init; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 

@@ -257,7 +257,9 @@ public static class ExportRun
         Console.WriteLine(
             $"  {resolver.DeclaredByBlueprint} tokens bound by the ability's ResolveDynamicTextFloat, " +
             $"{resolver.NamedByToken} by the quantity their name states, " +
-            $"{resolver.SynthesizedFromModifier} from the sole modifier their description leaves undeclared");
+            $"{resolver.SynthesizedFromModifier} from the sole modifier their description leaves undeclared, " +
+            $"{resolver.StatedByNativeLink} by a stated link to the row native code reads, " +
+            $"{resolver.PrintedAsReduction} printed as the share their multiplier removes");
         Console.WriteLine(
             $"  {resolver.ModifiersRead} effect modifier magnitudes read");
         Console.WriteLine(
