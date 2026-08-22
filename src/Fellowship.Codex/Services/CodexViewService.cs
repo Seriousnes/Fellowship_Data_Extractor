@@ -125,9 +125,9 @@ public sealed class CodexViewService(
             ? tokens.Color("core.text-secondary") ?? "#909BA6"
             : tokens.Color("core.text-primary") ?? "#EAE3DB");
 
-    public string? HeroColour(string name) => Readable(tokens.Hero(store.Hero(name)?.Codename ?? name));
+    public string? HeroColour(string name) => Readable(tokens.Hero(name));
 
-    public string? HeroSwatch(string name) => tokens.Hero(store.Hero(name)?.Codename ?? name);
+    public string? HeroSwatch(string name) => tokens.Hero(name);
 
     public string Name(EntityDocument document) => PublicTypes.NameOf(document);
 
@@ -370,7 +370,7 @@ public sealed class CodexViewService(
                 continue;
             }
 
-            built.Append(heroes.TryGetValue(words[at], out var hero) ? hero : words[at]);
+            built.Append(words[at]);
         }
 
         return built.ToString();
@@ -391,9 +391,6 @@ public sealed class CodexViewService(
 
         return [.. words];
     }
-
-    private readonly IReadOnlyDictionary<string, string> heroes = store.Settings.Heroes
-        .ToDictionary(hero => hero.Codename, hero => hero.Name, StringComparer.Ordinal);
 
     private readonly IReadOnlyDictionary<string, string> stats = store.Settings.StatCalculation.Attributes
         .Where(row => row.Value.DisplayName is { Length: > 0 } printed &&

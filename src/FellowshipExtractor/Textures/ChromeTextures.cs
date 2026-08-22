@@ -82,6 +82,7 @@ public static class ChromeTextures
         "T_Backgrounds_TalentTreeTierBackground_Locked",
         "T_Backgrounds_TalentTreeTierBackground_Unlocked",
         "T_Borders_Frame_TalentTreeCost",
+        "T_Borders_Frame_Pattern",
 
         GoldBand.Texture,
     ];
@@ -101,13 +102,14 @@ public static class ChromeTextures
         "T_Borders_RarityGlow",
     ];
 
-    private static readonly IReadOnlyDictionary<string, string> ModifierTinted =
+    private static readonly IReadOnlyDictionary<string, string> RowTinted =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["T_Icons_Generic_WeaponSkill"] = "core.primary-200",
             ["T_Icons_Generic_TooltipSlot"] = "core.primary-main",
             ["T_Icons_Generic_Gem"] = "core.primary-200",
             ["T_Backgrounds_TooltipSlot_Gradient_Decor"] = "core.secondary-600",
+            ["T_Borders_Frame_Pattern"] = "core.primary-200",
         };
 
     public static async Task<int> WriteAsync(
@@ -184,7 +186,7 @@ public static class ChromeTextures
             await target.WriteImageAsync(image, content, cancellationToken);
             written++;
 
-            if (ModifierTinted.TryGetValue(name, out var row))
+            if (RowTinted.TryGetValue(name, out var row))
             {
                 using var glyph = Image.Load<Rgba32>(content);
 
@@ -211,9 +213,9 @@ public static class ChromeTextures
             }
         }
 
-        if (painted.Count != ModifierTinted.Count)
+        if (painted.Count != RowTinted.Count)
         {
-            var absent = ModifierTinted.Keys
+            var absent = RowTinted.Keys
                 .Where(texture => !painted.Contains(texture))
                 .Order(StringComparer.Ordinal);
 

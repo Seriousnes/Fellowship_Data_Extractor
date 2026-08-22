@@ -49,7 +49,7 @@ public sealed class SettingsTableTests
             [SectionHeadingRows.Ability, SectionHeadingRows.Legendary, SectionHeadingRows.SetBonus],
             HeadingRows.Keys.Order(StringComparer.Ordinal));
 
-        Assert.Equal("game.game.hero-mosse", HeadingRows[SectionHeadingRows.Ability]);
+        Assert.Equal("game.game.hero-sylvie", HeadingRows[SectionHeadingRows.Ability]);
         Assert.Equal("game.rarity-legendary", HeadingRows[SectionHeadingRows.Legendary]);
         Assert.Equal("game.game.character-friendly", HeadingRows[SectionHeadingRows.SetBonus]);
     }

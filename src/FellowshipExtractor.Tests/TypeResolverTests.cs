@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
@@ -312,9 +314,14 @@ public sealed class TypeResolverTests
 
         Assert.All(
             rows,
-            item => Assert.True(
-                Resolver.Progression.Find(item.Body["tag"]!.GetValue<string>()) is not null ||
-                Resolver.Customizations.Find(item.Body["tag"]!.GetValue<string>()) is not null));
+            item =>
+            {
+                var tag = Tag("ItemID", item.Id.ToString(CultureInfo.InvariantCulture)).Name;
+
+                Assert.True(
+                    Resolver.Progression.Find(tag) is not null ||
+                    Resolver.Customizations.Find(tag) is not null);
+            });
 
         Assert.Equal(142, stated.Length);
     }

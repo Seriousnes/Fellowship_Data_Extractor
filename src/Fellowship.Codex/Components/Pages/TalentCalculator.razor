@@ -66,18 +66,17 @@ else
 
                             if (Taken.Contains(mine.Id))
                             {
-                                <a class="cx-tal" href="@Address(hero.Name, Toggled(mine))" aria-current="true"
-                                   data-tip="@Ui.Tip(mine.Talent)">@Face(mine, Picked)</a>
+                                <a class="cx-tal" href="@Address(hero.Name, Toggled(mine))"
+                                   aria-current="true">@Face(mine, Picked)</a>
                             }
                             else if (mine.Cost <= Left)
                             {
-                                <a class="cx-tal" href="@Address(hero.Name, Toggled(mine))"
-                                   data-tip="@Ui.Tip(mine.Talent)">@Face(mine, Unpicked)</a>
+                                <a class="cx-tal" href="@Address(hero.Name, Toggled(mine))">@Face(mine, Unpicked)</a>
                             }
                             else
                             {
-                                <span class="cx-tal" aria-disabled="true" tabindex="0" title="@Beyond(mine)"
-                                      data-tip="@Ui.Tip(mine.Talent)">@Face(mine, Unpicked)</span>
+                                <span class="cx-tal" aria-disabled="true" tabindex="0"
+                                      title="@Beyond(mine)">@Face(mine, Unpicked)</span>
                             }
                         }
                     </div>
@@ -120,7 +119,8 @@ else
     private string Frame =>
         $"--cx-hero:{Tone};" +
         $"--cx-tal-band:url({Ui.Chrome.TalentBand});" +
-        $"--cx-tal-cost:url({Ui.Chrome.TalentCost})";
+        $"--cx-tal-cost:url({Ui.Chrome.TalentCost});" +
+        $"--cx-tal-frame:url({Ui.Chrome.TalentFrame})";
 
     private static string Columns(TalentRow row) =>
         $"grid-template-columns:repeat({row.Nodes.Count}, minmax(0, 1fr))";
@@ -140,13 +140,13 @@ else
     }
 
     private RenderFragment Face(TalentNode node, string state) =>
-        @<text>
+        @<span class="cx-tal-face" data-tip="@Ui.Tip(node.Talent)">
             <span class="cx-tal-art" style="--cx-tal-slot:url(@Ui.Chrome.TalentSlot(state))">
                 <img class="cx-tal-icon" alt="" src="@Ui.Icon(node.Talent.Icon)" />
                 <span class="cx-tal-cost">@node.Cost</span>
             </span>
             <span class="cx-tal-name">@Ui.Name(node.Talent)</span>
-        </text>;
+        </span>;
 
     private string Toggled(TalentNode node)
     {

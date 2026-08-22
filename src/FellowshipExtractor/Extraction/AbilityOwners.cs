@@ -50,6 +50,7 @@ public sealed class AbilityOwners
 
     private readonly AbstractFileProvider _provider;
     private readonly IReadOnlyList<FAssetData> _assets;
+    private readonly Dictionary<string, string> _codenames;
 
     private readonly Dictionary<string, FAssetData> _byName = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _granted = new(StringComparer.OrdinalIgnoreCase);
@@ -81,10 +82,15 @@ public sealed class AbilityOwners
     public int AppliedEffectCount => _appliers.Count(pair => pair.Value.Length > 0);
 
     public AbilityOwners(
-        AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, IReadOnlyList<TagRecord> tags)
+        AbstractFileProvider provider,
+        IReadOnlyList<FAssetData> assets,
+        IReadOnlyList<TagRecord> tags,
+        HeroNames heroes)
     {
         _provider = provider;
         _assets = assets;
+        _codenames = heroes.Codenames.ToDictionary(
+            codename => codename, codename => codename, StringComparer.OrdinalIgnoreCase);
 
         foreach (var asset in assets) _byName.TryAdd(asset.AssetName.Text, asset);
 
@@ -378,12 +384,12 @@ public sealed class AbilityOwners
             if (!tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase)) continue;
             if (!_byName.TryGetValue(tag.Name, out var asset)) continue;
 
-            var applied = AppliedEffects.Named(_provider, asset.ObjectPath, effects);
+            var applied = AppliedEffects.Named(_provider, asset.ObjectPath, effects, _codenames);
             if (applied.Count == 0) continue;
 
             _applierTags[tag.Name] = AbilityTypes(asset.ObjectPath);
 
-            foreach (var name in applied) Owns(_appliers, name, tag.Name, effects);
+            foreach (var (name, _) in applied) Owns(_appliers, name, tag.Name, effects);
         }
     }
 
@@ -421,18 +427,26 @@ public sealed class AbilityOwners
             if (!walked.Add(applier)) continue;
             if (!_byName.TryGetValue(applier, out var asset)) continue;
 
-            var reached = AppliedEffects.Named(_provider, asset.ObjectPath, wanted);
+            var reached = AppliedEffects.Named(_provider, asset.ObjectPath, wanted, _codenames);
             if (reached.Count == 0) continue;
 
             var owningHeroes = HeroesOf(applier);
             var owningCreature = _creatures.GetValueOrDefault(applier);
             var owningOutsider = _outsiders.GetValueOrDefault(applier);
 
-            foreach (var applied in reached)
+            foreach (var (applied, keyed) in reached)
             {
                 if (applied.Equals(applier, StringComparison.OrdinalIgnoreCase)) continue;
 
-                foreach (var codename in owningHeroes) Claim(applied, codename, wanted);
+                if (keyed is not null)
+                {
+                    Claim(applied, keyed, wanted);
+                }
+                else
+                {
+                    foreach (var codename in owningHeroes) Claim(applied, codename, wanted);
+                }
+
                 if (owningCreature is not null) Owns(_creatures, applied, owningCreature, wanted);
                 if (owningOutsider is not null) Owns(_outsiders, applied, owningOutsider, wanted);
 

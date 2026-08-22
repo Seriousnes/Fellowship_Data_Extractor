@@ -61,8 +61,12 @@ public sealed class CreatureStats
 
     public int ScaledApart => _scaled.Count;
 
-    public CreatureStats(AbstractFileProvider provider)
+    private readonly HeroNames _heroes;
+
+    public CreatureStats(AbstractFileProvider provider, HeroNames heroes)
     {
+        _heroes = heroes;
+
         var attributes = CurveRows.Load(
             provider, BaseTable, "how much health, armour, resist, kill score and spirit points a creature has");
 
@@ -108,7 +112,7 @@ public sealed class CreatureStats
 
         foreach (var scope in scaled)
         {
-            apart[scope] = new DifficultyScaling
+            apart[heroes.Renamed(scope)] = new DifficultyScaling
             {
                 Health = Ladder(scaling, scope, HealthScale, required: false),
                 Damage = Ladder(scaling, scope, DamageScale, required: false),
@@ -168,7 +172,7 @@ public sealed class CreatureStats
             Intellect = Shared(characterId, Intellect),
             Strength = Shared(characterId, Strength),
             Agility = Shared(characterId, Agility),
-            Scaling = _scaled.Contains(characterId) ? characterId : null,
+            Scaling = _scaled.Contains(characterId) ? _heroes.Renamed(characterId) : null,
         };
 
         if (attributes is { Health: null, Armor: null, Resist: null, KillScore: null, SpiritPoints: null })

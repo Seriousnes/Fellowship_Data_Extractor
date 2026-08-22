@@ -38,19 +38,4 @@ public sealed class EnumDriftTests
 
         Assert.Equal(categories.Select(category => category.Name), Enum.GetNames<AbilityCategory>());
     }
-
-    [Fact]
-    public void HeroesAreNamedAsThePlayerReadsThem()
-    {
-        var names = Export.Loaded.Settings.Heroes.Select(hero => hero.Name).ToHashSet(StringComparer.Ordinal);
-        var enumNames = Enum.GetNames<Hero>();
-
-        foreach (var hero in Export.Loaded.Settings.Heroes)
-        {
-            if (names.Contains(hero.Codename)) continue;
-
-            Assert.Contains(hero.Name, enumNames);
-            Assert.DoesNotContain(hero.Codename, enumNames);
-        }
-    }
 }

@@ -259,7 +259,9 @@ entities share is decoded once and they all agree on the file.
 }
 ```
 
-The record goes to `output/tooltip-<table>-<id>.json`; the console prints the same thing as text.
+That is the resolver's own record. `DocumentProjection` turns it into the document the export
+writes, and the two differ where it matters most: the record's `name` is the build's spelling of the
+row, while the exported document's `name` is the display name and nothing else.
 
 The rule is everything the tooltip needs and nothing else. **A reference to another asset is never
 emitted as a path**, because a class name reconstructs nothing: either the value behind it is read
@@ -515,6 +517,10 @@ convention, so it holds for Gunde whose content sits in its own plugin root, and
 canonical spelling is taken from the `CharacterID` tag table. **Bowguy is Elarion, Mosse is Sylvie,
 Sune is Xavian, Firemage is Ardeos, Warmaster is Helena.**
 
+The codename is extraction vocabulary and stops at the export boundary. Every document, every key
+and every settings row is written under the shipped name, and `HeroNames` is the one place the two
+spellings meet.
+
 The icon is shared: these items declare a single `DefaultIcon`, not one per hero.
 
 One limit worth stating: the displayed damage range needs a stat value the caller supplies. The
@@ -619,24 +625,28 @@ root, so a container holds every build's documents side by side against one set 
 loads all of them, builds the site from the highest build, and renders what changed between adjacent
 versions on every entity page.
 
-The run reports what it read: 12,473 documents from 12,472 entities across 13,088 tags, 6,522 with a
-display name and 5,871 with an icon; 1,288 names and 1,282 icons inherited from the entity that
-applies them, 70 and 10 withheld because two entities that apply them disagree; 1,713 tuning rows
-supplied by namespace that no asset names; 1 coefficient row banded by its own `Spread` row and 61
-banded by their effect's calculation preset.
+The run reports what it read: 12,649 documents from 12,648 entities across 13,094 tags, 7,200 with a
+display name and 6,676 with an icon; 2,064 effects named as part of one of 2,306 tagged abilities,
+1,580 of them carrying a role; 965 names and 952 icons inherited from the entity that applies them,
+51 and 8 withheld because two entities that apply them disagree; 12,803 tuning rows supplied by
+namespace that no asset names; 26 coefficient rows banded by the `Spread` row their effect overrides
+with and 111 banded by their effect's calculation preset.
 
-It reports what it drew too: 127 chrome images, which is 95 chrome textures plus 28 rarity variants,
-four textures multiplied by each of the seven rarity colours, plus 4 modifier row textures, each
-multiplied by the colour row the row draws it in; and 4,367 entity icon images, 3,150 of them an
-icon composed against a rarity colour. `ui/` ends at 4,494 files and 212 MB, the whole of the
-transform work done once so that no consumer composes anything at render time.
+It reports what it drew too: 146 chrome images, which is the chrome textures plus the rarity
+variants, four textures multiplied by each of the seven rarity colours, plus the modifier row
+textures, each multiplied by the colour row the row draws it in; and 4,582 entity icon images, 3,150
+of them an icon composed against a rarity colour. `WriteImageAsync` never clears `ui/`, so a folder
+several runs old holds more than one run wrote; this one ends at 4,736 files and 335 MB, the whole
+of the transform work done once so that no consumer composes anything at render time.
 
-Every line is the same record the resolver produces for one entity - one shape, 2.9 MB for
-the whole game, down from 22.5 MB.
+Every line is the document the projection writes for one entity, one shape per type. The resolver's
+record carries the build's own spelling of the row and the projection writes none of it: what the
+row is for reaches the reader as `role`, and the ability it belongs to as `partOf`. 4.7 MB for the
+whole game.
 
 ### settings.json
 
-The one file beside `entities.jsonl` that is not an entity. 47,646 bytes of lookup tables that no
+The one file beside `entities.jsonl` that is not an entity. 62,466 bytes of lookup tables that no
 entity line can carry, written by the same run so the two always describe the same
 build. Three of them are below; the rest are the design system's named colours, the rich text style
 set and the stat calculation settings, which is what lets a renderer draw a tooltip in the game's
@@ -645,7 +655,7 @@ own colours without reading the build itself:
 ```json
 {
   "heroes": [
-    { "codename": "Firemage", "name": "Ardeos", "armorType": "Cloth",
+    { "name": "Ardeos", "armorType": "Cloth",
       "primaryStat": "Intellect", "color": "EB6328" }
   ],
   "rarities": [
@@ -657,10 +667,12 @@ own colours without reading the build itself:
 
 **heroes**, 12 rows, is the reverse index an item needs. An item expands into rows keyed by
 `armorType` and `primaryStat` and carries no hero at all, so `hero=Ardeos` selects one of them only
-through a table saying Ardeos is Cloth and Intellect. `codename` is the spelling every asset uses
-and `name` the one every tooltip prints. `color` is six hex digits from the design system row the
+through a table saying Ardeos is Cloth and Intellect. `name` is what every tooltip prints and the
+only spelling the export uses. `color` is six hex digits from the design system row the
 hero's metadata asset points at, followed rather than the `ClassColor` literal beside it because the
-two disagree: Aeona's asset says `BC00FF` while the row it names is `FC9FEC`.
+two disagree: Aeona's asset says `BC00FF` while the row it names is `FC9FEC`. The `colors` table
+keys each hero row `game.game.hero-<name>`, and `sectionHeadingRows.Ability` names one of those
+rows, so the two move together. `difficultyScaling.namespaces` is keyed the same way.
 
 **rarities**, 7 rows, is the ladder under both of its names. `name` is what the build files a tier
 under and what every `rarity` field in `entities.jsonl` says; `displayName` is what a player sees.
@@ -674,7 +686,7 @@ directions: internal `Champion` prints as "Heroic" and internal `Heroic` prints 
 The damage-school variants take three things to select, not one. The `showDamageType` flag a
 placeholder carries says the school is wanted in the number rather than in the sentence around it;
 a `coefficient` says the number is damage at all; and the `Magic.*` or `Physical` entry in the
-entity's own `tags` says which school. All three are needed because the flag is shipped on two
+entity's own `schools` says which school. All three are needed because the flag is shipped on two
 tokens that are not damage: Reaver's Edge and Blood Arc both set it on their `{Radius}`, and a
 renderer going by the flag alone would print "500 physical damage" for a distance. 10 tokens of 225
 carry the flag and 8 of those carry a coefficient. Without the flag the same renderer would write
@@ -698,6 +710,19 @@ effect asked for in its own right captures on itself, and only the referenced on
 
 `grep -c '/Game/\|/Script/' data/entities.jsonl data/settings.json` returns 0 for both, which is the check
 that no asset path survived anywhere in the export.
+
+The second check is that no hero codename did. `grep -c '"tag":' data/entities.jsonl`,
+`grep -c '"codename":' data/entities.jsonl` and `grep -c '"codename":' data/settings.json` all
+return 0, and
+`grep -o -i -E 'bowguy|firemage|ink|lisa|mosse|sune|vigor|warmaster' data/settings.json | wc -l`
+returns 0 because settings.json holds no exempt field. `entities.jsonl` cannot be checked that way:
+1,498 `icon` and 7,238 `iconByRarity` values are cooked texture filenames that carry a codename by
+design, and `Venomdrinker`, `Invigorate` and `Blood Link` carry a codename as a substring.
+A `placeholders[].key` is renamed together with the `{token}` its description splices it into, so
+the pair stays byte-matched and neither carries a codename. What is left after
+those exemptions is four shipped sentences the game itself wrote, which name a hero by the spelling
+the player does not read: two descriptions naming Sune and Mosse, the Rune of Renewal flavour line
+that writes both `Vigour` and `Vigor`, and the player title `The Warmaster`.
 
 Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` tables are indexed:
 
@@ -861,15 +886,16 @@ matching on the concrete type - `Item`, `Ability`, `SetBonus` and the rest - for
 of them carries, and a field the page has no section for is drawn as a fact under the words its name
 spells out. A field added
 upstream therefore shows up rather than disappearing. What is never drawn is a value that is a
-shipped spelling - the row's own gameplay tag, its loot rule set, its talent slot - because those
+shipped spelling - the row's loot rule set, its talent slot - because those
 say nothing a printed form says better; the internal *numbers* beside them are drawn in full, which
-is what the tuning and substitution panels are.
+is what the tuning and substitution panels are. The row's own gameplay tag is not among them because
+the export no longer carries it. What the row is for reaches the page as `role` and `partOf`.
 
 ### The name index
 
 14,478 rows, and one half of what a reader types has to work: the display name. A row's gameplay tag
-is the build's internal spelling of it and is shown nowhere, so it is searched for nowhere either,
-which takes the term list from 6,313 terms to 2,336 and makes `ga_mara` reach nothing.
+is the build's internal spelling of it and the export does not carry it, so the index has nothing to
+leave out. `SearchIndex` reads display names and nothing else, and `ga_mara` reaches nothing.
 `SearchIndex` splits every name into words at build time - including at every capital, so
 `PlacedProjectileAoe` contributes `projectile` and `aoe` - and looks one up by binary search over
 the sorted term list. Lookups are by prefix, so the box answers while the reader is still typing,
@@ -997,7 +1023,8 @@ both. `McpTests` holds the two wordings equal.
 - `src/FellowshipExtractor/Extraction/` - the readers and the export. `EntityResolver`
   builds the shared indexes once and turns a tag into an `Entity`, so resolving one entity and
   resolving the whole game are the same code, the same setup cost and the same record shape.
-  `Entity` is that shape and the only thing the export writes. `PropertyWalk` is the recursive
+  `Entity` is that shape, and `DocumentProjection` turns it into the typed document the export
+  writes. `PropertyWalk` is the recursive
   property walk everything else is built on, `CurveBindings` turns `FScalableFloat` references into
   resolved constants, `Numbers` sorts those into the named tooltip fields and the rest,
   `TuningNamespace` decides which prefix a row belongs to, `AbilityPresentationIndex` holds the

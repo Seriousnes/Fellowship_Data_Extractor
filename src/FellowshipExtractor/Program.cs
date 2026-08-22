@@ -1,5 +1,6 @@
 using CUE4Parse.UE4.Exceptions;
 using FellowshipExtractor;
+using FellowshipExtractor.Dump;
 using FellowshipExtractor.Extraction;
 using FellowshipExtractor.Output;
 using FellowshipExtractor.Usmap;
@@ -71,6 +72,19 @@ switch (command)
     }
     case "usmap":
         return await UsmapGenerateCommand.RunAsync(options) ? 0 : 1;
+    case "dump":
+    {
+        if (args.Length < 2)
+        {
+            Console.Error.WriteLine("dump needs a path filter, e.g. dump BP_DS_ButtonStyle_TalentTreeNode");
+            return 2;
+        }
+
+        var limit = args.Length > 2 && int.TryParse(args[2], out var many) ? many : 1;
+
+        await DumpCommand.RunAsync(options, args[1], limit);
+        return 0;
+    }
     default:
         Console.Error.WriteLine(
             $"""
@@ -89,6 +103,8 @@ switch (command)
 
              Commands:
                usmap                 recover the mappings without exporting
+               dump <filter> [count] write every export of the matching cooked assets as JSON under
+                                     output/dump, for reading an asset the export does not carry
 
              Environment:
                FELLOWSHIP_USMAP      a .usmap for this build, otherwise the one the usmap command wrote

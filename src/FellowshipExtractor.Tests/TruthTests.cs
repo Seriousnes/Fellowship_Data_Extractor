@@ -1,80 +1,109 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
+
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 
 public sealed class TruthTests
 {
-    private static JsonObject Record(string tag) =>
+    private const string ItemTable = "ItemID";
+
+    private static JsonObject Record(EntityType type, int id) =>
         Export.Loaded.Documents
-            .First(document => (string?)document.Body["tag"] == tag)
+            .First(document => document.Type == type && document.Id == id)
             .Body;
 
-    [Theory]
-    [InlineData("GE_Bowguy_SelfBuffForAoeProjectile_SelfBuff", 4)]
-    [InlineData("GA_Bowguy_SelfBuffForAoeProjectile", 4)]
-    [InlineData("GE_Vigor_SingleTargetAbsorb_Absorb", 12)]
-    [InlineData("GE_Meiko_TauntTotem_SelfBuff", 20)]
-    [InlineData("GE_Firemage_InstantSingleTargetDot_Dot", 30)]
-    [InlineData("GE_Ink_SelfDefenceBuff_SelfBuff_First", 4)]
-    [InlineData("GA_Warmaster_MeleeInterrupt", 4)]
-    public void ADurationIsWhatTheCalculationReturnsBare(string tag, double expected) =>
-        Assert.Equal(expected, (double?)Record(tag)["duration"]);
+    private static string[] Written(EntityType type, string table, string prefix)
+    {
+        var ids = Export.Loaded.Documents
+            .Where(document => document.Type == type)
+            .Select(document => document.Id)
+            .ToHashSet();
+
+        return
+        [
+            .. Export.Resolver.Tags
+                .Where(tag =>
+                    tag.Table.Equals(table, StringComparison.OrdinalIgnoreCase) &&
+                    tag.Name.StartsWith(prefix, StringComparison.Ordinal) &&
+                    ids.Contains(tag.NetId))
+                .Select(tag => tag.Name)
+                .Order(StringComparer.Ordinal),
+        ];
+    }
+
+    private static string Tagged(EntityType type, string table, int id) =>
+        Export.Resolver.FindTag(table, id.ToString(CultureInfo.InvariantCulture)) is { } tag
+            ? tag.Name
+            : throw new InvalidOperationException($"{table} states no row for {type} {id}.");
 
     [Theory]
-    [InlineData("GA_Vigor_SingleTargetAbsorb", 1)]
-    [InlineData("GA_Vigor_SingleTargetChargedHot", 1)]
-    [InlineData("GA_Vigor_SingleTargetDot", 1)]
-    [InlineData("GA_Lisa_InstantSingleTargetDamageAndDot", 9)]
-    [InlineData("GA_Sune_DroppedPulseAoe", 218)]
-    [InlineData("GA_Meiko_DurationalMultipleTeleportDamage_New", 100)]
-    [InlineData("GA_Ink_AoeAttack", 0.5)]
-    public void ACostIsTheCastCostNotATalentRow(string tag, double expected) =>
-        Assert.Equal(expected, (double?)Record(tag)["cost"]);
+    [InlineData(EntityType.Effect, 2009, 4)]
+    [InlineData(EntityType.Ability, 1398, 4)]
+    [InlineData(EntityType.Effect, 1321, 12)]
+    [InlineData(EntityType.Effect, 1491, 20)]
+    [InlineData(EntityType.Effect, 1820, 30)]
+    [InlineData(EntityType.Effect, 1752, 4)]
+    [InlineData(EntityType.Ability, 976, 4)]
+    public void ADurationIsWhatTheCalculationReturnsBare(EntityType type, int id, double expected) =>
+        Assert.Equal(expected, (double?)Record(type, id)["duration"]);
 
     [Theory]
-    [InlineData("GA_Ink_AoeAttack")]
-    [InlineData("GA_Ink_HeavySingleTargetAttack")]
-    [InlineData("GA_Lisa_InstantDamageSpender")]
-    public void AFractionOfTheResourceSaysSoOnTheRow(string tag) =>
-        Assert.True((bool?)Record(tag)["costIsFraction"]);
+    [InlineData(996, 1)]
+    [InlineData(995, 1)]
+    [InlineData(994, 1)]
+    [InlineData(1887, 9)]
+    [InlineData(1859, 218)]
+    [InlineData(1110, 100)]
+    [InlineData(1242, 0.5)]
+    public void ACostIsTheCastCostNotATalentRow(int id, double expected) =>
+        Assert.Equal(expected, (double?)Record(EntityType.Ability, id)["cost"]);
 
     [Theory]
-    [InlineData("GA_Sune_DroppedPulseAoe")]
-    [InlineData("GA_Lisa_InstantSingleTargetDamageAndDot")]
-    [InlineData("GA_Vigor_SingleTargetAbsorb")]
-    public void AnAbsoluteCostCarriesNoFractionFlag(string tag) =>
-        Assert.Null(Record(tag)["costIsFraction"]);
+    [InlineData(1242)]
+    [InlineData(1229)]
+    [InlineData(1970)]
+    public void AFractionOfTheResourceSaysSoOnTheRow(int id) =>
+        Assert.True((bool?)Record(EntityType.Ability, id)["costIsFraction"]);
 
     [Theory]
-    [InlineData("GA_Gunde_Talent_DotTransfer_Aoe", "range", 1000)]
-    [InlineData("GA_Mount_MountUp_Base", "castTime", 1.5)]
-    [InlineData("GA_Warmaster_InstantMeleeCleave", "range", 500)]
-    [InlineData("GA_Bowguy_ChanneledMultiProjectileDebuff", "channelTime", 2)]
-    [InlineData("GA_Rime_ChanneledBeamSingleDamage", "channelTime", 2)]
-    public void TheTooltipHookArgumentIsTheDisplayedValue(string tag, string field, double expected) =>
-        Assert.Equal(expected, (double?)Record(tag)[field]);
+    [InlineData(1859)]
+    [InlineData(1887)]
+    [InlineData(996)]
+    public void AnAbsoluteCostCarriesNoFractionFlag(int id) =>
+        Assert.Null(Record(EntityType.Ability, id)["costIsFraction"]);
 
     [Theory]
-    [InlineData("GE_Bowguy_CastedProjectileDamage_Buff", "Steady Hands")]
-    [InlineData("GE_Finesse_CurrentSpiritToBuff_Buff", "The Philosopher")]
-    [InlineData("GE_Perk_MaxHealthBasedAbsorb_Absorb", "The Dragon's Embrace")]
-    public void AnEffectShipsItsOwnUiDataName(string tag, string expected) =>
-        Assert.Equal(expected, (string?)Record(tag)["name"]);
+    [InlineData(2280, "range", 1000)]
+    [InlineData(3, "castTime", 1.5)]
+    [InlineData(981, "range", 500)]
+    [InlineData(1312, "channelTime", 2)]
+    [InlineData(1027, "channelTime", 2)]
+    public void TheTooltipHookArgumentIsTheDisplayedValue(int id, string field, double expected) =>
+        Assert.Equal(expected, (double?)Record(EntityType.Ability, id)[field]);
 
-    private static JsonObject Token(string tag, string key) =>
-        Record(tag)["placeholders"]?.AsArray()
+    [Theory]
+    [InlineData(1892, "Steady Hands")]
+    [InlineData(3189, "The Philosopher")]
+    [InlineData(2854, "The Dragon's Embrace")]
+    public void AnEffectShipsItsOwnUiDataName(int id, string expected) =>
+        Assert.Equal(expected, (string?)Record(EntityType.Effect, id)["name"]);
+
+    private static JsonObject Token(EntityType type, int id, string key) =>
+        Record(type, id)["placeholders"]?.AsArray()
             .OfType<JsonObject>()
             .FirstOrDefault(token => (string?)token["key"] == key)
-        ?? throw new InvalidOperationException($"{tag} carries no {{{key}}} placeholder.");
+        ?? throw new InvalidOperationException($"{type} {id} carries no {{{key}}} placeholder.");
 
     [Theory]
-    [InlineData("GA_Weapon_InstantDamageAccumulativeDebuff", "VoidTouchDmg", 42.5, "PrimaryAttribute", true)]
-    [InlineData("GA_Ink_AoeFear", "IntimidateDmgBreak", 30, "Strength", false)]
-    [InlineData("GA_Sune_SingleTargetAbsorb", "SolarShldAbsrb", 22.998, "Strength", true)]
+    [InlineData(155, "VoidTouchDmg", 42.5, "PrimaryAttribute", true)]
+    [InlineData(1241, "IntimidateDmgBreak", 30, "Strength", false)]
+    [InlineData(1848, "SolarShldAbsrb", 22.998, "Strength", true)]
     public void ATokenTheBodyMultipliesByAnAttributeIsACoefficientNotAValue(
-        string tag, string key, double coefficient, string attribute, bool expertise)
+        int id, string key, double coefficient, string attribute, bool expertise)
     {
-        var token = Token(tag, key);
+        var token = Token(EntityType.Ability, id, key);
 
         Assert.Equal(coefficient, (double?)token["coefficient"]);
         Assert.Equal(attribute, (string?)token["attribute"]);
@@ -85,7 +114,7 @@ public sealed class TruthTests
     [Fact]
     public void ABodyCombiningReadsAcrossAttributesShipsItsBracket()
     {
-        var token = Token("GA_Meiko_DamageSoakBuff", "StoneShieldHealth");
+        var token = Token(EntityType.Ability, 1122, "StoneShieldHealth");
 
         Assert.Equal(8.624, (double?)token["coefficient"]);
         Assert.Equal("Agility", (string?)token["attribute"]);
@@ -108,14 +137,14 @@ public sealed class TruthTests
     }
 
     [Theory]
-    [InlineData("GA_Lisa_ChanneledHealOrDamageProjectiles", "TemporBarrDmg", 1.91, "Intellect")]
-    [InlineData("GA_Lisa_ChanneledHealOrDamageProjectiles", "TemporBarrHeal", 5.22, "Intellect")]
-    [InlineData("GA_Weapon_InstantChargedProjectileHealOrDamage", "TwilSkyDmg", 9.552, "Intellect")]
-    [InlineData("GA_Weapon_InstantChargedProjectileHealOrDamage", "TwilSkyHeal", 19.104, "Intellect")]
+    [InlineData(1926, "TemporBarrDmg", 1.91, "Intellect")]
+    [InlineData(1926, "TemporBarrHeal", 5.22, "Intellect")]
+    [InlineData(156, "TwilSkyDmg", 9.552, "Intellect")]
+    [InlineData(156, "TwilSkyHeal", 19.104, "Intellect")]
     public void ARangeBodyTheReaderUsedToRefuseNowCarriesItsCoefficient(
-        string tag, string key, double coefficient, string attribute)
+        int id, string key, double coefficient, string attribute)
     {
-        var token = Token(tag, key);
+        var token = Token(EntityType.Ability, id, key);
 
         Assert.Equal(coefficient, (double?)token["coefficient"]);
         Assert.Equal(attribute, (string?)token["attribute"]);
@@ -125,7 +154,7 @@ public sealed class TruthTests
     [Fact]
     public void ARoundedRangeStillReadsItsExpertiseScaling()
     {
-        var token = Token("GA_Rime_CastedProjectileDamageOrbSpender", "GlacialBlast");
+        var token = Token(EntityType.Ability, 1028, "GlacialBlast");
 
         Assert.Equal(10.24, (double?)token["coefficient"]);
         Assert.Equal("Intellect", (string?)token["attribute"]);
@@ -135,7 +164,7 @@ public sealed class TruthTests
     [Fact]
     public void AStackCountIsNoneAtRestSoTheBaseHealRemains()
     {
-        var token = Token("GA_Meiko_InstantSelfDefensive", "SerenityHeal");
+        var token = Token(EntityType.Ability, 1119, "SerenityHeal");
 
         Assert.Equal(2.2, (double?)token["coefficient"]);
         Assert.Equal("Agility", (string?)token["attribute"]);
@@ -145,19 +174,19 @@ public sealed class TruthTests
     }
 
     [Theory]
-    [InlineData("GA_Meiko_MeleeRight", "EarthFistDmg", 0.1)]
-    [InlineData("GA_Ink_HeavySingleTargetAttack", "SkullCrushDmg", 0.2)]
-    [InlineData("GA_Ink_HeavySingleTargetAttack", "SkullCrushLightnDmg", 0.2)]
+    [InlineData(1100, "EarthFistDmg", 0.1)]
+    [InlineData(1229, "SkullCrushDmg", 0.2)]
+    [InlineData(1229, "SkullCrushLightnDmg", 0.2)]
     public void ATokenBandsInWhatItsEffectOverridesWithOrTheDefaultItsPresetDeclares(
-        string tag, string key, double spread) =>
-        Assert.Equal(spread, (double?)Token(tag, key)["spread"]);
+        int id, string key, double spread) =>
+        Assert.Equal(spread, (double?)Token(EntityType.Ability, id, key)["spread"]);
 
     [Theory]
-    [InlineData("GA_UB_BossWarrior_RangedDotProjectile", 0.4)]
-    [InlineData("GA_UB_BossWarrior_MeleeAutoAttack", 0.2)]
-    public void TwoAbilitiesOfOneBossPartOnWhetherTheirEffectBindsASpreadRow(string tag, double spread)
+    [InlineData(46, 0.4)]
+    [InlineData(448, 0.2)]
+    public void TwoAbilitiesOfOneBossPartOnWhetherTheirEffectBindsASpreadRow(int id, double spread)
     {
-        var coefficient = Record(tag)["coefficients"]?.AsArray().OfType<JsonObject>().Single();
+        var coefficient = Record(EntityType.Ability, id)["coefficients"]?.AsArray().OfType<JsonObject>().Single();
 
         Assert.NotNull(coefficient);
         Assert.Equal(spread, (double?)coefficient!["spread"]);
@@ -166,7 +195,7 @@ public sealed class TruthTests
     [Fact]
     public void ACreatureCoefficientBandsInTheEffectOnlyItsBytecodeNames()
     {
-        var coefficient = Record("GA_CM_ElfEnforcer_AutoAttack")["coefficients"]?.AsArray()
+        var coefficient = Record(EntityType.Ability, 92)["coefficients"]?.AsArray()
             .OfType<JsonObject>()
             .Single();
 
@@ -179,31 +208,31 @@ public sealed class TruthTests
     [Fact]
     public void AnEffectBorrowsTheNameOfTheAbilityOnlyItsBytecodeNames()
     {
-        var effect = Record("GE_CM_BlackburnMantrader_CastedRangedProjectile_Damage");
+        var effect = Record(EntityType.Effect, 1212);
 
         Assert.Equal("Frost Bolt", (string?)effect["name"]);
         Assert.Equal(958, (int?)effect["nameBorrowedFrom"]?["id"]);
     }
 
     [Theory]
-    [InlineData("GE_Bowguy_RangedAutoAttack_Damage", "Shoot")]
-    [InlineData("GE_DR_BloodfangMauler_MarkedByJump", "Pounce")]
-    public void AnEffectAnAbilityOnlyComparesOrFiltersOnKeepsItsApplierName(string tag, string expected) =>
-        Assert.Equal(expected, (string?)Record(tag)["name"]);
+    [InlineData(1868, "Shoot")]
+    [InlineData(1089, "Pounce")]
+    public void AnEffectAnAbilityOnlyComparesOrFiltersOnKeepsItsApplierName(int id, string expected) =>
+        Assert.Equal(expected, (string?)Record(EntityType.Effect, id)["name"]);
 
     [Theory]
-    [InlineData("GA_Ink_MeleeInterrupt", 4)]
-    [InlineData("GA_Gunde_SingleTargetInterrupt", 4)]
+    [InlineData(1226, 4)]
+    [InlineData(1244, 4)]
     public void ARowAnAppliedEffectBindsToItsDeclaredValueStillReadsAsTheAbilityDuration(
-        string tag, double expected) =>
-        Assert.Equal(expected, (double?)Record(tag)["duration"]);
+        int id, double expected) =>
+        Assert.Equal(expected, (double?)Record(EntityType.Ability, id)["duration"]);
 
     [Theory]
-    [InlineData("GA_Rime_Talent_SpendersSwap_SingleTarget", 4.096, true)]
-    [InlineData("GA_Rime_Talent_SpendersSwap_MultiTargets", 2.114, false)]
-    public void ACoefficientOnTheAbilityAReferenceNamesIsRead(string tag, double coefficient, bool expertise)
+    [InlineData(2223, 4.096, true)]
+    [InlineData(2224, 2.114, false)]
+    public void ACoefficientOnTheAbilityAReferenceNamesIsRead(int id, double coefficient, bool expertise)
     {
-        var token = Token(tag, "Talons");
+        var token = Token(EntityType.Ability, id, "Talons");
 
         Assert.Equal(coefficient, (double?)token["coefficient"]);
         Assert.Equal("Intellect", (string?)token["attribute"]);
@@ -211,16 +240,16 @@ public sealed class TruthTests
         Assert.Equal(expertise ? true : null, (bool?)token["scalesWithExpertise"]);
     }
 
-    private static JsonObject Modifier(string tag, string attribute) =>
-        Record(tag)["modifiers"]?.AsArray()
+    private static JsonObject Modifier(EntityType type, int id, string attribute) =>
+        Record(type, id)["modifiers"]?.AsArray()
             .OfType<JsonObject>()
             .FirstOrDefault(modifier => (string?)modifier["attribute"] == attribute)
-        ?? throw new InvalidOperationException($"{tag} carries no modifier on {attribute}.");
+        ?? throw new InvalidOperationException($"{type} {id} carries no modifier on {attribute}.");
 
     [Fact]
     public void AnAbsorbConsumptionScalerIsWhatItsCalculationClampsTo()
     {
-        var modifier = Modifier("GE_Vigor_SingleTargetAbsorb_Absorb", "AbsorbConsumptionScaler");
+        var modifier = Modifier(EntityType.Effect, 1321, "AbsorbConsumptionScaler");
 
         Assert.Equal(0.5, (double?)modifier["value"]);
         Assert.Null(modifier["op"]);
@@ -229,7 +258,7 @@ public sealed class TruthTests
     [Fact]
     public void ABlockMultiplierIsTheRowItsCalculationReads()
     {
-        var modifier = Modifier("GE_HeroAttributesBase", "BlockDamageReductionMultiplier");
+        var modifier = Modifier(EntityType.Effect, 6, "BlockDamageReductionMultiplier");
 
         Assert.Equal(0.8, (double?)modifier["value"]);
         Assert.Equal("Multiplicitive", (string?)modifier["op"]);
@@ -238,7 +267,7 @@ public sealed class TruthTests
     [Fact]
     public void AMagnitudeMultiplyingACapturedAttributeIsACoefficient()
     {
-        var modifier = Modifier("GE_Ink_MaxRage", "MaxResources");
+        var modifier = Modifier(EntityType.Effect, 1735, "MaxResources");
 
         Assert.Equal(200, (double?)modifier["coefficient"]);
         Assert.Null(modifier["value"]);
@@ -246,21 +275,21 @@ public sealed class TruthTests
     }
 
     [Theory]
-    [InlineData("GE_Vigor_SingleTargetAbsorb_Absorb", "IncreasedDuration", 12, 15)]
-    [InlineData("GE_Vigor_SingleTargetDot_Dot", "IncreasedDuration", 24, 30)]
-    [InlineData("GE_Vigor_SingleTargetEchoProccer_Buff", "IncreasedDuration", 30, 37.5)]
-    [InlineData("GE_Vigor_InstantResourceGain_Buff", "DurationAndCost", 8, 14)]
-    [InlineData("GE_Meiko_TauntTotem_SelfBuff", "IncreasedHealthAndDuration", 20, 30)]
-    [InlineData("GE_Rime_SelfDefenceBuff_SelfBuff", "DurationBoostAndHealFromDamage", 4, 8)]
-    [InlineData("GE_Ink_SelfDefenceBuff_SelfBuff_First", "IncreasedDurationAndTaunt", 4, 8)]
-    [InlineData("GE_Mosse_PinkButterfly_Double_Hot", "IncreasedHotDuration", 15, 24)]
-    [InlineData("GE_Firemage_CastedSingleHeavyDot_Dot", "ExtendedDuration", 9, 12)]
-    [InlineData("GE_Lisa_CastedProjectileDamageIncreaseDebuff_Debuff", "AbilityDamageIncrease", 20, 15)]
-    [InlineData("GE_Bowguy_SelfBuffForAoeProjectile_SelfBuff", "ChargesCooldownAndDuration", 4, 15)]
+    [InlineData(1321, "IncreasedDuration", 12, 15)]
+    [InlineData(1315, "IncreasedDuration", 24, 30)]
+    [InlineData(1316, "IncreasedDuration", 30, 37.5)]
+    [InlineData(1334, "DurationAndCost", 8, 14)]
+    [InlineData(1491, "IncreasedHealthAndDuration", 20, 30)]
+    [InlineData(1379, "DurationBoostAndHealFromDamage", 4, 8)]
+    [InlineData(1752, "IncreasedDurationAndTaunt", 4, 8)]
+    [InlineData(1448, "IncreasedHotDuration", 15, 24)]
+    [InlineData(2325, "ExtendedDuration", 9, 12)]
+    [InlineData(2624, "AbilityDamageIncrease", 20, 15)]
+    [InlineData(2009, "ChargesCooldownAndDuration", 4, 15)]
     public void ATalentTheCalculationGatesOnCarriesItsOwnDuration(
-        string tag, string talent, double bare, double held)
+        int id, string talent, double bare, double held)
     {
-        var record = Record(tag);
+        var record = Record(EntityType.Effect, id);
 
         Assert.Equal(bare, (double?)record["duration"]);
         Assert.Equal(held, (double?)record["talents"]?[talent]?["duration"]);
@@ -269,16 +298,16 @@ public sealed class TruthTests
     [Fact]
     public void ATokenTheUiDataDoesNotDeclareComesFromTheSoleModifier()
     {
-        var token = Token("GE_DungeonModifier_AnomalousOrbs_Buff_Amethyst", "Increase");
+        var token = Token(EntityType.Effect, 2710, "Increase");
 
         Assert.Equal(480, (double?)token["value"]);
-        Assert.Equal(480, (double?)Modifier("GE_DungeonModifier_AnomalousOrbs_Buff_Amethyst", "AmethystPower")["value"]);
+        Assert.Equal(480, (double?)Modifier(EntityType.Effect, 2710, "AmethystPower")["value"]);
     }
 
     [Fact]
     public void TheOneCalculationAnsweringARangeStatesBothEnds()
     {
-        var modifier = Modifier("GE_Mara_AoeAttackBuilder_Poison", "DurationMagnitude");
+        var modifier = Modifier(EntityType.Effect, 1731, "DurationMagnitude");
 
         Assert.Equal(6, (double?)modifier["valueLow"]);
         Assert.Equal(8, (double?)modifier["valueHigh"]);
@@ -287,34 +316,34 @@ public sealed class TruthTests
 
     [Fact]
     public void AnApplierWithAnAssignmentTheWalkCannotReadPublishesNoDuration() =>
-        Assert.Null(Record("GE_DR_BossCultLeader_Grip_SingleInstantPullNPC")["duration"]);
+        Assert.Null(Record(EntityType.Effect, 2461)["duration"]);
 
     [Theory]
-    [InlineData("GE_Mara_StunSpender_Stun", 4)]
-    [InlineData("GE_Ink_SwingTimerHitWindow", 0.6)]
-    [InlineData("GE_Rime_TargetedPeriodicProjectileAoe_AoeBuff", 20)]
-    [InlineData("GE_ST_BossGatekeeper_PullAndCastedAoe_Imobalize", 0.4)]
-    public void ADurationTheApplierSetsByCallerIsRecoveredFromItsBytecode(string tag, double expected) =>
-        Assert.Equal(expected, (double?)Record(tag)["duration"]);
+    [InlineData(1583, 4)]
+    [InlineData(1756, 0.6)]
+    [InlineData(2446, 20)]
+    [InlineData(2907, 0.4)]
+    public void ADurationTheApplierSetsByCallerIsRecoveredFromItsBytecode(int id, double expected) =>
+        Assert.Equal(expected, (double?)Record(EntityType.Effect, id)["duration"]);
 
     [Fact]
     public void APerkWritesEachHeroTheSentenceTheirOwnDynamicTextTableCarries()
     {
-        var record = Record("CAA_Perk_IncreasedDurationOrReducedCooldown");
-        var bowguy = (string?)record["descriptionsByHero"]?["Bowguy"];
+        var record = Record(EntityType.TraitPower, 689);
+        var elarion = (string?)record["descriptionsByHero"]?["Elarion"];
 
         Assert.Equal("{uniqueHeroDescription}", (string?)record["description"]);
-        Assert.NotNull(bowguy);
-        Assert.Contains("duration is increased", bowguy, StringComparison.Ordinal);
+        Assert.NotNull(elarion);
+        Assert.Contains("duration is increased", elarion, StringComparison.Ordinal);
     }
 
     [Fact]
     public void APerkSubstitutesTheConstantTheHerosOwnTokenNames()
     {
-        var bowguy = (string?)Record("CAA_Perk_InstantHealDamageReductionBuff")["descriptionsByHero"]?["Bowguy"];
+        var elarion = (string?)Record(EntityType.TraitPower, 688)["descriptionsByHero"]?["Elarion"];
 
-        Assert.NotNull(bowguy);
-        Assert.Contains("20%", bowguy, StringComparison.Ordinal);
+        Assert.NotNull(elarion);
+        Assert.Contains("20%", elarion, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -329,13 +358,13 @@ public sealed class TruthTests
     }
 
     [Theory]
-    [InlineData("Modifiers.Ascension.Ascension1", "Sahril's Madness", "Ascension", 2)]
-    [InlineData("Modifiers.Dungeon.MeteorRain", "Meteor Rain", "Dungeon", 3)]
-    [InlineData("Modifiers.Implicit.PromotedEnemies", "Promoted Enemies", "Implicit", 0)]
+    [InlineData(2, "Sahril's Madness", "Ascension", 2)]
+    [InlineData(14, "Meteor Rain", "Dungeon", 3)]
+    [InlineData(18, "Promoted Enemies", "Implicit", 0)]
     public void AModifierRowNamesItsKindAndTheRankItAsks(
-        string tag, string name, string kind, int minimumHeroRank)
+        int id, string name, string kind, int minimumHeroRank)
     {
-        var record = Record(tag);
+        var record = Record(EntityType.Modifier, id);
 
         Assert.Equal(name, (string?)record["name"]);
         Assert.Equal(kind, (string?)record["kind"]);
@@ -345,18 +374,18 @@ public sealed class TruthTests
     [Fact]
     public void AModifierRowCarriesTheDescriptionAndIconTheTableStates()
     {
-        var record = Record("Modifiers.Ascension.Ascension1");
+        var record = Record(EntityType.Modifier, 2);
 
         Assert.Contains("Increased Threat", (string?)record["description"], StringComparison.Ordinal);
         Assert.NotNull((string?)record["icon"]);
     }
 
     [Theory]
-    [InlineData("Modifiers.Implicit.ZoneBuffs")]
-    [InlineData("Modifiers.Implicit.HolyTrinityNerf")]
-    public void AModifierTagNoRowStatesExportsAsAStub(string tag)
+    [InlineData(26)]
+    [InlineData(28)]
+    public void AModifierTagNoRowStatesExportsAsAStub(int id)
     {
-        var record = Record(tag);
+        var record = Record(EntityType.Modifier, id);
 
         Assert.Null(record["name"]);
         Assert.Null(record["kind"]);
@@ -371,24 +400,19 @@ public sealed class TruthTests
         Assert.Equal(25, written.Length);
         Assert.Equal(23, written.Count(document => document.Body["kind"] is not null));
 
-        Assert.All(
-            written,
-            document => Assert.StartsWith(
-                "Modifiers.", (string?)document.Body["tag"], StringComparison.Ordinal));
+        Assert.Equal(
+            written.Length,
+            Written(EntityType.Modifier, ModifierInfo.Table, "Modifiers.").Length);
     }
 
-    private static (EntityType Type, int Id, string? Name, JsonObject Body)[] Under(string prefix) =>
-        [.. Export.Loaded.Documents.Where(document =>
-            ((string?)document.Body["tag"])?.StartsWith(prefix, StringComparison.Ordinal) is true)];
-
     [Theory]
-    [InlineData("ItemID.Progression.TalentPoints", "Talent Points", "Epic")]
-    [InlineData("ItemID.Progression.MasteryPoints", "Mastery Points", "Epic")]
-    [InlineData("ItemID.Progression.NumLegendaryEquipable", "Max number of Equippable Legendaries", "Legendary")]
-    [InlineData("ItemID.Progression.RankedLeagueLevel", "League Level", "Epic")]
-    public void AProgressionItemCarriesTheNameAndRarityItsRowStates(string tag, string name, string rarity)
+    [InlineData(1630, "Talent Points", "Epic")]
+    [InlineData(1629, "Mastery Points", "Epic")]
+    [InlineData(1742, "Max number of Equippable Legendaries", "Legendary")]
+    [InlineData(2110, "League Level", "Epic")]
+    public void AProgressionItemCarriesTheNameAndRarityItsRowStates(int id, string name, string rarity)
     {
-        var record = Record(tag);
+        var record = Record(EntityType.Item, id);
 
         Assert.Equal(name, (string?)record["name"]);
         Assert.Equal(rarity, (string?)record["rarity"]);
@@ -399,23 +423,22 @@ public sealed class TruthTests
     public void AProgressionItemCarriesTheSentenceItsRowStates() =>
         Assert.Contains(
             "allocated within the Hero Sheet",
-            (string?)Record("ItemID.Progression.TalentPoints")["description"],
+            (string?)Record(EntityType.Item, 1630)["description"],
             StringComparison.Ordinal);
 
     [Fact]
     public void TheFiveProgressionRowsAreWrittenAndTheBranchIsNot()
     {
-        var written = Under("ItemID.Progression");
+        var written = Written(EntityType.Item, ItemTable, "ItemID.Progression");
 
         Assert.Equal(5, written.Length);
-        Assert.All(written, document => Assert.Equal(EntityType.Item, document.Type));
-        Assert.DoesNotContain(written, document => (string?)document.Body["tag"] == "ItemID.Progression");
+        Assert.DoesNotContain("ItemID.Progression", written);
     }
 
     [Fact]
     public void ATitleTakesBothItsNameAndItsTitleTextFromTheOneProperty()
     {
-        var record = Record("ItemID.PlayerCustomization.Title.DefaultFellow");
+        var record = Record(EntityType.Item, 5597);
 
         Assert.Equal("Fellow", (string?)record["name"]);
         Assert.Equal("Fellow", (string?)record["titleText"]);
@@ -425,13 +448,13 @@ public sealed class TruthTests
     }
 
     [Theory]
-    [InlineData("ItemID.PlayerCustomization.Avatar.ChiefRebel", "Chief Rebel")]
-    [InlineData("ItemID.PlayerCustomization.Banner.ChiefRebel", "Chief Rebel")]
-    [InlineData("ItemID.PlayerCustomization.AvatarFrame.ChiefRebel", "Chief Rebel Avatar Frame")]
-    [InlineData("ItemID.PlayerCustomization.NameColor.ChiefRebel", "Chief Rebel Name Color")]
-    public void TheOtherFourCustomizationTablesNameTheirRowsWithDisplayName(string tag, string name)
+    [InlineData(4959, "Chief Rebel")]
+    [InlineData(4977, "Chief Rebel")]
+    [InlineData(4968, "Chief Rebel Avatar Frame")]
+    [InlineData(4986, "Chief Rebel Name Color")]
+    public void TheOtherFourCustomizationTablesNameTheirRowsWithDisplayName(int id, string name)
     {
-        var record = Record(tag);
+        var record = Record(EntityType.Item, id);
 
         Assert.Equal(name, (string?)record["name"]);
         Assert.Null(record["titleText"]);
@@ -439,29 +462,25 @@ public sealed class TruthTests
     }
 
     [Theory]
-    [InlineData("ItemID.PlayerCustomization.AvatarFrame.ChiefRebel")]
-    [InlineData("ItemID.PlayerCustomization.NameColor.ChiefRebel")]
-    public void ACustomizationRowStatesHowItIsAcquired(string tag) =>
-        Assert.Equal("Become an employee at Chief Rebel", (string?)Record(tag)["acquire"]);
+    [InlineData(4968)]
+    [InlineData(4986)]
+    public void ACustomizationRowStatesHowItIsAcquired(int id) =>
+        Assert.Equal("Become an employee at Chief Rebel", (string?)Record(EntityType.Item, id)["acquire"]);
 
     [Fact]
     public void TheHundredCustomizationRowsAreWrittenAndTheTagsWithNoRowAreNot()
     {
-        var written = Under("ItemID.PlayerCustomization.");
+        var written = Written(EntityType.Item, ItemTable, "ItemID.PlayerCustomization.");
 
         Assert.Equal(100, written.Length);
-        Assert.All(written, document => Assert.Equal(EntityType.Item, document.Type));
-
-        Assert.DoesNotContain(
-            written,
-            document => (string?)document.Body["tag"] == "ItemID.PlayerCustomization.Avatar.Debuff.Stunned");
+        Assert.DoesNotContain("ItemID.PlayerCustomization.Avatar.Debuff.Stunned", written);
     }
 
     [Theory]
-    [InlineData("ItemID.CompanionPet.Beetle.Blue", "Complete Paragon league as a Tank hero.")]
-    [InlineData("ItemID.CompanionPet.Cat.Munchkin.Black", "This can be purchased in the Store.")]
-    public void ACompanionPetStatesHowItIsAcquired(string tag, string acquire) =>
-        Assert.Equal(acquire, (string?)Record(tag)["acquire"]);
+    [InlineData(5103, "Complete Paragon league as a Tank hero.")]
+    [InlineData(5110, "This can be purchased in the Store.")]
+    public void ACompanionPetStatesHowItIsAcquired(int id, string acquire) =>
+        Assert.Equal(acquire, (string?)Record(EntityType.CompanionPet, id)["acquire"]);
 
     [Fact]
     public void TheSixPetsWithAnAssetStateHowTheyAreAcquired()
@@ -476,7 +495,7 @@ public sealed class TruthTests
     public void AMountWhoseLoreOnlyTheLocalizationTableCarriesShipsIt() =>
         Assert.Contains(
             "spirit-bear",
-            (string?)Record("ItemID.Mount.BearMagic.ArmoredGhostBlue")["lore"],
+            (string?)Record(EntityType.Mount, 4082)["lore"],
             StringComparison.Ordinal);
 
     [Fact]
@@ -493,23 +512,22 @@ public sealed class TruthTests
                 "ItemID.Mount.RatMagic.ArmoredGhostRed",
             ],
             mounts.Where(mount => mount.Body["lore"] is not null)
-                .Select(mount => mount.Body["tag"]!.GetValue<string>())
+                .Select(mount => Tagged(EntityType.Mount, ItemTable, mount.Id))
                 .Order(StringComparer.Ordinal)
                 .ToArray());
     }
 
     [Theory]
-    [InlineData("CharacterID.Hero.Gunde", "Gunde", "Gunde", "The Northlander", "Strength")]
-    [InlineData("CharacterID.Hero.Firemage", "Ardeos", "Firemage", "The Pyromancer", "Intellect")]
-    [InlineData("CharacterID.Hero.Mosse", "Sylvie", "Mosse", "The Daughter of the Forest", "Intellect")]
-    [InlineData("CharacterID.Hero.Bowguy", "Elarion", "Bowguy", "The Skystrider", "Agility")]
-    public void AHeroCarriesTheNameCodenameTitleAndMainStatTheBuildStates(
-        string tag, string name, string codename, string title, string mainStat)
+    [InlineData(9, "Gunde", "The Northlander", "Strength")]
+    [InlineData(7, "Ardeos", "The Pyromancer", "Intellect")]
+    [InlineData(14, "Sylvie", "The Daughter of the Forest", "Intellect")]
+    [InlineData(2, "Elarion", "The Skystrider", "Agility")]
+    public void AHeroCarriesTheNameTitleAndMainStatTheBuildStates(
+        int id, string name, string title, string mainStat)
     {
-        var record = Record(tag);
+        var record = Record(EntityType.Hero, id);
 
         Assert.Equal(name, (string?)record["name"]);
-        Assert.Equal(codename, (string?)record["codename"]);
         Assert.Equal(title, (string?)record["title"]);
         Assert.Equal(mainStat, (string?)record["mainStat"]);
     }
@@ -517,7 +535,7 @@ public sealed class TruthTests
     [Fact]
     public void TheHeroWhoseProseSitsUnderCleanKeysCarriesAllThreePassages()
     {
-        var record = Record("CharacterID.Hero.Gunde");
+        var record = Record(EntityType.Hero, 9);
 
         Assert.Contains("blood-magic", (string?)record["biography"], StringComparison.Ordinal);
         Assert.Contains("Rend is Gunde", (string?)record["playstyle"], StringComparison.Ordinal);
@@ -525,11 +543,11 @@ public sealed class TruthTests
     }
 
     [Theory]
-    [InlineData("CharacterID.Hero.Firemage")]
-    [InlineData("CharacterID.Hero.Rime")]
-    public void AHeroWhoseProseHasNoCleanKeyCarriesNoneOfIt(string tag)
+    [InlineData(7)]
+    [InlineData(17)]
+    public void AHeroWhoseProseHasNoCleanKeyCarriesNoneOfIt(int id)
     {
-        var record = Record(tag);
+        var record = Record(EntityType.Hero, id);
 
         Assert.Null(record["biography"]);
         Assert.Null(record["playstyle"]);
@@ -539,31 +557,30 @@ public sealed class TruthTests
     }
 
     [Fact]
-    public void EveryHeroColourIsTheHexTheSettingsPublishForTheSameCodename()
+    public void EveryHeroColourIsTheHexTheSettingsPublishForTheSameName()
     {
         var heroes = Export.Loaded.Documents.Where(document => document.Type == EntityType.Hero).ToArray();
 
         var published = Export.Loaded.Settings.Heroes.ToDictionary(
-            hero => hero.Codename, hero => hero.Color, StringComparer.OrdinalIgnoreCase);
+            hero => hero.Name, hero => hero.Color, StringComparer.OrdinalIgnoreCase);
 
         Assert.All(
             heroes,
             hero =>
             {
                 Assert.NotNull((string?)hero.Body["color"]);
-                Assert.Equal(published[(string)hero.Body["codename"]!], (string?)hero.Body["color"]);
+                Assert.Equal(published[(string)hero.Body["name"]!], (string?)hero.Body["color"]);
             });
 
-        Assert.Equal("5A1F20", (string?)Record("CharacterID.Hero.Gunde")["color"]);
+        Assert.Equal("5A1F20", (string?)Record(EntityType.Hero, 9)["color"]);
     }
 
     [Fact]
     public void TheTwelveRosterHeroesAreWrittenAndNoVariantOrUnbuiltCodenameIs()
     {
-        var written = Under("CharacterID.");
+        var written = Export.Loaded.Documents.Where(document => document.Type == EntityType.Hero).ToArray();
 
         Assert.Equal(12, written.Length);
-        Assert.All(written, document => Assert.Equal(EntityType.Hero, document.Type));
         Assert.All(written, document => Assert.NotNull((string?)document.Body["title"]));
 
         Assert.Equal(
@@ -581,8 +598,49 @@ public sealed class TruthTests
                 "CharacterID.Hero.Vigor",
                 "CharacterID.Hero.Warmaster",
             ],
-            written.Select(document => document.Body["tag"]!.GetValue<string>())
-                .Order(StringComparer.Ordinal)
-                .ToArray());
+            Written(EntityType.Hero, HeroNames.Table, "CharacterID."));
     }
+
+    [Theory]
+    [InlineData(2740, 1964, "Heal")]
+    [InlineData(2741, 1964, "Cost")]
+    [InlineData(2826, 1964, "RemoveStagger")]
+    [InlineData(1641, 1167, "Lockout")]
+    [InlineData(1642, 1167, "Interrupt")]
+    public void AnEffectNamedAfterAnAbilityCarriesTheAbilityAndTheRoleItPlays(int id, int ability, string role)
+    {
+        var record = Record(EntityType.Effect, id);
+
+        Assert.Equal("ability", (string?)record["partOf"]!["type"]);
+        Assert.Equal(ability, (int?)record["partOf"]!["id"]);
+        Assert.Equal(role, (string?)record["role"]);
+    }
+
+    [Theory]
+    [InlineData(3172, 1249)]
+    [InlineData(2196, 1047)]
+    [InlineData(1836, 1275)]
+    public void ATailOutsideTheRoleVocabularyIsWrittenAsNoRoleAtAll(int id, int ability)
+    {
+        var record = Record(EntityType.Effect, id);
+
+        Assert.Equal(ability, (int?)record["partOf"]!["id"]);
+        Assert.Null(record["role"]);
+    }
+
+    [Fact]
+    public void AnEffectNoAbilityTagNamesCarriesNeitherField()
+    {
+        var record = Record(EntityType.Effect, 2382);
+
+        Assert.Null(record["partOf"]);
+        Assert.Null(record["role"]);
+    }
+
+    [Fact]
+    public void ARoleIsOnlyWrittenBesideTheAbilityItIsPartOf() =>
+        Assert.All(
+            Export.Loaded.Documents.Where(document => document.Type == EntityType.Effect),
+            document => Assert.True(document.Body["role"] is null || document.Body["partOf"] is not null));
+
 }

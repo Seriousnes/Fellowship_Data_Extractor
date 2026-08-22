@@ -71,6 +71,8 @@ public interface IChromeAssetService
 
     string TalentCost { get; }
 
+    string TalentFrame { get; }
+
     string BlessingPlate(string? state);
 
     string? BlessingArt(string? icon, string? state);
@@ -109,6 +111,7 @@ public sealed class ChromeAssetService(
     private const string TalentBandTexture = "T_Backgrounds_TalentTreeTierBackground_Unlocked";
     private const string TalentCostTexture = "T_Borders_Frame_TalentTreeCost";
     private const string TalentButtonFamily = "T_Buttons_TalentTreeButton_";
+    private const string TalentFrameTexture = "T_Borders_Frame_Pattern";
 
     private const string TraitTexture = "T_Icons_StatTooltip_TraitSlot";
     private const string ExpandTexture = "T_Icons_Generic_TooltipExpand";
@@ -142,13 +145,14 @@ public sealed class ChromeAssetService(
             [ModifierKind.Essence] = EssenceModifierTexture,
         });
 
-    private static readonly IReadOnlyDictionary<string, string> ModifierTinted =
+    private static readonly IReadOnlyDictionary<string, string> RowTinted =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
             [TraitModifierTexture] = "core.primary-200",
             [BlessingModifierTexture] = "core.primary-main",
             [EssenceModifierTexture] = "core.primary-200",
             [ModifierDecorTexture] = "core.secondary-600",
+            [TalentFrameTexture] = "core.primary-200",
         };
 
     private static IReadOnlyDictionary<ModifierKind, string> Everywhere(
@@ -210,6 +214,8 @@ public sealed class ChromeAssetService(
 
     public string TalentCost => Url(Name(TalentCostTexture));
 
+    public string TalentFrame => Url(Tinted(TalentFrameTexture));
+
     public static bool Padlocked(string? state) =>
         string.Equals(Chosen(NodeStates, state), Unavailable, StringComparison.Ordinal);
 
@@ -258,7 +264,7 @@ public sealed class ChromeAssetService(
         kind is { } named ? Url(Tinted(ModifierGlyphs[named])) : Url(Name(RandomModifierTexture));
 
     private static string Tinted(string texture) =>
-        Name(texture, DesignTokenService.Variable(ModifierTinted[texture]));
+        Name(texture, DesignTokenService.Variable(RowTinted[texture]));
 
     public Badge AbilityBadge => Section(AbilityTexture, AbilityHeading);
 

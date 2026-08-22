@@ -199,9 +199,11 @@ public static class ExportRun
             (table, netId) => types.GetValueOrDefault((table, netId)),
             (type, id) => names.GetValueOrDefault((type, id)));
 
+        var roles = new EffectRoles(resolved);
+
         foreach (var record in resolved)
         {
-            await target.WriteDocumentAsync(DocumentProjection.From(record, references), default);
+            await target.WriteDocumentAsync(DocumentProjection.From(record, references, roles), default);
             written++;
 
             if (DocumentProjection.Implied(record) is { } implied)
@@ -217,6 +219,9 @@ public static class ExportRun
 
         Console.WriteLine($"\nwrote {written} documents from {resolved.Count} entities across {scanned} tags");
         Console.WriteLine($"  {withText} entities with a display name, {withIcon} with an icon");
+        Console.WriteLine(
+            $"  {roles.Parts} effects named as part of one of {roles.Abilities} tagged abilities, " +
+            $"{roles.Roles} of them carrying a role");
         if (dropped.Count > 0)
         {
             Console.WriteLine(

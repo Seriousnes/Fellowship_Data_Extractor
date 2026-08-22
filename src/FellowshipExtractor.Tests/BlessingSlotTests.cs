@@ -32,15 +32,15 @@ public sealed class BlessingSlotTests
     }
 
     [Fact]
-    public void EveryAbilityRankIsKeyedOnAHeroCodenameTheSettingsCarry()
+    public void EveryAbilityRankIsKeyedOnAHeroNameTheSettingsCarry()
     {
-        var codenames = Export.Loaded.Settings.Heroes.Select(hero => hero.Codename).ToArray();
+        var names = Export.Loaded.Settings.Heroes.Select(hero => hero.Name).ToArray();
 
         foreach (var blessing in Blessings)
         {
             Assert.All(blessing.AbilityRanks!, pair =>
             {
-                Assert.Contains(pair.Key, codenames, StringComparer.OrdinalIgnoreCase);
+                Assert.Contains(pair.Key, names, StringComparer.OrdinalIgnoreCase);
                 Assert.True(pair.Value > 0);
             });
         }

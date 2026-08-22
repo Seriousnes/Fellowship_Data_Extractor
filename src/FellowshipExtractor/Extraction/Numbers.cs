@@ -101,8 +101,9 @@ public static class Numbers
         return new SplitNumbers(named, rest, rows, own, promoted);
     }
 
-    public static void Add(Dictionary<string, object?> constants, CurveBinding binding, string? tuningNamespace) =>
-        constants[TuningNamespace.Relative(binding.RowName, tuningNamespace)] = Value(binding);
+    public static void Add(
+        Dictionary<string, object?> constants, CurveBinding binding, string? tuningNamespace, HeroNames heroes) =>
+        constants[heroes.Renamed(TuningNamespace.Relative(binding.RowName, tuningNamespace))] = Value(binding);
 
     public static void Add(SplitNumbers split, CurveBinding binding, string? tuningNamespace)
     {

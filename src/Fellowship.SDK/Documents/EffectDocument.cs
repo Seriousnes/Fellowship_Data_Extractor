@@ -36,4 +36,8 @@ public sealed class EffectDocument : EntityDocument
     public EntityReference? Owner { get; init; }
 
     public EntityReference? AppliedBy { get; init; }
+
+    public EntityReference? PartOf { get; init; }
+
+    public string? Role { get; init; }
 }

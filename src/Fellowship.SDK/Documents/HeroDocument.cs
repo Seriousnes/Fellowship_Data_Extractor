@@ -2,8 +2,6 @@ namespace Fellowship.SDK.Documents;
 
 public sealed class HeroDocument : EntityDocument
 {
-    public string? Codename { get; init; }
-
     public string? Title { get; init; }
 
     public PrimaryStat? MainStat { get; init; }

@@ -16,7 +16,8 @@ public static class DescriptionTokens
         EffectCalculationPresets presets,
         string? tuning,
         string? ownAsset,
-        ICollection<string> unbindableSpreadRows)
+        ICollection<string> unbindableSpreadRows,
+        HeroNames heroes)
     {
         var resolved = new Dictionary<string, Placeholder>(StringComparer.Ordinal);
 
@@ -29,7 +30,7 @@ public static class DescriptionTokens
             if (PropertyWalk.GetString(token, "TokenName") is not { } name) continue;
 
             resolved[name] = ResolveOne(
-                name, token, provider, constants, presets, tuning, ownAsset, unbindableSpreadRows);
+                name, token, provider, constants, presets, tuning, ownAsset, unbindableSpreadRows, heroes);
         }
 
         return resolved;
@@ -53,6 +54,23 @@ public static class DescriptionTokens
         }
 
         return placeholders;
+    }
+
+    public static string? Renamed(
+        Dictionary<string, Placeholder> placeholders, string? description, HeroNames heroes)
+    {
+        foreach (var written in placeholders.Keys.ToArray())
+        {
+            var shipped = heroes.Renamed(written);
+            if (shipped.Equals(written, StringComparison.Ordinal)) continue;
+
+            placeholders[shipped] = placeholders[written];
+            placeholders.Remove(written);
+
+            description = description?.Replace($"{{{written}}}", $"{{{shipped}}}", StringComparison.Ordinal);
+        }
+
+        return description;
     }
 
     private static bool IsSelf(string objectPath, string? ownAsset)
@@ -87,7 +105,8 @@ public static class DescriptionTokens
         EffectCalculationPresets presets,
         string? tuning,
         string? ownAsset,
-        ICollection<string> unbindableSpreadRows)
+        ICollection<string> unbindableSpreadRows,
+        HeroNames heroes)
     {
         var direct = PropertyWalk.GetStruct(token, "Attribute") is { } attribute
             ? PropertyWalk.GetString(attribute, "AttributeName")
@@ -115,7 +134,7 @@ public static class DescriptionTokens
 
         if (OwnConstant(token, constants) is { } own)
         {
-            return Made(declared, direct, null, [own], tuning);
+            return Made(declared, direct, null, [own], tuning, heroes);
         }
 
         if (objectPath is null) return bare;
@@ -143,7 +162,7 @@ public static class DescriptionTokens
 
         if (selected.Any(binding => binding.Multiplies)) declared = declared with { Multiplies = true };
 
-        return Made(declared, direct, effect.CapturedAttributes, selected, tuning);
+        return Made(declared, direct, effect.CapturedAttributes, selected, tuning, heroes);
     }
 
     private static bool Flag(IPropertyHolder token, string name) =>
@@ -169,14 +188,15 @@ public static class DescriptionTokens
         string? direct,
         IReadOnlyList<string>? captured,
         IReadOnlyList<CurveBinding> bindings,
-        string? tuning)
+        string? tuning,
+        HeroNames heroes)
     {
         var scaling = new SortedSet<string>(StringComparer.Ordinal);
         if (direct is not null) scaling.Add(direct);
         foreach (var attribute in captured ?? []) scaling.Add(attribute);
 
         var numbers = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var binding in bindings) Numbers.Add(numbers, binding, tuning);
+        foreach (var binding in bindings) Numbers.Add(numbers, binding, tuning, heroes);
 
         if (scaling.Count == 0 && numbers.Count == 0) return declared;
 

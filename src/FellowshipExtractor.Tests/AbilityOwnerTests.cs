@@ -12,6 +12,7 @@ public sealed class AbilityOwnerTests
     private const string LockoutEffect = "GE_Warmaster_MeleeInterrupt_Lockout";
     private const string InterruptEffect = "GE_Warmaster_MeleeInterrupt_Interrupt";
     private const string BossChilgar = "BP_NPC_VV_BossChilgar";
+    private const string MeleeWeapon = "GA_Weapon_CleaveDamageBuffCooldownReduction";
 
     [Fact]
     public void TwelveHeroesOwnAnAbilityAndGundeIsOneOfThem()
@@ -40,6 +41,33 @@ public sealed class AbilityOwnerTests
     public void TheSpiritMechanicIsOwnedByEveryHeroThatSlotsIt()
     {
         Assert.Equal(12, Export.Resolver.Owners.HeroesOf(SharedSpirit).Count);
+    }
+
+    [Theory]
+    [InlineData("GA_Warmaster_NoResourceLossSelfBuff", "Warmaster")]
+    [InlineData("GA_Meiko_DamageSoakBuff", "Meiko")]
+    [InlineData("GA_Mara_ChargedResourceRefillSelfBuff", "Mara")]
+    [InlineData("GA_Ink_CostReductionBuff", "Ink")]
+    [InlineData("GA_Gunde_DamageBlockHealthDrain", "Gunde")]
+    public void ADefensiveBelongsToTheHeroTheWeaponMapKeysItUnder(string ability, string codename)
+    {
+        Assert.Equal([codename], Export.Resolver.Owners.HeroesOf(ability));
+    }
+
+    [Fact]
+    public void TheWeaponThatKeysThoseDefensivesStillBelongsToEveryHeroItIsGrantedTo()
+    {
+        Assert.Equal(6, Export.Resolver.Owners.HeroesOf(MeleeWeapon).Count);
+    }
+
+    [Theory]
+    [InlineData("GE_Rime_SelfDefenceBuff_Talent_Heal", "Rime")]
+    [InlineData("GE_Warmaster_Talent_InstantMeleeCleave_ReducedAttackSpeed_Debuff", "Warmaster")]
+    [InlineData("GE_Vigor_Talent_SingleTargetAbsorb_ReducedIncomingDamage", "Vigor")]
+    [InlineData("GE_Bowguy_Talent_ChanneledMultiProjectileDebuff_IncomingDamage_Debuff", "Bowguy")]
+    public void AConditionalEffectBelongsToTheHeroItsRequiredSourceTagsName(string effect, string codename)
+    {
+        Assert.Equal([codename], Export.Resolver.Owners.HeroesOf(effect));
     }
 
     [Fact]

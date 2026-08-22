@@ -1,84 +1,72 @@
 {
   "heroes": [
     {
-      "codename": "Bowguy",
       "name": "Elarion",
       "armorType": "Mail",
       "primaryStat": "Agility",
       "color": "7F49F5"
     },
     {
-      "codename": "Firemage",
       "name": "Ardeos",
       "armorType": "Cloth",
       "primaryStat": "Intellect",
       "color": "EB6328"
     },
     {
-      "codename": "Gunde",
       "name": "Gunde",
       "armorType": "Leather",
       "primaryStat": "Strength",
       "color": "5A1F20"
     },
     {
-      "codename": "Ink",
       "name": "Tariq",
       "armorType": "Mail",
       "primaryStat": "Strength",
       "color": "163EB9"
     },
     {
-      "codename": "Lisa",
       "name": "Aeona",
       "armorType": "Cloth",
       "primaryStat": "Intellect",
       "color": "FC9FEC"
     },
     {
-      "codename": "Mara",
       "name": "Mara",
       "armorType": "Leather",
       "primaryStat": "Agility",
       "color": "4519A3"
     },
     {
-      "codename": "Meiko",
       "name": "Meiko",
       "armorType": "Leather",
       "primaryStat": "Agility",
       "color": "28E05C"
     },
     {
-      "codename": "Mosse",
       "name": "Sylvie",
       "armorType": "Leather",
       "primaryStat": "Intellect",
       "color": "EA4F84"
     },
     {
-      "codename": "Rime",
       "name": "Rime",
       "armorType": "Cloth",
       "primaryStat": "Intellect",
       "color": "1EA3EE"
     },
     {
-      "codename": "Sune",
       "name": "Xavian",
       "armorType": "Plate",
       "primaryStat": "Strength",
       "color": "077365"
     },
     {
-      "codename": "Vigor",
       "name": "Vigour",
       "armorType": "Mail",
       "primaryStat": "Intellect",
       "color": "DDDBC5"
     },
     {
-      "codename": "Warmaster",
       "name": "Helena",
       "armorType": "Plate",
       "primaryStat": "Strength",
@@ -258,18 +246,18 @@
     "game.game.gem-ruby": "A70947",
     "game.game.gem-sapphire": "1488F4",
     "game.game.gem-topaz": "FEDC63",
-    "game.game.hero-bowguy": "7F49F5",
-    "game.game.hero-firemage": "EB6328",
+    "game.game.hero-elarion": "7F49F5",
+    "game.game.hero-ardeos": "EB6328",
     "game.game.hero-gunde": "5A1F20",
-    "game.game.hero-ink": "163EB9",
-    "game.game.hero-lisa": "FC9FEC",
+    "game.game.hero-tariq": "163EB9",
+    "game.game.hero-aeona": "FC9FEC",
     "game.game.hero-mara": "4519A3",
     "game.game.hero-meiko": "28E05C",
-    "game.game.hero-mosse": "EA4F84",
+    "game.game.hero-sylvie": "EA4F84",
     "game.game.hero-rime": "1EA3EE",
-    "game.game.hero-sune": "077365",
-    "game.game.hero-vigor": "DDDBC5",
-    "game.game.hero-warmaster": "B46831",
+    "game.game.hero-xavian": "077365",
+    "game.game.hero-vigour": "DDDBC5",
+    "game.game.hero-helena": "B46831",
     "game.game.mana-player": "5F9AC9",
     "game.game.rarity-champion": "FFE565",
     "game.game.rarity-heroic": "BE2525",
@@ -522,7 +510,7 @@
     "Legendary": "game.rarity-legendary"
   },
   "sectionHeadingRows": {
-    "Ability": "game.game.hero-mosse",
+    "Ability": "game.game.hero-sylvie",
     "Legendary": "game.rarity-legendary",
     "SetBonus": "game.game.character-friendly"
   },
@@ -1047,7 +1035,7 @@
         },
         "namespaces": {}
       },
-      "Firemage": {
+      "Ardeos": {
         "health": {
           "1": 1,
           "151": 1
@@ -1058,7 +1046,7 @@
         },
         "namespaces": {}
       },
-      "Warmaster": {
+      "Helena": {
         "health": {
           "1": 1,
           "151": 1
@@ -1091,7 +1079,7 @@
         },
         "namespaces": {}
       },
-      "Vigor": {
+      "Vigour": {
         "health": {
           "1": 1,
           "151": 1
@@ -1102,7 +1090,7 @@
         },
         "namespaces": {}
       },
-      "Mosse": {
+      "Sylvie": {
         "health": {
           "1": 1,
           "151": 1
@@ -1190,7 +1178,7 @@
         },
         "namespaces": {}
       },
-      "Ink": {
+      "Tariq": {
         "health": {
           "1": 1,
           "151": 1
@@ -1223,7 +1211,7 @@
         },
         "namespaces": {}
       },
-      "Bowguy": {
+      "Elarion": {
         "health": {
           "1": 1,
           "151": 1
@@ -1234,7 +1222,7 @@
         },
         "namespaces": {}
       },
-      "Lisa": {
+      "Aeona": {
         "health": {
           "1": 1,
           "151": 1
@@ -1245,7 +1233,7 @@
         },
         "namespaces": {}
       },
-      "Sune": {
+      "Xavian": {
         "health": {
           "1": 1,
           "151": 1

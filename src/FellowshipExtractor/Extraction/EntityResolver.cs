@@ -186,7 +186,7 @@ public sealed class EntityResolver
         Vendors = new VendorInventories(provider, _assets);
         Sources = new ItemSources(provider, _assets, Dungeons, Vendors, HeroItems, Drops, Heroes);
 
-        CreatureStats = new CreatureStats(provider);
+        CreatureStats = new CreatureStats(provider, Heroes);
         Leagues = new Leagues(provider, _assets);
 
         Locations = new CreatureLocations(
@@ -213,7 +213,7 @@ public sealed class EntityResolver
         Types = new TypeResolver(
             _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations, Heroes);
 
-        Owners = new AbilityOwners(provider, _assets, _tags);
+        Owners = new AbilityOwners(provider, _assets, _tags, Heroes);
     }
 
     private string? PrintedName(TagRecord tag, UObject cdo)
@@ -412,7 +412,10 @@ public sealed class EntityResolver
         {
             AbilityMaxRank = row.MaxRank,
             PoolSlots = row.Slots,
-            AbilityRanks = row.NetIdByHero,
+            AbilityRanks = row.NetIdByHero.ToDictionary(
+                pair => Heroes.Shipped(pair.Key) ?? pair.Key,
+                pair => pair.Value,
+                StringComparer.OrdinalIgnoreCase),
         };
     }
 
@@ -679,9 +682,8 @@ public sealed class EntityResolver
         return entity with
         {
             DisplayName = entity.DisplayName ?? hero.ShippedName,
-            Codename = hero.Codename,
             PrimaryStat = hero.PrimaryStat,
-            HeroColor = Settings.Hero(hero.Codename)?.Color,
+            HeroColor = Settings.Hero(hero.ShippedName)?.Color,
             HeroTitle = prose?.Title,
             Biography = prose?.Biography,
             Playstyle = prose?.Playstyle,
@@ -800,7 +802,7 @@ public sealed class EntityResolver
             ? []
             : DescriptionTokens.Align(
                 DescriptionTokens.Resolve(
-                    tokenHolder, _provider, _constants, _presets, tuning, assetName, _unbindableSpreadRows),
+                    tokenHolder, _provider, _constants, _presets, tuning, assetName, _unbindableSpreadRows, Heroes),
                 display.Description);
 
         var split = Numbers.Split(bindings, tuning);
@@ -985,12 +987,14 @@ public sealed class EntityResolver
             SynthesizedFromModifier++;
         }
 
+        var described = DescriptionTokens.Renamed(placeholders, display.Description, Heroes);
+
         return new Entity
         {
             DisplayName = display.Name,
             Tags = cdo is null ? null : Empty(AbilityTypes(cdo)),
             Category = Categories.Of(cdo),
-            Description = display.Description,
+            Description = described,
             Detail = Empty(detail),
             Icon = Written(display.Icon, icons),
             CastTime = Named(split, "castTime"),
@@ -1016,13 +1020,19 @@ public sealed class EntityResolver
             Modifiers = magnitudes.Modifiers.Count == 0 ? null : magnitudes.Modifiers,
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Constants = baseline.Count == 0 ? null : baseline,
-            Talents = talents.Count == 0
-                ? null
-                : talents.ToDictionary(t => t.Key, t => (IReadOnlyDictionary<string, object?>)t.Value, StringComparer.Ordinal),
+            Talents = talents.Count == 0 ? null : Renamed(talents),
             TalentGates = cdo is null ? null : Empty(TalentGates(cdo, talents.Keys)),
             GrantedTags = Empty(grantedTags),
         };
     }
+
+    private IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> Renamed(
+        Dictionary<string, Dictionary<string, object?>> talents) =>
+        talents.ToDictionary(
+            talent => Heroes.Renamed(talent.Key),
+            talent => (IReadOnlyDictionary<string, object?>)talent.Value.ToDictionary(
+                field => Heroes.Renamed(field.Key), field => field.Value, StringComparer.Ordinal),
+            StringComparer.Ordinal);
 
     private static bool Supersedes(CurveBinding binding, string? tuning)
     {

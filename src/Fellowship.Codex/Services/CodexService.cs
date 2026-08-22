@@ -95,7 +95,7 @@ public sealed class CodexService : ICodexService
                 _ => [],
             })
             {
-                Colour = (t, value) => t.Hero(Codename(store, value)),
+                Colour = (t, value) => t.Hero(value),
             },
 
             new Facet("source", "Source", document => document switch
@@ -454,9 +454,6 @@ public sealed class CodexService : ICodexService
         ?? (store.All(owner.Type, owner.Id).FirstOrDefault() is { } document
             ? PublicTypes.NameOf(document)
             : null);
-
-    private static string Codename(IEntityStoreService store, string name) =>
-        store.Hero(name)?.Codename ?? name;
 
     private static string RarityWord(IEntityStoreService store, Rarity rarity, bool gem) =>
         store.Settings.Rarities.FirstOrDefault(r => r.Tier == (int)rarity) is { } entry

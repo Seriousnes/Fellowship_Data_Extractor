@@ -3,10 +3,14 @@ using System.Reflection;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Kismet;
+using CUE4Parse.UE4.Objects.GameplayTags;
 using CUE4Parse.UE4.Objects.UObject;
 
 namespace FellowshipExtractor.Extraction;
+
+public readonly record struct Reached(string Name, string? Hero);
 
 public static class AppliedEffects
 {
@@ -16,16 +20,144 @@ public static class AppliedEffects
 
     private static readonly Dictionary<Type, Func<object, object?>[]> Reachable = [];
 
-    public static IReadOnlyList<string> Named(
-        AbstractFileProvider provider, string objectPath, IReadOnlySet<string> wanted)
+    public static IReadOnlyList<Reached> Named(
+        AbstractFileProvider provider,
+        string objectPath,
+        IReadOnlySet<string> wanted,
+        IReadOnlyDictionary<string, string> codenames)
     {
         if (!provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(objectPath), out var package))
         {
             return [];
         }
 
-        return [.. Referenced(package, wanted).Select(reference => reference.Name)];
+        UObject[] exports;
+        try
+        {
+            exports = [.. package.GetExports()];
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+
+        var order = new List<string>();
+        var held = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+        void Hold(string name, string? hero)
+        {
+            if (!held.TryGetValue(name, out var already))
+            {
+                order.Add(name);
+                held[name] = hero;
+                return;
+            }
+
+            if (already is null && hero is not null) held[name] = hero;
+        }
+
+        foreach (var export in exports)
+        {
+            var properties = PropertyWalk.Walk(export).ToArray();
+            var keyed = HeroKeyed(properties, codenames);
+
+            foreach (var property in properties)
+            {
+                if (Leaf(PropertyWalk.AsString(property.Value)) is not { } name) continue;
+                if (!wanted.Contains(name)) continue;
+
+                Hold(name, Keying(keyed, property.Path));
+            }
+
+            if (export is not UStruct { ScriptBytecode: { Length: > 0 } bytecode }) continue;
+
+            foreach (var statement in bytecode)
+            {
+                foreach (var (constant, _) in Constants(statement, 0, false))
+                {
+                    if (Leaf(constant) is not { } name) continue;
+                    if (!wanted.Contains(name)) continue;
+
+                    Hold(name, null);
+                }
+            }
+        }
+
+        return [.. order.Select(name => new Reached(name, held[name]))];
     }
+
+    private static Dictionary<string, string?> HeroKeyed(
+        IReadOnlyList<WalkedProperty> properties, IReadOnlyDictionary<string, string> codenames)
+    {
+        var keyed = new Dictionary<string, string?>(StringComparer.Ordinal);
+
+        foreach (var property in properties)
+        {
+            if (Codename(property.Value, codenames) is not { } codename) continue;
+
+            foreach (var element in Elements(property.Path))
+            {
+                if (keyed.TryGetValue(element, out var already))
+                {
+                    if (!codename.Equals(already, StringComparison.Ordinal)) keyed[element] = null;
+                    continue;
+                }
+
+                keyed[element] = codename;
+            }
+        }
+
+        return keyed;
+    }
+
+    private static string? Keying(Dictionary<string, string?> keyed, string path)
+    {
+        string? nearest = null;
+
+        foreach (var element in Elements(path))
+        {
+            if (keyed.TryGetValue(element, out var codename) && codename is not null) nearest = codename;
+        }
+
+        return nearest;
+    }
+
+    private static IEnumerable<string> Elements(string path)
+    {
+        for (var at = path.IndexOf(']'); at >= 0; at = path.IndexOf(']', at + 1))
+        {
+            yield return path[..(at + 1)];
+        }
+    }
+
+    private static string? Codename(object? value, IReadOnlyDictionary<string, string> codenames)
+    {
+        foreach (var tag in Tags(value))
+        {
+            foreach (var segment in tag.Split('.'))
+            {
+                if (codenames.TryGetValue(segment, out var canonical)) return canonical;
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> Tags(object? value)
+    {
+        if (PropertyWalk.AsTags(value) is { } listed) return listed;
+
+        var held = value is FScriptStruct wrapper ? wrapper.StructType : value;
+
+        return held switch
+        {
+            FGameplayTag tag => tag.TagName.IsNone ? [] : (string[])[tag.TagName.Text],
+            IPropertyHolder holder when PropertyWalk.GetString(holder, TagNameField) is { } text => [text],
+            _ => [],
+        };
+    }
+
+    private const string TagNameField = "TagName";
 
     public static IReadOnlyList<(string Name, string Path)> Referenced(
         IPackage package, IReadOnlySet<string> wanted) => Walk(package, wanted, false);

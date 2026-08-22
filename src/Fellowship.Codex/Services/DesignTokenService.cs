@@ -16,7 +16,7 @@ public interface IDesignTokenService
 
     string? Rarity(string internalName);
 
-    string? Hero(string codename);
+    string? Hero(string name);
 
     string? Gem(string type);
 
@@ -42,7 +42,7 @@ public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenServ
     public string? Rarity(string internalName) =>
         rarityRows.TryGetValue(internalName, out var row) ? Color(row) : null;
 
-    public string? Hero(string codename) => Color(HeroKey(codename));
+    public string? Hero(string name) => Color(HeroKey(name));
 
     public string? Gem(string type) => Color($"game.game.gem-{type.ToLowerInvariant()}");
 
@@ -66,14 +66,6 @@ public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenServ
     {
         var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var hero in settings.Heroes)
-        {
-            if (!string.Equals(hero.Codename, hero.Name, StringComparison.OrdinalIgnoreCase))
-            {
-                keys.Add(HeroKey(hero.Codename));
-            }
-        }
-
         foreach (var rung in settings.Rarities)
         {
             if (string.Equals(rung.Name, rung.DisplayName, StringComparison.OrdinalIgnoreCase)) continue;
@@ -84,7 +76,7 @@ public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenServ
         return keys;
     }
 
-    private static string HeroKey(string codename) => $"game.game.hero-{codename.ToLowerInvariant()}";
+    private static string HeroKey(string name) => $"game.game.hero-{name.ToLowerInvariant()}";
 
     public static string Variable(string name) => name.Replace('.', '-');
 }

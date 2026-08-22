@@ -160,7 +160,7 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        Assert.Equal(["Difficulty", "ShowIcon", "Hero", "id"], names);
+        Assert.Equal(["Difficulty", "Hero", "id", "ShowIcon"], names);
     }
 
     [Fact]

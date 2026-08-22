@@ -349,15 +349,12 @@ public static class FellowshipLogs
 
         foreach (var hero in item.Heroes ?? [])
         {
-            if (store.Settings.Heroes.FirstOrDefault(
-                    known => known.Name.Equals(hero.ToString(), StringComparison.OrdinalIgnoreCase))
-                is { } named && ranks.TryGetValue(named.Codename, out var mine))
-            {
-                return mine + BlessingBase;
-            }
+            if (ranks.TryGetValue(hero.ToString(), out var mine)) return mine + BlessingBase;
         }
 
-        return ranks.Values.First() + BlessingBase;
+        throw new InvalidOperationException(
+            $"Blessing {blessingId} states a rank for none of {string.Join(", ", item.Heroes ?? [])}, so the rank " +
+            "it grants the item cannot be named.");
     }
 
     private static string? Named(EntityType type, int id, IEntityStoreService store) =>

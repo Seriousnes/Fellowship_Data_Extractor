@@ -215,8 +215,6 @@ public sealed record Entity
 
     public string? ModifierKind { get; init; }
 
-    public string? Codename { get; init; }
-
     public string? HeroTitle { get; init; }
 
     public string? HeroColor { get; init; }

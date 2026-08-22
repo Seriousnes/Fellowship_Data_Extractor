@@ -50,6 +50,11 @@ $slot-frame: math.percentage(math.div($slot-frame-px, $slot-canvas));
 
 .cx-tal-cells { display: grid; flex: 1 1 auto; min-width: 0; gap: 4px; }
 
+.cx-tal-face {
+  display: flex; align-items: center; gap: 12px; min-width: 0;
+  width: max-content; max-width: 100%;
+}
+
 .cx-tal {
   display: flex; align-items: center; gap: 12px; min-width: 0; text-align: left;
   cursor: pointer; padding: 9px 10px 9px 14px; border-radius: 2px;
@@ -75,6 +80,11 @@ $slot-frame: math.percentage(math.div($slot-frame-px, $slot-canvas));
 .cx-tal-art {
   position: relative; flex: 0 0 auto; width: 52px; aspect-ratio: 1;
   background: var(--cx-tal-slot) 0 0/100% 100% no-repeat;
+}
+
+.cx-tal[aria-current] .cx-tal-art::after {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: var(--cx-tal-frame) 0 0/100% 100% no-repeat;
 }
 
 .cx-tal-icon {

@@ -185,7 +185,7 @@ document.addEventListener('keydown', event => {
     box.select();
 });
 
-window.addEventListener('scroll', () => { if (anchored) place(anchored); }, { passive: true });
+window.addEventListener('scroll', () => { if (anchored) place(anchored); }, { passive: true, capture: true });
 window.addEventListener('resize', hide);
 
 function arrived() {

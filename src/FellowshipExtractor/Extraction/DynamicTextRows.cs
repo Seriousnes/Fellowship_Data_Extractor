@@ -51,9 +51,9 @@ public sealed class DynamicTextRows
             }
 
             var suffix = assetName[TablePrefix.Length..];
-            var codename = heroes.Profile(suffix)?.Codename;
+            var shipped = heroes.Profile(suffix)?.ShippedName;
 
-            if (codename is null)
+            if (shipped is null)
             {
                 Unresolved.Add(assetName);
                 continue;
@@ -72,7 +72,7 @@ public sealed class DynamicTextRows
                     _byRowKey[key.Text] = byHero = new SortedDictionary<string, string>(StringComparer.Ordinal);
                 }
 
-                byHero[codename] = Substitute(sentence, Declared(holder), constants);
+                byHero[shipped] = Substitute(sentence, Declared(holder), constants);
             }
         }
 

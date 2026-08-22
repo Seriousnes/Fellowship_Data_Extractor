@@ -26,7 +26,8 @@ public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassF
     private static partial Regex Picker();
 
     [GeneratedRegex(
-        "<(a|span) class=\"cx-tal\"[^>]*>\\s*<span class=\"cx-tal-art\" style=\"[^\"]*\"",
+        "<(a|span) class=\"cx-tal\"[^>]*>\\s*<span class=\"cx-tal-face\" data-tip=\"[^\"]*\">" +
+        "\\s*<span class=\"cx-tal-art\" style=\"[^\"]*\"",
         RegexOptions.Singleline)]
     private static partial Regex Faces();
 
@@ -368,11 +369,38 @@ public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassF
     }
 
     [Fact]
+    public async Task A_picked_talent_wears_the_ornate_frame_the_node_widget_overlays()
+    {
+        var hero = First;
+        var node = Tree(hero)[0].Nodes[0];
+
+        var page = await Draw($"{Asking(hero)}&picks={node.Id}");
+
+        Assert.Contains($"--cx-tal-frame:url({Chrome().TalentFrame})", page, StringComparison.Ordinal);
+        Assert.EndsWith(
+            "T_Borders_Frame_Pattern-core-primary-200.png", Chrome().TalentFrame, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task No_cell_asks_its_tooltip_for_art_the_cell_already_draws()
     {
         var page = await Draw(Asking(First));
 
         Assert.DoesNotContain(nameof(TooltipQuery.ShowIcon), page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_tooltip_anchors_to_the_icon_and_name_rather_than_the_whole_cell()
+    {
+        var page = (await Draw(Asking(First))).Bare();
+
+        Assert.Equal(
+            Cell(page).Length,
+            Regex.Count(page, "<span class=\"cx-tal-face\" data-tip=\""));
+
+        Assert.All(
+            Cells().Matches(page).Select(cell => cell.Value),
+            cell => Assert.DoesNotContain("data-tip", cell, StringComparison.Ordinal));
     }
 
     [Fact]

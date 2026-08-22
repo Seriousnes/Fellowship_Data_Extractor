@@ -1,3 +1,5 @@
+using System.Text;
+
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
@@ -169,5 +171,53 @@ public sealed class HeroNames
     {
         var dot = tag.LastIndexOf('.');
         return dot >= 0 ? tag[(dot + 1)..] : tag;
+    }
+
+    private Dictionary<string, string> Exact =>
+        field ??= _byCodename.Values.ToDictionary(
+            hero => hero.Codename, hero => hero.ShippedName, StringComparer.Ordinal);
+
+    public string Renamed(string key)
+    {
+        var segments = key.Split('.');
+        var changed = false;
+
+        for (var at = 0; at < segments.Length; at++)
+        {
+            var rewritten = Segment(segments[at]);
+            if (ReferenceEquals(rewritten, segments[at])) continue;
+
+            segments[at] = rewritten;
+            changed = true;
+        }
+
+        return changed ? string.Join('.', segments) : key;
+    }
+
+    private string Segment(string segment)
+    {
+        var built = new StringBuilder(segment.Length + 8);
+        var changed = false;
+        var start = 0;
+
+        for (var at = 1; at <= segment.Length; at++)
+        {
+            if (at < segment.Length && !(char.IsUpper(segment[at]) && !char.IsUpper(segment[at - 1]))) continue;
+
+            var word = segment[start..at];
+            start = at;
+
+            if (Exact.TryGetValue(word, out var shipped) && !shipped.Equals(word, StringComparison.Ordinal))
+            {
+                built.Append(shipped);
+                changed = true;
+            }
+            else
+            {
+                built.Append(word);
+            }
+        }
+
+        return changed ? built.ToString() : segment;
     }
 }

@@ -79,13 +79,15 @@ public sealed class Settings
         SlotIcons = slotIcons.BySlot;
         RarityOrnaments = ornaments.ByRarity;
         TalentTierPlates = tierPlates.ByRow;
-        RarityColorRows = colorRows.ByRarity;
-        SectionHeadingRows = headings.BySection;
         MaxTempers = tempers.ByRarity;
         DropItemLevels = drops.Plateaus;
         Blessings = blessings.Wording;
 
         var colours = Colours(provider, assets);
+        var moved = HeroRows(colours, heroes);
+
+        RarityColorRows = Drawn(colorRows.ByRarity, moved);
+        SectionHeadingRows = Drawn(headings.BySection, moved);
 
         Resolvable(RarityColorRows, colours, colorRows.Source);
         Resolvable(SectionHeadingRows, colours, headings.Source);
@@ -93,13 +95,15 @@ public sealed class Settings
         Heroes =
         [
             .. heroes.Profiles.Select(hero => new HeroEntry(
-                hero.Codename, hero.ShippedName, hero.ArmorType, hero.PrimaryStat)
+                hero.ShippedName, hero.ArmorType, hero.PrimaryStat)
             {
-                Color = hero.ColorRow is null ? null : colours.GetValueOrDefault(hero.ColorRow),
+                Color = hero.ColorRow is null
+                    ? null
+                    : colours.GetValueOrDefault(moved.GetValueOrDefault(hero.ColorRow, hero.ColorRow)),
             }),
         ];
 
-        _heroByCodename = Heroes.ToDictionary(hero => hero.Codename, StringComparer.OrdinalIgnoreCase);
+        _heroByName = Heroes.ToDictionary(hero => hero.Name, StringComparer.OrdinalIgnoreCase);
 
         if (rarities.MissingRenames.ToArray() is { Length: > 0 } missing)
         {
@@ -127,9 +131,9 @@ public sealed class Settings
         }
     }
 
-    private readonly Dictionary<string, HeroEntry> _heroByCodename;
+    private readonly Dictionary<string, HeroEntry> _heroByName;
 
-    public HeroEntry? Hero(string codename) => _heroByCodename.GetValueOrDefault(codename);
+    public HeroEntry? Hero(string name) => _heroByName.GetValueOrDefault(name);
 
     public SettingsFile ToFile() => new()
     {
@@ -170,6 +174,31 @@ public sealed class Settings
             RarityAdditions = StatCalculation.RarityAdditions,
         },
     };
+
+    private static Dictionary<string, string> HeroRows(Dictionary<string, string> colours, HeroNames heroes)
+    {
+        var moved = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var hero in heroes.Profiles)
+        {
+            if (hero.ColorRow is not { } row) continue;
+            if (!colours.Remove(row, out var hex)) continue;
+
+            var named = row[..^hero.Codename.Length] + hero.ShippedName.ToLowerInvariant();
+
+            colours[named] = hex;
+            moved[row] = named;
+        }
+
+        return moved;
+    }
+
+    private static Dictionary<string, string> Drawn(
+        IReadOnlyDictionary<string, string> rows, IReadOnlyDictionary<string, string> moved) =>
+        rows.ToDictionary(
+            row => row.Key,
+            row => moved.GetValueOrDefault(row.Value, row.Value),
+            StringComparer.OrdinalIgnoreCase);
 
     private static void Resolvable(
         IReadOnlyDictionary<string, string> rows,

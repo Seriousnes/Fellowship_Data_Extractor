@@ -8,6 +8,8 @@ public sealed class DocumentTests
 {
     private static readonly DocumentProjection.References Nothing = new((_, _) => null, (_, _) => null);
 
+    private static readonly EffectRoles Unlinked = new([]);
+
     [Fact]
     public void ADocumentClassIsNamedForItsType()
     {
@@ -90,7 +92,7 @@ public sealed class DocumentTests
             },
         };
 
-        var ability = (AbilityDocument)DocumentProjection.From(entity, Nothing);
+        var ability = (AbilityDocument)DocumentProjection.From(entity, Nothing, Unlinked);
 
         Assert.Equal(["Bravo", "Alpha"], ability.Placeholders?.Select(token => token.Key));
     }
@@ -118,7 +120,7 @@ public sealed class DocumentTests
     {
         var entity = new Entity { Type = EntityType.Ability, NetId = 1, DisplayName = label };
 
-        var ability = (AbilityDocument)DocumentProjection.From(entity, Nothing);
+        var ability = (AbilityDocument)DocumentProjection.From(entity, Nothing, Unlinked);
 
         Assert.Null(ability.Name);
     }
@@ -128,7 +130,7 @@ public sealed class DocumentTests
     {
         var entity = new Entity { Type = EntityType.Ability, NetId = 1, DisplayName = "Searing Blaze" };
 
-        var ability = (AbilityDocument)DocumentProjection.From(entity, Nothing);
+        var ability = (AbilityDocument)DocumentProjection.From(entity, Nothing, Unlinked);
 
         Assert.Equal("Searing Blaze", ability.Name);
     }

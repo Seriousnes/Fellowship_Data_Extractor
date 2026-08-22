@@ -54,7 +54,9 @@ dotnet run --project src/FellowshipExtractor
 
 **Why:** with no destination named the run writes `output/export-<build>`, and it writes both halves
 in the one pass: the documents under `data/`, and every composed image under `ui/`. It needs no
-environment at all, because the committed `mappings/` carries the usmap. A connection
+variables set, because the committed `mappings/` carries the usmap. It does need the Steam install,
+to read the paks and the appmanifest that names the build, and the first run against a clean `bin/`
+downloads Oodle. A connection
 string in `ConnectionStrings__icons` replaces that folder with the blob container, which is what the
 Publisher app host does. `RouteTests` calls `Export.Found()` directly rather than reading
 `FELLOWSHIP_EXPORT`, so the tests that run through `WebApplicationFactory` read the worktree's own

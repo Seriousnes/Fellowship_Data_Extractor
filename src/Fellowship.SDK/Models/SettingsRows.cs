@@ -1,6 +1,6 @@
 namespace Fellowship.SDK;
 
-public sealed record HeroEntry(string Codename, string Name, string? ArmorType, string PrimaryStat)
+public sealed record HeroEntry(string Name, string? ArmorType, string PrimaryStat)
 {
     public string? Color { get; init; }
 }
