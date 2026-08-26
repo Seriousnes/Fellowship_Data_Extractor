@@ -12,6 +12,8 @@ public sealed class GemTraitDocument : EntityDocument
 
     public EntityReference? Replaces { get; init; }
 
+    public IReadOnlyList<EntityReference>? Grants { get; init; }
+
     public string? Description { get; init; }
     public string? Icon { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }

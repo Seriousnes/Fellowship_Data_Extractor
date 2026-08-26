@@ -8,7 +8,7 @@ public sealed class DocumentTests
 {
     private static readonly DocumentProjection.References Nothing = new((_, _) => null, (_, _) => null);
 
-    private static readonly EffectRoles Unlinked = new([]);
+    private static readonly EffectRoles Unlinked = new([], []);
 
     [Fact]
     public void ADocumentClassIsNamedForItsType()

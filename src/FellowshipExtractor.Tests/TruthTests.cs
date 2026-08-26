@@ -617,16 +617,22 @@ public sealed class TruthTests
     }
 
     [Theory]
-    [InlineData(3172, 1249)]
-    [InlineData(2196, 1047)]
-    [InlineData(1836, 1275)]
-    public void ATailOutsideTheRoleVocabularyIsWrittenAsNoRoleAtAll(int id, int ability)
+    [InlineData(3172, 1249, "DamageOld")]
+    [InlineData(2196, 1047, "TurretCounter")]
+    [InlineData(1836, 1275, "CustomGlobalCooldown")]
+    public void AMultiWordTailIsWrittenAsTheRole(int id, int ability, string role)
     {
         var record = Record(EntityType.Effect, id);
 
         Assert.Equal(ability, (int?)record["partOf"]!["id"]);
-        Assert.Null(record["role"]);
+        Assert.Equal(role, (string?)record["role"]);
     }
+
+    [Fact]
+    public void EveryEffectNamedAsPartOfAnAbilityCarriesARole() =>
+        Assert.All(
+            Export.Loaded.Documents.Where(document => document.Type == EntityType.Effect),
+            document => Assert.True(document.Body["partOf"] is null || document.Body["role"] is not null));
 
     [Fact]
     public void AnEffectNoAbilityTagNamesCarriesNeitherField()

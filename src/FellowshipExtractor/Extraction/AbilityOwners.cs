@@ -30,6 +30,8 @@ public sealed class AbilityOwners
     private const string AbilityClassField = "GameplayAbilityClass";
     private const string TalentsField = "Talents";
     private const string AugmentationField = "CharacterAugmentationAsset";
+    private const string ReplacementsField = "AbilityReplacements";
+    private const string ReplacementAbilityField = "NewAbility";
     private const string GrantedAbilitiesField = "GrantedAbilities";
     private const string GrantedEffectsField = "GrantedGameplayEffects";
     private const string GrantedAssetField = "GrantedAbilityAsset";
@@ -170,15 +172,17 @@ public sealed class AbilityOwners
             {
                 Claim(augmentation, codename, wanted);
 
-                foreach (var granted in Grants(augmentation)) Claim(granted, codename, wanted);
+                foreach (var granted in GrantedBy(augmentation)) Claim(granted, codename, wanted);
             }
+
+            foreach (var replacement in TalentReplacements(talents)) Claim(replacement, codename, wanted);
         }
 
         foreach (var (asset, codename) in MappedAugmentations())
         {
             Claim(asset, codename, wanted);
 
-            foreach (var granted in Grants(asset)) Claim(granted, codename, wanted);
+            foreach (var granted in GrantedBy(asset)) Claim(granted, codename, wanted);
         }
     }
 
@@ -229,6 +233,26 @@ public sealed class AbilityOwners
         }
     }
 
+    private IEnumerable<string> TalentReplacements(string talentData)
+    {
+        if (DungeonNames.Load(_provider, talentData) is not { } talents) yield break;
+        if (PropertyWalk.Get(talents, TalentsField)?.GenericValue is not UScriptArray listed) yield break;
+
+        foreach (var entry in listed.Properties)
+        {
+            if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder talent }) continue;
+            if (PropertyWalk.Get(talent, ReplacementsField)?.GenericValue is not UScriptArray swaps) continue;
+
+            foreach (var swap in swaps.Properties)
+            {
+                if (swap?.GenericValue is not FScriptStruct { StructType: IPropertyHolder replacement }) continue;
+                if (PropertyWalk.GetString(replacement, ReplacementAbilityField) is not { } path) continue;
+
+                yield return Leaf(path);
+            }
+        }
+    }
+
     private IEnumerable<(string Asset, string Codename)> MappedAugmentations()
     {
         foreach (var objectPath in TableFinder.ByRowStructure(_assets, GrantedAbilityMappings.RowStructure))
@@ -246,7 +270,7 @@ public sealed class AbilityOwners
         }
     }
 
-    private IEnumerable<string> Grants(string augmentation)
+    public IEnumerable<string> GrantedBy(string augmentation)
     {
         if (!_byName.TryGetValue(augmentation, out var asset)) yield break;
         if (DungeonNames.Load(_provider, asset.ObjectPath) is not { } loaded) yield break;
@@ -368,7 +392,7 @@ public sealed class AbilityOwners
 
             Owns(_outsiders, Leaf(augmentation), mountId, wanted);
 
-            foreach (var granted in Grants(Leaf(augmentation))) Owns(_outsiders, granted, mountId, wanted);
+            foreach (var granted in GrantedBy(Leaf(augmentation))) Owns(_outsiders, granted, mountId, wanted);
         }
     }
 

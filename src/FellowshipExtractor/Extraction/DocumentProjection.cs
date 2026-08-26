@@ -263,6 +263,7 @@ public static class DocumentProjection
             Node = entity.GemNode!.Value,
             RequiredPower = entity.RequiredGemPower!.Value,
             Replaces = references.Of(EntityType.GemTrait, entity.Replaces),
+            Grants = Referenced(entity.Granted, references),
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),

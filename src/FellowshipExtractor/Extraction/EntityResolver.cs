@@ -303,6 +303,8 @@ public sealed class EntityResolver
                 entity = entity with { DescriptionsByHero = sentences };
             }
 
+            entity = entity with { Granted = Empty(Granting(tag.Name)) };
+
             if (Talents.ForAugmentation(tag.Name) is { } talent) entity = WithTalent(entity, talent, icons);
             if (Gems.ForAugmentation(tag.Name) is { } node) entity = WithGemNode(entity, node, icons);
             if (Traits.ForAugmentation(tag.NetId) is { } grantingTrait)
@@ -699,6 +701,12 @@ public sealed class EntityResolver
         ModifierKind = modifier.Kind,
         MinimumHeroRank = modifier.MinimumHeroRank,
     };
+
+    private IReadOnlyList<IconSource> Granting(string augmentation) =>
+        [.. Owners.GrantedBy(augmentation)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(named => Owned(named, AbilityTable) ?? Owned(named, EffectTable))
+            .OfType<IconSource>()];
 
     private IconSource? Owned(string? named, string table)
     {

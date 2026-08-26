@@ -169,6 +169,8 @@ public sealed record Entity
 
     public IconSource? AppliedBy { get; init; }
 
+    public IReadOnlyList<IconSource>? Granted { get; init; }
+
     public IReadOnlyList<string>? ApplierTags { get; init; }
 
     public CreatureRank? Rank { get; init; }

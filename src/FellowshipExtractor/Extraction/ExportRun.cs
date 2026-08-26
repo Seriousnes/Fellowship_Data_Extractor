@@ -199,7 +199,7 @@ public static class ExportRun
             (table, netId) => types.GetValueOrDefault((table, netId)),
             (type, id) => names.GetValueOrDefault((type, id)));
 
-        var roles = new EffectRoles(resolved);
+        var roles = new EffectRoles(resolved, resolver.Heroes.Codenames);
 
         foreach (var record in resolved)
         {
@@ -221,7 +221,7 @@ public static class ExportRun
         Console.WriteLine($"  {withText} entities with a display name, {withIcon} with an icon");
         Console.WriteLine(
             $"  {roles.Parts} effects named as part of one of {roles.Abilities} tagged abilities, " +
-            $"{roles.Roles} of them carrying a role");
+            $"{roles.Roles} of them carrying a role, {roles.Withheld} withheld for naming a hero");
         if (dropped.Count > 0)
         {
             Console.WriteLine(
