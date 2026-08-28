@@ -108,7 +108,9 @@ public class CorpusTests : BunitContext
             .Add(x => x.Entity, pants)
             .Add(x => x.Query, new TooltipQuery { Upgrades = 8 }));
 
-        Assert.Equal("Tempered8 / 8", cut.FindAll("div.row")[^1].QuerySelectorAll(":scope > span")[^1].TextContent);
+        var tempered = cut.FindAll("div.row").Single(row => row.QuerySelector("span.temper") is not null);
+
+        Assert.Equal("Tempered8 / 8", tempered.QuerySelectorAll(":scope > span")[^1].TextContent);
     }
 
     [Fact]

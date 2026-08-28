@@ -102,5 +102,32 @@ $display: ArnoPro, "Arno Pro", "Iowan Old Style", "Palatino Linotype", Palatino,
     }
   }
 
+  &.tip-ability {
+    .head { padding: 20px 16px 12px; }
+
+    .cat {
+      margin-top: 3px;
+      padding-bottom: 8px;
+      font-family: $display;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+      text-align: center;
+      text-wrap: balance;
+      color: var(--core-text-secondary);
+    }
+
+    &.plain {
+      .head {
+        margin: 0;
+        background: var(--fx-rule) bottom center/100% $header-rule-height no-repeat;
+      }
+
+      .title { color: var(--core-primary-main); }
+    }
+  }
+
   .rt-unstyled { color: inherit; }
 }

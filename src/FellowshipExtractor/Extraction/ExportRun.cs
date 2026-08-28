@@ -119,6 +119,11 @@ public static class ExportRun
             $"{resolver.Settings.SlotIcons.Count} slot glyphs, " +
             $"{resolver.Settings.MaxTempers.Count} tempering ladders, " +
             $"{resolver.Settings.AbilityCategories.Count} ability categories");
+        Console.WriteLine(
+            $"item power:         {resolver.Settings.Items.PowerPotential.ScorePerGemType.Count} gem tiers " +
+            $"and {resolver.Settings.Items.ItemGemPowers.Count} slots scored, item level to " +
+            $"{resolver.Settings.Items.MaxItemLevel} in steps of " +
+            $"{resolver.Settings.Items.ItemLevelsPerUpgrade}");
 
         var icons = new IconImages(
             provider, resolver.Collections.Renders, RarityImages.Ladder(resolver.Settings));

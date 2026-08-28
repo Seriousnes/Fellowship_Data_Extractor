@@ -30,6 +30,8 @@ public sealed class ItemSlotNames
 
     public int Count => _vocabulary.Count;
 
+    public IReadOnlyList<SlotName> Vocabulary => _vocabulary;
+
     public ItemSlotNames(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
         ReadVocabulary(provider);

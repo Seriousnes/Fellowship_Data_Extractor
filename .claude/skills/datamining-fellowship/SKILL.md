@@ -25,7 +25,12 @@ was four instructions in the binary.
 
 What the config already gave up, so nobody reads it twice:
 `[/Script/fellowship.CRItemSettings]` in `DefaultGame.ini` holds `StatPoolCalculation`,
-`ItemLevelsPerUpgrade`, `MaxItemLevel` and the tempering **cost** mods.
+`ItemLevelsPerUpgrade`, `MaxItemLevel`, the tempering **cost** mods, `GemSocketPowerMultipliers`,
+`ItemGemPowers` and, as of build 24952830, all fourteen fields of `HeroItemPowerPotentialSettings`.
+`ItemSettings.cs` reads that section; `ConfigIni.cs` is the paren-depth-aware literal parser it needs,
+because `ScorePerGemType=((Tier1, 20),…)` sits inside the `HeroItemPowerPotentialSettings=(…)` struct
+and a split on commas shreds it. Map keys are enum **member names**, checked against the usmap enum
+tables (`ECRGemTier`, `ECRGemSocketTier`, `ECRHeroItemType`) rather than trusted as text.
 `[/Script/fellowship.CRItemStaticDataSubsystem]` names `DT_SlotWeights`, `DT_AttributeProperties`,
 `DT_HeroItems` and the drop curves. `DynamicLootSystem.ini` names the loot plugin's seven assets.
 
@@ -51,6 +56,9 @@ for loads at that displacement.
 
 ## Already recovered, do not redo
 
+Every address below was decoded against the **24736527** shipping exe. The exe changed in 24952830, so
+re-anchor from the name-literal chain before reusing one.
+
 | What | Where |
 | --- | --- |
 | Item stat magnitude, whole calculation | `UCRDynamicHeroItem` virtual at **0x1455D33F0**, vtable 0x148C8B230 slot +0x2D0 |
@@ -64,6 +72,31 @@ for loads at that displacement.
 
 The formula and every in-game reading it reproduces are in `docs/item-stat-calibration.md`, implemented
 in `StatRows`/`StatMagnitudes` and pinned by `GroundTruthTests`.
+
+Decoded against **24952830**, written up in `docs/item-power-potential.md` and implemented in
+`Fellowship.Codex/Models/ItemPower.cs`:
+
+| What | Where |
+| --- | --- |
+| Item power potential, whole calculation | `UCRItemsBlueprintLibrary::CalculateItemPowerPotential` **0x145317B00** |
+| Loadout Power Score, whole calculation | unnamed native **0x145349B70**, `powf(1.04, talentPoints)` at 0x145349F3B |
+| Slot weight map build, keyed on row+0x08 | `0x145314782` / `0x145314795` |
+| `ECRHeroItemDynamicSlotType`, the instance's slot | BaseItemFixed 0, DynamicFixed 1, **Rerollable 2** |
+| `ECRHeroItemDynamicSlotContentType` | GemSocket **1**, SetBonus **2**, GrantedAbility **4**, TraitTree **5** |
+
+The two numbers are different scoring rules and the loadout total is not the sum of the per-item
+function, so never call the per-item one to mean an item's contribution to a Power Score.
+
+All ten terms of the per-item body are confirmed against printed cards, and both `ItemType` gates are
+confirmed by a card that carries a gated slot and scores nothing for it. When a card's arithmetic could
+split two ways because two factors share a value, read the rung's `rarityAdditions` row rather than
+counting the card's coloured stat lines.
+
+**Two enums differ only in word order and only one is the instance's.** `CRHeroItemDynamicSlot.SlotType`
+is `ECRHeroItemDynamicSlotType`; `CRDynamicHeroItemSlotDefinition.SlotType` is
+`ECRDynamicHeroItemSlotType`, whose members are entirely different. Reading an instance byte against the
+definition enum turns Rerollable into RandomStat and silently misprices every item. Resolve an ordinal
+through the struct that holds it, never through the enum whose name reads closest.
 
 ## Traps this build sets
 
@@ -89,10 +122,13 @@ carried none. Let the recovered formula tell you the split.
 
 ## Known unreachable
 
-`CRItemSettings.HeroItemPowerPotentialSettings` names fourteen factors and no `.ini` sets any of them,
-so all fourteen are compiled-in defaults and power potential stays caller-supplied. Native C++ bodies
-called from Blueprint bytecode are visible as a call with its arguments, never as what the callee
-computes.
+Native C++ bodies called from Blueprint bytecode are visible as a call with its arguments, never as
+what the callee computes.
+
+**Re-test a "no `.ini` sets it" claim against the build in front of you.** For 24736527 the record here
+said `HeroItemPowerPotentialSettings` was fourteen compiled-in defaults; 24952830's `DefaultGame.ini`
+writes all fourteen. The schema was byte-identical across the two builds, so nothing in the mappings
+signalled the change — only re-reading the config did.
 
 ## Stop fitting when
 

@@ -8,6 +8,8 @@ public static class TooltipView
 {
     public const string Root = "fx-tip";
 
+    public const string AbilityCard = "tip-ability";
+
     public const EntityType TraitType = EntityType.Trait;
 
     public const int SlotWidth = 48;
@@ -48,6 +50,31 @@ public static class TooltipView
         line.Value.Normalize().ToString(CultureInfo.InvariantCulture);
 
     public sealed record Fact(string Label, string Value, string? Title);
+
+    public const string InstantCast = "Instant";
+
+    public const string CastLabel = "cast";
+
+    public const string RangeLabel = "range";
+
+    public const string CooldownLabel = "cooldown";
+
+    public const string SecondsUnit = "s";
+
+    public sealed record Reading(string? Value, string? Unit, string? Label)
+    {
+        public string? Title { get; init; }
+
+        public bool Spent { get; init; }
+    }
+
+    public sealed record Overview(
+        IReadOnlyList<Reading> CastAndRange, IReadOnlyList<Reading> CostAndCooldown)
+    {
+        public static readonly Overview None = new([], []);
+
+        public bool Stated => CastAndRange.Count > 0 || CostAndCooldown.Count > 0;
+    }
 
     public sealed record ModifierLine(ModifierKind? Kind, string Name, int Amount)
     {

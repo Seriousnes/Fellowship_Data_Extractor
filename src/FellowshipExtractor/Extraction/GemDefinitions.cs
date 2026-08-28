@@ -117,6 +117,34 @@ public sealed class GemDefinitions
 
     public GemSize? ForSize(string tagName) => _byTierTag.GetValueOrDefault(tagName);
 
+    public IReadOnlyDictionary<int, string> RungByTier(RarityNames rarities)
+    {
+        var rungs = new Dictionary<int, string>();
+
+        foreach (var size in _byTierTag.Values)
+        {
+            if (rarities.Label(size.RarityTier) is not { } rung) continue;
+
+            if (rungs.TryGetValue(size.Tier, out var held) && !held.Equals(rung, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Gem tier {size.Tier} sits at both {held} and {rung}, so a score the config states per tier " +
+                    "cannot be filed under the rung a gem prints.");
+            }
+
+            rungs[size.Tier] = rung;
+        }
+
+        if (rungs.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "No gem size names both a tier and a rarity, so nothing joins the per tier scores the item " +
+                "settings state to the rung a gem carries.");
+        }
+
+        return rungs;
+    }
+
     public GemLadderNode? ForAugmentation(string assetName) => _byAugmentation.GetValueOrDefault(assetName);
 
     private static GemOverflow? Overflow(IPropertyHolder row, ConstantsTable constants)

@@ -50,9 +50,11 @@
 
     [Parameter] public string? Temper { get; set; }
 
+    private const string RingSlot = "Ring";
+
     private string? Kind => Entity switch
     {
-        ItemDocument { ArmorType: { } armor } => armor.ToString(),
+        ItemDocument { ArmorType: { } armor, Slot: not RingSlot } => armor.ToString(),
         GemDocument gem => gem.Type.ToString(),
         GemTraitDocument trait => trait.Gem.ToString(),
         GemTypeDocument type => type.Type.ToString(),

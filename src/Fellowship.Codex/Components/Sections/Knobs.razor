@@ -24,7 +24,7 @@
                         .OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase))
                     {
                         <option value="@who.Name" selected="@(who.Name == Here.Reading)">
-                            @who.Name (@who.ArmorType, @who.PrimaryStat)
+                            @who.Name
                         </option>
                     }
                 </select>

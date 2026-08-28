@@ -47,6 +47,8 @@
 
             <div class="cx-mega-panel">
                 <div class="cx-mega-cols">
+                    <a class="cx-mega-head" href="@Potential">Power Potential</a>
+
                     <a class="cx-mega-head" href="@Calculator">Talent Calculator</a>
 
                     <div class="cx-mega-sec">
@@ -69,6 +71,8 @@
 
 @code {
     private const string Calculator = "/tools/talents";
+
+    private const string Potential = "/tools/power-potential";
 
     private IReadOnlyList<HeroEntry> Roster =>
         [.. Ui.Store.Settings.Heroes.OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase)];

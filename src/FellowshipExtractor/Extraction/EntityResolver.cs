@@ -74,6 +74,7 @@ public sealed class EntityResolver
     public VendorInventories Vendors { get; }
     public ItemSources Sources { get; }
     public AbilityOwners Owners { get; }
+    public ResourcePools Pools { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
@@ -202,7 +203,7 @@ public sealed class EntityResolver
             SlotGlyphs, new RarityOrnaments(provider, rarities), new TalentTierPlates(provider),
             new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
-            CreatureStats, Leagues);
+            CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -214,6 +215,7 @@ public sealed class EntityResolver
             _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations, Heroes);
 
         Owners = new AbilityOwners(provider, _assets, _tags, Heroes);
+        Pools = new ResourcePools(provider, Heroes, _constants);
     }
 
     private string? PrintedName(TagRecord tag, UObject cdo)
@@ -294,6 +296,7 @@ public sealed class EntityResolver
 
         entity = WithProvenance(entity, tag, asset, cdo);
         entity = WithOwners(entity, tag);
+        entity = WithSpentResource(entity, display);
         entity = WithSuppliedDuration(entity, cdo, tag);
 
         if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
@@ -560,6 +563,32 @@ public sealed class EntityResolver
             AppliedBy = appliedBy,
             ApplierTags = appliedBy is null ? null : Empty(Owners.AbilityTagsOf(applier!)),
         };
+    }
+
+    public int SpentResourcesResolved { get; private set; }
+
+    private Entity WithSpentResource(Entity entity, Display display)
+    {
+        if (!display.CostIsFraction) return entity;
+        if (entity.Cost is not { } fraction || fraction == 0) return entity;
+
+        var pools = (entity.OwningHeroes ?? [])
+            .Select(Pools.Of)
+            .Where(pool => pool is not null)
+            .Distinct()
+            .ToArray();
+
+        if (pools is not [{ } pool])
+        {
+            throw new InvalidOperationException(
+                $"{entity.Name} spends {fraction} of the resource pool its presentation row prints as a " +
+                $"percentage, and {(pools.Length == 0 ? "no hero it belongs to fills one" : "its heroes fill pools of different sizes")}, " +
+                "so the amount it actually costs is unreadable and the fraction would export as the amount.");
+        }
+
+        SpentResourcesResolved++;
+
+        return entity with { Cost = fraction * pool };
     }
 
     public int SetByCallerDurationsScanned { get; private set; }
@@ -1012,7 +1041,6 @@ public sealed class EntityResolver
             Charges = charges.Charges,
             ChargesByLevelType = charges.ByLevelType,
             Cost = Named(split, "cost"),
-            CostIsFraction = display.CostIsFraction ? true : null,
             Resource = display.Resource,
             Range = Named(split, "range"),
             MinRange = Named(split, "minRange"),
@@ -1432,7 +1460,6 @@ public sealed class EntityResolver
         Tags = outer.Tags ?? inner.Tags,
         Category = outer.Category ?? inner.Category,
         ChargesByLevelType = outer.ChargesByLevelType ?? inner.ChargesByLevelType,
-        CostIsFraction = outer.CostIsFraction ?? inner.CostIsFraction,
         Resource = outer.Resource ?? inner.Resource,
         ScalesWithHaste = outer.ScalesWithHaste ?? inner.ScalesWithHaste,
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),

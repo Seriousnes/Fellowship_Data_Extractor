@@ -56,23 +56,20 @@ public sealed class TruthTests
     [InlineData(1887, 9)]
     [InlineData(1859, 218)]
     [InlineData(1110, 100)]
-    [InlineData(1242, 0.5)]
+    [InlineData(1242, 50)]
     public void ACostIsTheCastCostNotATalentRow(int id, double expected) =>
         Assert.Equal(expected, (double?)Record(EntityType.Ability, id)["cost"]);
 
     [Theory]
-    [InlineData(1242)]
-    [InlineData(1229)]
-    [InlineData(1970)]
-    public void AFractionOfTheResourceSaysSoOnTheRow(int id) =>
-        Assert.True((bool?)Record(EntityType.Ability, id)["costIsFraction"]);
+    [InlineData(1229, 25)]
+    [InlineData(1242, 50)]
+    [InlineData(1970, 0)]
+    public void AFractionOfTheResourceIsWrittenAsTheAmountItSpends(int id, double expected) =>
+        Assert.Equal(expected, (double?)Record(EntityType.Ability, id)["cost"]);
 
-    [Theory]
-    [InlineData(1859)]
-    [InlineData(1887)]
-    [InlineData(996)]
-    public void AnAbsoluteCostCarriesNoFractionFlag(int id) =>
-        Assert.Null(Record(EntityType.Ability, id)["costIsFraction"]);
+    [Fact]
+    public void NoRecordSaysItsCostIsAFraction() =>
+        Assert.All(Export.Loaded.Documents, document => Assert.Null(document.Body["costIsFraction"]));
 
     [Theory]
     [InlineData(2280, "range", 1000)]

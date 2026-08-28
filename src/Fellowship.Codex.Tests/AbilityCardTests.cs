@@ -36,13 +36,23 @@ public class AbilityCardTests : BunitContext
     }
 
     [Fact]
-    public void The_facts_row_carries_the_numbers_the_document_states()
+    public void The_overview_carries_the_numbers_the_document_states()
     {
         var drawn = Draw(Spell, new TooltipQuery());
 
-        var labels = drawn.FindAll(".lines .row .k").Select(cell => cell.TextContent).ToArray();
+        var labels = drawn.FindAll(".over .ov .k").Select(cell => cell.TextContent).ToArray();
 
-        Assert.Contains("Cooldown", labels, StringComparer.Ordinal);
+        Assert.Contains(TooltipView.CooldownLabel, labels, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void The_head_names_the_category_beneath_the_ability()
+    {
+        var categorised = export.Store.Entities.OfType<AbilityDocument>().First(row => row.Category is not null);
+
+        var drawn = Draw(categorised, new TooltipQuery());
+
+        Assert.Equal(categorised.Category!.ToString(), drawn.Find(".card > .head > .cat").TextContent);
     }
 
     [Fact]

@@ -38,8 +38,6 @@ public static class CatalogEndpoint
             heroes = store.Settings.Heroes.Select(hero => new
             {
                 hero.Name,
-                hero.ArmorType,
-                hero.PrimaryStat,
                 hero.Color,
             }),
             rarities = store.Settings.Rarities.Select(rarity => new

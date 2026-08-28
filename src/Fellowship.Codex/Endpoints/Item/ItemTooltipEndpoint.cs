@@ -38,7 +38,9 @@ public sealed record ItemTooltipRequest
     [Description("The gem id filling the item's socket.")]
     public int? Gem { get; init; }
 
-    [Description("The power potential to print.")]
+    [Description(
+        "The power potential to print in place of the one the tooltip computes from the item level, the " +
+        "tempering ceiling and the slots the rung adds.")]
     public decimal? PotentialPower { get; init; }
 
     [Description("The armour to print in place of the one the tooltip computes from the item level.")]

@@ -30,7 +30,12 @@ public interface ITooltipViewService
 
     IReadOnlyList<TooltipView.Fact> Facts(EntityDocument document, TooltipQuery query);
 
-    string? Potential(TooltipQuery query);
+    IReadOnlyList<TooltipView.Fact> Facts(
+        EntityDocument document, TooltipQuery query, TooltipView.Overview overview);
+
+    TooltipView.Overview Overview(EntityDocument document, TooltipQuery query);
+
+    string? Potential(EntityDocument document, TooltipQuery query, RarityEntry? rarity, int? level);
 
     IReadOnlyList<TooltipView.ModifierLine> Modifiers(
         ItemDocument document, TooltipQuery query, RarityEntry? rarity);
@@ -130,7 +135,15 @@ public sealed class TooltipViewService(
             : upgrades.ToString(CultureInfo.InvariantCulture);
     }
 
-    public IReadOnlyList<TooltipView.Fact> Facts(EntityDocument document, TooltipQuery query)
+    public IReadOnlyList<TooltipView.Fact> Facts(EntityDocument document, TooltipQuery query) =>
+        Facts(document, query, overviewed: false);
+
+    public IReadOnlyList<TooltipView.Fact> Facts(
+        EntityDocument document, TooltipQuery query, TooltipView.Overview overview) =>
+        Facts(document, query, overviewed: overview.Stated);
+
+    private IReadOnlyList<TooltipView.Fact> Facts(
+        EntityDocument document, TooltipQuery query, bool overviewed)
     {
         var facts = new List<TooltipView.Fact>();
 
@@ -138,33 +151,83 @@ public sealed class TooltipViewService(
         {
             if (value is not { } number) return;
 
-            var text = Math.Round((decimal)number, 2).Normalize().ToString(CultureInfo.InvariantCulture);
-
-            facts.Add(new TooltipView.Fact(label, unit is null ? text : text + unit, title));
+            facts.Add(new TooltipView.Fact(label, unit is null ? Number(number) : Number(number) + unit, title));
         }
 
         var (cast, hastened) = Hastened(document, DocumentFields.Number(document, nameof(AbilityDocument.CastTime)), query);
 
-        Add("Cast", cast, "s", hastened);
+        if (!overviewed)
+        {
+            Add("Cast", cast, "s", hastened);
+            Add("Cooldown", DocumentFields.Number(document, nameof(AbilityDocument.Cooldown)), "s");
+            Add("Range", DocumentFields.Number(document, nameof(AbilityDocument.Range)));
+        }
+
         Add("Channel", DocumentFields.Number(document, nameof(AbilityDocument.ChannelTime)), "s");
-        Add("Cooldown", DocumentFields.Number(document, nameof(AbilityDocument.Cooldown)), "s");
         Add("Charges", DocumentFields.Number(document, nameof(AbilityDocument.Charges)));
-        Add("Range", DocumentFields.Number(document, nameof(AbilityDocument.Range)));
         Add("Radius", DocumentFields.Number(document, nameof(AbilityDocument.Radius)));
         Add("Duration", DocumentFields.Number(document, nameof(AbilityDocument.Duration)), "s");
 
-        if (DocumentFields.Number(document, nameof(AbilityDocument.Cost)) is { } cost)
+        if (!overviewed && DocumentFields.Number(document, nameof(AbilityDocument.Cost)) is { } cost)
         {
-            var text = Math.Round((decimal)cost, 2).Normalize().ToString(CultureInfo.InvariantCulture);
             var resource = DocumentFields.Text(document, nameof(AbilityDocument.Resource));
 
-            facts.Add(new TooltipView.Fact("Cost", resource is { } r ? $"{text} {r}" : text, null));
+            facts.Add(new TooltipView.Fact(
+                "Cost", resource is { } spent ? $"{Number(cost)} {spent}" : Number(cost), null));
         }
 
         facts.AddRange(Menacing(document, query));
 
         return facts;
     }
+
+    public TooltipView.Overview Overview(EntityDocument document, TooltipQuery query)
+    {
+        if (document is not AbilityDocument) return TooltipView.Overview.None;
+
+        var casting = new List<TooltipView.Reading>(2);
+        var spending = new List<TooltipView.Reading>(2);
+
+        var (cast, hastened) = Hastened(
+            document, DocumentFields.Number(document, nameof(AbilityDocument.CastTime)), query);
+
+        casting.Add(cast is { } seconds
+            ? new TooltipView.Reading(
+                Number(seconds), TooltipView.SecondsUnit, TooltipView.CastLabel) { Title = hastened }
+            : new TooltipView.Reading(null, null, TooltipView.InstantCast));
+
+        if (DocumentFields.Number(document, nameof(AbilityDocument.Range)) is { } range)
+        {
+            casting.Add(new TooltipView.Reading(
+                Distance.Yards(range).Normalize().ToString(CultureInfo.InvariantCulture),
+                Distance.Unit,
+                TooltipView.RangeLabel)
+            {
+                Title = $"{Number(range)} unreal units, at " +
+                    $"{Distance.CentimetresPerYard.ToString(CultureInfo.InvariantCulture)} to the yard",
+            });
+        }
+
+        if (DocumentFields.Number(document, nameof(AbilityDocument.Cost)) is { } cost)
+        {
+            spending.Add(new TooltipView.Reading(
+                Number(cost), null, DocumentFields.Text(document, nameof(AbilityDocument.Resource)))
+            {
+                Spent = true,
+            });
+        }
+
+        if (DocumentFields.Number(document, nameof(AbilityDocument.Cooldown)) is { } cooldown)
+        {
+            spending.Add(new TooltipView.Reading(
+                Number(cooldown), TooltipView.SecondsUnit, TooltipView.CooldownLabel));
+        }
+
+        return new TooltipView.Overview(casting, spending);
+    }
+
+    private static string Number(double value) =>
+        Math.Round((decimal)value, 2).Normalize().ToString(CultureInfo.InvariantCulture);
 
     private IEnumerable<TooltipView.Fact> Menacing(EntityDocument document, TooltipQuery query)
     {
@@ -226,10 +289,15 @@ public sealed class TooltipViewService(
         _ => null,
     };
 
-    public string? Potential(TooltipQuery query) =>
-        query.PotentialPower is { } power
-            ? power.Normalize().ToString(CultureInfo.InvariantCulture)
-            : null;
+    public string? Potential(EntityDocument document, TooltipQuery query, RarityEntry? rarity, int? level)
+    {
+        var power = query.PotentialPower
+            ?? (document is ItemDocument item
+                ? ItemPower.Of(item, store.Settings, rarity, query, level)
+                : null);
+
+        return power?.Normalize().ToString(CultureInfo.InvariantCulture);
+    }
 
     public IReadOnlyList<TooltipView.ModifierLine> Modifiers(
         ItemDocument document, TooltipQuery query, RarityEntry? rarity)
@@ -312,7 +380,8 @@ public sealed class TooltipViewService(
             $$"""
             .{{TooltipView.Root}}{--fx-window:url({{chrome.Window}});
             --fx-thin:url({{chrome.ThinWindow}});--fx-fill:url({{chrome.WindowFill}});
-            --fx-divider:url({{chrome.GoldDivider}});--fx-subheader:url({{chrome.Header(null)}});
+            --fx-divider:url({{chrome.GoldDivider}});--fx-rule:url({{chrome.SimpleDivider}});
+            --fx-subheader:url({{chrome.Header(null)}});
             --fx-modplate:url({{chrome.ModifierPlate}});--fx-moddecor:url({{chrome.ModifierDecor}});
             {{Heading("ability", chrome.AbilityBadge)}}{{Heading("legendary", chrome.LegendaryBadge)}}
             {{Heading("setbonus", chrome.SetBonusBadge)}}}

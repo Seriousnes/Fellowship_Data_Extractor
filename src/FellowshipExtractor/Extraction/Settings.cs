@@ -50,6 +50,8 @@ public sealed class Settings
 
     public IReadOnlyList<LeagueEntry> Leagues { get; }
 
+    public ItemSettingsFile Items { get; }
+
     public Settings(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -68,10 +70,12 @@ public sealed class Settings
         DropItemLevels drops,
         Blessings blessings,
         CreatureStats creatures,
-        Leagues leagues)
+        Leagues leagues,
+        ItemSettings items)
     {
         DifficultyScaling = creatures.Scaling;
         Leagues = leagues.All;
+        Items = items.Values;
 
         StatCalculation = statCalculation;
         RandomStatPool = randomStatPool;
@@ -146,6 +150,7 @@ public sealed class Settings
         Blessings = Blessings,
         DifficultyScaling = DifficultyScaling,
         Leagues = Leagues,
+        Items = Items,
         SlotIcons = SlotIcons,
         RarityOrnaments = RarityOrnaments,
         TalentTierPlates = TalentTierPlates,

@@ -47,7 +47,7 @@ public class NamedTests(Export export)
     {
         var listed = export.Store.Entities.Count(row => PublicTypes.Listed(EntityTypes.TypeOf(row)));
 
-        Assert.Equal(12342, listed);
+        Assert.Equal(12348, listed);
         Assert.Equal(listed, export.View.Codex.Count);
         Assert.Equal(listed, export.View.Codex.Types.Sum(type => type.Count));
     }

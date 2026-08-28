@@ -154,7 +154,7 @@ public sealed class AbilityOwnerTests
             .Where(tag => tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
             .Count(tag => owners.ApplierOf(tag.Name) is { Length: 0 });
 
-        Assert.Equal(205, contested);
+        Assert.Equal(206, contested);
         Assert.Equal(1885, owners.AppliedEffectCount);
     }
 

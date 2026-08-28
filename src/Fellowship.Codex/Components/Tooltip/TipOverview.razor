@@ -1,0 +1,21 @@
+<div class="over">
+    <div class="ovs">
+        @foreach (var reading in Overview.CastAndRange)
+        {
+            @Cell(reading)
+        }
+    </div>
+    <div class="ovs paid">
+        @foreach (var reading in Overview.CostAndCooldown)
+        {
+            @Cell(reading)
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public TooltipView.Overview Overview { get; set; } = default!;
+
+    private RenderFragment Cell(TooltipView.Reading reading) =>
+        @<span class="@(reading.Spent ? "ov spent" : "ov")" title="@reading.Title">@if (reading.Value is { } value) { <span class="v">@value</span> }@if (reading.Unit is { } unit) { <span class="u">@unit</span> }@if (reading.Label is { } label) { <span class="k">@label</span> }</span>;
+}

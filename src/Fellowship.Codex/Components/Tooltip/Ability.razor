@@ -1,6 +1,6 @@
 @inject ITooltipViewService Ui
 
-<div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
+<div class="@TooltipView.Root @(overview.Stated ? TooltipView.AbilityCard : null) @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
     <style>@Sheet</style>
     @if (Query.ShowIcon && Art is { } art)
     {
@@ -14,7 +14,15 @@
             }
 
             <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+            @if (Category is { } category)
+            {
+                <p class="cat">@category</p>
+            }
         </header>
+        @if (overview.Stated)
+        {
+            <TipOverview Overview="overview" />
+        }
         @if (groups.Count > 0)
         {
             <div class="lines">
@@ -47,6 +55,8 @@
 
     private IReadOnlyList<TooltipView.Fact> facts = [];
 
+    private TooltipView.Overview overview = new([], []);
+
     private IReadOnlyList<RenderFragment> groups = [];
 
     protected override void OnParametersSet()
@@ -56,10 +66,13 @@
         Level = Ui.Level(Entity, Query);
         Temper = Ui.Temper(Query, Rung, Level);
         Sheet = new MarkupString(Ui.Style());
-        facts = Ui.Facts(Entity, Query);
+        overview = Ui.Overview(Entity, Query);
+        facts = Ui.Facts(Entity, Query, overview);
 
         groups = Groups();
     }
+
+    private string? Category => (Entity as AbilityDocument)?.Category?.ToString();
 
     private List<RenderFragment> Groups()
     {
@@ -72,9 +85,9 @@
 
         if (facts.Count > 0) drawn.Add(@<TipFacts Items="facts" />);
 
-        if (Ui.Potential(Query) is not null)
+        if (Ui.Potential(Entity, Query, null, null) is not null)
         {
-            drawn.Add(@<TipRolls Potential="@Ui.Potential(Query)" />);
+            drawn.Add(@<TipRolls Potential="@Ui.Potential(Entity, Query, null, null)" />);
         }
 
         if (Prose) drawn.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);

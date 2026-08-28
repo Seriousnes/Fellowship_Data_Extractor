@@ -91,7 +91,7 @@ public sealed class McpTests(McpHost mcp, RouteTests.Factory factory)
             Enum.GetValues<EntityType>().Where(PublicTypes.Listed).Select(EntityTypes.Slug).Order(),
             listed.Types.Select(type => type.Slug).Order());
 
-        Assert.Equal(store.Settings.Heroes.Select(hero => hero.Name).Order(), listed.Heroes.Select(h => h.Name).Order());
+        Assert.Equal(store.Settings.Heroes.Select(hero => hero.Name).Order(), listed.Heroes.Order());
         Assert.Equal(store.Settings.Rarities.Select(rung => rung.Tier).Order(), listed.Rarities.Select(r => r.Tier).Order());
         Assert.True(listed.Entities > 0);
     }

@@ -24,7 +24,7 @@ public sealed class CodexTools(
     public TypesResult ListTypes() => new(
         codex.Count,
         [.. codex.Types.Select(type => new TypeSummary(type.Slug, type.Label, type.Group, type.Count))],
-        [.. store.Settings.Heroes.Select(hero => new HeroSummary(hero.Name, hero.ArmorType, hero.PrimaryStat))],
+        [.. store.Settings.Heroes.Select(hero => hero.Name)],
         [.. store.Settings.Rarities.Select(rung =>
             new RaritySummary(rung.Tier, rung.DisplayName, rung.GemDisplayName))]);
 
@@ -89,12 +89,10 @@ public sealed class CodexTools(
 public sealed record TypesResult(
     int Entities,
     IReadOnlyList<TypeSummary> Types,
-    IReadOnlyList<HeroSummary> Heroes,
+    IReadOnlyList<string> Heroes,
     IReadOnlyList<RaritySummary> Rarities);
 
 public sealed record TypeSummary(string Slug, string Label, string Group, int Count);
-
-public sealed record HeroSummary(string Name, string? ArmorType, string PrimaryStat);
 
 public sealed record RaritySummary(int Tier, string DisplayName, string GemDisplayName);
 

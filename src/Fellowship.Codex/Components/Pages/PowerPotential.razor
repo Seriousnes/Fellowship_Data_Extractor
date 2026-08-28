@@ -1,0 +1,247 @@
+@page "/tools/power-potential"
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+@inject ITooltipViewService Cards
+
+<PageTitle>Power potential - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>Power potential</h1>
+
+<div class="cx-pp-lede">
+    <p>
+        Every item card prints one, and the card describes it as <q>the item's potential power; derived
+        from its Item Level, Rarity, and the Modifiers it has</q>. No item ships the number: the game
+        adds it up on the card out of ten terms, from the item's level, the slot it fills, how far it
+        can be tempered, and the slots its rarity hands it.
+    </p>
+    <p>
+        The hero panel prints a second number called <b>Power Score</b>, over a whole loadout. That is a
+        different scoring rule with its own reading of the same settings, and it is not the sum of the
+        number below, so a card's Power Potential is not that item's contribution to a hero's Score.
+    </p>
+</div>
+
+<Panel Head="The terms" Badge="@Termed">
+    <Table Items="Defined">
+        <Columns>
+            <Column Head="Term" Value="row => row.Label" />
+            <Column Head="Adds" Numeric Value="row => row.Adds" />
+            <Column Head="Counted" Value="row => row.Counted" />
+            <Column Head="Applies to" Value="row => row.Applies" />
+        </Columns>
+    </Table>
+
+    <Note>
+        Every term adds. Nothing in the sum multiplies, divides, floors or clamps, and the slot weight
+        scales the item level term alone. The card rounds the total to a whole number to print it, and
+        that is the only rounding there is.
+    </Note>
+</Panel>
+
+<Panel Head="Slot weights" Badge="@Slotted">
+    <p class="cx-pp-said">
+        The item level term is the only one a slot changes. Its weight is the slot's share of a hero's
+        stat budget, the same number the stat lines are cut from, and the twelve of them sum to
+        @Weighted rather than to one. Nothing in the total divides by that sum.
+    </p>
+
+    <Table Items="Weights">
+        <Columns>
+            <Column Head="Slot" Value="row => row.Slot" />
+            <Column Head="Stat weight" Numeric Value="row => row.Weight" />
+            <Column Head="@Headed" Numeric Value="row => row.Levelled" />
+        </Columns>
+    </Table>
+</Panel>
+
+<Panel Head="Worked examples" Badge="@Cased">
+    <p class="cx-pp-said">
+        Every card below is one the game drew, summed here by the same code the codex prints its own
+        tooltips with.
+    </p>
+
+    <div class="cx-pp-cases">
+        @foreach (var shown in Cases)
+        {
+            <article class="cx-pp-case">
+                <header class="cx-pp-case-head">
+                    <a class="cx-pp-case-name" href="@Ui.Href(EntityType.Item, shown.Item.Id)"
+                       style="@(shown.Colour is null ? null : $"color:{shown.Colour}")">@Ui.Name(shown.Item)</a>
+                    <span class="cx-pp-case-facts">@shown.Facts</span>
+                </header>
+
+                <table class="cx-pp-sum">
+                    <tbody>
+                        @foreach (var term in shown.Terms)
+                        {
+                            <tr>
+                                <th>@term.Label</th>
+                                <td class="cx-pp-work">@Working(term)</td>
+                                <td class="cx-pp-amount">@CodexView.Number(term.Amount)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th>Power Potential</th>
+                            <td class="cx-pp-work">@CodexView.Number(shown.Total) rounded</td>
+                            <td class="cx-pp-amount">@shown.Printed</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                @if (shown.Said is { Length: > 0 } said)
+                {
+                    <p class="cx-pp-case-said">@said</p>
+                }
+            </article>
+        }
+    </div>
+</Panel>
+
+@code {
+    private sealed record TermRow(string Label, string Adds, string Counted, string Applies);
+
+    private sealed record WeightRow(string Slot, string Weight, string Levelled);
+
+    private sealed record CaseRow(
+        ItemDocument Item,
+        string? Colour,
+        string Facts,
+        IReadOnlyList<ItemPowerTerm> Terms,
+        float Total,
+        string Printed,
+        string? Said);
+
+    private sealed record Reading(int Id, string Named, string Rung, int? Level, string? Said);
+
+    private const string Anywhere = "Every slot";
+
+    private static readonly IReadOnlyList<Reading> Read =
+    [
+        new(5326, "Asha's Chronoshift Spire", "Epic", null, null),
+        new(5184, "Webbed Gloves", "Regal", null,
+            "Two of these, tempered 4 / 8 and 6 / 8, both read the same total. The term takes the "
+            + "ceiling the rung allows, not the tempers already spent."),
+        new(5254, "Grimoire of Resurrection", "Epic", null, null),
+        new(5252, "Ancient Poultry Fetish", "Regal", null,
+            "Its Imbued Essence is a gem power rolled into a modifier slot, not a gem socket, so no "
+            + "socket term lands."),
+        new(5235, "Pendant of the Deep", "Heroic", 255,
+            "Its trait tree is unallocated on the card and still adds the whole amount: the term reads "
+            + "the tree's presence, never how much of it is spent."),
+        new(5309, "Witchslayer's Legs of Determination", "Regal", null, null),
+        new(5221, "Masochistic Razor Loop", "Legendary", null,
+            "It carries a granted ability and three legendary stats and scores for neither. A ring is "
+            + "not a weapon or a relic, and not a weapon or a neck."),
+    ];
+
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail =
+        [("Tools", null), ("Power potential", null)];
+
+    private SettingsFile Settings => Store.Settings;
+
+    private ItemPowerPotential Factors => Settings.Items.PowerPotential;
+
+    private string Termed => $"{Defined.Count} terms";
+
+    private string Slotted => $"{Weights.Count} slots";
+
+    private string Cased => $"{Cases.Count} cards";
+
+    private string Weighted =>
+        CodexView.Number(Settings.StatCalculation.SlotWeights.Values.Sum(slot => slot.StatWeight));
+
+    private int Topped => Store.Entities
+        .OfType<ItemDocument>()
+        .Max(item => item.ItemLevel) ?? Settings.Items.MaxItemLevel;
+
+    private string Headed => $"At item level {Topped}";
+
+    private string Slot(string type) => ItemPower.Printed(Settings.Items, type) ?? type;
+
+    private IReadOnlyList<TermRow> Defined =>
+    [
+        new("Item level", CodexView.Number(Factors.ItemLevelScoreFactor), "Per item level",
+            $"{Anywhere}, scaled by the slot's stat weight"),
+        new("Tempering ceiling", CodexView.Number(Factors.TemperScoreFactor), "Per temper allowed",
+            $"{Anywhere}, from the rung and the item level"),
+        new("Rerollable slots", CodexView.Number(Factors.ModSlotScoreFactor), "Per rerollable slot",
+            $"{Anywhere}, from the rung's additions"),
+        new("Gem socket", CodexView.Number(Factors.GemSocketScoreFactor), "Once",
+            "Any slot whose rung hands it a socket"),
+        new($"{Slot(ItemPower.WeaponType)} ability",
+            CodexView.Number(Factors.WeaponAbilityScoreFactor), "Once",
+            $"A {Slot(ItemPower.WeaponType)} carrying a granted ability"),
+        new($"{Slot(ItemPower.TrinketType)} ability",
+            CodexView.Number(Factors.RelicAbilityScoreFactor), "Once",
+            $"A {Slot(ItemPower.TrinketType)} carrying a granted ability"),
+        new($"{Slot(ItemPower.WeaponType)} trait tree",
+            CodexView.Number(Factors.WeaponTraitTreeScoreFactor), "Once",
+            $"A {Slot(ItemPower.WeaponType)} carrying a trait tree"),
+        new($"{Slot(ItemPower.NecklaceType)} trait tree",
+            CodexView.Number(Factors.NecklaceTraitTreeScoreFactor), "Once",
+            $"A {Slot(ItemPower.NecklaceType)} carrying a trait tree"),
+        new("Set bonus", CodexView.Number(Factors.SetBonusScoreFactor), "Once",
+            "Any slot whose rung hands it a set bonus"),
+        new("Legendary", CodexView.Number(Factors.LegendaryScoreFactor), "Once",
+            "Any slot at the legendary rung"),
+    ];
+
+    private IReadOnlyList<WeightRow> Weights =>
+    [
+        .. Settings.StatCalculation.SlotWeights
+            .OrderByDescending(pair => pair.Value.StatWeight)
+            .ThenBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(pair => new WeightRow(
+                pair.Key,
+                CodexView.Number(pair.Value.StatWeight),
+                CodexView.Number(
+                    Topped * (float)Factors.ItemLevelScoreFactor * (float)pair.Value.StatWeight)))
+    ];
+
+    private IReadOnlyList<CaseRow> Cases => [.. Read.Select(Drawn).OfType<CaseRow>()];
+
+    private CaseRow? Drawn(Reading reading)
+    {
+        var item = Store.All(EntityType.Item, reading.Id)
+            .OfType<ItemDocument>()
+            .FirstOrDefault(reading_ => string.Equals(reading_.Name, reading.Named, StringComparison.Ordinal));
+
+        if (item is null) return null;
+
+        var query = new TooltipQuery { Rarity = reading.Rung, ItemLevel = reading.Level };
+        var rung = Cards.Rarity(item, query);
+        var level = Cards.Level(item, query);
+
+        if (ItemPower.Inputs(item, Settings, rung, query, level) is not { } given) return null;
+        if (Cards.Potential(item, query, rung, level) is not { } printed) return null;
+
+        return new CaseRow(
+            item,
+            rung is null ? null : CodexView.Readable(Ui.Tokens.Rarity(rung.Name)),
+            string.Join(" · ", Facts(given, rung)),
+            ItemPower.Terms(given, Settings),
+            ItemPower.Potential(given, Settings),
+            printed,
+            reading.Said);
+    }
+
+    private IEnumerable<string> Facts(ItemPowerInputs given, RarityEntry? rung)
+    {
+        yield return given.Slot;
+
+        if (rung is not null) yield return rung.DisplayName;
+
+        yield return $"item level {given.Level}";
+    }
+
+    private static string Working(ItemPowerTerm term) => term switch
+    {
+        { Count: null } => "flat",
+        { Weight: { } weight } => $"{term.Count} × {CodexView.Number(term.Factor)} × {CodexView.Number(weight)}",
+        _ => $"{term.Count} × {CodexView.Number(term.Factor)}",
+    };
+}

@@ -110,19 +110,40 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
-    public void States_its_scalars_two_to_a_row()
+    public void Reads_its_cast_and_range_beside_its_cost_and_cooldown()
     {
-        var entity = new AbilityDocument { Id = 1, Cooldown = 30, Range = 25, Duration = 8 };
+        var entity = new AbilityDocument { Id = 1, Cooldown = 30, Range = 550, Duration = 8 };
+
+        var cut = Draw(entity);
+
+        var casting = cut.FindAll("div.ovs:not(.paid) span.ov");
+        var paying = cut.FindAll("div.ovs.paid span.ov");
+
+        Assert.Equal(2, casting.Count);
+        Assert.Equal("Instant", casting[0].QuerySelector("span.k")!.TextContent);
+        Assert.Equal("6", casting[1].QuerySelector("span.v")!.TextContent);
+        Assert.Equal("yd", casting[1].QuerySelector("span.u")!.TextContent);
+        Assert.Equal("range", casting[1].QuerySelector("span.k")!.TextContent);
+        Assert.Equal("550 unreal units, at 91.44 to the yard", casting[1].GetAttribute("title"));
+
+        Assert.Single(paying);
+        Assert.Equal("30", paying[0].QuerySelector("span.v")!.TextContent);
+        Assert.Equal("cooldown", paying[0].QuerySelector("span.k")!.TextContent);
+    }
+
+    [Fact]
+    public void States_the_scalars_the_overview_leaves_two_to_a_row()
+    {
+        var entity = new AbilityDocument { Id = 1, Cooldown = 30, Range = 550, Duration = 8 };
 
         var cut = Draw(entity);
 
         var rows = cut.FindAll("div.row");
 
-        Assert.Equal(2, rows.Count);
-        Assert.Equal(2, rows[0].QuerySelectorAll(":scope > span").Length);
-        Assert.Single(rows[1].QuerySelectorAll(":scope > span"));
-        Assert.Equal("Cooldown", rows[0].QuerySelector("span.k")!.TextContent);
-        Assert.Equal("30s", rows[0].QuerySelector("span.v")!.TextContent);
+        Assert.Single(rows);
+        Assert.Single(rows[0].QuerySelectorAll(":scope > span"));
+        Assert.Equal("Duration", rows[0].QuerySelector("span.k")!.TextContent);
+        Assert.Equal("8s", rows[0].QuerySelector("span.v")!.TextContent);
     }
 
     [Fact]
@@ -376,8 +397,10 @@ public class TooltipTests : BunitContext
             .Add(x => x.Entity, new ItemDocument { Id = 3, Name = "Darkfrost Arms" })
             .Add(x => x.Query, new TooltipQuery { PotentialPower = 885 }));
 
-        Assert.Equal("Power Potential", cut.Find("div.grp span.k").TextContent);
-        Assert.Equal("885", cut.Find("span.pot").TextContent);
+        var potential = cut.Find("div.grp div.pot");
+
+        Assert.Equal("Power Potential 885", potential.TextContent);
+        Assert.Equal("885", potential.QuerySelector("b")!.TextContent);
     }
 
     [Fact]

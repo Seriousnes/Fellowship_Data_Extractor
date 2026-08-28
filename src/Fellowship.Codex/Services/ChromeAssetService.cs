@@ -12,6 +12,8 @@ public interface IChromeAssetService
 
     string GoldDivider { get; }
 
+    string SimpleDivider { get; }
+
     string Panel { get; }
 
     string Window { get; }
@@ -132,6 +134,7 @@ public sealed class ChromeAssetService(
     private const string Unavailable = "Unavailable";
     private const string LockTexture = "T_Icons_Locked";
     private const string DividerTexture = "T_GoldDivider";
+    private const string SimpleDividerTexture = "T_SimpleDivider";
 
     private const string AbilityHeading = "Ability";
     private const string LegendaryHeading = "Legendary";
@@ -232,6 +235,8 @@ public sealed class ChromeAssetService(
     public string LockGlyph => Url(Name(LockTexture));
 
     public string GoldDivider => Url(Name(DividerTexture));
+
+    public string SimpleDivider => Url(Name(SimpleDividerTexture));
 
     public string Panel => Url(Name(PanelTexture));
 

@@ -72,9 +72,9 @@
 
         if (facts.Count > 0) drawn.Add(@<TipFacts Items="facts" />);
 
-        if (Ui.Potential(Query) is not null)
+        if (Ui.Potential(Entity, Query, null, null) is { } scored)
         {
-            drawn.Add(@<TipRolls Potential="@Ui.Potential(Query)" />);
+            drawn.Add(@<TipPotential Potential="@scored" />);
         }
 
         if (Prose) drawn.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);
