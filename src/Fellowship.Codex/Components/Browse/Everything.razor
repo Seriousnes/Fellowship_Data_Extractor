@@ -1,0 +1,41 @@
+@inject ICodexViewService Ui
+
+<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<EntityDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column Head="" Class="cx-art">
+            <Content Context="row"><Art Entity="row" /></Content>
+        </Column>
+        <Column Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column Head="Type" Key="type" Class="cx-tags">
+            <Content Context="row">
+                <a href="@View.Replace("type", EntityTypes.Slug(EntityTypes.TypeOf(row)))">
+                    @PublicTypes.Label(EntityTypes.TypeOf(row))
+                </a>
+            </Content>
+        </Column>
+        <Column Head="Source" Key="source" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var source in Sources(row))
+                {
+                    <Chip>@source</Chip>
+                }
+            </Content>
+        </Column>
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<EntityDocument> Drawn = [];
+
+    protected override void OnParametersSet() => Drawn = Rows;
+
+    private IEnumerable<string> Sources(EntityDocument row) =>
+        Ui.Codex.Facet("source") is { } facet ? facet.Values(row) : [];
+}

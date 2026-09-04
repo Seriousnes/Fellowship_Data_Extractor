@@ -51,6 +51,8 @@ public interface ITooltipViewService
 
     string Style();
 
+    string ModalStyle();
+
     bool DrawsState(EntityDocument document);
 
     EntityDocument? Granted(EntityDocument document);
@@ -68,7 +70,11 @@ public sealed class TooltipViewService(
 {
     private const string Sheet = "css/tooltip.css";
 
+    private const string ModalSheet = "css/modal.css";
+
     private readonly string sheet = Compose(environment, chrome, renderer);
+
+    private readonly string modal = Read(environment, ModalSheet, "Styles/modal.scss", "Components/Tooltip/_Modal.scss");
 
     public IChromeAssetService Chrome => chrome;
 
@@ -361,21 +367,11 @@ public sealed class TooltipViewService(
 
     public string Style() => sheet;
 
+    public string ModalStyle() => modal;
+
     private static string Compose(
         IWebHostEnvironment environment, IChromeAssetService chrome, IRichTextService renderer)
     {
-        var file = environment.WebRootFileProvider.GetFileInfo(Sheet);
-
-        if (!file.Exists || file.Length == 0)
-        {
-            throw new InvalidOperationException(
-                $"{Sheet} is missing from the web root, so the tooltip has no rules to carry. " +
-                "Sass writes it from Styles/tooltip.scss on build, which pulls in " +
-                "Components/Tooltip/_Tooltip.razor.scss.");
-        }
-
-        using var reading = new StreamReader(file.CreateReadStream());
-
         return
             $$"""
             .{{TooltipView.Root}}{--fx-window:url({{chrome.Window}});
@@ -387,8 +383,24 @@ public sealed class TooltipViewService(
             {{Heading("setbonus", chrome.SetBonusBadge)}}}
 
             """ +
-            reading.ReadToEnd() +
+            Read(environment, Sheet, "Styles/tooltip.scss", "Components/Tooltip/_Tooltip.razor.scss") +
             renderer.Css(TooltipView.Root);
+    }
+
+    private static string Read(IWebHostEnvironment environment, string sheet, string source, string partial)
+    {
+        var file = environment.WebRootFileProvider.GetFileInfo(sheet);
+
+        if (!file.Exists || file.Length == 0)
+        {
+            throw new InvalidOperationException(
+                $"{sheet} is missing from the web root, so the tooltip has no rules to carry. " +
+                $"Sass writes it from {source} on build, which pulls in {partial}.");
+        }
+
+        using var reading = new StreamReader(file.CreateReadStream());
+
+        return reading.ReadToEnd();
     }
 
     private static string Heading(string section, Badge badge) =>

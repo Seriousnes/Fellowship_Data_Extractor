@@ -1,4 +1,5 @@
 @inject ITooltipViewService Ui
+@inject ICodexViewService View
 
 <div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
     <style>@Sheet</style>
@@ -79,7 +80,7 @@
 
         if (Prose) drawn.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);
 
-        if (Entity is GemTypeDocument { OverflowDescription: not null })
+        if (View.Stone(Entity) is { OverflowDescription: not null })
         {
             drawn.Add(@<TipOverflow Entity="Entity" Query="Query" Hero="Hero" />);
         }

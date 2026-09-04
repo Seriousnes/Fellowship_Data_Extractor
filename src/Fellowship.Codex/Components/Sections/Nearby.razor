@@ -2,10 +2,9 @@
 {
     <Panel Head="More like this">
         <Pills>
-            @foreach (var (label, href, count) in Here.Related)
+            @foreach (var (label, href) in Here.Related)
             {
-                var badge = count.ToString("N0");
-                <Pill Href="@href" Badge="@badge">@label</Pill>
+                <Pill Href="@href">@label</Pill>
             }
         </Pills>
     </Panel>

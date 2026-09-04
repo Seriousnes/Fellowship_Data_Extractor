@@ -51,7 +51,7 @@
             <Pills>
                 @foreach (var hero in Heroes)
                 {
-                    var where = $"/browse?hero={Uri.EscapeDataString(hero)}";
+                    var where = $"/search?hero={Uri.EscapeDataString(hero)}";
                     <Pill Href="@where" Colour="@Ui.HeroColour(hero)">@hero</Pill>
                 }
             </Pills>

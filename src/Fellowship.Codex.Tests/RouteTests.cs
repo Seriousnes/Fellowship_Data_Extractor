@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Fellowship.Storage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -26,6 +27,16 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         Assert.NotNull(factory.Services.GetRequiredService<IExportSource>());
         Assert.NotNull(factory.Services.GetRequiredService<IEntityStoreService>());
+    }
+
+    [Fact]
+    public void The_store_is_S3_and_art_is_addressed_under_the_configured_bucket()
+    {
+        Assert.IsType<S3Storage>(factory.Services.GetRequiredService<IStorage>());
+
+        Assert.Equal(
+            "https://icons.s3.us-east-1.amazonaws.com/ui/T_GoldDivider.png",
+            factory.Services.GetRequiredService<IArtSource>().Address("ui/T_GoldDivider.png"));
     }
 
     [Fact]
@@ -57,7 +68,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task Both_routes_answer_for_one_id_of_every_type()
     {
-        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
@@ -78,7 +89,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task A_record_answers_the_type_the_slug_asked_for()
     {
-        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
@@ -197,7 +208,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task Every_tooltip_route_takes_the_art_flag_and_draws_no_art_without_it()
     {
-        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
@@ -324,7 +335,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var slot = ((ItemDocument)Factory.Store.All(EntityType.Item, 5191)[0]).Slot;
 
         var browse = await client.GetStringAsync(
-            $"/browse?type=item&slot={Uri.EscapeDataString(slot!)}", Xunit.TestContext.Current.CancellationToken);
+            $"/items?type=item&slot={Uri.EscapeDataString(slot!)}", Xunit.TestContext.Current.CancellationToken);
 
         Assert.Contains("entities", browse, StringComparison.Ordinal);
     }
@@ -443,11 +454,8 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.UseSetting(
-                "ConnectionStrings:icons",
-                "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;" +
-                "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;" +
-                "BlobEndpoint=http://127.0.0.1:1/devstoreaccount1;ContainerName=icons");
+            builder.UseSetting("S3:Bucket", "icons");
+            builder.UseSetting("AWS:Region", "us-east-1");
 
             builder.ConfigureServices(services =>
             {

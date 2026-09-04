@@ -6,9 +6,35 @@ public sealed class FolderExportSource(string folder) : IExportSource
 
     public string Folder { get; } = folder;
 
+    public string Root => Directory.GetParent(Path.GetFullPath(Folder))?.FullName ?? Folder;
+
+    public static string Located(string? option = null) =>
+        Environment.GetEnvironmentVariable(Variable) is { Length: > 0 } named
+            ? Carried(named, $"{Variable} names")
+            : Above(Directory.GetCurrentDirectory())
+                ?? Above(AppContext.BaseDirectory)
+                ?? throw Unlocated(option);
+
+    public static string Carried(string folder, string source)
+    {
+        var full = Path.GetFullPath(folder);
+
+        return Carries(full)
+            ? full
+            : throw new InvalidOperationException(
+                $"{source} {full}, which carries no {ExportReader.EntitiesName}.");
+    }
+
+    public static InvalidOperationException Unlocated(string? option = null) =>
+        new($"No output/{ExportFolders.Pattern} carrying {ExportReader.EntitiesName} and " +
+            $"{ExportReader.SettingsName} above {Directory.GetCurrentDirectory()} or " +
+            $"{AppContext.BaseDirectory}, and " +
+            (option is null ? $"{Variable} names none" : $"neither {option} nor {Variable} names one") +
+            ". Write it with 'dotnet run --project src/FellowshipExtractor'.");
+
     public static bool Carries(string folder) =>
-        File.Exists(Path.Combine(folder, ExportReader.Data, ExportReader.EntitiesName)) &&
-        File.Exists(Path.Combine(folder, ExportReader.Data, ExportReader.SettingsName));
+        File.Exists(Path.Combine(folder, ExportReader.EntitiesName)) &&
+        File.Exists(Path.Combine(folder, ExportReader.SettingsName));
 
     public static string? Above(string start)
     {
@@ -67,10 +93,10 @@ public sealed class FolderExportSource(string folder) : IExportSource
             older[id] = new ExportVersion(
                 id,
                 ExportReader.Group(await File.ReadAllLinesAsync(
-                    Path.Combine(sibling.FullName, ExportReader.Data, ExportReader.EntitiesName),
+                    Path.Combine(sibling.FullName, ExportReader.EntitiesName),
                     cancellationToken)),
                 await File.ReadAllTextAsync(
-                    Path.Combine(sibling.FullName, ExportReader.Data, ExportReader.SettingsName),
+                    Path.Combine(sibling.FullName, ExportReader.SettingsName),
                     cancellationToken));
         }
 
@@ -79,14 +105,14 @@ public sealed class FolderExportSource(string folder) : IExportSource
 
     private async Task<string?> TextAsync(string name, CancellationToken cancellationToken)
     {
-        var file = Path.Combine(Folder, ExportReader.Data, name);
+        var file = Path.Combine(Folder, name);
 
         return File.Exists(file) ? await File.ReadAllTextAsync(file, cancellationToken) : null;
     }
 
     private async Task<string[]> LinesAsync(string name, CancellationToken cancellationToken)
     {
-        var file = Path.Combine(Folder, ExportReader.Data, name);
+        var file = Path.Combine(Folder, name);
 
         if (!File.Exists(file)) throw ExportReader.Missing(name);
 

@@ -49,7 +49,7 @@
 
     private string Name => Ui.Name(Shown);
 
-    private string Under => $"/browse?type={EntityTypes.Slug(type)}";
+    private string Under => PublicTypes.Where(type);
 
     private static readonly string[] Own = ["hero", "state"];
 
@@ -119,7 +119,7 @@
 
     protected override void OnParametersSet()
     {
-        var resolved = EntityTypes.TryParse(Slug, out var named) && PublicTypes.Listed(named)
+        var resolved = EntityTypes.TryParse(Slug, out var named) && PublicTypes.IsListed(named)
             ? named
             : (EntityType?)null;
         type = resolved ?? default;
@@ -153,9 +153,9 @@
         };
     }
 
-    private IReadOnlyList<(string, string, int)> Nearby()
+    private IReadOnlyList<(string, string)> Nearby()
     {
-        var nearby = new List<(string, string, int)>();
+        var nearby = new List<(string, string)>();
         var named = Catalog.Flag(CodexQuery.NamedFlag);
 
         void Add(string facet, string? value)
@@ -172,8 +172,7 @@
 
             nearby.Add((
                 $"{definition.Label}: {Catalog.Printed(definition, value)}",
-                $"{Under}&{facet}={Uri.EscapeDataString(value)}",
-                count));
+                $"{Under}&{facet}={Uri.EscapeDataString(value)}"));
         }
 
         string? First(string key) => Catalog.Facet(key)?.Values(Shown).FirstOrDefault();

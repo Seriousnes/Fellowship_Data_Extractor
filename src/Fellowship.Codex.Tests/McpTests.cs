@@ -88,7 +88,7 @@ public sealed class McpTests(McpHost mcp, RouteTests.Factory factory)
         var store = RouteTests.Factory.Store;
 
         Assert.Equal(
-            Enum.GetValues<EntityType>().Where(PublicTypes.Listed).Select(EntityTypes.Slug).Order(),
+            Enum.GetValues<EntityType>().Where(PublicTypes.IsListed).Select(EntityTypes.Slug).Order(),
             listed.Types.Select(type => type.Slug).Order());
 
         Assert.Equal(store.Settings.Heroes.Select(hero => hero.Name).Order(), listed.Heroes.Order());
@@ -99,7 +99,7 @@ public sealed class McpTests(McpHost mcp, RouteTests.Factory factory)
     [Fact]
     public void Get_entity_answers_for_one_id_of_every_listed_type()
     {
-        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
@@ -210,15 +210,15 @@ public sealed class McpTests(McpHost mcp, RouteTests.Factory factory)
 
         Assert.Equal(item.Icon, named);
         Assert.True(
-            File.Exists(Path.Combine(Export.Found(), ChromeAssetService.Prefix, named!)),
-            $"{named} is not a file under the export's {ChromeAssetService.Prefix} folder.");
+            File.Exists(Path.Combine(Export.Art(), named!)),
+            $"{named} is not a file under the output's {ChromeAssetService.Prefix} folder.");
     }
 
     [Fact]
     public void Find_entity_matches_a_name_by_prefix_and_not_by_substring()
     {
         var named = RouteTests.Factory.Store.Entities.First(row =>
-            row.Name is { Length: > 6 } && PublicTypes.Listed(EntityTypes.TypeOf(row)));
+            row.Name is { Length: > 6 } && PublicTypes.IsListed(EntityTypes.TypeOf(row)));
 
         Assert.Contains(mcp.Tools.FindEntity(named.Name!).Results, hit => hit.Name == named.Name);
         Assert.DoesNotContain(mcp.Tools.FindEntity(named.Name![3..]).Results, hit => hit.Name == named.Name);

@@ -1,0 +1,11 @@
+User-agent: *
+
+Disallow: /api/
+Disallow: /swagger
+Disallow: /openapi/
+
+Disallow: /browse?q=
+Disallow: /browse?*&*
+Allow: /browse?type=*&page=*$
+
+Crawl-delay: 5

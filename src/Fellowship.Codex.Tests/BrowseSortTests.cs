@@ -18,7 +18,7 @@ public sealed class BrowseSortTests : IClassFixture<RouteTests.Factory>
         {
             var slugs = new TheoryData<string>();
 
-            foreach (var type in RouteTests.Factory.Store.Types.Where(PublicTypes.Listed))
+            foreach (var type in RouteTests.Factory.Store.Types.Where(PublicTypes.IsListed))
             {
                 slugs.Add(EntityTypes.Slug(type));
             }
@@ -39,7 +39,7 @@ public sealed class BrowseSortTests : IClassFixture<RouteTests.Factory>
     [MemberData(nameof(Listed))]
     public async Task Every_column_a_list_offers_to_sort_by_is_a_sorting_the_codex_declares(string slug)
     {
-        var listing = $"/browse?type={slug}";
+        var listing = PublicTypes.Where(EntityTypes.Parse(slug));
 
         var page = await Page(listing);
 

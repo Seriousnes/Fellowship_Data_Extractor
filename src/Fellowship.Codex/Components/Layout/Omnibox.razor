@@ -3,7 +3,7 @@
 @inject NavigationManager Nav
 @implements IDisposable
 
-<div class="cx-omnibox" role="search">
+<div class="@(Hero ? "cx-omnibox cx-omnibox-hero" : "cx-omnibox")" role="search">
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"></circle>
         <path d="M16 16l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
@@ -83,6 +83,8 @@
 @code {
     [Parameter] public string? Text { get; set; }
 
+    [Parameter] public bool Hero { get; set; }
+
     private const int HitPlateWidth = 30;
 
     private const int Rows = 12;
@@ -106,7 +108,7 @@
     private IReadOnlyList<string> Words => SuggestionService.Words(answer?.Query);
 
     private string All =>
-        "/browse?q=" + Uri.EscapeDataString(typed.Trim()) +
+        "/search?q=" + Uri.EscapeDataString(typed.Trim()) +
         (scope is null ? string.Empty : "&type=" + Uri.EscapeDataString(scope));
 
     private static string? On(bool set) => set ? "on" : null;

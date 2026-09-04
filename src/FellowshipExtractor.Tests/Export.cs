@@ -5,6 +5,7 @@ using CUE4Parse.FileProvider;
 
 using Fellowship.Codex.Services;
 using FellowshipExtractor.Extraction;
+using FellowshipExtractor.Output;
 
 using Fellowship.SDK.Documents;
 
@@ -52,6 +53,8 @@ public sealed class Export
     public required IReadOnlyList<(EntityType Type, int Id, string? Name, JsonObject Body)> Documents { get; init; }
     public required string Folder { get; init; }
 
+    public string Ui => Path.Combine(Directory.GetParent(Folder)!.FullName, ExportLayout.UiFolder);
+
     private static Export Load()
     {
         var folder = Folder_();
@@ -83,15 +86,13 @@ public sealed class Export
             return FolderExportSource.Carries(named)
                 ? named
                 : throw new DirectoryNotFoundException(
-                    $"{Variable} names {named}, which carries no " +
-                    $"{ExportReader.Data}/{ExportReader.EntitiesName}.");
+                    $"{Variable} names {named}, which carries no {ExportReader.EntitiesName}.");
         }
 
         return FolderExportSource.Above(AppContext.BaseDirectory)
             ?? throw new DirectoryNotFoundException(
                 $"No output/{ExportFolders.Pattern} above the test binary carries " +
-                $"{ExportReader.Data}/{ExportReader.EntitiesName} and " +
-                $"{ExportReader.Data}/{ExportReader.SettingsName}. Run " +
+                $"{ExportReader.EntitiesName} and {ExportReader.SettingsName}. Run " +
                 $"'dotnet run --project src/FellowshipExtractor' or point {Variable} at one.");
     }
 }

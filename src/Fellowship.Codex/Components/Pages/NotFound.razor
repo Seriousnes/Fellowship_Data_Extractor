@@ -27,7 +27,7 @@
                 string.Equals(t.Slug, Uri.UnescapeDataString(slug), StringComparison.OrdinalIgnoreCase)) is { } kind)
         {
             Said = $"The build has no {kind.Label} {id}.";
-            Where = $"/browse?type={Uri.EscapeDataString(kind.Slug)}";
+            Where = PublicTypes.Where(kind.Type);
             Offer = $"Browse the {kind.Count:N0} it does have.";
             Trail = [(kind.Label, Where), ("Nothing here", null)];
             return;

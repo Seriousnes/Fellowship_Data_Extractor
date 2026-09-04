@@ -1,18 +1,34 @@
-using Azure.Storage.Blobs;
+using Microsoft.Extensions.FileProviders;
+
+using Fellowship.Storage;
 
 namespace Fellowship.Codex.Services;
 
-public interface IArtSource
+public static class Art
 {
-    string Address(string blob);
+    public static StaticFileOptions From(string root) => new()
+    {
+        FileProvider = new PhysicalFileProvider(Path.Combine(root, ChromeAssetService.Prefix)),
+        RequestPath = $"/{ChromeAssetService.Prefix}",
+    };
 }
 
-public sealed class BlobArtSource(BlobContainerClient container) : IArtSource
+public interface IArtSource
 {
-    public string Address(string blob) => $"{container.Uri}/{blob}";
+    string Address(string name);
+}
+
+public sealed class StorageArtSource(IStorage storage) : IArtSource
+{
+    public string Address(string name) => storage.Address(name).ToString();
+}
+
+public sealed class FolderArtSource : IArtSource
+{
+    public string Address(string name) => $"/{name}";
 }
 
 public sealed class NamedArtSource : IArtSource
 {
-    public string Address(string blob) => blob[(blob.LastIndexOf('/') + 1)..];
+    public string Address(string name) => name[(name.LastIndexOf('/') + 1)..];
 }

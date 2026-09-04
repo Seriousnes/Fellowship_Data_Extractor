@@ -8,31 +8,31 @@
     <div class="cx-bar">
         <a class="cx-brand" href="/">
             <span class="cx-brand-mark" aria-hidden="true"></span>
-            <span class="cx-brand-name">Fellowship <b>Codex</b></span>
+            <span class="cx-brand-name"><span class="cx-brand-long">Fellowship </span><b>Codex</b></span>
         </a>
 
-        <MegaMenu />
+        <Menus />
 
-        <Omnibox Text="@Typed" />
+        @if (!AtHome)
+        {
+            <Omnibox Text="@Typed" />
+        }
     </div>
 </header>
 
 <main id="main">@Body</main>
 
 <footer class="cx-foot">
-    <p>
-        Every name, number, colour and texture on this page is read out of the shipped Fellowship
-        build by <b>FellowshipExtractor</b>.
-    </p>
-    <p class="cx-foot-links">
-        <a href="/api/catalog">catalog</a>
-        <a href="/openapi/v1.json">openapi</a>
+    <p class="cx-foot-links">        
+        <a href="/swagger/index.html">API Specs</a>
     </p>
 </footer>
 
 <div id="cx-tip" class="cx-tip-layer" hidden></div>
 
 @code {
+    private bool AtHome => Nav.ToBaseRelativePath(Nav.Uri).Split('?', 2)[0].Length == 0;
+
     private string? Typed =>
         Microsoft.AspNetCore.WebUtilities.QueryHelpers
             .ParseQuery(Nav.ToAbsoluteUri(Nav.Uri).Query)

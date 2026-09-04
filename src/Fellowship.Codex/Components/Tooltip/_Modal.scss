@@ -1,0 +1,83 @@
+$sheet-width: 440px;
+$sheet-inset: 16px;
+$bar-height: 56px;
+$bar-gap: 12px;
+$shut-size: 48px;
+
+.fx-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  box-sizing: border-box;
+  font: 400 14px/1.4 "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--core-text-primary);
+
+  & * { box-sizing: border-box; }
+
+  .scrim {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    background: #000000b8;
+
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  .shut {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    z-index: 1;
+    width: $shut-size;
+    height: $shut-size;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--core-primary-200);
+    font: 400 44px/1 "Noto Sans", system-ui, sans-serif;
+    text-shadow: 0 2px 8px #000;
+    cursor: pointer;
+  }
+
+  .sheet {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $bar-gap;
+    width: 100%;
+    max-width: $sheet-width;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: $sheet-inset;
+  }
+
+  .body {
+    display: flex;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 100%;
+    margin: auto 0;
+    padding-top: $bar-height + $bar-gap;
+    filter: drop-shadow(0 16px 26px #000000b0);
+  }
+
+  .open {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: $bar-height;
+    padding: 14px;
+    border: 1px solid var(--core-primary-500);
+    background: var(--core-secondary-900);
+    color: var(--core-primary-200);
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+}

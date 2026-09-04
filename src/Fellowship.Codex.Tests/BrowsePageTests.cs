@@ -8,7 +8,7 @@ public class BrowsePageTests(RouteTests.Factory factory) : IClassFixture<RouteTe
     private readonly HttpClient client = factory.CreateClient();
 
     private Task<string> Browse(string query = "") =>
-        client.GetStringAsync("/browse" + query, Xunit.TestContext.Current.CancellationToken);
+        client.GetStringAsync(query.Length == 0 ? "/items" : query, Xunit.TestContext.Current.CancellationToken);
 
     private static string[] Heads(string page) =>
         [.. page.Bare().Split("<thead>")[1].Split("</thead>")[0]
@@ -17,7 +17,7 @@ public class BrowsePageTests(RouteTests.Factory factory) : IClassFixture<RouteTe
             .Select(cell => Stripped(cell.Split('>', 2)[1].Split("</th>")[0]))];
 
     private static string[] Tabs(string page) =>
-        [.. page.Bare().Split("<a class=\"cx-tab\"").Skip(1).Select(tab => Stripped(tab.Split("</a>")[0]))];
+        [.. page.Bare().Split("<a class=\"cx-tab\"").Skip(1).Select(tab => Stripped(tab.Split('>', 2)[1].Split("</a>")[0]))];
 
     private static string Current(string page) =>
         Stripped(page.Bare().Split("aria-current=\"page\"")[1].Split("</a>")[0]);
@@ -38,43 +38,52 @@ public class BrowsePageTests(RouteTests.Factory factory) : IClassFixture<RouteTe
     }
 
     [Fact]
-    public async Task A_bare_browse_draws_the_items_list_and_marks_the_items_tab_current()
+    public async Task A_type_named_in_a_category_draws_that_types_list_and_marks_its_tab_current()
     {
-        var page = await Browse();
+        var page = await Browse(PublicTypes.Where(EntityType.Item));
 
         Assert.Equal(["", "Name", "ILvl", "Slot", "Source", "Type", "Set"], Heads(page));
         Assert.StartsWith(PublicTypes.Label(EntityType.Item), Current(page), StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task A_bare_browse_heads_the_type_it_draws()
+    public async Task A_type_named_in_a_category_heads_that_type()
+    {
+        var page = (await Browse(PublicTypes.Where(EntityType.Item))).Bare();
+
+        Assert.Contains($"<h1>{PublicTypes.Label(EntityType.Item)}</h1>", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_bare_category_heads_itself_and_draws_every_type_it_holds()
     {
         var page = (await Browse()).Bare();
 
-        Assert.Contains($"<h1>{PublicTypes.Label(EntityType.Item)}</h1>", page, StringComparison.Ordinal);
-        Assert.DoesNotContain("<h1>Browse the codex</h1>", page, StringComparison.Ordinal);
+        Assert.Contains("<h1>Items</h1>", page, StringComparison.Ordinal);
+        Assert.Equal(["", "Name", "Type", "Source"], Heads(page));
+        Assert.StartsWith("All", Current(page), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task A_query_naming_a_type_draws_that_types_list()
     {
-        var page = await Browse("?type=" + EntityTypes.Slug(EntityType.SetBonus));
+        var page = await Browse(PublicTypes.Where(EntityType.SetBonus));
 
         Assert.Equal(["", "Name", "Required", "Attribute", "Role"], Heads(page));
         Assert.StartsWith(PublicTypes.Label(EntityType.SetBonus), Current(page), StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task An_untabbed_type_still_draws_its_list_and_marks_itself_current()
+    public async Task A_gem_draws_its_list_and_marks_itself_current()
     {
-        var page = await Browse("?type=" + EntityTypes.Slug(EntityType.Gem));
+        var page = await Browse(PublicTypes.Where(EntityType.Gem));
 
         Assert.StartsWith(PublicTypes.Label(EntityType.Gem), Current(page), StringComparison.Ordinal);
         Assert.Equal("Name", Heads(page)[1]);
     }
 
     [Fact]
-    public async Task A_query_matching_only_abilities_draws_the_abilities_list()
+    public async Task A_search_matching_only_abilities_draws_the_abilities_list_when_the_tab_is_taken()
     {
         var name = NameNoOtherTypeCarries();
 
@@ -85,7 +94,8 @@ public class BrowsePageTests(RouteTests.Factory factory) : IClassFixture<RouteTe
         Assert.NotEmpty(carrying);
         Assert.All(carrying, row => Assert.IsType<AbilityDocument>(row));
 
-        var page = await Browse("?q=" + Uri.EscapeDataString(name));
+        var page = await Browse(
+            "/search?q=" + Uri.EscapeDataString(name) + "&type=" + EntityTypes.Slug(EntityType.Ability));
 
         Assert.Equal(["", "Name", "Source", "Type"], Heads(page));
         Assert.StartsWith(PublicTypes.Label(EntityType.Ability), Current(page), StringComparison.Ordinal);
@@ -96,21 +106,21 @@ public class BrowsePageTests(RouteTests.Factory factory) : IClassFixture<RouteTe
     {
         var name = NameNoOtherTypeCarries();
 
-        var page = (await Browse("?q=" + Uri.EscapeDataString(name))).Bare();
+        var page = (await Browse("/search?q=" + Uri.EscapeDataString(name))).Bare();
 
         Assert.Contains("Search results for", page, StringComparison.Ordinal);
         Assert.DoesNotContain($"<h1>{PublicTypes.Label(EntityType.Ability)}</h1>", page, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task No_page_draws_a_tab_labelled_all()
+    public async Task Every_page_opens_on_a_tab_labelled_all()
     {
-        foreach (var query in new[] { "", "?type=" + EntityTypes.Slug(EntityType.Ability), "?q=shield" })
+        foreach (var query in new[] { "", PublicTypes.Where(EntityType.Item), "/search?q=shield" })
         {
             var tabs = Tabs(await Browse(query));
 
             Assert.NotEmpty(tabs);
-            Assert.DoesNotContain(tabs, tab => tab.StartsWith("All", StringComparison.Ordinal));
+            Assert.StartsWith("All", tabs[0], StringComparison.Ordinal);
         }
     }
 

@@ -14,11 +14,11 @@ public class ColumnTests : BunitContext
         Store = export.Store;
         Services.AddSingleton(export.View);
 
-        Viewing = new BrowseView(export.View.Codex, new CodexQuery(), Nothing);
+        Viewing = new BrowseView(export.View.Codex, new CodexQuery(), Nothing, "/items");
     }
 
     private static CodexResults Nothing =>
-        new(0, 1, 1, [], [], new Dictionary<EntityType, int>(), EntityType.Item, []);
+        new(0, 1, 1, [], [], new Dictionary<EntityType, int>(), EntityType.Item, [], []);
 
     private IReadOnlyList<EntityDocument> Some(EntityType type) =>
         [.. Store.Entities.Where(document => EntityTypes.TypeOf(document) == type).Take(5)];

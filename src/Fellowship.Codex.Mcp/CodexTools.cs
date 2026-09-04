@@ -23,7 +23,7 @@ public sealed class CodexTools(
         "Lists every entity type the build carries, with the hero and rarity names other tools accept.")]
     public TypesResult ListTypes() => new(
         codex.Count,
-        [.. codex.Types.Select(type => new TypeSummary(type.Slug, type.Label, type.Group, type.Count))],
+        [.. codex.Types.Select(type => new TypeSummary(type.Slug, type.Label, type.Category.Slug, type.Count))],
         [.. store.Settings.Heroes.Select(hero => hero.Name)],
         [.. store.Settings.Rarities.Select(rung =>
             new RaritySummary(rung.Tier, rung.DisplayName, rung.GemDisplayName))]);
@@ -55,7 +55,7 @@ public sealed class CodexTools(
         [Description("The hero to read the entity as, when one id reads differently per hero.")]
         string? hero = null)
     {
-        if (!EntityTypes.TryParse(slug, out var type) || !PublicTypes.Listed(type))
+        if (!EntityTypes.TryParse(slug, out var type) || !PublicTypes.IsListed(type))
         {
             return Trouble(PublicTypes.NoSuchType(slug));
         }

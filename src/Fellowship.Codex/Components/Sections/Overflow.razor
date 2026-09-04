@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-@if (Entity is GemTypeDocument { OverflowDescription: { } description } overflow)
+@if (Ui.Stone(Entity) is { OverflowDescription: { } description } overflow)
 {
     <Panel Head="Past max power">
         <Prose>@Ui.Text(description, overflow.OverflowPlaceholders, [])</Prose>

@@ -31,6 +31,8 @@ public interface ICodexViewService
 
     string? RarityName(Rarity? rarity);
 
+    GemTypeDocument? Stone(EntityDocument document);
+
     string? LinkColour(EntityDocument document);
 
     string NameColour(EntityDocument document);
@@ -103,16 +105,24 @@ public sealed class CodexViewService(
 
         if (rung is { } found && Rung(found) is { } shade) return shade;
 
-        GemType? stone = document switch
-        {
-            GemTypeDocument type => type.Type,
-            GemDocument gem => gem.Type,
-            GemTraitDocument trait => trait.Gem,
-            _ => null,
-        };
-
-        return stone is { } named ? Readable(tokens.Gem(named.ToString())) : null;
+        return Cut(document) is { } named ? Readable(tokens.Gem(named.ToString())) : null;
     }
+
+    private static GemType? Cut(EntityDocument document) => document switch
+    {
+        GemTypeDocument type => type.Type,
+        GemDocument gem => gem.Type,
+        GemTraitDocument trait => trait.Gem,
+        _ => null,
+    };
+
+    private readonly ConcurrentDictionary<GemType, GemTypeDocument?> stones = new();
+
+    public GemTypeDocument? Stone(EntityDocument document) =>
+        Cut(document) is { } cut
+            ? stones.GetOrAdd(cut, wanted =>
+                store.Entities.OfType<GemTypeDocument>().FirstOrDefault(type => type.Type == wanted))
+            : null;
 
     private string? Rung(Rarity rarity) =>
         store.Settings.Rarities.FirstOrDefault(entry => entry.Tier == (int)rarity) is { } rung

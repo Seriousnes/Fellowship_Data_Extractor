@@ -21,6 +21,14 @@
 }
 .cx-omnibox-clear:hover { color: var(--ink); }
 
+.cx-omnibox-hero {
+  flex: 0 0 auto; width: min(680px, 100%); margin: 0;
+}
+.cx-omnibox-hero svg { left: 16px; width: 20px; height: 20px; }
+.cx-omnibox-hero input { font-size: 17px; padding: 15px 44px 15px 48px; border-radius: 4px; }
+.cx-omnibox-hero .cx-omnibox-clear { right: 10px; font-size: 22px; }
+.cx-omnibox-hero .cx-omnibox-drop { left: 0; right: 0; width: auto; text-align: left; }
+
 .cx-omnibox-drop {
   position: absolute; top: calc(100% + 6px); right: 0; width: min(640px, 92vw);
   background: #0d1721; border: 1px solid var(--line); border-top-color: var(--gold-deep);

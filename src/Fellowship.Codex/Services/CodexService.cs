@@ -19,11 +19,9 @@ public interface ICodexService
 
     IReadOnlyList<TypeView> Types { get; }
 
-    IReadOnlyList<TypeView> Tabs { get; }
+    IReadOnlyList<TypeView> Tabs(Category category);
 
     int Count { get; }
-
-    IReadOnlyList<MenuGroup> Menu { get; }
 
     IReadOnlyList<EntityDocument> Of(EntityType type);
 
@@ -45,10 +43,6 @@ public interface ICodexService
 }
 public sealed class CodexService : ICodexService
 {
-    private const int MenuValueLimit = 12;
-
-    private const int MenuSectionLimit = 4;
-
     private readonly IEntityStoreService store;
     private readonly IDesignTokenService tokens;
 
@@ -64,11 +58,10 @@ public sealed class CodexService : ICodexService
 
     public IReadOnlyList<TypeView> Types { get; }
 
-    public IReadOnlyList<TypeView> Tabs { get; }
-
     public int Count { get; }
 
-    public IReadOnlyList<MenuGroup> Menu { get; }
+    public IReadOnlyList<TypeView> Tabs(Category category) =>
+        [.. Types.Where(type => type.Category == category).OrderBy(type => type.Position)];
 
     public CodexService(IEntityStoreService store, IDesignTokenService tokens)
     {
@@ -79,7 +72,19 @@ public sealed class CodexService : ICodexService
 
         Facets =
         [
-            new Facet("slot", "Slot", document => One(document is ItemDocument item ? item.Slot : null)),
+            new Facet("slot", "Slot", document => document switch
+            {
+                ItemDocument item => One(item.Slot),
+                BlessingDocument { Slots: { } slots } => slots,
+                _ => [],
+            })
+            {
+                Primary = true,
+            },
+
+            new Facet("kind", "Item type", document =>
+                One(document is ItemDocument item ? Kind(item) : null)),
+
             new Facet("armor", "Armour", document =>
                 One(document is ItemDocument { ArmorType: { } armor } ? armor.ToString() : null)),
 
@@ -92,10 +97,12 @@ public sealed class CodexService : ICodexService
                 AbilityDocument { Heroes: { } heroes } => heroes.Select(hero => hero.ToString()),
                 EffectDocument { Heroes: { } heroes } => heroes.Select(hero => hero.ToString()),
                 TalentSlotDocument slot => [slot.Hero.ToString()],
+                TalentDocument talent when store.Slot(talent.Id) is { } slot => [slot.Hero.ToString()],
                 _ => [],
             })
             {
                 Colour = (t, value) => t.Hero(value),
+                Primary = true,
             },
 
             new Facet("source", "Source", document => document switch
@@ -127,14 +134,16 @@ public sealed class CodexService : ICodexService
             }))
             {
                 Colour = (t, value) => t.Gem(value),
+                Primary = true,
             },
 
             new Facet("trait", "Trait category", document =>
-                One(document is TraitDocument { Category: { } category } ? category : null)),
+                One(document is TraitDocument { Category: { } category } ? category : null)) { Primary = true },
 
             new Facet("role", "Role", document => document is SetBonusDocument { AllowedRoles: { } roles } ? roles : [])
             {
                 Colour = (t, value) => t.Role(value),
+                Primary = true,
             },
 
             new Facet("rarity", "Rarity", document => document switch
@@ -148,6 +157,7 @@ public sealed class CodexService : ICodexService
             })
             {
                 Colour = (t, value) => t.Rarity(Filed(store, value)),
+                Primary = true,
             },
         ];
 
@@ -288,7 +298,7 @@ public sealed class CodexService : ICodexService
         ];
 
         var counts = store.Entities
-            .Where(document => PublicTypes.Listed(EntityTypes.TypeOf(document)))
+            .Where(document => PublicTypes.IsListed(EntityTypes.TypeOf(document)))
             .GroupBy(EntityTypes.TypeOf)
             .ToDictionary(group => group.Key, group => group.Count());
 
@@ -296,24 +306,19 @@ public sealed class CodexService : ICodexService
 
         Types =
         [
-            .. PublicTypes.All
-                .Where(type => type.Listed)
+            .. PublicTypes.Listed
                 .Select(type => new TypeView(
-                    type.Type, type.Slug, type.Label, type.Group,
-                    counts.GetValueOrDefault(type.Type), type.Tabbed, type.Position))
+                    type.Type, type.Slug, type.Label, type.Category,
+                    counts.GetValueOrDefault(type.Type), type.Position))
                 .Where(type => type.Count > 0),
         ];
 
-        Tabs = [.. PublicTypes.Tabs.Join(Types, tab => tab.Type, view => view.Type, (_, view) => view)];
-
-        var listed = store.Entities.Where(document => PublicTypes.Listed(EntityTypes.TypeOf(document))).ToArray();
+        var listed = store.Entities.Where(document => PublicTypes.IsListed(EntityTypes.TypeOf(document))).ToArray();
 
         offered = Facets.ToDictionary(
             facet => facet.Key,
             facet => View(facet, listed).Values.Select(value => value.Value).ToArray(),
             StringComparer.OrdinalIgnoreCase);
-
-        Menu = BuildMenu();
     }
 
     public IReadOnlyList<EntityDocument> Of(EntityType type) =>
@@ -373,52 +378,11 @@ public sealed class CodexService : ICodexService
     public Sorting? Sorting(string key) =>
         Sortings.FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.OrdinalIgnoreCase));
 
-    private IReadOnlyList<MenuGroup> BuildMenu()
-    {
-        var groups = new List<MenuGroup>();
-
-        foreach (var group in Types.Select(type => type.Group).Distinct(StringComparer.Ordinal))
-        {
-            var entries = new List<MenuEntry>();
-
-            foreach (var type in Types.Where(t => t.Group == group))
-            {
-                var rows = Of(type.Type);
-                var sections = new List<MenuSection>();
-
-                foreach (var facet in Facets)
-                {
-                    var view = View(facet, rows);
-                    if (view.Values.Count < 2) continue;
-
-                    sections.Add(new MenuSection(view.Label,
-                    [
-                        .. view.Values.Take(MenuValueLimit).Select(value => new MenuLink(
-                            value.Label,
-                            $"?type={Uri.EscapeDataString(type.Slug)}&{facet.Key}={Uri.EscapeDataString(value.Value)}",
-                            value.Count,
-                            value.Colour)),
-                    ]));
-                }
-
-                entries.Add(new MenuEntry(
-                    type.Label,
-                    $"?type={Uri.EscapeDataString(type.Slug)}",
-                    type.Count,
-                    [.. sections.Take(MenuSectionLimit)]));
-            }
-
-            groups.Add(new MenuGroup(group, entries));
-        }
-
-        return groups;
-    }
-
     private static IEnumerable<string> One(string? value) => value is null ? [] : [value];
 
     public const string WeaponSlot = "Weapon";
 
-    private static readonly string[] SlotWords = ["Neck", "Ring", "Relic"];
+    public static readonly string[] SlotWords = ["Neck", "Ring", "Relic"];
 
     public static string? Kind(ItemDocument item) => item.Slot switch
     {

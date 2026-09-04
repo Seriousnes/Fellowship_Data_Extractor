@@ -1,5 +1,3 @@
-using Azure.Storage.Blobs;
-
 using Fellowship.SDK.Documents;
 
 using Fellowship.Codex.Models;
@@ -20,7 +18,7 @@ public sealed class ChromePixelTests
 
     private static Reading Read => Instance.Value;
 
-    private static string Ui => Path.Combine(Export.Loaded.Folder, ChromeAssetService.Prefix);
+    private static string Ui => Export.Loaded.Ui;
 
     private static Reading Build()
     {
@@ -35,7 +33,7 @@ public sealed class ChromePixelTests
         return new Reading(
             store,
             new ChromeAssetService(
-                new BlobArtSource(new BlobContainerClient(new Uri("http://localhost/icons"))),
+                new StorageArtSource(new MemoryStorage()),
                 store,
                 new DesignTokenService(store.Settings)));
     }

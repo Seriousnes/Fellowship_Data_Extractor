@@ -6,12 +6,12 @@ namespace Fellowship.Codex.Services;
 
 public interface ITooltipService
 {
-    Task<IResult> Get(EntityType type, int id, TooltipQuery query);
+    Task<IResult> Get(EntityType type, int id, TooltipQuery query, string origin);
 }
 
 public sealed class TooltipService(IEntityStoreService store, IFragmentService fragments) : ITooltipService
 {
-    public async Task<IResult> Get(EntityType type, int id, TooltipQuery query)
+    public async Task<IResult> Get(EntityType type, int id, TooltipQuery query, string origin)
     {
         if (query.Hero is { } named && store.Hero(named) is null)
         {
@@ -51,6 +51,7 @@ public sealed class TooltipService(IEntityStoreService store, IFragmentService f
             ["Entity"] = document!,
             ["Query"] = query,
             ["Hero"] = hero,
+            ["Origin"] = origin,
         });
 
         return Results.Content(fragment, "text/html; charset=utf-8");

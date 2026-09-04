@@ -17,7 +17,7 @@ public sealed class PublicReferenceTests : IClassFixture<RouteTests.Factory>
     public static TheoryData<string> Shapes() =>
     [
         "owner", "appliedBy", "nameBorrowedFrom", "artBorrowedFrom", "setBonus", "grants",
-        "legendaryStats", "power", "replaces", "foundIn", "abilities", "passives",
+        "power", "replaces", "foundIn", "abilities", "passives",
     ];
 
     private static EntityDocument Carrying(string shape) =>
@@ -32,7 +32,6 @@ public sealed class PublicReferenceTests : IClassFixture<RouteTests.Factory>
             "artBorrowedFrom" => document is EffectDocument { ArtBorrowedFrom: not null },
             "setBonus" => document is ItemDocument { SetBonus.Count: > 0 },
             "grants" => document is ItemDocument { Grants: not null },
-            "legendaryStats" => document is ItemDocument { LegendaryStats.Count: > 0 },
             "power" => document is TraitDocument { Power: not null } or SetBonusDocument { Power: not null },
             "replaces" => document is GemTraitDocument { Replaces: not null },
             "foundIn" => document is CreatureDocument { FoundIn.Count: > 0 },
@@ -91,6 +90,34 @@ public sealed class PublicReferenceTests : IClassFixture<RouteTests.Factory>
         Assert.NotNull(resource);
         Assert.True(Uri.TryCreate(resource, UriKind.Absolute, out var absolute), $"{resource} is not absolute.");
         Assert.Equal($"/api/{slug}/{id}", absolute!.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task An_item_carries_its_legendary_rolls_inline_rather_than_as_references()
+    {
+        var item = RouteTests.Factory.Store.Entities
+            .OfType<ItemDocument>()
+            .First(row =>
+                row.LegendaryStats is { Count: > 0 } &&
+                RouteTests.Factory.Store.All(EntityType.Item, row.Id).Count == 1);
+
+        var body = await client.GetStringAsync(
+            $"/api/item/{item.Id}", Xunit.TestContext.Current.CancellationToken);
+
+        using var reading = JsonDocument.Parse(body);
+
+        var rolls = reading.RootElement.GetProperty("legendaryStats").EnumerateArray().ToArray();
+
+        Assert.NotEmpty(rolls);
+
+        foreach (var roll in rolls)
+        {
+            Assert.False(roll.TryGetProperty("resource", out _));
+            Assert.False(roll.TryGetProperty("id", out _));
+            Assert.False(string.IsNullOrWhiteSpace(roll.GetProperty("name").GetString()));
+        }
+
+        Assert.Contains(rolls, roll => roll.TryGetProperty("description", out var text) && text.GetString() is not null);
     }
 
     [Fact]

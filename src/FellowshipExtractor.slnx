@@ -6,6 +6,7 @@
   <Project Path="Fellowship.Codex/Fellowship.Codex.csproj" />
   <Project Path="Fellowship.SDK.Generators/Fellowship.SDK.Generators.csproj" />
   <Project Path="Fellowship.SDK/Fellowship.SDK.csproj" />
+  <Project Path="Fellowship.Storage/Fellowship.Storage.csproj" />
   <Project Path="FellowshipExtractor.AppHost/FellowshipExtractor.AppHost.csproj" />
   <Project Path="FellowshipExtractor.Publisher/FellowshipExtractor.Publisher.csproj" />
   <Project Path="FellowshipExtractor.ServiceDefaults/FellowshipExtractor.ServiceDefaults.csproj" />

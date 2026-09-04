@@ -13,15 +13,15 @@ dotnet run --project src/FellowshipExtractor
 ```
 
 With no command that writes the whole export, described under [Everything at once](#everything-at-once):
-`output/export-<build>` unless a connection string names blob storage, where `<build>` is the Steam
-build id. The folder holds `data/` and `ui/` and nothing else, and `output/` holds the folder and
-nothing else.
+`output/` unless a remote store is named. It holds one `export-<build>` folder per build, where
+`<build>` is the Steam build id, and one `ui/` folder of art shared by all of them.
 
 | Argument | What it does |
 | --- | --- |
 | `--usmap` | Recovers the mappings first, and stops before exporting if they come back short |
-| `--output <path>` | Writes a folder laid out like the container, `output/export-<build>` by default |
-| `--connection-string <value>` | Writes into the `icons` blob container, also read from `ConnectionStrings__icons` |
+| `--output <path>` | Writes a folder laid out like a store, `output/` by default |
+| `--connection-string <value>` | Writes into an Azure Blob container, also read from `ConnectionStrings__icons` |
+| `--bucket <name>` | Writes into an S3 bucket, also read from `S3__Bucket` |
 
 | Command | What it does |
 | --- | --- |
@@ -592,38 +592,49 @@ dotnet run --project src/FellowshipExtractor -- --usmap
 
 Every run covers the whole build, with or without the mappings step.
 
-Two arguments name the destination. `--output <path>` writes a folder, `output/export-<build>` when
-neither argument is given, where `<build>` is the Steam build id of the install the assets came
-from. `--connection-string <value>` writes every document, setting and image straight into the
-`icons` blob container instead, leaving nothing on disk; the value is taken from the
-`ConnectionStrings:icons` configuration key when the argument is absent, which is the key the
-Publisher app host injects, so a run under it needs no argument at all and writes no export folder.
-Naming both writes both in one pass over the build.
+Three arguments name the destination. `--output <path>` writes a store-shaped folder to that path,
+and a run that names no remote store writes `output/` even without it, filing its documents under
+`export-<build>`, where `<build>` is the Steam build id of the install the assets came from.
+`--connection-string <value>` writes every document,
+setting and image straight into an Azure Blob container instead, leaving nothing on disk; the value
+is taken from the `ConnectionStrings:icons` configuration key when the argument is absent, which is
+the key the Publisher app host injects, so a run under it needs no argument at all and writes no
+export folder. `--bucket <name>` writes the same into an S3 bucket, read from the `S3__Bucket`
+environment variable when the argument is absent; the bucket's region and the account's credentials
+come from the AWS SDK's own configuration chain. Naming more than one destination writes each in one
+pass over the build.
+
+Both remote destinations, and the read the codex does, go through one interface. `IStorage` in
+`src/Fellowship.Storage` names a store of objects: it lists them, reads one, prepares the store for
+writing, writes one, and addresses one for a browser. `AzureStorage` implements it over an Azure Blob
+container, and `S3Storage` over an S3 bucket. The extractor picks the implementation from the
+destination argument, and the codex picks it from configuration: `ConnectionStrings:icons` names the
+blob container, `S3:Bucket` names the bucket, and the connection string wins when both are set.
 
 `--usmap` recovers the mappings before the pass and stops the run if the round-trip resolves no
 schema for a type the export reads, so an export is never written from mappings that would read
 their tables back empty.
 
-A folder run finishes by copying `data/settings.json` to `src/Fellowship.SDK/`, which is the copy
-the source generator turns into the enumerated types the documents are read against.
+A folder run finishes by copying `export-<build>/settings.json` to `src/Fellowship.SDK/`, which is
+the copy the source generator turns into the enumerated types the documents are read against.
 
-A blob run uploads every image as it draws it, and publishes `data/entities.jsonl` and
-`data/settings.json` together once the pass has both. A pass that throws part way publishes neither,
-so a throw during the export leaves the container on the pair the last finished pass left.
+A run that writes a store uploads every image as it draws it, and publishes `entities.jsonl` and
+`settings.json` together once the pass has both. A pass that throws part way publishes neither,
+so a throw during the export leaves the store on the pair the last finished pass left.
 
 Either destination is the same layout:
 
 ```
-<root>/data/entities.jsonl
-<root>/data/settings.json
+<root>/export-<build>/entities.jsonl
+<root>/export-<build>/settings.json
 <root>/ui/<texture>.png
 ```
 
-On disk `<root>` is `output/export-<build>`. In the container the two data blobs carry that folder as
-their prefix, `export-<build>/data/...`, and the images stay at `ui/<texture>.png` at the container
-root, so a container holds every build's documents side by side against one set of art. The codex
-loads all of them, builds the site from the highest build, and renders what changed between adjacent
-versions on every entity page.
+On disk `<root>` is `output/`, and in a store it is the store root. Each build files its two data
+objects under its own `export-<build>` folder, and every build draws on the one `ui/` beside them, so
+a root holds every build's documents side by side against one set of art. A later build overwrites
+the art it redraws under the name it redraws it as. The codex loads all of them, builds the site from
+the highest build, and renders what changed between adjacent versions on every entity page.
 
 The run reports what it read: 12,649 documents from 12,648 entities across 13,094 tags, 7,200 with a
 display name and 6,676 with an icon; 2,064 effects named as part of one of 2,306 tagged abilities,
@@ -708,13 +719,13 @@ granted abilities being dropped, 421 rows across the augmentation table. The att
 gameplay effects losing their own scaling: an ability's comes from the effect it applies, but an
 effect asked for in its own right captures on itself, and only the referenced ones were being read.
 
-`grep -c '/Game/\|/Script/' data/entities.jsonl data/settings.json` returns 0 for both, which is the check
+`grep -c '/Game/\|/Script/' entities.jsonl settings.json` returns 0 for both, which is the check
 that no asset path survived anywhere in the export.
 
-The second check is that no hero codename did. `grep -c '"tag":' data/entities.jsonl`,
-`grep -c '"codename":' data/entities.jsonl` and `grep -c '"codename":' data/settings.json` all
+The second check is that no hero codename did. `grep -c '"tag":' entities.jsonl`,
+`grep -c '"codename":' entities.jsonl` and `grep -c '"codename":' settings.json` all
 return 0, and
-`grep -o -i -E 'bowguy|firemage|ink|lisa|mosse|sune|vigor|warmaster' data/settings.json | wc -l`
+`grep -o -i -E 'bowguy|firemage|ink|lisa|mosse|sune|vigor|warmaster' settings.json | wc -l`
 returns 0 because settings.json holds no exempt field. `entities.jsonl` cannot be checked that way:
 1,498 `icon` and 7,238 `iconByRarity` values are cooked texture filenames that carry a codename by
 design, and `Venomdrinker`, `Invigorate` and `Blood Link` carry a codename as a substring.
@@ -741,40 +752,62 @@ Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` t
 
 ## The codex
 
-`src/Fellowship.Codex` serves the export as a website and as an API from one process. It
-reads everything it draws out of the `icons` blob container, so the container has to be filled
-before the app will start:
+`src/Fellowship.Codex` serves the export as a website and as an API from one process. It reads
+everything it draws out of one of two places, and configuration decides which. Naming an object
+store points it at an Azure Blob container or an S3 bucket; naming neither points it at the tracked
+`output/` folder in the checkout, which is what a plain `dotnet run --project src/Fellowship.Codex`
+does. These are the keys that name a store:
+
+- `ConnectionStrings:icons`: an Azure Blob container, `icons` unless the string names another
+  through `ContainerName=`. This is the key the app host injects from Azurite, so a run under
+  `FellowshipExtractor.AppHost` needs no configuration of its own.
+- `S3:Bucket`: the bucket the codex reads, which is how the deployed container names its store.
+- `AWS:Region`: the bucket's region, read from `AWS_REGION` in the environment when the key is absent.
+- `S3:PublicUrl`: an absolute URL that art links use in place of the bucket's own S3 URL, for a
+  content delivery network or a custom domain. Optional.
+- `S3:ServiceUrl`: an S3-compatible endpoint such as MinIO, which turns on path-style addressing.
+  Optional.
+
+The connection string wins when both name a store, so a machine holding AWS credentials still reads
+its own Azurite. With neither set the codex reads the folder: `FolderExportSource` walks up from the
+working directory and the app's own base directory to the first `output/` holding an
+`export-<build>` with both files, `FELLOWSHIP_EXPORT` names one outright, and the art beside it is
+served from `/ui` so a page addresses it same-origin.
+
+The two shapes differ by one segment, and each source reads its own. A folder files its pair flat,
+at `export-<build>/entities.jsonl`; an object store files it under `data/`, at
+`export-<build>/data/entities.jsonl`, which is the shape the deployed bucket and the app host's
+Azurite both carry. The art sits at `ui/<texture>.png` at the root of either.
+
+Fill the store by running the extractor against it:
 
 ```powershell
 dotnet run --project src/FellowshipExtractor -- usmap
 
-dotnet run --project src/FellowshipExtractor.Publisher
-
-aspire run
+dotnet run --project src/FellowshipExtractor -- --bucket BUCKET_NAME
 ```
 
-`FellowshipExtractor.Publisher` is an app host of its own: it starts the same Azurite the codex uses
-and runs the extractor against it, so publishing is one command and needs no connection string on the
-line. The extractor resource reads the same `mappings/fellowship-<build>.usmap` the `usmap` command wrote, and
-a `FELLOWSHIP_USMAP` set in the shell that starts the host is passed to it as an absolute path, so a
-usmap named there is the one the run reads. The extractor resource runs once and finishes, and the host keeps running until it is stopped,
-so stop it once the dashboard shows the run has exited. `aspire run` then starts the codex against
-the container that run filled.
+Replace `BUCKET_NAME` with the S3 bucket the codex reads. The bucket's region and the account's
+credentials come from the AWS SDK's own configuration chain: environment variables, a shared
+credentials file, or an instance role. The run reads the same `mappings/fellowship-<build>.usmap` the
+`usmap` command wrote. `FellowshipExtractor.Publisher` runs the same pass against the app host's
+Azurite instead, which is what fills the container the codex reads locally.
 
-A run with no connection string writes the same target as a folder instead, laid out exactly
-like the container, which is what the test suite reads. Either way the export is a build output and
-is not in the repository, so a fresh clone or a fresh worktree has to produce it first.
+A run with no remote store named writes the same export as a folder instead, which is what the test
+suite and a plain codex run both read. That folder is tracked, so a fresh clone has the documents
+and the art already and needs no run of its own to serve them.
 
 | Address | What it answers |
 | --- | --- |
-| `/` | The front page: the roster, every entity type counted, a sample of what is in there |
-| `/browse` | Type tabs, the filter rail, the results table. The whole page is the query string |
+| `/` | The front page: the wordmark and the search box, with the menus in the masthead |
+| `/spells`, `/items`, `/dungeons`, `/npcs` | One category: its type tabs, the filter rail, the results table. The whole page beyond the category is the query string |
+| `/search?q=` | The same page across every category, for a search that crosses them |
 | `/entity/{slug}/{id}` | One entity in full, with its live tooltip at the top |
 | `/not-found` | What answers an address that names nothing. A 404 set while a component is rendering discards the markup that set it, so the message is worked back out of the address here |
 | `/api/search?q=` | Ranked name matches across every type, grouped by type with counts |
 | `/api/entities?...` | Every entity a filter leaves, paged |
 | `/api/entity/{slug}/{id}` | One entity's exported record, every per-hero reading of it |
-| `/api/tooltip/{slug}/{id}` | Any entity's tooltip as a self-contained HTML fragment |
+| `/api/tooltip/{slug}/{id}` | Any entity's tooltip as a self-contained HTML fragment. `?mobile` wraps it in the chrome a phone draws it in |
 | `/api/catalog` | The menus, types and facets the browser is built from |
 | `/openapi/v1.json` | The OpenAPI 3.1 description of every route above |
 | `/swagger` | Swagger UI, reading that description |
@@ -804,7 +837,7 @@ never the plural a menu label reads, so `/api/tooltip/item/5146` and not `/api/t
 
 ### Static HTML, one island
 
-The site is a Blazor Web App rendered statically. Every page - the menus with their counts, the
+The site is a Blazor Web App rendered statically. Every page - the menus, the
 filter rail, the results table, the whole of an entity page - is rendered once on the server and
 sent as HTML, so it needs no circuit, works with scripting off, and is what a crawler and a reader
 both get. `Routes.razor` names no render mode.
@@ -816,8 +849,9 @@ which is the same answer one hop shorter; both go through `Suggestions`, so the 
 endpoint cannot disagree about ranking, grouping or the cap. Anything the island is handed has to
 survive serialization across that boundary, so it takes a string and injects the rest.
 
-The three remaining behaviours that are genuinely the browser's - opening a menu, drawing a hovered
-tooltip, and the knobs on an entity page - are one script. Every listener in it is delegated from
+The behaviours that are genuinely the browser's - opening a menu, the drawer a phone opens the menus
+in, drawing a hovered tooltip, the card a phone opens on tap, adding a filter to the rail and folding
+the rail on a phone, and the knobs on an entity page - are one script. Every listener in it is delegated from
 `document`, because enhanced navigation replaces the body in place: a handler bound to an element
 goes with the element, and the script itself is loaded once and never runs again.
 
@@ -835,6 +869,18 @@ naming where the fragment comes from, one container, a lazy fetch, an answer cac
 root. What differs is the bootstrap - that app is WebAssembly, so a provider component imports the
 module through `IJSRuntime`; here the pages are static and the module is loaded by a script tag and
 arms itself.
+
+A phone has nothing to hover, so a tap on a link that carries a tooltip address opens the card in
+place of following the link. The script fetches the same address with `mobile` added, and the
+endpoint answers the card wrapped in the chrome a phone draws it in: a close button pinned to the
+top right, the card centred in the screen, and a bar at the foot that links to the entity's own
+page. A card taller than the screen scrolls, and the bar follows it below the fold. The chrome's
+rules ride inside the fragment's own style element, so it is still one self-contained fragment
+painted into the same shadow root, with the layer switched to fill the viewport and the foot link
+pointed at the tapped link's own address. Dismissal is one attribute: the close button and the
+space around the card carry `data-dismiss`, and whoever painted the fragment removes it when a tap
+lands on an element that carries it. Any other caller gets the same fragment by adding `mobile` to
+the tooltip address, given bare or as `mobile=true`, and needs only that one listener.
 
 ### The page's styles and the tooltip's cannot touch
 
@@ -860,9 +906,9 @@ shadow root. That is closed on the other side, in `TooltipRenderer`'s root rule,
 fragment's business to be legible wherever it is embedded rather than every host's business to be
 careful with it.
 
-### Nothing in the browser is a list of the game's content
+### Nothing the browser filters by is a list of the game's content
 
-The menus, the filter rail, the type tabs and every count in them are read off `entities.jsonl` at
+The filter rail, the type tabs and every count in them are read off `entities.jsonl` at
 startup. A facet is declared once, as a name and a selector:
 
 ```csharp
@@ -874,12 +920,48 @@ passes the filter, so a facet can never offer a value that then matches nothing.
 each facet over the rows *every other* filter leaves, which is what keeps a second slot clickable
 after the first one is chosen.
 
-The extractor's own drop rules already keep a row a reader cannot meet out of `entities.jsonl`, so
-every one of the 21 types the corpus holds reaches a tab, a menu, a facet and search: there is no
-second, narrower list of which types a reader may meet. What `PublicTypes` still curates is only how
-a type is spelled and filed - its label, its noun and which column of the menu it sits under, because
-nothing in the build groups a trait with an item and nothing in it says which column a reader would
-look under.
+The rail keeps only a type's primary facets in view, which is what `Primary` on a facet declares:
+slot, hero and rarity for an item, hero for an ability, gem type for a gem. Every other facet,
+every flag and every measure the results carry is a row behind the `Additional filters…` select,
+drawn with its values but hidden until it is picked, and a `remove` button hides it again. A row the
+query already states draws open, with a `remove` link that clears it from the query. A flag no row
+of the results meets is absent, as is a measure no row carries. On a phone the rail sits
+above the results, folded under its head, and the head's badge counts the filters in force. A count
+of rows is stated once, beside the pager that sits above the table and again below it; a search
+counts each type on its tabs. Nothing else counts anything.
+
+### Categories are what a reader navigates by
+
+A reader meets Spells, Items, Dungeons and NPCs, and every entity type names one of them. That is what
+`Category` on a `PublicType` declares, and it is the only thing that decides a route: each category is
+one page taking the category out of its own address, so adding a fifth category adds a route without
+touching the page. A type is a tab within its category rather than a route of its own -
+`/spells?type=relic-power` lists the relic powers, and a relic power's own page is
+`/relic-power/{id}`. Landing on a category with no tab taken draws every type it holds in one table
+of art, name, type and source.
+
+### The menu is written, not discovered
+
+`MenuService` states the menu outright: which categories open, which types they list, which of those
+open a panel, and what each panel's sections are called. Nothing about its shape is read out of the
+export, so a menu never reorders itself because one hero happens to own more effects than another.
+Items alone earns a panel, because items alone are a hierarchy - Armour to an armour type to a slot,
+beside Accessories and Weapons - the shape a reader knows from an armoury. Talents open the roster,
+Gems open their types, NPCs open the zones they are found in; every other type is a plain link
+straight to its tab.
+
+A leaf list still reads its canonical source, sorted by name: the roster comes from `settings.json`,
+the armour types and gem types from the enums generated off it, the armour slots from the slot weights
+in paper-doll order, and the zones from the creatures' own source facet. What a hand-written tree
+loses is the guarantee that a link resolves at all, so `MenuTests` walks every href in it through the
+same parse and search a request takes, and fails on one that names no category, that the rail cannot
+read, or that answers with no rows.
+
+The extractor's own drop rules already keep a row a reader cannot meet out of `entities.jsonl`. What
+`PublicTypes` curates is how a type is spelled, which category files it, and
+whether a reader meets it at all: a talent slot, a mount power, a modifier, a hero, a legendary stat
+and a gem type each carry facts a page renders and none is an entity a reader browses to. A gem type
+is a value of the gem facet, and a legendary stat is read inline off the item that rolls it.
 
 The details table on an entity page is read off the row's own typed document class by reflection,
 matching on the concrete type - `Item`, `Ability`, `SetBonus` and the rest - for the fields only one
@@ -920,8 +1002,11 @@ value.
 Two Aspire app hosts share one Azurite instance. `FellowshipExtractor.AppHost` holds the storage
 emulator and the codex. `FellowshipExtractor.Publisher` holds the same storage emulator and
 `FellowshipExtractor` as a resource, with the container connection string injected by
-`WithReference` as `ConnectionStrings__icons`, so running it publishes the build into the container
-the codex reads and writes no folder of its own.
+`WithReference` as `ConnectionStrings__icons`, so running it publishes the build into the Azure
+container through the extractor's connection-string target and writes no folder of its own. This is
+the publisher path, and the codex reads the container it fills: `FellowshipExtractor.AppHost` injects
+the same `ConnectionStrings__icons` into the codex, which reads the blob container in place of the
+S3 bucket the deployed container reads.
 
 The emulator carries `WithLifetime(ContainerLifetime.Persistent)` in both, so the container outlives
 whichever host started it and the other attaches to the one already running rather than standing up
@@ -960,6 +1045,28 @@ Each checkout also gets its own `fellowship-azurite-<hash>` data volume, which n
 the worktree goes: `docker volume rm` it, or leave it and it will be reused if the worktree comes
 back at the same path.
 
+### Deploying the codex
+
+The codex runs in production as one Docker Compose service behind Caddy, reading the export from
+the `fellowship-codex` bucket and serving art through CloudFront at
+`cdn.codex.fellowshipanalyzer.com`. Merging to `master` deploys it:
+`.github/workflows/deploy.yml` builds `src/Fellowship.Codex/Dockerfile`, pushes the image to the
+GitHub container registry and starts it on the instance.
+
+A second job in the same workflow publishes the art the checkout carries, and the two run side by
+side because neither needs what the other produces. It lists the bucket's `ui/` prefix, takes each
+object's ETag as the MD5 of its bytes the way `S3Storage.Hash` does, hashes every file under
+`output/ui`, and uploads only the files whose hash the bucket does not already hold - the same rule
+`StorageTarget` applies when the extractor publishes straight to the store, so a run that adds a
+handful of textures uploads a handful. Uploads carry `Cache-Control: no-cache`, matching what the
+extractor writes, which is what lets a rewritten texture reach viewers through CloudFront without an
+invalidation. The AWS CLI's multipart threshold is raised to 64 MB first, so every object is put in
+one part and its ETag stays a plain MD5 the next run can compare against.
+
+`deploy/` holds the compose file, the
+CloudFormation stack, the provisioning script and the scripts the workflow runs on the server, and
+[docs/deploying-the-codex.md](docs/deploying-the-codex.md) is the runbook.
+
 ## The MCP server
 
 `src/Fellowship.Codex.Mcp` gives an AI agent the same export over MCP, with three tools:
@@ -996,7 +1103,7 @@ against that worktree's own export rather than another checkout's.
 The server finds its export in this order: an `--export <folder>` argument, then
 `FELLOWSHIP_EXPORT`, then the nearest `output/` above the working directory that holds an
 `export-*`, then the nearest one above its own binary. Within an `output/` it takes the highest
-build id carrying both `data/entities.jsonl` and `data/settings.json`, so several builds can sit
+build id carrying both `entities.jsonl` and `settings.json`, so several builds can sit
 side by side and the newest wins. The two ancestor walks make the registered entry portable across
 checkouts: the working directory covers a client started at the repository root, and the binary's
 own location covers one started anywhere else. `--export` and `FELLOWSHIP_EXPORT` name a folder
@@ -1005,8 +1112,8 @@ outside both, and are the only way to read a build other than the newest.
 Two things read differently over MCP than over HTTP. A reference's `resource` is the codex API's
 own path with no host, `/api/{slug}/{id}`, because a stdio server has no request to take a scheme
 and an authority from. And every art field names an image file, `Icon_Warmaster_FkPlate_Chest.png`,
-rather than addressing one in the blob container, because there is no container to address. Both
-fall out of what the host registers: `NamedArtSource` in place of `BlobArtSource`, and an empty
+rather than addressing one in a store, because there is no store to address. Both
+fall out of what the host registers: `NamedArtSource` in place of `StorageArtSource`, and an empty
 origin in place of `Origins.Of(http)`.
 
 Errors are results rather than protocol faults. Every tool answers a bad slug, an unknown hero, a
@@ -1047,6 +1154,10 @@ both. `McpTests` holds the two wordings equal.
 - `src/Fellowship.Codex.Mcp/` - the MCP server. `Entry` builds a plain host with no web pipeline,
   `CodexMcp` registers the codex's reading services over a folder export and names the server, and
   `CodexTools` is the three tools an agent calls.
+- `src/Fellowship.Storage/` - the object store the extractor writes and the codex reads. `IStorage`
+  names a store of objects; `AzureStorage` implements it over an Azure Blob container and `S3Storage`
+  over an S3 bucket; `AddStorage` registers the blob one from `ConnectionStrings:icons`, or the S3
+  one from the `S3` and `AWS` configuration keys.
 - `src/FellowshipExtractor.AppHost/` and `src/FellowshipExtractor.Publisher/` - the two app hosts.
   `StackIdentity.cs` sits in the first and is compiled into the second as a linked item, so the
   stack name, the port offset, the data volume, the compose project and the container name have one

@@ -108,7 +108,7 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
         var described = document.RootElement.GetProperty("info").GetProperty("description").GetString()!;
 
         var listed = RouteTests.Factory.Store.Entities
-            .Count(row => PublicTypes.Listed(EntityTypes.TypeOf(row)));
+            .Count(row => PublicTypes.IsListed(EntityTypes.TypeOf(row)));
 
         Assert.Contains(
             listed.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
@@ -162,7 +162,7 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
                 : Sample(name);
 
             CodexQuery.Parse(
-                Query(new Dictionary<string, string> { [name] = value }), codex, declared, out var error);
+                Query(new Dictionary<string, string> { [name] = value }), codex, declared, null, out var error);
 
             Assert.True(error is null, $"The document offers '{name}' and the filter answers: {error}");
         }
@@ -172,7 +172,7 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
             foreach (var bound in new[] { measure.Key + "Min", measure.Key + "Max" })
             {
                 CodexQuery.Parse(
-                    Query(new Dictionary<string, string> { [bound] = "1" }), codex, declared, out var error);
+                    Query(new Dictionary<string, string> { [bound] = "1" }), codex, declared, null, out var error);
 
                 Assert.True(error is null, $"The document names '{bound}' and the filter answers: {error}");
             }

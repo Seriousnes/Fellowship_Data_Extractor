@@ -2,7 +2,7 @@ using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Models;
 
-public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResults results)
+public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResults results, string where)
 {
     public ICodexService Codex => codex;
 
@@ -11,28 +11,63 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
     public CodexResults Results => results;
 
     public string Toggle(string facet, string value) =>
-        "/browse" + query.ToQueryString(toggle: (facet, value));
+        where + query.ToQueryString(toggle: (facet, value));
 
     public string Replace(string key, string? value) =>
-        "/browse" + query.ToQueryString(replace: (key, value));
+        where + query.ToQueryString(replace: (key, value));
 
-    public string PageLink(int page) => "/browse" + query.ToQueryString(page: page);
+    public string PageLink(int page) => where + query.ToQueryString(page: page);
 
     public string SortLink(string column) =>
         query.Sort == column && !query.Descending
-            ? "/browse" + query.ToQueryString(replace: ("dir", "desc"))
-            : "/browse" + (query with { Descending = false }).ToQueryString(replace: ("sort", column));
+            ? where + query.ToQueryString(replace: ("dir", "desc"))
+            : where + (query with { Descending = false }).ToQueryString(replace: ("sort", column));
 
     public string? SortState(string column) =>
         query.Sort != column ? null : query.Descending ? "descending" : "ascending";
 
+    public string Where => where;
+
     public string Bare =>
-        query.Text is null ? "/browse" : "/browse?q=" + Uri.EscapeDataString(query.Text);
+        query.Text is null ? where : where + "?q=" + Uri.EscapeDataString(query.Text);
 
     public IReadOnlyList<FacetView> Rail =>
     [
         .. results.Facets.Where(facet => facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Key)),
     ];
+
+    public IReadOnlyList<FacetView> Primary => [.. Rail.Where(facet => codex.Facet(facet.Key)?.Primary == true)];
+
+    public IReadOnlyList<FacetView> More => [.. Rail.Where(facet => codex.Facet(facet.Key)?.Primary != true)];
+
+    public IReadOnlyList<Flag> Flags =>
+    [
+        .. codex.Flags.Where(flag =>
+            query.Flags.ContainsKey(flag.Key) ||
+            results.Flagged.Contains(flag.Key, StringComparer.OrdinalIgnoreCase)),
+    ];
+
+    public bool Selected(string facet) =>
+        query.Selections.TryGetValue(facet, out var values) && values.Count > 0;
+
+    public bool Stated(string flag) => query.Flags.ContainsKey(flag);
+
+    public bool Bounded(string measure) => query.Ranges.ContainsKey(measure);
+
+    public bool? Answer(string flag) =>
+        query.Flags.TryGetValue(flag, out var wanted) ? wanted : flag == CodexQuery.NamedFlag ? query.Named : null;
+
+    public string Unbound(string measure)
+    {
+        var without = query with
+        {
+            Ranges = query.Ranges
+                .Where(r => !string.Equals(r.Key, measure, StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase),
+        };
+
+        return where + without.ToQueryString(page: 1);
+    }
 
     public IReadOnlyList<Measure> Ranges =>
     [
@@ -69,7 +104,7 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
             foreach (var type in query.Types)
             {
                 var slug = EntityTypes.Slug(type);
-                chips.Add((Models.FellowshipCodex.Label(type), "/browse" + query.ToQueryString(toggle: ("type", slug))));
+                chips.Add((Models.FellowshipCodex.Label(type), where + query.ToQueryString(toggle: ("type", slug))));
             }
 
             foreach (var (key, values) in query.Selections)
@@ -86,7 +121,7 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
             {
                 if (codex.Flag(key) is not { } flag) continue;
                 chips.Add(((wanted ? string.Empty : "Not: ") + flag.Label,
-                    "/browse" + query.ToQueryString(replace: (key, null))));
+                    where + query.ToQueryString(replace: (key, null))));
             }
 
             foreach (var (key, range) in query.Ranges)
@@ -103,14 +138,7 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
 
                 if (bounds is null) continue;
 
-                var without = query with
-                {
-                    Ranges = query.Ranges
-                        .Where(r => !string.Equals(r.Key, key, StringComparison.OrdinalIgnoreCase))
-                        .ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase),
-                };
-
-                chips.Add(($"{measure.Label}: {bounds}{measure.Unit}", "/browse" + without.ToQueryString(page: 1)));
+                chips.Add(($"{measure.Label}: {bounds}{measure.Unit}", Unbound(key)));
             }
 
             return chips;

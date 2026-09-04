@@ -15,11 +15,19 @@ public sealed record TraitTooltipRequest
     [Description("Given as true when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
+    [Description("Given as true, or bare, when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button and a link to its page.")]
+    public Switch? Mobile { get; init; }
+
     [Description("The state to draw the node at: selected, available or unavailable.")]
     public string? State { get; init; }
 
     public TooltipQuery ToQuery(IQueryCollection raw, StatParameters stats, out string? error) =>
-        StatQuery.Read(this, raw, stats, out error) with { ShowIcon = ShowIcon == true, State = StatQuery.Given(State) };
+        StatQuery.Read(this, raw, stats, out error) with
+        {
+            ShowIcon = ShowIcon == true,
+            Mobile = Mobile?.On == true,
+            State = StatQuery.Given(State),
+        };
 }
 
 public static class TraitTooltipEndpoint
@@ -42,7 +50,7 @@ public static class TraitTooltipEndpoint
         var query = request.ToQuery(http.Request.Query, store.Stats, out var error);
 
         return error is null
-            ? tooltips.Get(EntityType.Trait, request.Id, query)
+            ? tooltips.Get(EntityType.Trait, request.Id, query, Origins.Of(http))
             : Task.FromResult(StatQuery.Unreadable(error, store.Stats));
     }
 }

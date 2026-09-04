@@ -1,10 +1,10 @@
 bin/
 obj/
 /temp-*/
-/output/*
-!/output/export-*/
-/output/export-*/*
-!/output/export-*/data/
+
+# The dump command writes scratch JSON here for reading an asset the export does not carry.
+/output/dump/
+
 *.user
 /src/.vs/FellowshipExtractor.slnx
 .vs/
@@ -13,3 +13,6 @@ obj/
 # is the only committed source of styling and a fresh clone produces the rest on its first build.
 *.css
 *.css.map
+
+/deploy/codex.env
+/deploy/.env

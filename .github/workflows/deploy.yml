@@ -1,0 +1,187 @@
+name: Deploy the codex
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: An image tag already in the registry, to redeploy it without building.
+        required: false
+        type: string
+
+concurrency:
+  group: deploy-codex
+
+env:
+  IMAGE: ghcr.io/seriousnes/fellowship-codex
+  REMOTE: ubuntu@foundry.seriousnes.com
+  REMOTE_DIR: /opt/codex
+  HEALTH_URL: https://codex.fellowshipanalyzer.com/health
+  ART: ui
+  SOURCE: output/ui
+  STAGE: art-staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Name the image tag
+        id: image
+        env:
+          REQUESTED: ${{ inputs.tag }}
+        run: |
+          tag="$REQUESTED"
+          if [ -z "$tag" ]; then tag="${GITHUB_SHA:0:7}"; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Buildx
+        if: ${{ !inputs.tag }}
+        uses: docker/setup-buildx-action@v3
+
+      - name: Sign in to the registry
+        if: ${{ !inputs.tag }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push the image
+        if: ${{ !inputs.tag }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/Fellowship.Codex/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ steps.image.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Open the connection to the server
+        env:
+          KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$HOSTS" > ~/.ssh/known_hosts
+
+      - name: Write the compose file and the environment
+        env:
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_PUBLIC_URL: ${{ secrets.S3_PUBLIC_URL }}
+          REGION: ${{ secrets.AWS_REGION }}
+          KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          umask 077
+          {
+            printf 'S3__Bucket=%s\n' "$S3_BUCKET"
+            printf 'S3__PublicUrl=%s\n' "$S3_PUBLIC_URL"
+            printf 'AWS_REGION=%s\n' "$REGION"
+            printf 'AWS_ACCESS_KEY_ID=%s\n' "$KEY_ID"
+            printf 'AWS_SECRET_ACCESS_KEY=%s\n' "$SECRET"
+          } > codex.env
+          scp -o BatchMode=yes codex.env deploy/compose.yaml "$REMOTE:$REMOTE_DIR/"
+          rm codex.env
+
+      - name: Pull the image onto the server
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+          TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          printf '%s' "$TOKEN" | ssh -o BatchMode=yes "$REMOTE" \
+            "docker login ghcr.io -u '$ACTOR' --password-stdin && docker pull '$IMAGE:$TAG' && docker logout ghcr.io"
+
+      - name: Start the container
+        env:
+          TAG: ${{ steps.image.outputs.tag }}
+        run: ssh -o BatchMode=yes "$REMOTE" bash -s -- "$TAG" < deploy/server/start.sh
+
+      - name: Wait for the codex to answer
+        run: |
+          deadline=$((SECONDS + 120))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH_URL" || true)
+            if [ "$code" = "200" ]; then
+              echo "The codex answered 200 from $HEALTH_URL."
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "The codex did not answer 200 from $HEALTH_URL within 120 seconds." >&2
+          ssh -o BatchMode=yes "$REMOTE" "cd $REMOTE_DIR && docker compose logs --tail 80" >&2
+          exit 1
+
+      - name: Prune old images from the server
+        env:
+          TAG: ${{ steps.image.outputs.tag }}
+        run: ssh -o BatchMode=yes "$REMOTE" bash -s -- "$IMAGE" "$TAG" < deploy/server/prune.sh
+
+  art:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BUCKET: ${{ secrets.S3_BUCKET }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Name the art the bucket already carries
+        run: |
+          aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "$ART/" \
+            --query 'Contents[].[Key,ETag]' --output text > "$RUNNER_TEMP/listed.txt"
+          awk 'NF == 2' "$RUNNER_TEMP/listed.txt" > "$RUNNER_TEMP/published.tsv"
+          echo "The bucket carries $(wc -l < "$RUNNER_TEMP/published.tsv") object(s) under $ART/."
+
+      - name: Stage the art the bucket does not carry
+        run: |
+          carried=$(find "$SOURCE" -maxdepth 1 -type f -name '*.png' | wc -l)
+          if [ "$carried" -eq 0 ]; then
+            echo "The checkout carries no art under $SOURCE, which is what this job publishes." >&2
+            exit 1
+          fi
+          cd "$SOURCE"
+          find . -maxdepth 1 -type f -name '*.png' -print0 | xargs -0 md5sum > "$RUNNER_TEMP/local.md5"
+          awk -v prefix="$ART" '
+            NR == FNR {
+              tag = $2
+              gsub(/"/, "", tag)
+              if (tag ~ /^[0-9a-f]{32}$/) published[$1] = tag
+              next
+            }
+            {
+              name = substr($0, 35)
+              sub(/^\.\//, "", name)
+              if (published[prefix "/" name] != substr($0, 1, 32)) print name
+            }
+          ' "$RUNNER_TEMP/published.tsv" "$RUNNER_TEMP/local.md5" > "$RUNNER_TEMP/changed.txt"
+          rm -rf "$GITHUB_WORKSPACE/$STAGE"
+          mkdir -p "$GITHUB_WORKSPACE/$STAGE"
+          xargs -a "$RUNNER_TEMP/changed.txt" -d '\n' -r cp -l -t "$GITHUB_WORKSPACE/$STAGE"
+          changed=$(wc -l < "$RUNNER_TEMP/changed.txt")
+          echo "$changed of $carried art file(s) differ from the bucket's copy, $((carried - changed)) matched their hash."
+
+      - name: Publish the staged art
+        run: |
+          if [ ! -s "$RUNNER_TEMP/changed.txt" ]; then
+            echo "Every art file in the checkout already matches the bucket's copy, so nothing was published."
+            exit 0
+          fi
+          aws configure set default.s3.multipart_threshold 64MB
+          aws s3 cp "$GITHUB_WORKSPACE/$STAGE" "s3://$BUCKET/$ART/" --recursive \
+            --content-type image/png --cache-control no-cache --only-show-errors
+          echo "Published $(wc -l < "$RUNNER_TEMP/changed.txt") art file(s) to s3://$BUCKET/$ART/."

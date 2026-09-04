@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  ACM certificate for the CloudFront distribution that serves the Fellowship
+  codex art. CloudFront reads its certificate from us-east-1, so this stack
+  deploys there while the distribution itself stays in the codex stack. ACM
+  validates the name through DNS records CloudFormation writes into the hosted
+  zone.
+
+Parameters:
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: Id of the Route 53 public hosted zone for the domain.
+  CdnRecordName:
+    Type: String
+    Description: Hostname that serves the art, for example cdn.codex.fellowshipanalyzer.com.
+
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref CdnRecordName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref CdnRecordName
+          HostedZoneId: !Ref HostedZoneId
+
+Outputs:
+  CertificateArn:
+    Description: Certificate the CloudFront distribution presents for the art hostname.
+    Value: !Ref Certificate

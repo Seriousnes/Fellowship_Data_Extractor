@@ -16,6 +16,9 @@ public sealed record ItemTooltipRequest
     [Description("Given as true when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
+    [Description("Given as true, or bare, when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button and a link to its page.")]
+    public Switch? Mobile { get; init; }
+
     [Description("The hero whose reading of the id to draw, where one id reads differently per hero.")]
     public string? Hero { get; init; }
 
@@ -75,6 +78,7 @@ public sealed record ItemTooltipRequest
         return read with
         {
             ShowIcon = ShowIcon == true,
+            Mobile = Mobile?.On == true,
             RandomStats = rolled,
             Hero = StatQuery.Given(Hero),
             Rarity = StatQuery.Given(Rarity),
@@ -114,7 +118,7 @@ public static class ItemTooltipEndpoint
             http.Request.Query, store.Stats, store.Settings.StatCalculation.RandomStatPool, out var error);
 
         return error is null
-            ? tooltips.Get(EntityType.Item, request.Id, query)
+            ? tooltips.Get(EntityType.Item, request.Id, query, Origins.Of(http))
             : Task.FromResult(StatQuery.Unreadable(error, store.Stats));
     }
 }

@@ -14,6 +14,8 @@ public sealed record CodexQuery
 
     public string? Text { get; init; }
 
+    public Category? Category { get; init; }
+
     public IReadOnlyList<EntityType> Types { get; init; } = [];
 
     public IReadOnlyDictionary<string, IReadOnlyList<string>> Selections { get; init; } =
@@ -36,7 +38,11 @@ public sealed record CodexQuery
     public int PageSize { get; init; } = DefaultPageSize;
 
     public static CodexQuery Parse(
-        IQueryCollection query, ICodexService codex, IReadOnlySet<string> declared, out string? error)
+        IQueryCollection query,
+        ICodexService codex,
+        IReadOnlySet<string> declared,
+        Category? category,
+        out string? error)
     {
         error = null;
 
@@ -69,10 +75,16 @@ public sealed record CodexQuery
                     case "type":
                         foreach (var slug in values)
                         {
-                            if (!EntityTypes.TryParse(slug, out var named) || !PublicTypes.Listed(named))
+                            if (!EntityTypes.TryParse(slug, out var named) || !PublicTypes.IsListed(named))
                             {
                                 error = PublicTypes.NoSuchType(slug);
-                                return new CodexQuery();
+                                return new CodexQuery { Category = category };
+                            }
+
+                            if (category is not null && PublicTypes.Category(named) != category)
+                            {
+                                error = PublicTypes.NotInCategory(slug, category);
+                                return new CodexQuery { Category = category };
                             }
 
                             types.Add(named);
@@ -94,12 +106,12 @@ public sealed record CodexQuery
                         break;
 
                     case "page":
-                        if (!TryNumber(values, out var wanted, out error)) return new CodexQuery();
+                        if (!TryNumber(values, out var wanted, out error)) return new CodexQuery { Category = category };
                         page = wanted is > 0 ? (int)wanted : 1;
                         break;
 
                     case "size":
-                        if (!TryNumber(values, out var size, out error)) return new CodexQuery();
+                        if (!TryNumber(values, out var size, out error)) return new CodexQuery { Category = category };
                         pageSize = size is > 0 ? Math.Min((int)size, MaximumPageSize) : DefaultPageSize;
                         break;
 
@@ -137,7 +149,7 @@ public sealed record CodexQuery
                         {
                             error = $"'{value}' is not a value of {facet.Label}. The values are " +
                                 string.Join(", ", offered) + ".";
-                            return new CodexQuery();
+                            return new CodexQuery { Category = category };
                         }
 
                         chosen.Add(value);
@@ -157,7 +169,7 @@ public sealed record CodexQuery
 
             if (Bound(key) is var (measureKey, isMax) && codex.Measure(measureKey) is { } measure)
             {
-                if (!TryNumber(values, out var bound, out error)) return new CodexQuery();
+                if (!TryNumber(values, out var bound, out error)) return new CodexQuery { Category = category };
                 if (bound is null) continue;
 
                 var current = ranges.GetValueOrDefault(measure.Key);
@@ -170,26 +182,27 @@ public sealed record CodexQuery
                     .Concat(codex.Flags.Select(f => f.Key))
                     .Concat(codex.Measures.SelectMany(m => new[] { m.Key + "Min", m.Key + "Max" }))
                     .Concat(declared)) + ".";
-            return new CodexQuery();
+            return new CodexQuery { Category = category };
         }
 
         if (codex.Sorting(sort) is null && codex.Measure(sort) is null)
         {
             error = $"'{sort}' is not a column. Sort by one of " +
                 string.Join(", ", codex.Sortings.Select(s => s.Key).Concat(codex.Measures.Select(m => m.Key))) + ".";
-            return new CodexQuery();
+            return new CodexQuery { Category = category };
         }
 
         if (group is not null && codex.Facet(group) is null)
         {
             error = $"'{group}' is not a facet to group by. The facets are " +
                 string.Join(", ", codex.Facets.Select(f => f.Key)) + ".";
-            return new CodexQuery();
+            return new CodexQuery { Category = category };
         }
 
         return new CodexQuery
         {
             Text = string.IsNullOrWhiteSpace(text) ? null : text.Trim(),
+            Category = category,
             Types = types,
             Selections = selections,
             Flags = flags,
@@ -369,5 +382,7 @@ public sealed record CodexResults(
     IReadOnlyList<EntityDocument> Rows,
     IReadOnlyList<FacetView> Facets,
     IReadOnlyDictionary<EntityType, int> Types,
-    EntityType Chosen,
-    IReadOnlyList<string> Measured);
+    EntityType? Chosen,
+    IReadOnlyList<string> Measured,
+    IReadOnlyList<string> Flagged);
+

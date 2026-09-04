@@ -15,26 +15,34 @@ public sealed class CodexSearchService(
 {
     public CodexResults Run(CodexQuery query)
     {
-        IEnumerable<EntityDocument> read = query.Text is { } text
-            ? index.Search(text, int.MaxValue).Select(hit => hit.Document)
-            : store.Entities;
+        var found = query.Text is { } text
+            ? index.Search(text, int.MaxValue)
+                .Select(hit => hit.Document)
+                .Where(row => PublicTypes.IsListed(EntityTypes.TypeOf(row)))
+                .ToArray()
+            : Listed();
 
-        var rows = read.Where(row => PublicTypes.Listed(EntityTypes.TypeOf(row))).ToArray();
+        var rows = query.Category is { } category
+            ? found.Where(row => PublicTypes.Category(EntityTypes.TypeOf(row)) == category).ToArray()
+            : found;
 
         var across = rows.Where(row => Matches(row, query, skipTypes: true)).ToArray();
 
-        var chosen = query.Types.Count > 0 ? query.Types : [Default(across)];
+        var applied = query.Types.Count == 0
+            ? across
+            : across.Where(row => query.Types.Contains(EntityTypes.TypeOf(row))).ToArray();
 
-        var matched = across.Where(row => chosen.Contains(EntityTypes.TypeOf(row))).ToArray();
+        var chosen = query.Types.Count == 1 ? query.Types[0] : (EntityType?)null;
 
-        var ordered = Order(matched, query);
+        var ordered = Order(applied, query);
 
         var pages = Math.Max(1, (ordered.Length + query.PageSize - 1) / query.PageSize);
         var page = Math.Min(query.Page, pages);
         var window = ordered.Skip((page - 1) * query.PageSize).Take(query.PageSize).ToArray();
 
         var facets = codex.Facets
-            .Select(facet => codex.View(facet, Without(rows, query, facet.Key)))
+            .Select(facet => codex.View(
+                facet, Narrowed(query, facet.Key) ? Without(rows, query, facet.Key) : applied))
             .Where(view => view.Values.Count > 0)
             .ToArray();
 
@@ -42,30 +50,33 @@ public sealed class CodexSearchService(
             .GroupBy(EntityTypes.TypeOf)
             .ToDictionary(group => group.Key, group => group.Count());
 
-        var unbounded = rows.Where(row => Matches(row, query with { Ranges = NoRanges })).ToArray();
+        var unbounded = query.Ranges.Count == 0
+            ? applied
+            : rows.Where(row => Matches(row, query with { Ranges = NoRanges })).ToArray();
 
         var measured = codex.Measures
             .Where(measure => unbounded.Any(row => measure.Value(row) is not null))
             .Select(measure => measure.Key)
             .ToArray();
 
-        return new CodexResults(ordered.Length, page, pages, window, facets, types, chosen[0], measured);
-    }
+        var flagged = codex.Flags
+            .Where(flag => unbounded.Any(flag.Predicate))
+            .Select(flag => flag.Key)
+            .ToArray();
 
-    private static EntityType Default(IReadOnlyList<EntityDocument> across)
-    {
-        var present = across.Select(EntityTypes.TypeOf).ToHashSet();
-
-        foreach (var tab in PublicTypes.Tabs)
-        {
-            if (present.Contains(tab.Type)) return tab.Type;
-        }
-
-        return EntityType.Item;
+        return new CodexResults(ordered.Length, page, pages, window, facets, types, chosen, measured, flagged);
     }
 
     private static readonly IReadOnlyDictionary<string, (double?, double?)> NoRanges =
         new Dictionary<string, (double?, double?)>(StringComparer.OrdinalIgnoreCase);
+
+    private EntityDocument[]? listed;
+
+    private EntityDocument[] Listed() =>
+        listed ??= [.. store.Entities.Where(row => PublicTypes.IsListed(EntityTypes.TypeOf(row)))];
+
+    private static bool Narrowed(CodexQuery query, string facet) =>
+        query.Selections.TryGetValue(facet, out var values) && values.Count > 0;
 
     private EntityDocument[] Without(IReadOnlyList<EntityDocument> rows, CodexQuery query, string facet) =>
         [.. rows.Where(row => Matches(row, query, skipFacet: facet))];

@@ -1,0 +1,246 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Private S3 bucket and CloudFront distribution that serve the Fellowship codex
+  art and export, with Route 53 records for the codex hostname and the art
+  hostname, and least privilege IAM users for the server and the extractor. The
+  distribution uses pay-as-you-go pricing under the CloudFront always-free tier.
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: fellowship-codex
+    Description: Name of the private S3 bucket that holds the export and art.
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: Id of the Route 53 public hosted zone for the domain.
+  RecordName:
+    Type: String
+    Description: Hostname that serves the codex, for example codex.fellowshipanalyzer.com.
+  CdnRecordName:
+    Type: String
+    Description: Hostname that serves the art, for example cdn.codex.fellowshipanalyzer.com.
+  CertificateArn:
+    Type: String
+    Description: ARN of the us-east-1 ACM certificate for the art hostname.
+  Ipv4:
+    Type: String
+    Description: IPv4 address of the Lightsail instance that runs the codex.
+  Ipv6:
+    Type: String
+    Description: IPv6 address of the Lightsail instance that runs the codex.
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
+  ArtCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub "${AWS::StackName}-art"
+        Comment: Revalidate art on every request so a rewritten texture is served at once.
+        DefaultTTL: 86400
+        MinTTL: 0
+        MaxTTL: 31536000
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingBrotli: true
+          EnableAcceptEncodingGzip: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  ArtHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub "${AWS::StackName}-art-headers"
+        Comment: Answer every origin, so a page on any host can read the art.
+        CorsConfig:
+          OriginOverride: true
+          AccessControlAllowCredentials: false
+          AccessControlAllowOrigins:
+            Items:
+              - "*"
+          AccessControlAllowMethods:
+            Items:
+              - GET
+              - HEAD
+          AccessControlAllowHeaders:
+            Items:
+              - "*"
+          AccessControlMaxAgeSec: 3600
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub "Fellowship codex art (${AWS::StackName})"
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_All
+        Aliases:
+          - !Ref CdnRecordName
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          - Id: ArtBucket
+            DomainName: !GetAtt Bucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: ArtBucket
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          CachePolicyId: !Ref ArtCachePolicy
+          ResponseHeadersPolicyId: !Ref ArtHeadersPolicy
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipalReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${BucketName}/ui/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+  ServerUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: fellowship-codex-server
+      Policies:
+        - PolicyName: read-export-and-art
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ListBucket
+                Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub "arn:aws:s3:::${BucketName}"
+              - Sid: GetObjects
+                Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+
+  ExtractorUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: fellowship-codex-extractor
+      Policies:
+        - PolicyName: publish-export-and-art
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ListBucket
+                Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub "arn:aws:s3:::${BucketName}"
+              - Sid: GetObjects
+                Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+              - Sid: PutObjects
+                Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+
+  Ipv4Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref RecordName
+      Type: A
+      TTL: "300"
+      ResourceRecords:
+        - !Ref Ipv4
+
+  Ipv6Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref RecordName
+      Type: AAAA
+      TTL: "300"
+      ResourceRecords:
+        - !Ref Ipv6
+
+  CdnIpv4Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref CdnRecordName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: false
+
+  CdnIpv6Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref CdnRecordName
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: false
+
+Outputs:
+  CdnUrl:
+    Description: Absolute URL the art links use, which the codex reads as S3__PublicUrl.
+    Value: !Sub "https://${CdnRecordName}"
+  DistributionDomainName:
+    Description: CloudFront domain that serves the art.
+    Value: !GetAtt Distribution.DomainName
+  DistributionId:
+    Description: CloudFront distribution id, used to invalidate the art cache.
+    Value: !Ref Distribution
+  BucketName:
+    Description: Name of the S3 bucket that holds the export and art.
+    Value: !Ref Bucket
+  ServerUserName:
+    Description: IAM user the codex server reads the export with.
+    Value: !Ref ServerUser
+  ExtractorUserName:
+    Description: IAM user the extractor publishes the export with.
+    Value: !Ref ExtractorUser

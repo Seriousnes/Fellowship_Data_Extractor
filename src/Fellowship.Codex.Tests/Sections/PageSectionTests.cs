@@ -11,12 +11,11 @@ public class NearbyTests : BunitContext
     }
 
     [Fact]
-    public void Lists_each_way_out_with_its_count()
+    public void Lists_each_way_out_and_counts_none_of_them()
     {
-        var here = new Bearings
-        {
-            Related = [("Slot: Head", $"/browse?type={EntityTypes.Slug(EntityType.Item)}&slot=Head", 1271)],
-        };
+        var where = $"{PublicTypes.Where(EntityType.Item)}&slot=Head";
+
+        var here = new Bearings { Related = [("Slot: Head", where)] };
 
         var cut = Render<Nearby>(p => p.AddCascadingValue(here));
 
@@ -24,8 +23,9 @@ public class NearbyTests : BunitContext
 
         var pill = cut.Find("ul.cx-pills a");
 
-        Assert.Equal($"/browse?type={EntityTypes.Slug(EntityType.Item)}&slot=Head", pill.GetAttribute("href"));
-        Assert.Equal("1,271", pill.QuerySelector("span.cx-num")!.TextContent);
+        Assert.Equal(where, pill.GetAttribute("href"));
+        Assert.Equal("Slot: Head", pill.TextContent.Trim());
+        Assert.Null(pill.QuerySelector("span.cx-num"));
     }
 }
 

@@ -1,61 +1,9 @@
 @page "/"
-@inject ICodexViewService Ui
-@inject IEntityStoreService Store
 
 <PageTitle>Fellowship Codex</PageTitle>
 
-<section class="cx-hero-band">
-    <h1>The Fellowship Codex</h1>
-    <p>
-        @Entries.ToString("N0") entries read straight out of the shipped build: every item, ability,
-        effect, talent, trait and creature in it, with the art, the tuning numbers and the tooltip the
-        game draws from them.
-    </p>
+<section class="cx-home">
+    <span class="cx-home-mark" aria-hidden="true"></span>
+    <h1 class="cx-home-name">Fellowship <b>Codex</b></h1>
+    <Omnibox Hero="true" />
 </section>
-
-<Panel Head="The roster" Badge="@Roster">
-    <div class="cx-roster">
-        @foreach (var hero in Store.Settings.Heroes.OrderBy(h => h.Name, StringComparer.OrdinalIgnoreCase))
-        {
-            <a href="/browse?type=@ItemSlug&hero=@Uri.EscapeDataString(hero.Name)"
-               style="color:@(Ui.HeroColour(hero.Name) ?? "var(--muted)")">
-                <span class="cx-pip" style="background:@(Ui.HeroSwatch(hero.Name) ?? "var(--muted)")"></span>
-                <span class="cx-who">@hero.Name</span>
-            </a>
-        }
-    </div>
-</Panel>
-
-@foreach (var group in Ui.Codex.Menu)
-{
-    <Panel Head="@group.Label">
-        <div class="cx-cards">
-            @foreach (var entry in group.Entries)
-            {
-                <a class="cx-card" href="/browse@(entry.Query)">
-                    <span class="cx-card-name">@entry.Label</span><br />
-                    <span class="cx-card-count">@entry.Count.ToString("N0") entities</span>
-                    @if (entry.Sections.Count > 0)
-                    {
-                        <ul class="cx-card-links">
-                            @foreach (var link in entry.Sections[0].Links.Take(8))
-                            {
-                                <li>@link.Label</li>
-                            }
-                        </ul>
-                    }
-                </a>
-            }
-        </div>
-    </Panel>
-}
-
-@code {
-    private const int CardPlateWidth = 30;
-
-    private int Entries => Ui.Codex.Count;
-
-    private string Roster => $"{Store.Settings.Heroes.Count} heroes";
-
-    private static readonly string ItemSlug = EntityTypes.Slug(EntityType.Item);
-}

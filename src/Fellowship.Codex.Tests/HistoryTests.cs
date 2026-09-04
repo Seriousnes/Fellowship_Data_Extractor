@@ -12,10 +12,10 @@ public class HistoryTests
     {
         var folder = Path.Combine(output, ExportFolders.Name(build));
 
-        Directory.CreateDirectory(Path.Combine(folder, ExportReader.Data));
+        Directory.CreateDirectory(folder);
 
-        File.WriteAllLines(Path.Combine(folder, ExportReader.Data, ExportReader.EntitiesName), [line]);
-        File.WriteAllText(Path.Combine(folder, ExportReader.Data, ExportReader.SettingsName), Settings);
+        File.WriteAllLines(Path.Combine(folder, ExportReader.EntitiesName), [line]);
+        File.WriteAllText(Path.Combine(folder, ExportReader.SettingsName), Settings);
 
         return folder;
     }
@@ -80,11 +80,11 @@ public class HistoryTests
         {
             Version(output, "1000", Older);
 
-            Directory.CreateDirectory(Path.Combine(named, ExportReader.Data));
+            Directory.CreateDirectory(named);
             File.WriteAllLines(
-                Path.Combine(named, ExportReader.Data, ExportReader.EntitiesName), [Newer]);
+                Path.Combine(named, ExportReader.EntitiesName), [Newer]);
             File.WriteAllText(
-                Path.Combine(named, ExportReader.Data, ExportReader.SettingsName), Settings);
+                Path.Combine(named, ExportReader.SettingsName), Settings);
 
             var history = await new FolderExportSource(named)
                 .LoadAsync(Xunit.TestContext.Current.CancellationToken);

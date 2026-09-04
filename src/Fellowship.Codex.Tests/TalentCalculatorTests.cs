@@ -421,7 +421,7 @@ public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassF
     {
         var page = await Draw();
 
-        Assert.Contains(">Tools</button>", page.Bare(), StringComparison.Ordinal);
+        Assert.Contains(">Tools</summary>", page.Bare(), StringComparison.Ordinal);
         Assert.Contains($"href=\"{Page}\"", page, StringComparison.Ordinal);
     }
 

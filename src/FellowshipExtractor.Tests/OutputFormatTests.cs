@@ -3,6 +3,7 @@ using FellowshipExtractor.Extraction;
 using FellowshipExtractor.Output;
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
+using Fellowship.Storage;
 
 namespace FellowshipExtractor.Tests;
 
@@ -47,13 +48,13 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using (var target = new FolderTarget(folder))
+        await using (var target = new FolderTarget(folder, Build))
         {
             await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
         }
 
         var line = (await File.ReadAllLinesAsync(
-            Path.Combine(folder, ExportLayout.DataFolder, ExportLayout.EntitiesFile)))[0];
+            Path.Combine(folder, ExportFolders.Name(Build), ExportLayout.EntitiesFile)))[0];
         using var document = JsonDocument.Parse(line);
 
         Assert.Equal("ability", document.RootElement.GetProperty(EntityDocuments.Discriminator).GetString());
@@ -67,7 +68,7 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using (var target = new FolderTarget(folder))
+        await using (var target = new FolderTarget(folder, Build))
         {
             await target.WriteDocumentAsync(
                 new EffectDocument
@@ -80,7 +81,7 @@ public sealed class OutputFormatTests
         }
 
         var line = (await File.ReadAllLinesAsync(
-            Path.Combine(folder, ExportLayout.DataFolder, ExportLayout.EntitiesFile)))[0];
+            Path.Combine(folder, ExportFolders.Name(Build), ExportLayout.EntitiesFile)))[0];
         using var document = JsonDocument.Parse(line);
 
         Assert.Equal("effect", document.RootElement.GetProperty(EntityDocuments.Discriminator).GetString());
@@ -96,7 +97,7 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using (var target = new FolderTarget(folder))
+        await using (var target = new FolderTarget(folder, Build))
         {
             await target.WriteImageAsync("Firemage_Bolt.png", [1, 2, 3], default);
             await target.WriteSettingsAsync(new SettingsFile { GemTypes = ["Ruby"] }, default);
@@ -109,7 +110,7 @@ public sealed class OutputFormatTests
 
         var settings = JsonSerializer.Deserialize<SettingsFile>(
             await File.ReadAllTextAsync(
-                Path.Combine(folder, ExportLayout.DataFolder, Extraction.Settings.FileName)),
+                Path.Combine(folder, ExportFolders.Name(Build), Extraction.Settings.FileName)),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         Assert.Equal(["Ruby"], settings!.GemTypes);
@@ -120,7 +121,7 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using var target = new FolderTarget(folder);
+        await using var target = new FolderTarget(folder, Build);
 
         await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
         await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
@@ -133,7 +134,7 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using var target = new FolderTarget(folder);
+        await using var target = new FolderTarget(folder, Build);
 
         await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
 
@@ -146,7 +147,7 @@ public sealed class OutputFormatTests
     [Fact]
     public async Task APassThatEndedWithoutItsSettingsPublishesNoDocumentsEither()
     {
-        var target = new BlobTarget(NoStorage, Build);
+        var target = new StorageTarget(AzureStorage.FromConnectionString(NoStorage), Build);
 
         await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
 
@@ -156,7 +157,7 @@ public sealed class OutputFormatTests
     [Fact]
     public async Task APassHoldingBothHalvesPublishesThem()
     {
-        var target = new BlobTarget(NoStorage, Build);
+        var target = new StorageTarget(AzureStorage.FromConnectionString(NoStorage), Build);
 
         await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
         await target.WriteSettingsAsync(new SettingsFile { GemTypes = ["Ruby"] }, default);
@@ -165,7 +166,7 @@ public sealed class OutputFormatTests
     }
 
     [Fact]
-    public void ABlobRunFilesItsDataUnderTheBuildItExported()
+    public void AStorageRunFilesItsDataUnderTheBuildItExported()
     {
         Assert.Equal(
             $"{ExportFolders.Name(Build)}/{ExportLayout.DataFolder}/{ExportLayout.EntitiesFile}",
@@ -175,21 +176,25 @@ public sealed class OutputFormatTests
     }
 
     [Fact]
-    public async Task AConnectionStringNamingItsContainerWritesThatContainer()
+    public void AConnectionStringNamingItsContainerNamesThatContainer()
     {
-        await using var target = new BlobTarget($"{DevelopmentStorage};ContainerName=snapshots", Build);
+        var storage = AzureStorage.FromConnectionString($"{DevelopmentStorage};ContainerName=snapshots");
 
-        Assert.Equal("snapshots", target.Name);
-        Assert.Equal("http://localhost:10510/devstoreaccount1/snapshots", target.Container.Uri.AbsoluteUri);
+        Assert.Equal("snapshots", storage.Name);
+        Assert.Equal(
+            "http://localhost:10510/devstoreaccount1/snapshots/ui/T_GoldDivider.png",
+            storage.Address("ui/T_GoldDivider.png").AbsoluteUri);
     }
 
     [Fact]
-    public async Task AConnectionStringNamingNoContainerWritesIcons()
+    public void AConnectionStringNamingNoContainerNamesIcons()
     {
-        await using var target = new BlobTarget(DevelopmentStorage, Build);
+        var storage = AzureStorage.FromConnectionString(DevelopmentStorage);
 
-        Assert.Equal("icons", target.Name);
-        Assert.Equal("http://localhost:10510/devstoreaccount1/icons", target.Container.Uri.AbsoluteUri);
+        Assert.Equal("icons", storage.Name);
+        Assert.Equal(
+            "http://localhost:10510/devstoreaccount1/icons/ui/T_GoldDivider.png",
+            storage.Address("ui/T_GoldDivider.png").AbsoluteUri);
     }
 
     [Fact]
