@@ -27,7 +27,23 @@ else if (As == "aside")
                 }
             </div>
         }
-        @ChildContent
+        @if (Collapsible)
+        {
+            <button type="button" class="cx-panel-head cx-panel-toggle" aria-expanded="false">
+                @Head
+                @if (Badge is not null)
+                {
+                    <CountBadge Text="@Badge" />
+                }
+            </button>
+            <div class="cx-panel-body">
+                @ChildContent
+            </div>
+        }
+        else
+        {
+            @ChildContent
+        }
     </aside>
 }
 else
@@ -58,7 +74,10 @@ else
 
     [Parameter] public string? Aria { get; set; }
 
+    [Parameter] public bool Collapsible { get; set; }
+
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
-    private string Classes => Class is null ? "cx-panel" : $"cx-panel {Class}";
+    private string Classes =>
+        (Class is null ? "cx-panel" : $"cx-panel {Class}") + (Collapsible ? " cx-panel-collapsible" : string.Empty);
 }

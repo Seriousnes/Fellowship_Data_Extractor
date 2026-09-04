@@ -1,0 +1,100 @@
+@inject ICodexViewService Ui
+
+<nav class="cx-menus" aria-label="Site">
+    <button type="button" class="cx-menus-toggle" aria-expanded="false" aria-controls="cx-menus-drawer" aria-label="Menu">
+        <span class="cx-menus-bars" aria-hidden="true"></span>
+    </button>
+
+    <div class="cx-menus-drawer" id="cx-menus-drawer">
+        <button type="button" class="cx-menus-shut" aria-label="Close menu">&times;</button>
+
+        <details class="cx-menu" name="cx-menu">
+            <summary class="cx-menu-open">Database</summary>
+            <div class="cx-menu-panel">
+                @foreach (var group in Ui.Codex.Menu)
+                {
+                    <section class="cx-menu-group">
+                        <h2 class="cx-menu-group-head">@group.Label</h2>
+                        <ul>
+                            @foreach (var entry in group.Entries)
+                            {
+                                <li class="cx-menu-row">
+                                    <a href="/browse@(entry.Query)">@entry.Label</a>
+                                    @if (entry.Sections.Count > 0)
+                                    {
+                                        <details class="cx-menu-fly" name="cx-fly">
+                                            <summary class="cx-menu-more" aria-label="@entry.Label categories"></summary>
+                                            <div class="cx-menu-fly-panel">
+                                                @foreach (var part in entry.Sections)
+                                                {
+                                                    <div class="cx-menu-sec">
+                                                        <p class="cx-menu-sec-head">@part.Label</p>
+                                                        <ul>
+                                                            @foreach (var link in part.Links)
+                                                            {
+                                                                var counted = link.Count.ToString("N0");
+
+                                                                <li>
+                                                                    <a href="/browse@(link.Query)"
+                                                                       style="@(link.Colour is null ? null : $"color:{link.Colour}")">
+                                                                        @link.Label <CountBadge Text="@counted" />
+                                                                    </a>
+                                                                </li>
+                                                            }
+                                                        </ul>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </details>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </section>
+                }
+            </div>
+        </details>
+
+        <details class="cx-menu" name="cx-menu">
+            <summary class="cx-menu-open">Tools</summary>
+            <div class="cx-menu-panel">
+                <section class="cx-menu-group">
+                    <ul>
+                        <li class="cx-menu-row">
+                            <a href="@Potential">Power Potential</a>
+                        </li>
+                        <li class="cx-menu-row">
+                            <a href="@Calculator">Talent Calculator</a>
+                            <details class="cx-menu-fly" name="cx-fly">
+                                <summary class="cx-menu-more" aria-label="Talent Calculator heroes"></summary>
+                                <div class="cx-menu-fly-panel">
+                                    <div class="cx-menu-sec">
+                                        <p class="cx-menu-sec-head">Hero</p>
+                                        <ul>
+                                            @foreach (var who in Roster)
+                                            {
+                                                <li>
+                                                    <a href="@Calculator?hero=@Uri.EscapeDataString(who.Name)"
+                                                       style="color:@(Ui.HeroColour(who.Name) ?? "var(--muted)")">@who.Name</a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                            </details>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </details>
+    </div>
+</nav>
+
+@code {
+    private const string Calculator = "/tools/talents";
+
+    private const string Potential = "/tools/power-potential";
+
+    private IReadOnlyList<HeroEntry> Roster =>
+        [.. Ui.Store.Settings.Heroes.OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase)];
+}

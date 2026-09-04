@@ -19,8 +19,18 @@
 
 .cx-rail { position: sticky; top: 66px; max-height: calc(100vh - 82px); overflow-y: auto; }
 
+.cx-panel-toggle {
+  display: none; appearance: none; width: calc(100% + 32px); border: 0; cursor: pointer; text-align: left;
+}
+.cx-panel-toggle::after { content: "+"; margin-left: auto; color: var(--gold-deep); font-size: 18px; }
+.cx-panel-collapsible[data-open] > .cx-panel-toggle::after { content: "\2212"; }
+
 @media (max-width: 1080px) {
-  .cx-rail { position: static; max-height: none; order: 2; }
+  .cx-rail { position: static; max-height: none; }
+  .cx-panel-collapsible > .cx-panel-head:not(.cx-panel-toggle) { display: none; }
+  .cx-panel-collapsible > .cx-panel-toggle { display: flex; }
+  .cx-panel-collapsible:not([data-open]) > .cx-panel-toggle { margin-bottom: -14px; }
+  .cx-panel-collapsible:not([data-open]) > .cx-panel-body { display: none; }
 }
 
 .cx-raw-record > summary { cursor: pointer; list-style: none; }

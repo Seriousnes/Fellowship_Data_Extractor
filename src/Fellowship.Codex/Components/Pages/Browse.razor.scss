@@ -9,7 +9,10 @@
   .cx-browse > section { order: 1; }
 }
 
-.cx-facet + .cx-facet { border-top: 1px solid var(--line-soft); margin-top: 10px; padding-top: 10px; }
+.cx-facet:not([hidden]) ~ .cx-facet,
+.cx-facet:not([hidden]) ~ .cx-ranges,
+.cx-ranges .cx-facet:not([hidden]) ~ .cx-facet { border-top: 1px solid var(--line-soft); margin-top: 10px; padding-top: 10px; }
+.cx-ranges:not(:has(.cx-facet:not([hidden]))) { display: none; }
 .cx-facet > summary {
   cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;
   font-size: 11px; letter-spacing: .13em; text-transform: uppercase; color: var(--faint);
@@ -19,6 +22,16 @@
 .cx-facet > summary::after { content: "+"; margin-left: auto; color: var(--gold-deep); font-size: 14px; }
 .cx-facet[open] > summary::after { content: "\2212"; }
 .cx-facet > summary:hover { color: var(--gold-bright); }
+.cx-facet[data-more] > summary::after { margin-left: 0; }
+
+.cx-more {
+  display: block; width: 100%; margin-top: 12px; padding: 7px 8px; cursor: pointer;
+  @include sunken;
+  border-radius: 2px; font: 400 12px/1.2 var(--sans);
+}
+.cx-more:focus { @include edged; }
+
+.cx-group { border-top: 1px solid var(--line-soft); margin-top: 12px; padding-top: 10px; }
 
 .cx-facet-values { list-style: none; margin: 6px 0 0; padding: 0; max-height: 260px; overflow-y: auto; }
 .cx-facet-values li a {
@@ -29,9 +42,8 @@
 .cx-facet-values li a.on { background: var(--raised); color: var(--gold-bright); font-weight: 600; }
 .cx-facet-values li a.on::before { content: "\2713"; color: var(--gold-bright); font-size: 11px; }
 
-.cx-ranges { margin-top: 8px; }
-.cx-range { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 7px; }
-.cx-range > span { grid-column: 1 / -1; font-size: 12px; color: var(--core-secondary-000); }
+.cx-ranges { margin-top: 0; }
+.cx-range { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 6px 0 4px; }
 .cx-range input {
   width: 100%; min-width: 0; appearance: textfield;
   @include sunken;

@@ -34,6 +34,39 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
         .. results.Facets.Where(facet => facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Key)),
     ];
 
+    public IReadOnlyList<FacetView> Primary => [.. Rail.Where(facet => codex.Facet(facet.Key)?.Primary == true)];
+
+    public IReadOnlyList<FacetView> More => [.. Rail.Where(facet => codex.Facet(facet.Key)?.Primary != true)];
+
+    public IReadOnlyList<Flag> Flags =>
+    [
+        .. codex.Flags.Where(flag =>
+            query.Flags.ContainsKey(flag.Key) ||
+            results.Flagged.Contains(flag.Key, StringComparer.OrdinalIgnoreCase)),
+    ];
+
+    public bool Selected(string facet) =>
+        query.Selections.TryGetValue(facet, out var values) && values.Count > 0;
+
+    public bool Stated(string flag) => query.Flags.ContainsKey(flag);
+
+    public bool Bounded(string measure) => query.Ranges.ContainsKey(measure);
+
+    public bool? Answer(string flag) =>
+        query.Flags.TryGetValue(flag, out var wanted) ? wanted : flag == CodexQuery.NamedFlag ? query.Named : null;
+
+    public string Unbound(string measure)
+    {
+        var without = query with
+        {
+            Ranges = query.Ranges
+                .Where(r => !string.Equals(r.Key, measure, StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase),
+        };
+
+        return "/browse" + without.ToQueryString(page: 1);
+    }
+
     public IReadOnlyList<Measure> Ranges =>
     [
         .. codex.Measures.Where(measure =>
@@ -103,14 +136,7 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
 
                 if (bounds is null) continue;
 
-                var without = query with
-                {
-                    Ranges = query.Ranges
-                        .Where(r => !string.Equals(r.Key, key, StringComparison.OrdinalIgnoreCase))
-                        .ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase),
-                };
-
-                chips.Add(($"{measure.Label}: {bounds}{measure.Unit}", "/browse" + without.ToQueryString(page: 1)));
+                chips.Add(($"{measure.Label}: {bounds}{measure.Unit}", Unbound(key)));
             }
 
             return chips;

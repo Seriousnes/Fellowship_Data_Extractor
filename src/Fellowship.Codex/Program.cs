@@ -15,6 +15,7 @@ builder.Services.AddOpenApi(ApiDocument.Name, options =>
     options.AddDocumentTransformer<ApiInfo>();
     options.AddOperationTransformer<StatsNote>();
     options.AddOperationTransformer<ListParameters>();
+    options.AddOperationTransformer<SwitchParameters>();
     options.AddOperationTransformer<BrowsingParameters>();
 });
 builder.Services.AddProblemDetails();

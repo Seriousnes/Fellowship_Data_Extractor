@@ -370,4 +370,5 @@ public sealed record CodexResults(
     IReadOnlyList<FacetView> Facets,
     IReadOnlyDictionary<EntityType, int> Types,
     EntityType Chosen,
-    IReadOnlyList<string> Measured);
+    IReadOnlyList<string> Measured,
+    IReadOnlyList<string> Flagged);

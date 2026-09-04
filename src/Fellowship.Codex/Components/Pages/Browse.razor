@@ -30,7 +30,8 @@ else
     </div>
 
     <div class="cx-browse">
-        <Panel As="aside" Class="cx-rail" Aria="Filters" Head="Refine">
+        <Panel As="aside" Class="cx-rail" Aria="Filters" Head="Refine" Collapsible="true"
+               Badge="@(View.Chosen.Count > 0 ? View.Chosen.Count.ToString("N0") : null)">
             @if (View.Chosen.Count > 0)
             {
                 <ul class="cx-chosen">
@@ -42,7 +43,90 @@ else
                 </ul>
             }
 
-            <details class="cx-facet" open>
+            @foreach (var facet in View.Primary)
+            {
+                <details class="cx-facet" open>
+                    <summary>@facet.Label</summary>
+                    @Values(facet)
+                </details>
+            }
+
+            @foreach (var facet in View.More)
+            {
+                <details class="cx-facet" data-more="@("facet-" + facet.Key)" hidden="@(!View.Selected(facet.Key))" open>
+                    <summary>@facet.Label <FilterOff Clear="@(View.Selected(facet.Key) ? View.Replace(facet.Key, null) : null)" /></summary>
+                    @Values(facet)
+                </details>
+            }
+
+            @foreach (var flag in View.Flags)
+            {
+                var answer = View.Answer(flag.Key);
+
+                <details class="cx-facet" data-more="@("flag-" + flag.Key)" hidden="@(!View.Stated(flag.Key))" open>
+                    <summary>@flag.Label <FilterOff Clear="@(View.Stated(flag.Key) ? View.Replace(flag.Key, null) : null)" /></summary>
+                    <ul class="cx-facet-values">
+                        <li><a href="@View.Replace(flag.Key, "1")" class="@BrowseView.On(answer == true)">Yes</a></li>
+                        <li><a href="@View.Replace(flag.Key, "0")" class="@BrowseView.On(answer == false)">No</a></li>
+                    </ul>
+                </details>
+            }
+
+            @if (View.Ranges.Count > 0)
+            {
+                <form class="cx-ranges" method="get" action="/browse">
+                    @foreach (var (name, value) in Query.Fields())
+                    {
+                        <input type="hidden" name="@name" value="@value" />
+                    }
+                    @foreach (var measure in View.Ranges)
+                    {
+                        <details class="cx-facet" data-more="@("range-" + measure.Key)" hidden="@(!View.Bounded(measure.Key))" open>
+                            <summary>@Named(measure) <FilterOff Clear="@(View.Bounded(measure.Key) ? View.Unbound(measure.Key) : null)" /></summary>
+                            <div class="cx-range">
+                                <input type="number" step="any" name="@(measure.Key)Min" placeholder="min"
+                                       value="@(Query.Bound(measure.Key, false) is { } low ? FellowshipCodex.Number(low) : null)" />
+                                <input type="number" step="any" name="@(measure.Key)Max" placeholder="max"
+                                       value="@(Query.Bound(measure.Key, true) is { } high ? FellowshipCodex.Number(high) : null)" />
+                            </div>
+                        </details>
+                    }
+                    <button type="submit">Apply</button>
+                </form>
+            }
+
+            <select class="cx-more" aria-label="Additional filters">
+                <option value="">Additional filters…</option>
+                @if (View.More.Any(facet => !View.Selected(facet.Key)))
+                {
+                    <optgroup label="Filter by">
+                        @foreach (var facet in View.More.Where(facet => !View.Selected(facet.Key)))
+                        {
+                            <option value="@("facet-" + facet.Key)">@facet.Label</option>
+                        }
+                    </optgroup>
+                }
+                @if (View.Flags.Any(flag => !View.Stated(flag.Key)))
+                {
+                    <optgroup label="Only rows that">
+                        @foreach (var flag in View.Flags.Where(flag => !View.Stated(flag.Key)))
+                        {
+                            <option value="@("flag-" + flag.Key)">@flag.Label</option>
+                        }
+                    </optgroup>
+                }
+                @if (View.Ranges.Any(measure => !View.Bounded(measure.Key)))
+                {
+                    <optgroup label="Between">
+                        @foreach (var measure in View.Ranges.Where(measure => !View.Bounded(measure.Key)))
+                        {
+                            <option value="@("range-" + measure.Key)">@Named(measure)</option>
+                        }
+                    </optgroup>
+                }
+            </select>
+
+            <details class="cx-facet cx-group" open="@(Query.Group is not null)">
                 <summary>Group results by</summary>
                 <ul class="cx-facet-values">
                     <li>
@@ -53,69 +137,6 @@ else
                         var grouping = string.Equals(Query.Group, facet.Key, StringComparison.OrdinalIgnoreCase);
                         <li>
                             <a href="@View.Replace("group", facet.Key)" class="@BrowseView.On(grouping)">@facet.Label</a>
-                        </li>
-                    }
-                </ul>
-            </details>
-
-            @foreach (var facet in View.Rail)
-            {
-                <details class="cx-facet" open="@(Query.Selections.ContainsKey(facet.Key) || facet.Values.Count <= 8)">
-                    <summary>@facet.Label</summary>
-                    <ul class="cx-facet-values">
-                        @foreach (var value in facet.Values)
-                        {
-                            var chosen = Query.Chosen(facet.Key, value.Value);
-                            var counted = value.Count.ToString("N0");
-
-                            <li>
-                                <a href="@View.Toggle(facet.Key, value.Value)" class="@BrowseView.On(chosen)"
-                                   style="@(chosen || value.Colour is null ? null : $"color:{value.Colour}")">
-                                    @value.Label <CountBadge Text="@counted" />
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                </details>
-            }
-
-            @if (View.Ranges.Count > 0)
-            {
-                <details class="cx-facet" open="@(Query.Ranges.Count > 0)">
-                    <summary>Between</summary>
-                    <form class="cx-ranges" method="get" action="/browse">
-                        @foreach (var (name, value) in Query.Fields())
-                        {
-                            <input type="hidden" name="@name" value="@value" />
-                        }
-                        @foreach (var measure in View.Ranges)
-                        {
-                            <div class="cx-range">
-                                <span>@measure.Label@(measure.Unit is null ? null : $" ({measure.Unit})")</span>
-                                <input type="number" step="any" name="@(measure.Key)Min" placeholder="min"
-                                       value="@(Query.Bound(measure.Key, false) is { } low ? FellowshipCodex.Number(low) : null)" />
-                                <input type="number" step="any" name="@(measure.Key)Max" placeholder="max"
-                                       value="@(Query.Bound(measure.Key, true) is { } high ? FellowshipCodex.Number(high) : null)" />
-                            </div>
-                        }
-                        <button type="submit">Apply</button>
-                    </form>
-                </details>
-            }
-
-            <details class="cx-facet" open>
-                <summary>Only rows that</summary>
-                <ul class="cx-facet-values">
-                    @foreach (var flag in Catalog.Flags)
-                    {
-                        var state = Query.Flags.TryGetValue(flag.Key, out var wanted)
-                            ? wanted
-                            : flag.Key == CodexQuery.NamedFlag ? Query.Named : (bool?)null;
-                        var next = state is null ? "1" : state.Value ? "0" : null;
-                        <li>
-                            <a href="@View.Replace(flag.Key, next)" class="@BrowseView.On(state is not null)">
-                                @(state == false ? "Not: " : null)@flag.Label
-                            </a>
                         </li>
                     }
                 </ul>
@@ -192,7 +213,7 @@ else
     private CodexQuery Query = new();
 
     private CodexResults Results =
-        new(0, 1, 1, [], [], new Dictionary<EntityType, int>(), EntityType.Item, []);
+        new(0, 1, 1, [], [], new Dictionary<EntityType, int>(), EntityType.Item, [], []);
 
     private BrowseView View = default!;
 
@@ -225,6 +246,25 @@ else
     }
 
     private Facet? Grouping => Query.Group is null ? null : Catalog.Facet(Query.Group);
+
+    private static string Named(Measure measure) =>
+        measure.Unit is null ? measure.Label : $"{measure.Label} ({measure.Unit})";
+
+    private RenderFragment Values(FacetView facet) =>
+        @<ul class="cx-facet-values">
+            @foreach (var value in facet.Values)
+            {
+                var chosen = Query.Chosen(facet.Key, value.Value);
+                var counted = value.Count.ToString("N0");
+
+                <li>
+                    <a href="@View.Toggle(facet.Key, value.Value)" class="@BrowseView.On(chosen)"
+                       style="@(chosen || value.Colour is null ? null : $"color:{value.Colour}")">
+                        @value.Label <CountBadge Text="@counted" />
+                    </a>
+                </li>
+            }
+        </ul>;
 
     protected override void OnParametersSet()
     {

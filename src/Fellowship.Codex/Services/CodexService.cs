@@ -79,7 +79,7 @@ public sealed class CodexService : ICodexService
 
         Facets =
         [
-            new Facet("slot", "Slot", document => One(document is ItemDocument item ? item.Slot : null)),
+            new Facet("slot", "Slot", document => One(document is ItemDocument item ? item.Slot : null)) { Primary = true },
             new Facet("armor", "Armour", document =>
                 One(document is ItemDocument { ArmorType: { } armor } ? armor.ToString() : null)),
 
@@ -96,6 +96,7 @@ public sealed class CodexService : ICodexService
             })
             {
                 Colour = (t, value) => t.Hero(value),
+                Primary = true,
             },
 
             new Facet("source", "Source", document => document switch
@@ -110,7 +111,7 @@ public sealed class CodexService : ICodexService
             new Facet("rank", "Rank", document =>
                 One(document is CreatureDocument { Rank: { } rank } ? rank.ToString() : null)),
 
-            new Facet("school", "School", Schools),
+            new Facet("school", "School", Schools) { Primary = true },
             new Facet("set", "Set", document =>
                 document is ItemDocument { SetBonus: { } sets }
                     ? sets.Select(set => Owner(store, set)).OfType<string>()
@@ -127,14 +128,16 @@ public sealed class CodexService : ICodexService
             }))
             {
                 Colour = (t, value) => t.Gem(value),
+                Primary = true,
             },
 
             new Facet("trait", "Trait category", document =>
-                One(document is TraitDocument { Category: { } category } ? category : null)),
+                One(document is TraitDocument { Category: { } category } ? category : null)) { Primary = true },
 
             new Facet("role", "Role", document => document is SetBonusDocument { AllowedRoles: { } roles } ? roles : [])
             {
                 Colour = (t, value) => t.Role(value),
+                Primary = true,
             },
 
             new Facet("rarity", "Rarity", document => document switch
@@ -148,6 +151,7 @@ public sealed class CodexService : ICodexService
             })
             {
                 Colour = (t, value) => t.Rarity(Filed(store, value)),
+                Primary = true,
             },
         ];
 

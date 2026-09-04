@@ -1,68 +1,78 @@
 @use "../../Styles/shared" as *;
 
-.cx-pp-lede {
-  max-width: 76ch; margin: 0 0 18px;
-
-  p { margin: 0 0 10px; color: var(--muted); line-height: 1.55; }
-  p:last-child { margin-bottom: 0; }
-  b { color: var(--ink); font-weight: 600; }
-  q { quotes: "\201C" "\201D"; color: var(--ink); font-style: italic; }
-}
-
-.cx-pp-said {
-  max-width: 76ch; margin: 0 0 12px; color: var(--muted); font-size: 13.5px; line-height: 1.55;
-}
-
-.cx-pp-cases {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px;
-  align-items: start;
-}
-
-.cx-pp-case {
+.cx-pp-eq {
   @include sunken;
-  border-radius: 2px; padding: 12px 14px 13px; min-width: 0;
+  border-radius: 2px; padding: 20px 20px 6px;
 }
 
-.cx-pp-case-head { display: flex; flex-direction: column; gap: 2px; margin: 0 0 9px; }
-
-.cx-pp-case-name {
-  font-family: var(--display); font-size: 16px; letter-spacing: .04em; color: var(--ink);
+.cx-pp-row {
+  display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: baseline;
+  gap: 0 12px; padding: 9px 0; border-bottom: 1px solid var(--line-soft);
 }
 
-.cx-pp-case-facts { @include eyebrow; margin: 0; }
+.cx-pp-op { font-family: var(--mono); font-size: 18px; color: var(--gold); text-align: center; }
 
-.cx-pp-sum {
-  width: 100%; border-collapse: collapse; font-size: 13px;
+.cx-pp-term { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 
-  th, td { padding: 4px 0; vertical-align: baseline; }
+.cx-pp-expr {
+  font-family: var(--mono); font-size: 16px; color: var(--ink); white-space: nowrap;
 
-  th { text-align: left; font-weight: 400; color: var(--muted); }
+  .k { color: var(--core-secondary-100); }
+  .x { color: var(--faint); }
+  .f { color: var(--gold-bright); }
+}
 
-  tfoot th, tfoot td {
-    padding-top: 7px; border-top: 1px solid var(--line); color: var(--ink);
+.cx-pp-when { font-size: 12.5px; color: var(--muted); }
+
+.cx-pp-once { padding: 13px 0 4px; }
+
+.cx-pp-once-lead {
+  display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px;
+  font-size: 12.5px; color: var(--muted);
+
+  .cx-pp-op { flex: none; width: 22px; }
+}
+
+.cx-pp-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+
+.cx-pp-chip {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 2px;
+}
+
+.cx-pp-chip-name { font-size: 13.5px; color: var(--ink); }
+
+.cx-pp-chip-q { color: var(--faint); font-size: 11.5px; letter-spacing: .04em; }
+
+.cx-pp-chip-val { font-family: var(--mono); font-size: 15px; color: var(--gold-bright); }
+
+.cx-pp-foot {
+  display: flex; align-items: baseline; gap: 12px; padding: 14px 0 8px;
+
+  .cx-pp-op { flex: none; width: 22px; color: var(--gold-bright); }
+  .cx-pp-expr { font-size: 14px; color: var(--gold-bright); }
+}
+
+.cx-pp-scroll { overflow-x: auto; }
+
+.cx-pp-slots {
+  width: 100%; border-collapse: collapse; font-size: 13.5px;
+
+  thead th {
+    text-align: left; font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--faint); padding: 7px 10px; border-bottom: 1px solid var(--line); background: var(--sunken);
+    white-space: nowrap;
   }
 
-  tfoot th { font-family: var(--display); letter-spacing: .03em; }
-}
+  th.cx-pp-w { text-align: right; }
 
-.cx-pp-work {
-  padding-left: 10px; text-align: right; white-space: nowrap;
-  font-family: var(--mono); font-size: 11.5px; color: var(--faint);
-}
+  tbody td { padding: 6px 10px; border-bottom: 1px solid var(--line-soft); color: var(--ink); }
+  tbody tr:hover td { background: #131f2a; }
 
-.cx-pp-amount {
-  padding-left: 12px; text-align: right; white-space: nowrap;
-  font-family: var(--mono); font-size: 12.5px; color: var(--ink);
-}
+  td.cx-pp-w {
+    text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink);
+  }
 
-.cx-pp-sum tfoot .cx-pp-amount { font-size: 15px; color: var(--gold-bright); }
-
-.cx-pp-case-said {
-  margin: 10px 0 0; padding-top: 9px; border-top: 1px solid var(--line-soft);
-  color: var(--muted); font-size: 12.5px; line-height: 1.5;
-}
-
-@media (max-width: 560px) {
-  .cx-pp-cases { grid-template-columns: minmax(0, 1fr); }
-  .cx-pp-work { display: none; }
+  tfoot td { padding: 8px 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+  tfoot td.cx-pp-w { color: var(--core-secondary-100); }
 }

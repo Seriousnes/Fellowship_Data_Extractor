@@ -15,6 +15,9 @@ public sealed record AbilityTooltipRequest
     [Description("Given as true when the entity's icon is to be shown beside the card. A card that shows its icon inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
+    [Description("Given as true, or bare, when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button and a link to its page.")]
+    public Switch? Mobile { get; init; }
+
     [Description("The hero whose stat a PrimaryAttribute coefficient scales off.")]
     public string? Hero { get; init; }
 
@@ -25,6 +28,7 @@ public sealed record AbilityTooltipRequest
         StatQuery.Read(this, raw, stats, out error) with
         {
             ShowIcon = ShowIcon == true,
+            Mobile = Mobile?.On == true,
             Hero = StatQuery.Given(Hero),
             Difficulty = Difficulty,
         };
@@ -50,7 +54,7 @@ public static class AbilityTooltipEndpoint
         var query = request.ToQuery(http.Request.Query, store.Stats, out var error);
 
         return error is null
-            ? tooltips.Get(EntityType.Ability, request.Id, query)
+            ? tooltips.Get(EntityType.Ability, request.Id, query, Origins.Of(http))
             : Task.FromResult(StatQuery.Unreadable(error, store.Stats));
     }
 }

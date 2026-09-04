@@ -49,7 +49,12 @@ public sealed class CodexSearchService(
             .Select(measure => measure.Key)
             .ToArray();
 
-        return new CodexResults(ordered.Length, page, pages, window, facets, types, chosen[0], measured);
+        var flagged = codex.Flags
+            .Where(flag => unbounded.Any(flag.Predicate))
+            .Select(flag => flag.Key)
+            .ToArray();
+
+        return new CodexResults(ordered.Length, page, pages, window, facets, types, chosen[0], measured, flagged);
     }
 
     private static EntityType Default(IReadOnlyList<EntityDocument> across)

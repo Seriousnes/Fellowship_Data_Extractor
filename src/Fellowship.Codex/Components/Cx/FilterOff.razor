@@ -1,0 +1,12 @@
+@if (Clear is null)
+{
+    <button type="button" class="cx-facet-off">remove</button>
+}
+else
+{
+    <a class="cx-facet-off" href="@Clear">remove</a>
+}
+
+@code {
+    [Parameter] public string? Clear { get; set; }
+}

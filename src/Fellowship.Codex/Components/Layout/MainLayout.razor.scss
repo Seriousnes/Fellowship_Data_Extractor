@@ -1,5 +1,7 @@
 @use "../../Styles/shared" as *;
 
+$phone: 899px;
+
 .cx-skip {
   position: absolute; left: -9999px; top: 0; z-index: 100;
   background: var(--panel); color: var(--ink); padding: 10px 16px; border: 1px solid var(--gold);
@@ -14,6 +16,7 @@
 }
 
 .cx-bar {
+  position: relative;
   max-width: var(--wide); margin: 0 auto; padding: 0 $gutter;
   display: flex; align-items: center; gap: clamp(10px, 2vw, 26px); min-height: 54px;
 }
@@ -28,9 +31,19 @@
 }
 .cx-brand-name {
   font-family: var(--display); font-size: 18px; letter-spacing: .11em; text-transform: uppercase;
-  color: var(--core-secondary-000); font-weight: 400;
+  color: var(--core-secondary-000); font-weight: 400; white-space: nowrap;
 }
 .cx-brand-name b { color: var(--gold-bright); font-weight: 600; }
+
+@media (max-width: $phone) {
+  .cx-bar { gap: 10px; min-height: 52px; }
+  .cx-brand { gap: 7px; }
+  .cx-brand-name { font-size: 15px; letter-spacing: .08em; }
+}
+
+@media (max-width: 599px) {
+  .cx-brand-long { display: none; }
+}
 
 main { max-width: var(--wide); margin: 0 auto; padding: 14px $gutter 90px; }
 
@@ -40,6 +53,12 @@ main { max-width: var(--wide); margin: 0 auto; padding: 14px $gutter 90px; }
   filter: drop-shadow(0 16px 26px #000000b0);
 }
 .cx-tip-layer[hidden] { display: none; }
+.cx-tip-layer[data-modal] {
+  inset: 0; z-index: 95;
+  pointer-events: auto;
+  filter: none;
+  transform: none;
+}
 
 .cx-foot {
   border-top: 1px solid var(--line); margin-top: 40px;

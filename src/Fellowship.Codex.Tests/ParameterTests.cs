@@ -153,14 +153,14 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
             : [];
 
     [Fact]
-    public void An_ability_tooltip_declares_the_id_the_hero_the_difficulty_and_nothing_else()
+    public void An_ability_tooltip_declares_the_id_the_hero_the_difficulty_the_mobile_flag_and_nothing_else()
     {
         var names = Parameters(Operation("/api/ability/{id}/tooltip"))
             .Select(parameter => parameter.Name)
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        Assert.Equal(["Difficulty", "Hero", "id", "ShowIcon"], names);
+        Assert.Equal(["Difficulty", "Hero", "id", "Mobile", "ShowIcon"], names);
     }
 
     [Fact]

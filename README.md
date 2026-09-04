@@ -790,14 +790,14 @@ repository, so a fresh clone or a fresh worktree has to produce it first.
 
 | Address | What it answers |
 | --- | --- |
-| `/` | The front page: the roster, every entity type counted, a sample of what is in there |
+| `/` | The front page: the wordmark and the search box, with the menus in the masthead |
 | `/browse` | Type tabs, the filter rail, the results table. The whole page is the query string |
 | `/entity/{slug}/{id}` | One entity in full, with its live tooltip at the top |
 | `/not-found` | What answers an address that names nothing. A 404 set while a component is rendering discards the markup that set it, so the message is worked back out of the address here |
 | `/api/search?q=` | Ranked name matches across every type, grouped by type with counts |
 | `/api/entities?...` | Every entity a filter leaves, paged |
 | `/api/entity/{slug}/{id}` | One entity's exported record, every per-hero reading of it |
-| `/api/tooltip/{slug}/{id}` | Any entity's tooltip as a self-contained HTML fragment |
+| `/api/tooltip/{slug}/{id}` | Any entity's tooltip as a self-contained HTML fragment. `?mobile` wraps it in the chrome a phone draws it in |
 | `/api/catalog` | The menus, types and facets the browser is built from |
 | `/openapi/v1.json` | The OpenAPI 3.1 description of every route above |
 | `/swagger` | Swagger UI, reading that description |
@@ -839,8 +839,9 @@ which is the same answer one hop shorter; both go through `Suggestions`, so the 
 endpoint cannot disagree about ranking, grouping or the cap. Anything the island is handed has to
 survive serialization across that boundary, so it takes a string and injects the rest.
 
-The three remaining behaviours that are genuinely the browser's - opening a menu, drawing a hovered
-tooltip, and the knobs on an entity page - are one script. Every listener in it is delegated from
+The behaviours that are genuinely the browser's - opening a menu, the drawer a phone opens the menus
+in, drawing a hovered tooltip, the card a phone opens on tap, adding a filter to the rail and folding
+the rail on a phone, and the knobs on an entity page - are one script. Every listener in it is delegated from
 `document`, because enhanced navigation replaces the body in place: a handler bound to an element
 goes with the element, and the script itself is loaded once and never runs again.
 
@@ -858,6 +859,18 @@ naming where the fragment comes from, one container, a lazy fetch, an answer cac
 root. What differs is the bootstrap - that app is WebAssembly, so a provider component imports the
 module through `IJSRuntime`; here the pages are static and the module is loaded by a script tag and
 arms itself.
+
+A phone has nothing to hover, so a tap on a link that carries a tooltip address opens the card in
+place of following the link. The script fetches the same address with `mobile` added, and the
+endpoint answers the card wrapped in the chrome a phone draws it in: a close button pinned to the
+top right, the card centred in the screen, and a bar at the foot that links to the entity's own
+page. A card taller than the screen scrolls, and the bar follows it below the fold. The chrome's
+rules ride inside the fragment's own style element, so it is still one self-contained fragment
+painted into the same shadow root, with the layer switched to fill the viewport and the foot link
+pointed at the tapped link's own address. Dismissal is one attribute: the close button and the
+space around the card carry `data-dismiss`, and whoever painted the fragment removes it when a tap
+lands on an element that carries it. Any other caller gets the same fragment by adding `mobile` to
+the tooltip address, given bare or as `mobile=true`, and needs only that one listener.
 
 ### The page's styles and the tooltip's cannot touch
 
@@ -896,6 +909,14 @@ and that one selector both counts what the export holds under each value and dec
 passes the filter, so a facet can never offer a value that then matches nothing. The rail counts
 each facet over the rows *every other* filter leaves, which is what keeps a second slot clickable
 after the first one is chosen.
+
+The rail keeps only a type's primary facets in view, which is what `Primary` on a facet declares:
+slot and rarity for an item, hero and school for an ability, gem type for a gem. Every other facet,
+every flag and every measure the results carry is a row behind the `Additional filters…` select,
+drawn with its values but hidden until it is picked, and a `remove` button hides it again. A row the
+query already states draws open, with a `remove` link that clears it from the query. A flag no row
+of the results meets is absent, as is a measure no row carries. On a phone the rail sits
+above the results, folded under its head, and the head's badge counts the filters in force.
 
 The extractor's own drop rules already keep a row a reader cannot meet out of `entities.jsonl`, so
 every one of the 21 types the corpus holds reaches a tab, a menu, a facet and search: there is no

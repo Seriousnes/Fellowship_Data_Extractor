@@ -15,6 +15,8 @@ public sealed record Facet(
 {
     public Func<IDesignTokenService, string, string?>? Colour { get; init; }
 
+    public bool Primary { get; init; }
+
     public bool Matches(EntityDocument document, IReadOnlyCollection<string> wanted) =>
         Values(document).Any(value => wanted.Contains(value, StringComparer.OrdinalIgnoreCase));
 }

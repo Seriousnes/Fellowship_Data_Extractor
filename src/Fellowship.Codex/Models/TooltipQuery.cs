@@ -123,6 +123,27 @@ public sealed class RolledStats
     }
 }
 
+public readonly record struct Switch(bool On)
+{
+    private static readonly IReadOnlySet<string> Yes = new HashSet<string>(["", "true", "1", "yes", "on"], StringComparer.OrdinalIgnoreCase);
+
+    private static readonly IReadOnlySet<string> No = new HashSet<string>(["false", "0", "no", "off"], StringComparer.OrdinalIgnoreCase);
+
+    public static bool TryParse(string? value, IFormatProvider? provider, out Switch result)
+    {
+        var given = value?.Trim() ?? string.Empty;
+
+        if (Yes.Contains(given))
+        {
+            result = new Switch(true);
+            return true;
+        }
+
+        result = default;
+        return No.Contains(given);
+    }
+}
+
 public sealed record TooltipQuery
 {
     public string? Hero { get; init; }
@@ -142,6 +163,8 @@ public sealed record TooltipQuery
     public bool NoSocket { get; init; }
 
     public bool ShowIcon { get; init; }
+
+    public bool Mobile { get; init; }
 
     public int? Gem { get; init; }
 

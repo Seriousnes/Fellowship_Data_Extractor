@@ -15,6 +15,11 @@ public sealed record ItemPowerInputs(
 
 public sealed record ItemPowerTerm(string Label, int? Count, double Factor, double? Weight, float Amount);
 
+public sealed record OnceScore(string Primary, string? Qualifier, double Factor, Func<ItemPowerInputs, bool> Fires)
+{
+    public string Label => Qualifier is null ? Primary : $"{Primary} {Qualifier}";
+}
+
 public static class ItemPower
 {
     public const string WeaponType = "Weapon";
@@ -58,8 +63,7 @@ public static class ItemPower
 
     public static IReadOnlyList<ItemPowerTerm> Terms(ItemPowerInputs given, SettingsFile settings)
     {
-        var items = settings.Items;
-        var factors = items.PowerPotential;
+        var factors = settings.Items.PowerPotential;
         var weight = settings.StatCalculation.SlotWeights[given.Slot].StatWeight;
 
         var terms = new List<ItemPowerTerm>
@@ -72,32 +76,42 @@ public static class ItemPower
                 given.RerollableSlots * (float)factors.ModSlotScoreFactor),
         };
 
-        void Flat(bool fires, string label, double factor)
+        foreach (var once in OnceScores(settings))
         {
-            if (fires) terms.Add(new ItemPowerTerm(label, null, factor, null, (float)factor));
+            if (once.Fires(given))
+            {
+                terms.Add(new ItemPowerTerm(once.Label, null, once.Factor, null, (float)once.Factor));
+            }
         }
 
-        string Named(string type, string what) => $"{Printed(items, type) ?? type} {what}";
-
-        Flat(given.HasGemSocket, "Gem socket", factors.GemSocketScoreFactor);
-
-        Flat(given.HasGrantedAbility && Wears(items, given.Slot, WeaponType),
-            Named(WeaponType, "ability"), factors.WeaponAbilityScoreFactor);
-
-        Flat(given.HasGrantedAbility && Wears(items, given.Slot, TrinketType),
-            Named(TrinketType, "ability"), factors.RelicAbilityScoreFactor);
-
-        Flat(given.HasTraitTree && Wears(items, given.Slot, WeaponType),
-            Named(WeaponType, "trait tree"), factors.WeaponTraitTreeScoreFactor);
-
-        Flat(given.HasTraitTree && Wears(items, given.Slot, NecklaceType),
-            Named(NecklaceType, "trait tree"), factors.NecklaceTraitTreeScoreFactor);
-
-        Flat(given.HasSetBonus, "Set bonus", factors.SetBonusScoreFactor);
-
-        Flat(given.Legendary, "Legendary", factors.LegendaryScoreFactor);
-
         return terms;
+    }
+
+    public static IReadOnlyList<OnceScore> OnceScores(SettingsFile settings)
+    {
+        var items = settings.Items;
+        var factors = items.PowerPotential;
+
+        string Slot(string type) => Printed(items, type) ?? type;
+        bool Wearing(ItemPowerInputs given, string type) => Wears(items, given.Slot, type);
+
+        return
+        [
+            new("Gem socket", null, factors.GemSocketScoreFactor,
+                given => given.HasGemSocket),
+            new("Set bonus", null, factors.SetBonusScoreFactor,
+                given => given.HasSetBonus),
+            new(Slot(WeaponType), "ability", factors.WeaponAbilityScoreFactor,
+                given => given.HasGrantedAbility && Wearing(given, WeaponType)),
+            new(Slot(TrinketType), "ability", factors.RelicAbilityScoreFactor,
+                given => given.HasGrantedAbility && Wearing(given, TrinketType)),
+            new(Slot(WeaponType), "trait tree", factors.WeaponTraitTreeScoreFactor,
+                given => given.HasTraitTree && Wearing(given, WeaponType)),
+            new(Slot(NecklaceType), "trait tree", factors.NecklaceTraitTreeScoreFactor,
+                given => given.HasTraitTree && Wearing(given, NecklaceType)),
+            new("Legendary", "rung", factors.LegendaryScoreFactor,
+                given => given.Legendary),
+        ];
     }
 
     public static float Potential(ItemPowerInputs given, SettingsFile settings)
