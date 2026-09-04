@@ -38,6 +38,8 @@ public sealed class ExportHistoryHolder
 
 public static class ExportReader
 {
+    public const string DataFolder = "data";
+
     public const string EntitiesName = "entities.jsonl";
 
     public const string SettingsName = "settings.json";
@@ -47,7 +49,9 @@ public static class ExportReader
     private static readonly string IdName =
         Options.PropertyNamingPolicy!.ConvertName(nameof(EntityDocument.Id));
 
-    public static string Data(string build, string name) => $"{ExportFolders.Name(build)}/{name}";
+    public static string Data(string name) => $"{DataFolder}/{name}";
+
+    public static string Data(string build, string name) => $"{ExportFolders.Name(build)}/{Data(name)}";
 
     public static InvalidOperationException Missing(string name) =>
         new($"The export carries no {name}. Run 'dotnet run --project src/FellowshipExtractor' to " +

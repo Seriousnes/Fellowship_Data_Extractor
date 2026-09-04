@@ -6,24 +6,10 @@ public static class ExportFolder
 {
     public const string Option = "--export";
 
-    public static string Locate(IReadOnlyList<string> args)
-    {
-        if (Given(args) is { } asked) return Carried(asked, $"The {Option} argument names");
-
-        if (Environment.GetEnvironmentVariable(FolderExportSource.Variable) is { Length: > 0 } named)
-        {
-            return Carried(named, $"{FolderExportSource.Variable} names");
-        }
-
-        return FolderExportSource.Above(Directory.GetCurrentDirectory())
-            ?? FolderExportSource.Above(AppContext.BaseDirectory)
-            ?? throw new InvalidOperationException(
-                $"No output/{ExportFolders.Pattern} carrying {ExportReader.EntitiesName} " +
-                $"and {ExportReader.SettingsName} above " +
-                $"{Directory.GetCurrentDirectory()} or {AppContext.BaseDirectory}, and neither {Option} nor " +
-                $"{FolderExportSource.Variable} names one. Write it with " +
-                "'dotnet run --project src/FellowshipExtractor'.");
-    }
+    public static string Locate(IReadOnlyList<string> args) =>
+        Given(args) is { } asked
+            ? FolderExportSource.Carried(asked, $"The {Option} argument names")
+            : FolderExportSource.Located(Option);
 
     private static string? Given(IReadOnlyList<string> args)
     {
@@ -33,15 +19,5 @@ public static class ExportFolder
         }
 
         return null;
-    }
-
-    private static string Carried(string folder, string source)
-    {
-        var full = Path.GetFullPath(folder);
-
-        return FolderExportSource.Carries(full)
-            ? full
-            : throw new InvalidOperationException(
-                $"{source} {full}, which carries no {ExportReader.EntitiesName}.");
     }
 }

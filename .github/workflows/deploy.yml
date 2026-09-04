@@ -19,6 +19,9 @@ env:
   REMOTE: ubuntu@foundry.seriousnes.com
   REMOTE_DIR: /opt/codex
   HEALTH_URL: https://codex.fellowshipanalyzer.com/health
+  ART: ui
+  SOURCE: output/ui
+  STAGE: art-staging
 
 jobs:
   deploy:
@@ -124,3 +127,61 @@ jobs:
         env:
           TAG: ${{ steps.image.outputs.tag }}
         run: ssh -o BatchMode=yes "$REMOTE" bash -s -- "$IMAGE" "$TAG" < deploy/server/prune.sh
+
+  art:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BUCKET: ${{ secrets.S3_BUCKET }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Name the art the bucket already carries
+        run: |
+          aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "$ART/" \
+            --query 'Contents[].[Key,ETag]' --output text > "$RUNNER_TEMP/listed.txt"
+          awk 'NF == 2' "$RUNNER_TEMP/listed.txt" > "$RUNNER_TEMP/published.tsv"
+          echo "The bucket carries $(wc -l < "$RUNNER_TEMP/published.tsv") object(s) under $ART/."
+
+      - name: Stage the art the bucket does not carry
+        run: |
+          carried=$(find "$SOURCE" -maxdepth 1 -type f -name '*.png' | wc -l)
+          if [ "$carried" -eq 0 ]; then
+            echo "The checkout carries no art under $SOURCE, which is what this job publishes." >&2
+            exit 1
+          fi
+          cd "$SOURCE"
+          find . -maxdepth 1 -type f -name '*.png' -print0 | xargs -0 md5sum > "$RUNNER_TEMP/local.md5"
+          awk -v prefix="$ART" '
+            NR == FNR {
+              tag = $2
+              gsub(/"/, "", tag)
+              if (tag ~ /^[0-9a-f]{32}$/) published[$1] = tag
+              next
+            }
+            {
+              name = substr($0, 35)
+              sub(/^\.\//, "", name)
+              if (published[prefix "/" name] != substr($0, 1, 32)) print name
+            }
+          ' "$RUNNER_TEMP/published.tsv" "$RUNNER_TEMP/local.md5" > "$RUNNER_TEMP/changed.txt"
+          rm -rf "$GITHUB_WORKSPACE/$STAGE"
+          mkdir -p "$GITHUB_WORKSPACE/$STAGE"
+          xargs -a "$RUNNER_TEMP/changed.txt" -d '\n' -r cp -l -t "$GITHUB_WORKSPACE/$STAGE"
+          changed=$(wc -l < "$RUNNER_TEMP/changed.txt")
+          echo "$changed of $carried art file(s) differ from the bucket's copy, $((carried - changed)) matched their hash."
+
+      - name: Publish the staged art
+        run: |
+          if [ ! -s "$RUNNER_TEMP/changed.txt" ]; then
+            echo "Every art file in the checkout already matches the bucket's copy, so nothing was published."
+            exit 0
+          fi
+          aws configure set default.s3.multipart_threshold 64MB
+          aws s3 cp "$GITHUB_WORKSPACE/$STAGE" "s3://$BUCKET/$ART/" --recursive \
+            --content-type image/png --cache-control no-cache --only-show-errors
+          echo "Published $(wc -l < "$RUNNER_TEMP/changed.txt") art file(s) to s3://$BUCKET/$ART/."

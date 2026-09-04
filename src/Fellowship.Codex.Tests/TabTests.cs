@@ -47,8 +47,12 @@ public class TabTests(Export export)
             export.View.Codex.Tabs(Categories.Items).Select(tab => tab.Label));
 
         Assert.Equal(
-            ["Dungeons", "Creatures"],
+            ["Dungeons"],
             export.View.Codex.Tabs(Categories.Dungeons).Select(tab => tab.Label));
+
+        Assert.Equal(
+            ["Creatures"],
+            export.View.Codex.Tabs(Categories.Npcs).Select(tab => tab.Label));
     }
 
     [Fact]
@@ -123,8 +127,7 @@ public class TabTests(Export export)
 
         Assert.All(
             results.Rows,
-            row => Assert.Contains(
-                EntityTypes.TypeOf(row), new[] { EntityType.Dungeon, EntityType.Creature }));
+            row => Assert.Equal(EntityType.Dungeon, EntityTypes.TypeOf(row)));
 
         Assert.Null(results.Chosen);
     }
@@ -239,7 +242,7 @@ public class TabRouteTests(RouteTests.Factory factory) : IClassFixture<RouteTest
         using var reading = System.Text.Json.JsonDocument.Parse(body);
 
         Assert.Equal(
-            ["spells", "items", "dungeons"],
+            [.. Categories.All.Select(category => category.Slug)],
             reading.RootElement.GetProperty("categories").EnumerateArray()
                 .Select(category => category.GetProperty("slug").GetString()));
 

@@ -70,14 +70,41 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
     }
 
     private static bool Whole(HashSet<string> files) =>
-        files.Contains(ExportReader.EntitiesName) &&
-        files.Contains(ExportReader.SettingsName);
+        files.Contains(ExportReader.Data(ExportReader.EntitiesName)) &&
+        files.Contains(ExportReader.Data(ExportReader.SettingsName));
 
-    private static InvalidOperationException Absent(IReadOnlyDictionary<string, HashSet<string>> carried) =>
-        ExportReader.Missing(
-            carried.Any(version => version.Value.Contains(ExportReader.EntitiesName))
-                ? ExportReader.SettingsName
-                : ExportReader.EntitiesName);
+    private const int Named = 4;
+
+    private static InvalidOperationException Absent(IReadOnlyDictionary<string, HashSet<string>> carried)
+    {
+        if (carried.Count == 0) return ExportReader.Missing(ExportReader.EntitiesName);
+
+        var folders = string.Join("; ", carried
+            .OrderByDescending(version => ExportFolders.Build(version.Key))
+            .ThenByDescending(version => version.Key, StringComparer.Ordinal)
+            .Select(version => $"{version.Key} holds {Held(version.Value)}"));
+
+        return new InvalidOperationException(
+            $"No {ExportFolders.Pattern} folder in the store carries both " +
+            $"{ExportReader.Data(ExportReader.EntitiesName)} and " +
+            $"{ExportReader.Data(ExportReader.SettingsName)}, which is where an object store's export is " +
+            $"read from. The store holds {folders}. A store filled by an extractor that laid the pair out " +
+            "at another depth reads this way until it is filled again in the shape it is read in: 'dotnet " +
+            "run --project src/FellowshipExtractor -- --connection-string <value>' for an Azure Blob " +
+            "container, '-- --bucket <name>' for an S3 bucket.");
+    }
+
+    private static string Held(HashSet<string> files)
+    {
+        if (files.Count == 0) return "nothing";
+
+        var named = files.Order(StringComparer.Ordinal).Take(Named).ToArray();
+        var beyond = files.Count - named.Length;
+
+        return beyond > 0
+            ? $"{string.Join(", ", named)} and {beyond} more"
+            : string.Join(", ", named);
+    }
 
     private Task<string?> TextAsync(string build, string name, CancellationToken cancellationToken) =>
         storage.ReadTextAsync(ExportReader.Data(build, name), cancellationToken);

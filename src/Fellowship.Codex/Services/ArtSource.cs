@@ -1,6 +1,17 @@
+using Microsoft.Extensions.FileProviders;
+
 using Fellowship.Storage;
 
 namespace Fellowship.Codex.Services;
+
+public static class Art
+{
+    public static StaticFileOptions From(string root) => new()
+    {
+        FileProvider = new PhysicalFileProvider(Path.Combine(root, ChromeAssetService.Prefix)),
+        RequestPath = $"/{ChromeAssetService.Prefix}",
+    };
+}
 
 public interface IArtSource
 {
@@ -10,6 +21,11 @@ public interface IArtSource
 public sealed class StorageArtSource(IStorage storage) : IArtSource
 {
     public string Address(string name) => storage.Address(name).ToString();
+}
+
+public sealed class FolderArtSource : IArtSource
+{
+    public string Address(string name) => $"/{name}";
 }
 
 public sealed class NamedArtSource : IArtSource

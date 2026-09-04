@@ -73,9 +73,14 @@ public sealed class MenuService : IMenuService
 
     private IReadOnlyList<MenuLink> Armour(string where) =>
     [
-        .. Enum.GetValues<ArmorType>()
-            .Select(worn => Narrow(where, "kind", worn.ToString(), null,
-                new MenuSection("Slot", Worn($"{where}&kind={worn}")))),
+        .. Enum.GetValues<ArmorType>().Select(worn =>
+        {
+            var narrowed = Link(where, "kind", worn.ToString());
+
+            return new MenuLink(
+                FellowshipCodex.Spaced(worn.ToString()), narrowed, null,
+                [new MenuSection("Slot", Worn(narrowed))]);
+        }),
     ];
 
     private static IReadOnlyList<MenuLink> Accessories(string where) =>
@@ -127,7 +132,10 @@ public sealed class MenuService : IMenuService
 
     private static MenuLink Narrow(
         string where, string key, string value, string? colour, params MenuSection[] sections) =>
-        new(FellowshipCodex.Spaced(value), $"{where}&{key}={Uri.EscapeDataString(value)}", colour, sections);
+        new(FellowshipCodex.Spaced(value), Link(where, key, value), colour, sections);
+
+    private static string Link(string where, string key, string value) =>
+        $"{where}{(where.Contains('?', StringComparison.Ordinal) ? '&' : '?')}{key}={Uri.EscapeDataString(value)}";
 
     private static string Where(EntityType type) => PublicTypes.Where(type);
 

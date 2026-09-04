@@ -753,9 +753,10 @@ Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` t
 ## The codex
 
 `src/Fellowship.Codex` serves the export as a website and as an API from one process. It reads
-everything it draws out of an object store, so the store has to be filled and named to the codex
-before the app will start. The store is an Azure Blob container or an S3 bucket, and the codex reads
-whichever configuration names:
+everything it draws out of one of two places, and configuration decides which. Naming an object
+store points it at an Azure Blob container or an S3 bucket; naming neither points it at the tracked
+`output/` folder in the checkout, which is what a plain `dotnet run --project src/Fellowship.Codex`
+does. These are the keys that name a store:
 
 - `ConnectionStrings:icons`: an Azure Blob container, `icons` unless the string names another
   through `ContainerName=`. This is the key the app host injects from Azurite, so a run under
@@ -768,7 +769,15 @@ whichever configuration names:
   Optional.
 
 The connection string wins when both name a store, so a machine holding AWS credentials still reads
-its own Azurite. The codex refuses to start when neither is set, naming both keys.
+its own Azurite. With neither set the codex reads the folder: `FolderExportSource` walks up from the
+working directory and the app's own base directory to the first `output/` holding an
+`export-<build>` with both files, `FELLOWSHIP_EXPORT` names one outright, and the art beside it is
+served from `/ui` so a page addresses it same-origin.
+
+The two shapes differ by one segment, and each source reads its own. A folder files its pair flat,
+at `export-<build>/entities.jsonl`; an object store files it under `data/`, at
+`export-<build>/data/entities.jsonl`, which is the shape the deployed bucket and the app host's
+Azurite both carry. The art sits at `ui/<texture>.png` at the root of either.
 
 Fill the store by running the extractor against it:
 
@@ -784,14 +793,14 @@ credentials file, or an instance role. The run reads the same `mappings/fellowsh
 `usmap` command wrote. `FellowshipExtractor.Publisher` runs the same pass against the app host's
 Azurite instead, which is what fills the container the codex reads locally.
 
-A run with no remote store named writes the same export as a folder instead, laid out exactly like a
-store, which is what the test suite reads. Either way the export is a build output and is not in the
-repository, so a fresh clone or a fresh worktree has to produce it first.
+A run with no remote store named writes the same export as a folder instead, which is what the test
+suite and a plain codex run both read. That folder is tracked, so a fresh clone has the documents
+and the art already and needs no run of its own to serve them.
 
 | Address | What it answers |
 | --- | --- |
 | `/` | The front page: the wordmark and the search box, with the menus in the masthead |
-| `/spells`, `/items`, `/dungeons` | One category: its type tabs, the filter rail, the results table. The whole page beyond the category is the query string |
+| `/spells`, `/items`, `/dungeons`, `/npcs` | One category: its type tabs, the filter rail, the results table. The whole page beyond the category is the query string |
 | `/search?q=` | The same page across every category, for a search that crosses them |
 | `/entity/{slug}/{id}` | One entity in full, with its live tooltip at the top |
 | `/not-found` | What answers an address that names nothing. A 404 set while a component is rendering discards the markup that set it, so the message is worked back out of the address here |
@@ -828,7 +837,7 @@ never the plural a menu label reads, so `/api/tooltip/item/5146` and not `/api/t
 
 ### Static HTML, one island
 
-The site is a Blazor Web App rendered statically. Every page - the menus with their counts, the
+The site is a Blazor Web App rendered statically. Every page - the menus, the
 filter rail, the results table, the whole of an entity page - is rendered once on the server and
 sent as HTML, so it needs no circuit, works with scripting off, and is what a crawler and a reader
 both get. `Routes.razor` names no render mode.
@@ -897,9 +906,9 @@ shadow root. That is closed on the other side, in `TooltipRenderer`'s root rule,
 fragment's business to be legible wherever it is embedded rather than every host's business to be
 careful with it.
 
-### Nothing in the browser is a list of the game's content
+### Nothing the browser filters by is a list of the game's content
 
-The menus, the filter rail, the type tabs and every count in them are read off `entities.jsonl` at
+The filter rail, the type tabs and every count in them are read off `entities.jsonl` at
 startup. A facet is declared once, as a name and a selector:
 
 ```csharp
@@ -921,22 +930,35 @@ above the results, folded under its head, and the head's badge counts the filter
 of rows is stated once, beside the pager that sits above the table and again below it; a search
 counts each type on its tabs. Nothing else counts anything.
 
-### Three categories are what a reader navigates by
+### Categories are what a reader navigates by
 
-A reader meets Spells, Items and Dungeons, and every entity type names one of the three. That is what
-`Category` on a `PublicType` declares, and it is the only thing that decides a route: `/spells`,
-`/items` and `/dungeons` are one page taking the category out of its own address, so adding a fourth
-category adds a route without touching the page. A type is a tab within its category rather than a
-route of its own - `/spells?type=relic-power` lists the relic powers, and a relic power's own page is
+A reader meets Spells, Items, Dungeons and NPCs, and every entity type names one of them. That is what
+`Category` on a `PublicType` declares, and it is the only thing that decides a route: each category is
+one page taking the category out of its own address, so adding a fifth category adds a route without
+touching the page. A type is a tab within its category rather than a route of its own -
+`/spells?type=relic-power` lists the relic powers, and a relic power's own page is
 `/relic-power/{id}`. Landing on a category with no tab taken draws every type it holds in one table
 of art, name, type and source.
 
-The menu drills the same way: category, then type, then the facets that type declares in `Drill`.
-Items drill their kind and then their slot, the shape a reader knows from an armoury; a level whose
-facet offers fewer than two values is skipped rather than drawn empty.
+### The menu is written, not discovered
+
+`MenuService` states the menu outright: which categories open, which types they list, which of those
+open a panel, and what each panel's sections are called. Nothing about its shape is read out of the
+export, so a menu never reorders itself because one hero happens to own more effects than another.
+Items alone earns a panel, because items alone are a hierarchy - Armour to an armour type to a slot,
+beside Accessories and Weapons - the shape a reader knows from an armoury. Talents open the roster,
+Gems open their types, NPCs open the zones they are found in; every other type is a plain link
+straight to its tab.
+
+A leaf list still reads its canonical source, sorted by name: the roster comes from `settings.json`,
+the armour types and gem types from the enums generated off it, the armour slots from the slot weights
+in paper-doll order, and the zones from the creatures' own source facet. What a hand-written tree
+loses is the guarantee that a link resolves at all, so `MenuTests` walks every href in it through the
+same parse and search a request takes, and fails on one that names no category, that the rail cannot
+read, or that answers with no rows.
 
 The extractor's own drop rules already keep a row a reader cannot meet out of `entities.jsonl`. What
-`PublicTypes` curates is how a type is spelled, which category files it, what it drills through, and
+`PublicTypes` curates is how a type is spelled, which category files it, and
 whether a reader meets it at all: a talent slot, a mount power, a modifier, a hero, a legendary stat
 and a gem type each carry facts a page renders and none is an entity a reader browses to. A gem type
 is a value of the gem facet, and a legendary stat is read inline off the item that rolls it.
@@ -1029,7 +1051,19 @@ The codex runs in production as one Docker Compose service behind Caddy, reading
 the `fellowship-codex` bucket and serving art through CloudFront at
 `cdn.codex.fellowshipanalyzer.com`. Merging to `master` deploys it:
 `.github/workflows/deploy.yml` builds `src/Fellowship.Codex/Dockerfile`, pushes the image to the
-GitHub container registry and starts it on the instance. `deploy/` holds the compose file, the
+GitHub container registry and starts it on the instance.
+
+A second job in the same workflow publishes the art the checkout carries, and the two run side by
+side because neither needs what the other produces. It lists the bucket's `ui/` prefix, takes each
+object's ETag as the MD5 of its bytes the way `S3Storage.Hash` does, hashes every file under
+`output/ui`, and uploads only the files whose hash the bucket does not already hold - the same rule
+`StorageTarget` applies when the extractor publishes straight to the store, so a run that adds a
+handful of textures uploads a handful. Uploads carry `Cache-Control: no-cache`, matching what the
+extractor writes, which is what lets a rewritten texture reach viewers through CloudFront without an
+invalidation. The AWS CLI's multipart threshold is raised to 64 MB first, so every object is put in
+one part and its ETag stays a plain MD5 the next run can compare against.
+
+`deploy/` holds the compose file, the
 CloudFormation stack, the provisioning script and the scripts the workflow runs on the server, and
 [docs/deploying-the-codex.md](docs/deploying-the-codex.md) is the runbook.
 

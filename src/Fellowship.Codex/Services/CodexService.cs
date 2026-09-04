@@ -97,6 +97,7 @@ public sealed class CodexService : ICodexService
                 AbilityDocument { Heroes: { } heroes } => heroes.Select(hero => hero.ToString()),
                 EffectDocument { Heroes: { } heroes } => heroes.Select(hero => hero.ToString()),
                 TalentSlotDocument slot => [slot.Hero.ToString()],
+                TalentDocument talent when store.Slot(talent.Id) is { } slot => [slot.Hero.ToString()],
                 _ => [],
             })
             {

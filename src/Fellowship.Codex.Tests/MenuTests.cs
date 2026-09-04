@@ -14,8 +14,11 @@ public sealed class MenuTests(Export export)
     private static IEnumerable<MenuLink> Under(MenuLink link) =>
         Every(link.Sections.SelectMany(section => section.Links));
 
-    private MenuLink Row(string label) =>
-        Every(Menu).Single(link => link.Label == label);
+    private MenuLink Row(Category category) =>
+        Menu.Single(link => link.Href == $"/{category.Slug}");
+
+    private MenuLink Row(EntityType type) =>
+        Every(Menu).Single(link => link.Href == PublicTypes.Where(type));
 
     private static MenuSection Section(MenuLink link, string head) =>
         link.Sections.Single(section => section.Head == head);
@@ -48,11 +51,11 @@ public sealed class MenuTests(Export export)
     }
 
     [Fact]
-    public void Each_category_lists_its_types_under_no_heading()
+    public void Spells_and_items_list_their_types_under_no_heading()
     {
-        foreach (var category in Menu.Where(link => link.Sections.Count > 0))
+        foreach (var category in new[] { Categories.Spells, Categories.Items })
         {
-            var section = Assert.Single(category.Sections);
+            var section = Assert.Single(Row(category).Sections);
 
             Assert.Null(section.Head);
             Assert.NotEmpty(section.Links);
@@ -62,15 +65,17 @@ public sealed class MenuTests(Export export)
     [Fact]
     public void Abilities_and_effects_and_dungeons_are_plain_links()
     {
-        Assert.Empty(Row("Abilities").Sections);
-        Assert.Empty(Row("Effects").Sections);
-        Assert.Empty(Row("Dungeons").Sections);
+        Assert.Empty(Row(EntityType.Ability).Sections);
+        Assert.Empty(Row(EntityType.Effect).Sections);
+        Assert.Empty(Row(Categories.Dungeons).Sections);
+
+        Assert.DoesNotContain(Every(Menu), link => link.Href == PublicTypes.Where(EntityType.Dungeon));
     }
 
     [Fact]
     public void Talents_fly_out_to_the_roster()
     {
-        var heroes = Section(Row("Talents"), "Hero");
+        var heroes = Section(Row(EntityType.Talent), "Hero");
 
         Assert.Equal(export.Menu.Roster, [.. heroes.Links.Select(link => link.Label)]);
 
@@ -84,9 +89,10 @@ public sealed class MenuTests(Export export)
     [Fact]
     public void Items_group_into_armour_and_accessories_and_weapons()
     {
-        var items = Row("Items");
+        var items = Row(EntityType.Item);
 
-        Assert.Equal(["Armour", "Accessories", "Weapons"], [.. items.Sections.Select(section => section.Head)]);
+        Assert.Equal<string?>(
+            ["Armour", "Accessories", "Weapons"], [.. items.Sections.Select(section => section.Head)]);
 
         Assert.Equal(
             [.. Enum.GetValues<ArmorType>().Select(worn => worn.ToString())],
@@ -102,7 +108,7 @@ public sealed class MenuTests(Export export)
     [Fact]
     public void An_armour_type_flies_out_to_the_slots_it_covers_and_no_accessory()
     {
-        var plate = Section(Row("Items"), "Armour").Links.Single(link => link.Label == "Plate");
+        var plate = Section(Row(EntityType.Item), "Armour").Links.Single(link => link.Label == "Plate");
 
         var slots = Section(plate, "Slot").Links;
 
@@ -118,7 +124,7 @@ public sealed class MenuTests(Export export)
     [Fact]
     public void Gems_fly_out_to_their_types()
     {
-        var types = Section(Row("Gems"), "Types");
+        var types = Section(Row(EntityType.Gem), "Types");
 
         Assert.Equal(
             [.. Enum.GetValues<GemType>().Select(cut => cut.ToString())],
@@ -130,7 +136,7 @@ public sealed class MenuTests(Export export)
     [Fact]
     public void Npcs_fly_out_to_the_zones_they_are_found_in()
     {
-        var zones = Section(Row("NPCs"), "Zone").Links;
+        var zones = Section(Row(Categories.Npcs), "Zone").Links;
 
         Assert.NotEmpty(zones);
         Assert.Equal([.. zones.Select(zone => zone.Label).Order(StringComparer.OrdinalIgnoreCase)],

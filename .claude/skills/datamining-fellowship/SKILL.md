@@ -18,7 +18,7 @@ was four instructions in the binary.
 
 | Rung | Where | What it gives |
 | --- | --- | --- |
-| 0. Already done? | `output/export-<build>/data/entities.jsonl` | Whether the value is already projected onto a document. This is the **output** of extraction, not a view of the build: it answers "does the export carry this entity's cast time", never "what fields does `DA_StatCalculationSettings` ship". A miss here means keep going, not that the asset lacks it. |
+| 0. Already done? | `output/export-<build>/entities.jsonl` | Whether the value is already projected onto a document. This is the **output** of extraction, not a view of the build: it answers "does the export carry this entity's cast time", never "what fields does `DA_StatCalculationSettings` ship". A miss here means keep going, not that the asset lacks it. |
 | 1. Schema | `UsmapParser` on `mappings/fellowship-<build>.usmap` | The **complete** input set of a system. `CRDynamicItemSettings` enumerates eight things and there is no ninth. Do this before searching the asset tree; it is what tells you when to stop. |
 | 2. Config and assets | a reader under `src/FellowshipExtractor/Extraction/` | `ProviderFactory.CreateAsync` mounts the containers; `AssetRegistry.ReadAssets` is the index and `provider.LoadPackageObject<T>` reads a package. `.ini` files are container files like any other. Read rows, never file names. |
 | 3. Binary | see below | Everything the first three do not carry. |

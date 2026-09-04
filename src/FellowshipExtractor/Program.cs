@@ -95,6 +95,16 @@ switch (command)
         await DumpCommand.RunAsync(options, args[1], limit);
         return 0;
     }
+    case "dump-all":
+    {
+        if (args.Length < 2)
+        {
+            Console.Error.WriteLine("dump-all needs a destination folder, which it must not share with output/.");
+            return 2;
+        }
+
+        return await DumpAll.RunAsync(options, Path.GetFullPath(args[1]));
+    }
     default:
         Console.Error.WriteLine(
             $"""
@@ -119,6 +129,10 @@ switch (command)
                usmap                 recover the mappings without exporting
                dump <filter> [count] write every export of the matching cooked assets as JSON under
                                      output/dump, for reading an asset the export does not carry
+               dump-all <folder>     write the whole evidence base for every ability and gameplay
+                                     effect the export carries into the named folder: property trees,
+                                     expanded modifier magnitudes, Blueprint bytecode, the constants
+                                     and tag tables, every curve table, the locres and the config
 
              Environment:
                FELLOWSHIP_USMAP      a .usmap for this build, otherwise the one the usmap command wrote

@@ -25,9 +25,20 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.DefaultIgnoreCondition =
         System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);
 
-builder.AddStorage();
-builder.Services.AddSingleton<IExportSource, StorageExportSource>();
-builder.Services.AddSingleton<IArtSource, StorageArtSource>();
+FolderExportSource? folder = null;
+
+if (StorageExtensions.Names(builder.Configuration))
+{
+    builder.AddStorage();
+    builder.Services.AddSingleton<IExportSource, StorageExportSource>();
+    builder.Services.AddSingleton<IArtSource, StorageArtSource>();
+}
+else
+{
+    folder = new FolderExportSource(FolderExportSource.Located());
+    builder.Services.AddSingleton<IExportSource>(folder);
+    builder.Services.AddSingleton<IArtSource, FolderArtSource>();
+}
 
 builder.Services.AddCodexServices();
 builder.Services.AddTooltipServices();
@@ -43,11 +54,14 @@ await app.Services.LoadExportAsync(app.Lifetime.ApplicationStopping);
 app.MapDefaultEndpoints();
 app.MapOpenApi();
 
+app.UseCors();
 app.UseOutputCache();
 app.UseResponseCompression();
 app.UseRateLimiter();
 app.UseRequestTimeouts();
 app.MapStaticAssets();
+
+if (folder is not null) app.UseStaticFiles(Art.From(folder.Root));
 
 app.UseSwaggerUI(options =>
 {
@@ -58,9 +72,9 @@ app.UseSwaggerUI(options =>
 
 app.UseAntiforgery();
 
-app.MapRazorComponents<App>().AddInteractiveServerRenderMode().Serve();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode().ServePages();
 
-app.MapGroup(string.Empty).Serve().MapApiEndpoints();
+app.MapGroup(string.Empty).Serve().RequireCors(Serving.Origins).MapApiEndpoints();
 
 app.Run();
 

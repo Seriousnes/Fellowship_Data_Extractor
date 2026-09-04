@@ -47,4 +47,34 @@ public class StorageExportSourceTests
         Assert.Contains(
             ExportReader.SettingsName, failure.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task A_prefix_carrying_the_pair_at_another_depth_names_the_folder_and_what_it_holds()
+    {
+        var source = Reading(new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [$"{ExportFolders.Name("1001")}/{ExportReader.EntitiesName}"] = Newer,
+            [$"{ExportFolders.Name("1001")}/{ExportReader.SettingsName}"] = Settings,
+        });
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => source.LoadAsync(Xunit.TestContext.Current.CancellationToken));
+
+        Assert.Contains(
+            $"{ExportFolders.Name("1001")} holds {ExportReader.EntitiesName}",
+            failure.Message,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_empty_store_says_the_export_is_absent_rather_than_naming_a_folder()
+    {
+        var source = Reading(new Dictionary<string, string>(StringComparer.Ordinal));
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => source.LoadAsync(Xunit.TestContext.Current.CancellationToken));
+
+        Assert.Contains(ExportReader.EntitiesName, failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(" holds ", failure.Message, StringComparison.Ordinal);
+    }
 }

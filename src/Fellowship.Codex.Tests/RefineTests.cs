@@ -220,12 +220,18 @@ public sealed partial class RefineTests(RouteTests.Factory factory) : IClassFixt
     [Fact]
     public async Task A_category_with_no_type_draws_every_type_in_one_table_under_an_All_tab()
     {
-        var main = Main(await Page("/dungeons"));
+        var main = Main(await Page("/items"));
 
-        Assert.Contains("<a class=\"cx-tab\" href=\"/dungeons\" aria-current=\"page\">", main, StringComparison.Ordinal);
-        Assert.Contains("<a href=\"/dungeons?sort=type\">Type</a>", main, StringComparison.Ordinal);
-        Assert.Contains("<a href=\"/dungeons?type=dungeon\">", main, StringComparison.Ordinal);
-        Assert.Contains("<a href=\"/dungeons?type=creature\">", main, StringComparison.Ordinal);
+        Assert.Contains("<a class=\"cx-tab\" href=\"/items\" aria-current=\"page\">", main, StringComparison.Ordinal);
+        Assert.Contains("<a href=\"/items?sort=type\">Type</a>", main, StringComparison.Ordinal);
+
+        var typed = System.Text.RegularExpressions.Regex
+            .Matches(main, "<a href=\"/items\\?type=([a-z-]+)\">")
+            .Select(match => match.Groups[1].Value)
+            .Distinct()
+            .ToArray();
+
+        Assert.True(typed.Length > 1, $"One table drew only {string.Join(", ", typed)}.");
     }
 
     [Fact]

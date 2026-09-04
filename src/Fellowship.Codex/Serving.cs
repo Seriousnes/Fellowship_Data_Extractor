@@ -9,6 +9,8 @@ public static class Serving
 {
     public const string Policy = "codex";
 
+    public const string Origins = "origins";
+
     private const int Renders = 8;
 
     private const int Queued = 32;
@@ -30,6 +32,11 @@ public static class Serving
                 .SetVaryByHeader("Accept-Encoding")
                 .Expire(Kept));
         });
+
+        services.AddCors(options => options.AddPolicy(Origins, policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .WithMethods(HttpMethods.Get, HttpMethods.Head, HttpMethods.Options)));
 
         services.AddRateLimiter(options =>
         {
@@ -59,5 +66,33 @@ public static class Serving
         builder.WithRequestTimeout(Policy);
 
         return builder;
+    }
+
+    public static IEndpointConventionBuilder ServePages(this IEndpointConventionBuilder builder) =>
+        new ApartFromTheCircuit(builder).Serve();
+
+    private sealed class ApartFromTheCircuit(IEndpointConventionBuilder endpoints) : IEndpointConventionBuilder
+    {
+        private const string Circuit = "_blazor";
+
+        public void Add(Action<EndpointBuilder> convention) =>
+            endpoints.Add(endpoint =>
+            {
+                if (Hub(endpoint)) return;
+
+                convention(endpoint);
+            });
+
+        public void Finally(Action<EndpointBuilder> convention) =>
+            endpoints.Finally(endpoint =>
+            {
+                if (Hub(endpoint)) return;
+
+                convention(endpoint);
+            });
+
+        private static bool Hub(EndpointBuilder endpoint) =>
+            endpoint is RouteEndpointBuilder route &&
+            route.RoutePattern.RawText?.TrimStart('/').StartsWith(Circuit, StringComparison.OrdinalIgnoreCase) is true;
     }
 }

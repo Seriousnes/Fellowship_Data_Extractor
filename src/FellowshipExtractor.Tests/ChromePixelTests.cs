@@ -18,7 +18,7 @@ public sealed class ChromePixelTests
 
     private static Reading Read => Instance.Value;
 
-    private static string Ui => Path.Combine(Export.Loaded.Folder, ChromeAssetService.Prefix);
+    private static string Ui => Export.Loaded.Ui;
 
     private static Reading Build()
     {

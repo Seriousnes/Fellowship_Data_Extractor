@@ -169,10 +169,10 @@ public sealed class OutputFormatTests
     public void AStorageRunFilesItsDataUnderTheBuildItExported()
     {
         Assert.Equal(
-            $"{ExportFolders.Name(Build)}/{ExportLayout.EntitiesFile}",
+            $"{ExportFolders.Name(Build)}/{ExportLayout.DataFolder}/{ExportLayout.EntitiesFile}",
             ExportLayout.Data(Build, ExportLayout.EntitiesFile));
 
-        Assert.Equal("export-19240315/settings.json", ExportLayout.Data(Build, Settings.FileName));
+        Assert.Equal("export-19240315/data/settings.json", ExportLayout.Data(Build, Settings.FileName));
     }
 
     [Fact]

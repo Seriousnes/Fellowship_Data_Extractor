@@ -1,3 +1,7 @@
+using Microsoft.AspNetCore.Components.Endpoints;
+using Microsoft.AspNetCore.Http.Timeouts;
+using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 
 namespace Fellowship.Codex.Tests;
@@ -38,10 +42,8 @@ public sealed class EndpointTests : IClassFixture<RouteTests.Factory>
 
         foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
-            var slug = EntityTypes.Slug(type);
-
-            Assert.Contains($"/api/{slug}/{{id:int}}", patterns);
-            Assert.Contains($"/api/{slug}/{{id:int}}/tooltip", patterns);
+            Assert.Contains($"/api/{EntityTypes.Slug(type)}/{{id:int}}", patterns);
+            Assert.Contains($"/api/{EntityTypes.Slug(type)}/{{id:int}}/tooltip", patterns);
         }
     }
 
@@ -55,10 +57,43 @@ public sealed class EndpointTests : IClassFixture<RouteTests.Factory>
 
         foreach (var type in Enum.GetValues<EntityType>().Where(named => !PublicTypes.IsListed(named)))
         {
-            var slug = EntityTypes.Slug(type);
-
-            Assert.DoesNotContain($"/api/{slug}/{{id:int}}", patterns);
-            Assert.DoesNotContain($"/api/{slug}/{{id:int}}/tooltip", patterns);
+            Assert.DoesNotContain($"/api/{EntityTypes.Slug(type)}/{{id:int}}", patterns);
+            Assert.DoesNotContain($"/api/{EntityTypes.Slug(type)}/{{id:int}}/tooltip", patterns);
         }
     }
+
+    [Fact]
+    public void The_circuit_carries_no_output_cache_no_concurrency_limit_and_no_request_timeout()
+    {
+        var circuit = endpoints.Where(Circuit).ToArray();
+
+        Assert.NotEmpty(circuit);
+
+        foreach (var endpoint in circuit)
+        {
+            Assert.Null(endpoint.Metadata.GetMetadata<IOutputCachePolicy>());
+            Assert.Null(endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>());
+            Assert.Null(endpoint.Metadata.GetMetadata<RequestTimeoutAttribute>());
+        }
+    }
+
+    [Fact]
+    public void Every_rendered_page_is_cached_shed_and_timed_out()
+    {
+        var pages = endpoints
+            .Where(endpoint => !Circuit(endpoint) && endpoint.Metadata.GetMetadata<RootComponentMetadata>() is not null)
+            .ToArray();
+
+        Assert.NotEmpty(pages);
+
+        foreach (var page in pages)
+        {
+            Assert.NotNull(page.Metadata.GetMetadata<IOutputCachePolicy>());
+            Assert.Equal(Serving.Policy, page.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName);
+            Assert.Equal(Serving.Policy, page.Metadata.GetMetadata<RequestTimeoutAttribute>()?.PolicyName);
+        }
+    }
+
+    private static bool Circuit(RouteEndpoint endpoint) =>
+        endpoint.RoutePattern.RawText?.TrimStart('/').StartsWith("_blazor", StringComparison.OrdinalIgnoreCase) is true;
 }

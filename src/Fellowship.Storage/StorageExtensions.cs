@@ -13,6 +13,10 @@ public static class StorageExtensions
 
     public const string ConnectionKey = $"ConnectionStrings:{ConnectionName}";
 
+    public static bool Names(IConfiguration configuration) =>
+        StorageDefaults.Named(configuration.GetConnectionString(ConnectionName)) is not null ||
+        StorageDefaults.Named(configuration[S3Settings.BucketKey]) is not null;
+
     public static void AddStorage(this IHostApplicationBuilder builder)
     {
         var configuration = builder.Configuration;

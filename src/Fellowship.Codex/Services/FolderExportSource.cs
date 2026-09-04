@@ -6,6 +6,32 @@ public sealed class FolderExportSource(string folder) : IExportSource
 
     public string Folder { get; } = folder;
 
+    public string Root => Directory.GetParent(Path.GetFullPath(Folder))?.FullName ?? Folder;
+
+    public static string Located(string? option = null) =>
+        Environment.GetEnvironmentVariable(Variable) is { Length: > 0 } named
+            ? Carried(named, $"{Variable} names")
+            : Above(Directory.GetCurrentDirectory())
+                ?? Above(AppContext.BaseDirectory)
+                ?? throw Unlocated(option);
+
+    public static string Carried(string folder, string source)
+    {
+        var full = Path.GetFullPath(folder);
+
+        return Carries(full)
+            ? full
+            : throw new InvalidOperationException(
+                $"{source} {full}, which carries no {ExportReader.EntitiesName}.");
+    }
+
+    public static InvalidOperationException Unlocated(string? option = null) =>
+        new($"No output/{ExportFolders.Pattern} carrying {ExportReader.EntitiesName} and " +
+            $"{ExportReader.SettingsName} above {Directory.GetCurrentDirectory()} or " +
+            $"{AppContext.BaseDirectory}, and " +
+            (option is null ? $"{Variable} names none" : $"neither {option} nor {Variable} names one") +
+            ". Write it with 'dotnet run --project src/FellowshipExtractor'.");
+
     public static bool Carries(string folder) =>
         File.Exists(Path.Combine(folder, ExportReader.EntitiesName)) &&
         File.Exists(Path.Combine(folder, ExportReader.SettingsName));

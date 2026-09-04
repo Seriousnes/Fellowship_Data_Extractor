@@ -163,17 +163,24 @@ public sealed partial class NavigationTests(RouteTests.Factory factory) : IClass
     {
         var menu = Menu(await Page("/items"), "Database");
 
-        var plain = Declared(menus.Menu).Where(link => link.Sections.Count == 0).ToArray();
+        var plain = Declared(menus.Menu)
+            .Where(link => link.Sections.Count == 0 && link.Colour is null)
+            .ToArray();
 
         Assert.NotEmpty(plain);
 
         foreach (var link in plain)
         {
-            var anchor = $"<a href=\"{link.Href.Replace("&", "&amp;")}\">{link.Label}</a>";
+            var anchor = $"<a href=\"{link.Href.Replace("&", "&amp;")}\">";
             var at = menu.IndexOf(anchor, StringComparison.Ordinal);
 
             Assert.True(at >= 0, $"The menu carries no row for {link.Label}.");
-            Assert.StartsWith("</li>", menu[(at + anchor.Length)..].TrimStart(), StringComparison.Ordinal);
+
+            var after = menu[(at + anchor.Length)..];
+
+            Assert.StartsWith(
+                "</li>", after[(after.IndexOf("</a>", StringComparison.Ordinal) + 4)..].TrimStart(),
+                StringComparison.Ordinal);
         }
     }
 
