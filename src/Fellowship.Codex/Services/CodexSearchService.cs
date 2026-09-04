@@ -15,17 +15,24 @@ public sealed class CodexSearchService(
 {
     public CodexResults Run(CodexQuery query)
     {
-        IEnumerable<EntityDocument> read = query.Text is { } text
-            ? index.Search(text, int.MaxValue).Select(hit => hit.Document)
-            : store.Entities;
-
-        var rows = read.Where(row => PublicTypes.Listed(EntityTypes.TypeOf(row))).ToArray();
+        var rows = query.Text is { } text
+            ? index.Search(text, int.MaxValue)
+                .Select(hit => hit.Document)
+                .Where(row => PublicTypes.Listed(EntityTypes.TypeOf(row)))
+                .ToArray()
+            : Listed();
 
         var across = rows.Where(row => Matches(row, query, skipTypes: true)).ToArray();
 
+        var applied = query.Types.Count == 0
+            ? across
+            : across.Where(row => query.Types.Contains(EntityTypes.TypeOf(row))).ToArray();
+
         var chosen = query.Types.Count > 0 ? query.Types : [Default(across)];
 
-        var matched = across.Where(row => chosen.Contains(EntityTypes.TypeOf(row))).ToArray();
+        var matched = query.Types.Count > 0
+            ? applied
+            : across.Where(row => chosen.Contains(EntityTypes.TypeOf(row))).ToArray();
 
         var ordered = Order(matched, query);
 
@@ -34,7 +41,8 @@ public sealed class CodexSearchService(
         var window = ordered.Skip((page - 1) * query.PageSize).Take(query.PageSize).ToArray();
 
         var facets = codex.Facets
-            .Select(facet => codex.View(facet, Without(rows, query, facet.Key)))
+            .Select(facet => codex.View(
+                facet, Narrowed(query, facet.Key) ? Without(rows, query, facet.Key) : applied))
             .Where(view => view.Values.Count > 0)
             .ToArray();
 
@@ -42,7 +50,9 @@ public sealed class CodexSearchService(
             .GroupBy(EntityTypes.TypeOf)
             .ToDictionary(group => group.Key, group => group.Count());
 
-        var unbounded = rows.Where(row => Matches(row, query with { Ranges = NoRanges })).ToArray();
+        var unbounded = query.Ranges.Count == 0
+            ? applied
+            : rows.Where(row => Matches(row, query with { Ranges = NoRanges })).ToArray();
 
         var measured = codex.Measures
             .Where(measure => unbounded.Any(row => measure.Value(row) is not null))
@@ -71,6 +81,14 @@ public sealed class CodexSearchService(
 
     private static readonly IReadOnlyDictionary<string, (double?, double?)> NoRanges =
         new Dictionary<string, (double?, double?)>(StringComparer.OrdinalIgnoreCase);
+
+    private EntityDocument[]? listed;
+
+    private EntityDocument[] Listed() =>
+        listed ??= [.. store.Entities.Where(row => PublicTypes.Listed(EntityTypes.TypeOf(row)))];
+
+    private static bool Narrowed(CodexQuery query, string facet) =>
+        query.Selections.TryGetValue(facet, out var values) && values.Count > 0;
 
     private EntityDocument[] Without(IReadOnlyList<EntityDocument> rows, CodexQuery query, string facet) =>
         [.. rows.Where(row => Matches(row, query, skipFacet: facet))];

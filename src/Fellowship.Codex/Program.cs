@@ -34,6 +34,7 @@ builder.Services.AddTooltipServices();
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
+builder.Services.AddServing();
 
 var app = builder.Build();
 
@@ -42,7 +43,10 @@ await app.Services.LoadExportAsync(app.Lifetime.ApplicationStopping);
 app.MapDefaultEndpoints();
 app.MapOpenApi();
 
+app.UseOutputCache();
 app.UseResponseCompression();
+app.UseRateLimiter();
+app.UseRequestTimeouts();
 app.MapStaticAssets();
 
 app.UseSwaggerUI(options =>
@@ -54,9 +58,9 @@ app.UseSwaggerUI(options =>
 
 app.UseAntiforgery();
 
-app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode().Serve();
 
-app.MapApiEndpoints();
+app.MapGroup(string.Empty).Serve().MapApiEndpoints();
 
 app.Run();
 
