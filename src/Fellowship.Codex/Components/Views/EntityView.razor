@@ -66,5 +66,5 @@
             : null;
 
     private string Filter(string school) =>
-        $"/browse?type={EntityTypes.Slug(EntityTypes.TypeOf(Entity))}&{SchoolFacet}={Uri.EscapeDataString(school)}";
+        $"{PublicTypes.Where(EntityTypes.TypeOf(Entity))}&{SchoolFacet}={Uri.EscapeDataString(school)}";
 }

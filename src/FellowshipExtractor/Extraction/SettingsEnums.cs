@@ -24,9 +24,9 @@ public static class SettingsEnums
     private static IReadOnlyList<string> Sorted(IEnumerable<string> members) =>
         [.. members.Where(member => member.Length > 0).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
 
-    public static void Publish(string folder)
+    public static void Publish(string output, string build)
     {
-        var exported = Path.Combine(folder, ExportLayout.DataFolder, Settings.FileName);
+        var exported = Path.Combine(output, ExportFolders.Name(build), Settings.FileName);
         var settings = SettingsReader.Read(exported);
 
         var committed = Path.Combine(RepositoryRoot(), "src", "Fellowship.SDK", Settings.FileName);

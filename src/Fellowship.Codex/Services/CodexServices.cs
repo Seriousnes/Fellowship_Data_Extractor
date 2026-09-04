@@ -20,6 +20,7 @@ public static class CodexServices
         services.AddSingleton<IPlaceholderService, PlaceholderService>();
 
         services.AddSingleton<ICodexService, CodexService>();
+        services.AddSingleton<IMenuService, MenuService>();
         services.AddSingleton<ISearchIndexService, SearchIndexService>();
         services.AddSingleton<ICodexSearchService, CodexSearchService>();
         services.AddSingleton<ICodexViewService, CodexViewService>();

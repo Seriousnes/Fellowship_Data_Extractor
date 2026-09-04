@@ -1,7 +1,7 @@
 <DynamicComponent Type="Component(Type)" Parameters="Knobs" />
 
 @code {
-    [Parameter, EditorRequired] public EntityType Type { get; set; }
+    [Parameter] public EntityType? Type { get; set; }
 
     [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Documents { get; set; } = [];
 
@@ -10,8 +10,9 @@
     private Dictionary<string, object?> Knobs =>
         new(StringComparer.Ordinal) { ["Rows"] = Documents, ["View"] = View };
 
-    private static System.Type Component(EntityType type) => type switch
+    private static System.Type Component(EntityType? type) => type switch
     {
+        null => typeof(Everything),
         EntityType.Item => typeof(Items),
         EntityType.Ability => typeof(Abilities),
         EntityType.Effect => typeof(Effects),
@@ -20,7 +21,6 @@
         EntityType.GemTrait => typeof(GemTraits),
         EntityType.Trait => typeof(Traits),
         EntityType.SetBonus => typeof(SetBonuses),
-        EntityType.GemType => typeof(GemTypes),
         EntityType.Gem => typeof(Gems),
         EntityType.Creature => typeof(Creatures),
         EntityType.Dungeon => typeof(Dungeons),
@@ -28,12 +28,11 @@
         EntityType.CompanionPet => typeof(CompanionPets),
         EntityType.Currency => typeof(Currencies),
         EntityType.LegendaryPower => typeof(LegendaryPowers),
-        EntityType.LegendaryStat => typeof(LegendaryStats),
         EntityType.WeaponPower => typeof(WeaponPowers),
         EntityType.RelicPower => typeof(RelicPowers),
         EntityType.TraitPower => typeof(TraitPowers),
         EntityType.SetBonusPower => typeof(SetBonusPowers),
         _ => throw new InvalidOperationException(
-            $"{PublicTypes.Label(type)} is not a type the codex lists, so no browse component draws it."),
+            $"{PublicTypes.Label(type.Value)} is not a type the codex lists, so no browse component draws it."),
     };
 }

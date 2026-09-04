@@ -2,7 +2,7 @@ using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Models;
 
-public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResults results)
+public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResults results, string where)
 {
     public ICodexService Codex => codex;
 
@@ -11,23 +11,25 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
     public CodexResults Results => results;
 
     public string Toggle(string facet, string value) =>
-        "/browse" + query.ToQueryString(toggle: (facet, value));
+        where + query.ToQueryString(toggle: (facet, value));
 
     public string Replace(string key, string? value) =>
-        "/browse" + query.ToQueryString(replace: (key, value));
+        where + query.ToQueryString(replace: (key, value));
 
-    public string PageLink(int page) => "/browse" + query.ToQueryString(page: page);
+    public string PageLink(int page) => where + query.ToQueryString(page: page);
 
     public string SortLink(string column) =>
         query.Sort == column && !query.Descending
-            ? "/browse" + query.ToQueryString(replace: ("dir", "desc"))
-            : "/browse" + (query with { Descending = false }).ToQueryString(replace: ("sort", column));
+            ? where + query.ToQueryString(replace: ("dir", "desc"))
+            : where + (query with { Descending = false }).ToQueryString(replace: ("sort", column));
 
     public string? SortState(string column) =>
         query.Sort != column ? null : query.Descending ? "descending" : "ascending";
 
+    public string Where => where;
+
     public string Bare =>
-        query.Text is null ? "/browse" : "/browse?q=" + Uri.EscapeDataString(query.Text);
+        query.Text is null ? where : where + "?q=" + Uri.EscapeDataString(query.Text);
 
     public IReadOnlyList<FacetView> Rail =>
     [
@@ -64,7 +66,7 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
                 .ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase),
         };
 
-        return "/browse" + without.ToQueryString(page: 1);
+        return where + without.ToQueryString(page: 1);
     }
 
     public IReadOnlyList<Measure> Ranges =>
@@ -102,7 +104,7 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
             foreach (var type in query.Types)
             {
                 var slug = EntityTypes.Slug(type);
-                chips.Add((Models.FellowshipCodex.Label(type), "/browse" + query.ToQueryString(toggle: ("type", slug))));
+                chips.Add((Models.FellowshipCodex.Label(type), where + query.ToQueryString(toggle: ("type", slug))));
             }
 
             foreach (var (key, values) in query.Selections)
@@ -119,7 +121,7 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
             {
                 if (codex.Flag(key) is not { } flag) continue;
                 chips.Add(((wanted ? string.Empty : "Not: ") + flag.Label,
-                    "/browse" + query.ToQueryString(replace: (key, null))));
+                    where + query.ToQueryString(replace: (key, null))));
             }
 
             foreach (var (key, range) in query.Ranges)

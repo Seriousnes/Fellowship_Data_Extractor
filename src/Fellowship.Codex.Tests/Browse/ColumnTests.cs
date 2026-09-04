@@ -14,7 +14,7 @@ public class ColumnTests : BunitContext
         Store = export.Store;
         Services.AddSingleton(export.View);
 
-        Viewing = new BrowseView(export.View.Codex, new CodexQuery(), Nothing);
+        Viewing = new BrowseView(export.View.Codex, new CodexQuery(), Nothing, "/items");
     }
 
     private static CodexResults Nothing =>

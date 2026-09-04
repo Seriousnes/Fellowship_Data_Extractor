@@ -130,7 +130,7 @@ public class DetailTests : BunitContext
             .Where(href => href?.Contains("school=") == true)
             .ToList();
 
-        var expected = $"/browse?type={EntityTypes.Slug(EntityType.Ability)}&school={Uri.EscapeDataString("Magic / Fire")}";
+        var expected = $"{PublicTypes.Where(EntityType.Ability)}&school={Uri.EscapeDataString("Magic / Fire")}";
 
         Assert.Contains(hrefs, href => href == expected);
     }

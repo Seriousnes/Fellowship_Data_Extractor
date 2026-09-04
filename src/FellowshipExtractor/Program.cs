@@ -55,9 +55,7 @@ switch (command)
         var remote = connectionString is not null || bucket is not null;
 
         var folder = Argument(args, OutputFlag)
-            ?? (remote
-                ? null
-                : Path.Combine(options.ResolvedOutputDir, ExportFolders.Name(Build())));
+            ?? (remote ? null : options.ResolvedOutputDir);
 
         if (Array.Exists(args, a => a.Equals(UsmapFlag, StringComparison.OrdinalIgnoreCase)))
         {
@@ -65,7 +63,7 @@ switch (command)
         }
 
         List<IExportTarget> destinations = [];
-        if (folder is not null) destinations.Add(new FolderTarget(folder));
+        if (folder is not null) destinations.Add(new FolderTarget(folder, Build()));
         if (connectionString is not null)
             destinations.Add(new StorageTarget(AzureStorage.FromConnectionString(connectionString), Build()));
         if (bucket is not null)
@@ -78,7 +76,7 @@ switch (command)
             await ExportRun.RunAsync(options, target);
         }
 
-        if (folder is not null) SettingsEnums.Publish(folder);
+        if (folder is not null) SettingsEnums.Publish(folder, Build());
 
         return 0;
     }
@@ -103,13 +101,13 @@ switch (command)
              Unknown command '{command}'.
 
              With no command, the extractor writes the whole export: every entity as its type's
-             document under data/, and every image under ui/.
+             document under export-<steam build id>/, and every image under ui/.
 
                --usmap                      recover the mappings first, and stop before exporting if
                                             they come back short
-               --output <path>              a folder laid out like the store,
-                                            output/export-<steam build id> unless a remote store is
-                                            named
+               --output <path>              a folder laid out like the store, holding
+                                            export-<steam build id>/ and ui/, output/ unless a
+                                            remote store is named
                --connection-string <value>  an Azure Blob container, '{StorageDefaults.Name}' unless the
                                             string names another, also read from the
                                             {ConnectionStringVariable} variable

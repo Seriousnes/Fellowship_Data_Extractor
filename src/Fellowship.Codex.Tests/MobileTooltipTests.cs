@@ -89,7 +89,7 @@ public sealed class MobileTooltipTests(RouteTests.Factory factory) : IClassFixtu
     [Fact]
     public async Task Every_type_s_tooltip_accepts_mobile_and_opens_its_own_page()
     {
-        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             var (document, wearer) = Sample(type);
             var slug = EntityTypes.Slug(type);

@@ -15,13 +15,11 @@ public sealed class StaleExportTests
 
         try
         {
-            var data = Directory.CreateDirectory(Path.Combine(folder, ExportReader.DataFolder)).FullName;
-
             File.Copy(
-                Path.Combine(Export.Loaded.Folder, ExportReader.DataFolder, ExportReader.SettingsName),
-                Path.Combine(data, ExportReader.SettingsName));
+                Path.Combine(Export.Loaded.Folder, ExportReader.SettingsName),
+                Path.Combine(folder, ExportReader.SettingsName));
 
-            File.WriteAllLines(Path.Combine(data, ExportReader.EntitiesName), [line]);
+            File.WriteAllLines(Path.Combine(folder, ExportReader.EntitiesName), [line]);
 
             var snapshot = new FolderExportSource(folder)
                 .LoadAsync(CancellationToken.None)
@@ -67,12 +65,10 @@ public sealed class StaleExportTests
 
         try
         {
-            Directory.CreateDirectory(Path.Combine(folder, ExportReader.DataFolder));
-
             var failure = Assert.Throws<InvalidOperationException>(() =>
                 new FolderExportSource(folder).LoadAsync(CancellationToken.None).GetAwaiter().GetResult());
 
-            Assert.Contains("data/settings.json", failure.Message, StringComparison.Ordinal);
+            Assert.Contains(ExportReader.SettingsName, failure.Message, StringComparison.Ordinal);
             Assert.Contains("FellowshipExtractor.Publisher", failure.Message, StringComparison.Ordinal);
             Assert.Contains("src/FellowshipExtractor", failure.Message, StringComparison.Ordinal);
         }

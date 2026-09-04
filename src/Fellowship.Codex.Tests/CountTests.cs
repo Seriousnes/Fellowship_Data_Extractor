@@ -11,7 +11,7 @@ public class CountTests(Export export)
             .Distinct()
             .Count();
 
-        var listed = export.Store.Entities.Count(row => PublicTypes.Listed(EntityTypes.TypeOf(row)));
+        var listed = export.Store.Entities.Count(row => PublicTypes.IsListed(EntityTypes.TypeOf(row)));
 
         Assert.Equal(export.Store.Entities.Count, export.Store.Count);
         Assert.Equal(ids, export.Store.Ids);

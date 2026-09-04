@@ -48,13 +48,13 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using (var target = new FolderTarget(folder))
+        await using (var target = new FolderTarget(folder, Build))
         {
             await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
         }
 
         var line = (await File.ReadAllLinesAsync(
-            Path.Combine(folder, ExportLayout.DataFolder, ExportLayout.EntitiesFile)))[0];
+            Path.Combine(folder, ExportFolders.Name(Build), ExportLayout.EntitiesFile)))[0];
         using var document = JsonDocument.Parse(line);
 
         Assert.Equal("ability", document.RootElement.GetProperty(EntityDocuments.Discriminator).GetString());
@@ -68,7 +68,7 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using (var target = new FolderTarget(folder))
+        await using (var target = new FolderTarget(folder, Build))
         {
             await target.WriteDocumentAsync(
                 new EffectDocument
@@ -81,7 +81,7 @@ public sealed class OutputFormatTests
         }
 
         var line = (await File.ReadAllLinesAsync(
-            Path.Combine(folder, ExportLayout.DataFolder, ExportLayout.EntitiesFile)))[0];
+            Path.Combine(folder, ExportFolders.Name(Build), ExportLayout.EntitiesFile)))[0];
         using var document = JsonDocument.Parse(line);
 
         Assert.Equal("effect", document.RootElement.GetProperty(EntityDocuments.Discriminator).GetString());
@@ -97,7 +97,7 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using (var target = new FolderTarget(folder))
+        await using (var target = new FolderTarget(folder, Build))
         {
             await target.WriteImageAsync("Firemage_Bolt.png", [1, 2, 3], default);
             await target.WriteSettingsAsync(new SettingsFile { GemTypes = ["Ruby"] }, default);
@@ -110,7 +110,7 @@ public sealed class OutputFormatTests
 
         var settings = JsonSerializer.Deserialize<SettingsFile>(
             await File.ReadAllTextAsync(
-                Path.Combine(folder, ExportLayout.DataFolder, Extraction.Settings.FileName)),
+                Path.Combine(folder, ExportFolders.Name(Build), Extraction.Settings.FileName)),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         Assert.Equal(["Ruby"], settings!.GemTypes);
@@ -121,7 +121,7 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using var target = new FolderTarget(folder);
+        await using var target = new FolderTarget(folder, Build);
 
         await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
         await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
@@ -134,7 +134,7 @@ public sealed class OutputFormatTests
     {
         var folder = Directory.CreateTempSubdirectory().FullName;
 
-        await using var target = new FolderTarget(folder);
+        await using var target = new FolderTarget(folder, Build);
 
         await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
 
@@ -169,10 +169,10 @@ public sealed class OutputFormatTests
     public void AStorageRunFilesItsDataUnderTheBuildItExported()
     {
         Assert.Equal(
-            $"{ExportFolders.Name(Build)}/{ExportLayout.DataFolder}/{ExportLayout.EntitiesFile}",
+            $"{ExportFolders.Name(Build)}/{ExportLayout.EntitiesFile}",
             ExportLayout.Data(Build, ExportLayout.EntitiesFile));
 
-        Assert.Equal("export-19240315/data/settings.json", ExportLayout.Data(Build, Settings.FileName));
+        Assert.Equal("export-19240315/settings.json", ExportLayout.Data(Build, Settings.FileName));
     }
 
     [Fact]

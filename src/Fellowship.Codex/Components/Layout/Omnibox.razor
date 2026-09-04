@@ -108,7 +108,7 @@
     private IReadOnlyList<string> Words => SuggestionService.Words(answer?.Query);
 
     private string All =>
-        "/browse?q=" + Uri.EscapeDataString(typed.Trim()) +
+        "/search?q=" + Uri.EscapeDataString(typed.Trim()) +
         (scope is null ? string.Empty : "&type=" + Uri.EscapeDataString(scope));
 
     private static string? On(bool set) => set ? "on" : null;

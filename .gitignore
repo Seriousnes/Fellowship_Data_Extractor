@@ -1,10 +1,10 @@
 bin/
 obj/
 /temp-*/
-/output/*
-!/output/export-*/
-/output/export-*/*
-!/output/export-*/data/
+
+# The dump command writes scratch JSON here for reading an asset the export does not carry.
+/output/dump/
+
 *.user
 /src/.vs/FellowshipExtractor.slnx
 .vs/

@@ -220,12 +220,14 @@ function openMenu(menu) {
     if (desk()) nudge(menu);
 }
 
-function openFly(fly) {
-    const panel = fly.closest('.cx-menu-panel');
-
-    for (const other of panel?.querySelectorAll('.cx-menu-fly[open]') ?? []) {
-        if (other !== fly) other.removeAttribute('open');
+function shutFlies(keep) {
+    for (const other of document.querySelectorAll('.cx-menu-fly[open]')) {
+        if (!other.contains(keep)) other.removeAttribute('open');
     }
+}
+
+function openFly(fly) {
+    shutFlies(fly);
 
     fly.setAttribute('open', '');
     if (desk()) flip(fly);
@@ -331,10 +333,7 @@ document.addEventListener('pointerover', event => {
 
         if (row && fly && !fly.hasAttribute('open')) openFly(fly);
 
-        if (row && !fly) {
-            const panel = row.closest('.cx-menu-panel');
-            for (const other of panel?.querySelectorAll('.cx-menu-fly[open]') ?? []) other.removeAttribute('open');
-        }
+        if (row && !fly) shutFlies(row);
     }
 
     const link = event.target.closest?.('[data-tip]');

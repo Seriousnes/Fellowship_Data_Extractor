@@ -1,6 +1,7 @@
 @inject ITooltipViewService Ui
+@inject ICodexViewService View
 
-@if (Entity is GemTypeDocument { OverflowDescription: { } description } overflow)
+@if (View.Stone(Entity) is { OverflowDescription: { } description } overflow)
 {
     <div class="grp">
         <div class="sec"><span>Past Max Power</span></div>

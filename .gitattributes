@@ -2,3 +2,4 @@ deploy/** text eol=lf
 *.sh text eol=lf
 Dockerfile text eol=lf
 .dockerignore text eol=lf
+.github/** text eol=lf

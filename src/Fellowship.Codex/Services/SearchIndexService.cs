@@ -26,7 +26,7 @@ public sealed class SearchIndexService : ISearchIndexService
 
     public SearchIndexService(IEntityStoreService store, ILogger<SearchIndexService> logger)
     {
-        docs = [.. store.Entities.Where(document => PublicTypes.Listed(EntityTypes.TypeOf(document)))];
+        docs = [.. store.Entities.Where(document => PublicTypes.IsListed(EntityTypes.TypeOf(document)))];
 
         display = new string[docs.Length];
         displayWords = new string[docs.Length][];

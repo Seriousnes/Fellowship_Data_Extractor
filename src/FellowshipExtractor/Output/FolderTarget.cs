@@ -6,7 +6,7 @@ using Fellowship.SDK.Documents;
 
 namespace FellowshipExtractor.Output;
 
-public sealed class FolderTarget(string root) : IExportTarget
+public sealed class FolderTarget(string output, string build) : IExportTarget
 {
     private readonly WrittenNames _images = new();
 
@@ -14,7 +14,7 @@ public sealed class FolderTarget(string root) : IExportTarget
 
     private string Data()
     {
-        var data = Path.Combine(root, ExportLayout.DataFolder);
+        var data = Path.Combine(output, ExportFolders.Name(build));
         Directory.CreateDirectory(data);
         return data;
     }
@@ -35,7 +35,7 @@ public sealed class FolderTarget(string root) : IExportTarget
     {
         if (_images.Repeats(name, png, out _)) return;
 
-        var ui = Path.Combine(root, ExportLayout.UiFolder);
+        var ui = Path.Combine(output, ExportLayout.UiFolder);
         Directory.CreateDirectory(ui);
 
         await File.WriteAllBytesAsync(Path.Combine(ui, name), png, cancellationToken);

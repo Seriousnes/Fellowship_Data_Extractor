@@ -4,6 +4,9 @@ $phone: 899px;
 $desk: 900px;
 $row-inset: 8px;
 $more-size: 26px;
+$panel-pad: 18px;
+$fly-pad: 14px;
+$panel-gap: 6px;
 
 .cx-menus { flex: 0 0 auto; }
 
@@ -77,26 +80,35 @@ $more-size: 26px;
   .cx-menu-panel {
     position: absolute; left: 0; top: 100%; z-index: 65;
     display: flex; gap: 26px; align-items: flex-start;
-    padding: 16px 18px 18px;
+    padding: 16px $panel-pad $panel-pad;
     background: linear-gradient(180deg, #101c27 0%, #0c1620 100%);
     border: 1px solid var(--line); border-top-color: var(--gold-deep);
     box-shadow: 0 26px 40px -24px #000;
     max-width: calc(100vw - 2 * #{$gutter});
   }
-  .cx-menu-group { flex: 0 0 auto; min-width: 176px; }
+  .cx-menu-group { flex: 0 0 auto; min-width: 176px; --cx-menu-clear: #{$panel-pad + 1px + $panel-gap}; }
 
   .cx-menu-fly-panel {
     position: absolute; left: 100%; top: -9px; z-index: 66;
     display: flex; gap: 22px; align-items: flex-start;
-    padding: 12px 14px 14px; margin-left: 6px;
+    padding: 12px $fly-pad $fly-pad; margin-left: var(--cx-menu-clear);
     background: linear-gradient(180deg, #101c27 0%, #0c1620 100%);
     border: 1px solid var(--line); border-top-color: var(--gold-deep);
     box-shadow: 0 26px 40px -24px #000;
     width: max-content; max-width: min(720px, calc(100vw - 2 * #{$gutter}));
     flex-wrap: wrap;
   }
-  .cx-menu-fly[data-flip] > .cx-menu-fly-panel { left: auto; right: 100%; margin-left: 0; margin-right: 6px; }
-  .cx-menu-sec { flex: 0 0 auto; min-width: 150px; }
+  .cx-menu-fly-panel::before {
+    content: ""; position: absolute; top: 0; bottom: 0;
+    left: calc(-1 * var(--cx-menu-clear)); width: var(--cx-menu-clear);
+  }
+  .cx-menu-fly[data-flip] > .cx-menu-fly-panel {
+    left: auto; right: 100%; margin-left: 0; margin-right: var(--cx-menu-clear);
+  }
+  .cx-menu-fly[data-flip] > .cx-menu-fly-panel::before {
+    left: auto; right: calc(-1 * var(--cx-menu-clear));
+  }
+  .cx-menu-sec { flex: 0 0 auto; min-width: 150px; --cx-menu-clear: #{$fly-pad + 1px + $panel-gap}; }
 }
 
 @media (max-width: $phone) {

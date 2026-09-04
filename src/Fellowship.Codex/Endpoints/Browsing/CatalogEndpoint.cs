@@ -12,24 +12,26 @@ public static class CatalogEndpoint
             .WithName("GetCatalog")
             .WithSummary("The menus, entity types and filter facets the browser is driven by.");
 
-    private static IResult Handle(ICodexService codex, IEntityStoreService store)
+    private static IResult Handle(ICodexService codex, IMenuService menus, IEntityStoreService store)
     {
         var rows = store.Entities
-            .Where(document => PublicTypes.Listed(EntityTypes.TypeOf(document)))
+            .Where(document => PublicTypes.IsListed(EntityTypes.TypeOf(document)))
             .ToArray();
 
         return Results.Ok(new
         {
             entities = codex.Count,
 
+            categories = Categories.All.Select(category => new { category.Slug, category.Label }),
+
             types = codex.Types
                 .OrderBy(type => type.Position)
                 .Select(type => new
                 {
-                    type.Slug, type.Label, type.Group, type.Count, type.Tabbed, type.Position,
+                    type.Slug, type.Label, Category = type.Category.Slug, type.Count, type.Position,
                 }),
 
-            menu = codex.Menu,
+            menu = menus.Menu,
             facets = codex.Facets.Select(facet => codex.View(facet, rows)),
             flags = codex.Flags.Select(flag => new { flag.Key, flag.Label }),
             measures = codex.Measures.Select(measure => new { measure.Key, measure.Label, measure.Unit }),

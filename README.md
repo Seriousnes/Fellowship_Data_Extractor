@@ -13,14 +13,13 @@ dotnet run --project src/FellowshipExtractor
 ```
 
 With no command that writes the whole export, described under [Everything at once](#everything-at-once):
-`output/export-<build>` unless a remote store is named, where `<build>` is the Steam
-build id. The folder holds `data/` and `ui/` and nothing else, and `output/` holds the folder and
-nothing else.
+`output/` unless a remote store is named. It holds one `export-<build>` folder per build, where
+`<build>` is the Steam build id, and one `ui/` folder of art shared by all of them.
 
 | Argument | What it does |
 | --- | --- |
 | `--usmap` | Recovers the mappings first, and stops before exporting if they come back short |
-| `--output <path>` | Writes a folder laid out like a store, `output/export-<build>` by default |
+| `--output <path>` | Writes a folder laid out like a store, `output/` by default |
 | `--connection-string <value>` | Writes into an Azure Blob container, also read from `ConnectionStrings__icons` |
 | `--bucket <name>` | Writes into an S3 bucket, also read from `S3__Bucket` |
 
@@ -593,9 +592,10 @@ dotnet run --project src/FellowshipExtractor -- --usmap
 
 Every run covers the whole build, with or without the mappings step.
 
-Three arguments name the destination. `--output <path>` writes a folder to that path, and a run that
-names no remote store writes `output/export-<build>` even without it, where `<build>` is the Steam
-build id of the install the assets came from. `--connection-string <value>` writes every document,
+Three arguments name the destination. `--output <path>` writes a store-shaped folder to that path,
+and a run that names no remote store writes `output/` even without it, filing its documents under
+`export-<build>`, where `<build>` is the Steam build id of the install the assets came from.
+`--connection-string <value>` writes every document,
 setting and image straight into an Azure Blob container instead, leaving nothing on disk; the value
 is taken from the `ConnectionStrings:icons` configuration key when the argument is absent, which is
 the key the Publisher app host injects, so a run under it needs no argument at all and writes no
@@ -615,26 +615,26 @@ blob container, `S3:Bucket` names the bucket, and the connection string wins whe
 schema for a type the export reads, so an export is never written from mappings that would read
 their tables back empty.
 
-A folder run finishes by copying `data/settings.json` to `src/Fellowship.SDK/`, which is the copy
-the source generator turns into the enumerated types the documents are read against.
+A folder run finishes by copying `export-<build>/settings.json` to `src/Fellowship.SDK/`, which is
+the copy the source generator turns into the enumerated types the documents are read against.
 
-A run that writes a store uploads every image as it draws it, and publishes `data/entities.jsonl` and
-`data/settings.json` together once the pass has both. A pass that throws part way publishes neither,
+A run that writes a store uploads every image as it draws it, and publishes `entities.jsonl` and
+`settings.json` together once the pass has both. A pass that throws part way publishes neither,
 so a throw during the export leaves the store on the pair the last finished pass left.
 
 Either destination is the same layout:
 
 ```
-<root>/data/entities.jsonl
-<root>/data/settings.json
+<root>/export-<build>/entities.jsonl
+<root>/export-<build>/settings.json
 <root>/ui/<texture>.png
 ```
 
-On disk `<root>` is `output/export-<build>`. In a store the two data objects carry that folder as
-their prefix, `export-<build>/data/...`, and the images stay at `ui/<texture>.png` at the store
-root, so a store holds every build's documents side by side against one set of art. The codex
-loads all of them, builds the site from the highest build, and renders what changed between adjacent
-versions on every entity page.
+On disk `<root>` is `output/`, and in a store it is the store root. Each build files its two data
+objects under its own `export-<build>` folder, and every build draws on the one `ui/` beside them, so
+a root holds every build's documents side by side against one set of art. A later build overwrites
+the art it redraws under the name it redraws it as. The codex loads all of them, builds the site from
+the highest build, and renders what changed between adjacent versions on every entity page.
 
 The run reports what it read: 12,649 documents from 12,648 entities across 13,094 tags, 7,200 with a
 display name and 6,676 with an icon; 2,064 effects named as part of one of 2,306 tagged abilities,
@@ -719,13 +719,13 @@ granted abilities being dropped, 421 rows across the augmentation table. The att
 gameplay effects losing their own scaling: an ability's comes from the effect it applies, but an
 effect asked for in its own right captures on itself, and only the referenced ones were being read.
 
-`grep -c '/Game/\|/Script/' data/entities.jsonl data/settings.json` returns 0 for both, which is the check
+`grep -c '/Game/\|/Script/' entities.jsonl settings.json` returns 0 for both, which is the check
 that no asset path survived anywhere in the export.
 
-The second check is that no hero codename did. `grep -c '"tag":' data/entities.jsonl`,
-`grep -c '"codename":' data/entities.jsonl` and `grep -c '"codename":' data/settings.json` all
+The second check is that no hero codename did. `grep -c '"tag":' entities.jsonl`,
+`grep -c '"codename":' entities.jsonl` and `grep -c '"codename":' settings.json` all
 return 0, and
-`grep -o -i -E 'bowguy|firemage|ink|lisa|mosse|sune|vigor|warmaster' data/settings.json | wc -l`
+`grep -o -i -E 'bowguy|firemage|ink|lisa|mosse|sune|vigor|warmaster' settings.json | wc -l`
 returns 0 because settings.json holds no exempt field. `entities.jsonl` cannot be checked that way:
 1,498 `icon` and 7,238 `iconByRarity` values are cooked texture filenames that carry a codename by
 design, and `Venomdrinker`, `Invigorate` and `Blood Link` carry a codename as a substring.
@@ -791,7 +791,8 @@ repository, so a fresh clone or a fresh worktree has to produce it first.
 | Address | What it answers |
 | --- | --- |
 | `/` | The front page: the wordmark and the search box, with the menus in the masthead |
-| `/browse` | Type tabs, the filter rail, the results table. The whole page is the query string |
+| `/spells`, `/items`, `/dungeons` | One category: its type tabs, the filter rail, the results table. The whole page beyond the category is the query string |
+| `/search?q=` | The same page across every category, for a search that crosses them |
 | `/entity/{slug}/{id}` | One entity in full, with its live tooltip at the top |
 | `/not-found` | What answers an address that names nothing. A 404 set while a component is rendering discards the markup that set it, so the message is worked back out of the address here |
 | `/api/search?q=` | Ranked name matches across every type, grouped by type with counts |
@@ -911,19 +912,34 @@ each facet over the rows *every other* filter leaves, which is what keeps a seco
 after the first one is chosen.
 
 The rail keeps only a type's primary facets in view, which is what `Primary` on a facet declares:
-slot and rarity for an item, hero and school for an ability, gem type for a gem. Every other facet,
+slot, hero and rarity for an item, hero for an ability, gem type for a gem. Every other facet,
 every flag and every measure the results carry is a row behind the `Additional filters…` select,
 drawn with its values but hidden until it is picked, and a `remove` button hides it again. A row the
 query already states draws open, with a `remove` link that clears it from the query. A flag no row
 of the results meets is absent, as is a measure no row carries. On a phone the rail sits
-above the results, folded under its head, and the head's badge counts the filters in force.
+above the results, folded under its head, and the head's badge counts the filters in force. A count
+of rows is stated once, beside the pager that sits above the table and again below it; a search
+counts each type on its tabs. Nothing else counts anything.
 
-The extractor's own drop rules already keep a row a reader cannot meet out of `entities.jsonl`, so
-every one of the 21 types the corpus holds reaches a tab, a menu, a facet and search: there is no
-second, narrower list of which types a reader may meet. What `PublicTypes` still curates is only how
-a type is spelled and filed - its label, its noun and which column of the menu it sits under, because
-nothing in the build groups a trait with an item and nothing in it says which column a reader would
-look under.
+### Three categories are what a reader navigates by
+
+A reader meets Spells, Items and Dungeons, and every entity type names one of the three. That is what
+`Category` on a `PublicType` declares, and it is the only thing that decides a route: `/spells`,
+`/items` and `/dungeons` are one page taking the category out of its own address, so adding a fourth
+category adds a route without touching the page. A type is a tab within its category rather than a
+route of its own - `/spells?type=relic-power` lists the relic powers, and a relic power's own page is
+`/relic-power/{id}`. Landing on a category with no tab taken draws every type it holds in one table
+of art, name, type and source.
+
+The menu drills the same way: category, then type, then the facets that type declares in `Drill`.
+Items drill their kind and then their slot, the shape a reader knows from an armoury; a level whose
+facet offers fewer than two values is skipped rather than drawn empty.
+
+The extractor's own drop rules already keep a row a reader cannot meet out of `entities.jsonl`. What
+`PublicTypes` curates is how a type is spelled, which category files it, what it drills through, and
+whether a reader meets it at all: a talent slot, a mount power, a modifier, a hero, a legendary stat
+and a gem type each carry facts a page renders and none is an entity a reader browses to. A gem type
+is a value of the gem facet, and a legendary stat is read inline off the item that rolls it.
 
 The details table on an entity page is read off the row's own typed document class by reflection,
 matching on the concrete type - `Item`, `Ability`, `SetBonus` and the rest - for the fields only one
@@ -1010,10 +1026,12 @@ back at the same path.
 ### Deploying the codex
 
 The codex runs in production as one Docker Compose service behind Caddy, reading the export from
-the `fellowship-codex` bucket and serving art through CloudFront. `src/Fellowship.Codex/Dockerfile`
-builds the image, `deploy/` holds the compose file, the CloudFormation stack and the provisioning,
-server setup and deploy scripts, and [docs/deploying-the-codex.md](docs/deploying-the-codex.md) is
-the runbook.
+the `fellowship-codex` bucket and serving art through CloudFront at
+`cdn.codex.fellowshipanalyzer.com`. Merging to `master` deploys it:
+`.github/workflows/deploy.yml` builds `src/Fellowship.Codex/Dockerfile`, pushes the image to the
+GitHub container registry and starts it on the instance. `deploy/` holds the compose file, the
+CloudFormation stack, the provisioning script and the scripts the workflow runs on the server, and
+[docs/deploying-the-codex.md](docs/deploying-the-codex.md) is the runbook.
 
 ## The MCP server
 
@@ -1051,7 +1069,7 @@ against that worktree's own export rather than another checkout's.
 The server finds its export in this order: an `--export <folder>` argument, then
 `FELLOWSHIP_EXPORT`, then the nearest `output/` above the working directory that holds an
 `export-*`, then the nearest one above its own binary. Within an `output/` it takes the highest
-build id carrying both `data/entities.jsonl` and `data/settings.json`, so several builds can sit
+build id carrying both `entities.jsonl` and `settings.json`, so several builds can sit
 side by side and the newest wins. The two ancestor walks make the registered entry portable across
 checkouts: the working directory covers a client started at the repository root, and the binary's
 own location covers one started anywhere else. `--export` and `FELLOWSHIP_EXPORT` name a folder

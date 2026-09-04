@@ -84,7 +84,7 @@ public sealed record PublicEntity
 
     public PublicReference? Grants { get; init; }
 
-    public IReadOnlyList<PublicReference>? LegendaryStats { get; init; }
+    public IReadOnlyList<PublicLegendaryStat>? LegendaryStats { get; init; }
 
     public PublicReference? Power { get; init; }
 
@@ -165,7 +165,7 @@ public sealed record PublicEntity
             TalentRow = (document as TalentSlotDocument)?.Row,
             TalentColumn = (document as TalentSlotDocument)?.Column,
             TalentCost = (document as TalentSlotDocument)?.Cost,
-            GemOverflow = document is GemTypeDocument gem ? PublicGemOverflow.From(gem, view) : null,
+            GemOverflow = view.Stone(document) is { } stone ? PublicGemOverflow.From(stone, view) : null,
             GemType = GemTypeName(document),
             GemPower = (document as GemDocument)?.Power,
             Rarity = view.Rarity(document),
@@ -181,7 +181,7 @@ public sealed record PublicEntity
                 ? [.. attributes.Select(attribute => attribute.ToString())]
                 : null,
             Grants = PublicReference.From((document as ItemDocument)?.Grants, view, origin),
-            LegendaryStats = References((document as ItemDocument)?.LegendaryStats, view, origin),
+            LegendaryStats = Rolls((document as ItemDocument)?.LegendaryStats, view),
             Power = PublicReference.From(PowerOf(document), view, origin),
             Talent = PublicReference.From((document as TalentSlotDocument)?.Talent, view, origin),
 
@@ -221,6 +221,15 @@ public sealed record PublicEntity
         SetBonusDocument bonus => bonus.Power,
         _ => null,
     };
+
+    private static IReadOnlyList<PublicLegendaryStat>? Rolls(
+        IReadOnlyList<EntityReference>? sources, ICodexViewService view) =>
+        sources
+            ?.SelectMany(source => view.Store.All(source.Type, source.Id))
+            .Select(roll => PublicLegendaryStat.From(roll, view))
+            .ToArray() is { Length: > 0 } rolled
+            ? rolled
+            : null;
 
     private static IReadOnlyList<PublicReference>? References(
         IReadOnlyList<EntityReference>? sources, ICodexViewService view, string origin) =>
@@ -366,6 +375,27 @@ public sealed record PublicRankRun(string Literal, IReadOnlyList<string> Printed
         Ticks = run.Ticks,
         Disagrees = run.Disagrees,
     };
+}
+
+public sealed record PublicLegendaryStat(string Name)
+{
+    public string? Description { get; init; }
+
+    public IReadOnlyList<string>? ScalesOff { get; init; }
+
+    public static PublicLegendaryStat From(EntityDocument roll, ICodexViewService view) =>
+        new(PublicTypes.NameOf(roll))
+        {
+            Description = view.PlainText(
+                DocumentFields.Text(roll, nameof(LegendaryStatDocument.Description)),
+                CodexView.PlaceholdersOf(roll),
+                []),
+            ScalesOff = view.Codex
+                .Scaling(DocumentFields.Words(roll, nameof(LegendaryStatDocument.ScalesOff)))
+                .ToArray() is { Length: > 0 } stats
+                ? stats
+                : null,
+        };
 }
 
 public sealed record PublicGemOverflow(string Description)

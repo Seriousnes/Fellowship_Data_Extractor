@@ -20,10 +20,8 @@ public static class ApiEndpoints
         app.MapEffect();
         app.MapGem();
         app.MapGemTrait();
-        app.MapGemType();
         app.MapItem();
         app.MapLegendaryPower();
-        app.MapLegendaryStat();
         app.MapMount();
         app.MapRelicPower();
         app.MapSetBonus();

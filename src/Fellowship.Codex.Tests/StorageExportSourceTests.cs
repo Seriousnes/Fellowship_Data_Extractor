@@ -45,6 +45,6 @@ public class StorageExportSourceTests
             () => source.LoadAsync(Xunit.TestContext.Current.CancellationToken));
 
         Assert.Contains(
-            ExportReader.Data(ExportReader.SettingsName), failure.Message, StringComparison.Ordinal);
+            ExportReader.SettingsName, failure.Message, StringComparison.Ordinal);
     }
 }

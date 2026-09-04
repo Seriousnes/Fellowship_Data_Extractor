@@ -13,7 +13,7 @@ namespace FellowshipExtractor.Tests;
 public sealed class IconArtTests
 {
     private static string Ui(string name) =>
-        Path.Combine(Export.Loaded.Folder, ExportLayout.UiFolder, name);
+        Path.Combine(Export.Loaded.Ui, name);
 
     private static string Image_(string objectPath)
     {

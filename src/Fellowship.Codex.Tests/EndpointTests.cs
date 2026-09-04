@@ -19,7 +19,7 @@ public sealed class EndpointTests : IClassFixture<RouteTests.Factory>
 
         var missing = new List<string>();
 
-        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             if (!named.Contains($"Get{type}")) missing.Add($"Get{type}");
             if (!named.Contains($"Get{type}Tooltip")) missing.Add($"Get{type}Tooltip");
@@ -36,7 +36,7 @@ public sealed class EndpointTests : IClassFixture<RouteTests.Factory>
             .OfType<string>()
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             var slug = EntityTypes.Slug(type);
 
@@ -53,7 +53,7 @@ public sealed class EndpointTests : IClassFixture<RouteTests.Factory>
             .OfType<string>()
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var type in Enum.GetValues<EntityType>().Where(named => !PublicTypes.Listed(named)))
+        foreach (var type in Enum.GetValues<EntityType>().Where(named => !PublicTypes.IsListed(named)))
         {
             var slug = EntityTypes.Slug(type);
 

@@ -1,4 +1,5 @@
 @inject ICodexViewService Ui
+@inject IMenuService Nav
 
 <nav class="cx-menus" aria-label="Site">
     <button type="button" class="cx-menus-toggle" aria-expanded="false" aria-controls="cx-menus-drawer" aria-label="Menu">
@@ -11,47 +12,17 @@
         <details class="cx-menu" name="cx-menu">
             <summary class="cx-menu-open">Database</summary>
             <div class="cx-menu-panel">
-                @foreach (var group in Ui.Codex.Menu)
-                {
-                    <section class="cx-menu-group">
-                        <h2 class="cx-menu-group-head">@group.Label</h2>
-                        <ul>
-                            @foreach (var entry in group.Entries)
-                            {
-                                <li class="cx-menu-row">
-                                    <a href="/browse@(entry.Query)">@entry.Label</a>
-                                    @if (entry.Sections.Count > 0)
-                                    {
-                                        <details class="cx-menu-fly" name="cx-fly">
-                                            <summary class="cx-menu-more" aria-label="@entry.Label categories"></summary>
-                                            <div class="cx-menu-fly-panel">
-                                                @foreach (var part in entry.Sections)
-                                                {
-                                                    <div class="cx-menu-sec">
-                                                        <p class="cx-menu-sec-head">@part.Label</p>
-                                                        <ul>
-                                                            @foreach (var link in part.Links)
-                                                            {
-                                                                var counted = link.Count.ToString("N0");
-
-                                                                <li>
-                                                                    <a href="/browse@(link.Query)"
-                                                                       style="@(link.Colour is null ? null : $"color:{link.Colour}")">
-                                                                        @link.Label <CountBadge Text="@counted" />
-                                                                    </a>
-                                                                </li>
-                                                            }
-                                                        </ul>
-                                                    </div>
-                                                }
-                                            </div>
-                                        </details>
-                                    }
-                                </li>
-                            }
-                        </ul>
-                    </section>
-                }
+                <section class="cx-menu-group">
+                    <ul>
+                        @foreach (var category in Nav.Menu)
+                        {
+                            <li class="cx-menu-row">
+                                <a href="@category.Href">@category.Label</a>
+                                @Flyout(category, "database")
+                            </li>
+                        }
+                    </ul>
+                </section>
             </div>
         </details>
 
@@ -65,17 +36,17 @@
                         </li>
                         <li class="cx-menu-row">
                             <a href="@Calculator">Talent Calculator</a>
-                            <details class="cx-menu-fly" name="cx-fly">
-                                <summary class="cx-menu-more" aria-label="Talent Calculator heroes"></summary>
+                            <details class="cx-menu-fly" name="cx-fly-tools">
+                                <summary class="cx-menu-more" aria-label="Talent Calculator by hero"></summary>
                                 <div class="cx-menu-fly-panel">
                                     <div class="cx-menu-sec">
                                         <p class="cx-menu-sec-head">Hero</p>
                                         <ul>
-                                            @foreach (var who in Roster)
+                                            @foreach (var who in Nav.Roster)
                                             {
                                                 <li>
-                                                    <a href="@Calculator?hero=@Uri.EscapeDataString(who.Name)"
-                                                       style="color:@(Ui.HeroColour(who.Name) ?? "var(--muted)")">@who.Name</a>
+                                                    <a href="@Calculator?hero=@Uri.EscapeDataString(who)"
+                                                       style="color:@(Ui.HeroColour(who) ?? "var(--muted)")">@who</a>
                                                 </li>
                                             }
                                         </ul>
@@ -95,6 +66,37 @@
 
     private const string Potential = "/tools/power-potential";
 
-    private IReadOnlyList<HeroEntry> Roster =>
-        [.. Ui.Store.Settings.Heroes.OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase)];
+    private RenderFragment? Flyout(MenuLink link, string group) =>
+        link.Sections.Count == 0
+            ? null
+            : @<details class="cx-menu-fly" name="@("cx-fly-" + group)">
+                  <summary class="cx-menu-more" aria-label="@Says(link)"></summary>
+                  <div class="cx-menu-fly-panel">
+                      @foreach (var section in link.Sections)
+                      {
+                          <div class="cx-menu-sec">
+                              @if (section.Head is { } head)
+                              {
+                                  <p class="cx-menu-sec-head">@head</p>
+                              }
+                              <ul>
+                                  @foreach (var under in section.Links)
+                                  {
+                                      <li class="cx-menu-row">
+                                          <a href="@under.Href"
+                                             style="@(under.Colour is null ? null : $"color:{under.Colour}")">@under.Label</a>
+                                          @Flyout(under, Keyed(link.Label))
+                                      </li>
+                                  }
+                              </ul>
+                          </div>
+                      }
+                  </div>
+              </details>;
+
+    private static string Says(MenuLink link) =>
+        link.Sections is [{ Head: { } only }] ? $"{link.Label} by {only}" : $"More under {link.Label}";
+
+    private static string Keyed(string label) =>
+        new([.. label.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant)]);
 }

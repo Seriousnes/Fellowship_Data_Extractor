@@ -1,0 +1,98 @@
+@use "../../Styles/shared" as *;
+
+.cx-browse {
+  display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); gap: 18px; align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .cx-browse { grid-template-columns: minmax(0, 1fr); }
+  .cx-browse > section { order: 1; }
+}
+
+.cx-facet:not([hidden]) ~ .cx-facet,
+.cx-facet:not([hidden]) ~ .cx-ranges,
+.cx-ranges .cx-facet:not([hidden]) ~ .cx-facet { border-top: 1px solid var(--line-soft); margin-top: 10px; padding-top: 10px; }
+.cx-ranges:not(:has(.cx-facet:not([hidden]))) { display: none; }
+.cx-facet > summary {
+  cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;
+  font-size: 11px; letter-spacing: .13em; text-transform: uppercase; color: var(--faint);
+  padding: 2px 0;
+}
+.cx-facet > summary::-webkit-details-marker { display: none; }
+.cx-facet > summary::after { content: "+"; margin-left: auto; color: var(--gold-deep); font-size: 14px; }
+.cx-facet[open] > summary::after { content: "\2212"; }
+.cx-facet > summary:hover { color: var(--gold-bright); }
+.cx-facet[data-more] > summary::after { margin-left: 0; }
+
+.cx-more {
+  display: block; width: 100%; margin-top: 12px; padding: 7px 8px; cursor: pointer;
+  @include sunken;
+  border-radius: 2px; font: 400 12px/1.2 var(--sans);
+}
+.cx-more:focus { @include edged; }
+
+.cx-group { border-top: 1px solid var(--line-soft); margin-top: 12px; padding-top: 10px; }
+
+.cx-facet-values { list-style: none; margin: 6px 0 0; padding: 0; max-height: 260px; overflow-y: auto; }
+.cx-facet-values li a {
+  display: flex; align-items: baseline; gap: 7px; padding: 2px 4px; border-radius: 2px;
+  color: var(--core-secondary-000); font-size: 13px;
+}
+.cx-facet-values li a:hover { background: var(--raised); text-decoration: none; }
+.cx-facet-values li a.on { background: var(--raised); color: var(--gold-bright); font-weight: 600; }
+.cx-facet-values li a.on::before { content: "\2713"; color: var(--gold-bright); font-size: 11px; }
+
+.cx-ranges { margin-top: 0; }
+.cx-range { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 6px 0 4px; }
+.cx-range input {
+  width: 100%; min-width: 0; appearance: textfield;
+  @include sunken;
+  border-radius: 2px; font: 400 12px/1 var(--sans); padding: 5px 6px;
+}
+.cx-range input:focus { @include edged; }
+.cx-ranges button {
+  width: 100%; appearance: none; cursor: pointer; margin-top: 4px;
+  @include gold-slab;
+  border: 0; border-radius: 2px; font: 600 12px/1 var(--sans); letter-spacing: .06em; padding: 8px;
+}
+.cx-ranges button:hover { background: var(--gold); }
+
+.cx-chosen { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 12px; padding: 0; list-style: none; }
+.cx-chosen li a {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--raised); border: 1px solid var(--line); border-radius: 2px;
+  padding: 3px 8px; font-size: 12px; color: var(--ink);
+}
+.cx-chosen li a:hover {
+  border-color: var(--semantic-negative); color: var(--semantic-negative); text-decoration: none;
+}
+.cx-chosen li a::after { content: "\00d7"; color: var(--faint); }
+.cx-chosen .cx-clear-all a { color: var(--muted); font-size: 12px; background: none; border: 0; }
+.cx-chosen .cx-clear-all a::after { content: none; }
+
+.cx-tabs {
+  display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 12px;
+}
+.cx-tab {
+  display: inline-flex; align-items: baseline; gap: 7px; white-space: nowrap;
+  padding: 9px 13px; font-size: 13px; color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+.cx-tab:hover { color: var(--ink); text-decoration: none; }
+.cx-tab[aria-current] { color: var(--gold-bright); border-bottom-color: var(--gold); font-weight: 600; }
+
+.cx-pager {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  justify-content: space-between; margin: 10px 0; font-size: 12px; color: var(--muted);
+}
+.cx-pager .cx-count b { color: var(--ink); font-weight: 600; }
+.cx-pager-links { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.cx-pager-links a, .cx-pager-links span {
+  padding: 5px 10px; border: 1px solid var(--line); border-radius: 2px; color: var(--muted);
+}
+.cx-pager-links a:hover { border-color: var(--gold-deep); color: var(--gold-bright); text-decoration: none; }
+.cx-pager-links [aria-current] {
+  @include gold-slab;
+  border-color: var(--gold-deep); font-weight: 600;
+}
+.cx-pager-links .cx-gap { border: 0; padding: 5px 2px; }

@@ -110,7 +110,7 @@ public class ParticularsTests : BunitContext
 
         Assert.Equal("Heroes", cut.Find("p.cx-sub-head").TextContent);
         Assert.Equal(
-            $"/browse?hero={Uri.EscapeDataString(Hero.Aeona.ToString())}",
+            $"/search?hero={Uri.EscapeDataString(Hero.Aeona.ToString())}",
             cut.Find("ul.cx-pills a").GetAttribute("href"));
     }
 

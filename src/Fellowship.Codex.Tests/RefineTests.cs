@@ -9,7 +9,7 @@ public sealed partial class RefineTests(RouteTests.Factory factory) : IClassFixt
     private readonly ICodexService codex = factory.Services.GetRequiredService<ICodexService>();
 
     private Task<string> Page(string query) =>
-        client.GetStringAsync("/browse" + query, Xunit.TestContext.Current.CancellationToken);
+        client.GetStringAsync(query, Xunit.TestContext.Current.CancellationToken);
 
     private static string Main(string page) => page.Bare().Split("<main")[1].Split("</main>")[0];
 
@@ -36,9 +36,9 @@ public sealed partial class RefineTests(RouteTests.Factory factory) : IClassFixt
     [GeneratedRegex("<option value=\"([a-z-]+)\">")]
     private static partial Regex Option();
 
-    private static string Items => "?type=" + EntityTypes.Slug(EntityType.Item);
+    private static string Items => PublicTypes.Where(EntityType.Item);
 
-    private static string Abilities => "?type=" + EntityTypes.Slug(EntityType.Ability);
+    private static string Abilities => PublicTypes.Where(EntityType.Ability);
 
     [Fact]
     public async Task Items_keep_slot_and_rarity_in_view_and_hold_every_other_facet_behind_the_select()
@@ -68,7 +68,7 @@ public sealed partial class RefineTests(RouteTests.Factory factory) : IClassFixt
 
         Assert.NotEmpty(primary);
 
-        foreach (var query in new[] { Items, Abilities, "?type=" + EntityTypes.Slug(EntityType.Gem) })
+        foreach (var query in new[] { Items, Abilities, PublicTypes.Where(EntityType.Gem) })
         {
             var rail = Rail(await Page(query));
 
@@ -120,8 +120,8 @@ public sealed partial class RefineTests(RouteTests.Factory factory) : IClassFixt
 
         Assert.StartsWith("<details class=\"cx-facet\" data-more=\"flag-icon\" hidden open>", row, StringComparison.Ordinal);
         Assert.Contains("<summary>Has art <button type=\"button\" class=\"cx-facet-off\">remove</button></summary>", row, StringComparison.Ordinal);
-        Assert.Contains("<li><a href=\"/browse?type=item&amp;icon=1\">Yes</a></li>", row, StringComparison.Ordinal);
-        Assert.Contains("<li><a href=\"/browse?type=item&amp;icon=0\">No</a></li>", row, StringComparison.Ordinal);
+        Assert.Contains("<li><a href=\"/items?type=item&amp;icon=1\">Yes</a></li>", row, StringComparison.Ordinal);
+        Assert.Contains("<li><a href=\"/items?type=item&amp;icon=0\">No</a></li>", row, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -131,9 +131,9 @@ public sealed partial class RefineTests(RouteTests.Factory factory) : IClassFixt
         var row = Row(rail, "flag-socket");
 
         Assert.StartsWith("<details class=\"cx-facet\" data-more=\"flag-socket\" open>", row, StringComparison.Ordinal);
-        Assert.Contains("<summary>Rolls with a gem socket <a class=\"cx-facet-off\" href=\"/browse?type=item\">remove</a></summary>", row, StringComparison.Ordinal);
-        Assert.Contains("<li><a href=\"/browse?type=item&amp;socket=1\" class=\"on\">Yes</a></li>", row, StringComparison.Ordinal);
-        Assert.Contains("<li><a href=\"/browse?type=item&amp;socket=0\">No</a></li>", row, StringComparison.Ordinal);
+        Assert.Contains("<summary>Rolls with a gem socket <a class=\"cx-facet-off\" href=\"/items?type=item\">remove</a></summary>", row, StringComparison.Ordinal);
+        Assert.Contains("<li><a href=\"/items?type=item&amp;socket=1\" class=\"on\">Yes</a></li>", row, StringComparison.Ordinal);
+        Assert.Contains("<li><a href=\"/items?type=item&amp;socket=0\">No</a></li>", row, StringComparison.Ordinal);
         Assert.DoesNotContain("value=\"flag-socket\"", Select(rail), StringComparison.Ordinal);
     }
 
@@ -145,7 +145,7 @@ public sealed partial class RefineTests(RouteTests.Factory factory) : IClassFixt
         var row = Row(rail, "facet-armor");
 
         Assert.StartsWith("<details class=\"cx-facet\" data-more=\"facet-armor\" open>", row, StringComparison.Ordinal);
-        Assert.Contains("<summary>Armour <a class=\"cx-facet-off\" href=\"/browse?type=item\">remove</a></summary>", row, StringComparison.Ordinal);
+        Assert.Contains("<summary>Armour <a class=\"cx-facet-off\" href=\"/items?type=item\">remove</a></summary>", row, StringComparison.Ordinal);
         Assert.Contains("class=\"on\"", row, StringComparison.Ordinal);
         Assert.DoesNotContain("value=\"facet-armor\"", Select(rail), StringComparison.Ordinal);
     }
@@ -154,11 +154,11 @@ public sealed partial class RefineTests(RouteTests.Factory factory) : IClassFixt
     public async Task A_bounded_measure_draws_its_row_open_inside_the_form_and_links_its_removal()
     {
         var rail = Rail(await Page(Abilities + "&cooldownMin=10"));
-        var form = rail.Split("<form class=\"cx-ranges\" method=\"get\" action=\"/browse\">")[1].Split("</form>")[0];
+        var form = rail.Split("<form class=\"cx-ranges\" method=\"get\" action=\"/spells\">")[1].Split("</form>")[0];
         var row = Row(form, "range-cooldown");
 
         Assert.StartsWith("<details class=\"cx-facet\" data-more=\"range-cooldown\" open>", row, StringComparison.Ordinal);
-        Assert.Contains("<summary>Cooldown (s) <a class=\"cx-facet-off\" href=\"/browse?type=ability\">remove</a></summary>", row, StringComparison.Ordinal);
+        Assert.Contains("<summary>Cooldown (s) <a class=\"cx-facet-off\" href=\"/spells?type=ability\">remove</a></summary>", row, StringComparison.Ordinal);
         Assert.Contains("name=\"cooldownMin\"", row, StringComparison.Ordinal);
         Assert.Contains("value=\"10\"", row, StringComparison.Ordinal);
         Assert.StartsWith("<details class=\"cx-facet\" data-more=\"range-cast\" hidden open>", Row(form, "range-cast"), StringComparison.Ordinal);
@@ -181,10 +181,57 @@ public sealed partial class RefineTests(RouteTests.Factory factory) : IClassFixt
 
         Assert.True(
             main.IndexOf("<aside class=\"cx-panel cx-rail", StringComparison.Ordinal) <
-            main.IndexOf("<div class=\"cx-results-head\">", StringComparison.Ordinal));
+            main.IndexOf("<nav class=\"cx-pager\"", StringComparison.Ordinal));
 
         Assert.Contains("<div class=\"cx-panel-head\">Refine<span class=\"cx-num\">2</span></div>", main, StringComparison.Ordinal);
         Assert.Contains("<button type=\"button\" class=\"cx-panel-head cx-panel-toggle\" aria-expanded=\"false\">Refine<span class=\"cx-num\">2</span></button>", main, StringComparison.Ordinal);
         Assert.Contains("<div class=\"cx-panel-body\">", main, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_rail_counts_no_rows_and_keeps_school_behind_the_select()
+    {
+        var rail = Rail(await Page(Abilities));
+        var body = rail.Split("<div class=\"cx-panel-body\">")[1];
+
+        Assert.DoesNotContain("cx-num", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<details class=\"cx-facet\" open><summary>School</summary>", rail, StringComparison.Ordinal);
+        Assert.Contains("data-more=\"facet-school\"", rail, StringComparison.Ordinal);
+        Assert.Contains("<option value=\"facet-school\">School</option>", Select(rail), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_page_counts_its_rows_beside_the_pager_at_the_top_and_the_foot()
+    {
+        var main = Main(await Page(Items));
+
+        var pagers = main.Split("<nav class=\"cx-pager\" aria-label=\"Pagination\">").Length - 1;
+
+        Assert.Equal(2, pagers);
+        Assert.Contains("</b> entities", main, StringComparison.Ordinal);
+        Assert.Contains("<a href=\"/items?type=item&amp;page=2\">Next", main, StringComparison.Ordinal);
+
+        var second = Main(await Page(Items + "&page=2"));
+
+        Assert.Contains("First</a>", second, StringComparison.Ordinal);
+        Assert.Contains("Prev</a>", second, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_category_with_no_type_draws_every_type_in_one_table_under_an_All_tab()
+    {
+        var main = Main(await Page("/dungeons"));
+
+        Assert.Contains("<a class=\"cx-tab\" href=\"/dungeons\" aria-current=\"page\">", main, StringComparison.Ordinal);
+        Assert.Contains("<a href=\"/dungeons?sort=type\">Type</a>", main, StringComparison.Ordinal);
+        Assert.Contains("<a href=\"/dungeons?type=dungeon\">", main, StringComparison.Ordinal);
+        Assert.Contains("<a href=\"/dungeons?type=creature\">", main, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Only_a_search_counts_its_types_on_the_tabs()
+    {
+        Assert.DoesNotContain("cx-num", Main(await Page("/items")), StringComparison.Ordinal);
+        Assert.Contains("cx-num", Main(await Page("/search?q=ancient")), StringComparison.Ordinal);
     }
 }

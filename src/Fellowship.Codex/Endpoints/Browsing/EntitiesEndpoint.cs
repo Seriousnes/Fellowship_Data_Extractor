@@ -31,7 +31,7 @@ public sealed record EntitiesRequest
     public int? Size { get; init; }
 
     public CodexQuery ToQuery(IQueryCollection raw, ICodexService codex, out string? error) =>
-        CodexQuery.Parse(raw, codex, RequestProperties.Of(typeof(EntitiesRequest)), out error);
+        CodexQuery.Parse(raw, codex, RequestProperties.Of(typeof(EntitiesRequest)), null, out error);
 }
 
 public static class EntitiesEndpoint

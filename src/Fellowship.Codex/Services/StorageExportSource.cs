@@ -70,12 +70,12 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
     }
 
     private static bool Whole(HashSet<string> files) =>
-        files.Contains(ExportReader.Data(ExportReader.EntitiesName)) &&
-        files.Contains(ExportReader.Data(ExportReader.SettingsName));
+        files.Contains(ExportReader.EntitiesName) &&
+        files.Contains(ExportReader.SettingsName);
 
     private static InvalidOperationException Absent(IReadOnlyDictionary<string, HashSet<string>> carried) =>
         ExportReader.Missing(
-            carried.Any(version => version.Value.Contains(ExportReader.Data(ExportReader.EntitiesName)))
+            carried.Any(version => version.Value.Contains(ExportReader.EntitiesName))
                 ? ExportReader.SettingsName
                 : ExportReader.EntitiesName);
 

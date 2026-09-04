@@ -18,8 +18,8 @@ public static class ExportFolder
         return FolderExportSource.Above(Directory.GetCurrentDirectory())
             ?? FolderExportSource.Above(AppContext.BaseDirectory)
             ?? throw new InvalidOperationException(
-                $"No output/{ExportFolders.Pattern} carrying {ExportReader.DataFolder}/{ExportReader.EntitiesName} " +
-                $"and {ExportReader.DataFolder}/{ExportReader.SettingsName} above " +
+                $"No output/{ExportFolders.Pattern} carrying {ExportReader.EntitiesName} " +
+                $"and {ExportReader.SettingsName} above " +
                 $"{Directory.GetCurrentDirectory()} or {AppContext.BaseDirectory}, and neither {Option} nor " +
                 $"{FolderExportSource.Variable} names one. Write it with " +
                 "'dotnet run --project src/FellowshipExtractor'.");
@@ -42,7 +42,6 @@ public static class ExportFolder
         return FolderExportSource.Carries(full)
             ? full
             : throw new InvalidOperationException(
-                $"{source} {full}, which carries no " +
-                $"{ExportReader.DataFolder}/{ExportReader.EntitiesName}.");
+                $"{source} {full}, which carries no {ExportReader.EntitiesName}.");
     }
 }

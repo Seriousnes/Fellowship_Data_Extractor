@@ -2,72 +2,90 @@ using Fellowship.SDK.Documents;
 
 namespace Fellowship.Codex.Models;
 
+public sealed record Category(string Slug, string Label);
+
 public sealed record PublicType(
-    EntityType Type, string Slug, string Label, string Noun, string Group, bool Listed, bool Tabbed, int Position);
+    EntityType Type,
+    string Slug,
+    string Label,
+    string Noun,
+    Category Category,
+    bool Listed,
+    int Position);
+
+public static class Categories
+{
+    public static Category Spells { get; } = new("spells", "Spells");
+
+    public static Category Items { get; } = new("items", "Items");
+
+    public static Category Dungeons { get; } = new("dungeons", "Dungeons");
+
+    public static Category Npcs { get; } = new("npcs", "NPCs");
+
+    public static IReadOnlyList<Category> All { get; } = [Spells, Items, Dungeons, Npcs];
+
+    public static Category? Find(string? slug) =>
+        All.FirstOrDefault(category => string.Equals(category.Slug, slug, StringComparison.OrdinalIgnoreCase));
+
+    public static string NoSuchCategory(string? asked) =>
+        $"'{asked}' is not a category. The categories are {string.Join(", ", All.Select(one => one.Slug))}.";
+}
 
 public static class PublicTypes
 {
-    private static readonly (EntityType Type, string Label, string Noun, string Group)[] Table =
+    private static readonly (EntityType Type, string Label, string Noun, Category Category)[] Table =
     [
-        (EntityType.Item, "Items", "item", "Items"),
-        (EntityType.Trait, "Traits", "trait", "Items"),
-        (EntityType.SetBonus, "Set Bonuses", "set bonus", "Items"),
-        (EntityType.SetBonusPower, "Set Bonus Powers", "set bonus power", "Items"),
-        (EntityType.WeaponPower, "Weapon Powers", "weapon power", "Items"),
-        (EntityType.RelicPower, "Relic Powers", "relic power", "Items"),
-        (EntityType.TraitPower, "Trait Powers", "trait power", "Items"),
-        (EntityType.LegendaryPower, "Legendary Powers", "legendary power", "Items"),
-        (EntityType.LegendaryStat, "Legendary Stats", "legendary stat", "Items"),
-        (EntityType.Currency, "Currencies", "currency", "Items"),
-        (EntityType.GemType, "Gem Types", "gem type", "Gems"),
-        (EntityType.Gem, "Gems", "gem", "Gems"),
-        (EntityType.GemTrait, "Gem Traits", "gem trait", "Gems"),
-        (EntityType.Ability, "Abilities", "ability", "Abilities"),
-        (EntityType.Blessing, "Blessings", "blessing", "Abilities"),
-        (EntityType.Effect, "Effects", "effect", "Abilities"),
-        (EntityType.Talent, "Talents", "talent", "Characters"),
-        (EntityType.TalentSlot, "Talent Slots", "talent slot", "Characters"),
-        (EntityType.Creature, "Creatures", "creature", "Characters"),
-        (EntityType.Dungeon, "Dungeons", "dungeon", "Characters"),
-        (EntityType.Modifier, "Modifiers", "modifier", "Characters"),
-        (EntityType.Hero, "Heroes", "hero", "Characters"),
-        (EntityType.CompanionPet, "Companion Pets", "companion pet", "Characters"),
-        (EntityType.Mount, "Mounts", "mount", "Characters"),
-        (EntityType.MountPower, "Mount Powers", "mount power", "Characters"),
-    ];
+        (EntityType.Ability, "Abilities", "ability", Categories.Spells),
+        (EntityType.Effect, "Effects", "effect", Categories.Spells),
+        (EntityType.Talent, "Talents", "talent", Categories.Spells),
+        (EntityType.Trait, "Traits", "trait", Categories.Spells),
+        (EntityType.GemTrait, "Gem Traits", "gem trait", Categories.Spells),
+        (EntityType.SetBonus, "Set Bonuses", "set bonus", Categories.Spells),
+        (EntityType.SetBonusPower, "Set Bonus Powers", "set bonus power", Categories.Spells),
+        (EntityType.TraitPower, "Trait Powers", "trait power", Categories.Spells),
+        (EntityType.WeaponPower, "Weapon Powers", "weapon power", Categories.Spells),
+        (EntityType.RelicPower, "Relic Powers", "relic power", Categories.Spells),
+        (EntityType.LegendaryPower, "Legendary Powers", "legendary power", Categories.Spells),
+        (EntityType.TalentSlot, "Talent Slots", "talent slot", Categories.Spells),
+        (EntityType.MountPower, "Mount Powers", "mount power", Categories.Spells),
+        (EntityType.Hero, "Heroes", "hero", Categories.Spells),
 
-    private static readonly EntityType[] Tabbed =
-    [
-        EntityType.Item, EntityType.Ability, EntityType.Effect, EntityType.Talent,
-        EntityType.Blessing, EntityType.GemTrait, EntityType.Trait, EntityType.SetBonus,
-        EntityType.GemType, EntityType.Creature, EntityType.Dungeon, EntityType.Mount, EntityType.CompanionPet,
-        EntityType.Currency, EntityType.LegendaryPower, EntityType.WeaponPower,
-        EntityType.RelicPower, EntityType.TraitPower, EntityType.SetBonusPower,
-    ];
+        (EntityType.Item, "Items", "item", Categories.Items),
+        (EntityType.Blessing, "Blessings", "blessing", Categories.Items),
+        (EntityType.Gem, "Gems", "gem", Categories.Items),
+        (EntityType.Currency, "Currencies", "currency", Categories.Items),
+        (EntityType.Mount, "Mounts", "mount", Categories.Items),
+        (EntityType.CompanionPet, "Companion Pets", "companion pet", Categories.Items),
+        (EntityType.LegendaryStat, "Legendary Stats", "legendary stat", Categories.Items),
+        (EntityType.GemType, "Gem Types", "gem type", Categories.Items),
 
-    private static readonly EntityType[] Untabbed = [EntityType.Gem, EntityType.LegendaryStat];
+        (EntityType.Dungeon, "Dungeons", "dungeon", Categories.Dungeons),
+        (EntityType.Modifier, "Modifiers", "modifier", Categories.Dungeons),
+
+        (EntityType.Creature, "Creatures", "creature", Categories.Npcs),
+    ];
 
     private static readonly EntityType[] Unlisted =
-        [EntityType.TalentSlot, EntityType.MountPower, EntityType.Modifier, EntityType.Hero];
-
-    private static readonly EntityType[] Ordered =
     [
-        .. Tabbed,
-        .. Table.Select(row => row.Type).Where(Untabbed.Contains),
-        .. Table.Select(row => row.Type).Where(Unlisted.Contains),
+        EntityType.TalentSlot,
+        EntityType.MountPower,
+        EntityType.Hero,
+        EntityType.LegendaryStat,
+        EntityType.GemType,
+        EntityType.Modifier,
     ];
 
     public static IReadOnlyList<PublicType> All { get; } = Verified(
     [
-        .. Table.Select(row => new PublicType(
+        .. Table.Select((row, position) => new PublicType(
             row.Type,
             EntityTypes.Slug(row.Type),
             row.Label,
             row.Noun,
-            row.Group,
+            row.Category,
             !Unlisted.Contains(row.Type),
-            Tabbed.Contains(row.Type),
-            Array.IndexOf(Ordered, row.Type))),
+            position)),
     ]);
 
     private static IReadOnlyList<PublicType> Verified(IReadOnlyList<PublicType> table)
@@ -78,26 +96,31 @@ public static class PublicTypes
         {
             throw new InvalidOperationException(
                 $"{string.Join(", ", missing)} {(missing.Length == 1 ? "has" : "have")} no row in " +
-                $"{nameof(PublicTypes)}.{nameof(Table)}.");
+                $"{nameof(PublicTypes)}.{nameof(Table)}, so the codex states neither a category nor a label for " +
+                (missing.Length == 1 ? "it." : "them."));
         }
 
-        var placed = Tabbed.Concat(Untabbed).Concat(Unlisted).ToArray();
-        var unplaced = Enum.GetValues<EntityType>().Except(placed).ToArray();
-        var twice = placed.GroupBy(type => type).Where(group => group.Count() > 1).Select(group => group.Key).ToArray();
-
-        if (unplaced.Length > 0)
-        {
-            throw new InvalidOperationException(
-                $"{string.Join(", ", unplaced)} {(unplaced.Length == 1 ? "is" : "are")} in none of " +
-                $"{nameof(Tabbed)}, {nameof(Untabbed)} and {nameof(Unlisted)}, so the codex states neither a " +
-                "tab for it nor a reason it holds none.");
-        }
+        var twice = table
+            .GroupBy(type => type.Type)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToArray();
 
         if (twice.Length > 0)
         {
             throw new InvalidOperationException(
-                $"{string.Join(", ", twice)} {(twice.Length == 1 ? "is" : "are")} in more than one of " +
-                $"{nameof(Tabbed)}, {nameof(Untabbed)} and {nameof(Unlisted)}, which together state each type once.");
+                $"{string.Join(", ", twice)} {(twice.Length == 1 ? "has" : "have")} more than one row in " +
+                $"{nameof(PublicTypes)}.{nameof(Table)}, which states each type once.");
+        }
+
+        var unnamed = Unlisted.Except(table.Select(type => type.Type)).ToArray();
+
+        if (unnamed.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"{string.Join(", ", unnamed)} {(unnamed.Length == 1 ? "is" : "are")} named in " +
+                $"{nameof(PublicTypes)}.{nameof(Unlisted)} and {(unnamed.Length == 1 ? "has" : "have")} no row in " +
+                $"{nameof(Table)}.");
         }
 
         return table;
@@ -106,22 +129,32 @@ public static class PublicTypes
     private static readonly IReadOnlyDictionary<EntityType, PublicType> ByType =
         All.ToDictionary(type => type.Type);
 
-    public static IReadOnlyList<PublicType> Tabs { get; } =
-        [.. All.Where(type => type.Tabbed).OrderBy(type => type.Position)];
+    public static IReadOnlyList<PublicType> Listed { get; } =
+        [.. All.Where(type => type.Listed).OrderBy(type => type.Position)];
 
-    public static bool Listed(EntityType type) => Find(type).Listed;
+    public static IReadOnlyList<PublicType> In(Category category) =>
+        [.. Listed.Where(type => type.Category == category)];
+
+    public static bool IsListed(EntityType type) => Find(type).Listed;
 
     public static string NoSuchType(string? asked) =>
         $"'{asked}' is not a type. The types are {Accepted}.";
 
+    public static string NotInCategory(string? asked, Category category) =>
+        $"'{asked}' is not a {category.Label} type. The {category.Label} types are " +
+        $"{string.Join(", ", In(category).Select(type => type.Slug))}.";
+
     private static readonly string Accepted =
-        string.Join(", ", All.Where(type => type.Listed).OrderBy(type => type.Position).Select(type => type.Slug));
+        string.Join(", ", Listed.Select(type => type.Slug));
 
     public static string Label(EntityType type) => Find(type).Label;
 
     public static string Noun(EntityType type) => Find(type).Noun;
 
-    public static string Group(EntityType type) => Find(type).Group;
+    public static Category Category(EntityType type) => Find(type).Category;
+
+    public static string Where(EntityType type) =>
+        $"/{Category(type).Slug}?type={Uri.EscapeDataString(Find(type).Slug)}";
 
     public static string? DisplayNameOf(EntityDocument document) => document.Name;
 

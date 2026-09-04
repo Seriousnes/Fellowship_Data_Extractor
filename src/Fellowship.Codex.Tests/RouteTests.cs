@@ -68,7 +68,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task Both_routes_answer_for_one_id_of_every_type()
     {
-        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
@@ -89,7 +89,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task A_record_answers_the_type_the_slug_asked_for()
     {
-        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
@@ -208,7 +208,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task Every_tooltip_route_takes_the_art_flag_and_draws_no_art_without_it()
     {
-        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.Listed))
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
@@ -335,7 +335,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var slot = ((ItemDocument)Factory.Store.All(EntityType.Item, 5191)[0]).Slot;
 
         var browse = await client.GetStringAsync(
-            $"/browse?type=item&slot={Uri.EscapeDataString(slot!)}", Xunit.TestContext.Current.CancellationToken);
+            $"/items?type=item&slot={Uri.EscapeDataString(slot!)}", Xunit.TestContext.Current.CancellationToken);
 
         Assert.Contains("entities", browse, StringComparison.Ordinal);
     }

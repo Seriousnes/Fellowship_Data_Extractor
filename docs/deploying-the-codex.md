@@ -4,10 +4,11 @@ The codex runs as one Docker container on the Lightsail instance `seriousnes`, b
 that already serves Foundry. Caddy terminates TLS for `codex.fellowshipanalyzer.com` and reverse
 proxies to the container on loopback port 5280. The container reads the export from a private S3
 bucket at startup and keeps it in memory. Browsers fetch the art (`ui/*.png`) through a CloudFront
-distribution that serves the same bucket over its `*.cloudfront.net` domain.
+distribution that serves the same bucket at `cdn.codex.fellowshipanalyzer.com`.
 
-Deployment is manual from your Windows machine over SSH. The scripts live in `deploy/` and use the
-key `~/.ssh/seriousnes-lightsail`.
+Merging to `master` deploys. The workflow `.github/workflows/deploy.yml` builds the image, pushes it
+to the GitHub container registry, and starts it on the instance over SSH. What stays on your machine
+is the AWS provisioning and the extractor run that publishes the export and the art to the bucket.
 
 ## First-time provisioning
 
@@ -19,24 +20,37 @@ pwsh ./deploy/aws/provision.ps1
 ```
 
 The script looks up the hosted zone id for `fellowshipanalyzer.com` and the instance's IPv4 and
-IPv6 addresses, validates and deploys the template `deploy/aws/fellowship-codex.yaml`, and reads its
-outputs. It creates one access key for `fellowship-codex-server` and writes `deploy/codex.env` with
-the bucket name, the CloudFront domain as `S3__PublicUrl`, the region, and that key pair. It creates
+IPv6 addresses. It deploys `deploy/aws/fellowship-codex-certificate.yaml` to `us-east-1`, the region
+CloudFront reads certificates from, and takes the certificate ARN from its output. It then validates
+and deploys the template `deploy/aws/fellowship-codex.yaml` to `ap-southeast-2` with that ARN, and
+reads its outputs. It creates one access key for `fellowship-codex-server` and writes
+`deploy/codex.env` with the bucket name, `https://cdn.codex.fellowshipanalyzer.com` as
+`S3__PublicUrl`, the region, and that key pair. When the server user already holds the key that
+`deploy/codex.env` carries, the script keeps that key and rewrites the file around it, so a re-run
+applies a template change to the environment the server reads. It creates
 one access key for `fellowship-codex-extractor` and writes it into a local AWS CLI profile named
 `fellowship-codex-extractor`. It also saves each key pair as `<user>_accessKeys.csv`, the format the
 IAM console downloads, under `$env:USERPROFILE\Documents\AWS\Codex`; pass `-CredentialsDir` to save them elsewhere.
 
 The stack creates:
 
-- The private bucket `fellowship-codex` in `ap-southeast-2`, with public access blocked, object
-  ownership enforced, and a CORS rule that allows `GET` and `HEAD` from `https://codex.fellowshipanalyzer.com`.
-- A CloudFront distribution that reads the bucket through an origin access control, redirects HTTP
-  to HTTPS, compresses responses, serves IPv6, HTTP/2 and HTTP/3, and uses `PriceClass_All` so
-  Sydney viewers reach a nearby edge.
+- The private bucket `fellowship-codex` in `ap-southeast-2`, with public access blocked and object
+  ownership enforced.
+- A CloudFront distribution that reads the bucket through an origin access control, answers to
+  `cdn.codex.fellowshipanalyzer.com` under the ACM certificate, redirects HTTP to HTTPS, compresses
+  responses, serves IPv6, HTTP/2 and HTTP/3, and uses `PriceClass_All` so Sydney viewers reach a
+  nearby edge. A response headers policy attaches `Access-Control-Allow-Origin: *` at the edge.
 - The bucket policy that lets the CloudFront service principal read the art (`ui/*`) for that distribution.
 - The IAM users `fellowship-codex-server` (read the bucket) and `fellowship-codex-extractor` (read
   and write the bucket).
 - The Route 53 `A` and `AAAA` records that point `codex.fellowshipanalyzer.com` at the instance.
+- The Route 53 alias `A` and `AAAA` records that point `cdn.codex.fellowshipanalyzer.com` at the
+  distribution.
+
+The certificate stack `fellowship-codex-certificate` in `us-east-1` creates the ACM certificate for
+`cdn.codex.fellowshipanalyzer.com` and the DNS records that validate it, which CloudFormation writes
+into the same hosted zone. The first deployment waits for ACM to see those records, which takes a few
+minutes.
 
 Each user holds one access key. To rotate a key, delete the existing one in IAM and run
 `provision.ps1` again; the script names the key to delete and writes a fresh one.
@@ -65,6 +79,36 @@ The stack creates the `A` and `AAAA` records for `codex.fellowshipanalyzer.com`.
 instance's static IPv4 and IPv6 addresses. Caddy issues the certificate within seconds of the first
 reload.
 
+It also creates the alias `A` and `AAAA` records for `cdn.codex.fellowshipanalyzer.com`, which point
+at the distribution and carry no TTL of their own. CloudFront answers them under the ACM certificate
+the `us-east-1` stack holds, and ACM renews that certificate on its own while the validation records
+stay in the zone.
+
+## Reading the codex from another site
+
+Both halves answer any origin, so a page served from another host reads them from the browser. The
+Blazor WebAssembly app at `https://www.fellowshipanalyzer.com` runs on the viewer's machine, and its
+requests carry that page's origin rather than the codex's.
+
+The art comes from the CloudFront response headers policy `fellowship-codex-art-headers`, which attaches
+`Access-Control-Allow-Origin: *` at the edge. The bucket stays private behind the origin access
+control and never sees the `Origin` header.
+
+The records come from the CORS policy `origins`, which `Program.cs` requires on the `/api` group and
+on nothing else. It allows any origin, any header, and `GET`, `HEAD` and `OPTIONS` without
+credentials. `*` carries no `Vary: Origin`, so the output cache in `Serving.cs` holds one entry per
+route whatever origin asked for it.
+
+Confirm both after a deployment:
+
+```powershell
+curl.exe -sI -H 'Origin: https://www.fellowshipanalyzer.com' https://cdn.codex.fellowshipanalyzer.com/ui/T_Icon_Armor_Cloth_Chest_01.png
+curl.exe -sI -H 'Origin: https://www.fellowshipanalyzer.com' https://codex.fellowshipanalyzer.com/api/item/1
+```
+
+Each response carries `access-control-allow-origin: *`. A `200` without that header is the failure
+that reads as success in the network tab.
+
 ## Publishing the export
 
 Publish the export and art to the bucket from your machine with the extractor profile:
@@ -78,34 +122,65 @@ The extractor writes `export-<build>/data/entities.jsonl`, `export-<build>/data/
 `ui/<texture>.png` to the bucket. It sets `Cache-Control: no-cache` and an MD5 on each art object and
 rewrites an art key only when its bytes change.
 
+## Tests on a pull request
+
+`.github/workflows/tests.yml` runs `src/Fellowship.Codex.Tests` on every pull request, and on every
+push to `master`. The tracked `output/export-*/data` gives it the documents; the art it draws comes
+from the bucket, read with `aws s3 sync` into the newest export folder's `ui/` and held in the
+Actions cache under the build id. The cache is what the `master` runs are for: a run restores caches
+written by its own ref, its base ref, or the default branch, so without a run on `master` no pull
+request could ever read another's download. With one, only the first run after a new export pays for
+the 335 MB.
+
+`src/FellowshipExtractor.Tests` stays a local run. It mounts the game paks through `Export.Provider`,
+which needs the Steam install no hosted runner has.
+
+The deploy workflow does not run the tests. It assumes what merged to `master` passed them.
+
 ## Deploying
 
-`deploy/deploy.ps1` builds the image, ships it to the server, and starts it:
+Merging to `master` runs `.github/workflows/deploy.yml`. The job tags the image with the short git
+sha, builds it for `linux/amd64` with the Actions layer cache, and pushes it to
+`ghcr.io/seriousnes/fellowship-codex`. It writes `/opt/codex/codex.env` from the repository secrets
+and copies `deploy/compose.yaml` beside it. On the instance it signs in to the registry with the
+job's own `GITHUB_TOKEN`, pulls the tag, signs out, and runs `deploy/server/start.sh`, which writes
+`/opt/codex/.env` with `CODEX_TAG=<sha>` and runs `docker compose up -d --remove-orphans`. It then
+waits for `https://codex.fellowshipanalyzer.com/health` to answer 200 from the runner, printing the
+container logs and failing the job if it does not, and runs `deploy/server/prune.sh` to remove
+server images older than the newest three, keeping the tag it just deployed.
+
+The registry credential is the job's own token, which expires when the job ends, so no long lived
+registry credential rests on the instance. The `deploy-codex` concurrency group holds a second merge
+until the first finishes.
+
+The workflow reads these repository secrets:
+
+| Secret | Holds |
+| --- | --- |
+| `SSH_PRIVATE_KEY` | The private half of the key `ubuntu@foundry.seriousnes.com` accepts. |
+| `SSH_KNOWN_HOSTS` | The instance's host key, so the runner verifies what it connects to. |
+| `S3_BUCKET` | The bucket the codex reads, written as `S3__Bucket`. |
+| `S3_PUBLIC_URL` | `https://cdn.codex.fellowshipanalyzer.com`, written as `S3__PublicUrl`. |
+| `AWS_REGION` | The bucket's region. |
+| `AWS_ACCESS_KEY_ID` | The `fellowship-codex-server` key id. |
+| `AWS_SECRET_ACCESS_KEY` | That key's secret. |
+
+`provision.ps1` writes the same five S3 and AWS values into `deploy/codex.env`, which is where the
+secret values come from. After a key rotation, set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+again from that file:
 
 ```powershell
-pwsh ./deploy/deploy.ps1
+gh secret set AWS_ACCESS_KEY_ID --body (Select-String '^AWS_ACCESS_KEY_ID=' deploy/codex.env).Line.Split('=', 2)[1]
 ```
-
-The script tags the image with the short git sha, builds it for `linux/amd64`, saves it to a temp
-tar, copies the tar to the server, and loads it. It copies `deploy/compose.yaml` and
-`deploy/codex.env` to `/opt/codex/`, writes `/opt/codex/.env` with `CODEX_TAG=<sha>`, and runs
-`docker compose up -d --remove-orphans`. It waits for `https://codex.fellowshipanalyzer.com/health`
-to answer 200, then removes server images older than the newest three, keeping the tag it just
-deployed.
 
 ## Rolling back
 
-Redeploy an image already on the server by its tag:
+Run the same workflow from the Actions tab with **Run workflow**, giving the short sha of an image
+already in the registry as the `tag` input. The job skips the build and the push, pulls that tag, and
+restarts the container against it. List the tags the registry holds with:
 
 ```powershell
-pwsh ./deploy/deploy.ps1 -Tag <sha>
-```
-
-The script skips the build and the image copy, points `CODEX_TAG` at that sha, and restarts the
-container. List the tags on the server with:
-
-```bash
-ssh -i ~/.ssh/seriousnes-lightsail ubuntu@foundry.seriousnes.com "docker images fellowship-codex"
+gh api /user/packages/container/fellowship-codex/versions --jq '.[].metadata.container.tags[]'
 ```
 
 ## Reading logs
@@ -137,8 +212,8 @@ these amounts. CloudFront bills usage above an allowance at the standard pay-as-
 resource.
 
 The distribution keeps `PriceClass_All`, so Sydney viewers reach a nearby edge. The distribution
-serves the art on the default `*.cloudfront.net` domain, which uses CloudFront's certificate at no
-charge.
+serves the art on `cdn.codex.fellowshipanalyzer.com` under an ACM certificate, which ACM issues,
+renews and serves through SNI at no charge.
 
 ## Invalidating CloudFront
 
@@ -176,8 +251,8 @@ and the static IP is reattached, restore the codex:
 
 1. Copy `deploy/server/setup.sh` and `deploy/caddy/codex.caddy` to the instance and run `setup.sh`
    to reinstall Docker, `/opt/codex`, and the Caddy site.
-2. Run `deploy/deploy.ps1` to build, ship, and start the container. It copies the current
-   `deploy/codex.env`, whose keys still work.
+2. Run the deploy workflow from the Actions tab to pull and start the container. It writes
+   `/opt/codex/codex.env` from the secrets, whose keys still work.
 
 The records point at the instance IP. When the replacement takes a new IP, run `provision.ps1` again
 to update the `A` and `AAAA` records.

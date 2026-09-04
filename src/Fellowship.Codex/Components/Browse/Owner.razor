@@ -28,7 +28,7 @@ else if (Holder is { } holder && Named(holder) is { } name)
     [Parameter] public EntityReference? Holder { get; set; }
 
     private string HeroList(string hero) =>
-        $"/browse?type={Uri.EscapeDataString(EntityTypes.Slug(Type))}&hero={Uri.EscapeDataString(hero)}";
+        $"{PublicTypes.Where(Type)}&hero={Uri.EscapeDataString(hero)}";
 
     private string? Named(EntityReference holder) =>
         holder.Name ?? (Ui.Store.All(holder.Type, holder.Id) is [var first, ..] ? Ui.Name(first) : null);

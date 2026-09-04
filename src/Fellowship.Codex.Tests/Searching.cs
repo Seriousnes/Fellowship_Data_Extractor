@@ -14,10 +14,15 @@ public static class Searching
         Indexes.GetValue(export, built => new SearchIndexService(built.Store, NullLogger<SearchIndexService>.Instance));
 
     public static CodexQuery Ask(Export export, out string? error, params (string Key, string Value)[] asked) =>
+        AskIn(export, null, out error, asked);
+
+    public static CodexQuery AskIn(
+        Export export, Category? category, out string? error, params (string Key, string Value)[] asked) =>
         CodexQuery.Parse(
             new QueryCollection(asked.ToDictionary(pair => pair.Key, pair => new StringValues(pair.Value))),
             export.View.Codex,
             RequestProperties.Of(typeof(EntitiesRequest)),
+            category,
             out error);
 
     public static CodexResults Run(Export export, params (string Key, string Value)[] asked)

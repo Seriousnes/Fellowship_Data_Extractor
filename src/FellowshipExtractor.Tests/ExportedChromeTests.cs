@@ -40,7 +40,7 @@ public sealed class ExportedChromeTests
         ("T_Backgrounds_TooltipSlot_Gradient_Decor", "core.secondary-600"),
     ];
 
-    private static string Ui(string name) => Path.Combine(Export.Loaded.Folder, ExportLayout.UiFolder, name);
+    private static string Ui(string name) => Path.Combine(Export.Loaded.Ui, name);
 
     private static IReadOnlyList<RarityEntry> Ladder => Export.Loaded.Settings.Rarities;
 

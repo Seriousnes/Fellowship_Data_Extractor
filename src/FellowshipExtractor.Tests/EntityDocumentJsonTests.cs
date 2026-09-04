@@ -15,7 +15,7 @@ public sealed class EntityDocumentJsonTests
         new(() =>
         [
             .. File.ReadLines(Path.Combine(
-                    Export.Loaded.Folder, ExportLayout.DataFolder, ExportLayout.EntitiesFile))
+                    Export.Loaded.Folder, ExportLayout.EntitiesFile))
                 .Where(line => line.Length > 0)
                 .Select(line => (
                     Type: EntityTypes.Parse(JsonNode.Parse(line)![EntityDocuments.Discriminator]!.GetValue<string>()),

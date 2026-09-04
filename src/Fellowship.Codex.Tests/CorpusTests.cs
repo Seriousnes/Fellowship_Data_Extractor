@@ -33,7 +33,7 @@ public class CorpusTests : BunitContext
             Assert.Equal(type.Type, results.Chosen);
             Assert.NotEmpty(results.Rows);
 
-            var view = new BrowseView(Exported.View.Codex, new CodexQuery { Types = [type.Type] }, results);
+            var view = new BrowseView(Exported.View.Codex, new CodexQuery { Types = [type.Type] }, results, PublicTypes.Where(type.Type));
 
             var cut = Render<Components.Browse.Rows>(p => p
                 .Add(x => x.Type, type.Type)

@@ -39,6 +39,8 @@ public sealed class Export
 
     public IExportHistoryService History { get; }
 
+    public IMenuService Menu { get; }
+
     public string Folder { get; }
 
     public Export()
@@ -61,10 +63,17 @@ public sealed class Export
 
         var chrome = Chrome = new ChromeAssetService(new StorageArtSource(new MemoryStorage()), Store, tokens);
 
-        View = new CodexViewService(Store, new CodexService(Store, tokens), tokens, chrome, richText, substitutions);
+        var codex = new CodexService(Store, tokens);
+
+        Menu = new MenuService(Store, codex, tokens);
+
+        View = new CodexViewService(Store, codex, tokens, chrome, richText, substitutions);
 
         Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, new ApiWebRoot());
     }
+
+    public static string Art() =>
+        Path.Combine(Directory.GetParent(Found())!.FullName, ChromeAssetService.Prefix);
 
     public static string Found() =>
         FolderExportSource.Above(AppContext.BaseDirectory)

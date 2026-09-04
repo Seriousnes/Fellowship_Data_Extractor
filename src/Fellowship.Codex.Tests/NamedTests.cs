@@ -6,7 +6,7 @@ public class NamedTests(Export export)
     [Fact]
     public void A_bare_browse_answers_only_rows_the_build_names()
     {
-        var results = Searching.Run(export);
+        var results = Searching.Run(export, ("type", "item"));
 
         Assert.Equal(EntityType.Item, results.Chosen);
         Assert.Equal(2769, results.Total);
@@ -45,9 +45,9 @@ public class NamedTests(Export export)
     [Fact]
     public void The_codex_counts_every_document_of_every_listed_type()
     {
-        var listed = export.Store.Entities.Count(row => PublicTypes.Listed(EntityTypes.TypeOf(row)));
+        var listed = export.Store.Entities.Count(row => PublicTypes.IsListed(EntityTypes.TypeOf(row)));
 
-        Assert.Equal(12348, listed);
+        Assert.Equal(12339, listed);
         Assert.Equal(listed, export.View.Codex.Count);
         Assert.Equal(listed, export.View.Codex.Types.Sum(type => type.Count));
     }
@@ -68,7 +68,7 @@ public class NamedTests(Export export)
     public void An_unnamed_row_is_reachable_by_the_one_thing_it_has()
     {
         var unnamed = export.Store.Entities.First(row =>
-            PublicTypes.Listed(EntityTypes.TypeOf(row)) && PublicTypes.DisplayNameOf(row) is null);
+            PublicTypes.IsListed(EntityTypes.TypeOf(row)) && PublicTypes.DisplayNameOf(row) is null);
 
         var hits = Searching.Index(export)
             .Search(unnamed.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), 200);
