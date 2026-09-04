@@ -1,4 +1,3 @@
-using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -60,8 +59,7 @@ public sealed class Export
 
         var substitutions = new PlaceholderService(Store, richText);
 
-        var icons = new BlobContainerClient(new Uri("http://localhost/icons"));
-        var chrome = Chrome = new ChromeAssetService(new BlobArtSource(icons), Store, tokens);
+        var chrome = Chrome = new ChromeAssetService(new StorageArtSource(new MemoryStorage()), Store, tokens);
 
         View = new CodexViewService(Store, new CodexService(Store, tokens), tokens, chrome, richText, substitutions);
 

@@ -38,7 +38,7 @@ public sealed class ExportHistoryHolder
 
 public static class ExportReader
 {
-    public const string Data = "data";
+    public const string DataFolder = "data";
 
     public const string EntitiesName = "entities.jsonl";
 
@@ -49,21 +49,23 @@ public static class ExportReader
     private static readonly string IdName =
         Options.PropertyNamingPolicy!.ConvertName(nameof(EntityDocument.Id));
 
-    public static string Blob(string name) => $"{Data}/{name}";
+    public static string Data(string name) => $"{DataFolder}/{name}";
 
-    public static string Blob(string build, string name) => $"{ExportFolders.Name(build)}/{Blob(name)}";
+    public static string Data(string build, string name) => $"{ExportFolders.Name(build)}/{Data(name)}";
 
     public static InvalidOperationException Missing(string name) =>
-        new($"The export carries no {Blob(name)}. Run the FellowshipExtractor.Publisher app host, which " +
-            "runs the extractor into the icons container, or run 'dotnet run --project " +
-            "src/FellowshipExtractor -- --output <folder>' to write the folder it reads instead.");
+        new($"The export carries no {Data(name)}. Run 'dotnet run --project src/FellowshipExtractor' to " +
+            "write it: with no destination it writes the output/export-<build> folder the codex and the " +
+            "MCP server read, '--bucket <name>' fills an S3 bucket, and '--connection-string' fills an " +
+            "Azure Blob container, which is what the FellowshipExtractor.Publisher app host runs. The " +
+            "codex reads whichever of the two its own configuration names.");
 
     public static SettingsFile ReadSettings(string? json)
     {
         if (json is null) throw Missing(SettingsName);
 
         return JsonSerializer.Deserialize<SettingsFile>(json, Options)
-            ?? throw new InvalidOperationException($"{Blob(SettingsName)} deserialised to nothing.");
+            ?? throw new InvalidOperationException($"{Data(SettingsName)} deserialised to nothing.");
     }
 
     public static IReadOnlyList<EntityDocument> ReadEntities(IEnumerable<string> lines)
@@ -132,12 +134,12 @@ public static class ExportReader
         {
             return JsonSerializer.Deserialize<EntityDocument>(line, Options)
                 ?? throw new InvalidOperationException(
-                    $"Line {number} of {Blob(EntitiesName)} deserialised to nothing.");
+                    $"Line {number} of {Data(EntitiesName)} deserialised to nothing.");
         }
         catch (Exception failure) when (failure is JsonException or NotSupportedException)
         {
             throw new InvalidOperationException(
-                $"Line {number} of {Blob(EntitiesName)} does not read as a document: {failure.Message} An " +
+                $"Line {number} of {Data(EntitiesName)} does not read as a document: {failure.Message} An " +
                 $"export written before a document carried the '{EntityDocuments.Discriminator}' it is read " +
                 "back as reads this way. Write it again with 'dotnet run --project " +
                 "src/FellowshipExtractor'.",

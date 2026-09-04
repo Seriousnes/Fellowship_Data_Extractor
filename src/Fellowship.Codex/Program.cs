@@ -5,6 +5,7 @@ using Fellowship.Codex.Components;
 using Fellowship.Codex.Endpoints;
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
+using Fellowship.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,9 +24,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.DefaultIgnoreCondition =
         System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);
 
-builder.AddAzureBlobContainerClient("icons");
-builder.Services.AddSingleton<IExportSource, BlobExportSource>();
-builder.Services.AddSingleton<IArtSource, BlobArtSource>();
+builder.AddStorage();
+builder.Services.AddSingleton<IExportSource, StorageExportSource>();
+builder.Services.AddSingleton<IArtSource, StorageArtSource>();
 
 builder.Services.AddCodexServices();
 builder.Services.AddTooltipServices();

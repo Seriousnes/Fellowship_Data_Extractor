@@ -287,7 +287,7 @@ public sealed class ChromeAssetService(
     private static string Name(string texture, string rarity) =>
         $"{Prefix}/{texture}-{rarity.ToLowerInvariant()}.png";
 
-    private string Url(string blob) => art.Address(blob);
+    private string Url(string name) => art.Address(name);
 
     private static string Chosen(IReadOnlyList<string> states, string? state) =>
         states.FirstOrDefault(known => string.Equals(known, state, StringComparison.OrdinalIgnoreCase))

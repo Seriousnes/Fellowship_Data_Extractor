@@ -1,29 +1,19 @@
 using System.Text.Json;
 
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
-
 using FellowshipExtractor.Extraction;
 
 using Fellowship.SDK.Documents;
+using Fellowship.Storage;
 
 namespace FellowshipExtractor.Output;
 
-public sealed class BlobTarget(string connectionString, string build) : IExportTarget
+public sealed class StorageTarget(IStorage storage, string build) : IExportTarget
 {
-    public const string ContainerName = "icons";
-
-    private const string ContainerKey = "ContainerName";
-
     private const string CacheControl = "no-cache";
-
-    private readonly (string Account, string Name) _storage = Parse(connectionString);
 
     private readonly WrittenNames _names = new();
 
     private readonly MemoryStream _entities = new();
-
-    private BlobContainerClient? _client;
 
     private Dictionary<string, string>? _published;
 
@@ -37,53 +27,22 @@ public sealed class BlobTarget(string connectionString, string build) : IExportT
 
     private StreamWriter Lines() => _lines ??= new StreamWriter(_entities, leaveOpen: true);
 
-    public string Name => _storage.Name;
+    private string Name => storage.Name;
 
-    public BlobContainerClient Container =>
-        _client ??= new BlobServiceClient(_storage.Account).GetBlobContainerClient(_storage.Name);
-
-    private static (string Account, string Name) Parse(string connectionString)
+    private async Task ReadyAsync(CancellationToken cancellationToken)
     {
-        List<string> account = [];
-        var name = ContainerName;
+        if (_published is not null) return;
 
-        foreach (var pair in connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var separator = pair.IndexOf('=');
-
-            if (separator > 0 && pair[..separator].Trim().Equals(ContainerKey, StringComparison.OrdinalIgnoreCase))
-            {
-                var named = pair[(separator + 1)..].Trim();
-                if (named.Length > 0) name = named;
-
-                continue;
-            }
-
-            account.Add(pair);
-        }
-
-        return (string.Join(';', account), name);
-    }
-
-    private async Task<BlobContainerClient> ContainerAsync(CancellationToken cancellationToken)
-    {
-        var container = Container;
-
-        if (_published is not null) return container;
-
-        await container.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
-        await container.SetAccessPolicyAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
+        await storage.PrepareAsync(cancellationToken);
 
         var published = new Dictionary<string, string>(StringComparer.Ordinal);
-        await foreach (var blob in container.GetBlobsAsync(cancellationToken: cancellationToken))
+        await foreach (var stored in storage.ListAsync(null, cancellationToken))
         {
-            if (blob.Properties.ContentHash is { } hash) published[blob.Name] = Convert.ToBase64String(hash);
+            if (stored.Hash is { } hash) published[stored.Name] = Convert.ToBase64String(hash);
         }
 
         _published = published;
-        Console.WriteLine($"container {Name} already holds {published.Count} blob(s) carrying a hash");
-
-        return container;
+        Console.WriteLine($"store {Name} already holds {published.Count} object(s) carrying a hash");
     }
 
     private async Task PublishAsync(
@@ -91,7 +50,7 @@ public sealed class BlobTarget(string connectionString, string build) : IExportT
     {
         if (_names.Repeats(name, content, out var hash)) return;
 
-        var container = await ContainerAsync(cancellationToken);
+        await ReadyAsync(cancellationToken);
         var stamp = Convert.ToBase64String(hash);
 
         if (_published!.TryGetValue(name, out var published) && published == stamp)
@@ -100,18 +59,7 @@ public sealed class BlobTarget(string connectionString, string build) : IExportT
             return;
         }
 
-        await container.GetBlobClient(name).UploadAsync(
-            BinaryData.FromBytes(content),
-            new BlobUploadOptions
-            {
-                HttpHeaders = new BlobHttpHeaders
-                {
-                    ContentHash = hash,
-                    ContentType = contentType,
-                    CacheControl = CacheControl,
-                },
-            },
-            cancellationToken);
+        await storage.WriteAsync(name, content, contentType, CacheControl, hash, cancellationToken);
 
         _published[name] = stamp;
         _uploaded++;
@@ -158,7 +106,7 @@ public sealed class BlobTarget(string connectionString, string build) : IExportT
 
             Console.Error.WriteLine(
                 $"the pass ended holding {held} without {absent}, so neither was published: a snapshot is " +
-                "both files from one pass, and the container keeps the pair the last finished pass left.");
+                "both files from one pass, and the store keeps the pair the last finished pass left.");
         }
 
         await _entities.DisposeAsync();
@@ -166,7 +114,7 @@ public sealed class BlobTarget(string connectionString, string build) : IExportT
         if (_published is not null)
         {
             Console.WriteLine(
-                $"uploaded {_uploaded} blob(s) to {Container.Uri}, {_matched} already matched their hash");
+                $"uploaded {_uploaded} object(s) to {storage.Address(string.Empty)}, {_matched} already matched their hash");
         }
     }
 }

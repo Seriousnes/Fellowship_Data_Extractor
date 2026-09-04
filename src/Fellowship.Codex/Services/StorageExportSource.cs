@@ -1,9 +1,8 @@
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
+using Fellowship.Storage;
 
 namespace Fellowship.Codex.Services;
 
-public sealed class BlobExportSource(BlobContainerClient container) : IExportSource
+public sealed class StorageExportSource(IStorage storage) : IExportSource
 {
     public async Task<ExportHistory> LoadAsync(CancellationToken cancellationToken)
     {
@@ -51,44 +50,35 @@ public sealed class BlobExportSource(BlobContainerClient container) : IExportSou
     {
         var carried = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
 
-        await foreach (var blob in container.GetBlobsAsync(
-            BlobTraits.None, BlobStates.None, ExportFolders.Prefix, cancellationToken))
+        await foreach (var stored in storage.ListAsync(ExportFolders.Prefix, cancellationToken))
         {
-            var separator = blob.Name.IndexOf('/');
+            var separator = stored.Name.IndexOf('/');
 
             if (separator <= 0) continue;
 
-            var folder = blob.Name[..separator];
+            var folder = stored.Name[..separator];
 
             if (!carried.TryGetValue(folder, out var files))
             {
                 carried[folder] = files = new HashSet<string>(StringComparer.Ordinal);
             }
 
-            files.Add(blob.Name[(separator + 1)..]);
+            files.Add(stored.Name[(separator + 1)..]);
         }
 
         return carried;
     }
 
     private static bool Whole(HashSet<string> files) =>
-        files.Contains(ExportReader.Blob(ExportReader.EntitiesName)) &&
-        files.Contains(ExportReader.Blob(ExportReader.SettingsName));
+        files.Contains(ExportReader.Data(ExportReader.EntitiesName)) &&
+        files.Contains(ExportReader.Data(ExportReader.SettingsName));
 
     private static InvalidOperationException Absent(IReadOnlyDictionary<string, HashSet<string>> carried) =>
         ExportReader.Missing(
-            carried.Any(version => version.Value.Contains(ExportReader.Blob(ExportReader.EntitiesName)))
+            carried.Any(version => version.Value.Contains(ExportReader.Data(ExportReader.EntitiesName)))
                 ? ExportReader.SettingsName
                 : ExportReader.EntitiesName);
 
-    private async Task<string?> TextAsync(string build, string name, CancellationToken cancellationToken)
-    {
-        var blob = container.GetBlobClient(ExportReader.Blob(build, name));
-
-        if (!await blob.ExistsAsync(cancellationToken)) return null;
-
-        var content = await blob.DownloadContentAsync(cancellationToken);
-
-        return content.Value.Content.ToString();
-    }
+    private Task<string?> TextAsync(string build, string name, CancellationToken cancellationToken) =>
+        storage.ReadTextAsync(ExportReader.Data(build, name), cancellationToken);
 }

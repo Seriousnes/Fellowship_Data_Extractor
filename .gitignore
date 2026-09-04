@@ -13,3 +13,6 @@ obj/
 # is the only committed source of styling and a fresh clone produces the rest on its first build.
 *.css
 *.css.map
+
+/deploy/codex.env
+/deploy/.env

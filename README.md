@@ -13,15 +13,16 @@ dotnet run --project src/FellowshipExtractor
 ```
 
 With no command that writes the whole export, described under [Everything at once](#everything-at-once):
-`output/export-<build>` unless a connection string names blob storage, where `<build>` is the Steam
+`output/export-<build>` unless a remote store is named, where `<build>` is the Steam
 build id. The folder holds `data/` and `ui/` and nothing else, and `output/` holds the folder and
 nothing else.
 
 | Argument | What it does |
 | --- | --- |
 | `--usmap` | Recovers the mappings first, and stops before exporting if they come back short |
-| `--output <path>` | Writes a folder laid out like the container, `output/export-<build>` by default |
-| `--connection-string <value>` | Writes into the `icons` blob container, also read from `ConnectionStrings__icons` |
+| `--output <path>` | Writes a folder laid out like a store, `output/export-<build>` by default |
+| `--connection-string <value>` | Writes into an Azure Blob container, also read from `ConnectionStrings__icons` |
+| `--bucket <name>` | Writes into an S3 bucket, also read from `S3__Bucket` |
 
 | Command | What it does |
 | --- | --- |
@@ -592,13 +593,23 @@ dotnet run --project src/FellowshipExtractor -- --usmap
 
 Every run covers the whole build, with or without the mappings step.
 
-Two arguments name the destination. `--output <path>` writes a folder, `output/export-<build>` when
-neither argument is given, where `<build>` is the Steam build id of the install the assets came
-from. `--connection-string <value>` writes every document, setting and image straight into the
-`icons` blob container instead, leaving nothing on disk; the value is taken from the
-`ConnectionStrings:icons` configuration key when the argument is absent, which is the key the
-Publisher app host injects, so a run under it needs no argument at all and writes no export folder.
-Naming both writes both in one pass over the build.
+Three arguments name the destination. `--output <path>` writes a folder to that path, and a run that
+names no remote store writes `output/export-<build>` even without it, where `<build>` is the Steam
+build id of the install the assets came from. `--connection-string <value>` writes every document,
+setting and image straight into an Azure Blob container instead, leaving nothing on disk; the value
+is taken from the `ConnectionStrings:icons` configuration key when the argument is absent, which is
+the key the Publisher app host injects, so a run under it needs no argument at all and writes no
+export folder. `--bucket <name>` writes the same into an S3 bucket, read from the `S3__Bucket`
+environment variable when the argument is absent; the bucket's region and the account's credentials
+come from the AWS SDK's own configuration chain. Naming more than one destination writes each in one
+pass over the build.
+
+Both remote destinations, and the read the codex does, go through one interface. `IStorage` in
+`src/Fellowship.Storage` names a store of objects: it lists them, reads one, prepares the store for
+writing, writes one, and addresses one for a browser. `AzureStorage` implements it over an Azure Blob
+container, and `S3Storage` over an S3 bucket. The extractor picks the implementation from the
+destination argument, and the codex picks it from configuration: `ConnectionStrings:icons` names the
+blob container, `S3:Bucket` names the bucket, and the connection string wins when both are set.
 
 `--usmap` recovers the mappings before the pass and stops the run if the round-trip resolves no
 schema for a type the export reads, so an export is never written from mappings that would read
@@ -607,9 +618,9 @@ their tables back empty.
 A folder run finishes by copying `data/settings.json` to `src/Fellowship.SDK/`, which is the copy
 the source generator turns into the enumerated types the documents are read against.
 
-A blob run uploads every image as it draws it, and publishes `data/entities.jsonl` and
+A run that writes a store uploads every image as it draws it, and publishes `data/entities.jsonl` and
 `data/settings.json` together once the pass has both. A pass that throws part way publishes neither,
-so a throw during the export leaves the container on the pair the last finished pass left.
+so a throw during the export leaves the store on the pair the last finished pass left.
 
 Either destination is the same layout:
 
@@ -619,9 +630,9 @@ Either destination is the same layout:
 <root>/ui/<texture>.png
 ```
 
-On disk `<root>` is `output/export-<build>`. In the container the two data blobs carry that folder as
-their prefix, `export-<build>/data/...`, and the images stay at `ui/<texture>.png` at the container
-root, so a container holds every build's documents side by side against one set of art. The codex
+On disk `<root>` is `output/export-<build>`. In a store the two data objects carry that folder as
+their prefix, `export-<build>/data/...`, and the images stay at `ui/<texture>.png` at the store
+root, so a store holds every build's documents side by side against one set of art. The codex
 loads all of them, builds the site from the highest build, and renders what changed between adjacent
 versions on every entity page.
 
@@ -741,29 +752,41 @@ Presentation coverage is uneven, and the cause is that only `CRAbilityDataRow` t
 
 ## The codex
 
-`src/Fellowship.Codex` serves the export as a website and as an API from one process. It
-reads everything it draws out of the `icons` blob container, so the container has to be filled
-before the app will start:
+`src/Fellowship.Codex` serves the export as a website and as an API from one process. It reads
+everything it draws out of an object store, so the store has to be filled and named to the codex
+before the app will start. The store is an Azure Blob container or an S3 bucket, and the codex reads
+whichever configuration names:
+
+- `ConnectionStrings:icons`: an Azure Blob container, `icons` unless the string names another
+  through `ContainerName=`. This is the key the app host injects from Azurite, so a run under
+  `FellowshipExtractor.AppHost` needs no configuration of its own.
+- `S3:Bucket`: the bucket the codex reads, which is how the deployed container names its store.
+- `AWS:Region`: the bucket's region, read from `AWS_REGION` in the environment when the key is absent.
+- `S3:PublicUrl`: an absolute URL that art links use in place of the bucket's own S3 URL, for a
+  content delivery network or a custom domain. Optional.
+- `S3:ServiceUrl`: an S3-compatible endpoint such as MinIO, which turns on path-style addressing.
+  Optional.
+
+The connection string wins when both name a store, so a machine holding AWS credentials still reads
+its own Azurite. The codex refuses to start when neither is set, naming both keys.
+
+Fill the store by running the extractor against it:
 
 ```powershell
 dotnet run --project src/FellowshipExtractor -- usmap
 
-dotnet run --project src/FellowshipExtractor.Publisher
-
-aspire run
+dotnet run --project src/FellowshipExtractor -- --bucket BUCKET_NAME
 ```
 
-`FellowshipExtractor.Publisher` is an app host of its own: it starts the same Azurite the codex uses
-and runs the extractor against it, so publishing is one command and needs no connection string on the
-line. The extractor resource reads the same `mappings/fellowship-<build>.usmap` the `usmap` command wrote, and
-a `FELLOWSHIP_USMAP` set in the shell that starts the host is passed to it as an absolute path, so a
-usmap named there is the one the run reads. The extractor resource runs once and finishes, and the host keeps running until it is stopped,
-so stop it once the dashboard shows the run has exited. `aspire run` then starts the codex against
-the container that run filled.
+Replace `BUCKET_NAME` with the S3 bucket the codex reads. The bucket's region and the account's
+credentials come from the AWS SDK's own configuration chain: environment variables, a shared
+credentials file, or an instance role. The run reads the same `mappings/fellowship-<build>.usmap` the
+`usmap` command wrote. `FellowshipExtractor.Publisher` runs the same pass against the app host's
+Azurite instead, which is what fills the container the codex reads locally.
 
-A run with no connection string writes the same target as a folder instead, laid out exactly
-like the container, which is what the test suite reads. Either way the export is a build output and
-is not in the repository, so a fresh clone or a fresh worktree has to produce it first.
+A run with no remote store named writes the same export as a folder instead, laid out exactly like a
+store, which is what the test suite reads. Either way the export is a build output and is not in the
+repository, so a fresh clone or a fresh worktree has to produce it first.
 
 | Address | What it answers |
 | --- | --- |
@@ -920,8 +943,11 @@ value.
 Two Aspire app hosts share one Azurite instance. `FellowshipExtractor.AppHost` holds the storage
 emulator and the codex. `FellowshipExtractor.Publisher` holds the same storage emulator and
 `FellowshipExtractor` as a resource, with the container connection string injected by
-`WithReference` as `ConnectionStrings__icons`, so running it publishes the build into the container
-the codex reads and writes no folder of its own.
+`WithReference` as `ConnectionStrings__icons`, so running it publishes the build into the Azure
+container through the extractor's connection-string target and writes no folder of its own. This is
+the publisher path, and the codex reads the container it fills: `FellowshipExtractor.AppHost` injects
+the same `ConnectionStrings__icons` into the codex, which reads the blob container in place of the
+S3 bucket the deployed container reads.
 
 The emulator carries `WithLifetime(ContainerLifetime.Persistent)` in both, so the container outlives
 whichever host started it and the other attaches to the one already running rather than standing up
@@ -959,6 +985,14 @@ offset can move them into do not overlap, so neither takes an address the other 
 Each checkout also gets its own `fellowship-azurite-<hash>` data volume, which nothing removes when
 the worktree goes: `docker volume rm` it, or leave it and it will be reused if the worktree comes
 back at the same path.
+
+### Deploying the codex
+
+The codex runs in production as one Docker Compose service behind Caddy, reading the export from
+the `fellowship-codex` bucket and serving art through CloudFront. `src/Fellowship.Codex/Dockerfile`
+builds the image, `deploy/` holds the compose file, the CloudFormation stack and the provisioning,
+server setup and deploy scripts, and [docs/deploying-the-codex.md](docs/deploying-the-codex.md) is
+the runbook.
 
 ## The MCP server
 
@@ -1005,8 +1039,8 @@ outside both, and are the only way to read a build other than the newest.
 Two things read differently over MCP than over HTTP. A reference's `resource` is the codex API's
 own path with no host, `/api/{slug}/{id}`, because a stdio server has no request to take a scheme
 and an authority from. And every art field names an image file, `Icon_Warmaster_FkPlate_Chest.png`,
-rather than addressing one in the blob container, because there is no container to address. Both
-fall out of what the host registers: `NamedArtSource` in place of `BlobArtSource`, and an empty
+rather than addressing one in a store, because there is no store to address. Both
+fall out of what the host registers: `NamedArtSource` in place of `StorageArtSource`, and an empty
 origin in place of `Origins.Of(http)`.
 
 Errors are results rather than protocol faults. Every tool answers a bad slug, an unknown hero, a
@@ -1047,6 +1081,10 @@ both. `McpTests` holds the two wordings equal.
 - `src/Fellowship.Codex.Mcp/` - the MCP server. `Entry` builds a plain host with no web pipeline,
   `CodexMcp` registers the codex's reading services over a folder export and names the server, and
   `CodexTools` is the three tools an agent calls.
+- `src/Fellowship.Storage/` - the object store the extractor writes and the codex reads. `IStorage`
+  names a store of objects; `AzureStorage` implements it over an Azure Blob container and `S3Storage`
+  over an S3 bucket; `AddStorage` registers the blob one from `ConnectionStrings:icons`, or the S3
+  one from the `S3` and `AWS` configuration keys.
 - `src/FellowshipExtractor.AppHost/` and `src/FellowshipExtractor.Publisher/` - the two app hosts.
   `StackIdentity.cs` sits in the first and is compiled into the second as a linked item, so the
   stack name, the port offset, the data volume, the compose project and the container name have one

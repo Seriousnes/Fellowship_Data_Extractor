@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fellowship.SDK\Fellowship.SDK.csproj" />
+    <ProjectReference Include="..\Fellowship.Storage\Fellowship.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.28.0" />
     <PackageReference Include="CUE4Parse" Version="1.2.2.202608" />
     <PackageReference Include="CUE4Parse-Conversion" Version="1.2.2.202608" />
     <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.10" />

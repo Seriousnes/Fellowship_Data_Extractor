@@ -84,14 +84,14 @@ public sealed class Export
                 ? named
                 : throw new DirectoryNotFoundException(
                     $"{Variable} names {named}, which carries no " +
-                    $"{ExportReader.Data}/{ExportReader.EntitiesName}.");
+                    $"{ExportReader.DataFolder}/{ExportReader.EntitiesName}.");
         }
 
         return FolderExportSource.Above(AppContext.BaseDirectory)
             ?? throw new DirectoryNotFoundException(
                 $"No output/{ExportFolders.Pattern} above the test binary carries " +
-                $"{ExportReader.Data}/{ExportReader.EntitiesName} and " +
-                $"{ExportReader.Data}/{ExportReader.SettingsName}. Run " +
+                $"{ExportReader.DataFolder}/{ExportReader.EntitiesName} and " +
+                $"{ExportReader.DataFolder}/{ExportReader.SettingsName}. Run " +
                 $"'dotnet run --project src/FellowshipExtractor' or point {Variable} at one.");
     }
 }

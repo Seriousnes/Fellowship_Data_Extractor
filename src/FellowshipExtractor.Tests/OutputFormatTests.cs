@@ -3,6 +3,7 @@ using FellowshipExtractor.Extraction;
 using FellowshipExtractor.Output;
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
+using Fellowship.Storage;
 
 namespace FellowshipExtractor.Tests;
 
@@ -146,7 +147,7 @@ public sealed class OutputFormatTests
     [Fact]
     public async Task APassThatEndedWithoutItsSettingsPublishesNoDocumentsEither()
     {
-        var target = new BlobTarget(NoStorage, Build);
+        var target = new StorageTarget(AzureStorage.FromConnectionString(NoStorage), Build);
 
         await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
 
@@ -156,7 +157,7 @@ public sealed class OutputFormatTests
     [Fact]
     public async Task APassHoldingBothHalvesPublishesThem()
     {
-        var target = new BlobTarget(NoStorage, Build);
+        var target = new StorageTarget(AzureStorage.FromConnectionString(NoStorage), Build);
 
         await target.WriteDocumentAsync(new AbilityDocument { Id = 1122, Name = "Stone Shield" }, default);
         await target.WriteSettingsAsync(new SettingsFile { GemTypes = ["Ruby"] }, default);
@@ -165,7 +166,7 @@ public sealed class OutputFormatTests
     }
 
     [Fact]
-    public void ABlobRunFilesItsDataUnderTheBuildItExported()
+    public void AStorageRunFilesItsDataUnderTheBuildItExported()
     {
         Assert.Equal(
             $"{ExportFolders.Name(Build)}/{ExportLayout.DataFolder}/{ExportLayout.EntitiesFile}",
@@ -175,21 +176,25 @@ public sealed class OutputFormatTests
     }
 
     [Fact]
-    public async Task AConnectionStringNamingItsContainerWritesThatContainer()
+    public void AConnectionStringNamingItsContainerNamesThatContainer()
     {
-        await using var target = new BlobTarget($"{DevelopmentStorage};ContainerName=snapshots", Build);
+        var storage = AzureStorage.FromConnectionString($"{DevelopmentStorage};ContainerName=snapshots");
 
-        Assert.Equal("snapshots", target.Name);
-        Assert.Equal("http://localhost:10510/devstoreaccount1/snapshots", target.Container.Uri.AbsoluteUri);
+        Assert.Equal("snapshots", storage.Name);
+        Assert.Equal(
+            "http://localhost:10510/devstoreaccount1/snapshots/ui/T_GoldDivider.png",
+            storage.Address("ui/T_GoldDivider.png").AbsoluteUri);
     }
 
     [Fact]
-    public async Task AConnectionStringNamingNoContainerWritesIcons()
+    public void AConnectionStringNamingNoContainerNamesIcons()
     {
-        await using var target = new BlobTarget(DevelopmentStorage, Build);
+        var storage = AzureStorage.FromConnectionString(DevelopmentStorage);
 
-        Assert.Equal("icons", target.Name);
-        Assert.Equal("http://localhost:10510/devstoreaccount1/icons", target.Container.Uri.AbsoluteUri);
+        Assert.Equal("icons", storage.Name);
+        Assert.Equal(
+            "http://localhost:10510/devstoreaccount1/icons/ui/T_GoldDivider.png",
+            storage.Address("ui/T_GoldDivider.png").AbsoluteUri);
     }
 
     [Fact]

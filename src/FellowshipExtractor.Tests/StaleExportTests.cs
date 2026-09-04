@@ -15,10 +15,10 @@ public sealed class StaleExportTests
 
         try
         {
-            var data = Directory.CreateDirectory(Path.Combine(folder, ExportReader.Data)).FullName;
+            var data = Directory.CreateDirectory(Path.Combine(folder, ExportReader.DataFolder)).FullName;
 
             File.Copy(
-                Path.Combine(Export.Loaded.Folder, ExportReader.Data, ExportReader.SettingsName),
+                Path.Combine(Export.Loaded.Folder, ExportReader.DataFolder, ExportReader.SettingsName),
                 Path.Combine(data, ExportReader.SettingsName));
 
             File.WriteAllLines(Path.Combine(data, ExportReader.EntitiesName), [line]);
@@ -67,7 +67,7 @@ public sealed class StaleExportTests
 
         try
         {
-            Directory.CreateDirectory(Path.Combine(folder, ExportReader.Data));
+            Directory.CreateDirectory(Path.Combine(folder, ExportReader.DataFolder));
 
             var failure = Assert.Throws<InvalidOperationException>(() =>
                 new FolderExportSource(folder).LoadAsync(CancellationToken.None).GetAwaiter().GetResult());

@@ -7,8 +7,8 @@ public sealed class FolderExportSource(string folder) : IExportSource
     public string Folder { get; } = folder;
 
     public static bool Carries(string folder) =>
-        File.Exists(Path.Combine(folder, ExportReader.Data, ExportReader.EntitiesName)) &&
-        File.Exists(Path.Combine(folder, ExportReader.Data, ExportReader.SettingsName));
+        File.Exists(Path.Combine(folder, ExportReader.DataFolder, ExportReader.EntitiesName)) &&
+        File.Exists(Path.Combine(folder, ExportReader.DataFolder, ExportReader.SettingsName));
 
     public static string? Above(string start)
     {
@@ -67,10 +67,10 @@ public sealed class FolderExportSource(string folder) : IExportSource
             older[id] = new ExportVersion(
                 id,
                 ExportReader.Group(await File.ReadAllLinesAsync(
-                    Path.Combine(sibling.FullName, ExportReader.Data, ExportReader.EntitiesName),
+                    Path.Combine(sibling.FullName, ExportReader.DataFolder, ExportReader.EntitiesName),
                     cancellationToken)),
                 await File.ReadAllTextAsync(
-                    Path.Combine(sibling.FullName, ExportReader.Data, ExportReader.SettingsName),
+                    Path.Combine(sibling.FullName, ExportReader.DataFolder, ExportReader.SettingsName),
                     cancellationToken));
         }
 
@@ -79,14 +79,14 @@ public sealed class FolderExportSource(string folder) : IExportSource
 
     private async Task<string?> TextAsync(string name, CancellationToken cancellationToken)
     {
-        var file = Path.Combine(Folder, ExportReader.Data, name);
+        var file = Path.Combine(Folder, ExportReader.DataFolder, name);
 
         return File.Exists(file) ? await File.ReadAllTextAsync(file, cancellationToken) : null;
     }
 
     private async Task<string[]> LinesAsync(string name, CancellationToken cancellationToken)
     {
-        var file = Path.Combine(Folder, ExportReader.Data, name);
+        var file = Path.Combine(Folder, ExportReader.DataFolder, name);
 
         if (!File.Exists(file)) throw ExportReader.Missing(name);
 

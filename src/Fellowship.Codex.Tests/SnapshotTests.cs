@@ -9,17 +9,17 @@ public class SnapshotTests
 
         try
         {
-            Directory.CreateDirectory(Path.Combine(folder, ExportReader.Data));
+            Directory.CreateDirectory(Path.Combine(folder, ExportReader.DataFolder));
 
             File.WriteAllLines(
-                Path.Combine(folder, ExportReader.Data, ExportReader.EntitiesName),
+                Path.Combine(folder, ExportReader.DataFolder, ExportReader.EntitiesName),
                 ["""{"$type":"item","id":5224,"name":"Sunforged Greatsword"}"""]);
 
             var failure = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => new FolderExportSource(folder).LoadAsync(Xunit.TestContext.Current.CancellationToken));
 
             Assert.Contains(
-                $"{ExportReader.Data}/{ExportReader.SettingsName}", failure.Message, StringComparison.Ordinal);
+                $"{ExportReader.DataFolder}/{ExportReader.SettingsName}", failure.Message, StringComparison.Ordinal);
             Assert.Contains("FellowshipExtractor.Publisher", failure.Message, StringComparison.Ordinal);
             Assert.Contains("src/FellowshipExtractor", failure.Message, StringComparison.Ordinal);
         }

@@ -5,12 +5,16 @@ using FellowshipExtractor.Extraction;
 using FellowshipExtractor.Output;
 using FellowshipExtractor.Usmap;
 
+using Fellowship.Storage;
+
 ReadFailureLog.EnableIfRequested();
 
 const string OutputFlag = "--output";
 const string ConnectionStringFlag = "--connection-string";
+const string BucketFlag = "--bucket";
 const string UsmapFlag = "--usmap";
 const string ConnectionStringVariable = "ConnectionStrings__icons";
+const string BucketVariable = "S3__Bucket";
 
 var command = args.Length > 0 && !args[0].StartsWith('-') ? args[0].ToLowerInvariant() : "export";
 var options = new ExtractorOptions
@@ -42,13 +46,18 @@ switch (command)
         var connectionString = Argument(args, ConnectionStringFlag)
             ?? Environment.GetEnvironmentVariable(ConnectionStringVariable);
 
+        var bucket = Argument(args, BucketFlag)
+            ?? Environment.GetEnvironmentVariable(BucketVariable);
+
         string? read = null;
         string Build() => read ??= GameBuild.Read(options);
 
+        var remote = connectionString is not null || bucket is not null;
+
         var folder = Argument(args, OutputFlag)
-            ?? (connectionString is null
-                ? Path.Combine(options.ResolvedOutputDir, ExportFolders.Name(Build()))
-                : null);
+            ?? (remote
+                ? null
+                : Path.Combine(options.ResolvedOutputDir, ExportFolders.Name(Build())));
 
         if (Array.Exists(args, a => a.Equals(UsmapFlag, StringComparison.OrdinalIgnoreCase)))
         {
@@ -57,7 +66,10 @@ switch (command)
 
         List<IExportTarget> destinations = [];
         if (folder is not null) destinations.Add(new FolderTarget(folder));
-        if (connectionString is not null) destinations.Add(new BlobTarget(connectionString, Build()));
+        if (connectionString is not null)
+            destinations.Add(new StorageTarget(AzureStorage.FromConnectionString(connectionString), Build()));
+        if (bucket is not null)
+            destinations.Add(new StorageTarget(S3Storage.FromBucket(bucket), Build()));
 
         await using (IExportTarget target = destinations.Count == 1
             ? destinations[0]
@@ -95,11 +107,15 @@ switch (command)
 
                --usmap                      recover the mappings first, and stop before exporting if
                                             they come back short
-               --output <path>              a folder laid out like the container,
-                                            output/export-<steam build id> unless a connection string
-                                            names blob storage
-               --connection-string <value>  blob storage, container '{BlobTarget.ContainerName}', also read from
-                                            the {ConnectionStringVariable} variable
+               --output <path>              a folder laid out like the store,
+                                            output/export-<steam build id> unless a remote store is
+                                            named
+               --connection-string <value>  an Azure Blob container, '{StorageDefaults.Name}' unless the
+                                            string names another, also read from the
+                                            {ConnectionStringVariable} variable
+               --bucket <name>              an S3 bucket, its region and credentials from the AWS SDK's
+                                            own configuration chain, also read from the {BucketVariable}
+                                            variable
 
              Commands:
                usmap                 recover the mappings without exporting
