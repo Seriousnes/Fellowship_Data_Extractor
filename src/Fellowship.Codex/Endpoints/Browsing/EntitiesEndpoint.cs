@@ -64,6 +64,6 @@ public static class EntitiesEndpoint
             results.Total,
             results.Page,
             results.Pages,
-            [.. results.Rows.Select(row => SearchResult.From(row, view))]));
+            [.. results.Rows.Select(row => SearchResults.From(row, view))]));
     }
 }

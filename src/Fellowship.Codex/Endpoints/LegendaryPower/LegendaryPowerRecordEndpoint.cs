@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class LegendaryPowerRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetLegendaryPower")
             .WithSummary($"One {PublicTypes.Noun(EntityType.LegendaryPower)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<LegendaryPowerRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] LegendaryPowerRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.LegendaryPower, request.Id, null, http, store, view);
+        Records.One<LegendaryPowerRecord>(request.Id, null, http, store, view);
 }

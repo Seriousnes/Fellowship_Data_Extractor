@@ -75,6 +75,8 @@ public sealed class EntityResolver
     public ItemSources Sources { get; }
     public AbilityOwners Owners { get; }
     public ResourcePools Pools { get; }
+    public ResourceNames ResourceNames { get; }
+    public ResourceGains Gains { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
@@ -216,6 +218,11 @@ public sealed class EntityResolver
 
         Owners = new AbilityOwners(provider, _assets, _tags, Heroes);
         Pools = new ResourcePools(provider, Heroes, _constants);
+        ResourceNames = new ResourceNames(Pools, Heroes);
+
+        Gains = new ResourceGains(
+            provider, mappings, _constants, Pools, Owners, Heroes, ResourceNames, _tags,
+            name => LoadDefaultObject(FindAsset(name)));
     }
 
     private string? PrintedName(TagRecord tag, UObject cdo)
@@ -296,7 +303,9 @@ public sealed class EntityResolver
 
         entity = WithProvenance(entity, tag, asset, cdo);
         entity = WithOwners(entity, tag);
-        entity = WithSpentResource(entity, display);
+
+        entity = WithSpentResource(entity, display, tag);
+        entity = WithGeneratedResources(entity);
         entity = WithSuppliedDuration(entity, cdo, tag);
 
         if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
@@ -567,10 +576,10 @@ public sealed class EntityResolver
 
     public int SpentResourcesResolved { get; private set; }
 
-    private Entity WithSpentResource(Entity entity, Display display)
+    private Entity WithSpentResource(Entity entity, Display display, TagRecord tag)
     {
-        if (!display.CostIsFraction) return entity;
         if (entity.Cost is not { } fraction || fraction == 0) return entity;
+        if (!display.CostIsFraction && !Fractional(tag)) return entity;
 
         var pools = (entity.OwningHeroes ?? [])
             .Select(Pools.Of)
@@ -589,6 +598,20 @@ public sealed class EntityResolver
         SpentResourcesResolved++;
 
         return entity with { Cost = fraction * pool };
+    }
+
+    private bool Fractional(TagRecord tag)
+    {
+        if (Owners.ApplierOf(tag.Name) is not { Length: > 0 } applier) return false;
+
+        return Display.From(Presentation.Find(applier)?.Row, null).CostIsFraction;
+    }
+
+    private Entity WithGeneratedResources(Entity entity)
+    {
+        if (entity.Generates is not { Count: > 0 } gains) return entity;
+
+        return entity with { Generates = Empty(Gains.Joined(gains, entity.OwningHeroes)) };
     }
 
     public int SetByCallerDurationsScanned { get; private set; }
@@ -1055,6 +1078,9 @@ public sealed class EntityResolver
             Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand, [.. scaling]),
             Modifiers = magnitudes.Modifiers.Count == 0 ? null : magnitudes.Modifiers,
             Placeholders = placeholders.Count == 0 ? null : placeholders,
+            Generates = Empty(Gains.Of(cdo, assetName)),
+            Tuning = tuning,
+            Declares = Empty(Bound(bindings)),
             Constants = baseline.Count == 0 ? null : baseline,
             Talents = talents.Count == 0 ? null : Renamed(talents),
             TalentGates = cdo is null ? null : Empty(TalentGates(cdo, talents.Keys)),
@@ -1464,6 +1490,9 @@ public sealed class EntityResolver
         ScalesWithHaste = outer.ScalesWithHaste ?? inner.ScalesWithHaste,
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
         Coefficients = Union(outer.Coefficients, inner.Coefficients),
+        Generates = Union(outer.Generates, inner.Generates),
+        Tuning = outer.Tuning ?? inner.Tuning,
+        Declares = Union(outer.Declares, inner.Declares),
         Placeholders = Union(outer.Placeholders, inner.Placeholders),
         Constants = Union(outer.Constants, inner.Constants),
         Talents = UnionTalents(outer.Talents, inner.Talents),
@@ -1505,6 +1534,13 @@ public sealed class EntityResolver
     {
         if (first is null || second is null) return first ?? second;
         return [.. first.Concat(second).Distinct()];
+    }
+
+    private static IReadOnlyList<ResourceGain>? Union(
+        IReadOnlyList<ResourceGain>? first, IReadOnlyList<ResourceGain>? second)
+    {
+        if (first is null || second is null) return first ?? second;
+        return ResourceGains.Ordered(ResourceGains.Collapsed(first.Concat(second).Distinct()));
     }
 
     private static IReadOnlyDictionary<string, T>? Union<T>(
@@ -1672,4 +1708,13 @@ public sealed class EntityResolver
     }
 
     private static IReadOnlyList<T>? Empty<T>(IReadOnlyList<T> items) => items.Count == 0 ? null : items;
+
+    private IReadOnlyList<string> Bound(IReadOnlyList<CurveBinding> bindings) =>
+    [
+        .. bindings
+            .Select(binding => binding.RowName)
+            .Where(row => _constants.Lookup(row).Record is not null)
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal),
+    ];
 }

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class EffectRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetEffect")
             .WithSummary($"One {PublicTypes.Noun(EntityType.Effect)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<EffectRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] EffectRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Effect, request.Id, null, http, store, view);
+        Records.One<EffectRecord>(request.Id, null, http, store, view);
 }

@@ -17,13 +17,19 @@ builder.Services.AddOpenApi(ApiDocument.Name, options =>
     options.AddOperationTransformer<ListParameters>();
     options.AddOperationTransformer<SwitchParameters>();
     options.AddOperationTransformer<BrowsingParameters>();
+    options.AddSchemaTransformer<TypeSlugs>();
 });
 builder.Services.AddProblemDetails();
 builder.Services.AddValidation();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
+{
     options.SerializerOptions.DefaultIgnoreCondition =
-        System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);
+        System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+
+    options.SerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter());
+});
 
 FolderExportSource? folder = null;
 

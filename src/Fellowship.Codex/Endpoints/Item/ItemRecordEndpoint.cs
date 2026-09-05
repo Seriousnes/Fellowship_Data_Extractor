@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -22,11 +23,11 @@ public static class ItemRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetItem")
             .WithSummary($"One {PublicTypes.Noun(EntityType.Item)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<ItemRecord>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] ItemRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Item, request.Id, request.Hero, http, store, view);
+        Records.One<ItemRecord>(request.Id, request.Hero, http, store, view);
 }

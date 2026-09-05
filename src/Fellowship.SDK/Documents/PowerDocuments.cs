@@ -14,4 +14,6 @@ public sealed class TraitDocument : EntityDocument
     public string? Description { get; init; }
     public string? Icon { get; init; }
     public IReadOnlyList<RankRun>? RankRuns { get; init; }
+
+    public IReadOnlyList<ResourceGain>? Generates { get; init; }
 }

@@ -1,3 +1,5 @@
+using Fellowship.SDK.Models;
+
 namespace Fellowship.SDK.Documents;
 
 public sealed class TalentDocument : EntityDocument
@@ -12,4 +14,6 @@ public sealed class TalentDocument : EntityDocument
     public double? Range { get; init; }
     public double? Radius { get; init; }
     public double? Cost { get; init; }
+
+    public IReadOnlyList<ResourceGain>? Generates { get; init; }
 }

@@ -1,14 +1,16 @@
 using System.Text.Json;
 
+using Fellowship.SDK.Records;
+
 namespace Fellowship.Codex.Tests;
 
-public sealed class PublicReferenceTests : IClassFixture<RouteTests.Factory>
+public sealed class RecordReferenceTests : IClassFixture<RouteTests.Factory>
 {
     private readonly HttpClient client;
 
     private readonly ICodexViewService view;
 
-    public PublicReferenceTests(RouteTests.Factory factory)
+    public RecordReferenceTests(RouteTests.Factory factory)
     {
         client = factory.CreateClient();
         view = factory.Services.GetRequiredService<ICodexViewService>();
@@ -113,7 +115,8 @@ public sealed class PublicReferenceTests : IClassFixture<RouteTests.Factory>
         foreach (var roll in rolls)
         {
             Assert.False(roll.TryGetProperty("resource", out _));
-            Assert.False(roll.TryGetProperty("id", out _));
+            Assert.Equal(
+                EntityTypes.Slug(EntityType.LegendaryStat), roll.GetProperty("type").GetString());
             Assert.False(string.IsNullOrWhiteSpace(roll.GetProperty("name").GetString()));
         }
 
@@ -121,14 +124,33 @@ public sealed class PublicReferenceTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public void Every_entity_type_projects_the_record_class_named_for_it()
+    {
+        foreach (var type in Enum.GetValues<EntityType>())
+        {
+            var shape = EntityRecords.Record(type);
+
+            var document = RouteTests.Factory.Store.Entities
+                .FirstOrDefault(row => EntityTypes.TypeOf(row) == type);
+
+            Assert.True(document is not null, $"The export carries no {EntityTypes.Slug(type)} to project.");
+
+            var record = RecordProjection.Of(document!, view, "https://host");
+
+            Assert.Equal(type, record.Type);
+            Assert.IsType(shape, record);
+        }
+    }
+
+    [Fact]
     public void A_talent_slot_carries_the_talent_it_bears_as_a_reference()
     {
         var slot = RouteTests.Factory.Store.Entities.OfType<TalentSlotDocument>().First();
 
-        var reference = PublicEntity.From(slot, view, "https://host").Talent;
+        var reference = RecordProjection.From(slot, view, "https://host").Talent;
 
         Assert.NotNull(reference);
-        Assert.Equal(EntityTypes.Slug(EntityType.Talent), reference.Type);
+        Assert.Equal(EntityType.Talent, reference.Type);
         Assert.Equal($"https://host/api/talent/{reference.Id}", reference.Resource);
     }
 

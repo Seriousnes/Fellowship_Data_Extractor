@@ -1,0 +1,688 @@
+using System.Globalization;
+
+using Fellowship.SDK.Documents;
+using Fellowship.SDK.Models;
+using Fellowship.SDK.Records;
+
+using Fellowship.Codex.Services;
+
+namespace Fellowship.Codex.Models;
+
+public static class RecordProjection
+{
+    private static readonly IReadOnlyDictionary<EntityType, Func<EntityDocument, ICodexViewService, string, EntityRecord>>
+        Table = Verified(new Dictionary<EntityType, Func<EntityDocument, ICodexViewService, string, EntityRecord>>
+        {
+            [EntityType.Ability] = (document, view, origin) => From((AbilityDocument)document, view, origin),
+            [EntityType.Blessing] = (document, view, origin) => From((BlessingDocument)document, view, origin),
+            [EntityType.CompanionPet] = (document, view, origin) => From((CompanionPetDocument)document, view, origin),
+            [EntityType.Creature] = (document, view, origin) => From((CreatureDocument)document, view, origin),
+            [EntityType.Currency] = (document, view, origin) => From((CurrencyDocument)document, view, origin),
+            [EntityType.Dungeon] = (document, view, origin) => From((DungeonDocument)document, view, origin),
+            [EntityType.Effect] = (document, view, origin) => From((EffectDocument)document, view, origin),
+            [EntityType.Gem] = (document, view, origin) => From((GemDocument)document, view, origin),
+            [EntityType.GemTrait] = (document, view, origin) => From((GemTraitDocument)document, view, origin),
+            [EntityType.GemType] = (document, view, origin) => From((GemTypeDocument)document, view, origin),
+            [EntityType.Hero] = (document, view, origin) => From((HeroDocument)document, view, origin),
+            [EntityType.Item] = (document, view, origin) => From((ItemDocument)document, view, origin),
+            [EntityType.LegendaryPower] = (document, view, origin) =>
+                From((LegendaryPowerDocument)document, view, origin),
+            [EntityType.LegendaryStat] = (document, view, origin) =>
+                From((LegendaryStatDocument)document, view, origin),
+            [EntityType.Modifier] = (document, view, origin) => From((ModifierDocument)document, view, origin),
+            [EntityType.Mount] = (document, view, origin) => From((MountDocument)document, view, origin),
+            [EntityType.MountPower] = (document, view, origin) => From((MountPowerDocument)document, view, origin),
+            [EntityType.RelicPower] = (document, view, origin) => From((RelicPowerDocument)document, view, origin),
+            [EntityType.SetBonus] = (document, view, origin) => From((SetBonusDocument)document, view, origin),
+            [EntityType.SetBonusPower] = (document, view, origin) =>
+                From((SetBonusPowerDocument)document, view, origin),
+            [EntityType.Talent] = (document, view, origin) => From((TalentDocument)document, view, origin),
+            [EntityType.TalentSlot] = (document, view, origin) => From((TalentSlotDocument)document, view, origin),
+            [EntityType.Trait] = (document, view, origin) => From((TraitDocument)document, view, origin),
+            [EntityType.TraitPower] = (document, view, origin) => From((TraitPowerDocument)document, view, origin),
+            [EntityType.WeaponPower] = (document, view, origin) => From((WeaponPowerDocument)document, view, origin),
+        });
+
+    private static IReadOnlyDictionary<EntityType, Func<EntityDocument, ICodexViewService, string, EntityRecord>>
+        Verified(IReadOnlyDictionary<EntityType, Func<EntityDocument, ICodexViewService, string, EntityRecord>> table)
+    {
+        var missing = Enum.GetValues<EntityType>().Except(table.Keys).ToArray();
+
+        if (missing.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"{string.Join(", ", missing)} {(missing.Length == 1 ? "has" : "have")} no row in " +
+                $"{nameof(RecordProjection)}.{nameof(Table)}, so the codex answers no record for " +
+                (missing.Length == 1 ? "it." : "them."));
+        }
+
+        return table;
+    }
+
+    public static EntityRecord Of(EntityDocument document, ICodexViewService view, string origin) =>
+        Table[EntityTypes.TypeOf(document)](document, view, origin);
+
+    public static TRecord Of<TRecord>(EntityDocument document, ICodexViewService view, string origin)
+        where TRecord : EntityRecord =>
+        (TRecord)Of(document, view, origin);
+
+    public static AbilityRecord From(AbilityDocument document, ICodexViewService view, string origin)
+    {
+        var tokens = document.Placeholders ?? [];
+        var tags = document.Schools ?? [];
+
+        return new AbilityRecord
+        {
+            Type = EntityType.Ability,
+            Id = document.Id,
+            Generates = Generated(document.Generates),
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, tokens, tags),
+            Detail = Lines(document.Detail, view, tokens, tags),
+            Icon = Art(document.Icon, view),
+            Category = document.Category,
+            CastTime = document.CastTime,
+            ChannelTime = document.ChannelTime,
+            ChannelTick = document.ChannelTick,
+            Cooldown = document.Cooldown,
+            Charges = document.Charges,
+            ChargesByLevelType = document.ChargesByLevelType,
+            Cost = document.Cost,
+            Resource = document.Resource,
+            Range = document.Range,
+            MinRange = document.MinRange,
+            Radius = document.Radius,
+            Duration = document.Duration,
+            Period = document.Period,
+            ScalesWithHaste = document.ScalesWithHaste,
+            ScalesOff = Scaling(document.ScalesOff, view),
+            Coefficients = Some(document.Coefficients),
+            Placeholders = Tokens(tokens, tags, view),
+            Schools = Some(tags),
+            Heroes = Some(document.Heroes),
+            Owner = Reference(document.Owner, view, origin),
+        };
+    }
+
+    public static BlessingRecord From(BlessingDocument document, ICodexViewService view, string origin)
+    {
+        var tokens = document.Placeholders ?? [];
+
+        return new BlessingRecord
+        {
+            Type = EntityType.Blessing,
+            Id = document.Id,
+            Generates = Generated(document.Generates),
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, tokens, []),
+            Icon = Art(document.Icon, view),
+            Placeholders = Tokens(tokens, [], view),
+            ScalesOff = Scaling(document.ScalesOff, view),
+            MaxRank = document.MaxRank,
+            Slots = Some(document.Slots),
+            AbilityRanks = document.AbilityRanks,
+        };
+    }
+
+    public static CompanionPetRecord From(CompanionPetDocument document, ICodexViewService view, string origin) =>
+        new()
+        {
+            Type = EntityType.CompanionPet,
+            Id = document.Id,
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, [], []),
+            Acquire = document.Acquire,
+            Icon = Art(document.Icon, view),
+        };
+
+    public static CreatureRecord From(CreatureDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.Creature,
+        Id = document.Id,
+        Name = PublicTypes.NameOf(document),
+        Icon = Art(document.Icon, view),
+        Rank = document.Rank,
+        Health = document.Health,
+        Armor = document.Armor,
+        Resist = document.Resist,
+        KillScore = document.KillScore,
+        SpiritPoints = document.SpiritPoints,
+        CountsTowardScore = document.CountsTowardScore,
+        Intellect = document.Intellect,
+        Strength = document.Strength,
+        Agility = document.Agility,
+        Scaling = document.Scaling,
+        Abilities = Wielded(document.Abilities, view, origin),
+        Passives = Wielded(document.Passives, view, origin),
+        FoundIn = References(document.FoundIn, view, origin),
+    };
+
+    public static CurrencyRecord From(CurrencyDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.Currency,
+        Id = document.Id,
+        Name = PublicTypes.NameOf(document),
+        Rarity = view.Rarity(document),
+        Description = view.PlainText(document.Description, [], []),
+        Icon = Art(document.Icon, view),
+    };
+
+    public static DungeonRecord From(DungeonDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.Dungeon,
+        Id = document.Id,
+        Name = PublicTypes.NameOf(document),
+        Description = view.PlainText(document.Description, [], []),
+        Icon = Art(document.Icon, view),
+        Background = Art(document.Background, view),
+        MaxPlayers = document.MaxPlayers,
+        QualifierTime = document.QualifierTime,
+        RequiredScore = document.RequiredScore,
+        MinimumHeroRank = document.MinimumHeroRank,
+        Creatures = Dwelling(document, view, origin),
+    };
+
+    public static EffectRecord From(EffectDocument document, ICodexViewService view, string origin)
+    {
+        var tokens = document.Placeholders ?? [];
+        var tags = document.Schools ?? [];
+
+        return new EffectRecord
+        {
+            Type = EntityType.Effect,
+            Id = document.Id,
+            Generates = Generated(document.Generates),
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, tokens, tags),
+            Icon = Art(document.Icon, view),
+            Duration = document.Duration,
+            Period = document.Period,
+            Cooldown = document.Cooldown,
+            Range = document.Range,
+            Radius = document.Radius,
+            Cost = document.Cost,
+            TickrateIgnoresHaste = document.TickrateIgnoresHaste,
+            MaxStacks = document.MaxStacks,
+            Infinite = document.Infinite,
+            ScalesOff = Scaling(document.ScalesOff, view),
+            Placeholders = Tokens(tokens, tags, view),
+            Schools = Some(tags),
+            Modifiers = Some(document.Modifiers),
+            Talents = document.Talents,
+            NameBorrowedFrom = Reference(document.NameBorrowedFrom, view, origin),
+            ArtBorrowedFrom = Reference(document.ArtBorrowedFrom, view, origin),
+            Heroes = Some(document.Heroes),
+            Owner = Reference(document.Owner, view, origin),
+            AppliedBy = Reference(document.AppliedBy, view, origin),
+            PartOf = Reference(document.PartOf, view, origin),
+            Role = document.Role,
+        };
+    }
+
+    public static GemRecord From(GemDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.Gem,
+        Id = document.Id,
+        Name = PublicTypes.NameOf(document),
+        GemType = document.Type,
+        Power = document.Power,
+        Rarity = view.Rarity(document),
+        Icon = Art(document.Icon, view),
+        GemOverflow = Overflow(document, view),
+    };
+
+    public static GemTraitRecord From(GemTraitDocument document, ICodexViewService view, string origin)
+    {
+        var tokens = document.Placeholders ?? [];
+
+        return new GemTraitRecord
+        {
+            Type = EntityType.GemTrait,
+            Id = document.Id,
+            Name = PublicTypes.NameOf(document),
+            GemType = document.Gem,
+            Node = document.Node,
+            RequiredPower = document.RequiredPower,
+            Replaces = Reference(document.Replaces, view, origin),
+            Grants = References(document.Grants, view, origin),
+            Description = view.PlainText(document.Description, tokens, []),
+            Icon = Art(document.Icon, view),
+            Placeholders = Tokens(tokens, [], view),
+            ScalesOff = Scaling(document.ScalesOff, view),
+            GemOverflow = Overflow(document, view),
+        };
+    }
+
+    public static GemTypeRecord From(GemTypeDocument document, ICodexViewService view, string origin)
+    {
+        var tokens = document.OverflowPlaceholders ?? [];
+
+        return new GemTypeRecord
+        {
+            Type = EntityType.GemType,
+            Id = document.Id,
+            Name = PublicTypes.NameOf(document),
+            GemType = document.Type,
+            Attribute = view.Store.StatName(document.Attribute),
+            Icon = Art(document.Icon, view),
+            OverflowDescription = view.PlainText(document.OverflowDescription, tokens, []),
+            OverflowPlaceholders = Tokens(tokens, [], view),
+        };
+    }
+
+    public static HeroRecord From(HeroDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.Hero,
+        Id = document.Id,
+        Name = PublicTypes.NameOf(document),
+        Title = document.Title,
+        MainStat = document.MainStat,
+        Color = document.Color,
+        Biography = document.Biography,
+        Playstyle = document.Playstyle,
+        SpiritAbility = document.SpiritAbility,
+    };
+
+    public static ItemRecord From(ItemDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.Item,
+        Id = document.Id,
+        Name = PublicTypes.NameOf(document),
+        ArmorType = document.ArmorType,
+        PrimaryStat = document.PrimaryStat,
+        Hero = document.Hero,
+        Heroes = Some(document.Heroes),
+        Slot = document.Slot,
+        GemSlot = document.GemSlot,
+        UniqueEquipped = document.UniqueEquipped,
+        Rarity = view.Rarity(document),
+        Rarities = Rungs(document.Rarities, view),
+        SetBonus = References(document.SetBonus, view, origin),
+        Stats = Slots(document, view),
+        RuleSet = document.RuleSet,
+        Description = view.PlainText(document.Description, [], []),
+        Acquire = document.Acquire,
+        TitleText = document.TitleText,
+        Icon = Art(document.Icon, view),
+        IconByRarity = Rungs(document, view),
+        Grants = Reference(document.Grants, view, origin),
+        LegendaryStats = Rolls(document.LegendaryStats, view),
+        Sources = Sourced(document.Sources, view, origin),
+        ItemLevel = document.ItemLevel,
+    };
+
+    public static LegendaryPowerRecord From(LegendaryPowerDocument document, ICodexViewService view, string origin)
+    {
+        var tokens = document.Placeholders ?? [];
+
+        return new LegendaryPowerRecord
+        {
+            Type = EntityType.LegendaryPower,
+            Id = document.Id,
+            Generates = Generated(document.Generates),
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, tokens, []),
+            Icon = Art(document.Icon, view),
+            Cooldown = document.Cooldown,
+            Placeholders = Tokens(tokens, [], view),
+            ScalesOff = Scaling(document.ScalesOff, view),
+        };
+    }
+
+    public static LegendaryStatRecord From(LegendaryStatDocument document, ICodexViewService view, string origin) =>
+        new()
+        {
+            Type = EntityType.LegendaryStat,
+            Id = document.Id,
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, [], []),
+            ScalesOff = Scaling(document.ScalesOff, view),
+        };
+
+    public static ModifierRecord From(ModifierDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.Modifier,
+        Id = document.Id,
+        Generates = Generated(document.Generates),
+        Name = PublicTypes.NameOf(document),
+        Description = view.PlainText(document.Description, [], []),
+        Icon = Art(document.Icon, view),
+        Kind = document.Kind,
+        MinimumHeroRank = document.MinimumHeroRank,
+    };
+
+    public static MountRecord From(MountDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.Mount,
+        Id = document.Id,
+        Name = PublicTypes.NameOf(document),
+        Description = view.PlainText(document.Description, [], []),
+        Lore = document.Lore,
+        Icon = Art(document.Icon, view),
+    };
+
+    public static MountPowerRecord From(MountPowerDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.MountPower,
+        Id = document.Id,
+        Generates = Generated(document.Generates),
+        Name = PublicTypes.NameOf(document),
+        Description = view.PlainText(document.Description, [], []),
+        Icon = Art(document.Icon, view),
+    };
+
+    public static RelicPowerRecord From(RelicPowerDocument document, ICodexViewService view, string origin)
+    {
+        var tags = document.Schools ?? [];
+
+        return new RelicPowerRecord
+        {
+            Type = EntityType.RelicPower,
+            Id = document.Id,
+            Generates = Generated(document.Generates),
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, [], tags),
+            Icon = Art(document.Icon, view),
+            CastTime = document.CastTime,
+            Cooldown = document.Cooldown,
+            Duration = document.Duration,
+            Range = document.Range,
+            ScalesWithHaste = document.ScalesWithHaste,
+            Schools = Some(tags),
+            ScalesOff = Scaling(document.ScalesOff, view),
+        };
+    }
+
+    public static SetBonusRecord From(SetBonusDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.SetBonus,
+        Id = document.Id,
+        Name = PublicTypes.NameOf(document),
+        Pieces = document.Pieces,
+        Description = view.PlainText(document.Description, [], []),
+        Icon = Art(document.Icon, view),
+        Power = Reference(document.Power, view, origin),
+        AllowedRoles = Some(document.AllowedRoles),
+        AllowedAttributes = Some(document.AllowedAttributes),
+    };
+
+    public static SetBonusPowerRecord From(SetBonusPowerDocument document, ICodexViewService view, string origin) =>
+        new()
+        {
+            Type = EntityType.SetBonusPower,
+            Id = document.Id,
+            Generates = Generated(document.Generates),
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, [], []),
+            Icon = Art(document.Icon, view),
+            Cooldown = document.Cooldown,
+            ScalesOff = Scaling(document.ScalesOff, view),
+        };
+
+    public static TalentRecord From(TalentDocument document, ICodexViewService view, string origin)
+    {
+        var tokens = document.Placeholders ?? [];
+
+        return new TalentRecord
+        {
+            Type = EntityType.Talent,
+            Id = document.Id,
+            Generates = Generated(document.Generates),
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, tokens, []),
+            Icon = Art(document.Icon, view),
+            Placeholders = Tokens(tokens, [], view),
+            ScalesOff = Scaling(document.ScalesOff, view),
+            Cooldown = document.Cooldown,
+            Duration = document.Duration,
+            Range = document.Range,
+            Radius = document.Radius,
+            Cost = document.Cost,
+        };
+    }
+
+    public static TalentSlotRecord From(TalentSlotDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.TalentSlot,
+        Id = document.Id,
+        Name = PublicTypes.NameOf(document),
+        Hero = document.Hero,
+        Row = document.Row,
+        Column = document.Column,
+        Cost = document.Cost,
+        Talent = Referenced(document.Talent.Type, document.Talent.Id, view, origin),
+    };
+
+    public static TraitRecord From(TraitDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.Trait,
+        Id = document.Id,
+        Generates = Generated(document.Generates),
+        Name = PublicTypes.NameOf(document),
+        Category = document.Category,
+        MaxRank = document.MaxRank,
+        RandomChance = document.RandomChance,
+        Power = Reference(document.Power, view, origin),
+        Description = view.PlainText(document.Description, [], []),
+        Icon = Art(document.Icon, view),
+        RankRuns = Runs(document.RankRuns),
+    };
+
+    public static TraitPowerRecord From(TraitPowerDocument document, ICodexViewService view, string origin)
+    {
+        var tokens = document.Placeholders ?? [];
+
+        return new TraitPowerRecord
+        {
+            Type = EntityType.TraitPower,
+            Id = document.Id,
+            Generates = Generated(document.Generates),
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, tokens, []),
+            DescriptionsByHero = Readings(document.DescriptionsByHero, view, tokens),
+            Icon = Art(document.Icon, view),
+            Cooldown = document.Cooldown,
+            Duration = document.Duration,
+            Placeholders = Tokens(tokens, [], view),
+            ScalesOff = Scaling(document.ScalesOff, view),
+        };
+    }
+
+    public static WeaponPowerRecord From(WeaponPowerDocument document, ICodexViewService view, string origin)
+    {
+        var tokens = document.Placeholders ?? [];
+        var tags = document.Schools ?? [];
+
+        return new WeaponPowerRecord
+        {
+            Type = EntityType.WeaponPower,
+            Id = document.Id,
+            Generates = Generated(document.Generates),
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, tokens, tags),
+            Icon = Art(document.Icon, view),
+            CastTime = document.CastTime,
+            ChannelTime = document.ChannelTime,
+            ChannelTick = document.ChannelTick,
+            Cooldown = document.Cooldown,
+            Duration = document.Duration,
+            Period = document.Period,
+            Range = document.Range,
+            Radius = document.Radius,
+            ScalesWithHaste = document.ScalesWithHaste,
+            Schools = Some(tags),
+            Placeholders = Tokens(tokens, tags, view),
+            ScalesOff = Scaling(document.ScalesOff, view),
+        };
+    }
+
+    private static string? Art(string? icon, ICodexViewService view) => icon is null ? null : view.Icon(icon);
+
+    private static IReadOnlyList<T>? Some<T>(IReadOnlyList<T>? values) => values is { Count: > 0 } held ? held : null;
+
+    internal static IReadOnlyList<string>? Named(IEnumerable<string> values) =>
+        values.ToArray() is { Length: > 0 } named ? named : null;
+
+    private static IReadOnlyList<string>? Scaling(IReadOnlyList<string>? attributes, ICodexViewService view) =>
+        Named(view.Codex.Scaling(attributes));
+
+    private static IReadOnlyList<string>? Lines(
+        IReadOnlyList<string>? detail,
+        ICodexViewService view,
+        IReadOnlyList<Placeholder> tokens,
+        IReadOnlyList<string> tags) =>
+        detail is { Count: > 0 } lines ? [.. lines.Select(line => view.PlainText(line, tokens, tags)!)] : null;
+
+    private static IReadOnlyDictionary<string, string>? Readings(
+        IReadOnlyDictionary<string, string>? byHero, ICodexViewService view, IReadOnlyList<Placeholder> tokens) =>
+        byHero is { Count: > 0 } written
+            ? written.ToDictionary(entry => entry.Key, entry => view.PlainText(entry.Value, tokens, [])!)
+            : null;
+
+    internal static RecordReference? Reference(EntityReference? source, ICodexViewService view, string origin) =>
+        source is null ? null : Referenced(source.Type, source.Id, view, origin);
+
+    internal static RecordReference Referenced(
+        EntityType type, int id, ICodexViewService view, string origin) =>
+        new(
+            type,
+            id,
+            view.Name(type, id),
+            $"{origin}/api/{EntityTypes.Slug(type)}/{id.ToString(CultureInfo.InvariantCulture)}");
+
+    private static IReadOnlyList<RecordReference>? References(
+        IReadOnlyList<EntityReference>? sources, ICodexViewService view, string origin) =>
+        sources?.Select(source => Referenced(source.Type, source.Id, view, origin)).ToArray()
+            is { Length: > 0 } named
+            ? named
+            : null;
+
+    private static IReadOnlyList<CreatureAbilityRecord>? Wielded(
+        IReadOnlyList<CreatureAbility>? held, ICodexViewService view, string origin) =>
+        held?.Select(slot => new CreatureAbilityRecord(
+                Referenced(slot.Ability.Type, slot.Ability.Id, view, origin), slot.Phase, slot.Shown))
+            .ToArray() is { Length: > 0 } wielded
+            ? wielded
+            : null;
+
+    private static IReadOnlyList<RecordReference>? Dwelling(
+        DungeonDocument dungeon, ICodexViewService view, string origin) =>
+        view.Store.Entities
+            .OfType<CreatureDocument>()
+            .Where(creature => creature.FoundIn?.Any(level => level.Id == dungeon.Id) is true)
+            .Select(creature => Referenced(EntityType.Creature, creature.Id, view, origin))
+            .ToArray() is { Length: > 0 } found
+            ? found
+            : null;
+
+    private static IReadOnlyList<ItemSourceRecord>? Sourced(
+        IReadOnlyList<ItemSource>? sources, ICodexViewService view, string origin) =>
+        sources?.Select(source => new ItemSourceRecord(source.Kind, source.Name)
+            {
+                Dungeon = Reference(source.Dungeon, view, origin),
+            })
+            .ToArray() is { Length: > 0 } dropped
+            ? dropped
+            : null;
+
+    private static IReadOnlyList<LegendaryStatRecord>? Rolls(
+        IReadOnlyList<EntityReference>? sources, ICodexViewService view) =>
+        sources
+            ?.SelectMany(source => view.Store.All(source.Type, source.Id))
+            .OfType<LegendaryStatDocument>()
+            .Select(roll => From(roll, view, string.Empty))
+            .ToArray() is { Length: > 0 } rolled
+            ? rolled
+            : null;
+
+    private static IReadOnlyList<StatSlotRecord>? Slots(ItemDocument document, ICodexViewService view) =>
+        document.Stats is { Count: > 0 } slots
+            ? [.. slots.Select(slot => new StatSlotRecord(view.Store.StatName(slot.Stat), slot.Weight, slot.Kind))]
+            : null;
+
+    private static IReadOnlyList<string>? Rungs(IReadOnlyList<Rarity>? rarities, ICodexViewService view) =>
+        rarities?.Select(rung => view.RarityName(rung)).OfType<string>().ToArray() is { Length: > 0 } named
+            ? named
+            : null;
+
+    private static IReadOnlyDictionary<string, string>? Rungs(ItemDocument document, ICodexViewService view)
+    {
+        if (document.IconByRarity is not { Count: > 0 } art) return null;
+
+        var printed = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var (rung, icon) in art)
+        {
+            var known = view.Store.Settings.Rarities.FirstOrDefault(entry =>
+                string.Equals(entry.Name, rung, StringComparison.OrdinalIgnoreCase));
+
+            if (known is not null) printed[known.DisplayName] = view.Icon(icon);
+        }
+
+        return printed.Count == 0 ? null : printed;
+    }
+
+    private static GemOverflowRecord? Overflow(EntityDocument document, ICodexViewService view)
+    {
+        if (view.Stone(document) is not { OverflowDescription: { } description } gem) return null;
+
+        var tokens = gem.OverflowPlaceholders ?? [];
+
+        return new GemOverflowRecord(view.PlainText(description, tokens, [])!)
+        {
+            Placeholders = Tokens(tokens, [], view),
+            Icon = Art(gem.Icon, view),
+        };
+    }
+
+    private static IReadOnlyList<RankRunRecord>? Runs(IReadOnlyList<RankRun>? runs) =>
+        runs is { Count: > 0 } ranked
+            ? [.. ranked.Select(run => new RankRunRecord(run.Literal, run.Printed)
+            {
+                Values = run.Values,
+                Transform = run.Transform,
+                Ticks = run.Ticks,
+                Disagrees = run.Disagrees,
+            })]
+            : null;
+
+    private static IReadOnlyList<ResourceGainRecord>? Generated(IReadOnlyList<ResourceGain>? gains) =>
+        gains is not { Count: > 0 }
+            ? null
+            : [.. gains.Select(gain => new ResourceGainRecord(gain.Resource)
+            {
+                ResourceName = gain.ResourceName,
+                Amount = gain.Amount,
+                AmountOnCritical = gain.AmountOnCritical,
+                ShareOfMaximum = gain.ShareOfMaximum,
+                Per = gain.Per,
+                Chance = gain.Chance,
+                RowGroup = gain.RowGroup,
+                Source = gain.Source,
+                SourceOnCritical = gain.SourceOnCritical,
+                SourceKind = gain.SourceKind,
+            })];
+
+    internal static IReadOnlyList<PlaceholderRecord>? Tokens(
+        IReadOnlyList<Placeholder> tokens, IReadOnlyList<string> tags, ICodexViewService view) =>
+        tokens.Select((token, at) => Token(token, view, at + 1, tags)).ToArray() is { Length: > 0 } spent
+            ? spent
+            : null;
+
+    private static PlaceholderRecord Token(
+        Placeholder token, ICodexViewService view, int ordinal, IReadOnlyList<string>? tags) => new()
+    {
+        Ordinal = ordinal,
+        Reading = view.Reading(token, tags),
+        Attribute = view.Store.StatDisplay(token.Attribute)?.DisplayName is { Length: > 0 } printed ? printed : null,
+        Coefficient = token.Coefficient,
+        Spread = token.Spread,
+        Value = token.Value,
+        Text = token.Text,
+        Percent = token.Percent,
+        Format = token.Format,
+        Unit = token.Unit,
+        ShowDamageType = token.ShowDamageType,
+        ScalesOff = Named(view.Codex.Scaling(token.ScalesOff)),
+    };
+}

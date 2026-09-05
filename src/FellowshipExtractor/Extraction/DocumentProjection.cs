@@ -40,6 +40,7 @@ public static class DocumentProjection
             ChargesByLevelType = entity.ChargesByLevelType,
             Cost = entity.Cost,
             Resource = entity.Resource,
+            Generates = Generated(entity),
             Range = entity.Range,
             MinRange = entity.MinRange,
             Radius = entity.Radius,
@@ -130,6 +131,7 @@ public static class DocumentProjection
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Schools = Schools(entity.Tags) ?? Schools(entity.ApplierTags),
             Modifiers = entity.Modifiers,
+            Generates = Generated(entity),
             Talents = entity.Talents,
             NameBorrowedFrom = references.At(entity.NameInheritedFrom),
             ArtBorrowedFrom = references.At(entity.IconInheritedFrom),
@@ -181,6 +183,7 @@ public static class DocumentProjection
             Description = entity.Description,
             Icon = entity.Icon,
             Kind = entity.ModifierKind,
+            Generates = Generated(entity),
             MinimumHeroRank = entity.MinimumHeroRank,
         },
 
@@ -229,6 +232,7 @@ public static class DocumentProjection
             Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
+            Generates = Generated(entity),
         },
 
         EntityType.SetBonus => new SetBonusDocument
@@ -282,6 +286,7 @@ public static class DocumentProjection
             Range = entity.Range,
             Radius = entity.Radius,
             Cost = entity.Cost,
+            Generates = Generated(entity),
         },
 
         EntityType.Blessing => new BlessingDocument
@@ -295,6 +300,7 @@ public static class DocumentProjection
             MaxRank = entity.AbilityMaxRank,
             Slots = entity.PoolSlots,
             AbilityRanks = entity.AbilityRanks,
+            Generates = Generated(entity),
         },
 
         EntityType.Trait => new TraitDocument
@@ -308,6 +314,7 @@ public static class DocumentProjection
             Description = entity.Description,
             Icon = entity.Icon,
             RankRuns = entity.RankRuns,
+            Generates = Generated(entity),
         },
 
         EntityType.TraitPower => new TraitPowerDocument
@@ -321,6 +328,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
+            Generates = Generated(entity),
         },
 
         EntityType.SetBonusPower => new SetBonusPowerDocument
@@ -331,6 +339,7 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             ScalesOff = entity.ScalesOff,
+            Generates = Generated(entity),
         },
 
         EntityType.RelicPower => new RelicPowerDocument
@@ -346,6 +355,7 @@ public static class DocumentProjection
             ScalesWithHaste = entity.ScalesWithHaste,
             Schools = Schools(entity.Tags),
             ScalesOff = entity.ScalesOff,
+            Generates = Generated(entity),
         },
 
         EntityType.WeaponPower => new WeaponPowerDocument
@@ -366,6 +376,7 @@ public static class DocumentProjection
             Schools = Schools(entity.Tags),
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
+            Generates = Generated(entity),
         },
 
         EntityType.LegendaryPower => new LegendaryPowerDocument
@@ -377,6 +388,7 @@ public static class DocumentProjection
             Cooldown = entity.Cooldown,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
+            Generates = Generated(entity),
         },
 
         EntityType.LegendaryStat => new LegendaryStatDocument
@@ -497,4 +509,7 @@ public static class DocumentProjection
 
         return [.. claimed.Select(Enum.Parse<Hero>).Distinct().Order()];
     }
+
+    private static IReadOnlyList<ResourceGain>? Generated(Entity entity) =>
+        entity.Generates is { Count: > 0 } gains ? gains : null;
 }

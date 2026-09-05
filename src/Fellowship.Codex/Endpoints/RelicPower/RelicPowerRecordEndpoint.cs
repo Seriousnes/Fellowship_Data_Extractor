@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class RelicPowerRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetRelicPower")
             .WithSummary($"One {PublicTypes.Noun(EntityType.RelicPower)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<RelicPowerRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] RelicPowerRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.RelicPower, request.Id, null, http, store, view);
+        Records.One<RelicPowerRecord>(request.Id, null, http, store, view);
 }

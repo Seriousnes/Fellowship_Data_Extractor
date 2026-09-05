@@ -1,3 +1,5 @@
+using Fellowship.SDK.Models;
+
 namespace Fellowship.SDK.Documents;
 
 public sealed class BlessingDocument : EntityDocument
@@ -6,6 +8,8 @@ public sealed class BlessingDocument : EntityDocument
     public string? Icon { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
+
+    public IReadOnlyList<ResourceGain>? Generates { get; init; }
 
     public int? MaxRank { get; init; }
 

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class TalentRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetTalent")
             .WithSummary($"One {PublicTypes.Noun(EntityType.Talent)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<TalentRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] TalentRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Talent, request.Id, null, http, store, view);
+        Records.One<TalentRecord>(request.Id, null, http, store, view);
 }

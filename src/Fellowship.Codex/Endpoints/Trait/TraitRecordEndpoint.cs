@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class TraitRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetTrait")
             .WithSummary($"One {PublicTypes.Noun(EntityType.Trait)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<TraitRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] TraitRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Trait, request.Id, null, http, store, view);
+        Records.One<TraitRecord>(request.Id, null, http, store, view);
 }
