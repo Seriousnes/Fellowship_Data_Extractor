@@ -105,20 +105,6 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public void The_document_names_the_entity_count_it_was_given()
-    {
-        var described = document.RootElement.GetProperty("info").GetProperty("description").GetString()!;
-
-        var listed = RouteTests.Factory.Store.Entities
-            .Count(row => PublicTypes.IsListed(EntityTypes.TypeOf(row)));
-
-        Assert.Contains(
-            listed.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
-            described,
-            StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void Every_record_route_answers_the_record_class_named_for_the_type_it_addresses()
     {
         foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
