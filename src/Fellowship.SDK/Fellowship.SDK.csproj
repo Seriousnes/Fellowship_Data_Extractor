@@ -10,7 +10,7 @@
     <BuildNumber Condition="'$(BuildNumber)' == ''">0</BuildNumber>
     <VersionPrefix>1.0.$(BuildNumber)</VersionPrefix>
     <Authors>Seriousnes</Authors>
-    <Description>The documents the Fellowship data export is written as and read back through, the records the codex API answers with, and the settings enums generated from the build it was extracted from.</Description>
+    <Description>The documents the Fellowship data export is written as and read back through, the records the codex API answers with, a client that reads them from codex.fellowshipanalyzer.com, and the settings enums generated from the build it was extracted from.</Description>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/Seriousnes/Fellowship_Data_Extractor</RepositoryUrl>
     <PackageProjectUrl>https://github.com/Seriousnes/Fellowship_Data_Extractor</PackageProjectUrl>
