@@ -2,6 +2,8 @@ namespace Fellowship.SDK.Records;
 
 public sealed record TraitRecord : EntityRecord
 {
+    public IReadOnlyList<ResourceGainRecord>? Generates { get; init; }
+
     public string? Category { get; init; }
 
     public int? MaxRank { get; init; }

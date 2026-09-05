@@ -184,6 +184,8 @@ public sealed class BareStateWalk(
         return true;
     }
 
+    public void Holds(string name, KismetExpression value) => _locals[name] = value;
+
     private int At(uint offset)
     {
         for (var index = 0; index < _bytecode.Length; index++)
@@ -343,6 +345,8 @@ public sealed class BareStateWalk(
 
         return Bound(expression) is { } assigned ? Number(assigned, depth + 1) : null;
     }
+
+    public double? Reading(KismetExpression? expression) => Scalable(expression, 0);
 
     public string Written(KismetExpression? expression, int depth = 0)
     {

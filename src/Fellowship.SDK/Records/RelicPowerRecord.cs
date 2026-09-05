@@ -2,6 +2,8 @@ namespace Fellowship.SDK.Records;
 
 public sealed record RelicPowerRecord : EntityRecord
 {
+    public IReadOnlyList<ResourceGainRecord>? Generates { get; init; }
+
     public string? Description { get; init; }
     public string? Icon { get; init; }
     public double? CastTime { get; init; }

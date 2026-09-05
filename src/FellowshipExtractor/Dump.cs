@@ -148,6 +148,7 @@ public static class DumpAll
         WriteCurves(root, provider, assets, counts);
         WriteLocres(root, provider, counts);
         WriteConfig(root, provider, counts);
+        WriteHeroes(root, provider, assets, counts);
 
         Console.WriteLine($"curves, locres and config written at {clock.Elapsed}");
 
@@ -1222,6 +1223,51 @@ public static class DumpAll
 
         Console.WriteLine($"locres: {many} strings, {cultures.Length} .locres files in the containers");
     }
+
+    private static void WriteHeroes(
+        string root, AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, Counts counts)
+    {
+        var folder = Path.Combine(root, "heroes");
+        Directory.CreateDirectory(folder);
+
+        using var stream = File.Create(Path.Combine(folder, "metadata.json"));
+        using var writer = new Utf8JsonWriter(stream, UeJson.WriterOptions);
+
+        writer.WriteStartArray();
+
+        var written = 0;
+
+        foreach (var asset in assets.OrderBy(a => a.ObjectPath, StringComparer.OrdinalIgnoreCase))
+        {
+            if (!HeroMetadataClasses.Contains(asset.AssetClass.Text)) continue;
+            if (!provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(asset.ObjectPath), out var package))
+            {
+                continue;
+            }
+
+            foreach (var export in Exports(package))
+            {
+                writer.WriteStartObject();
+                writer.WriteString("objectPath", asset.ObjectPath);
+                writer.WriteString("assetClass", asset.AssetClass.Text);
+                writer.WriteString("export", export.Name);
+                writer.WriteString("exportType", export.ExportType);
+                writer.WritePropertyName("properties");
+                UeJson.WriteObject(writer, export);
+                writer.WriteEndObject();
+
+                written++;
+            }
+        }
+
+        writer.WriteEndArray();
+
+        counts.Add("heroMetadataExports", written);
+        Console.WriteLine($"heroes: {written} exports across the hero metadata assets");
+    }
+
+    private static readonly HashSet<string> HeroMetadataClasses =
+        new(StringComparer.Ordinal) { "BP_HeroMetaDataAsset_C", "CRHeroMetaDataAsset", "CRHeroResourceDataAsset" };
 
     private static void WriteConfig(string root, AbstractFileProvider provider, Counts counts)
     {

@@ -181,13 +181,15 @@ public static class ExportRun
             if (scanned % 500 == 0) Console.WriteLine($"  {scanned} of {resolver.Tags.Count}...");
         }
 
-        var types = resolved
+        var shared = resolver.Gains.Shared(resolved);
+
+        var types = shared
             .GroupBy(row => (Table: row.Table!, NetId: row.NetId!.Value))
             .ToDictionary(group => group.Key, group => group.First().Type);
 
         var names = new Dictionary<(EntityType Type, int Id), string>();
 
-        foreach (var record in resolved)
+        foreach (var record in shared)
         {
             if (record.Type is not { } type) continue;
             if (DocumentProjection.Name(record) is not { } named) continue;
@@ -204,9 +206,9 @@ public static class ExportRun
             (table, netId) => types.GetValueOrDefault((table, netId)),
             (type, id) => names.GetValueOrDefault((type, id)));
 
-        var roles = new EffectRoles(resolved, resolver.Heroes.Codenames);
+        var roles = new EffectRoles(shared, resolver.Heroes.Codenames);
 
-        foreach (var record in resolved)
+        foreach (var record in shared)
         {
             await target.WriteDocumentAsync(DocumentProjection.From(record, references, roles), default);
             written++;
@@ -272,6 +274,42 @@ public static class ExportRun
             $"{resolver.PrintedAsReduction} printed as the share their multiplier removes");
         Console.WriteLine(
             $"  {resolver.ModifiersRead} effect modifier magnitudes read");
+
+        var generations = resolver.Gains.Written;
+
+        Console.WriteLine(
+            $"  {resolver.Gains.Reached} resource generations found while walking the graphs, counting one " +
+            "visit per walk of a body, written as " +
+            $"{generations.Entries} entries over {generations.Documents} documents: " +
+            $"{generations.Amounts} stating an amount, {generations.Shares} a share of the pool ceiling, " +
+            $"{generations.Filled} both, {generations.Amountless} neither");
+
+        foreach (var (reason, count) in resolver.Gains.Dropped)
+        {
+            Console.WriteLine($"    {count} dropped because {reason}");
+        }
+
+        foreach (var ceiling in resolver.Gains.RuntimeCeilings()) Console.WriteLine($"    {ceiling}");
+
+        Console.WriteLine(
+            $"  every hero carries a ceiling row for {string.Join(", ", resolver.Pools.Universal)}, " +
+            "so one hero's noun for one of those names it for all");
+
+        Console.WriteLine("  the names the shipped sentences print each resource channel under:");
+
+        foreach (var named in resolver.ResourceNames.Named()) Console.WriteLine($"    {named}");
+        foreach (var contested in resolver.ResourceNames.Contested()) Console.WriteLine($"    {contested}");
+        foreach (var unnamed in resolver.ResourceNames.Unnamed()) Console.WriteLine($"    {unnamed}");
+
+        if (resolver.Gains.Frames.Count > 0)
+        {
+            Console.WriteLine(
+                $"  the {resolver.Gains.Frames.Count} distinct bytecode frames a generation was dropped for " +
+                "naming with no number:");
+
+            foreach (var frame in resolver.Gains.Frames) Console.WriteLine($"    {frame}");
+        }
+
         Console.WriteLine(
             $"  {resolver.DurationsFromSetByCaller} of {resolver.SetByCallerDurationsScanned} durations the " +
             "applier sets by caller recovered from its bytecode");

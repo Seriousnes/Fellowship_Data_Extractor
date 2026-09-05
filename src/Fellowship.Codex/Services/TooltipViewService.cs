@@ -1,6 +1,7 @@
 using System.Globalization;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Models;
 
 using Microsoft.AspNetCore.Components;
 
@@ -182,9 +183,32 @@ public sealed class TooltipViewService(
                 "Cost", resource is { } spent ? $"{Number(cost)} {spent}" : Number(cost), null));
         }
 
+        foreach (var gain in FellowshipCodex.Generates(document))
+        {
+            facts.Add(new TooltipView.Fact("Generates", Generated(gain), gain.Source));
+        }
+
         facts.AddRange(Menacing(document, query));
 
         return facts;
+    }
+
+    private static string Generated(ResourceGain gain)
+    {
+        var pool = gain.ResourceName ?? gain.Resource;
+
+        var magnitude = gain.Amount is { } amount
+            ? gain.AmountOnCritical is { } critical
+                ? $"{Number(amount)} or {Number(critical)} on a critical strike "
+                : $"{Number(amount)} "
+            : gain.ShareOfMaximum is { } share
+                ? $"{Number(share * 100)}% of maximum "
+                : string.Empty;
+
+        var trigger = gain.Per is { } per ? $" per {FellowshipCodex.Spaced(per).ToLowerInvariant()}" : string.Empty;
+        var chance = gain.Chance is { } odds ? $", {Number(odds * 100)}% of the time" : string.Empty;
+
+        return $"{magnitude}{pool}{trigger}{chance}";
     }
 
     public TooltipView.Overview Overview(EntityDocument document, TooltipQuery query)

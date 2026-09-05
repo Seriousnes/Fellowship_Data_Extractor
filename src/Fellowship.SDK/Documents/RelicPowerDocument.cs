@@ -1,3 +1,5 @@
+using Fellowship.SDK.Models;
+
 namespace Fellowship.SDK.Documents;
 
 public sealed class RelicPowerDocument : EntityDocument
@@ -11,4 +13,6 @@ public sealed class RelicPowerDocument : EntityDocument
     public bool? ScalesWithHaste { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
+
+    public IReadOnlyList<ResourceGain>? Generates { get; init; }
 }

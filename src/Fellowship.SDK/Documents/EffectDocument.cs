@@ -26,6 +26,8 @@ public sealed class EffectDocument : EntityDocument
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
 
+    public IReadOnlyList<ResourceGain>? Generates { get; init; }
+
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
 
     public EntityReference? NameBorrowedFrom { get; init; }

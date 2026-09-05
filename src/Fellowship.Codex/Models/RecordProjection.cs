@@ -75,6 +75,7 @@ public static class RecordProjection
         {
             Type = EntityType.Ability,
             Id = document.Id,
+            Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, tags),
             Detail = Lines(document.Detail, view, tokens, tags),
@@ -111,6 +112,7 @@ public static class RecordProjection
         {
             Type = EntityType.Blessing,
             Id = document.Id,
+            Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, []),
             Icon = Art(document.Icon, view),
@@ -189,6 +191,7 @@ public static class RecordProjection
         {
             Type = EntityType.Effect,
             Id = document.Id,
+            Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, tags),
             Icon = Art(document.Icon, view),
@@ -316,6 +319,7 @@ public static class RecordProjection
         {
             Type = EntityType.LegendaryPower,
             Id = document.Id,
+            Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, []),
             Icon = Art(document.Icon, view),
@@ -339,6 +343,7 @@ public static class RecordProjection
     {
         Type = EntityType.Modifier,
         Id = document.Id,
+        Generates = Generated(document.Generates),
         Name = PublicTypes.NameOf(document),
         Description = view.PlainText(document.Description, [], []),
         Icon = Art(document.Icon, view),
@@ -360,6 +365,7 @@ public static class RecordProjection
     {
         Type = EntityType.MountPower,
         Id = document.Id,
+        Generates = Generated(document.Generates),
         Name = PublicTypes.NameOf(document),
         Description = view.PlainText(document.Description, [], []),
         Icon = Art(document.Icon, view),
@@ -373,6 +379,7 @@ public static class RecordProjection
         {
             Type = EntityType.RelicPower,
             Id = document.Id,
+            Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, [], tags),
             Icon = Art(document.Icon, view),
@@ -404,6 +411,7 @@ public static class RecordProjection
         {
             Type = EntityType.SetBonusPower,
             Id = document.Id,
+            Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, [], []),
             Icon = Art(document.Icon, view),
@@ -419,6 +427,7 @@ public static class RecordProjection
         {
             Type = EntityType.Talent,
             Id = document.Id,
+            Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, []),
             Icon = Art(document.Icon, view),
@@ -448,6 +457,7 @@ public static class RecordProjection
     {
         Type = EntityType.Trait,
         Id = document.Id,
+        Generates = Generated(document.Generates),
         Name = PublicTypes.NameOf(document),
         Category = document.Category,
         MaxRank = document.MaxRank,
@@ -466,6 +476,7 @@ public static class RecordProjection
         {
             Type = EntityType.TraitPower,
             Id = document.Id,
+            Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, []),
             DescriptionsByHero = Readings(document.DescriptionsByHero, view, tokens),
@@ -486,6 +497,7 @@ public static class RecordProjection
         {
             Type = EntityType.WeaponPower,
             Id = document.Id,
+            Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, tags),
             Icon = Art(document.Icon, view),
@@ -633,6 +645,23 @@ public static class RecordProjection
                 Disagrees = run.Disagrees,
             })]
             : null;
+
+    private static IReadOnlyList<ResourceGainRecord>? Generated(IReadOnlyList<ResourceGain>? gains) =>
+        gains is not { Count: > 0 }
+            ? null
+            : [.. gains.Select(gain => new ResourceGainRecord(gain.Resource)
+            {
+                ResourceName = gain.ResourceName,
+                Amount = gain.Amount,
+                AmountOnCritical = gain.AmountOnCritical,
+                ShareOfMaximum = gain.ShareOfMaximum,
+                Per = gain.Per,
+                Chance = gain.Chance,
+                RowGroup = gain.RowGroup,
+                Source = gain.Source,
+                SourceOnCritical = gain.SourceOnCritical,
+                SourceKind = gain.SourceKind,
+            })];
 
     internal static IReadOnlyList<PlaceholderRecord>? Tokens(
         IReadOnlyList<Placeholder> tokens, IReadOnlyList<string> tags, ICodexViewService view) =>

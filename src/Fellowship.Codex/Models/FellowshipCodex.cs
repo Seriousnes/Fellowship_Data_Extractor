@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Models;
 
 using Fellowship.Codex.Services;
 
@@ -69,10 +70,16 @@ internal static class DocumentFields
 
     public static IReadOnlyList<string> Words(EntityDocument document, string name) =>
         Property(document, name)?.GetValue(document) as IReadOnlyList<string> ?? [];
+
+    public static IReadOnlyList<ResourceGain> List(EntityDocument document, string name) =>
+        Property(document, name)?.GetValue(document) as IReadOnlyList<ResourceGain> ?? [];
 }
 
 public static class FellowshipCodex
 {
+    public static IReadOnlyList<ResourceGain> Generates(EntityDocument document) =>
+        DocumentFields.List(document, nameof(AbilityDocument.Generates));
+
     public static IReadOnlyList<string> Schools(EntityDocument document) => document switch
     {
         AbilityDocument ability => ability.Schools ?? [],

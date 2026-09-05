@@ -1,3 +1,5 @@
+using Fellowship.SDK.Models;
+
 namespace Fellowship.SDK.Documents;
 
 public sealed class WeaponPowerDocument : EntityDocument
@@ -16,4 +18,6 @@ public sealed class WeaponPowerDocument : EntityDocument
     public IReadOnlyList<string>? Schools { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
+
+    public IReadOnlyList<ResourceGain>? Generates { get; init; }
 }

@@ -71,6 +71,14 @@ public sealed record Entity
 
     public string? Resource { get; init; }
 
+    public IReadOnlyList<ResourceGain>? Generates { get; init; }
+
+    [JsonIgnore]
+    public string? Tuning { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? Declares { get; init; }
+
     public double? Range { get; init; }
     public double? MinRange { get; init; }
     public double? Radius { get; init; }

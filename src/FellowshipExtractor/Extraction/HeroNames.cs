@@ -13,6 +13,8 @@ public sealed record HeroProfile(string Codename, string ShippedName)
     public required string PrimaryStat { get; init; }
 
     public string? ColorRow { get; init; }
+
+    public string? Mechanics { get; init; }
 }
 
 public sealed class HeroNames
@@ -25,6 +27,7 @@ public sealed class HeroNames
     private const string ArmorTypeField = "ArmorType";
     private const string MainStatField = "MainStat";
     private const string HeroIdField = "HeroID";
+    private const string MechanicsField = "HeroMechanics";
 
     private readonly Dictionary<string, HeroProfile> _byCodename = new(StringComparer.OrdinalIgnoreCase);
 
@@ -85,6 +88,7 @@ public sealed class HeroNames
                 ArmorType = armor.Label(PropertyWalk.Get(metadata, ArmorTypeField)?.GenericValue),
                 PrimaryStat = stat,
                 ColorRow = colourRow,
+                Mechanics = PropertyWalk.GetString(metadata, MechanicsField),
             };
         }
     }

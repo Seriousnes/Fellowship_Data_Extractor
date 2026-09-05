@@ -20,6 +20,8 @@ public sealed class AbilityDocument : EntityDocument
 
     public string? Resource { get; init; }
 
+    public IReadOnlyList<ResourceGain>? Generates { get; init; }
+
     public double? Range { get; init; }
     public double? MinRange { get; init; }
     public double? Radius { get; init; }
