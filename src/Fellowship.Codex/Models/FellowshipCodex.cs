@@ -44,27 +44,8 @@ public sealed class SortOrder : IComparer<IComparable?>
     };
 }
 
-public sealed record FacetValue(string Value, string Label, int Count, string? Colour);
-
-public sealed record FacetView(string Key, string Label, IReadOnlyList<FacetValue> Values);
-
 public sealed record TypeView(
     EntityType Type, string Slug, string Label, Category Category, int Count, int Position);
-
-public sealed record MenuSection(string? Head, IReadOnlyList<MenuLink> Links);
-
-public sealed record MenuLink(string Label, string Href, string? Colour, IReadOnlyList<MenuSection> Sections)
-{
-    public MenuLink(string Label, string Href)
-        : this(Label, Href, null, [])
-    {
-    }
-
-    public MenuLink(string Label, string Href, params MenuSection[] Sections)
-        : this(Label, Href, null, Sections)
-    {
-    }
-}
 
 internal static class DocumentFields
 {

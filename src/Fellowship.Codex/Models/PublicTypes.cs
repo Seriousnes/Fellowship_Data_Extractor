@@ -2,8 +2,6 @@ using Fellowship.SDK.Documents;
 
 namespace Fellowship.Codex.Models;
 
-public sealed record Category(string Slug, string Label);
-
 public sealed record PublicType(
     EntityType Type,
     string Slug,
