@@ -1,5 +1,7 @@
 using System.Text.Json;
 
+using Fellowship.SDK.Records;
+
 namespace Fellowship.Codex.Tests;
 
 public sealed class RecordReferenceTests : IClassFixture<RouteTests.Factory>
@@ -119,6 +121,25 @@ public sealed class RecordReferenceTests : IClassFixture<RouteTests.Factory>
         }
 
         Assert.Contains(rolls, roll => roll.TryGetProperty("description", out var text) && text.GetString() is not null);
+    }
+
+    [Fact]
+    public void Every_entity_type_projects_the_record_class_named_for_it()
+    {
+        foreach (var type in Enum.GetValues<EntityType>())
+        {
+            var shape = EntityRecords.Record(type);
+
+            var document = RouteTests.Factory.Store.Entities
+                .FirstOrDefault(row => EntityTypes.TypeOf(row) == type);
+
+            Assert.True(document is not null, $"The export carries no {EntityTypes.Slug(type)} to project.");
+
+            var record = RecordProjection.Of(document!, view, "https://host");
+
+            Assert.Equal(type, record.Type);
+            Assert.IsType(shape, record);
+        }
     }
 
     [Fact]
