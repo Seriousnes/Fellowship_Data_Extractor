@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Text.Json;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Endpoints;
 using Fellowship.Codex.Models;
@@ -70,13 +71,16 @@ public sealed class CodexTools(
         var outcome = store.Resolve(type, id, asked, out var document, out var wearer);
 
         return outcome == Lookup.Found
-            ? Read(PublicEntity.From(document!, view, string.Empty))
+            ? Read(RecordProjection.Of(document!, view, string.Empty))
             : Trouble(Lookups.Trouble(outcome, type, id, wearer, store.All(type, id)).Detail);
     }
 
-    private static CallToolResult Read(PublicEntity record) => new()
+    private static CallToolResult Read(EntityRecord record) => new()
     {
-        Content = [new TextContentBlock { Text = JsonSerializer.Serialize(record, CodexMcp.Json) }],
+        Content =
+        [
+            new TextContentBlock { Text = JsonSerializer.Serialize(record, record.GetType(), CodexMcp.Json) },
+        ],
     };
 
     private static CallToolResult Trouble(string detail) => new()

@@ -2,13 +2,13 @@ using System.Text.Json;
 
 namespace Fellowship.Codex.Tests;
 
-public sealed class PublicReferenceTests : IClassFixture<RouteTests.Factory>
+public sealed class RecordReferenceTests : IClassFixture<RouteTests.Factory>
 {
     private readonly HttpClient client;
 
     private readonly ICodexViewService view;
 
-    public PublicReferenceTests(RouteTests.Factory factory)
+    public RecordReferenceTests(RouteTests.Factory factory)
     {
         client = factory.CreateClient();
         view = factory.Services.GetRequiredService<ICodexViewService>();
@@ -113,7 +113,8 @@ public sealed class PublicReferenceTests : IClassFixture<RouteTests.Factory>
         foreach (var roll in rolls)
         {
             Assert.False(roll.TryGetProperty("resource", out _));
-            Assert.False(roll.TryGetProperty("id", out _));
+            Assert.Equal(
+                EntityTypes.Slug(EntityType.LegendaryStat), roll.GetProperty("type").GetString());
             Assert.False(string.IsNullOrWhiteSpace(roll.GetProperty("name").GetString()));
         }
 
@@ -125,10 +126,10 @@ public sealed class PublicReferenceTests : IClassFixture<RouteTests.Factory>
     {
         var slot = RouteTests.Factory.Store.Entities.OfType<TalentSlotDocument>().First();
 
-        var reference = PublicEntity.From(slot, view, "https://host").Talent;
+        var reference = RecordProjection.From(slot, view, "https://host").Talent;
 
         Assert.NotNull(reference);
-        Assert.Equal(EntityTypes.Slug(EntityType.Talent), reference.Type);
+        Assert.Equal(EntityType.Talent, reference.Type);
         Assert.Equal($"https://host/api/talent/{reference.Id}", reference.Resource);
     }
 

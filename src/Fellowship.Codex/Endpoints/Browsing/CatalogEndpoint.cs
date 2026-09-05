@@ -10,7 +10,8 @@ public static class CatalogEndpoint
     public static RouteHandlerBuilder MapCatalog(this IEndpointRouteBuilder group) =>
         group.MapGet("/catalog", Handle)
             .WithName("GetCatalog")
-            .WithSummary("The menus, entity types and filter facets the browser is driven by.");
+            .WithSummary("The menus, entity types and filter facets the browser is driven by.")
+            .Produces<CatalogResponse>();
 
     private static IResult Handle(ICodexService codex, IMenuService menus, IEntityStoreService store)
     {
@@ -18,36 +19,24 @@ public static class CatalogEndpoint
             .Where(document => PublicTypes.IsListed(EntityTypes.TypeOf(document)))
             .ToArray();
 
-        return Results.Ok(new
-        {
-            entities = codex.Count,
-
-            categories = Categories.All.Select(category => new { category.Slug, category.Label }),
-
-            types = codex.Types
-                .OrderBy(type => type.Position)
-                .Select(type => new
-                {
-                    type.Slug, type.Label, Category = type.Category.Slug, type.Count, type.Position,
-                }),
-
-            menu = menus.Menu,
-            facets = codex.Facets.Select(facet => codex.View(facet, rows)),
-            flags = codex.Flags.Select(flag => new { flag.Key, flag.Label }),
-            measures = codex.Measures.Select(measure => new { measure.Key, measure.Label, measure.Unit }),
-            sortings = codex.Sortings.Select(sorting => new { sorting.Key, sorting.Label }),
-
-            heroes = store.Settings.Heroes.Select(hero => new
-            {
-                hero.Name,
-                hero.Color,
-            }),
-            rarities = store.Settings.Rarities.Select(rarity => new
-            {
-                rarity.Tier,
-                rarity.DisplayName,
-                rarity.GemDisplayName,
-            }),
-        });
+        return Results.Ok(new CatalogResponse(
+            codex.Count,
+            Categories.All,
+            [
+                .. codex.Types
+                    .OrderBy(type => type.Position)
+                    .Select(type => new CatalogType(
+                        type.Slug, type.Label, type.Category.Slug, type.Count, type.Position)),
+            ],
+            menus.Menu,
+            [.. codex.Facets.Select(facet => codex.View(facet, rows))],
+            [.. codex.Flags.Select(flag => new CatalogFlag(flag.Key, flag.Label))],
+            [.. codex.Measures.Select(measure => new CatalogMeasure(measure.Key, measure.Label, measure.Unit))],
+            [.. codex.Sortings.Select(sorting => new CatalogSorting(sorting.Key, sorting.Label))],
+            [.. store.Settings.Heroes.Select(hero => new CatalogHero(hero.Name, hero.Color))],
+            [
+                .. store.Settings.Rarities.Select(rarity => new CatalogRarity(
+                    rarity.Tier, rarity.DisplayName, rarity.GemDisplayName)),
+            ]));
     }
 }

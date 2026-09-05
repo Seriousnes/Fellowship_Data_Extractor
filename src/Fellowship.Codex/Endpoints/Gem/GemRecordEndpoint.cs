@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class GemRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetGem")
             .WithSummary($"One {PublicTypes.Noun(EntityType.Gem)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<GemRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] GemRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Gem, request.Id, null, http, store, view);
+        Records.One<GemRecord>(request.Id, null, http, store, view);
 }

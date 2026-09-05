@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class WeaponPowerRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetWeaponPower")
             .WithSummary($"One {PublicTypes.Noun(EntityType.WeaponPower)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<WeaponPowerRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] WeaponPowerRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.WeaponPower, request.Id, null, http, store, view);
+        Records.One<WeaponPowerRecord>(request.Id, null, http, store, view);
 }

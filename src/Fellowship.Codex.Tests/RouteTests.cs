@@ -131,6 +131,25 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public async Task An_enum_a_record_carries_reads_as_the_name_the_build_gives_it()
+    {
+        var item = Factory.Store.Entities
+            .OfType<ItemDocument>()
+            .First(row =>
+                row.ArmorType is not null &&
+                row.Heroes is { Count: > 0 } &&
+                Factory.Store.All(EntityType.Item, row.Id).Count == 1);
+
+        var body = await client.GetStringAsync(
+            $"/api/item/{item.Id}", Xunit.TestContext.Current.CancellationToken);
+
+        using var reading = System.Text.Json.JsonDocument.Parse(body);
+
+        Assert.Equal(item.ArmorType!.ToString(), reading.RootElement.GetProperty("armorType").GetString());
+        Assert.Equal(item.Heroes![0].ToString(), reading.RootElement.GetProperty("heroes")[0].GetString());
+    }
+
+    [Fact]
     public async Task An_optional_property_the_binder_fills_reaches_the_card()
     {
         var id = Factory.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 }).Id;

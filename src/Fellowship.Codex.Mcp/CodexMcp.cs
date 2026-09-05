@@ -28,6 +28,7 @@ public static class CodexMcp
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
+        Converters = { new JsonStringEnumConverter() },
     };
 
     public static IMcpServerBuilder AddCodexMcp(this IHostApplicationBuilder builder, string export)

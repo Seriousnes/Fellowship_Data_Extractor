@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class CreatureRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetCreature")
             .WithSummary($"One {PublicTypes.Noun(EntityType.Creature)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<CreatureRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] CreatureRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Creature, request.Id, null, http, store, view);
+        Records.One<CreatureRecord>(request.Id, null, http, store, view);
 }

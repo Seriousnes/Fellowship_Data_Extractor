@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class BlessingRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetBlessing")
             .WithSummary($"One {PublicTypes.Noun(EntityType.Blessing)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<BlessingRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] BlessingRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.Blessing, request.Id, null, http, store, view);
+        Records.One<BlessingRecord>(request.Id, null, http, store, view);
 }

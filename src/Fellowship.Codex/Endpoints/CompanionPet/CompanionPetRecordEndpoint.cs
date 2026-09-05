@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class CompanionPetRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetCompanionPet")
             .WithSummary($"One {PublicTypes.Noun(EntityType.CompanionPet)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<CompanionPetRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] CompanionPetRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.CompanionPet, request.Id, null, http, store, view);
+        Records.One<CompanionPetRecord>(request.Id, null, http, store, view);
 }

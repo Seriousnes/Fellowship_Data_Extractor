@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
@@ -19,10 +20,10 @@ public static class SetBonusRecordEndpoint
         group.MapGet("/{id:int}", Handle)
             .WithName("GetSetBonus")
             .WithSummary($"One {PublicTypes.Noun(EntityType.SetBonus)}'s record.")
-            .Produces<PublicEntity>()
+            .Produces<SetBonusRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
         [AsParameters] SetBonusRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One(EntityType.SetBonus, request.Id, null, http, store, view);
+        Records.One<SetBonusRecord>(request.Id, null, http, store, view);
 }

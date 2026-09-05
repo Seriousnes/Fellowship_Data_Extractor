@@ -1,5 +1,7 @@
 using System.Text.Json;
 
+using Fellowship.SDK.Records;
+
 using Microsoft.AspNetCore.Http;
 
 namespace Fellowship.Codex.Tests;
@@ -114,6 +116,39 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
             listed.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
             described,
             StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Every_record_route_answers_the_record_class_named_for_the_type_it_addresses()
+    {
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
+        {
+            var answered = Operation($"/api/{EntityTypes.Slug(type)}/{{id}}")
+                .GetProperty("responses")
+                .GetProperty("200")
+                .GetProperty("content")
+                .GetProperty("application/json")
+                .GetProperty("schema")
+                .GetProperty("$ref")
+                .GetString();
+
+            Assert.Equal($"#/components/schemas/{EntityRecords.Record(type).Name}", answered);
+        }
+    }
+
+    [Fact]
+    public void The_type_a_record_carries_is_documented_as_the_slug_it_is_written_as()
+    {
+        var documented = document.RootElement
+            .GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty(nameof(EntityType))
+            .GetProperty("enum")
+            .EnumerateArray()
+            .Select(entry => entry.GetString())
+            .ToArray();
+
+        Assert.Equal(Enum.GetValues<EntityType>().Select(EntityTypes.Slug), documented);
     }
 
     [Fact]
