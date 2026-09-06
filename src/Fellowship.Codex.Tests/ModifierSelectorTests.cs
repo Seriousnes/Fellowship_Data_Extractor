@@ -122,7 +122,7 @@ public class ModifierSelectorTests : BunitContext
 
         Assert.NotNull(choice.QuerySelector(".cx-sel-art figure.fx-slot"));
         Assert.Equal(tip.Address, choice.GetAttribute("data-tip"));
-        Assert.Equal(tip.Body, choice.GetAttribute("data-tip-ask"));
+        Assert.Equal(tip.Body, choice.GetAttribute("data-tip-request"));
         Assert.Equal(export.View.Name(trait), choice.QuerySelector(".cx-sel-name")!.TextContent);
     }
 

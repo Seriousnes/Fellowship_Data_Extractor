@@ -223,33 +223,34 @@
 
     private TooltipQuery Query(IReadOnlyDictionary<string, string> values)
     {
-        var request = new TooltipRequest
+        var stats = StatQuery.FromQuery(
+            new QueryCollection(raw), RequestProperties.OfEveryTooltip, Store.Stats, out _);
+
+        var rolled = StatQuery.Rolled(
+            RolledStats.TryParse(values.GetValueOrDefault("randomStats"), out var names) ? names.Values : null,
+            Store.Stats,
+            Store.Settings.StatCalculation.RandomStatPool,
+            out _);
+
+        return StatQuery.Read(stats, Store.Stats, out _) with
         {
             ShowIcon = true,
-            Hero = values.GetValueOrDefault("hero"),
-            Rarity = values.GetValueOrDefault("rarity"),
+            Hero = StatQuery.NullIfEmpty(values.GetValueOrDefault("hero")),
+            Rarity = StatQuery.NullIfEmpty(values.GetValueOrDefault("rarity")),
             ItemLevel = Number(values, "itemLevel"),
             Upgrades = Number(values, "upgrades"),
             MaxUpgrades = Number(values, "maxUpgrades"),
             NoSocket = values.ContainsKey("noSocket"),
             Gem = Number(values, "gem"),
             AllocatedTraits = Number(values, "allocatedTraits"),
-            RandomStats = RolledStats.TryParse(values.GetValueOrDefault("randomStats"), out var rolled)
-                ? rolled.Values
-                : null,
+            RandomStats = rolled,
             Modifiers = ItemModifiers.TryParse(values.GetValueOrDefault("modifiers"), out var modifiers)
                 ? modifiers.Values
-                : null,
+                : [],
             ImbuedTraits = ImbuedTraits.TryParse(values.GetValueOrDefault("imbuedTraits"), out var imbued)
                 ? imbued.Values
-                : null,
-            Stats = StatQuery.FromQuery(
-                new QueryCollection(raw), RequestProperties.Of(typeof(TooltipRequest)), Store.Stats, out _),
-        };
-
-        return TooltipRequests.Read(request, Store, out _) with
-        {
-            State = values.GetValueOrDefault("state"),
+                : [],
+            State = StatQuery.NullIfEmpty(values.GetValueOrDefault("state")),
             Difficulty = Number(values, "difficulty"),
         };
     }

@@ -78,7 +78,7 @@ public class DetachedArtTests : BunitContext
         var view = export.View;
 
         Assert.DoesNotContain(
-            nameof(TooltipRequest.ShowIcon),
+            nameof(ItemTooltipRequest.ShowIcon),
             view.Tip(document).Body ?? string.Empty,
             StringComparison.OrdinalIgnoreCase);
 

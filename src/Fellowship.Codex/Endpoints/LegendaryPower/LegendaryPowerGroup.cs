@@ -13,7 +13,7 @@ public static class LegendaryPowerGroup
             .WithTags(PublicTypes.Label(EntityType.LegendaryPower));
 
         group.MapLegendaryPowerRecord();
-        group.MapTooltip(EntityType.LegendaryPower);
+        group.MapLegendaryPowerTooltip();
 
         return group;
     }

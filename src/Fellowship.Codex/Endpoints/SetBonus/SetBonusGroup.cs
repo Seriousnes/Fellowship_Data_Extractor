@@ -13,7 +13,7 @@ public static class SetBonusGroup
             .WithTags(PublicTypes.Label(EntityType.SetBonus));
 
         group.MapSetBonusRecord();
-        group.MapTooltip(EntityType.SetBonus);
+        group.MapSetBonusTooltip();
 
         return group;
     }

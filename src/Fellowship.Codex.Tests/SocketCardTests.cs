@@ -109,7 +109,7 @@ public class SocketCardTests : BunitContext
     [Fact]
     public void The_gem_the_caller_names_reaches_the_query_from_the_request()
     {
-        var query = TooltipRequests.Read(new TooltipRequest { Gem = 35 }, export.Store, out var error);
+        var query = TooltipRequests.Read(new ItemTooltipRequest { Gem = 35 }, export.Store, out var error);
 
         Assert.Null(error);
         Assert.Equal(35, query.Gem);

@@ -52,7 +52,7 @@
                 var mine = at;
 
                 <a class="cx-omnibox-hit" href="@hit.Href" role="option"
-                   data-tip="@hit.Tooltip" data-tip-ask="@hit.TooltipBody"
+                   data-tip="@hit.Tooltip" data-tip-request="@hit.TooltipBody"
                    aria-selected="@(active == mine ? "true" : "false")" data-active="@On(active == mine)">
                     <Icon Src="@hit.IconUrl" Rarity="@hit.Rarity" Width="HitPlateWidth" />
                     <span class="cx-t">

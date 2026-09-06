@@ -13,7 +13,7 @@ public static class CurrencyGroup
             .WithTags(PublicTypes.Label(EntityType.Currency));
 
         group.MapCurrencyRecord();
-        group.MapTooltip(EntityType.Currency);
+        group.MapCurrencyTooltip();
 
         return group;
     }

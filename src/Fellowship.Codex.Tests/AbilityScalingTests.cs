@@ -31,8 +31,7 @@ public sealed class AbilityScalingTests : IClassFixture<RouteTests.Factory>
         var (id, _) = Scaling();
         var hero = RouteTests.Factory.Store.Settings.Heroes[0];
 
-        var html = await client.TooltipHtmlAsync(
-            EntityType.Ability, id, new TooltipRequest { Hero = hero.Name });
+        var html = await client.TooltipHtmlAsync(id, new AbilityTooltipRequest { Hero = hero.Name });
 
         Assert.Contains(hero.PrimaryStat, html, StringComparison.Ordinal);
     }
@@ -45,10 +44,10 @@ public sealed class AbilityScalingTests : IClassFixture<RouteTests.Factory>
         var stat = hero.PrimaryStat;
 
         var named = await client.TooltipHtmlAsync(
-            EntityType.Ability, id, new TooltipRequest { Hero = hero.Name }.Rated(stat, 1000m));
+            id, new AbilityTooltipRequest { Hero = hero.Name, Stats = Stats.Rated(stat, 1000m) });
 
         var supplied = await client.TooltipHtmlAsync(
-            EntityType.Ability, id, new TooltipRequest().Rated(stat, 1000m));
+            id, new AbilityTooltipRequest { Stats = Stats.Rated(stat, 1000m) });
 
         Assert.Equal(named, supplied);
     }
@@ -62,24 +61,17 @@ public sealed class AbilityScalingTests : IClassFixture<RouteTests.Factory>
             .First(candidate => string.Equals(candidate.PrimaryStat, "Strength", StringComparison.Ordinal));
 
         var both = await client.TooltipHtmlAsync(
-            EntityType.Ability,
             id,
-            new TooltipRequest { Hero = hero.Name }.Rated("Strength", 1000m).Rated("Intellect", 4000m));
+            new AbilityTooltipRequest
+            {
+                Hero = hero.Name,
+                Stats = Stats.Rated("Strength", 1000m).Rated("Intellect", 4000m),
+            });
 
         var strengthOnly = await client.TooltipHtmlAsync(
-            EntityType.Ability, id, new TooltipRequest { Hero = hero.Name }.Rated("Strength", 1000m));
+            id, new AbilityTooltipRequest { Hero = hero.Name, Stats = Stats.Rated("Strength", 1000m) });
 
         Assert.Equal(strengthOnly, both);
     }
 
-    [Fact]
-    public async Task An_ability_takes_the_item_level_an_item_takes_rather_than_refusing_it()
-    {
-        var (id, _) = Scaling();
-
-        using var response = await client.TooltipAsync(
-            EntityType.Ability, id, new TooltipRequest { ItemLevel = 200 });
-
-        Assert.True(response.IsSuccessStatusCode, await response.BodyAsync());
-    }
 }

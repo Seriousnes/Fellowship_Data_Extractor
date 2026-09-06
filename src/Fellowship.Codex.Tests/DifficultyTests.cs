@@ -45,12 +45,11 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task A_creature_tooltip_states_its_health_at_the_difficulty_the_request_names()
     {
-        var opening = await client.TooltipHtmlAsync(EntityType.Creature, NoorTheBetrayer);
+        var opening = await client.TooltipHtmlAsync<CreatureTooltipRequest>(NoorTheBetrayer);
 
         var deep = await client.TooltipHtmlAsync(
-            EntityType.Creature,
             NoorTheBetrayer,
-            new TooltipRequest { Difficulty = Eternal.MinimumDifficulty + 44 });
+            new CreatureTooltipRequest { Difficulty = Eternal.MinimumDifficulty + 44 });
 
         var health = Difficulties.Health(Noor, Settings, Eternal.MinimumDifficulty + 44);
 
@@ -151,12 +150,11 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task An_ability_tooltip_states_its_damage_only_once_the_request_names_a_difficulty()
     {
-        var opening = await client.TooltipHtmlAsync(EntityType.Ability, BetrayersArrow);
+        var opening = await client.TooltipHtmlAsync<AbilityTooltipRequest>(BetrayersArrow);
 
         var deep = await client.TooltipHtmlAsync(
-            EntityType.Ability,
             BetrayersArrow,
-            new TooltipRequest { Difficulty = Eternal.MinimumDifficulty + 44 });
+            new AbilityTooltipRequest { Difficulty = Eternal.MinimumDifficulty + 44 });
 
         Assert.Contains("Damage", opening, StringComparison.Ordinal);
         Assert.Contains("Damage", deep, StringComparison.Ordinal);

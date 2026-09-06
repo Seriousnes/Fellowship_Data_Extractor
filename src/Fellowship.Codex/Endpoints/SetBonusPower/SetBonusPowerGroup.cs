@@ -13,7 +13,7 @@ public static class SetBonusPowerGroup
             .WithTags(PublicTypes.Label(EntityType.SetBonusPower));
 
         group.MapSetBonusPowerRecord();
-        group.MapTooltip(EntityType.SetBonusPower);
+        group.MapSetBonusPowerTooltip();
 
         return group;
     }

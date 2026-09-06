@@ -13,7 +13,7 @@ public static class MountGroup
             .WithTags(PublicTypes.Label(EntityType.Mount));
 
         group.MapMountRecord();
-        group.MapTooltip(EntityType.Mount);
+        group.MapMountTooltip();
 
         return group;
     }

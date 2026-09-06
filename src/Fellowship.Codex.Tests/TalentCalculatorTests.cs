@@ -388,7 +388,7 @@ public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassF
     {
         var page = await Draw(Asking(First));
 
-        Assert.DoesNotContain(nameof(TooltipRequest.ShowIcon), page, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(nameof(TalentTooltipRequest.ShowIcon), page, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

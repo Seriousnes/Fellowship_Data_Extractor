@@ -31,7 +31,7 @@
                             <button type="button" class="cx-sel-choice" @key="mine.Key"
                                     data-kind="@mine.Candidate.Accepts" data-id="@mine.Candidate.Id"
                                     data-active="@(mine.Key == Active ? "on" : null)"
-                                    data-tip="@mine.Tip?.Address" data-tip-ask="@mine.Tip?.Body"
+                                    data-tip="@mine.Tip?.Address" data-tip-request="@mine.Tip?.Body"
                                     disabled="@(mine.Forbidden is not null)" title="@mine.Forbidden"
                                     @ref="rows[mine.Key]"
                                     @onclick="() => OnPick.InvokeAsync(mine.Candidate)">

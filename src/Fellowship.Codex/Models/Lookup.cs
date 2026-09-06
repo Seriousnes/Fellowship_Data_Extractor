@@ -50,8 +50,8 @@ public static class Lookups
 
             Lookup.NeedsHero => new Fault(
                 "This id reads differently per hero.",
-                $"The build has {readings.Count} readings of {noun} {id} and no hero was given. " +
-                    "Add hero=<name> to pick one. The readings are " +
+                $"The build has {readings.Count} readings of {noun} {id} and no hero was named. " +
+                    "Name a hero to pick one. The readings are " +
                     string.Join("; ", readings.Select(Describe)) + ".",
                 StatusCodes.Status400BadRequest),
 

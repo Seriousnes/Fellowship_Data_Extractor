@@ -82,7 +82,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
                 record.StatusCode == HttpStatusCode.OK,
                 $"{address} answered {(int)record.StatusCode}, not 200. Body: {body}");
 
-            using var tooltip = await client.TooltipAsync(type, id, new TooltipRequest { Hero = hero });
+            using var tooltip = await client.TooltipAsync(type, id, hero: hero);
             var drawn = await tooltip.BodyAsync();
 
             Assert.True(
@@ -123,7 +123,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
 
         var record = await client.GetAsync(
             $"/api/item/{id}{Wearer(hero)}", Xunit.TestContext.Current.CancellationToken);
-        using var tooltip = await client.TooltipAsync(EntityType.Item, id, new TooltipRequest { Hero = hero });
+        using var tooltip = await client.TooltipAsync(id, new ItemTooltipRequest { Hero = hero });
 
         record.EnsureSuccessStatusCode();
         tooltip.EnsureSuccessStatusCode();
@@ -157,7 +157,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         var id = Factory.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 }).Id;
 
-        var drawn = await client.TooltipHtmlAsync(EntityType.Item, id, new TooltipRequest { Armor = 303 });
+        var drawn = await client.TooltipHtmlAsync(id, new ItemTooltipRequest { Armor = 303 });
 
         Assert.Contains("303", drawn, StringComparison.Ordinal);
     }
@@ -167,7 +167,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         const int EldrinSignet = 5220;
 
-        var drawn = await client.TooltipHtmlAsync(EntityType.Item, EldrinSignet, new TooltipRequest
+        var drawn = await client.TooltipHtmlAsync(EldrinSignet, new ItemTooltipRequest
         {
             Hero = "Rime",
             ItemLevel = 360,
@@ -188,7 +188,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var (id, _) = Sample(EntityType.Item);
 
         using var response = await client.TooltipAsync(
-            EntityType.Item, id, new TooltipRequest { RandomStats = ["Armor"] });
+            id, new ItemTooltipRequest { RandomStats = ["Armor"] });
 
         var body = await response.BodyAsync();
 
@@ -218,7 +218,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var (id, hero) = Sample(EntityType.Item);
 
         using var response = await client.TooltipAsync(
-            EntityType.Item, id, new TooltipRequest { Hero = hero, ItemLevel = 10001 });
+            id, new ItemTooltipRequest { Hero = hero, ItemLevel = 10001 });
 
         var body = await response.BodyAsync();
 
@@ -234,7 +234,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var (id, _) = Sample(EntityType.Item);
         var address = $"/{CodexAddresses.Tooltip(EntityType.Item, id)}";
 
-        using var queried = await client.TooltipAsync(EntityType.Item, id, new TooltipRequest());
+        using var queried = await client.TooltipAsync(id, new ItemTooltipRequest());
         using var posted = await client.PostAsync(
             address, content: null, Xunit.TestContext.Current.CancellationToken);
         using var got = await client.GetAsync(address, Xunit.TestContext.Current.CancellationToken);
@@ -252,8 +252,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
 
-            using var response = await client.TooltipAsync(
-                type, id, new TooltipRequest { ShowIcon = true, Hero = hero });
+            using var response = await client.TooltipAsync(type, id, showIcon: true, hero: hero);
 
             var body = await response.BodyAsync();
 
@@ -268,10 +267,10 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         var ability = Factory.Store.Entities.OfType<AbilityDocument>().First(row => row.Icon is not null);
 
-        var bare = await client.TooltipHtmlAsync(EntityType.Ability, ability.Id);
+        var bare = await client.TooltipHtmlAsync<AbilityTooltipRequest>(ability.Id);
 
         var drawn = await client.TooltipHtmlAsync(
-            EntityType.Ability, ability.Id, new TooltipRequest { ShowIcon = true });
+            ability.Id, new AbilityTooltipRequest { ShowIcon = true });
 
         Assert.DoesNotContain("<figure class=\"fx-slot", bare, StringComparison.Ordinal);
         Assert.Contains("<figure class=\"fx-slot", drawn, StringComparison.Ordinal);
@@ -283,7 +282,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var trait = Factory.Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null);
 
         var drawn = await client.TooltipHtmlAsync(
-            EntityType.Trait, trait.Id, new TooltipRequest { State = "unavailable" });
+            trait.Id, new TraitTooltipRequest { State = "unavailable" });
 
         Assert.Contains(chrome.TraitNode("unavailable"), drawn, StringComparison.Ordinal);
     }
@@ -305,22 +304,18 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public async Task A_rarity_reaches_a_gem_and_a_value_that_belongs_to_an_item_is_ignored()
+    public async Task A_rarity_the_game_prints_reaches_a_gem()
     {
         var (id, _) = Sample(EntityType.Gem);
         var ladder = Factory.Store.Settings.Rarities;
 
         var low = await client.TooltipHtmlAsync(
-            EntityType.Gem, id, new TooltipRequest { Rarity = ladder[0].GemDisplayName });
+            id, new GemTooltipRequest { Rarity = ladder[0].GemDisplayName });
 
         var high = await client.TooltipHtmlAsync(
-            EntityType.Gem, id, new TooltipRequest { Rarity = ladder[^1].GemDisplayName });
-
-        var level = await client.TooltipHtmlAsync(
-            EntityType.Gem, id, new TooltipRequest { Rarity = ladder[0].GemDisplayName, ItemLevel = 100 });
+            id, new GemTooltipRequest { Rarity = ladder[^1].GemDisplayName });
 
         Assert.NotEqual(low, high);
-        Assert.Equal(low, level);
     }
 
     [Fact]

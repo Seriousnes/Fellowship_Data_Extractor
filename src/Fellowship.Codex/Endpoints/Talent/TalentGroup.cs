@@ -13,7 +13,7 @@ public static class TalentGroup
             .WithTags(PublicTypes.Label(EntityType.Talent));
 
         group.MapTalentRecord();
-        group.MapTooltip(EntityType.Talent);
+        group.MapTalentTooltip();
 
         return group;
     }

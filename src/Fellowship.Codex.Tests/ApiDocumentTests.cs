@@ -1,5 +1,7 @@
+using System.Reflection;
 using System.Text.Json;
 
+using Fellowship.SDK.Client;
 using Fellowship.SDK.Records;
 
 using Microsoft.AspNetCore.Http;
@@ -117,6 +119,64 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
             }
         }
     }
+
+    [Fact]
+    public void Each_type_takes_its_own_tooltip_request_carrying_only_what_that_card_reads()
+    {
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
+        {
+            var operation = Operation($"/api/{EntityTypes.Slug(type)}/{{id}}/tooltip", "query");
+
+            var reference = operation
+                .GetProperty("requestBody")
+                .GetProperty("content")
+                .GetProperty("application/json")
+                .GetProperty("schema")
+                .GetProperty("$ref")
+                .GetString()!;
+
+            var name = reference[(reference.LastIndexOf('/') + 1)..];
+
+            Assert.Equal($"{type}TooltipRequest", name);
+
+            var record = TooltipRequestTypes.Find(type);
+
+            Assert.NotNull(record);
+
+            Assert.Equal(
+                record.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Select(property => JsonNamingPolicy.CamelCase.ConvertName(property.Name))
+                    .Order(StringComparer.Ordinal),
+                SchemaProperties(name));
+        }
+    }
+
+    [Fact]
+    public void Only_an_item_can_be_asked_for_a_power_potential()
+    {
+        Assert.Contains("potentialPower", SchemaProperties($"{EntityType.Item}TooltipRequest"));
+
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
+        {
+            if (type is EntityType.Item) continue;
+
+            Assert.DoesNotContain(
+                "potentialPower",
+                SchemaProperties($"{type}TooltipRequest"));
+        }
+    }
+
+    private IReadOnlyList<string> SchemaProperties(string name) =>
+    [
+        .. document.RootElement
+            .GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty(name)
+            .GetProperty("properties")
+            .EnumerateObject()
+            .Select(property => property.Name)
+            .Order(StringComparer.Ordinal),
+    ];
 
     [Fact]
     public void The_search_limit_description_names_the_bounds_the_service_holds_to()

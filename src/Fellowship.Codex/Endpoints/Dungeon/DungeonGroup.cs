@@ -12,7 +12,7 @@ public static class DungeonGroup
             .WithTags(PublicTypes.Label(EntityType.Dungeon));
 
         group.MapDungeonRecord();
-        group.MapTooltip(EntityType.Dungeon);
+        group.MapDungeonTooltip();
 
         return group;
     }

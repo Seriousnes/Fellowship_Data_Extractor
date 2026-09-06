@@ -24,7 +24,7 @@ public sealed class MobileTooltipTests(RouteTests.Factory factory) : IClassFixtu
         var (item, hero) = Sample(EntityType.Item);
 
         var drawn = await client.TooltipHtmlAsync(
-            EntityType.Item, item.Id, new TooltipRequest { Hero = hero, Mobile = true });
+            item.Id, new ItemTooltipRequest { Hero = hero, Mobile = true });
 
         Assert.StartsWith("<div class=\"fx-modal\"", drawn, StringComparison.Ordinal);
         Assert.Contains("<div class=\"scrim\" data-dismiss>", drawn, StringComparison.Ordinal);
@@ -42,7 +42,7 @@ public sealed class MobileTooltipTests(RouteTests.Factory factory) : IClassFixtu
     {
         var (item, hero) = Sample(EntityType.Item);
 
-        var drawn = await client.TooltipHtmlAsync(EntityType.Item, item.Id, new TooltipRequest { Hero = hero });
+        var drawn = await client.TooltipHtmlAsync(item.Id, new ItemTooltipRequest { Hero = hero });
 
         Assert.StartsWith("<div class=\"fx-tip", drawn, StringComparison.Ordinal);
         Assert.DoesNotContain("fx-modal", drawn, StringComparison.Ordinal);
@@ -55,12 +55,12 @@ public sealed class MobileTooltipTests(RouteTests.Factory factory) : IClassFixtu
         var (item, hero) = Sample(EntityType.Item);
 
         var wrapped = await client.TooltipHtmlAsync(
-            EntityType.Item, item.Id, new TooltipRequest { Hero = hero, Mobile = true });
+            item.Id, new ItemTooltipRequest { Hero = hero, Mobile = true });
 
         Assert.StartsWith("<div class=\"fx-modal\"", wrapped, StringComparison.Ordinal);
 
         var bare = await client.TooltipHtmlAsync(
-            EntityType.Item, item.Id, new TooltipRequest { Hero = hero, Mobile = false });
+            item.Id, new ItemTooltipRequest { Hero = hero, Mobile = false });
 
         Assert.StartsWith("<div class=\"fx-tip", bare, StringComparison.Ordinal);
     }
@@ -93,8 +93,7 @@ public sealed class MobileTooltipTests(RouteTests.Factory factory) : IClassFixtu
             var (document, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
 
-            using var response = await client.TooltipAsync(
-                type, document.Id, new TooltipRequest { Hero = hero, Mobile = true });
+            using var response = await client.TooltipAsync(type, document.Id, mobile: true, hero: hero);
 
             var drawn = await response.BodyAsync();
 
@@ -113,7 +112,7 @@ public sealed class MobileTooltipTests(RouteTests.Factory factory) : IClassFixtu
         var (item, hero) = Sample(EntityType.Item);
 
         var drawn = await client.TooltipHtmlAsync(
-            EntityType.Item, item.Id, new TooltipRequest { Hero = hero, Mobile = true });
+            item.Id, new ItemTooltipRequest { Hero = hero, Mobile = true });
 
         var shut = drawn.IndexOf("<button type=\"button\" class=\"shut\"", StringComparison.Ordinal);
         var scrim = drawn.IndexOf("<div class=\"scrim\" data-dismiss>", StringComparison.Ordinal);
@@ -127,7 +126,7 @@ public sealed class MobileTooltipTests(RouteTests.Factory factory) : IClassFixtu
         var (item, hero) = Sample(EntityType.Item);
 
         var drawn = await client.TooltipHtmlAsync(
-            EntityType.Item, item.Id, new TooltipRequest { Hero = hero, Mobile = true });
+            item.Id, new ItemTooltipRequest { Hero = hero, Mobile = true });
 
         Assert.Contains(".fx-modal", drawn.Split("<style>")[1].Split("</style>")[0], StringComparison.Ordinal);
     }

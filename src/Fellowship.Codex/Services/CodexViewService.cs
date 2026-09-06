@@ -159,15 +159,43 @@ public sealed class CodexViewService(
 
     public TooltipLink Tip(EntityDocument document, bool showIcon = false)
     {
-        var address = "/" + CodexAddresses.Tooltip(EntityTypes.TypeOf(document), document.Id);
+        var type = EntityTypes.TypeOf(document);
+        var address = "/" + CodexAddresses.Tooltip(type, document.Id);
 
+        var icon = showIcon ? true : (bool?)null;
         var hero = Reading(document);
 
-        if (hero is null && !showIcon) return new TooltipLink(address, null);
+        return new TooltipLink(address, type switch
+        {
+            EntityType.Ability => Body(new AbilityTooltipRequest { ShowIcon = icon, Hero = hero }),
+            EntityType.Blessing => Body(new BlessingTooltipRequest { ShowIcon = icon }),
+            EntityType.CompanionPet => Body(new CompanionPetTooltipRequest { ShowIcon = icon }),
+            EntityType.Creature => Body(new CreatureTooltipRequest { ShowIcon = icon }),
+            EntityType.Currency => Body(new CurrencyTooltipRequest { ShowIcon = icon }),
+            EntityType.Dungeon => Body(new DungeonTooltipRequest { ShowIcon = icon }),
+            EntityType.Effect => Body(new EffectTooltipRequest { ShowIcon = icon }),
+            EntityType.Gem => Body(new GemTooltipRequest { ShowIcon = icon }),
+            EntityType.GemTrait => Body(new GemTraitTooltipRequest { ShowIcon = icon }),
+            EntityType.Item => Body(new ItemTooltipRequest { ShowIcon = icon, Hero = hero }),
+            EntityType.LegendaryPower => Body(new LegendaryPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.Mount => Body(new MountTooltipRequest { ShowIcon = icon }),
+            EntityType.RelicPower => Body(new RelicPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.SetBonus => Body(new SetBonusTooltipRequest { ShowIcon = icon }),
+            EntityType.SetBonusPower => Body(new SetBonusPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.Talent => Body(new TalentTooltipRequest { ShowIcon = icon }),
+            EntityType.Trait => Body(new TraitTooltipRequest { ShowIcon = icon }),
+            EntityType.TraitPower => Body(new TraitPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.WeaponPower => Body(new WeaponPowerTooltipRequest { ShowIcon = icon, Hero = hero }),
+            _ => null,
+        });
+    }
 
-        var request = new TooltipRequest { ShowIcon = showIcon ? true : null, Hero = hero };
+    private static string? Body<TRequest>(TRequest request)
+        where TRequest : class, ITooltipRequest
+    {
+        var body = JsonSerializer.Serialize(request, CodexJson.Options);
 
-        return new TooltipLink(address, JsonSerializer.Serialize(request, CodexJson.Options));
+        return body == "{}" ? null : body;
     }
 
     public string? Reading(EntityDocument document) =>

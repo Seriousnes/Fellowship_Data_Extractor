@@ -13,7 +13,7 @@ public static class WeaponPowerGroup
             .WithTags(PublicTypes.Label(EntityType.WeaponPower));
 
         group.MapWeaponPowerRecord();
-        group.MapTooltip(EntityType.WeaponPower);
+        group.MapWeaponPowerTooltip();
 
         return group;
     }

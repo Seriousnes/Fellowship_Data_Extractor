@@ -6,7 +6,6 @@ const HOVER = '(hover: hover)';
 
 const BASE = `
 :host { display: block }
-.said { margin: 0; padding: 10px 2px; color: var(--muted); font: 400 13px/1.5 var(--sans) }
 `;
 
 function paint(host, html) {
@@ -21,16 +20,16 @@ function wipe(host) {
 
 const responses = new Map();
 
-function fragment(url, ask) {
-    const key = `${url}\n${ask ?? ''}`;
+function fragment(url, request) {
+    const key = `${url}\n${request ?? ''}`;
 
     if (!responses.has(key)) {
         responses.set(key, fetch(url, {
             method: 'QUERY',
-            headers: ask
+            headers: request
                 ? { accept: 'text/html', 'content-type': 'application/json' }
                 : { accept: 'text/html' },
-            body: ask ?? undefined,
+            body: request ?? undefined,
         })
             .then(async response => ({ ok: response.ok, body: await response.text() }))
             .catch(() => null));
@@ -83,7 +82,7 @@ function draw(link) {
     window.clearTimeout(waiting);
     waiting = window.setTimeout(async () => {
         const mine = ++sequence;
-        const response = await fragment(url, link.dataset.tipAsk);
+        const response = await fragment(url, link.dataset.tipRequest);
 
         if (mine !== sequence || !response?.ok || modal) return;
 
@@ -135,8 +134,8 @@ function hide() {
     }
 }
 
-function withMobile(ask) {
-    return JSON.stringify({ ...JSON.parse(ask || '{}'), mobile: true });
+function withMobile(request) {
+    return JSON.stringify({ ...JSON.parse(request || '{}'), mobile: true });
 }
 
 async function present(link) {
@@ -146,7 +145,7 @@ async function present(link) {
     hide();
 
     const mine = ++sequence;
-    const response = await fragment(url, withMobile(link.dataset.tipAsk));
+    const response = await fragment(url, withMobile(link.dataset.tipRequest));
 
     if (mine !== sequence || !response?.ok) return;
 

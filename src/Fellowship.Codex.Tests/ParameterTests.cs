@@ -188,14 +188,14 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
             : [];
 
     [Fact]
-    public void A_tooltip_takes_the_id_on_the_route_and_everything_else_off_the_shared_request()
+    public void A_tooltip_takes_the_id_on_the_route_and_everything_else_off_its_own_request()
     {
         var operation = Operation("/api/ability/{id}/tooltip", "query");
 
         Assert.Equal(["id"], Parameters(operation).Select(parameter => parameter.Name));
 
         Assert.Equal(
-            $"#/components/schemas/{nameof(TooltipRequest)}",
+            $"#/components/schemas/{nameof(AbilityTooltipRequest)}",
             operation.GetProperty("requestBody")
                 .GetProperty("content")
                 .GetProperty("application/json")
@@ -204,21 +204,21 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
                 .GetString());
 
         Assert.Equal(
-            RequestProperties.Of(typeof(TooltipRequest)).Order(StringComparer.OrdinalIgnoreCase),
-            Properties(Component(nameof(TooltipRequest))).Order(StringComparer.OrdinalIgnoreCase),
+            RequestProperties.Of(typeof(AbilityTooltipRequest)).Order(StringComparer.OrdinalIgnoreCase),
+            Properties(Component(nameof(AbilityTooltipRequest))).Order(StringComparer.OrdinalIgnoreCase),
             StringComparer.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void The_shared_request_alone_declares_the_level_the_tempering_and_the_potential()
+    public void The_item_request_alone_declares_the_level_the_tempering_and_the_potential()
     {
         string[] owned = ["ItemLevel", "Upgrades", "MaxUpgrades", "PotentialPower"];
 
-        var properties = Properties(Component(nameof(TooltipRequest)));
+        var properties = Properties(Component(nameof(ItemTooltipRequest)));
 
         foreach (var name in owned)
         {
-            Assert.True(properties.Contains(name), $"The shared request declares no '{name}' property.");
+            Assert.True(properties.Contains(name), $"The item request declares no '{name}' property.");
         }
 
         foreach (var (path, operation) in Tooltips())
@@ -271,7 +271,7 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public void A_list_property_publishes_the_entries_it_carries_rather_than_the_string_they_were_written_as()
     {
-        var properties = Component(nameof(TooltipRequest)).GetProperty("properties");
+        var properties = Component(nameof(ItemTooltipRequest)).GetProperty("properties");
 
         foreach (var (name, entry, fields) in new[]
         {
@@ -297,7 +297,7 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public void The_stats_property_publishes_one_list_of_rolls_per_stat()
     {
-        var stats = Component(nameof(TooltipRequest)).GetProperty("properties").GetProperty("stats");
+        var stats = Component(nameof(ItemTooltipRequest)).GetProperty("properties").GetProperty("stats");
 
         Assert.True(Kinds(stats).Contains("object"), $"The stats publish {stats}");
         Assert.True(

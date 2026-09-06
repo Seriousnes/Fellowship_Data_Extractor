@@ -127,8 +127,7 @@ public class StateTests : BunitContext
     [Fact]
     public void The_node_the_caller_names_reaches_the_query()
     {
-        var query = TooltipRequests.Read(
-            new TooltipRequest { State = "available" }, export.Store, out var error);
+        var query = TooltipRequests.Read(new TraitTooltipRequest { State = "available" }, out var error);
 
         Assert.Null(error);
         Assert.Equal("available", query.State);

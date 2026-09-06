@@ -63,13 +63,12 @@ public class BlessingCardTests : BunitContext
     [Fact]
     public void The_equipped_tier_the_caller_names_reaches_the_query()
     {
-        var query = TooltipRequests.Read(
-            new TooltipRequest { EquippedTier = 3 }, export.Store, out var error);
+        var query = TooltipRequests.Read(new BlessingTooltipRequest { EquippedTier = 3 }, out var error);
 
         Assert.Null(error);
         Assert.Equal(3, query.EquippedTier);
 
-        Assert.Null(TooltipRequests.Read(new TooltipRequest(), export.Store, out _).EquippedTier);
+        Assert.Null(TooltipRequests.Read(new BlessingTooltipRequest(), out _).EquippedTier);
     }
 
     [Fact]

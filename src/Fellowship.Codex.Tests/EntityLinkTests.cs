@@ -22,8 +22,8 @@ public class EntityLinkTests : BunitContext
         var document = Store.Entities.OfType<ItemDocument>().First(row => row.Icon is not null);
 
         Assert.DoesNotContain(
-            nameof(TooltipRequest.ShowIcon),
-            Draw(document).GetAttribute("data-tip-ask") ?? string.Empty,
+            nameof(ItemTooltipRequest.ShowIcon),
+            Draw(document).GetAttribute("data-tip-request") ?? string.Empty,
             StringComparison.OrdinalIgnoreCase);
     }
 
@@ -36,7 +36,7 @@ public class EntityLinkTests : BunitContext
                 .Add(x => x.Entity, document)
                 .Add(x => x.ShowIcon, true))
             .Find("a")
-            .GetAttribute("data-tip-ask") ?? string.Empty;
+            .GetAttribute("data-tip-request") ?? string.Empty;
 
         Assert.Contains("\"showIcon\":true", body, StringComparison.Ordinal);
     }

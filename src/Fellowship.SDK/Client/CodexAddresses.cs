@@ -26,8 +26,8 @@ public static class CodexAddresses
 
     /// <summary>
     /// The <c>/api</c> route answering one entity's tooltip as a self-contained HTML fragment. The route
-    /// takes a <c>QUERY</c> carrying a <see cref="TooltipRequest"/> body, so the address carries no
-    /// parameters of its own.
+    /// takes a <c>QUERY</c> carrying that type's own <see cref="ITooltipRequest"/> body, so the address
+    /// carries no parameters of its own.
     /// </summary>
     public static string Tooltip(EntityType type, int id) =>
         $"api/{EntityTypes.Slug(type)}/{Number(id)}/tooltip";

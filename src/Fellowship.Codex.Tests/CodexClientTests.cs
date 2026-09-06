@@ -39,13 +39,13 @@ public sealed class CodexClientTests : IClassFixture<RouteTests.Factory>
         }
     }
 
-    private static async Task<Recorder> Sent(TooltipRequest? request)
+    private static async Task<Recorder> Sent(ItemTooltipRequest? request)
     {
         var recorder = new Recorder();
 
         using var http = new HttpClient(recorder);
 
-        await new CodexClient(http).TooltipAsync(EntityType.Item, 5218, request, Stopping);
+        await new CodexClient(http).TooltipAsync(5218, request, Stopping);
 
         return recorder;
     }
@@ -169,8 +169,8 @@ public sealed class CodexClientTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task A_tooltip_comes_back_as_the_fragment_the_codex_draws()
     {
-        var html = await codex.TooltipAsync(
-            EntityType.Ability, Sample(EntityType.Ability), cancellation: Stopping);
+        var html = await codex.TooltipAsync<AbilityTooltipRequest>(
+            Sample(EntityType.Ability), cancellation: Stopping);
 
         Assert.Contains("<", html, StringComparison.Ordinal);
         Assert.Contains("style", html, StringComparison.Ordinal);
@@ -185,7 +185,7 @@ public sealed class CodexClientTests : IClassFixture<RouteTests.Factory>
                 row.Stats is { Count: > 0 } &&
                 RouteTests.Factory.Store.All(EntityType.Item, row.Id).Count == 1);
 
-        var html = await codex.TooltipAsync(EntityType.Item, item.Id, new TooltipRequest { Armor = 303m }, Stopping);
+        var html = await codex.TooltipAsync(item.Id, new ItemTooltipRequest { Armor = 303m }, Stopping);
 
         Assert.Contains("303", html, StringComparison.Ordinal);
     }
@@ -204,7 +204,8 @@ public sealed class CodexClientTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task The_request_the_caller_states_is_the_body_the_query_carries()
     {
-        var sent = await Sent(new TooltipRequest { Hero = "Rime", ItemLevel = 360, RandomStats = ["Haste", "Haste"] });
+        var sent = await Sent(
+            new ItemTooltipRequest { Hero = "Rime", ItemLevel = 360, RandomStats = ["Haste", "Haste"] });
 
         Assert.Equal(
             """{"hero":"Rime","itemLevel":360,"randomStats":["Haste","Haste"]}""",
@@ -214,7 +215,8 @@ public sealed class CodexClientTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task A_stat_rolled_twice_carries_both_magnitudes_as_separate_entries()
     {
-        var sent = await Sent(new TooltipRequest().Rated("Haste", 100m, 250m).Percent("Haste", 10m));
+        var sent = await Sent(
+            new ItemTooltipRequest { Stats = Stats.Rated("Haste", 100m, 250m).Percent("Haste", 10m) });
 
         Assert.Equal("""{"stats":{"Haste":{"rating":[100,250],"percentage":[10]}}}""", sent.Body);
     }

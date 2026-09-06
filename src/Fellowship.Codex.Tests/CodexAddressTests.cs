@@ -7,14 +7,11 @@ namespace Fellowship.Codex.Tests;
 
 public class CodexAddressTests
 {
-    private static readonly TooltipRequest Everything = new()
+    private static readonly ItemTooltipRequest ItemRequest = new()
     {
         ShowIcon = true,
         Mobile = true,
         Hero = "Gunde",
-        Difficulty = 3,
-        State = "equipped",
-        EquippedTier = 5,
         Rarity = "6",
         ItemLevel = 360,
         Upgrades = 4,
@@ -35,38 +32,73 @@ public class CodexAddressTests
         },
     };
 
-    private static IReadOnlySet<string> Declared() => RequestProperties.Of(typeof(TooltipRequest));
+    private static readonly AbilityTooltipRequest AbilityRequest = new()
+    {
+        ShowIcon = true,
+        Mobile = true,
+        Hero = "Gunde",
+        Difficulty = 3,
+        Stats = new Dictionary<string, StatRolls>
+        {
+            ["Strength"] = new() { Rating = [400m, 134m] },
+        },
+    };
 
-    private static JsonDocument Body(TooltipRequest request) =>
+    private static readonly BlessingTooltipRequest BlessingRequest = new()
+    {
+        ShowIcon = true,
+        Mobile = true,
+        State = "equipped",
+        EquippedTier = 5,
+    };
+
+    private static JsonDocument Body<TRequest>(TRequest request) where TRequest : class, ITooltipRequest =>
         JsonDocument.Parse(JsonSerializer.Serialize(request, CodexJson.Options));
 
-    private static IReadOnlyList<string> Names(TooltipRequest request)
+    private static IReadOnlyList<string> Names<TRequest>(TRequest request)
+        where TRequest : class, ITooltipRequest
     {
         using var body = Body(request);
 
         return [.. body.RootElement.EnumerateObject().Select(property => property.Name)];
     }
 
+    private static void Declares<TRequest>(TRequest request) where TRequest : class, ITooltipRequest
+    {
+        var declared = RequestProperties.Of(typeof(TRequest));
+
+        foreach (var name in Names(request)) Assert.True(declared.Contains(name), name);
+    }
+
+    private static void Reaches<TRequest>(TRequest request) where TRequest : class, ITooltipRequest
+    {
+        var written = Names(request).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var declared = RequestProperties.Of(typeof(TRequest));
+
+        foreach (var name in declared) Assert.True(written.Contains(name), name);
+    }
+
     [Fact]
     public void Every_parameter_the_body_writes_is_one_a_tooltip_request_declares()
     {
-        var declared = Declared();
-
-        foreach (var name in Names(Everything)) Assert.True(declared.Contains(name), name);
+        Declares(ItemRequest);
+        Declares(AbilityRequest);
+        Declares(BlessingRequest);
     }
 
     [Fact]
     public void Every_property_of_the_request_reaches_the_body()
     {
-        var written = Names(Everything).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var name in Declared()) Assert.True(written.Contains(name), name);
+        Reaches(ItemRequest);
+        Reaches(AbilityRequest);
+        Reaches(BlessingRequest);
     }
 
     [Fact]
     public void A_stat_is_written_once_per_magnitude_it_stands_at()
     {
-        using var body = Body(new TooltipRequest
+        using var body = Body(new ItemTooltipRequest
         {
             Stats = new Dictionary<string, StatRolls>
             {

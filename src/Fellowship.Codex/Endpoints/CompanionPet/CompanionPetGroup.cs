@@ -13,7 +13,7 @@ public static class CompanionPetGroup
             .WithTags(PublicTypes.Label(EntityType.CompanionPet));
 
         group.MapCompanionPetRecord();
-        group.MapTooltip(EntityType.CompanionPet);
+        group.MapCompanionPetTooltip();
 
         return group;
     }

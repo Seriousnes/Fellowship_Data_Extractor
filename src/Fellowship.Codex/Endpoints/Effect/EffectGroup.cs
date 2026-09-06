@@ -13,7 +13,7 @@ public static class EffectGroup
             .WithTags(PublicTypes.Label(EntityType.Effect));
 
         group.MapEffectRecord();
-        group.MapTooltip(EntityType.Effect);
+        group.MapEffectTooltip();
 
         return group;
     }

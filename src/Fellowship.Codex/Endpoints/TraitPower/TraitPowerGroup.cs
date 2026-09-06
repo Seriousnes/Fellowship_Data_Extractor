@@ -13,7 +13,7 @@ public static class TraitPowerGroup
             .WithTags(PublicTypes.Label(EntityType.TraitPower));
 
         group.MapTraitPowerRecord();
-        group.MapTooltip(EntityType.TraitPower);
+        group.MapTraitPowerTooltip();
 
         return group;
     }

@@ -13,7 +13,7 @@ public static class BlessingGroup
             .WithTags(PublicTypes.Label(EntityType.Blessing));
 
         group.MapBlessingRecord();
-        group.MapTooltip(EntityType.Blessing);
+        group.MapBlessingTooltip();
 
         return group;
     }

@@ -174,7 +174,9 @@ public class TooltipTests : BunitContext
     {
         var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1229);
 
-        var card = Card(ability, new TooltipRequest().Rated("Strength", 100m)).Find("div.lines").TextContent;
+        var request = new AbilityTooltipRequest { Stats = Stats.Rated("Strength", 100m) };
+
+        var card = Card(ability, request).Find("div.lines").TextContent;
 
         Assert.Contains("1,044 - 1,276", card, StringComparison.Ordinal);
         Assert.Contains("365 - 446", card, StringComparison.Ordinal);
@@ -185,9 +187,10 @@ public class TooltipTests : BunitContext
     {
         var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1260);
 
-        var bare = Damage(ability, new TooltipRequest().Rated("Intellect", 1000m));
+        var bare = Damage(ability, new AbilityTooltipRequest { Stats = Stats.Rated("Intellect", 1000m) });
         var sharpened = Damage(
-            ability, new TooltipRequest().Rated("Intellect", 1000m).Rated("Expertise", 5000m));
+            ability,
+            new AbilityTooltipRequest { Stats = Stats.Rated("Intellect", 1000m).Rated("Expertise", 5000m) });
 
         Assert.True(
             sharpened > bare,
@@ -200,11 +203,13 @@ public class TooltipTests : BunitContext
         var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1260);
 
         Assert.Equal(
-            Damage(ability, new TooltipRequest().Rated("Intellect", 1000m)),
-            Damage(ability, new TooltipRequest().Rated("Intellect", 1000m).Rated("Haste", 500m)));
+            Damage(ability, new AbilityTooltipRequest { Stats = Stats.Rated("Intellect", 1000m) }),
+            Damage(
+                ability,
+                new AbilityTooltipRequest { Stats = Stats.Rated("Intellect", 1000m).Rated("Haste", 500m) }));
     }
 
-    private decimal Damage(EntityDocument entity, TooltipRequest request)
+    private decimal Damage(EntityDocument entity, AbilityTooltipRequest request)
     {
         var write = Write(entity, request);
         var number = System.Text.RegularExpressions.Regex.Match(write, @"\d[\d,]*(\.\d+)?");
@@ -214,12 +219,19 @@ public class TooltipTests : BunitContext
         return decimal.Parse(number.Value.Replace(",", ""));
     }
 
-    private string Write(EntityDocument entity, TooltipRequest request) =>
+    private string Write(EntityDocument entity, AbilityTooltipRequest request) =>
         Card(entity, request).Find("p.desc").TextContent;
 
-    private IRenderedComponent<Components.Tooltip.Tooltip> Card(EntityDocument entity, TooltipRequest request)
+    private IRenderedComponent<Components.Tooltip.Tooltip> Card(
+        EntityDocument entity, AbilityTooltipRequest request)
     {
-        var query = TooltipRequests.Read(request, Store, out _);
+        var query = StatQuery.Read(request.Stats, Store.Stats, out _) with
+        {
+            ShowIcon = request.ShowIcon == true,
+            Mobile = request.Mobile == true,
+            Hero = StatQuery.NullIfEmpty(request.Hero),
+            Difficulty = request.Difficulty,
+        };
 
         return Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, entity)

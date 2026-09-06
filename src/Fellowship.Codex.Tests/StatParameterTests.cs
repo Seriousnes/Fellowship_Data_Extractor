@@ -67,7 +67,7 @@ public sealed class PublishedStatTests : IClassFixture<RouteTests.Factory>
             var key = stat.Replace(" ", string.Empty, StringComparison.Ordinal);
 
             using var response = await client.TooltipAsync(
-                EntityType.Ability, id, new TooltipRequest().Rated(key, 10m));
+                id, new AbilityTooltipRequest { Stats = Stats.Rated(key, 10m) });
 
             Assert.True(response.IsSuccessStatusCode, $"'{key}' answered {(int)response.StatusCode}.");
         }
@@ -79,7 +79,7 @@ public sealed class PublishedStatTests : IClassFixture<RouteTests.Factory>
         var id = RouteTests.Factory.Store.Entities.First(row => row is AbilityDocument).Id;
 
         using var response = await client.TooltipAsync(
-            EntityType.Ability, id, new TooltipRequest().Rated("Nonesuch", 10m));
+            id, new AbilityTooltipRequest { Stats = Stats.Rated("Nonesuch", 10m) });
 
         var body = await response.BodyAsync();
 
@@ -95,7 +95,7 @@ public sealed class PublishedStatTests : IClassFixture<RouteTests.Factory>
             .First(row => row.Stats is { Count: > 0 })
             .Id;
 
-        var html = await client.TooltipHtmlAsync(EntityType.Item, id, new TooltipRequest { Armor = 303m });
+        var html = await client.TooltipHtmlAsync(id, new ItemTooltipRequest { Armor = 303m });
 
         Assert.Contains("303", html, StringComparison.Ordinal);
     }

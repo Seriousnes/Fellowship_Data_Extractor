@@ -53,10 +53,12 @@ public sealed class CodexClient
         ReadAsync<CatalogResponse>(CodexAddresses.Catalog, cancellation);
 
     [RequiresUnreferencedCode(TrimWarning)]
-    public async Task<string> TooltipAsync(
-        EntityType type, int id, TooltipRequest? request = null, CancellationToken cancellation = default)
+    public async Task<string> TooltipAsync<TRequest>(
+        int id, TRequest? request = null, CancellationToken cancellation = default)
+        where TRequest : class, ITooltipRequest
     {
-        using var message = new HttpRequestMessage(HttpMethod.Query, CodexAddresses.Tooltip(type, id));
+        using var message = new HttpRequestMessage(
+            HttpMethod.Query, CodexAddresses.Tooltip(TRequest.Type, id));
 
         message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
 

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 
 using Fellowship.SDK.Client;
 
@@ -28,7 +29,7 @@ public sealed class QueryTransportTests : IClassFixture<RouteTests.Factory>
     {
         var ability = Ability();
 
-        using var response = await client.TooltipAsync(EntityType.Ability, ability.Id);
+        using var response = await client.TooltipAsync<AbilityTooltipRequest>(ability.Id);
 
         var card = await response.BodyAsync();
 
@@ -36,10 +37,76 @@ public sealed class QueryTransportTests : IClassFixture<RouteTests.Factory>
             response.StatusCode == HttpStatusCode.OK,
             $"A QUERY carrying no body answered {(int)response.StatusCode}, not 200. Body: {card}");
 
-        var empty = await client.TooltipHtmlAsync(EntityType.Ability, ability.Id, new TooltipRequest());
+        var empty = await client.TooltipHtmlAsync(ability.Id, new AbilityTooltipRequest());
 
         Assert.Equal(empty, card);
     }
+
+    [Fact]
+    public async Task A_type_takes_stats_only_where_a_stat_the_caller_sends_changes_the_card()
+    {
+        var everyStat = "\"stats\":{" + string.Join(
+            ",", Store.Stats.Names.Select(name => $"{JsonSerializer.Serialize(name)}:{{\"rating\":[5000]}}")) + "}";
+
+        var takers = new List<EntityType>();
+
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
+        {
+            var drawn = await Draws(type, everyStat);
+
+            var declared = TooltipRequestTypes.Find(type)!
+                .GetProperty(nameof(ItemTooltipRequest.Stats)) is not null;
+
+            Assert.True(
+                drawn == declared,
+                declared
+                    ? $"{type} declares Stats, but no {type} in the export draws differently for one."
+                    : $"{type} draws differently for a stat and no longer takes one. " +
+                        "Give its request Stats back.");
+
+            if (declared) takers.Add(type);
+        }
+
+        Assert.NotEmpty(takers);
+    }
+
+    private async Task<bool> Draws(EntityType type, string stats)
+    {
+        var drawn = Store.Entities.Where(document => EntityTypes.TypeOf(document) == type).ToArray();
+
+        var compared = 0;
+
+        foreach (var document in drawn.Where(Scaled).Concat(drawn.Where(name => !Scaled(name))))
+        {
+            if (compared == 40) break;
+
+            var address = $"/{CodexAddresses.Tooltip(type, document.Id)}";
+
+            var named = Store.All(type, document.Id).Count > 1 && Store.Wearer(document) is { } wearer
+                ? $"\"hero\":{JsonSerializer.Serialize(wearer.Name)},"
+                : string.Empty;
+
+            using var bare = await client.TooltipAsync(address, $"{{{named.TrimEnd(',')}}}");
+            using var sent = await client.TooltipAsync(address, $"{{{named}{stats}}}");
+
+            if (!bare.IsSuccessStatusCode) continue;
+
+            compared++;
+
+            if (await bare.BodyAsync() != await sent.BodyAsync()) return true;
+        }
+
+        Assert.True(compared > 0, $"No {type} could be drawn, so nothing was compared.");
+
+        return false;
+    }
+
+    private static bool Scaled(EntityDocument document) =>
+        document is ItemDocument { Stats: { Count: > 0 } } ||
+        CodexView.PlaceholdersOf(document).Any(placeholder =>
+            placeholder.Coefficient is not null ||
+            placeholder.Tickrate == true ||
+            placeholder.ScalesWithExpertise == true);
 
     [Fact]
     public async Task A_body_that_is_not_json_is_refused_as_a_bad_request()
@@ -58,12 +125,31 @@ public sealed class QueryTransportTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public async Task A_parameter_belonging_to_another_type_of_card_is_read_past()
+    {
+        var ability = Ability();
+
+        using var message = new HttpRequestMessage(
+            HttpMethod.Query, $"/{CodexAddresses.Tooltip(EntityType.Ability, ability.Id)}")
+        {
+            Content = new StringContent("{\"potentialPower\":500}", Encoding.UTF8, "application/json"),
+        };
+
+        using var response = await client.SendAsync(message, Xunit.TestContext.Current.CancellationToken);
+
+        var card = await response.BodyAsync();
+
+        Assert.True(response.IsSuccessStatusCode, card);
+        Assert.Equal(await client.TooltipHtmlAsync<AbilityTooltipRequest>(ability.Id), card);
+    }
+
+    [Fact]
     public async Task A_stat_the_table_does_not_carry_is_refused_by_name()
     {
         var ability = Ability();
 
         using var response = await client.TooltipAsync(
-            EntityType.Ability, ability.Id, new TooltipRequest().Rated("Nonesuch", 10m));
+            ability.Id, new AbilityTooltipRequest { Stats = Stats.Rated("Nonesuch", 10m) });
 
         var body = await response.BodyAsync();
 
@@ -81,18 +167,17 @@ public sealed class QueryTransportTests : IClassFixture<RouteTests.Factory>
         var ability = Hastening();
         var row = Store.Stats.Row(resolved);
 
-        var bare = await client.TooltipHtmlAsync(EntityType.Ability, ability.Id, new TooltipRequest());
+        var bare = await client.TooltipHtmlAsync(ability.Id, new AbilityTooltipRequest());
 
         var rated = await client.TooltipHtmlAsync(
-            EntityType.Ability, ability.Id, new TooltipRequest().Rated(HasteStat, 1000m));
+            ability.Id, new AbilityTooltipRequest { Stats = Stats.Rated(HasteStat, 1000m) });
 
         var percentage = await client.TooltipHtmlAsync(
-            EntityType.Ability, ability.Id, new TooltipRequest().Percent(HasteStat, 10m));
+            ability.Id, new AbilityTooltipRequest { Stats = Stats.Percent(HasteStat, 10m) });
 
         var both = await client.TooltipHtmlAsync(
-            EntityType.Ability,
             ability.Id,
-            new TooltipRequest().Rated(HasteStat, 1000m).Percent(HasteStat, 10m));
+            new AbilityTooltipRequest { Stats = Stats.Rated(HasteStat, 1000m).Percent(HasteStat, 10m) });
 
         Assert.Contains(Haste(StatConversion.FromPercentage(10m, row)), percentage, StringComparison.Ordinal);
         Assert.NotEqual(bare, rated);
@@ -107,10 +192,10 @@ public sealed class QueryTransportTests : IClassFixture<RouteTests.Factory>
         var (item, label) = Declared();
 
         var separate = await client.TooltipHtmlAsync(
-            EntityType.Item, item.Id, new TooltipRequest().Rated(label, 100m, 250m));
+            item.Id, new ItemTooltipRequest { Stats = Stats.Rated(label, 100m, 250m) });
 
         var single = await client.TooltipHtmlAsync(
-            EntityType.Item, item.Id, new TooltipRequest().Rated(label, 350m));
+            item.Id, new ItemTooltipRequest { Stats = Stats.Rated(label, 350m) });
 
         Assert.Contains(
             $"<span class=\"v random\">&#x2B;350</span><span>{label}</span>", separate, StringComparison.Ordinal);
@@ -194,11 +279,11 @@ public sealed class QueryCacheTests : IClassFixture<QueryCacheTests.Factory>
         var ability = AbilityWithArt();
         var before = cache.Keys.Count;
 
-        var first = await client.TooltipHtmlAsync(EntityType.Ability, ability.Id, new TooltipRequest());
-        var again = await client.TooltipHtmlAsync(EntityType.Ability, ability.Id, new TooltipRequest());
+        var first = await client.TooltipHtmlAsync(ability.Id, new AbilityTooltipRequest());
+        var again = await client.TooltipHtmlAsync(ability.Id, new AbilityTooltipRequest());
 
         var withArt = await client.TooltipHtmlAsync(
-            EntityType.Ability, ability.Id, new TooltipRequest { ShowIcon = true });
+            ability.Id, new AbilityTooltipRequest { ShowIcon = true });
 
         var keys = cache.Keys.Skip(before).ToArray();
 
