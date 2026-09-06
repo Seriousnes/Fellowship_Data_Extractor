@@ -26,7 +26,7 @@ public static class StatConversion
     {
         if (attribute.Brackets is not { Count: > 0 } brackets) return raw;
 
-        var kept = 0m;
+        var total = 0m;
         var floor = 0m;
 
         foreach (var bracket in brackets)
@@ -35,14 +35,14 @@ public static class StatConversion
             if (ceiling <= floor) continue;
 
             var inside = Math.Min(raw, ceiling) - floor;
-            if (inside <= 0) return kept;
+            if (inside <= 0) return total;
 
-            kept += inside * (decimal)bracket.PenaltyPercentage;
+            total += inside * (decimal)bracket.PenaltyPercentage;
             floor = ceiling;
         }
 
-        if (raw > floor) kept += (raw - floor) * (decimal)attribute.FinalPenaltyPercentage;
+        if (raw > floor) total += (raw - floor) * (decimal)attribute.FinalPenaltyPercentage;
 
-        return kept;
+        return total;
     }
 }

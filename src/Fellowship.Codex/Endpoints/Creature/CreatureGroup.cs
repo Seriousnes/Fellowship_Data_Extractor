@@ -13,7 +13,7 @@ public static class CreatureGroup
             .WithTags(PublicTypes.Label(EntityType.Creature));
 
         group.MapCreatureRecord();
-        group.MapCreatureTooltip();
+        group.MapTooltip(EntityType.Creature);
 
         return group;
     }

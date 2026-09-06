@@ -13,9 +13,9 @@ public sealed class S3Storage(IAmazonS3 client, S3Settings settings) : IStorage
     public static S3Storage FromBucket(string bucket) =>
         new(new AmazonS3Client(), new S3Settings(bucket, null, null));
 
-    public Uri Address(string name) => new(Located(name));
+    public Uri Address(string name) => new(Url(name));
 
-    private string Located(string name)
+    private string Url(string name)
     {
         if (settings.PublicUrl is { } publicUrl) return $"{publicUrl.TrimEnd('/')}/{name}";
 
@@ -70,8 +70,8 @@ public sealed class S3Storage(IAmazonS3 client, S3Settings settings) : IStorage
 
             return await reader.ReadToEndAsync(cancellationToken);
         }
-        catch (AmazonS3Exception absent)
-            when (absent.StatusCode == HttpStatusCode.NotFound || absent.ErrorCode == "NoSuchKey")
+        catch (AmazonS3Exception notFound)
+            when (notFound.StatusCode == HttpStatusCode.NotFound || notFound.ErrorCode == "NoSuchKey")
         {
             return null;
         }

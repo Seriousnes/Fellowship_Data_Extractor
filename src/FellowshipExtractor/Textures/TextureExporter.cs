@@ -9,7 +9,7 @@ namespace FellowshipExtractor.Textures;
 public readonly record struct TextureBytes(
     byte[]? Content, string? Extension, int Width, int Height, string? PixelFormat, string? Error)
 {
-    public bool Written => Content is not null;
+    public bool HasContent => Content is not null;
 }
 
 public static class TextureExporter

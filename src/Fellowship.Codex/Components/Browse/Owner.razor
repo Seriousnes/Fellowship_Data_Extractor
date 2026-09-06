@@ -8,7 +8,7 @@
         <a class="cx-owner" href="@HeroList(hero.ToString())" style="color:@Ui.HeroColour(hero.ToString())">@hero</a>
     }
 }
-else if (Holder is { } holder && Named(holder) is { } name)
+else if (Holder is { } holder && Name(holder) is { } name)
 {
     @if (Ui.Store.All(holder.Type, holder.Id).Count > 0)
     {
@@ -30,6 +30,6 @@ else if (Holder is { } holder && Named(holder) is { } name)
     private string HeroList(string hero) =>
         $"{PublicTypes.Where(Type)}&hero={Uri.EscapeDataString(hero)}";
 
-    private string? Named(EntityReference holder) =>
+    private string? Name(EntityReference holder) =>
         holder.Name ?? (Ui.Store.All(holder.Type, holder.Id) is [var first, ..] ? Ui.Name(first) : null);
 }

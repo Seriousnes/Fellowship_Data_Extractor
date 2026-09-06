@@ -10,9 +10,9 @@ namespace Fellowship.Codex.Endpoints;
 
 public static class RequestProperties
 {
-    private static readonly ConcurrentDictionary<Type, FrozenSet<string>> Declared = new();
+    private static readonly ConcurrentDictionary<Type, FrozenSet<string>> Properties = new();
 
-    public static IReadOnlySet<string> Of(Type request) => Declared.GetOrAdd(request, Read);
+    public static IReadOnlySet<string> Of(Type request) => Properties.GetOrAdd(request, Read);
 
     private static FrozenSet<string> Read(Type request) =>
         request.GetProperties()

@@ -13,7 +13,7 @@ public static class AbilityGroup
             .WithTags(PublicTypes.Label(EntityType.Ability));
 
         group.MapAbilityRecord();
-        group.MapAbilityTooltip();
+        group.MapTooltip(EntityType.Ability);
 
         return group;
     }

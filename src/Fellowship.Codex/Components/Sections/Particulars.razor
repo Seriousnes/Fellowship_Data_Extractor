@@ -23,7 +23,8 @@
                                 }
                                 else
                                 {
-                                    <a href="@fact.Href" data-tip="@fact.Tip">@fact.Value</a>
+                                    <a href="@fact.Href" data-tip="@fact.Tip?.Address"
+                                       data-tip-ask="@fact.Tip?.Body">@fact.Value</a>
                                 }
                             </Fact>
                         }
@@ -104,7 +105,7 @@
     [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 
     [Parameter]
-    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts { get; set; } = [];
+    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Facts { get; set; } = [];
 
     [Parameter] public IReadOnlyList<(string Label, string Href)> Schools { get; set; } = [];
 

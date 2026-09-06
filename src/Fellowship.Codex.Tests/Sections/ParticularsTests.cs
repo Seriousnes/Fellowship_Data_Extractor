@@ -16,7 +16,7 @@ public class ParticularsTests : BunitContext
     [Fact]
     public void Renders_the_facts_in_two_tables_with_the_odd_row_in_the_first()
     {
-        IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> facts =
+        IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> facts =
         [
             ("Cooldown", "2.5", "s", null, null),
             ("Range", "30", "m", null, null),
@@ -35,7 +35,7 @@ public class ParticularsTests : BunitContext
     [Fact]
     public void Renders_an_empty_second_table_for_a_single_fact()
     {
-        IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> facts =
+        IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> facts =
         [
             ("Cooldown", "2.5", "s", null, null),
         ];
@@ -51,9 +51,9 @@ public class ParticularsTests : BunitContext
     [Fact]
     public void Renders_a_linked_fact_cell_with_its_tip()
     {
-        IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> facts =
+        IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> facts =
         [
-            ("Resource", "Mana", null, "/browse?resource=Mana", "/api/effect/9/tooltip"),
+            ("Resource", "Mana", null, "/browse?resource=Mana", new TooltipLink("/api/effect/9/tooltip", null)),
         ];
 
         var cut = Render<Particulars>(p => p.AddCascadingValue(new ItemDocument { Id = 1 }).Add(x => x.Facts, facts));

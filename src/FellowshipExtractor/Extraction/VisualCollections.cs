@@ -42,11 +42,11 @@ public sealed class VisualCollections
         }
     }
 
-    public int RungCount(string collectionPath) => Skins(collectionPath)?.Properties.Count ?? 0;
+    public int SkinCount(string collectionPath) => Skins(collectionPath)?.Properties.Count ?? 0;
 
-    public string? Icon(string collectionPath, int rung, string slotType)
+    public string? Icon(string collectionPath, int index, string slotType)
     {
-        var key = $"{collectionPath}#{rung}#{slotType}";
+        var key = $"{collectionPath}#{index}#{slotType}";
         if (_icons.TryGetValue(key, out var cached)) return cached;
 
         return _icons[key] = Read();
@@ -54,9 +54,9 @@ public sealed class VisualCollections
         string? Read()
         {
             if (Skins(collectionPath) is not { } skins) return null;
-            if (rung < 0 || rung >= skins.Properties.Count) return null;
+            if (index < 0 || index >= skins.Properties.Count) return null;
 
-            if (skins.Properties[rung]?.GenericValue is not FScriptStruct { StructType: IPropertyHolder skin })
+            if (skins.Properties[index]?.GenericValue is not FScriptStruct { StructType: IPropertyHolder skin })
             {
                 return null;
             }

@@ -74,7 +74,7 @@ public sealed class DynamicAbilityRanks
                 foreach (var pool in Tags(row, PoolsField))
                 {
                     if (!pool.StartsWith(PoolTagPrefix, StringComparison.OrdinalIgnoreCase)) continue;
-                    if (slotNames.Named(pool[PoolTagPrefix.Length..]) is { } named) worn.Add(named.Shipped);
+                    if (slotNames.Find(pool[PoolTagPrefix.Length..]) is { } named) worn.Add(named.Shipped);
                 }
 
                 if (!heroes.TryGetValue(blessing, out var byHero))

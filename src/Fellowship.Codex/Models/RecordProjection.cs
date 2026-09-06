@@ -296,7 +296,7 @@ public static class RecordProjection
         GemSlot = document.GemSlot,
         UniqueEquipped = document.UniqueEquipped,
         Rarity = view.Rarity(document),
-        Rarities = Rungs(document.Rarities, view),
+        Rarities = RarityNames(document.Rarities, view),
         SetBonus = References(document.SetBonus, view, origin),
         Stats = Slots(document, view),
         RuleSet = document.RuleSet,
@@ -304,7 +304,7 @@ public static class RecordProjection
         Acquire = document.Acquire,
         TitleText = document.TitleText,
         Icon = Art(document.Icon, view),
-        IconByRarity = Rungs(document, view),
+        IconByRarity = IconsByRarity(document, view),
         Grants = Reference(document.Grants, view, origin),
         LegendaryStats = Rolls(document.LegendaryStats, view),
         Sources = Sourced(document.Sources, view, origin),
@@ -518,7 +518,7 @@ public static class RecordProjection
 
     private static string? Art(string? icon, ICodexViewService view) => icon is null ? null : view.Icon(icon);
 
-    private static IReadOnlyList<T>? Some<T>(IReadOnlyList<T>? values) => values is { Count: > 0 } held ? held : null;
+    private static IReadOnlyList<T>? Some<T>(IReadOnlyList<T>? values) => values is { Count: > 0 } list ? list : null;
 
     internal static IReadOnlyList<string>? Named(IEnumerable<string> values) =>
         values.ToArray() is { Length: > 0 } named ? named : null;
@@ -535,8 +535,8 @@ public static class RecordProjection
 
     private static IReadOnlyDictionary<string, string>? Readings(
         IReadOnlyDictionary<string, string>? byHero, ICodexViewService view, IReadOnlyList<Placeholder> tokens) =>
-        byHero is { Count: > 0 } written
-            ? written.ToDictionary(entry => entry.Key, entry => view.PlainText(entry.Value, tokens, [])!)
+        byHero is { Count: > 0 } entries
+            ? entries.ToDictionary(entry => entry.Key, entry => view.PlainText(entry.Value, tokens, [])!)
             : null;
 
     internal static RecordReference? Reference(EntityReference? source, ICodexViewService view, string origin) =>
@@ -558,8 +558,8 @@ public static class RecordProjection
             : null;
 
     private static IReadOnlyList<CreatureAbilityRecord>? Wielded(
-        IReadOnlyList<CreatureAbility>? held, ICodexViewService view, string origin) =>
-        held?.Select(slot => new CreatureAbilityRecord(
+        IReadOnlyList<CreatureAbility>? abilities, ICodexViewService view, string origin) =>
+        abilities?.Select(slot => new CreatureAbilityRecord(
                 Referenced(slot.Ability.Type, slot.Ability.Id, view, origin), slot.Phase, slot.Shown))
             .ToArray() is { Length: > 0 } wielded
             ? wielded
@@ -600,21 +600,22 @@ public static class RecordProjection
             ? [.. slots.Select(slot => new StatSlotRecord(view.Store.StatName(slot.Stat), slot.Weight, slot.Kind))]
             : null;
 
-    private static IReadOnlyList<string>? Rungs(IReadOnlyList<Rarity>? rarities, ICodexViewService view) =>
-        rarities?.Select(rung => view.RarityName(rung)).OfType<string>().ToArray() is { Length: > 0 } named
+    private static IReadOnlyList<string>? RarityNames(IReadOnlyList<Rarity>? rarities, ICodexViewService view) =>
+        rarities?.Select(rarity => view.RarityName(rarity)).OfType<string>().ToArray() is { Length: > 0 } named
             ? named
             : null;
 
-    private static IReadOnlyDictionary<string, string>? Rungs(ItemDocument document, ICodexViewService view)
+    private static IReadOnlyDictionary<string, string>? IconsByRarity(
+        ItemDocument document, ICodexViewService view)
     {
         if (document.IconByRarity is not { Count: > 0 } art) return null;
 
         var printed = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        foreach (var (rung, icon) in art)
+        foreach (var (rarity, icon) in art)
         {
             var known = view.Store.Settings.Rarities.FirstOrDefault(entry =>
-                string.Equals(entry.Name, rung, StringComparison.OrdinalIgnoreCase));
+                string.Equals(entry.Name, rarity, StringComparison.OrdinalIgnoreCase));
 
             if (known is not null) printed[known.DisplayName] = view.Icon(icon);
         }

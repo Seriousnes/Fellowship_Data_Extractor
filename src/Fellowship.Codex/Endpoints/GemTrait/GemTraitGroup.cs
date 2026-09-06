@@ -13,7 +13,7 @@ public static class GemTraitGroup
             .WithTags(PublicTypes.Label(EntityType.GemTrait));
 
         group.MapGemTraitRecord();
-        group.MapGemTraitTooltip();
+        group.MapTooltip(EntityType.GemTrait);
 
         return group;
     }

@@ -20,9 +20,9 @@
 </div>
 
 @code {
-    [CascadingParameter] public EntityDocument Shown { get; set; } = default!;
+    [CascadingParameter] public EntityDocument Document { get; set; } = default!;
 
-    private BlessingDocument Entity => (BlessingDocument)Shown;
+    private BlessingDocument Entity => (BlessingDocument)Document;
 
     [Parameter] public TooltipQuery Query { get; set; } = new();
 

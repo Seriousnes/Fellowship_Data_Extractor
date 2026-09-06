@@ -1,8 +1,8 @@
 const SHOW = 150;
 const HIDE = 100;
 const LINGER = 260;
-const DESK = '(min-width: 900px)';
-const HOVERS = '(hover: hover)';
+const DESKTOP = '(min-width: 900px)';
+const HOVER = '(hover: hover)';
 
 const BASE = `
 :host { display: block }
@@ -19,20 +19,28 @@ function wipe(host) {
     if (host?.shadowRoot) host.shadowRoot.replaceChildren();
 }
 
-const answers = new Map();
+const responses = new Map();
 
-function fragment(url) {
-    if (!answers.has(url)) {
-        answers.set(url, fetch(url, { headers: { accept: 'text/html' } })
+function fragment(url, ask) {
+    const key = `${url}\n${ask ?? ''}`;
+
+    if (!responses.has(key)) {
+        responses.set(key, fetch(url, {
+            method: 'QUERY',
+            headers: ask
+                ? { accept: 'text/html', 'content-type': 'application/json' }
+                : { accept: 'text/html' },
+            body: ask ?? undefined,
+        })
             .then(async response => ({ ok: response.ok, body: await response.text() }))
             .catch(() => null));
     }
 
-    return answers.get(url);
+    return responses.get(key);
 }
 
-const desk = () => window.matchMedia(DESK).matches;
-const hovers = () => window.matchMedia(HOVERS).matches;
+const isDesktop = () => window.matchMedia(DESKTOP).matches;
+const canHover = () => window.matchMedia(HOVER).matches;
 
 function lock(held) {
     document.documentElement.style.overflow = held ? 'hidden' : '';
@@ -75,14 +83,14 @@ function draw(link) {
     window.clearTimeout(waiting);
     waiting = window.setTimeout(async () => {
         const mine = ++sequence;
-        const answer = await fragment(url);
+        const response = await fragment(url, link.dataset.tipAsk);
 
-        if (mine !== sequence || !answer?.ok || modal) return;
+        if (mine !== sequence || !response?.ok || modal) return;
 
         const box = layer();
         if (!box) return;
 
-        paint(box, answer.body);
+        paint(box, response.body);
         box.hidden = false;
         anchored = link;
         place(link);
@@ -127,8 +135,8 @@ function hide() {
     }
 }
 
-function mobile(url) {
-    return url + (url.includes('?') ? '&' : '?') + 'mobile';
+function withMobile(ask) {
+    return JSON.stringify({ ...JSON.parse(ask || '{}'), mobile: true });
 }
 
 async function present(link) {
@@ -138,14 +146,14 @@ async function present(link) {
     hide();
 
     const mine = ++sequence;
-    const answer = await fragment(mobile(url));
+    const response = await fragment(url, withMobile(link.dataset.tipAsk));
 
-    if (mine !== sequence || !answer?.ok) return;
+    if (mine !== sequence || !response?.ok) return;
 
     const box = layer();
     if (!box) return;
 
-    const root = paint(box, answer.body);
+    const root = paint(box, response.body);
     const open = root.querySelector('.fx-modal .open');
     if (open && link.href) open.href = link.href;
 
@@ -217,7 +225,7 @@ function openMenu(menu) {
     }
 
     menu.setAttribute('open', '');
-    if (desk()) nudge(menu);
+    if (isDesktop()) nudge(menu);
 }
 
 function shutFlies(keep) {
@@ -230,7 +238,7 @@ function openFly(fly) {
     shutFlies(fly);
 
     fly.setAttribute('open', '');
-    if (desk()) flip(fly);
+    if (isDesktop()) flip(fly);
 }
 
 let lingering = 0;
@@ -250,7 +258,7 @@ function siblings(link) {
 }
 
 function coarse(event) {
-    return event.pointerType ? event.pointerType !== 'mouse' : !hovers();
+    return event.pointerType ? event.pointerType !== 'mouse' : !canHover();
 }
 
 function kindsOf(select) {
@@ -320,7 +328,7 @@ document.addEventListener('pointerover', event => {
 
     const nav = event.target.closest?.('.cx-menus');
 
-    if (nav && desk()) {
+    if (nav && isDesktop()) {
         stay();
 
         const opener = event.target.closest('.cx-menu-open');
@@ -347,11 +355,11 @@ document.addEventListener('pointerout', event => {
 
     const nav = event.target.closest?.('.cx-menus');
 
-    if (nav && desk() && !nav.contains(event.relatedTarget)) linger();
+    if (nav && isDesktop() && !nav.contains(event.relatedTarget)) linger();
 });
 
 document.addEventListener('focusin', event => {
-    if (!hovers()) return;
+    if (!canHover()) return;
 
     const link = event.target.closest?.('[data-tip]');
     if (link) draw(link);
@@ -363,7 +371,7 @@ document.addEventListener('focusout', event => {
 
 document.addEventListener('toggle', event => {
     const target = event.target;
-    if (!(target instanceof HTMLDetailsElement) || !target.open || !desk()) return;
+    if (!(target instanceof HTMLDetailsElement) || !target.open || !isDesktop()) return;
 
     if (target.matches('.cx-menu')) nudge(target);
     if (target.matches('.cx-menu-fly')) flip(target);
@@ -456,7 +464,7 @@ document.addEventListener('keydown', event => {
 
     const nav = event.target.closest?.('.cx-menus');
 
-    if (nav && desk()) {
+    if (nav && isDesktop()) {
         const opener = event.target.closest('.cx-menu-open');
 
         if (opener) {
@@ -537,7 +545,7 @@ window.addEventListener('scroll', () => { if (anchored) place(anchored); }, { pa
 
 window.addEventListener('resize', () => {
     if (!modal) hide();
-    if (desk()) shutDrawer();
+    if (isDesktop()) shutDrawer();
 });
 
 function arrived() {

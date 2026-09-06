@@ -13,7 +13,7 @@ public static class RelicPowerGroup
             .WithTags(PublicTypes.Label(EntityType.RelicPower));
 
         group.MapRelicPowerRecord();
-        group.MapRelicPowerTooltip();
+        group.MapTooltip(EntityType.RelicPower);
 
         return group;
     }

@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-<figure class="fx-trait-crest @(Padlocked ? "locked" : null)" style="--fx-node:url(@Plate);--fx-node-width:@Across">
+<figure class="fx-trait-crest @(Padlocked ? "locked" : null)" style="--fx-node:url(@Plate);--fx-node-width:@WidthPx">
     <div class="well">@if (Art is { } art) { <img alt="" src="@art"> }</div>
     @if (Padlocked)
     {
@@ -21,5 +21,5 @@
 
     private string? Art => Ui.Icon(Entity.Icon);
 
-    private string Across => Width.ToString(CultureInfo.InvariantCulture) + "px";
+    private string WidthPx => Width.ToString(CultureInfo.InvariantCulture) + "px";
 }

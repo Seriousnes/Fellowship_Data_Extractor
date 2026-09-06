@@ -23,23 +23,23 @@ public static class TokenCalculations
     public static TokenQuantity Of(int? calculation) =>
         calculation is { } ordinal && Quantities.TryGetValue(ordinal, out var quantity)
             ? quantity
-            : TokenQuantity.Unsettled;
+            : TokenQuantity.Unknown;
 
-    public static TokenQuantity Named(string tokenName)
+    public static TokenQuantity ForName(string tokenName)
     {
         foreach (var quantity in Enum.GetValues<TokenQuantity>())
         {
-            if (quantity == TokenQuantity.Unsettled) continue;
+            if (quantity == TokenQuantity.Unknown) continue;
             if (tokenName.EndsWith(quantity.ToString(), StringComparison.OrdinalIgnoreCase)) return quantity;
         }
 
-        return TokenQuantity.Unsettled;
+        return TokenQuantity.Unknown;
     }
 
     public static IReadOnlyList<CurveBinding> Select(
         IReadOnlyList<CurveBinding> bindings, TokenQuantity quantity)
     {
-        if (quantity == TokenQuantity.Unsettled) return bindings;
+        if (quantity == TokenQuantity.Unknown) return bindings;
 
         var selected = bindings.Where(b => Holds(b.Property, quantity)).ToArray();
         return selected.Length == 0 ? bindings : selected;

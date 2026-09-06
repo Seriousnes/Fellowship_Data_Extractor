@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 
+using Fellowship.SDK.Client;
+
 namespace Fellowship.Codex.Tests;
 
 public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassFixture<RouteTests.Factory>
@@ -184,7 +186,7 @@ public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassF
 
         Assert.Equal(TalentPlan.Points, spent);
 
-        var page = await Draw($"{Asking(hero)}&picks={TalentPlan.Written(tree, taken)}");
+        var page = await Draw($"{Asking(hero)}&picks={TalentPlan.Write(tree, taken)}");
         var cells = Cell(page);
 
         Assert.Equal(
@@ -215,7 +217,7 @@ public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassF
             spent += node.Cost;
         }
 
-        var page = await Draw($"{Asking(hero)}&picks={TalentPlan.Written(tree, affordable)}");
+        var page = await Draw($"{Asking(hero)}&picks={TalentPlan.Write(tree, affordable)}");
 
         Assert.Contains(
             $"costs {dearest.Cost}, and only {TalentPlan.Points - spent} of the {TalentPlan.Points} points are left.",
@@ -306,7 +308,7 @@ public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassF
             spent += talent.Cost;
         }
 
-        var full = await Draw($"{Asking(hero)}&picks={TalentPlan.Written(tree, taken)}");
+        var full = await Draw($"{Asking(hero)}&picks={TalentPlan.Write(tree, taken)}");
 
         Assert.Equal(
             Whole(full).Length - taken.Count,
@@ -344,7 +346,7 @@ public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassF
             spent += node.Cost;
         }
 
-        var page = await Draw($"{Asking(hero)}&picks={TalentPlan.Written(tree, taken)}");
+        var page = await Draw($"{Asking(hero)}&picks={TalentPlan.Write(tree, taken)}");
 
         Assert.Equal(
             taken.Count, Whole(page).Count(cell => cell.Contains(Slot("selected"), StringComparison.Ordinal)));
@@ -364,7 +366,7 @@ public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassF
 
         foreach (var node in Tree(hero).SelectMany(row => row.Nodes))
         {
-            Assert.Contains($"data-tip=\"{Ui().Tip(node.Talent)}\"", page, StringComparison.Ordinal);
+            Assert.Contains($"data-tip=\"{Ui().Tip(node.Talent).Address}\"", page, StringComparison.Ordinal);
         }
     }
 
@@ -386,7 +388,7 @@ public partial class TalentCalculatorTests(RouteTests.Factory factory) : IClassF
     {
         var page = await Draw(Asking(First));
 
-        Assert.DoesNotContain(nameof(TooltipQuery.ShowIcon), page, StringComparison.Ordinal);
+        Assert.DoesNotContain(nameof(TooltipRequest.ShowIcon), page, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

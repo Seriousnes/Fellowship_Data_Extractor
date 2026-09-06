@@ -115,7 +115,7 @@ public sealed class HeroItemTable
             Slot = slot?.Shipped,
             ArmorType = _armor.Label(PropertyWalk.Get(row, "ArmorType")?.GenericValue),
             Stats = [.. primary, .. Template(row, "SecondaryStatsWeightsTemplate", primaryPool: false)],
-            SetBonus = Named(PropertyWalk.GetString(row, "SetBonusA")),
+            SetBonus = Name(PropertyWalk.GetString(row, "SetBonusA")),
             Heroes = heroes,
             UniqueEquipped = PropertyWalk.Get(row, "IsUniqueEquippable")?.GenericValue is true,
             Rarity = Rarity(row),
@@ -234,6 +234,6 @@ public sealed class HeroItemTable
         }
     }
 
-    private static string? Named(string? value) =>
+    private static string? Name(string? value) =>
         string.IsNullOrEmpty(value) || value.Equals(NoneValue, StringComparison.Ordinal) ? null : value;
 }

@@ -1,16 +1,18 @@
 using Fellowship.SDK.Documents;
 
+using Fellowship.Codex.Services;
+
 namespace Fellowship.Codex.Models;
 
 public sealed record Bearings
 {
-    public EntityDocument? Shown { get; init; }
+    public EntityDocument? Entity { get; init; }
 
     public IReadOnlyList<EntityDocument> Readings { get; init; } = [];
 
     public string? Reading { get; init; }
 
-    public string Address { get; init; } = string.Empty;
+    public TooltipLink? Tip { get; init; }
 
     public string Page { get; init; } = string.Empty;
 
@@ -24,6 +26,6 @@ public sealed record Bearings
 
     public IReadOnlyList<(string Label, string Href)> Related { get; init; } = [];
 
-    public IReadOnlyDictionary<string, string> Asked { get; init; } =
+    public IReadOnlyDictionary<string, string> Values { get; init; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }

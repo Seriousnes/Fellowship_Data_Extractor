@@ -16,14 +16,14 @@ public static class EntityDocuments
 {
     public const string Discriminator = "$type";
 
-    private const string Shaped =
-        "A document is read into a class named at run time, so trimming can take that class away.";
+    private const string TrimWarning =
+        "A document is read into a type named at run time, so trimming can take that type away.";
 
     private static JsonSerializerOptions? options;
 
     public static JsonSerializerOptions Options
     {
-        [RequiresUnreferencedCode(Shaped)]
+        [RequiresUnreferencedCode(TrimWarning)]
         get => options ??= new()
         {
             WriteIndented = false,
@@ -36,7 +36,7 @@ public static class EntityDocuments
         };
     }
 
-    [RequiresUnreferencedCode(Shaped)]
+    [RequiresUnreferencedCode(TrimWarning)]
     private static void Polymorphism(JsonTypeInfo info)
     {
         if (info.Type != typeof(EntityDocument)) return;

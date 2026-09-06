@@ -58,7 +58,7 @@ public static class TooltipPayload
         var found = new List<CurveBinding>();
         var claimed = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var statement in walk.Reached())
+        foreach (var statement in walk.Statements())
         {
             switch (statement)
             {
@@ -66,7 +66,7 @@ public static class TooltipPayload
                     Overwritten(walk, call, overwritten);
                     continue;
 
-                case EX_CallMath call when Named(call.StackNode.Name) is { } helper:
+                case EX_CallMath call when Helper(call.StackNode.Name) is { } helper:
                     ReadStruct(walk, cdo, constants, call, helper, overwritten, found, claimed);
                     continue;
 
@@ -123,7 +123,7 @@ public static class TooltipPayload
 
     private static KismetExpression? Argument(EX_CallMath call, int at) => call.Parameters.ElementAtOrDefault(at);
 
-    private static StructCall? Named(string invoked) =>
+    private static StructCall? Helper(string invoked) =>
         Array.Find(StructHelpers, helper => helper.Function.Equals(invoked, StringComparison.Ordinal));
 
     private static string? Made(EX_StructMemberContext member) =>

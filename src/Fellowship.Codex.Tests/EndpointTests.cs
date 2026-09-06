@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components.Endpoints;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.RateLimiting;
@@ -26,7 +27,7 @@ public sealed class EndpointTests : IClassFixture<RouteTests.Factory>
         foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
             if (!named.Contains($"Get{type}")) missing.Add($"Get{type}");
-            if (!named.Contains($"Get{type}Tooltip")) missing.Add($"Get{type}Tooltip");
+            if (!named.Contains($"Query{type}Tooltip")) missing.Add($"Query{type}Tooltip");
         }
 
         Assert.True(missing.Count == 0, "No endpoint file names " + string.Join(", ", missing) + ".");
@@ -44,6 +45,27 @@ public sealed class EndpointTests : IClassFixture<RouteTests.Factory>
         {
             Assert.Contains($"/api/{EntityTypes.Slug(type)}/{{id:int}}", patterns);
             Assert.Contains($"/api/{EntityTypes.Slug(type)}/{{id:int}}/tooltip", patterns);
+        }
+    }
+
+    [Fact]
+    public void Every_tooltip_route_answers_query_and_nothing_else()
+    {
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
+        {
+            var pattern = $"/api/{EntityTypes.Slug(type)}/{{id:int}}/tooltip";
+
+            var matching = endpoints
+                .Where(candidate =>
+                    string.Equals(candidate.RoutePattern.RawText, pattern, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            var endpoint = Assert.Single<RouteEndpoint>(matching);
+
+            var methods = endpoint.Metadata.GetMetadata<IHttpMethodMetadata>();
+
+            Assert.NotNull(methods);
+            Assert.Equal(new[] { HttpMethods.Query }, methods.HttpMethods);
         }
     }
 

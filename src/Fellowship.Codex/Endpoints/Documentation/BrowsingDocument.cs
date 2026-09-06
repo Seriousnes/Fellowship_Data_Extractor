@@ -10,17 +10,17 @@ namespace Fellowship.Codex.Endpoints;
 
 public sealed class BrowsingParameters(ICodexService codex) : IOpenApiOperationTransformer
 {
-    private const string Named = "GetEntities";
+    private const string EndpointName = "GetEntities";
 
     public Task TransformAsync(
         OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellation)
     {
-        var named = context.Description.ActionDescriptor.EndpointMetadata
+        var endpointName = context.Description.ActionDescriptor.EndpointMetadata
             .OfType<IEndpointNameMetadata>()
             .Select(metadata => metadata.EndpointName)
             .FirstOrDefault();
 
-        if (!string.Equals(named, Named, StringComparison.Ordinal)) return Task.CompletedTask;
+        if (!string.Equals(endpointName, EndpointName, StringComparison.Ordinal)) return Task.CompletedTask;
 
         foreach (var facet in codex.Facets)
         {
@@ -37,8 +37,8 @@ public sealed class BrowsingParameters(ICodexService codex) : IOpenApiOperationT
             "The measures are " + string.Join(", ", codex.Measures.Select(measure => measure.Key)) + ". " +
             "`sort` takes name, type or a measure, and `group` takes a facet.";
 
-        operation.Description = operation.Description is { Length: > 0 } already
-            ? already + "\n\n" + note
+        operation.Description = operation.Description is { Length: > 0 } existing
+            ? existing + "\n\n" + note
             : note;
 
         return Task.CompletedTask;
@@ -48,8 +48,8 @@ public sealed class BrowsingParameters(ICodexService codex) : IOpenApiOperationT
     {
         operation.Parameters ??= [];
 
-        if (operation.Parameters.Any(already =>
-            string.Equals(already.Name, name, StringComparison.OrdinalIgnoreCase)))
+        if (operation.Parameters.Any(existing =>
+            string.Equals(existing.Name, name, StringComparison.OrdinalIgnoreCase)))
         {
             return;
         }

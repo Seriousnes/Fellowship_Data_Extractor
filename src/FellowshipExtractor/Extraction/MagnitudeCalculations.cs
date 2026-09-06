@@ -14,7 +14,7 @@ public sealed record MagnitudeReading(double? Value, double? Low, double? High)
 {
     public static readonly MagnitudeReading None = new(null, null, null);
 
-    public bool Answered => Value is not null || Low is not null;
+    public bool HasValue => Value is not null || Low is not null;
 }
 
 public static class MagnitudeCalculations

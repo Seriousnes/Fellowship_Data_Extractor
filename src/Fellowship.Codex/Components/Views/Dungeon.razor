@@ -47,13 +47,13 @@
             .. Ui.Codex.Of(EntityType.Creature)
                 .OfType<CreatureDocument>()
                 .Where(creature => creature.FoundIn?.Any(level => level.Id == Entity.Id) is true)
-                .OrderBy(creature => Standing(creature.Rank))
+                .OrderBy(creature => Ordinal(creature.Rank))
                 .ThenBy(creature => PublicTypes.NameOf(creature), StringComparer.OrdinalIgnoreCase),
         ];
 
     private static readonly CreatureRank[] Order =
         [CreatureRank.Boss, CreatureRank.Elite, CreatureRank.Enemy, CreatureRank.Friendly];
 
-    private static int Standing(CreatureRank? rank) =>
+    private static int Ordinal(CreatureRank? rank) =>
         rank is { } named ? Array.IndexOf(Order, named) : Order.Length;
 }

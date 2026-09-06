@@ -46,7 +46,7 @@ public sealed class BareStateWalk(
 
     public IReadOnlyDictionary<string, double>? ByLevelType { get; private set; }
 
-    public IEnumerable<KismetExpression> Reached()
+    public IEnumerable<KismetExpression> Statements()
     {
         var at = 0;
 
@@ -60,7 +60,7 @@ public sealed class BareStateWalk(
                     yield break;
 
                 case EX_JumpIfNot branch:
-                    if (Truth(branch.BooleanExpression) is not { } taken) yield break;
+                    if (Boolean(branch.BooleanExpression) is not { } taken) yield break;
 
                     at = taken ? at + 1 : At(branch.CodeOffset);
                     if (at < 0) yield break;
@@ -94,7 +94,7 @@ public sealed class BareStateWalk(
             AssumedTags = AssumedTags,
         };
 
-        foreach (var _ in inside.Reached()) { }
+        foreach (var _ in inside.Statements()) { }
 
         foreach (var gate in inside._gates) _gates.Add(gate);
 
@@ -108,10 +108,10 @@ public sealed class BareStateWalk(
 
             if (parameter.PropertyFlags.HasFlag(EPropertyFlags.OutParm) &&
                 DynamicTextFloats.Name(call.Parameters.ElementAtOrDefault(at)) is { } local &&
-                inside._locals.TryGetValue(parameter.Name.Text, out var written) &&
-                inside.Number(written) is { } answered)
+                inside._locals.TryGetValue(parameter.Name.Text, out var bound) &&
+                inside.Number(bound) is { } number)
             {
-                _returned[local] = answered;
+                _returned[local] = number;
             }
 
             at++;
@@ -130,13 +130,13 @@ public sealed class BareStateWalk(
                     if (Number(returned.ReturnExpression) is { } answer) return answer;
                     if (ByLevelType is not null || Range is not null) return null;
 
-                    return Refuse($"returns {Shape(returned.ReturnExpression)}, which is no number");
+                    return Refuse($"returns {Describe(returned.ReturnExpression)}, which is no number");
 
                 case EX_JumpIfNot branch:
-                    if (Truth(branch.BooleanExpression) is not { } taken)
+                    if (Boolean(branch.BooleanExpression) is not { } taken)
                     {
                         return Refuse(
-                            $"branches on {Shape(branch.BooleanExpression)}, which is neither " +
+                            $"branches on {Describe(branch.BooleanExpression)}, which is neither " +
                             "true nor false for a character holding no talents");
                     }
 
@@ -204,7 +204,7 @@ public sealed class BareStateWalk(
             ? assigned
             : null;
 
-    public bool? Truth(KismetExpression? expression, int depth = 0)
+    public bool? Boolean(KismetExpression? expression, int depth = 0)
     {
         if (expression is null || depth > MaxDepth) return null;
 
@@ -215,18 +215,18 @@ public sealed class BareStateWalk(
             case EX_IntConst value: return value.Value != 0;
             case EX_ByteConst value: return value.Value != 0;
             case EX_DynamicCast: return true;
-            case EX_Cast cast: return Truth(cast.Target, depth + 1);
-            case EX_Context context: return Truth(context.ContextExpression, depth + 1);
+            case EX_Cast cast: return Boolean(cast.Target, depth + 1);
+            case EX_Context context: return Boolean(context.ContextExpression, depth + 1);
 
-            case EX_CallMath call: return CalledTruth(call, depth);
+            case EX_CallMath call: return CallBoolean(call, depth);
 
-            case EX_LocalVirtualFunction call: return NamedTruth(call.VirtualFunctionName.Text, call.Parameters);
-            case EX_VirtualFunction call: return NamedTruth(call.VirtualFunctionName.Text, call.Parameters);
-            case EX_LocalFinalFunction call: return NamedTruth(call.StackNode.Name, call.Parameters);
-            case EX_FinalFunction call: return NamedTruth(call.StackNode.Name, call.Parameters);
+            case EX_LocalVirtualFunction call: return TagBoolean(call.VirtualFunctionName.Text, call.Parameters);
+            case EX_VirtualFunction call: return TagBoolean(call.VirtualFunctionName.Text, call.Parameters);
+            case EX_LocalFinalFunction call: return TagBoolean(call.StackNode.Name, call.Parameters);
+            case EX_FinalFunction call: return TagBoolean(call.StackNode.Name, call.Parameters);
         }
 
-        return Bound(expression) is { } assigned ? Truth(assigned, depth + 1) : null;
+        return Bound(expression) is { } assigned ? Boolean(assigned, depth + 1) : null;
     }
 
     private static readonly string[] TagTests =
@@ -239,60 +239,60 @@ public sealed class BareStateWalk(
         "HasAllTags",
     ];
 
-    private bool? NamedTruth(string invoked, IReadOnlyList<KismetExpression> parameters)
+    private bool? TagBoolean(string invoked, IReadOnlyList<KismetExpression> parameters)
     {
         if (!TagTests.Contains(invoked, StringComparer.Ordinal)) return null;
 
-        var held = false;
+        var matched = false;
 
         foreach (var parameter in parameters)
         {
-            if (Tested(parameter) is not { } tag) continue;
+            if (Tag(parameter) is not { } tag) continue;
 
             _gates.Add(tag);
-            if (AssumedTags.Contains(tag)) held = true;
+            if (AssumedTags.Contains(tag)) matched = true;
         }
 
-        return held;
+        return matched;
     }
 
-    private string? Tested(KismetExpression? expression)
+    private string? Tag(KismetExpression? expression)
     {
         if (expression is EX_StructConst { Struct.Name: TagStruct } inline)
         {
-            return Named(inline.Properties.OfType<EX_NameConst>().FirstOrDefault()?.Value.Text);
+            return Name(inline.Properties.OfType<EX_NameConst>().FirstOrDefault()?.Value.Text);
         }
 
         if (DynamicTextFloats.Name(expression) is not { } property) return null;
-        if (PropertyWalk.GetStruct(cdo, property) is not { } held) return null;
+        if (PropertyWalk.GetStruct(cdo, property) is not { } holder) return null;
 
-        return Named(PropertyWalk.GetString(held, TagNameField));
+        return Name(PropertyWalk.GetString(holder, TagNameField));
     }
 
-    private bool? CalledTruth(EX_CallMath call, int depth)
+    private bool? CallBoolean(EX_CallMath call, int depth)
     {
         var invoked = call.StackNode.Name;
 
         if (invoked.Equals("IsValid", StringComparison.Ordinal)) return true;
-        if (NamedTruth(invoked, call.Parameters) is { } known) return known;
+        if (TagBoolean(invoked, call.Parameters) is { } known) return known;
 
         if (invoked.Equals("Not_PreBool", StringComparison.Ordinal))
         {
-            return Truth(call.Parameters.FirstOrDefault(), depth + 1) is { } inner ? !inner : null;
+            return Boolean(call.Parameters.FirstOrDefault(), depth + 1) is { } inner ? !inner : null;
         }
 
         if (invoked.Equals("BooleanAND", StringComparison.Ordinal))
         {
-            var a = Truth(call.Parameters.ElementAtOrDefault(0), depth + 1);
-            var b = Truth(call.Parameters.ElementAtOrDefault(1), depth + 1);
+            var a = Boolean(call.Parameters.ElementAtOrDefault(0), depth + 1);
+            var b = Boolean(call.Parameters.ElementAtOrDefault(1), depth + 1);
             if (a is false || b is false) return false;
             return a is true && b is true ? true : null;
         }
 
         if (invoked.Equals("BooleanOR", StringComparison.Ordinal))
         {
-            var a = Truth(call.Parameters.ElementAtOrDefault(0), depth + 1);
-            var b = Truth(call.Parameters.ElementAtOrDefault(1), depth + 1);
+            var a = Boolean(call.Parameters.ElementAtOrDefault(0), depth + 1);
+            var b = Boolean(call.Parameters.ElementAtOrDefault(1), depth + 1);
             if (a is true || b is true) return true;
             return a is false && b is false ? false : null;
         }
@@ -338,9 +338,9 @@ public sealed class BareStateWalk(
             case EX_SwitchValue chosen: return Switched(chosen, depth);
         }
 
-        if (DynamicTextFloats.Name(expression) is { } local && _returned.TryGetValue(local, out var written))
+        if (DynamicTextFloats.Name(expression) is { } local && _returned.TryGetValue(local, out var number))
         {
-            return written;
+            return number;
         }
 
         return Bound(expression) is { } assigned ? Number(assigned, depth + 1) : null;
@@ -348,7 +348,7 @@ public sealed class BareStateWalk(
 
     public double? Reading(KismetExpression? expression) => Scalable(expression, 0);
 
-    public string Written(KismetExpression? expression, int depth = 0)
+    public string Text(KismetExpression? expression, int depth = 0)
     {
         if (expression is null) return "nothing";
         if (depth > MaxDepth) return "too deep to write out";
@@ -364,46 +364,46 @@ public sealed class BareStateWalk(
             case EX_IntOne: return "1";
             case EX_IntZero: return "0";
 
-            case EX_Cast cast: return Written(cast.Target, depth + 1);
-            case EX_CallMath call: return WrittenCall(call, depth);
-            case EX_SwitchValue chosen: return $"a switch on {Shape(chosen.IndexTerm)}";
+            case EX_Cast cast: return Text(cast.Target, depth + 1);
+            case EX_CallMath call: return CallText(call, depth);
+            case EX_SwitchValue chosen: return $"a switch on {Describe(chosen.IndexTerm)}";
         }
 
-        if (DynamicTextFloats.Name(expression) is { } local && _returned.TryGetValue(local, out var answered))
+        if (DynamicTextFloats.Name(expression) is { } local && _returned.TryGetValue(local, out var number))
         {
-            return $"{local} {answered}";
+            return $"{local} {number}";
         }
 
-        if (Bound(expression) is { } assigned) return Written(assigned, depth + 1);
+        if (Bound(expression) is { } assigned) return Text(assigned, depth + 1);
 
         return DynamicTextFloats.Name(expression) is { } unbound
             ? $"{unbound} (nothing binds it)"
             : expression.Token.ToString();
     }
 
-    private string WrittenCall(EX_CallMath call, int depth)
+    private string CallText(EX_CallMath call, int depth)
     {
         var invoked = call.StackNode.Name;
 
         if (invoked.StartsWith(ScalableRead, StringComparison.Ordinal))
         {
             var argument = call.Parameters.FirstOrDefault();
-            var named = DynamicTextFloats.Name(argument) ?? Shape(argument);
+            var name = DynamicTextFloats.Name(argument) ?? Describe(argument);
 
-            if (Struct(argument, depth + 1) is not { } read) return $"{named} (no scalable float)";
+            if (Struct(argument, depth + 1) is not { } read) return $"{name} (no scalable float)";
 
             return read.Row is { } row
-                ? $"{named} -> {row} {constants.Lookup(row).Record?.Value} x {read.Multiplier}"
-                : $"{named} -> literal {read.Multiplier}";
+                ? $"{name} -> {row} {constants.Lookup(row).Record?.Value} x {read.Multiplier}"
+                : $"{name} -> literal {read.Multiplier}";
         }
 
         if (invoked.StartsWith("Conv_", StringComparison.Ordinal) ||
             invoked.StartsWith("MakeLiteral", StringComparison.Ordinal))
         {
-            return Written(call.Parameters.FirstOrDefault(), depth + 1);
+            return Text(call.Parameters.FirstOrDefault(), depth + 1);
         }
 
-        return $"{invoked}({string.Join(", ", call.Parameters.Select(p => Written(p, depth + 1)))})";
+        return $"{invoked}({string.Join(", ", call.Parameters.Select(p => Text(p, depth + 1)))})";
     }
 
     private double? Called(EX_CallMath call, int depth)
@@ -454,12 +454,12 @@ public sealed class BareStateWalk(
 
         if (invoked is "SelectFloat" or "SelectInt" or "SelectDouble")
         {
-            return Truth(call.Parameters.ElementAtOrDefault(2), depth + 1) switch
+            return Boolean(call.Parameters.ElementAtOrDefault(2), depth + 1) switch
             {
                 true => Argument(0),
                 false => Argument(1),
                 null => Refuse(
-                    $"picks between two values on {Shape(call.Parameters.ElementAtOrDefault(2))}, " +
+                    $"picks between two values on {Describe(call.Parameters.ElementAtOrDefault(2))}, " +
                     "which is neither true nor false for a character holding no talents"),
             };
         }
@@ -532,8 +532,8 @@ public sealed class BareStateWalk(
             if (Case(branch.CaseTerm, depth + 1) is not { } value)
             {
                 return Refuse(
-                    $"chooses its value on {Shape(chosen.IndexTerm)}, and the branch for " +
-                    $"{Shape(branch.CaseIndexValueTerm)} reads no number");
+                    $"chooses its value on {Describe(chosen.IndexTerm)}, and the branch for " +
+                    $"{Describe(branch.CaseIndexValueTerm)} reads no number");
             }
 
             cases.Add((branch.CaseIndexValueTerm, value));
@@ -550,7 +550,7 @@ public sealed class BareStateWalk(
             if (Number(index) is not { } ordinal)
             {
                 return Refuse(
-                    $"chooses its value on {Shape(chosen.IndexTerm)} against {Shape(index)}, " +
+                    $"chooses its value on {Describe(chosen.IndexTerm)} against {Describe(index)}, " +
                     "which is no ordinal");
             }
 
@@ -571,7 +571,7 @@ public sealed class BareStateWalk(
     {
         if (mappings is null || Enumerated(chosen.IndexTerm) is not { } enumerated)
         {
-            Refuse($"answers a different value per {Shape(chosen.IndexTerm)}, which names no enum, so the " +
+            Refuse($"answers a different value per {Describe(chosen.IndexTerm)}, which names no enum, so the " +
                    "values cannot be keyed by anything the export states");
 
             return null;
@@ -644,7 +644,7 @@ public sealed class BareStateWalk(
             ? PropertyWalk.GetString(curve, RowField)
             : null;
 
-        return (PropertyWalk.AsNumber(PropertyWalk.Get(scalable, ValueField)?.GenericValue) ?? 1, Named(row));
+        return (PropertyWalk.AsNumber(PropertyWalk.Get(scalable, ValueField)?.GenericValue) ?? 1, Name(row));
     }
 
     private static (double Multiplier, string? Row)? Inline(EX_StructConst constant)
@@ -670,20 +670,20 @@ public sealed class BareStateWalk(
             }
         }
 
-        return (multiplier ?? 1, Named(row));
+        return (multiplier ?? 1, Name(row));
     }
 
-    private static string? Named(string? row) =>
+    private static string? Name(string? row) =>
         row is null || row.Length == 0 || row.Equals(NoRow, StringComparison.Ordinal) ? null : row;
 
-    private string Shape(KismetExpression? expression, int depth = 0)
+    private string Describe(KismetExpression? expression, int depth = 0)
     {
         if (expression is null) return "nothing";
-        if (depth <= MaxDepth && Bound(expression) is { } assigned) return Shape(assigned, depth + 1);
+        if (depth <= MaxDepth && Bound(expression) is { } assigned) return Describe(assigned, depth + 1);
 
         return expression switch
         {
-            EX_Context context => Shape(context.ContextExpression, depth + 1),
+            EX_Context context => Describe(context.ContextExpression, depth + 1),
             EX_CallMath call => call.StackNode.Name,
             EX_LocalVirtualFunction call => call.VirtualFunctionName.Text,
             EX_VirtualFunction call => call.VirtualFunctionName.Text,

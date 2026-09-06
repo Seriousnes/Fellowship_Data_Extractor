@@ -93,7 +93,7 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
         List<(string Name, List<(string Member, int? Value)> Members)> fields;
         using (document)
         {
-            fields = Checked(Fields(document.RootElement, context), context);
+            fields = Check(Fields(document.RootElement, context), context);
         }
 
         context.AddSource(HintName, SourceText.From(Declare(fields), Encoding.UTF8));
@@ -111,8 +111,8 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
             ("PrimaryStat", Bare(heroes.Select(hero => Text(Member(hero, "primaryStat"))))),
             ("Hero", Bare(heroes.Select(hero => Text(Member(hero, "name"))))),
             ("GemType", Bare(Items(Member(root, "gemTypes")).Select(gemType => Text(gemType)))),
-            ("Rarity", Ladder(Items(Member(root, "rarities")), "tier", context)),
-            ("AbilityCategory", Ladder(Items(Member(root, "abilityCategories")), "value", context)),
+            ("Rarity", Numbered(Items(Member(root, "rarities")), "tier", context)),
+            ("AbilityCategory", Numbered(Items(Member(root, "abilityCategories")), "value", context)),
         ];
     }
 
@@ -123,19 +123,19 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
             .OrderBy(member => member, StringComparer.Ordinal)
             .Select(member => (member, (int?)null))];
 
-    private static List<(string Member, int? Value)> Ladder(
+    private static List<(string Member, int? Value)> Numbered(
         IReadOnlyList<JsonElement> members,
         string ordinal,
         SourceProductionContext? context)
     {
-        var ladder = new List<(string Member, int? Value)>();
+        var numbered = new List<(string Member, int? Value)>();
         foreach (var member in members)
         {
             var name = Text(Member(member, "name"));
-            if (Member(member, ordinal) is { ValueKind: JsonValueKind.Number } stated
-                && stated.TryGetInt32(out var value))
+            if (Member(member, ordinal) is { ValueKind: JsonValueKind.Number } number
+                && number.TryGetInt32(out var value))
             {
-                ladder.Add((name, value));
+                numbered.Add((name, value));
                 continue;
             }
 
@@ -146,10 +146,10 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
                 $"\"{name}\" states no whole-number {ordinal}"));
         }
 
-        return [.. ladder.OrderBy(rung => rung.Value)];
+        return [.. numbered.OrderBy(entry => entry.Value)];
     }
 
-    private static List<(string Name, List<(string Member, int? Value)> Members)> Checked(
+    private static List<(string Name, List<(string Member, int? Value)> Members)> Check(
         List<(string Name, List<(string Member, int? Value)> Members)> fields,
         SourceProductionContext context)
     {
@@ -201,7 +201,7 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
     }
 
     private static JsonElement? Member(JsonElement? value, string name) =>
-        value is { ValueKind: JsonValueKind.Object } keyed && keyed.TryGetProperty(name, out var member)
+        value is { ValueKind: JsonValueKind.Object } element && element.TryGetProperty(name, out var member)
             ? member
             : null;
 
@@ -209,8 +209,8 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
         value is { ValueKind: JsonValueKind.Array } array ? [.. array.EnumerateArray()] : [];
 
     private static IEnumerable<string> Names(JsonElement? value) =>
-        value is { ValueKind: JsonValueKind.Object } keyed
-            ? keyed.EnumerateObject().Select(member => member.Name)
+        value is { ValueKind: JsonValueKind.Object } element
+            ? element.EnumerateObject().Select(member => member.Name)
             : [];
 
     private static string Text(JsonElement? value) =>

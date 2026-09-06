@@ -10,6 +10,7 @@ public static class SearchResults
     {
         var type = EntityTypes.TypeOf(document);
         var item = document as ItemDocument;
+        var tip = view.Tip(document);
 
         return new SearchResult(
             EntityTypes.Slug(type),
@@ -19,7 +20,8 @@ public static class SearchResults
             view.Icon(DocumentFields.Text(document, nameof(ItemDocument.Icon))),
             view.RarityName(document),
             view.Href(document),
-            view.Tip(document),
+            tip.Address,
+            tip.Body,
             item?.Slot,
             item?.ArmorType?.ToString(),
             item?.Heroes?.Select(hero => hero.ToString()).ToArray());

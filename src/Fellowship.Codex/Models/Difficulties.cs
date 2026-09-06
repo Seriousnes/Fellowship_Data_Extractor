@@ -18,7 +18,7 @@ public static class Difficulties
     public static DifficultyStep? At(SettingsFile settings, int difficulty) =>
         settings.DifficultyScaling.Health.ContainsKey(difficulty) ? Step(settings, difficulty) : null;
 
-    public static int? Asked(string? value, SettingsFile settings) =>
+    public static int? Read(string? value, SettingsFile settings) =>
         int.TryParse(value, out var difficulty) && settings.DifficultyScaling.Health.ContainsKey(difficulty)
             ? difficulty
             : null;
@@ -52,10 +52,10 @@ public static class Difficulties
     }
 
     public static double? HealthScale(SettingsFile settings, string? scaling, int difficulty) =>
-        Scale(settings, scaling, difficulty, apart => apart.Health);
+        Scale(settings, scaling, difficulty, table => table.Health);
 
     public static double? DamageScale(SettingsFile settings, string? scaling, int difficulty) =>
-        Scale(settings, scaling, difficulty, apart => apart.Damage);
+        Scale(settings, scaling, difficulty, table => table.Damage);
 
     private static double? Scale(
         SettingsFile settings,
@@ -64,8 +64,8 @@ public static class Difficulties
         Func<DifficultyScaling, IReadOnlyDictionary<int, double>> ladder)
     {
         if (scaling is { Length: > 0 } named &&
-            settings.DifficultyScaling.Namespaces.TryGetValue(named, out var apart) &&
-            ladder(apart).TryGetValue(difficulty, out var own))
+            settings.DifficultyScaling.Namespaces.TryGetValue(named, out var byNamespace) &&
+            ladder(byNamespace).TryGetValue(difficulty, out var own))
         {
             return own;
         }

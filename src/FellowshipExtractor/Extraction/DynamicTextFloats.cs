@@ -440,7 +440,7 @@ public static class DynamicTextFloats
 
         foreach (var statement in bytecode)
         {
-            if (Named(statement) == HasteScaler)
+            if (FunctionName(statement) == HasteScaler)
             {
                 haste = true;
 
@@ -497,9 +497,9 @@ public static class DynamicTextFloats
         return null;
     }
 
-    private static string? Named(KismetExpression expression) => expression switch
+    private static string? FunctionName(KismetExpression expression) => expression switch
     {
-        EX_Context context => Named(context.ContextExpression),
+        EX_Context context => FunctionName(context.ContextExpression),
         EX_LocalVirtualFunction call => call.VirtualFunctionName.Text,
         EX_LocalFinalFunction call => call.StackNode.Name,
         EX_CallMath call => call.StackNode.Name,

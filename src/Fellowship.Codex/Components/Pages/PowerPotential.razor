@@ -61,7 +61,7 @@
                 }
             </tbody>
             <tfoot>
-                <tr><td>Sum</td><td class="cx-pp-w">@Weighted</td></tr>
+                <tr><td>Sum</td><td class="cx-pp-w">@TotalWeight</td></tr>
             </tfoot>
         </table>
     </div>
@@ -79,7 +79,7 @@
 
     private static string Factor(double value) => CodexView.Number(value);
 
-    private string Weighted =>
+    private string TotalWeight =>
         CodexView.Number(Settings.StatCalculation.SlotWeights.Values.Sum(slot => slot.StatWeight));
 
     private IReadOnlyList<OnceScore> Once => ItemPower.OnceScores(Settings);

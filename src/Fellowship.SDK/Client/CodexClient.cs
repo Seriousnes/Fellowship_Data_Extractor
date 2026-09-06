@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 using Fellowship.SDK.Records;
@@ -7,8 +8,8 @@ namespace Fellowship.SDK.Client;
 
 public sealed class CodexClient
 {
-    private const string Shaped =
-        "A record is read into a shape named at run time, so trimming can take that shape away.";
+    private const string TrimWarning =
+        "A record is read into a type named at run time, so trimming can take that type away.";
 
     public static Uri Origin => CodexAddresses.Origin;
 
@@ -20,95 +21,102 @@ public sealed class CodexClient
         this.http.BaseAddress ??= Origin;
     }
 
-    [RequiresUnreferencedCode(Shaped)]
+    [RequiresUnreferencedCode(TrimWarning)]
     public Task<TRecord> GetAsync<TRecord>(
         int id, string? hero = null, CancellationToken cancellation = default)
         where TRecord : EntityRecord =>
         Read<TRecord>(EntityRecords.TypeOf(typeof(TRecord)), id, hero, cancellation);
 
-    [RequiresUnreferencedCode(Shaped)]
+    [RequiresUnreferencedCode(TrimWarning)]
     public async Task<EntityRecord> GetAsync(
         EntityType type, int id, string? hero = null, CancellationToken cancellation = default) =>
-        (EntityRecord)await Answered(
+        (EntityRecord)await ReadAsync(
             EntityRecords.Record(type), CodexAddresses.Record(type, id, hero), cancellation).ConfigureAwait(false);
 
-    [RequiresUnreferencedCode(Shaped)]
+    [RequiresUnreferencedCode(TrimWarning)]
     public Task<EntityRecord> GetAsync(
         RecordReference reference, string? hero = null, CancellationToken cancellation = default) =>
         GetAsync(reference.Type, reference.Id, hero, cancellation);
 
-    [RequiresUnreferencedCode(Shaped)]
+    [RequiresUnreferencedCode(TrimWarning)]
     public Task<SearchResponse> SearchAsync(
         string query, EntityType? type = null, int? limit = null, CancellationToken cancellation = default) =>
-        Answered<SearchResponse>(CodexAddresses.Search(query, type, limit), cancellation);
+        ReadAsync<SearchResponse>(CodexAddresses.Search(query, type, limit), cancellation);
 
-    [RequiresUnreferencedCode(Shaped)]
+    [RequiresUnreferencedCode(TrimWarning)]
     public Task<EntitiesResponse> EntitiesAsync(
         EntityFilter? filter = null, CancellationToken cancellation = default) =>
-        Answered<EntitiesResponse>(CodexAddresses.Entities(filter), cancellation);
+        ReadAsync<EntitiesResponse>(CodexAddresses.Entities(filter), cancellation);
 
-    [RequiresUnreferencedCode(Shaped)]
+    [RequiresUnreferencedCode(TrimWarning)]
     public Task<CatalogResponse> CatalogAsync(CancellationToken cancellation = default) =>
-        Answered<CatalogResponse>(CodexAddresses.Catalog, cancellation);
+        ReadAsync<CatalogResponse>(CodexAddresses.Catalog, cancellation);
 
-    [RequiresUnreferencedCode(Shaped)]
+    [RequiresUnreferencedCode(TrimWarning)]
     public async Task<string> TooltipAsync(
-        EntityType type, int id, TooltipRequest? asked = null, CancellationToken cancellation = default)
+        EntityType type, int id, TooltipRequest? request = null, CancellationToken cancellation = default)
     {
-        using var answer = await http
-            .GetAsync(CodexAddresses.Tooltip(type, id, asked), cancellation)
-            .ConfigureAwait(false);
+        using var message = new HttpRequestMessage(HttpMethod.Query, CodexAddresses.Tooltip(type, id));
 
-        await Raised(answer, cancellation).ConfigureAwait(false);
+        message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
 
-        return await answer.Content.ReadAsStringAsync(cancellation).ConfigureAwait(false);
+        if (request is not null)
+        {
+            message.Content = JsonContent.Create(request, options: CodexJson.Options);
+        }
+
+        using var response = await http.SendAsync(message, cancellation).ConfigureAwait(false);
+
+        await ThrowIfFailed(response, cancellation).ConfigureAwait(false);
+
+        return await response.Content.ReadAsStringAsync(cancellation).ConfigureAwait(false);
     }
 
-    [RequiresUnreferencedCode(Shaped)]
+    [RequiresUnreferencedCode(TrimWarning)]
     private async Task<TRecord> Read<TRecord>(
         EntityType type, int id, string? hero, CancellationToken cancellation)
         where TRecord : EntityRecord =>
-        (TRecord)await Answered(
+        (TRecord)await ReadAsync(
                 EntityRecords.Record(type), CodexAddresses.Record(type, id, hero), cancellation)
             .ConfigureAwait(false);
 
-    [RequiresUnreferencedCode(Shaped)]
-    private async Task<TAnswer> Answered<TAnswer>(string address, CancellationToken cancellation) =>
-        (TAnswer)await Answered(typeof(TAnswer), address, cancellation).ConfigureAwait(false);
+    [RequiresUnreferencedCode(TrimWarning)]
+    private async Task<TResponse> ReadAsync<TResponse>(string address, CancellationToken cancellation) =>
+        (TResponse)await ReadAsync(typeof(TResponse), address, cancellation).ConfigureAwait(false);
 
-    [RequiresUnreferencedCode(Shaped)]
-    private async Task<object> Answered(Type shape, string address, CancellationToken cancellation)
+    [RequiresUnreferencedCode(TrimWarning)]
+    private async Task<object> ReadAsync(Type recordType, string address, CancellationToken cancellation)
     {
-        using var answer = await http.GetAsync(address, cancellation).ConfigureAwait(false);
+        using var response = await http.GetAsync(address, cancellation).ConfigureAwait(false);
 
-        await Raised(answer, cancellation).ConfigureAwait(false);
+        await ThrowIfFailed(response, cancellation).ConfigureAwait(false);
 
-        return await answer.Content
-                .ReadFromJsonAsync(shape, CodexJson.Options, cancellation)
+        return await response.Content
+                .ReadFromJsonAsync(recordType, CodexJson.Options, cancellation)
                 .ConfigureAwait(false)
             ?? throw new CodexException(
-                answer.StatusCode,
+                response.StatusCode,
                 new CodexFault { Title = "The codex answered nothing.", Detail = $"{address} answered null." });
     }
 
-    [RequiresUnreferencedCode(Shaped)]
-    private static async Task Raised(HttpResponseMessage answer, CancellationToken cancellation)
+    [RequiresUnreferencedCode(TrimWarning)]
+    private static async Task ThrowIfFailed(HttpResponseMessage response, CancellationToken cancellation)
     {
-        if (answer.IsSuccessStatusCode) return;
+        if (response.IsSuccessStatusCode) return;
 
         CodexFault? fault = null;
 
         try
         {
-            fault = await answer.Content
+            fault = await response.Content
                 .ReadFromJsonAsync<CodexFault>(CodexJson.Options, cancellation)
                 .ConfigureAwait(false);
         }
-        catch (Exception trouble) when (trouble is System.Text.Json.JsonException or NotSupportedException)
+        catch (Exception exception) when (exception is System.Text.Json.JsonException or NotSupportedException)
         {
             fault = null;
         }
 
-        throw new CodexException(answer.StatusCode, fault ?? new CodexFault());
+        throw new CodexException(response.StatusCode, fault ?? new CodexFault());
     }
 }

@@ -49,8 +49,8 @@ public sealed class ItemSettings
             SetBonusScoreFactor = Number(config, potential, "SetBonusScoreFactor"),
             LegendaryScoreFactor = Number(config, potential, "LegendaryScoreFactor"),
             AllocatedTalentPointPowerPotential = Number(config, potential, "AllocatedTalentPointPowerPotential"),
-            ScorePerGemType = GemRungs(
-                config, mappings, List(config, potential, "ScorePerGemType"), gems.RungByTier(rarities)),
+            ScorePerGemType = GemScores(
+                config, mappings, List(config, potential, "ScorePerGemType"), gems.RarityByTier(rarities)),
             ScorePerAllocatedWeaponTrait = (int)Number(config, potential, "ScorePerAllocatedWeaponTrait"),
             ScorePerAllocatedNecklaceTrait = (int)Number(config, potential, "ScorePerAllocatedNecklaceTrait"),
         };
@@ -71,11 +71,11 @@ public sealed class ItemSettings
 
         Values = new ItemSettingsFile
         {
-            MaxItemLevel = config.Whole(MaxItemLevelKey),
-            ItemLevelsPerUpgrade = config.Whole(LevelsPerUpgradeKey),
+            MaxItemLevel = config.Integer(MaxItemLevelKey),
+            ItemLevelsPerUpgrade = config.Integer(LevelsPerUpgradeKey),
             SlotNames = slots.Vocabulary.ToDictionary(
                 slot => slot.Type, slot => slot.Shipped, StringComparer.OrdinalIgnoreCase),
-            GemSocketPowerMultipliers = Rungs(
+            GemSocketPowerMultipliers = ByTier(
                 config, mappings, config.RequiredList(SocketMultipliersKey), SocketTierEnum, Number),
             ItemGemPowers = Slots(config, mappings, config.RequiredList(GemPowersKey), slots),
             PowerPotential = potentialSettings,
@@ -97,18 +97,18 @@ public sealed class ItemSettings
             $"[{SettingsSection}] in {config.Path} writes {PowerPotentialKey}.{field} as a scalar, not the " +
             "parenthesised literal a map is written as.");
 
-    private static double Number(string written, string what, string path) =>
-        double.TryParse(written, CultureInfo.InvariantCulture, out var value)
+    private static double Number(string text, string what, string path) =>
+        double.TryParse(text, CultureInfo.InvariantCulture, out var value)
             ? value
-            : throw new InvalidOperationException($"{what} in {path} reads '{written}', which is not a number.");
+            : throw new InvalidOperationException($"{what} in {path} reads '{text}', which is not a number.");
 
-    private static int Whole(string written, string what, string path) =>
-        int.TryParse(written, CultureInfo.InvariantCulture, out var value)
+    private static int Integer(string text, string what, string path) =>
+        int.TryParse(text, CultureInfo.InvariantCulture, out var value)
             ? value
             : throw new InvalidOperationException(
-                $"{what} in {path} reads '{written}', which is not a whole number.");
+                $"{what} in {path} reads '{text}', which is not a whole number.");
 
-    private static Dictionary<int, TValue> Rungs<TValue>(
+    private static Dictionary<int, TValue> ByTier<TValue>(
         ConfigIni config,
         TypeMappings mappings,
         ConfigList map,
@@ -116,7 +116,7 @@ public sealed class ItemSettings
         Func<string, string, string, TValue> read)
     {
         var members = EnumOrdinals.Members(mappings, enumName);
-        var rungs = new Dictionary<int, TValue>();
+        var byTier = new Dictionary<int, TValue>();
 
         foreach (var (key, value) in map.Pairs())
         {
@@ -124,53 +124,53 @@ public sealed class ItemSettings
             {
                 throw new InvalidOperationException(
                     $"[{SettingsSection}] in {config.Path} keys a map by '{key}', which {enumName} does not " +
-                    "declare. The rung it names cannot be read back.");
+                    "declare. The tier it names cannot be read back.");
             }
 
-            rungs[Rung(key, enumName)] = read(value.Text, $"{enumName}::{key}", config.Path);
+            byTier[Tier(key, enumName)] = read(value.Text, $"{enumName}::{key}", config.Path);
         }
 
-        if (rungs.Count == 0)
+        if (byTier.Count == 0)
         {
             throw new InvalidOperationException(
                 $"[{SettingsSection}] in {config.Path} writes a map keyed by {enumName} that reads back with no " +
                 "entries at all.");
         }
 
-        return rungs;
+        return byTier;
     }
 
-    private static Dictionary<string, int> GemRungs(
-        ConfigIni config, TypeMappings mappings, ConfigList map, IReadOnlyDictionary<int, string> rungByTier)
+    private static Dictionary<string, int> GemScores(
+        ConfigIni config, TypeMappings mappings, ConfigList map, IReadOnlyDictionary<int, string> rarityByTier)
     {
         var scores = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var (tier, score) in Rungs(config, mappings, map, GemTierEnum, Whole))
+        foreach (var (tier, score) in ByTier(config, mappings, map, GemTierEnum, Integer))
         {
-            if (!rungByTier.TryGetValue(tier, out var rung))
+            if (!rarityByTier.TryGetValue(tier, out var rarity))
             {
                 throw new InvalidOperationException(
                     $"[{SettingsSection}] in {config.Path} scores gem tier {tier}, which no shipped gem sits at, " +
-                    "so the score belongs to no rung a gem prints.");
+                    "so the score belongs to no rarity a gem prints.");
             }
 
-            scores[rung] = score;
+            scores[rarity] = score;
         }
 
         return scores;
     }
 
-    private static int Rung(string member, string enumName)
+    private static int Tier(string member, string enumName)
     {
         var digits = member.Length;
         while (digits > 0 && char.IsAsciiDigit(member[digits - 1])) digits--;
 
         if (digits == member.Length) return 0;
 
-        return int.TryParse(member[digits..], CultureInfo.InvariantCulture, out var rung)
-            ? rung
+        return int.TryParse(member[digits..], CultureInfo.InvariantCulture, out var tier)
+            ? tier
             : throw new InvalidOperationException(
-                $"{enumName} declares '{member}', whose trailing digits are not the rung it names.");
+                $"{enumName} declares '{member}', whose trailing digits are not the tier it names.");
     }
 
     private static Dictionary<string, double> Slots(
@@ -188,7 +188,7 @@ public sealed class ItemSettings
                     "does not declare.");
             }
 
-            if (slots.Named(key) is not { } slot)
+            if (slots.Find(key) is not { } slot)
             {
                 throw new InvalidOperationException(
                     $"[{SettingsSection}] in {config.Path} keys {GemPowersKey} by '{key}', which the shipped slot " +

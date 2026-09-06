@@ -6,7 +6,7 @@ public class EmptyTests : BunitContext
     public void Renders_a_headline_and_a_detail_line()
     {
         var cut = Render<Empty>(p => p
-            .Add(x => x.Said, "Nothing in the build answers that.")
+            .Add(x => x.Message, "Nothing in the build answers that.")
             .AddChildContent("Remove a filter and try again."));
 
         cut.MarkupMatches(
@@ -26,7 +26,7 @@ public class EmptyTests : BunitContext
     public void Renders_a_link_as_the_detail_line()
     {
         var cut = Render<Empty>(p => p
-            .Add(x => x.Said, "No such id.")
+            .Add(x => x.Message, "No such id.")
             .AddChildContent("<a href=\"/browse\">Browse everything</a>"));
 
         cut.MarkupMatches(

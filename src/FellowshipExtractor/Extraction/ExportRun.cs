@@ -31,14 +31,14 @@ public static class ExportRun
             .Where(p => p.GetCustomAttribute<JsonIgnoreAttribute>() is null),
     ];
 
-    private static bool Says(Entity entity) => Array.Exists(Content, p => p.GetValue(entity) is not null);
+    private static bool HasContent(Entity entity) => Array.Exists(Content, p => p.GetValue(entity) is not null);
 
     private static readonly string[] NullMembers = ["Invalid", "None"];
 
     private static bool NullMember(Entity entity) =>
         entity.Name is { } name &&
         Array.Exists(NullMembers, leaf => name.EndsWith($".{leaf}", StringComparison.OrdinalIgnoreCase)) &&
-        !Says(entity);
+        !HasContent(entity);
 
     public static string? NotWritten(Entity entity, IReadOnlySet<string> branches)
     {
@@ -46,9 +46,9 @@ public static class ExportRun
 
         if (entity.Type is null) return "no type";
 
-        if (entity.Name is { } name && branches.Contains(name) && !Says(entity)) return "empty branch";
+        if (entity.Name is { } name && branches.Contains(name) && !HasContent(entity)) return "empty branch";
 
-        if (entity.Type is EntityType.Creature && !Says(entity)) return "a creature carrying nothing";
+        if (entity.Type is EntityType.Creature && !HasContent(entity)) return "a creature carrying nothing";
 
         return null;
     }
@@ -73,7 +73,7 @@ public static class ExportRun
         Console.WriteLine($"talents:            {resolver.Talents.Count} across {resolver.Talents.HeroCount} trees");
         Console.WriteLine(
             $"gems:               {resolver.Gems.TypeCount} types, {resolver.Gems.SizeCount} sizes, " +
-            $"{resolver.Gems.NodeCount} ladder nodes, {resolver.Gems.ReplacementCount} superseded");
+            $"{resolver.Gems.NodeCount} gem nodes, {resolver.Gems.ReplacementCount} superseded");
         Console.WriteLine(
             $"item traits:        {resolver.Traits.Count} rows, {resolver.Traits.BoundRuns} of " +
             $"{resolver.Traits.TotalRuns} rank runs bound to a curve");
@@ -92,7 +92,7 @@ public static class ExportRun
         Console.WriteLine(
             $"dungeons:           {resolver.Dungeons.Count} named, {resolver.Locations.Dungeons} with a map, " +
             $"{resolver.Locations.Maps} umaps read, {resolver.Locations.Placed} creatures placed, " +
-            $"{resolver.Locations.Housed} of them by the folder they live in, " +
+            $"{resolver.Locations.PlacedByFolder} of them by the folder they live in, " +
             $"{resolver.Locations.Unplaced} placed in none");
         Console.WriteLine(
             $"modifiers:          {resolver.Modifiers.Count} rows across {resolver.Modifiers.TableCount} tables, " +
@@ -236,7 +236,7 @@ public static class ExportRun
                 string.Join(", ", dropped.Select(entry => $"{entry.Key} {entry.Value}")));
         }
         Console.WriteLine(
-            $"  {icons.Written} entity icon images and {chrome} chrome images written, " +
+            $"  {icons.Count} entity icon images and {chrome} chrome images written, " +
             $"{icons.Composed} of the icons composed against a rarity colour");
         Console.WriteLine(
             $"  {resolver.Lore.Count} mounts whose lore the localization table keys by their own tag: " +
@@ -275,10 +275,10 @@ public static class ExportRun
         Console.WriteLine(
             $"  {resolver.ModifiersRead} effect modifier magnitudes read");
 
-        var generations = resolver.Gains.Written;
+        var generations = resolver.Gains.Totals;
 
         Console.WriteLine(
-            $"  {resolver.Gains.Reached} resource generations found while walking the graphs, counting one " +
+            $"  {resolver.Gains.Generations} resource generations found while walking the graphs, counting one " +
             "visit per walk of a body, written as " +
             $"{generations.Entries} entries over {generations.Documents} documents: " +
             $"{generations.Amounts} stating an amount, {generations.Shares} a share of the pool ceiling, " +
@@ -297,7 +297,7 @@ public static class ExportRun
 
         Console.WriteLine("  the names the shipped sentences print each resource channel under:");
 
-        foreach (var named in resolver.ResourceNames.Named()) Console.WriteLine($"    {named}");
+        foreach (var named in resolver.ResourceNames.Lines()) Console.WriteLine($"    {named}");
         foreach (var contested in resolver.ResourceNames.Contested()) Console.WriteLine($"    {contested}");
         foreach (var unnamed in resolver.ResourceNames.Unnamed()) Console.WriteLine($"    {unnamed}");
 

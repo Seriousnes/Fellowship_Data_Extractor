@@ -1,3 +1,5 @@
+using Fellowship.SDK.Client;
+
 namespace Fellowship.Codex.Tests;
 
 [Collection(Corpus.Name)]
@@ -20,9 +22,9 @@ public class EntityLinkTests : BunitContext
         var document = Store.Entities.OfType<ItemDocument>().First(row => row.Icon is not null);
 
         Assert.DoesNotContain(
-            nameof(TooltipQuery.ShowIcon),
-            Draw(document).GetAttribute("data-tip") ?? string.Empty,
-            StringComparison.Ordinal);
+            nameof(TooltipRequest.ShowIcon),
+            Draw(document).GetAttribute("data-tip-ask") ?? string.Empty,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -30,13 +32,13 @@ public class EntityLinkTests : BunitContext
     {
         var document = Store.Entities.OfType<ItemDocument>().First(row => row.Icon is not null);
 
-        var asked = Render<EntityLink>(p => p
+        var body = Render<EntityLink>(p => p
                 .Add(x => x.Entity, document)
                 .Add(x => x.ShowIcon, true))
             .Find("a")
-            .GetAttribute("data-tip") ?? string.Empty;
+            .GetAttribute("data-tip-ask") ?? string.Empty;
 
-        Assert.Contains($"{nameof(TooltipQuery.ShowIcon)}=true", asked, StringComparison.Ordinal);
+        Assert.Contains("\"showIcon\":true", body, StringComparison.Ordinal);
     }
 
     [Fact]

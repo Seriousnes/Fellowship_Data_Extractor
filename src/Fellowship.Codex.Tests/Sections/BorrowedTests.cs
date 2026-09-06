@@ -16,7 +16,7 @@ public class BorrowedTests : BunitContext
         var slug = EntityTypes.Slug(EntityType.Item);
         var cut = Render<BorrowedArt>(p => p
             .Add(x => x.Href, $"/{slug}/12")
-            .Add(x => x.Tip, $"/api/{slug}/12/tooltip")
+            .Add(x => x.Tip, new TooltipLink($"/api/{slug}/12/tooltip", null))
             .Add(x => x.Name, "Old Boots"));
 
         Assert.Equal("Borrowed art", cut.Find("div.cx-panel-head").TextContent);
@@ -42,7 +42,7 @@ public class BorrowedTests : BunitContext
         var slug = EntityTypes.Slug(EntityType.Ability);
         var cut = Render<BorrowedName>(p => p
             .Add(x => x.Href, $"/{slug}/9")
-            .Add(x => x.Tip, $"/api/{slug}/9/tooltip")
+            .Add(x => x.Tip, new TooltipLink($"/api/{slug}/9/tooltip", null))
             .Add(x => x.Name, "Sunder"));
 
         Assert.Equal("Borrowed name", cut.Find("div.cx-panel-head").TextContent);

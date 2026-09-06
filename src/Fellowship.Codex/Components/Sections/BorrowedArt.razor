@@ -3,7 +3,7 @@
     <Panel Head="Borrowed art">
         <Note>
             This record ships no art of its own. The image above belongs to
-            <a href="@Href" data-tip="@Tip">@Name</a>,
+            <a href="@Href" data-tip="@Tip?.Address" data-tip-ask="@Tip?.Body">@Name</a>,
             which is where it was taken from.
         </Note>
     </Panel>
@@ -12,7 +12,7 @@
 @code {
     [Parameter] public string? Href { get; set; }
 
-    [Parameter] public string? Tip { get; set; }
+    [Parameter] public TooltipLink? Tip { get; set; }
 
     [Parameter] public string? Name { get; set; }
 }

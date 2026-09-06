@@ -8,7 +8,7 @@
         <table class="cx-rows">
             <thead>
                 <tr>
-                    @foreach (var column in drawn)
+                    @foreach (var column in columns)
                     {
                         <th class="@Tone(column)" aria-sort="@Sorted(column)">
                             @if (Link(column) is { } href)
@@ -40,13 +40,13 @@
                             last = value;
 
                             <tr class="cx-group-head">
-                                <td colspan="@drawn.Count">@(value ?? Ungrouped)</td>
+                                <td colspan="@columns.Count">@(value ?? Ungrouped)</td>
                             </tr>
                         }
                     }
 
                     <tr>
-                        @foreach (var column in drawn)
+                        @foreach (var column in columns)
                         {
                             <td class="@Tone(column)">
                                 @if (column.Content is { } template)
@@ -84,14 +84,14 @@
 
     [Parameter] public string Ungrouped { get; set; } = "Carries none";
 
-    private readonly List<Column<T>> drawn = [];
+    private readonly List<Column<T>> columns = [];
 
     public void Add(Column<T> column)
     {
-        if (!drawn.Contains(column)) drawn.Add(column);
+        if (!columns.Contains(column)) columns.Add(column);
     }
 
-    public void Remove(Column<T> column) => drawn.Remove(column);
+    public void Remove(Column<T> column) => columns.Remove(column);
 
     private static string? Tone(Column<T> column) =>
         (column.Numeric ? "cx-numeric" : null, column.Class) switch

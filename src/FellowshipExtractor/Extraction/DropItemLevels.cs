@@ -25,12 +25,12 @@ public sealed class DropItemLevels
     private const string TimeField = "Time";
     private const string ValueField = "Value";
 
-    public IReadOnlyList<DropPlateau> Plateaus { get; }
+    public IReadOnlyList<DropItemLevel> Levels { get; }
 
-    public int Count => Plateaus.Count;
+    public int Count => Levels.Count;
 
-    public int? Plateau(string row) =>
-        Plateaus.FirstOrDefault(plateau => plateau.Row.Equals(row, StringComparison.OrdinalIgnoreCase))?.ItemLevel;
+    public int? ItemLevel(string row) =>
+        Levels.FirstOrDefault(level => level.Row.Equals(row, StringComparison.OrdinalIgnoreCase))?.ItemLevel;
 
     public DropItemLevels(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
@@ -52,7 +52,7 @@ public sealed class DropItemLevels
             if (!wanted.Contains(overridden, StringComparer.OrdinalIgnoreCase)) wanted.Add(overridden);
         }
 
-        var plateaus = new List<DropPlateau>(wanted.Count);
+        var levels = new List<DropItemLevel>(wanted.Count);
 
         foreach (var wantedRow in wanted)
         {
@@ -62,10 +62,10 @@ public sealed class DropItemLevels
                     $"{Table} carries no {wantedRow} row, which a droptable group reads, so a drop reading that " +
                     "group would pay an item level nothing states.");
 
-            plateaus.Add(Plateau(wantedRow, row));
+            levels.Add(Read(wantedRow, row));
         }
 
-        Plateaus = plateaus;
+        Levels = levels;
     }
 
     private static IEnumerable<string> Overrides(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
@@ -85,7 +85,7 @@ public sealed class DropItemLevels
         }
     }
 
-    private static DropPlateau Plateau(string rowName, FStructFallback row)
+    private static DropItemLevel Read(string rowName, FStructFallback row)
     {
         if (PropertyWalk.AsOrdinal(PropertyWalk.Get(row, InterpolationField)?.GenericValue)
             is not LinearInterpolation)
@@ -123,14 +123,14 @@ public sealed class DropItemLevels
         if (steps.Count == 0)
         {
             throw new InvalidOperationException(
-                $"{Table}'s {rowName} row read back with no keys, so the level it plateaus at is unreadable.");
+                $"{Table}'s {rowName} row read back with no keys, so the level it levels at is unreadable.");
         }
 
         steps.Sort((left, right) => left.Difficulty.CompareTo(right.Difficulty));
 
-        var plateau = steps[^1].ItemLevel;
-        var reached = steps.First(step => step.ItemLevel == plateau);
+        var top = steps[^1].ItemLevel;
+        var reached = steps.First(step => step.ItemLevel == top);
 
-        return new DropPlateau(rowName, reached.Difficulty, plateau);
+        return new DropItemLevel(rowName, reached.Difficulty, top);
     }
 }

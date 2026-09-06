@@ -75,12 +75,12 @@ public static class Lookups
 
     public static IResult Problem(
         Lookup outcome, EntityType type, int id, HeroEntry? hero, IReadOnlyList<EntityDocument> readings) =>
-        Raised(Trouble(outcome, type, id, hero, readings));
+        Respond(Trouble(outcome, type, id, hero, readings));
 
     public static IResult NoSuchHero(string named, IReadOnlyList<HeroEntry> roster) =>
-        Raised(NoHero(named, roster));
+        Respond(NoHero(named, roster));
 
-    private static IResult Raised(Fault fault) =>
+    private static IResult Respond(Fault fault) =>
         Results.Problem(title: fault.Title, detail: fault.Detail, statusCode: fault.Status);
 
     private static string Describe(EntityDocument document) => document switch

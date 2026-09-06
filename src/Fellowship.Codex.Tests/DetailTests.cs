@@ -108,7 +108,7 @@ public class DetailTests : BunitContext
         var entity = new ItemDocument { Id = 1, Description = "some words", Slot = "Back" };
 
         var cut = Render<Detail>(p => p
-            .AddCascadingValue(new Bearings { Shown = entity })
+            .AddCascadingValue(new Bearings { Entity = entity })
             .Add(x => x.Entity, entity));
 
         var roots = cut.Nodes.OfType<IElement>().ToList();

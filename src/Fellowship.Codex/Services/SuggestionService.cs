@@ -16,8 +16,8 @@ public sealed class SuggestionService(ISearchIndexService index, ICodexViewServi
 
     public const int MaximumLimit = 100;
 
-    public static int Limit(string? asked) =>
-        int.TryParse(asked, out var wanted) ? Math.Clamp(wanted, 1, MaximumLimit) : DefaultLimit;
+    public static int Limit(string? value) =>
+        int.TryParse(value, out var wanted) ? Math.Clamp(wanted, 1, MaximumLimit) : DefaultLimit;
 
     public SearchResponse For(string? text, string? type, int limit)
     {

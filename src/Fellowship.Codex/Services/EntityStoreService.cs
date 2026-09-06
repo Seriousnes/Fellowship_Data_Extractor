@@ -44,7 +44,7 @@ public interface IEntityStoreService
 
     int DropItemLevel(EntityDocument document);
 
-    int Difficulty(string? asked);
+    int Difficulty(string? value);
 
     CreatureDocument? Menacing(EntityDocument? document);
 
@@ -125,7 +125,7 @@ public sealed class EntityStoreService : IEntityStoreService
 
         var groups = new Dictionary<(EntityType, int), List<EntityDocument>>();
         var stats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var spelled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var attributeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var entities = snapshot.Entities;
 
         foreach (var document in entities)
@@ -144,7 +144,7 @@ public sealed class EntityStoreService : IEntityStoreService
                 tree.Add(slot);
             }
 
-            Census(document, stats, spelled);
+            Census(document, stats, attributeNames);
 
             Count++;
         }
@@ -166,11 +166,11 @@ public sealed class EntityStoreService : IEntityStoreService
 
         var rows = Settings.StatCalculation.Attributes;
         var named = rows.Count(row => row.Value.DisplayName is { Length: > 0 });
-        var unnamed = spelled.Count(key => !rows.ContainsKey(key));
+        var unnamed = attributeNames.Count(key => !rows.ContainsKey(key));
 
         logger.LogInformation(
             "Export snapshot loaded: {Entities} entities under {Ids} ids, {Ambiguous} of which read differently per hero. " +
-            "{Heroes} heroes, {Rarities} rarity rungs, {Formats} print formats, {Colors} colours, {Styles} text styles, {Stats} stat names",
+            "{Heroes} heroes, {Rarities} rarities, {Formats} print formats, {Colors} colours, {Styles} text styles, {Stats} stat names",
             Count, Ids, byId.Count(e => e.Value.Length > 1), Settings.Heroes.Count,
             Settings.Rarities.Count, Settings.PrintFormats.Count, Settings.Colors.Count,
             Settings.TextStyles.Count, Stats.Names.Count);
@@ -178,23 +178,26 @@ public sealed class EntityStoreService : IEntityStoreService
         logger.LogInformation(
             "Attribute names: {Named} of {Attributes} shipped rows print a word, and {Unnamed} of the {Spelled} attribute " +
             "names the export spells have no row, so they print spaced out",
-            named, rows.Count, unnamed, spelled.Count);
+            named, rows.Count, unnamed, attributeNames.Count);
     }
 
-    private static void Census(EntityDocument document, HashSet<string> stats, HashSet<string> spelled)
+    private static void Census(EntityDocument document, HashSet<string> stats, HashSet<string> attributeNames)
     {
         foreach (var slot in Field<StatSlot>(document, nameof(ItemDocument.Stats)))
         {
             stats.Add(slot.Stat);
-            spelled.Add(slot.Stat);
+            attributeNames.Add(slot.Stat);
         }
 
-        foreach (var attribute in Field<string>(document, nameof(AbilityDocument.ScalesOff))) spelled.Add(attribute);
+        foreach (var attribute in Field<string>(document, nameof(AbilityDocument.ScalesOff)))
+        {
+            attributeNames.Add(attribute);
+        }
 
         foreach (var token in Field<Placeholder>(document, nameof(AbilityDocument.Placeholders)))
         {
-            if (token.Attribute is { } attribute) spelled.Add(attribute);
-            foreach (var scaling in token.ScalesOff ?? []) spelled.Add(scaling);
+            if (token.Attribute is { } attribute) attributeNames.Add(attribute);
+            foreach (var scaling in token.ScalesOff ?? []) attributeNames.Add(scaling);
         }
     }
 
@@ -261,12 +264,12 @@ public sealed class EntityStoreService : IEntityStoreService
         Settings.Heroes.FirstOrDefault(hero => EntityStore.Reads(document, hero));
 
     public int DropItemLevel(EntityDocument document) =>
-        Plateau(document is ItemDocument { Rarity: Fellowship.SDK.Rarity.Legendary }
+        ItemLevel(document is ItemDocument { Rarity: Fellowship.SDK.Rarity.Legendary }
             ? LegendaryDropRow
             : DefaultDropRow);
 
-    public int Difficulty(string? asked) =>
-        Difficulties.Asked(asked, Settings)
+    public int Difficulty(string? value) =>
+        Difficulties.Read(value, Settings)
         ?? Settings.DifficultyScaling.Health.Keys.DefaultIfEmpty(1).Min();
 
     public CreatureDocument? Menacing(EntityDocument? document) => document switch
@@ -277,11 +280,11 @@ public sealed class EntityStoreService : IEntityStoreService
         _ => null,
     };
 
-    private int Plateau(string row) =>
+    private int ItemLevel(string row) =>
         Settings.DropItemLevels.FirstOrDefault(
-            plateau => plateau.Row.Equals(row, StringComparison.OrdinalIgnoreCase))?.ItemLevel
+            level => level.Row.Equals(row, StringComparison.OrdinalIgnoreCase))?.ItemLevel
         ?? throw new InvalidOperationException(
-            $"The settings state no {row} drop plateau, so there is no item level to answer a request that " +
+            $"The settings state no {row} drop item level, so there is no item level to answer a request that " +
             "names none. Write it again with 'dotnet run --project src/FellowshipExtractor'.");
 
     public RarityEntry? Rarity(string? word, bool gem)

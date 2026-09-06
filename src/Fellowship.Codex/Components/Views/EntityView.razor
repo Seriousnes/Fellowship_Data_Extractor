@@ -8,8 +8,8 @@
     <Substitutions Tokens="Tokens" />
     <Ranks />
     <Overflow />
-    <BorrowedName Href="@(Namer?.Href)" Tip="@(Namer?.Tip)" Name="@(Namer?.Name)" />
-    <BorrowedArt Href="@(Lender?.Href)" Tip="@(Lender?.Tip)" Name="@(Lender?.Name)" />
+    <BorrowedName Href="@(NameSource?.Href)" Tip="@(NameSource?.Tip)" Name="@(NameSource?.Name)" />
+    <BorrowedArt Href="@(ArtSource?.Href)" Tip="@(ArtSource?.Tip)" Name="@(ArtSource?.Name)" />
     @ChildContent
     @if (ByVersion.Count > 0)
     {
@@ -27,9 +27,9 @@
     [CascadingParameter] private Bearings Here { get; set; } = new();
 
     [Parameter]
-    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Extra { get; set; } = [];
+    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Extra { get; set; } = [];
 
-    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts = [];
+    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Facts = [];
 
     private IReadOnlyList<(string Label, string Href)> Schools = [];
 
@@ -39,9 +39,9 @@
 
     private IReadOnlyList<VersionValue> ByVersion = [];
 
-    private (string Href, string? Tip, string Name)? Namer;
+    private (string Href, TooltipLink? Tip, string Name)? NameSource;
 
-    private (string Href, string? Tip, string Name)? Lender;
+    private (string Href, TooltipLink? Tip, string Name)? ArtSource;
 
     private const string SchoolFacet = "school";
 
@@ -50,18 +50,18 @@
         Facts = [.. Extra, .. Ui.Facts(Entity)];
         Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(AbilityDocument.ScalesOff)))];
         Tokens = Ui.Substitutions(Entity);
-        ByVersion = ReferenceEquals(Entity, Here.Shown) ? History.Of(Entity) : [];
+        ByVersion = ReferenceEquals(Entity, Here.Entity) ? History.Of(Entity) : [];
 
         IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
 
         Schools = [.. schools.Select(school => (school, Filter(school)))];
 
-        Namer = Borrowed((Entity as EffectDocument)?.NameBorrowedFrom);
-        Lender = Borrowed((Entity as EffectDocument)?.ArtBorrowedFrom);
+        NameSource = Borrowed((Entity as EffectDocument)?.NameBorrowedFrom);
+        ArtSource = Borrowed((Entity as EffectDocument)?.ArtBorrowedFrom);
     }
 
-    private (string Href, string? Tip, string Name)? Borrowed(EntityReference? source) =>
-        source is not null && Ui.Addresses(source.Type, source.Id, ShowIcon: true) is { } found
+    private (string Href, TooltipLink? Tip, string Name)? Borrowed(EntityReference? source) =>
+        source is not null && Ui.Addresses(source.Type, source.Id, showIcon: true) is { } found
             ? (found.Href, found.Tip, Ui.Name(source.Type, source.Id))
             : null;
 

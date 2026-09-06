@@ -13,21 +13,21 @@ public static class StorageExtensions
 
     public const string ConnectionKey = $"ConnectionStrings:{ConnectionName}";
 
-    public static bool Names(IConfiguration configuration) =>
-        StorageDefaults.Named(configuration.GetConnectionString(ConnectionName)) is not null ||
-        StorageDefaults.Named(configuration[S3Settings.BucketKey]) is not null;
+    public static bool Configured(IConfiguration configuration) =>
+        StorageDefaults.NullIfEmpty(configuration.GetConnectionString(ConnectionName)) is not null ||
+        StorageDefaults.NullIfEmpty(configuration[S3Settings.BucketKey]) is not null;
 
     public static void AddStorage(this IHostApplicationBuilder builder)
     {
         var configuration = builder.Configuration;
 
-        if (StorageDefaults.Named(configuration.GetConnectionString(ConnectionName)) is { } connectionString)
+        if (StorageDefaults.NullIfEmpty(configuration.GetConnectionString(ConnectionName)) is { } connectionString)
         {
             builder.Services.AddSingleton<IStorage>(AzureStorage.FromConnectionString(connectionString));
             return;
         }
 
-        if (StorageDefaults.Named(configuration[S3Settings.BucketKey]) is not { } bucket) throw Unconfigured();
+        if (StorageDefaults.NullIfEmpty(configuration[S3Settings.BucketKey]) is not { } bucket) throw Unconfigured();
 
         var settings = S3Settings.From(configuration, bucket);
         var options = configuration.GetAWSOptions();

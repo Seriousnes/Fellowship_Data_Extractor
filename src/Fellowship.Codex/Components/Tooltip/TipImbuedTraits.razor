@@ -16,9 +16,9 @@
     {
         if (query.HasImbuedTraits == false) return null;
 
-        if (entity.Slot is { } slot && TooltipView.ImbuedTraitCapacities.TryGetValue(slot, out var carried))
+        if (entity.Slot is { } slot && TooltipView.ImbuedTraitCapacities.TryGetValue(slot, out var capacity))
         {
-            return carried;
+            return capacity;
         }
 
         return query.HasImbuedTraits == true ? TooltipView.ImbuedTraitCapacities.Values.Max() : null;

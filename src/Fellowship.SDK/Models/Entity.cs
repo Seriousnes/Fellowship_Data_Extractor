@@ -339,7 +339,7 @@ public sealed record StatSlot(string Stat, int Weight)
 
 public enum TokenQuantity
 {
-    Unsettled,
+    Unknown,
 
     Period,
 

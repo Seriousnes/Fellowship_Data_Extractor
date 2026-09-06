@@ -125,25 +125,25 @@ public sealed class RarityTests
             rungs.Order(StringComparer.Ordinal));
     }
 
-    private static DropPlateau Plateau(string row) =>
-        Export.Loaded.Settings.DropItemLevels.Single(plateau => plateau.Row == row);
+    private static DropItemLevel Level(string row) =>
+        Export.Loaded.Settings.DropItemLevels.Single(level => level.Row == row);
 
     [Fact]
-    public void TheDropLadderPlateausAt315AndALegendaryDropAt360()
+    public void TheDropLadderTopsAt315AndALegendaryDropAt360()
     {
         Assert.Equal(
-            new DropPlateau(FellowshipExtractor.Extraction.DropItemLevels.DefaultRow, 21, 315),
-            Plateau(FellowshipExtractor.Extraction.DropItemLevels.DefaultRow));
+            new DropItemLevel(FellowshipExtractor.Extraction.DropItemLevels.DefaultRow, 21, 315),
+            Level(FellowshipExtractor.Extraction.DropItemLevels.DefaultRow));
 
-        Assert.Equal(new DropPlateau("Legendary", 21, 360), Plateau("Legendary"));
+        Assert.Equal(new DropItemLevel("Legendary", 21, 360), Level("Legendary"));
     }
 
     [Fact]
-    public void EveryPlateauIsAMultipleOfFifteen()
+    public void EveryDropItemLevelIsAMultipleOfFifteen()
     {
         Assert.NotEmpty(Export.Loaded.Settings.DropItemLevels);
 
-        Assert.All(Export.Loaded.Settings.DropItemLevels, plateau => Assert.Equal(0, plateau.ItemLevel % 15));
+        Assert.All(Export.Loaded.Settings.DropItemLevels, level => Assert.Equal(0, level.ItemLevel % 15));
     }
 
     [Fact]

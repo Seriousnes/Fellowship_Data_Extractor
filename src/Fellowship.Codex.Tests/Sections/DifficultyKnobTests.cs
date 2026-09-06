@@ -112,7 +112,7 @@ public class DifficultyKnobTests : BunitContext
         Assert.All(
             offered.Zip(Difficulties.Ladder(Settings).Where(step => step.League == Eternal.Name)),
             pair => Assert.EndsWith(
-                $"{DifficultyKnob.Asked}={pair.Second.Difficulty}",
+                $"{DifficultyKnob.Key}={pair.Second.Difficulty}",
                 pair.First.GetAttribute("href"),
                 StringComparison.Ordinal));
     }
@@ -125,7 +125,7 @@ public class DifficultyKnobTests : BunitContext
         var marked = picker.FindAll("[role=option][aria-selected=true]");
 
         Assert.Single(marked);
-        Assert.EndsWith($"{DifficultyKnob.Asked}={Deep}", marked[0].GetAttribute("href"), StringComparison.Ordinal);
+        Assert.EndsWith($"{DifficultyKnob.Key}={Deep}", marked[0].GetAttribute("href"), StringComparison.Ordinal);
     }
 
     [Fact]

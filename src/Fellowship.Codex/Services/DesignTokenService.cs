@@ -31,7 +31,7 @@ public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenServ
 
     private readonly IReadOnlyDictionary<string, string> rarityRows = settings.RarityColorRows;
 
-    private readonly IReadOnlySet<string> unshown = Unshown(settings);
+    private readonly IReadOnlySet<string> hidden = Hidden(settings);
 
     public IReadOnlyDictionary<string, string> Colors => colors;
 
@@ -54,7 +54,7 @@ public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenServ
 
         foreach (var (name, value) in colors.OrderBy(c => c.Key, StringComparer.Ordinal))
         {
-            if (unshown.Contains(name)) continue;
+            if (hidden.Contains(name)) continue;
 
             css.Append("--").Append(Variable(name)).Append(":#").Append(value).Append(';');
         }
@@ -62,15 +62,15 @@ public sealed class DesignTokenService(SettingsFile settings) : IDesignTokenServ
         return css.ToString();
     }
 
-    private static IReadOnlySet<string> Unshown(SettingsFile settings)
+    private static IReadOnlySet<string> Hidden(SettingsFile settings)
     {
         var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var rung in settings.Rarities)
+        foreach (var rarity in settings.Rarities)
         {
-            if (string.Equals(rung.Name, rung.DisplayName, StringComparison.OrdinalIgnoreCase)) continue;
+            if (string.Equals(rarity.Name, rarity.DisplayName, StringComparison.OrdinalIgnoreCase)) continue;
 
-            if (settings.RarityColorRows.TryGetValue(rung.Name, out var row)) keys.Add(row);
+            if (settings.RarityColorRows.TryGetValue(rarity.Name, out var row)) keys.Add(row);
         }
 
         return keys;

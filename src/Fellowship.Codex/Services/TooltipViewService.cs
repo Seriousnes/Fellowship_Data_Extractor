@@ -23,11 +23,11 @@ public interface ITooltipViewService
 
     string? Ornament(RarityEntry? rarity);
 
-    string Rung(EntityDocument document, RarityEntry rarity);
+    string RarityName(EntityDocument document, RarityEntry rarity);
 
     int? Level(EntityDocument document, TooltipQuery query);
 
-    string? Temper(TooltipQuery query, RarityEntry? rarity, int? level);
+    string? Temper(EntityDocument document, TooltipQuery query, RarityEntry? rarity, int? level);
 
     IReadOnlyList<TooltipView.Fact> Facts(EntityDocument document, TooltipQuery query);
 
@@ -85,8 +85,8 @@ public sealed class TooltipViewService(
     {
         var tier = document switch
         {
-            ItemDocument { Rarity: { } rung } => (int?)rung,
-            ItemDocument { Rarities: { Count: > 0 } rungs } => (int)rungs.Max(),
+            ItemDocument { Rarity: { } only } => (int?)only,
+            ItemDocument { Rarities: { Count: > 0 } rarities } => (int)rarities.Max(),
             CurrencyDocument { Rarity: { } coin } => (int)coin,
             GemDocument gem => (int)gem.Rarity,
             _ => null,
@@ -122,16 +122,20 @@ public sealed class TooltipViewService(
 
     public string? Ornament(RarityEntry? rarity) => rarity is null ? null : chrome.Ornament(rarity.Name);
 
-    public string Rung(EntityDocument document, RarityEntry rarity) =>
+    public string RarityName(EntityDocument document, RarityEntry rarity) =>
         document is GemDocument ? rarity.GemDisplayName : rarity.DisplayName;
 
-    public int? Level(EntityDocument document, TooltipQuery query) =>
-        document is ItemDocument { Stats: { Count: > 0 } }
-            ? query.ItemLevel ?? store.DropItemLevel(document)
-            : query.ItemLevel;
-
-    public string? Temper(TooltipQuery query, RarityEntry? rarity, int? level)
+    public int? Level(EntityDocument document, TooltipQuery query) => document switch
     {
+        ItemDocument { Stats: { Count: > 0 } } => query.ItemLevel ?? store.DropItemLevel(document),
+        ItemDocument => query.ItemLevel,
+        _ => null,
+    };
+
+    public string? Temper(EntityDocument document, TooltipQuery query, RarityEntry? rarity, int? level)
+    {
+        if (document is not ItemDocument) return null;
+
         if (query.Upgrades is not { } upgrades) return null;
 
         var ceiling = query.MaxUpgrades

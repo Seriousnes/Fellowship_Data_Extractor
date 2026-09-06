@@ -18,7 +18,7 @@ public sealed class DynamicItemVisuals
     private const string AllRaritiesField = "DropsInAllRarities";
     private const string SpecificRaritiesField = "DropsInSpecificRarities";
 
-    private static readonly int[] RungByTier = [0, 0, 1, 1, 2, 2, 2];
+    private static readonly int[] SkinByTier = [0, 0, 1, 1, 2, 2, 2];
 
     private readonly Dictionary<string, string> _collections = new(StringComparer.OrdinalIgnoreCase);
     private readonly VisualCollections _visuals;
@@ -56,16 +56,16 @@ public sealed class DynamicItemVisuals
         if (mappingKey is null || slotType is null) return [];
         if (!_collections.TryGetValue(Key(mappingKey, heroCodename), out var collection)) return [];
 
-        var rungs = _visuals.RungCount(collection);
-        if (rungs == 0) return [];
+        var skins = _visuals.SkinCount(collection);
+        if (skins == 0) return [];
 
         var icons = new List<RarityIcon>();
 
         foreach (var tier in _rarities.Tiers)
         {
             if (_rarities.Label(tier) is not { } rarity) continue;
-            if (Rung(tier, rungs) is not { } rung) continue;
-            if (_visuals.Icon(collection, rung, slotType) is not { } path) continue;
+            if (Skin(tier, skins) is not { } index) continue;
+            if (_visuals.Icon(collection, index, slotType) is not { } path) continue;
 
             icons.Add(new RarityIcon(rarity, path));
         }
@@ -92,8 +92,8 @@ public sealed class DynamicItemVisuals
         ];
     }
 
-    private static int? Rung(int tier, int rungs) =>
-        tier < 0 || tier >= RungByTier.Length ? null : Math.Min(RungByTier[tier], rungs - 1);
+    private static int? Skin(int tier, int skins) =>
+        tier < 0 || tier >= SkinByTier.Length ? null : Math.Min(SkinByTier[tier], skins - 1);
 
     private static string Key(string mappingKey, string heroCodename) => $"{mappingKey}#{heroCodename}";
 }

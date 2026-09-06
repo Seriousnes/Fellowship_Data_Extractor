@@ -27,7 +27,7 @@ public class ModifierSelectorTests : BunitContext
         Stats = [new StatSlot("Stamina", 40) { Kind = SlotKinds.Primary }],
     };
 
-    private RarityEntry Top => export.Store.Settings.Rarities.OrderBy(rung => rung.Tier).Last();
+    private RarityEntry Top => export.Store.Settings.Rarities.OrderBy(rarity => rarity.Tier).Last();
 
     private (IRenderedComponent<ModifierSelector> Dialog, List<CraftCandidate> Picked, List<int> Shut) Open(
         CraftSlot slot, TooltipQuery query, ItemDocument? item = null)
@@ -39,7 +39,7 @@ public class ModifierSelectorTests : BunitContext
             .Add(x => x.Slot, slot)
             .Add(x => x.Item, item ?? Worn("Head"))
             .Add(x => x.Query, query)
-            .Add(x => x.Rung, Top)
+            .Add(x => x.Rarity, Top)
             .Add(x => x.OnPick, EventCallback.Factory.Create<CraftCandidate>(this, picked.Add))
             .Add(x => x.OnShut, EventCallback.Factory.Create(this, () => shut.Add(1))));
 
@@ -83,7 +83,7 @@ public class ModifierSelectorTests : BunitContext
             .Select(row => ItemCraft.Slots(
                 new ItemDocument { Id = 1, RuleSet = row.Rule, Slot = "Head" },
                 settings,
-                settings.Rarities.Single(rung => rung.Tier == row.Tier)))
+                settings.Rarities.Single(rarity => rarity.Tier == row.Tier)))
             .SelectMany(slots => slots)
             .First(slot =>
                 slot.SlotName == CraftSlots.RandomRolls &&
@@ -118,8 +118,11 @@ public class ModifierSelectorTests : BunitContext
 
         var choice = dialog.Find($"button.cx-sel-choice[data-id=\"{trait.Id}\"]");
 
+        var tip = export.View.Tip(trait);
+
         Assert.NotNull(choice.QuerySelector(".cx-sel-art figure.fx-slot"));
-        Assert.Equal(export.View.Tip(trait), choice.GetAttribute("data-tip"));
+        Assert.Equal(tip.Address, choice.GetAttribute("data-tip"));
+        Assert.Equal(tip.Body, choice.GetAttribute("data-tip-ask"));
         Assert.Equal(export.View.Name(trait), choice.QuerySelector(".cx-sel-name")!.TextContent);
     }
 
@@ -242,17 +245,17 @@ public class ModifierSelectorTests : BunitContext
 
         var worn = offered[0].Slots![0];
 
-        var carried = offered
+        var modifiers = offered
             .Select(blessing => new ItemModifier(ModifierKind.Blessing, blessing.Id, 1))
             .ToArray();
 
         var slot = new CraftSlot(CraftSlots.RandomRolls, 0, [CraftSlots.AbilityRank]);
 
-        var (dialog, _, _) = Open(slot, new TooltipQuery { Modifiers = carried }, Worn(worn));
+        var (dialog, _, _) = Open(slot, new TooltipQuery { Modifiers = modifiers }, Worn(worn));
 
-        var standing = dialog.Find($"button.cx-sel-choice[data-id=\"{offered[0].Id}\"]");
+        var current = dialog.Find($"button.cx-sel-choice[data-id=\"{offered[0].Id}\"]");
 
-        Assert.False(standing.HasAttribute("disabled"));
+        Assert.False(current.HasAttribute("disabled"));
     }
 
     [Fact]

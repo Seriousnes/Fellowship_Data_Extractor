@@ -1,3 +1,5 @@
+using Fellowship.SDK.Client;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 
@@ -6,16 +8,22 @@ namespace Fellowship.Codex.Tests;
 [Collection(Corpus.Name)]
 public class TooltipQueryTests(Export export)
 {
-    private static IQueryCollection Raw(params (string Key, string[] Values)[] asked) =>
-        new QueryCollection(asked.ToDictionary(a => a.Key, a => new StringValues(a.Values)));
+    private static IQueryCollection Raw(params (string Key, string[] Values)[] values) =>
+        new QueryCollection(values.ToDictionary(pair => pair.Key, pair => new StringValues(pair.Values)));
 
-    private IReadOnlyList<string> Rollable => export.Store.Settings.StatCalculation.RandomStatPool;
+    private static IReadOnlySet<string> Declared => RequestProperties.Of(typeof(TooltipRequest));
+
+    private TooltipQuery Query(TooltipRequest request, out string? error) =>
+        TooltipRequests.Read(request, export.Store, out error);
+
+    private string Flat => export.Store.Stats.Names
+        .First(name => export.Store.Stats.Resolve(name) is { } stat &&
+            !StatConversion.Converts(export.Store.Stats.Row(stat)));
 
     [Fact]
     public void An_item_reads_the_armor_the_caller_states()
     {
-        var query = new ItemTooltipRequest { Id = 1, Armor = 303m }
-            .ToQuery(Raw(), export.Store.Stats, Rollable, out var error);
+        var query = Query(new TooltipRequest { Armor = 303m }, out var error);
 
         Assert.Null(error);
         Assert.Equal(303m, query.Armor);
@@ -24,10 +32,13 @@ public class TooltipQueryTests(Export export)
     [Fact]
     public void An_item_reads_each_imbued_trait_and_the_rank_it_sits_at()
     {
-        Assert.True(ImbuedTraits.TryParse("12:2,7", out var traits));
-
-        var query = new ItemTooltipRequest { Id = 1, ImbuedTraits = traits, HasImbuedTraits = true }
-            .ToQuery(Raw(), export.Store.Stats, Rollable, out _);
+        var query = Query(
+            new TooltipRequest
+            {
+                ImbuedTraits = [new ImbuedTrait(12, 2), new ImbuedTrait(7, 1)],
+                HasImbuedTraits = true,
+            },
+            out _);
 
         Assert.Equal([new ImbuedTrait(12, 2), new ImbuedTrait(7, 1)], query.ImbuedTraits);
         Assert.True(query.HasImbuedTraits);
@@ -36,21 +47,26 @@ public class TooltipQueryTests(Export export)
     [Fact]
     public void An_item_reads_every_modifier_the_caller_states_in_the_order_stated()
     {
-        Assert.True(ItemModifiers.TryParse("trait:412:1,blessing:7:1,essence:3:100", out var modifiers));
+        ItemModifier[] modifiers =
+        [
+            new(ModifierKind.Trait, 412, 1),
+            new(ModifierKind.Blessing, 7, 1),
+            new(ModifierKind.Essence, 3, 100),
+        ];
 
-        var query = new ItemTooltipRequest { Id = 1, Modifiers = modifiers }
-            .ToQuery(Raw(), export.Store.Stats, Rollable, out _);
-
-        Assert.Equal(modifiers.Values, query.Modifiers);
+        Assert.Equal(modifiers, Query(new TooltipRequest { Modifiers = modifiers }, out _).Modifiers);
     }
 
     [Fact]
     public void An_item_carries_the_allocated_count_the_caller_states_beside_the_list()
     {
-        Assert.True(ImbuedTraits.TryParse("12:2,7", out var traits));
-
-        var query = new ItemTooltipRequest { Id = 1, ImbuedTraits = traits, AllocatedTraits = 4 }
-            .ToQuery(Raw(), export.Store.Stats, Rollable, out _);
+        var query = Query(
+            new TooltipRequest
+            {
+                ImbuedTraits = [new ImbuedTrait(12, 2), new ImbuedTrait(7, 1)],
+                AllocatedTraits = 4,
+            },
+            out _);
 
         Assert.Equal(2, query.ImbuedTraits.Count);
         Assert.Equal(4, query.AllocatedTraits);
@@ -59,7 +75,7 @@ public class TooltipQueryTests(Export export)
     [Fact]
     public void An_item_counts_no_traits_when_the_caller_names_none()
     {
-        var query = new ItemTooltipRequest { Id = 1 }.ToQuery(Raw(), export.Store.Stats, Rollable, out _);
+        var query = Query(new TooltipRequest(), out _);
 
         Assert.Null(query.AllocatedTraits);
         Assert.Null(query.HasImbuedTraits);
@@ -71,8 +87,7 @@ public class TooltipQueryTests(Export export)
     [Fact]
     public void An_item_keeps_armor_for_the_printed_line_and_still_reads_a_stat()
     {
-        var query = new ItemTooltipRequest { Id = 1, Armor = 303m }
-            .ToQuery(Raw(("stamina", ["36"])), export.Store.Stats, Rollable, out var error);
+        var query = Query(new TooltipRequest { Armor = 303m }.Rated("stamina", 36m), out var error);
 
         Assert.Null(error);
         Assert.Equal(303m, query.Armor);
@@ -80,21 +95,83 @@ public class TooltipQueryTests(Export export)
     }
 
     [Fact]
-    public void An_item_refuses_a_key_that_is_neither_its_property_nor_a_stat()
+    public void A_stat_name_the_build_does_not_carry_is_refused()
     {
-        new ItemTooltipRequest { Id = 1 }
-            .ToQuery(Raw(("nonesuch", ["1"])), export.Store.Stats, Rollable, out var error);
+        var query = Query(new TooltipRequest().Rated("nonesuch", 1m), out var error);
+
+        Assert.Equal("Unknown stat 'nonesuch'.", error);
+        Assert.Empty(query.Stats);
+    }
+
+    [Fact]
+    public void Two_rolls_of_one_stat_stay_two_magnitudes_of_their_own()
+    {
+        var query = Query(new TooltipRequest().Rated("Haste", 100m, 250m), out var error);
+
+        Assert.Null(error);
+        Assert.Equal([100m, 250m], query.Stats["Haste"]);
+        Assert.Equal(350m, query.Total("Haste"));
+    }
+
+    [Fact]
+    public void A_percentage_roll_on_a_stat_that_converts_nothing_is_refused()
+    {
+        var query = Query(new TooltipRequest().Percent(Flat, 10m), out var error);
+
+        Assert.Equal($"'{Flat}' is not a rating, so its percentage rolls have nothing to convert.", error);
+        Assert.Empty(query.Attributes);
+    }
+
+    [Fact]
+    public void A_magnitude_past_the_ceiling_a_coefficient_can_be_applied_to_is_refused()
+    {
+        var query = Query(new TooltipRequest().Rated("Haste", 1_000_000_000_001m), out var error);
+
+        Assert.NotNull(error);
+        Assert.Contains("past the", error);
+        Assert.Empty(query.Stats);
+    }
+
+    [Fact]
+    public void The_page_reads_past_a_parameter_and_refuses_a_key_that_is_neither_that_nor_a_stat()
+    {
+        Assert.Empty(StatQuery.FromQuery(Raw(("armor", ["303"])), Declared, export.Store.Stats, out var known));
+        Assert.Null(known);
+
+        StatQuery.FromQuery(Raw(("nonesuch", ["1"])), Declared, export.Store.Stats, out var error);
 
         Assert.Equal("Unknown parameter 'nonesuch'.", error);
     }
 
     [Fact]
+    public void The_page_reads_a_percentage_suffix_as_the_percentage_roll_of_the_stat_it_names()
+    {
+        var stats = StatQuery.FromQuery(
+            Raw(($"Haste{StatConversion.PercentageSuffix}", ["10"])),
+            Declared,
+            export.Store.Stats,
+            out var error);
+
+        Assert.Null(error);
+        Assert.Equal([10m], stats["Haste"].Percentage);
+        Assert.Null(stats["Haste"].Rating);
+    }
+
+    [Fact]
+    public void The_page_keeps_a_repeated_key_as_a_roll_of_its_own()
+    {
+        var stats = StatQuery.FromQuery(
+            Raw(("Haste", ["100", "250"])), Declared, export.Store.Stats, out var error);
+
+        Assert.Null(error);
+        Assert.Equal([100m, 250m], stats["Haste"].Rating);
+    }
+
+    [Fact]
     public void An_item_reads_each_random_stat_the_caller_names_once_per_roll()
     {
-        Assert.True(RolledStats.TryParse("Stamina,Expertise,Expertise", out var rolled));
-
-        var query = new ItemTooltipRequest { Id = 1, RandomStats = rolled }
-            .ToQuery(Raw(), export.Store.Stats, Rollable, out var error);
+        var query = Query(
+            new TooltipRequest { RandomStats = ["Stamina", "Expertise", "Expertise"] }, out var error);
 
         Assert.Null(error);
         Assert.Equal(["Stamina", "Expertise", "Expertise"], query.RandomStats);
@@ -103,10 +180,7 @@ public class TooltipQueryTests(Export export)
     [Fact]
     public void An_item_reads_a_random_stat_by_the_name_the_game_prints()
     {
-        Assert.True(RolledStats.TryParse("Critical Strike,CritChance", out var rolled));
-
-        var query = new ItemTooltipRequest { Id = 1, RandomStats = rolled }
-            .ToQuery(Raw(), export.Store.Stats, Rollable, out var error);
+        var query = Query(new TooltipRequest { RandomStats = ["Critical Strike", "CritChance"] }, out var error);
 
         Assert.Null(error);
         Assert.Equal(["CritChance", "CritChance"], query.RandomStats);
@@ -115,10 +189,7 @@ public class TooltipQueryTests(Export export)
     [Fact]
     public void An_item_refuses_a_random_stat_no_slot_rolls()
     {
-        Assert.True(RolledStats.TryParse("Stamina,Armor", out var rolled));
-
-        new ItemTooltipRequest { Id = 1, RandomStats = rolled }
-            .ToQuery(Raw(), export.Store.Stats, Rollable, out var error);
+        Query(new TooltipRequest { RandomStats = ["Stamina", "Armor"] }, out var error);
 
         Assert.NotNull(error);
         Assert.Contains("'Armor' is not a stat a random slot rolls.", error);
@@ -127,14 +198,12 @@ public class TooltipQueryTests(Export export)
 
     [Fact]
     public void An_item_rolls_nothing_when_the_caller_names_nothing() =>
-        Assert.Empty(new ItemTooltipRequest { Id = 1 }
-            .ToQuery(Raw(), export.Store.Stats, Rollable, out _).RandomStats);
+        Assert.Empty(Query(new TooltipRequest(), out _).RandomStats);
 
     [Fact]
-    public void An_ability_carries_the_hero_and_nothing_more()
+    public void A_request_naming_only_the_hero_carries_the_hero_and_nothing_more()
     {
-        var query = new AbilityTooltipRequest { Id = 1, Hero = "Barbarian" }
-            .ToQuery(Raw(), export.Store.Stats, out var error);
+        var query = Query(new TooltipRequest { Hero = "Barbarian" }, out var error);
 
         Assert.Null(error);
         Assert.Equal("Barbarian", query.Hero);
@@ -143,50 +212,30 @@ public class TooltipQueryTests(Export export)
     }
 
     [Fact]
-    public void An_ability_reads_a_blank_hero_as_none_given()
-    {
-        var query = new AbilityTooltipRequest { Id = 1, Hero = string.Empty }
-            .ToQuery(Raw(), export.Store.Stats, out _);
-
-        Assert.Null(query.Hero);
-    }
+    public void A_blank_hero_reads_as_none_given() =>
+        Assert.Null(Query(new TooltipRequest { Hero = string.Empty }, out _).Hero);
 
     [Fact]
-    public void A_blessing_carries_the_state_and_the_tier()
+    public void The_state_and_the_equipped_tier_a_blessing_is_drawn_at_reach_the_query()
     {
-        var query = new BlessingTooltipRequest { Id = 1, State = "allocated", EquippedTier = 2 }
-            .ToQuery(Raw(), export.Store.Stats, out _);
+        var query = Query(new TooltipRequest { State = "allocated", EquippedTier = 2 }, out _);
 
         Assert.Equal("allocated", query.State);
         Assert.Equal(2, query.EquippedTier);
     }
 
     [Fact]
-    public void A_trait_carries_the_state()
-    {
-        var query = new TraitTooltipRequest { Id = 1, State = "unavailable" }
-            .ToQuery(Raw(), export.Store.Stats, out _);
-
-        Assert.Equal("unavailable", query.State);
-    }
+    public void The_state_a_trait_node_sits_at_reaches_the_query() =>
+        Assert.Equal("unavailable", Query(new TooltipRequest { State = "unavailable" }, out _).State);
 
     [Fact]
-    public void A_gem_and_a_currency_carry_the_rung()
-    {
-        Assert.Equal(
-            "3",
-            new GemTooltipRequest { Id = 1, Rarity = "3" }.ToQuery(Raw(), export.Store.Stats, out _).Rarity);
-
-        Assert.Equal(
-            "3",
-            new CurrencyTooltipRequest { Id = 1, Rarity = "3" }.ToQuery(Raw(), export.Store.Stats, out _).Rarity);
-    }
+    public void The_rarity_the_caller_names_reaches_the_query() =>
+        Assert.Equal("3", Query(new TooltipRequest { Rarity = "3" }, out _).Rarity);
 
     [Fact]
-    public void A_bare_type_carries_the_stats_and_nothing_else()
+    public void A_request_naming_only_a_stat_carries_the_stat_and_nothing_else()
     {
-        var query = new EffectTooltipRequest { Id = 1 }
-            .ToQuery(Raw(("Stamina", ["40"])), export.Store.Stats, out var error);
+        var query = Query(new TooltipRequest().Rated("Stamina", 40m), out var error);
 
         Assert.Null(error);
         Assert.Equal(40m, query.Total("Stamina"));

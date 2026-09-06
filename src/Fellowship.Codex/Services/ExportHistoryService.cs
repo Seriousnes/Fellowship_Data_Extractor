@@ -18,10 +18,10 @@ public sealed class ExportHistoryService : IExportHistoryService
 {
     private static readonly string[] Variant =
     [
-        Named(nameof(ItemDocument.ArmorType)),
-        Named(nameof(ItemDocument.PrimaryStat)),
-        Named(nameof(ItemDocument.Hero)),
-        Named(nameof(ItemDocument.Heroes)),
+        JsonName(nameof(ItemDocument.ArmorType)),
+        JsonName(nameof(ItemDocument.PrimaryStat)),
+        JsonName(nameof(ItemDocument.Hero)),
+        JsonName(nameof(ItemDocument.Heroes)),
     ];
 
     private readonly ExportHistory history;
@@ -76,8 +76,8 @@ public sealed class ExportHistoryService : IExportHistoryService
     }
 
     private static JsonNode? Field(JsonNode? node, string name) =>
-        node is JsonObject carried && carried.TryGetPropertyValue(name, out var value) ? value : null;
+        node is JsonObject fields && fields.TryGetPropertyValue(name, out var value) ? value : null;
 
-    private static string Named(string property) =>
+    private static string JsonName(string property) =>
         EntityDocuments.Options.PropertyNamingPolicy!.ConvertName(property);
 }

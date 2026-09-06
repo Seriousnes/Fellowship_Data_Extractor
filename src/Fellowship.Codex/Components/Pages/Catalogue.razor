@@ -4,7 +4,7 @@
 @inject ICodexSearchService Search
 @inject NavigationManager Nav
 
-@if (Gone)
+@if (Missing)
 {
     return;
 }
@@ -18,7 +18,7 @@
 @if (Error is { } error)
 {
     <Panel>
-        <Empty Said="That filter could not be read.">@error</Empty>
+        <Empty Message="That filter could not be read.">@error</Empty>
     </Panel>
 }
 else
@@ -31,7 +31,7 @@ else
                 <CountBadge Text="@Results.Types.Values.Sum().ToString("N0")" />
             }
         </a>
-        @foreach (var type in Strip)
+        @foreach (var type in Tabs)
         {
             <a class="cx-tab" href="@View.Replace("type", type.Slug)"
                aria-current="@(Results.Chosen == type.Type ? "page" : null)">
@@ -97,7 +97,7 @@ else
                     @foreach (var measure in View.Ranges)
                     {
                         <details class="cx-facet" data-more="@("range-" + measure.Key)" hidden="@(!View.Bounded(measure.Key))" open>
-                            <summary>@Named(measure) <FilterOff Clear="@(View.Bounded(measure.Key) ? View.Unbound(measure.Key) : null)" /></summary>
+                            <summary>@Name(measure) <FilterOff Clear="@(View.Bounded(measure.Key) ? View.Unbound(measure.Key) : null)" /></summary>
                             <div class="cx-range">
                                 <input type="number" step="any" name="@(measure.Key)Min" placeholder="min"
                                        value="@(Query.Bound(measure.Key, false) is { } low ? FellowshipCodex.Number(low) : null)" />
@@ -135,7 +135,7 @@ else
                     <optgroup label="Between">
                         @foreach (var measure in View.Ranges.Where(measure => !View.Bounded(measure.Key)))
                         {
-                            <option value="@("range-" + measure.Key)">@Named(measure)</option>
+                            <option value="@("range-" + measure.Key)">@Name(measure)</option>
                         }
                     </optgroup>
                 }
@@ -164,7 +164,7 @@ else
             @if (Results.Rows.Count == 0)
             {
                 <Panel>
-                    <Empty Said="Nothing in the build answers that.">
+                    <Empty Message="Nothing in the build answers that.">
                         @(Query.IsEmpty
                             ? "Pick a category from the menus above, or type a name into the search box."
                             : "Remove a filter and try again.")
@@ -195,34 +195,34 @@ else
 
     private Category? Here;
 
-    private bool Gone;
+    private bool Missing;
 
     private string? Error;
 
     private string Where => Here is { } category ? "/" + category.Slug : "/search";
 
     private string Heading =>
-        Query.Text is { } typed
-            ? $"Search results for “{typed}”"
+        Query.Text is { } text
+            ? $"Search results for “{text}”"
             : Results.Chosen is { } chosen
                 ? FellowshipCodex.Label(chosen)
                 : Here?.Label ?? "Search the codex";
 
-    private IReadOnlyList<TypeView> Strip
+    private IReadOnlyList<TypeView> Tabs
     {
         get
         {
-            var offered = Here is { } category
+            var types = Here is { } category
                 ? Catalog.Tabs(category)
                 : [.. Catalog.Types.OrderBy(type => type.Position)];
 
-            return [.. offered.Where(type => Results.Types.ContainsKey(type.Type) || Results.Chosen == type.Type)];
+            return [.. types.Where(type => Results.Types.ContainsKey(type.Type) || Results.Chosen == type.Type)];
         }
     }
 
     private Facet? Grouping => Query.Group is null ? null : Catalog.Facet(Query.Group);
 
-    private static string Named(Measure measure) =>
+    private static string Name(Measure measure) =>
         measure.Unit is null ? measure.Label : $"{measure.Label} ({measure.Unit})";
 
     private RenderFragment Values(FacetView facet) =>
@@ -282,19 +282,19 @@ else
     protected override void OnParametersSet()
     {
         Here = Slug is null ? null : Categories.Find(Slug);
-        Gone = Slug is not null && Here is null;
+        Missing = Slug is not null && Here is null;
 
-        if (Gone)
+        if (Missing)
         {
             Nav.NotFound();
             return;
         }
 
-        var asked = Http?.Request.Query ?? Microsoft.AspNetCore.Http.QueryCollection.Empty;
+        var request = Http?.Request.Query ?? Microsoft.AspNetCore.Http.QueryCollection.Empty;
 
-        Query = CodexQuery.Parse(asked, Catalog, RequestProperties.Of(typeof(EntitiesRequest)), Here, out Error);
+        Query = CodexQuery.Parse(request, Catalog, RequestProperties.Of(typeof(EntitiesRequest)), Here, out Error);
 
-        if (Error is null && asked.Any(p => p.Value.All(string.IsNullOrEmpty)))
+        if (Error is null && request.Any(p => p.Value.All(string.IsNullOrEmpty)))
         {
             Nav.NavigateTo(Where + Query.ToQueryString(), replace: true);
             return;

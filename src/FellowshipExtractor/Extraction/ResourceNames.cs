@@ -176,7 +176,7 @@ public sealed class ResourceNames(ResourcePools pools, HeroNames heroes)
         }
     }
 
-    public IEnumerable<string> Named()
+    public IEnumerable<string> Lines()
     {
         foreach (var (key, stated) in Stated().OrderBy(entry => entry.Key.Hero, StringComparer.Ordinal)
                      .ThenBy(entry => entry.Key.Channel, StringComparer.Ordinal))

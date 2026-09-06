@@ -61,24 +61,24 @@ public static class ItemPower
             HasSetBonus: Carries(CraftSlots.SetBonus));
     }
 
-    public static IReadOnlyList<ItemPowerTerm> Terms(ItemPowerInputs given, SettingsFile settings)
+    public static IReadOnlyList<ItemPowerTerm> Terms(ItemPowerInputs inputs, SettingsFile settings)
     {
         var factors = settings.Items.PowerPotential;
-        var weight = settings.StatCalculation.SlotWeights[given.Slot].StatWeight;
+        var weight = settings.StatCalculation.SlotWeights[inputs.Slot].StatWeight;
 
         var terms = new List<ItemPowerTerm>
         {
-            new("Item level", given.Level, factors.ItemLevelScoreFactor, weight,
-                given.Level * (float)factors.ItemLevelScoreFactor * (float)weight),
-            new("Tempering ceiling", given.MaxUpgrades, factors.TemperScoreFactor, null,
-                given.MaxUpgrades * (float)factors.TemperScoreFactor),
-            new("Rerollable slots", given.RerollableSlots, factors.ModSlotScoreFactor, null,
-                given.RerollableSlots * (float)factors.ModSlotScoreFactor),
+            new("Item level", inputs.Level, factors.ItemLevelScoreFactor, weight,
+                inputs.Level * (float)factors.ItemLevelScoreFactor * (float)weight),
+            new("Tempering ceiling", inputs.MaxUpgrades, factors.TemperScoreFactor, null,
+                inputs.MaxUpgrades * (float)factors.TemperScoreFactor),
+            new("Rerollable slots", inputs.RerollableSlots, factors.ModSlotScoreFactor, null,
+                inputs.RerollableSlots * (float)factors.ModSlotScoreFactor),
         };
 
         foreach (var once in OnceScores(settings))
         {
-            if (once.Fires(given))
+            if (once.Fires(inputs))
             {
                 terms.Add(new ItemPowerTerm(once.Label, null, once.Factor, null, (float)once.Factor));
             }
@@ -93,39 +93,39 @@ public static class ItemPower
         var factors = items.PowerPotential;
 
         string Slot(string type) => Printed(items, type) ?? type;
-        bool Wearing(ItemPowerInputs given, string type) => Wears(items, given.Slot, type);
+        bool Wearing(ItemPowerInputs inputs, string type) => Wears(items, inputs.Slot, type);
 
         return
         [
             new("Gem socket", null, factors.GemSocketScoreFactor,
-                given => given.HasGemSocket),
+                inputs => inputs.HasGemSocket),
             new("Set bonus", null, factors.SetBonusScoreFactor,
-                given => given.HasSetBonus),
+                inputs => inputs.HasSetBonus),
             new(Slot(WeaponType), "ability", factors.WeaponAbilityScoreFactor,
-                given => given.HasGrantedAbility && Wearing(given, WeaponType)),
+                inputs => inputs.HasGrantedAbility && Wearing(inputs, WeaponType)),
             new(Slot(TrinketType), "ability", factors.RelicAbilityScoreFactor,
-                given => given.HasGrantedAbility && Wearing(given, TrinketType)),
+                inputs => inputs.HasGrantedAbility && Wearing(inputs, TrinketType)),
             new(Slot(WeaponType), "trait tree", factors.WeaponTraitTreeScoreFactor,
-                given => given.HasTraitTree && Wearing(given, WeaponType)),
+                inputs => inputs.HasTraitTree && Wearing(inputs, WeaponType)),
             new(Slot(NecklaceType), "trait tree", factors.NecklaceTraitTreeScoreFactor,
-                given => given.HasTraitTree && Wearing(given, NecklaceType)),
+                inputs => inputs.HasTraitTree && Wearing(inputs, NecklaceType)),
             new("Legendary", "rung", factors.LegendaryScoreFactor,
-                given => given.Legendary),
+                inputs => inputs.Legendary),
         ];
     }
 
-    public static float Potential(ItemPowerInputs given, SettingsFile settings)
+    public static float Potential(ItemPowerInputs inputs, SettingsFile settings)
     {
         var score = 0f;
 
-        foreach (var term in Terms(given, settings)) score += term.Amount;
+        foreach (var term in Terms(inputs, settings)) score += term.Amount;
 
         return score;
     }
 
     public static decimal? Of(
         ItemDocument item, SettingsFile settings, RarityEntry? rarity, TooltipQuery query, int? level) =>
-        Inputs(item, settings, rarity, query, level) is { } given
-            ? StatRows.RoundHalfToEven(Potential(given, settings))
+        Inputs(item, settings, rarity, query, level) is { } inputs
+            ? StatRows.RoundHalfToEven(Potential(inputs, settings))
             : null;
 }

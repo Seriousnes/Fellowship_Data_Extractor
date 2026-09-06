@@ -36,7 +36,7 @@ public sealed class EffectRoles
 
             parts++;
 
-            if (Named(stem.Tail) is null) withheld++;
+            if (RoleName(stem.Tail) is null) withheld++;
             else roles++;
         }
 
@@ -55,9 +55,9 @@ public sealed class EffectRoles
 
     public int? PartOf(string? tag) => Stem(tag)?.Ability;
 
-    public string? Role(string? tag) => Stem(tag) is { } stem ? Named(stem.Tail) : null;
+    public string? Role(string? tag) => Stem(tag) is { } stem ? RoleName(stem.Tail) : null;
 
-    private string? Named(string tail)
+    private string? RoleName(string tail)
     {
         var role = string.Empty;
 

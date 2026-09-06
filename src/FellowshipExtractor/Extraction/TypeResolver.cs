@@ -68,7 +68,7 @@ public sealed class TypeResolver(
 
         if (tag.Table.Equals(HeroNames.Table, StringComparison.OrdinalIgnoreCase))
         {
-            return heroes.Rostered(tag.Name) is not null ? EntityType.Hero : null;
+            return heroes.ForTag(tag.Name) is not null ? EntityType.Hero : null;
         }
 
         return Tables.TryGetValue(tag.Table, out var table) ? table : null;

@@ -20,14 +20,14 @@ public static class EntityRecords
 {
     private const string Suffix = "Record";
 
-    private const string Named = "The record class is named at run time, so trimming can take it away.";
+    private const string TrimWarning = "The record class is named at run time, so trimming can take it away.";
 
     private static readonly ConcurrentDictionary<EntityType, Type> ByMember = new();
 
-    [RequiresUnreferencedCode(Named)]
+    [RequiresUnreferencedCode(TrimWarning)]
     public static Type Record(EntityType type) => ByMember.GetOrAdd(type, Resolve);
 
-    [RequiresUnreferencedCode(Named)]
+    [RequiresUnreferencedCode(TrimWarning)]
     private static Type Resolve(EntityType type) =>
         typeof(EntityRecord).Assembly.GetType($"{typeof(EntityRecord).Namespace}.{type}{Suffix}")
         ?? throw new InvalidOperationException(

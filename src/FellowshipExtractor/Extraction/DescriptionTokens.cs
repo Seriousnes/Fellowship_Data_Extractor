@@ -116,7 +116,7 @@ public static class DescriptionTokens
         var self = objectPath is not null && IsSelf(objectPath, ownAsset);
 
         var quantity = TokenCalculations.Of(Ordinal(token, "Calculation"));
-        if (self && quantity == TokenQuantity.Unsettled) quantity = TokenCalculations.Named(name);
+        if (self && quantity == TokenQuantity.Unknown) quantity = TokenCalculations.ForName(name);
 
         var declared = new Placeholder
         {

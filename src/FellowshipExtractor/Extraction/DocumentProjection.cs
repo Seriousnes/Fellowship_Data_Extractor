@@ -158,8 +158,8 @@ public static class DocumentProjection
             Strength = entity.Strength,
             Agility = entity.Agility,
             Scaling = entity.Scaling,
-            Abilities = Wielded(entity.Abilities, references),
-            Passives = Wielded(entity.Passives, references),
+            Abilities = Abilities(entity.Abilities, references),
+            Passives = Abilities(entity.Passives, references),
             FoundIn = Referenced(entity.FoundIn, references),
         },
 
@@ -415,7 +415,7 @@ public static class DocumentProjection
             : null;
 
     public static string? Name(Entity entity) =>
-        entity.DisplayName is { } name && WrittenAsWords(name) ? name : null;
+        entity.DisplayName is { } name && ReadsAsWords(name) ? name : null;
 
     private static IconSource? Augmentation(int? netId) =>
         netId is { } id ? new IconSource(TalentTrees.AugmentationTable, id, string.Empty) : null;
@@ -424,7 +424,7 @@ public static class DocumentProjection
         IReadOnlyList<IconSource>? sources, References references) =>
         sources?.Select(references.At).OfType<EntityReference>().ToArray() is { Length: > 0 } named ? named : null;
 
-    private static IReadOnlyList<CreatureAbility>? Wielded(
+    private static IReadOnlyList<CreatureAbility>? Abilities(
         IReadOnlyList<PhaseAbility>? held, References references) =>
         held?.Select(slot => references.At(slot.Ability) is { } ability
                 ? new CreatureAbility(ability, slot.Phase, slot.Shown)
@@ -442,7 +442,7 @@ public static class DocumentProjection
             ? carried
             : null;
 
-    private static bool WrittenAsWords(string name)
+    private static bool ReadsAsWords(string name)
     {
         for (var at = 0; at < name.Length; at++)
         {

@@ -13,7 +13,7 @@ public static class ItemGroup
             .WithTags(PublicTypes.Label(EntityType.Item));
 
         group.MapItemRecord();
-        group.MapItemTooltip();
+        group.MapTooltip(EntityType.Item);
 
         return group;
     }

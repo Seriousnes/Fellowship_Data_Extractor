@@ -4,7 +4,7 @@ public static class StorageDefaults
 {
     public const string Name = "icons";
 
-    public static string? Named(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+    public static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 }
 
 public readonly record struct StoredObject(string Name, byte[]? Hash);

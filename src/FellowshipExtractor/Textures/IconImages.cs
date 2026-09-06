@@ -16,7 +16,7 @@ public sealed class IconImages(
 
     private readonly List<(string Name, byte[] Png)> _pending = [];
 
-    public int Written { get; private set; }
+    public int Count { get; private set; }
 
     public int Composed { get; private set; }
 
@@ -31,18 +31,18 @@ public sealed class IconImages(
         if (name is null) return null;
         if (!renders.Contains(iconPath)) return name;
 
-        return ExportLayout.Variant(name, rarity is null ? rarities[^1].Rarity : Rung(rarity));
+        return ExportLayout.Variant(name, rarity is null ? rarities[^1].Rarity : Check(rarity));
     }
 
-    private string Rung(string rarity)
+    private string Check(string rarity)
     {
-        foreach (var rung in rarities)
+        foreach (var entry in rarities)
         {
-            if (rung.Rarity.Equals(rarity, StringComparison.OrdinalIgnoreCase)) return rung.Rarity;
+            if (entry.Rarity.Equals(rarity, StringComparison.OrdinalIgnoreCase)) return entry.Rarity;
         }
 
         throw new InvalidOperationException(
-            $"An icon was asked for at rarity {rarity}, which is no rung of the ladder the settings publish, so it " +
+            $"An icon was asked for at rarity {rarity}, which is no rarity the settings publish, so it " +
             "would name a variant no run writes.");
     }
 
@@ -56,7 +56,7 @@ public sealed class IconImages(
         }
 
         var encoded = TextureExporter.Export(texture, ETextureFormat.Png);
-        if (!encoded.Written)
+        if (!encoded.HasContent)
         {
             Undecoded++;
             return null;
@@ -72,9 +72,9 @@ public sealed class IconImages(
 
         using var icon = Image.Load<Rgba32>(encoded.Content!);
 
-        foreach (var rung in rarities)
+        foreach (var entry in rarities)
         {
-            _pending.Add((ExportLayout.Variant(name, rung.Rarity), RarityImages.Compose(icon, rung.Colour)));
+            _pending.Add((ExportLayout.Variant(name, entry.Rarity), RarityImages.Compose(icon, entry.Colour)));
             Composed++;
         }
 
@@ -86,7 +86,7 @@ public sealed class IconImages(
         foreach (var (name, png) in _pending)
         {
             await target.WriteImageAsync(name, png, cancellationToken);
-            Written++;
+            Count++;
         }
 
         _pending.Clear();

@@ -7,7 +7,7 @@
 }
 .cx-knob select:focus, .cx-knob input:focus { @include edged; }
 
-.cx-rungs {
+.cx-rarities {
   display: flex; flex-wrap: wrap; gap: 4px;
 
   button {

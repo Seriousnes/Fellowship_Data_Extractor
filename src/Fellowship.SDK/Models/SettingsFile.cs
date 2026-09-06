@@ -65,7 +65,7 @@ public sealed record SettingsFile
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; init; } =
         new Dictionary<string, IReadOnlyList<TemperCeiling>>(StringComparer.OrdinalIgnoreCase);
 
-    public IReadOnlyList<DropPlateau> DropItemLevels { get; init; } = [];
+    public IReadOnlyList<DropItemLevel> DropItemLevels { get; init; } = [];
 
     public BlessingEntry Blessings { get; init; } = new(string.Empty, string.Empty, string.Empty, 0);
 

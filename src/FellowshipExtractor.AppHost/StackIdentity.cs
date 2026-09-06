@@ -102,8 +102,8 @@ static class ComposeStackExtensions
 
             var service = resource.Name;
 
-            foreach (var named in resource.Annotations.OfType<ContainerNameAnnotation>().ToArray())
-                resource.Annotations.Remove(named);
+            foreach (var annotation in resource.Annotations.OfType<ContainerNameAnnotation>().ToArray())
+                resource.Annotations.Remove(annotation);
 
             resource.Annotations.Add(new ContainerNameAnnotation { Name = $"{project}-{service}" });
             resource.Annotations.Add(new ContainerRuntimeArgsCallbackAnnotation(runtimeArgs =>

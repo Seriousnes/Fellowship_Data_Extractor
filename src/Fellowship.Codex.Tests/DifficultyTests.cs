@@ -3,6 +3,7 @@ using System.Text.Json;
 using AngleSharp;
 
 using Fellowship.SDK;
+using Fellowship.SDK.Client;
 using Fellowship.SDK.Models;
 
 using Fellowship.Codex.Models;
@@ -42,14 +43,14 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public async Task A_creature_tooltip_states_its_health_at_the_difficulty_it_is_asked_for()
+    public async Task A_creature_tooltip_states_its_health_at_the_difficulty_the_request_names()
     {
-        var opening = await client.GetStringAsync(
-            $"/api/creature/{NoorTheBetrayer}/tooltip", Xunit.TestContext.Current.CancellationToken);
+        var opening = await client.TooltipHtmlAsync(EntityType.Creature, NoorTheBetrayer);
 
-        var deep = await client.GetStringAsync(
-            $"/api/creature/{NoorTheBetrayer}/tooltip?difficulty={Eternal.MinimumDifficulty + 44}",
-            Xunit.TestContext.Current.CancellationToken);
+        var deep = await client.TooltipHtmlAsync(
+            EntityType.Creature,
+            NoorTheBetrayer,
+            new TooltipRequest { Difficulty = Eternal.MinimumDifficulty + 44 });
 
         var health = Difficulties.Health(Noor, Settings, Eternal.MinimumDifficulty + 44);
 
@@ -148,14 +149,14 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public async Task An_ability_tooltip_states_its_damage_only_once_a_difficulty_is_asked_for()
+    public async Task An_ability_tooltip_states_its_damage_only_once_the_request_names_a_difficulty()
     {
-        var opening = await client.GetStringAsync(
-            $"/api/ability/{BetrayersArrow}/tooltip", Xunit.TestContext.Current.CancellationToken);
+        var opening = await client.TooltipHtmlAsync(EntityType.Ability, BetrayersArrow);
 
-        var deep = await client.GetStringAsync(
-            $"/api/ability/{BetrayersArrow}/tooltip?difficulty={Eternal.MinimumDifficulty + 44}",
-            Xunit.TestContext.Current.CancellationToken);
+        var deep = await client.TooltipHtmlAsync(
+            EntityType.Ability,
+            BetrayersArrow,
+            new TooltipRequest { Difficulty = Eternal.MinimumDifficulty + 44 });
 
         Assert.Contains("Damage", opening, StringComparison.Ordinal);
         Assert.Contains("Damage", deep, StringComparison.Ordinal);
@@ -187,7 +188,7 @@ public sealed class DifficultyTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public async Task A_creature_page_reads_its_health_at_the_difficulty_it_is_asked_for()
+    public async Task A_creature_page_reads_its_health_at_the_difficulty_its_address_names()
     {
         var difficulty = Eternal.MinimumDifficulty + 44;
 

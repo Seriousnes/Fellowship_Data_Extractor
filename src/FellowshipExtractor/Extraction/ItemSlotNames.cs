@@ -40,7 +40,7 @@ public sealed class ItemSlotNames
 
     public SlotName? ByOrdinal(int ordinal) => _byOrdinal.GetValueOrDefault(ordinal);
 
-    public SlotName? Named(string token)
+    public SlotName? Find(string token)
     {
         if (_byToken.TryGetValue(token, out var cached)) return cached;
         return _byToken[token] = Match(token);
@@ -52,7 +52,7 @@ public sealed class ItemSlotNames
 
         foreach (var token in tagName[DynamicTagPrefix.Length..].Split(TagSeparators))
         {
-            if (Named(token) is { } slot) return slot;
+            if (Find(token) is { } slot) return slot;
         }
 
         return null;
@@ -161,7 +161,7 @@ public sealed class ItemSlotNames
 
         foreach (var (ordinal, label) in labels)
         {
-            if (Named(label) is { } slot)
+            if (Find(label) is { } slot)
             {
                 _byOrdinal[ordinal] = slot;
                 claimed.Add(slot.Type);

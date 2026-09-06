@@ -19,7 +19,7 @@ public sealed class SlotIcons
     {
         foreach (var (type, texture) in Textures(provider))
         {
-            var named = slots.Named(type)
+            var named = slots.Find(type)
                 ?? (int.TryParse(type, out var ordinal) ? slots.ByOrdinal(ordinal) : null);
 
             if (named is not { } slot)

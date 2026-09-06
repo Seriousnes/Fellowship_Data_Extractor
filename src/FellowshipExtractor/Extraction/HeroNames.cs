@@ -157,7 +157,7 @@ public sealed class HeroNames
         return marker < 0 ? null : colourRow![(marker + RowPrefix.Length)..];
     }
 
-    public HeroProfile? Rostered(string tagName)
+    public HeroProfile? ForTag(string tagName)
     {
         if (!tagName.StartsWith(HeroVariants.HeroTagPrefix, StringComparison.OrdinalIgnoreCase)) return null;
 

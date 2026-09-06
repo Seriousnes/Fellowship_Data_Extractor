@@ -1,5 +1,4 @@
-using System.Reflection;
-using System.Web;
+using System.Text.Json;
 
 using Fellowship.SDK;
 using Fellowship.SDK.Client;
@@ -29,68 +28,67 @@ public class CodexAddressTests
         RandomStats = ["Stamina", "Haste"],
         Modifiers = [new ItemModifier(ModifierKind.Blessing, 12, 3)],
         ImbuedTraits = [new ImbuedTrait(456, 2)],
+        Stats = new Dictionary<string, StatRolls>
+        {
+            ["Strength"] = new() { Rating = [400m, 134m] },
+            ["Haste"] = new() { Rating = [100m], Percentage = [10m] },
+        },
     };
 
-    private static IReadOnlySet<string> Declared() =>
-        typeof(ItemTooltipRequest).Assembly
-            .GetTypes()
-            .Where(type => type.Name.EndsWith("TooltipRequest", StringComparison.Ordinal))
-            .SelectMany(type => type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            .Select(property => property.Name)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    private static IReadOnlySet<string> Declared() => RequestProperties.Of(typeof(TooltipRequest));
 
-    private static IReadOnlyList<KeyValuePair<string, string?>> Written(TooltipRequest asked)
+    private static JsonDocument Body(TooltipRequest request) =>
+        JsonDocument.Parse(JsonSerializer.Serialize(request, CodexJson.Options));
+
+    private static IReadOnlyList<string> Names(TooltipRequest request)
     {
-        var address = CodexAddresses.Tooltip(EntityType.Item, 5218, asked);
-        var query = HttpUtility.ParseQueryString(address[(address.IndexOf('?') + 1)..]);
+        using var body = Body(request);
 
-        return [.. query.AllKeys.SelectMany(key =>
-            (query.GetValues(key) ?? []).Select(value => KeyValuePair.Create(key!, (string?)value)))];
+        return [.. body.RootElement.EnumerateObject().Select(property => property.Name)];
     }
 
     [Fact]
-    public void Every_parameter_the_address_writes_is_one_a_tooltip_request_declares()
+    public void Every_parameter_the_body_writes_is_one_a_tooltip_request_declares()
     {
         var declared = Declared();
 
-        foreach (var (key, _) in Written(Everything)) Assert.Contains(key, declared);
+        foreach (var name in Names(Everything)) Assert.True(declared.Contains(name), name);
     }
 
     [Fact]
-    public void Every_property_of_the_request_reaches_the_address()
+    public void Every_property_of_the_request_reaches_the_body()
     {
-        var written = Written(Everything).Select(pair => pair.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var written = Names(Everything).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var carried = typeof(TooltipRequest)
-            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(property => property.Name is not (nameof(TooltipRequest.Stats) or nameof(TooltipRequest.Parameters)))
-            .Select(property => property.Name);
-
-        foreach (var property in carried) Assert.Contains(property, written);
+        foreach (var name in Declared()) Assert.True(written.Contains(name), name);
     }
 
     [Fact]
     public void A_stat_is_written_once_per_magnitude_it_stands_at()
     {
-        var written = Written(new TooltipRequest
+        using var body = Body(new TooltipRequest
         {
-            Stats = new Dictionary<string, IReadOnlyList<decimal>>
+            Stats = new Dictionary<string, StatRolls>
             {
-                ["Strength"] = [400m, 134m],
-                ["Haste"] = [100m],
+                ["Strength"] = new() { Rating = [400m, 134m] },
+                ["Haste"] = new() { Rating = [100m] },
             },
         });
 
+        var stats = body.RootElement.GetProperty("stats");
+
         Assert.Equal(
             ["Strength=400", "Strength=134", "Haste=100"],
-            written.Select(pair => $"{pair.Key}={pair.Value}"));
+            stats.EnumerateObject().SelectMany(stat => stat.Value
+                .GetProperty("rating")
+                .EnumerateArray()
+                .Select(value => $"{stat.Name}={value.GetDecimal()}")));
     }
 
     [Fact]
-    public void A_request_asking_nothing_writes_no_query()
+    public void A_tooltip_is_addressed_by_its_type_and_id_alone()
     {
         Assert.Equal("api/item/5218/tooltip", CodexAddresses.Tooltip(EntityType.Item, 5218));
-        Assert.Equal("api/item/5218/tooltip", CodexAddresses.Tooltip(EntityType.Item, 5218, new TooltipRequest()));
     }
 
     [Fact]

@@ -3,7 +3,7 @@
     <Panel Head="Borrowed name">
         <Note>
             This record ships no name of its own. The heading above belongs to
-            <a href="@Href" data-tip="@Tip">@Name</a>,
+            <a href="@Href" data-tip="@Tip?.Address" data-tip-ask="@Tip?.Body">@Name</a>,
             which is the entry that applies this one: a player reads a debuff as the ability that
             landed it, so the word is that ability's rather than this record's.
         </Note>
@@ -13,7 +13,7 @@
 @code {
     [Parameter] public string? Href { get; set; }
 
-    [Parameter] public string? Tip { get; set; }
+    [Parameter] public TooltipLink? Tip { get; set; }
 
     [Parameter] public string? Name { get; set; }
 }

@@ -168,7 +168,7 @@ public static class ChromeTextures
             }
 
             var encoded = TextureExporter.Export(texture, ETextureFormat.Png);
-            if (!encoded.Written)
+            if (!encoded.HasContent)
             {
                 Console.Error.WriteLine($"{name,-56} did not decode: {encoded.Error}");
                 missing++;
@@ -203,11 +203,11 @@ public static class ChromeTextures
 
             using var mask = Image.Load<Rgba32>(content);
 
-            foreach (var rung in ladder)
+            foreach (var entry in ladder)
             {
                 await target.WriteImageAsync(
-                    ExportLayout.Variant(image, rung.Rarity),
-                    RarityImages.Tint(mask, rung.Colour),
+                    ExportLayout.Variant(image, entry.Rarity),
+                    RarityImages.Tint(mask, entry.Colour),
                     cancellationToken);
 
                 variants++;

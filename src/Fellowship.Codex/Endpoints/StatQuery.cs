@@ -1,9 +1,8 @@
 using System.Globalization;
 
-using Fellowship.SDK.Documents;
+using Fellowship.SDK.Client;
 
 using Fellowship.Codex.Models;
-using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Endpoints;
 
@@ -11,93 +10,129 @@ public static class StatQuery
 {
     private const decimal Ceiling = 1_000_000_000_000m;
 
-    public static string? Given(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+    public static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
-    public static TooltipQuery Read<TRequest>(
-        TRequest request, IQueryCollection raw, StatParameters stats, out string? error)
-        where TRequest : notnull
+    public static TooltipQuery Read(
+        IReadOnlyDictionary<string, StatRolls>? stats, StatParameters parameters, out string? error)
     {
         error = null;
 
-        var declared = RequestProperties.Of(request.GetType());
+        if (stats is null) return new TooltipQuery();
 
         var values = new Dictionary<string, IReadOnlyList<decimal>>(StringComparer.OrdinalIgnoreCase);
         var attributes = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var (key, given) in raw)
+        foreach (var (key, rolls) in stats)
+        {
+            var stat = parameters.Resolve(key);
+
+            if (stat is null)
+            {
+                error = $"Unknown stat '{key}'.";
+                return new TooltipQuery();
+            }
+
+            var attribute = parameters.Row(stat);
+
+            IReadOnlyList<decimal> rating = rolls?.Rating ?? [];
+            IReadOnlyList<decimal> percentage = rolls?.Percentage ?? [];
+
+            if (percentage.Count > 0 && !StatConversion.Converts(attribute))
+            {
+                error = $"'{key}' is not a rating, so its percentage rolls have nothing to convert.";
+                return new TooltipQuery();
+            }
+
+            if (rating.Count == 0 && percentage.Count == 0) continue;
+
+            error = TooLarge(key, rating) ?? TooLarge(key, percentage);
+
+            if (error is not null) return new TooltipQuery();
+
+            if (rating.Count > 0)
+            {
+                values[stat] = values.TryGetValue(stat, out var existing) ? [.. existing, .. rating] : rating;
+            }
+
+            attributes[stat] = attributes.GetValueOrDefault(stat)
+                + StatConversion.FromRating(rating.Sum(), attribute)
+                + StatConversion.FromPercentage(percentage.Sum(), attribute);
+        }
+
+        return new TooltipQuery { Stats = values, Attributes = attributes };
+    }
+
+    public static IReadOnlyDictionary<string, StatRolls> FromQuery(
+        IQueryCollection query, IReadOnlySet<string> declared, StatParameters parameters, out string? error)
+    {
+        error = null;
+
+        var stats = new Dictionary<string, StatRolls>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (key, values) in query)
         {
             if (declared.Contains(key)) continue;
 
-            var stat = stats.Resolve(key);
+            var name = key;
+            var stat = parameters.Resolve(key);
             var percentage = false;
 
             if (stat is null && key.EndsWith(StatConversion.PercentageSuffix, StringComparison.OrdinalIgnoreCase))
             {
-                stat = stats.Resolve(key[..^StatConversion.PercentageSuffix.Length]);
+                name = key[..^StatConversion.PercentageSuffix.Length];
+                stat = parameters.Resolve(name);
                 percentage = stat is not null;
             }
 
             if (stat is null)
             {
                 error = $"Unknown parameter '{key}'.";
-                return new TooltipQuery();
+                return new Dictionary<string, StatRolls>();
             }
 
-            var attribute = stats.Row(stat);
-
-            if (percentage && !StatConversion.Converts(attribute))
+            if (percentage && !StatConversion.Converts(parameters.Row(stat)))
             {
-                error =
-                    $"'{key[..^StatConversion.PercentageSuffix.Length]}' is not a rating, " +
-                    $"so '{key}' has nothing to convert.";
-                return new TooltipQuery();
+                error = $"'{name}' is not a rating, so '{key}' has nothing to convert.";
+                return new Dictionary<string, StatRolls>();
             }
 
-            var numbers = new List<decimal>(given.Count);
+            var numbers = new List<decimal>(values.Count);
 
-            foreach (var value in given)
+            foreach (var value in values)
             {
                 if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var number))
                 {
                     error = $"Stat '{key}' has the non-numeric value '{value}'.";
-                    return new TooltipQuery();
-                }
-
-                if (Math.Abs(number) > Ceiling)
-                {
-                    error = $"Stat '{key}' is {value}, past the {Ceiling:N0} a coefficient can be applied to.";
-                    return new TooltipQuery();
+                    return new Dictionary<string, StatRolls>();
                 }
 
                 numbers.Add(number);
             }
 
-            if (!percentage)
-            {
-                values[stat] = values.TryGetValue(stat, out var already) ? [.. already, .. numbers] : numbers;
-            }
+            var rolls = stats.GetValueOrDefault(name) ?? new StatRolls();
+            var existing = percentage ? rolls.Percentage : rolls.Rating;
 
-            attributes[stat] = attributes.GetValueOrDefault(stat) + (percentage
-                ? StatConversion.FromPercentage(numbers.Sum(), attribute)
-                : StatConversion.FromRating(numbers.Sum(), attribute));
+            IReadOnlyList<decimal> joined = existing is null ? numbers : [.. existing, .. numbers];
+
+            stats[name] = percentage ? rolls with { Percentage = joined } : rolls with { Rating = joined };
         }
 
-        return new TooltipQuery { Stats = values, Attributes = attributes };
+        return stats;
     }
 
     public static IReadOnlyList<string> Rolled(
-        RolledStats? given, StatParameters stats, IReadOnlyList<string> pool, out string? error)
+        IReadOnlyList<string>? names, StatParameters parameters, IReadOnlyList<string> pool, out string? error)
     {
         error = null;
 
-        if (given is not { Values.Count: > 0 }) return [];
+        if (names is not { Count: > 0 }) return [];
 
         var rollable = new HashSet<string>(pool, StringComparer.OrdinalIgnoreCase);
-        var resolved = new List<string>(given.Values.Count);
+        var resolved = new List<string>(names.Count);
 
-        foreach (var name in given.Values)
+        foreach (var name in names)
         {
-            var stat = stats.Resolve(name) ?? (rollable.Contains(name) ? name : null);
+            var stat = parameters.Resolve(name) ?? (rollable.Contains(name) ? name : null);
 
             if (stat is null || !rollable.Contains(stat))
             {
@@ -107,14 +142,29 @@ public static class StatQuery
                 return [];
             }
 
-            resolved.Add(rollable.TryGetValue(stat, out var filed) ? filed : stat);
+            resolved.Add(rollable.TryGetValue(stat, out var stored) ? stored : stat);
         }
 
         return resolved;
     }
 
-    public static IResult Unreadable(string error, StatParameters stats) => Results.Problem(
+    public static IResult Unreadable(string error, StatParameters parameters) => Results.Problem(
         title: "The request parameters could not be read.",
-        detail: $"{error} Stat parameters are {string.Join(", ", stats.Names)}.",
+        detail: $"{error} Stat parameters are {string.Join(", ", parameters.Names)}.",
         statusCode: StatusCodes.Status400BadRequest);
+
+    private static string? TooLarge(string key, IReadOnlyList<decimal> values)
+    {
+        foreach (var value in values)
+        {
+            if (Math.Abs(value) > Ceiling)
+            {
+                return
+                    $"Stat '{key}' is {value.ToString(CultureInfo.InvariantCulture)}, " +
+                    $"past the {Ceiling:N0} a coefficient can be applied to.";
+            }
+        }
+
+        return null;
+    }
 }

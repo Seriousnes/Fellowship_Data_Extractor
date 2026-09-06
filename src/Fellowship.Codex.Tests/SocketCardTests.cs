@@ -1,7 +1,6 @@
-using Fellowship.Codex.Components.Tooltip;
+using Fellowship.SDK.Client;
 
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
+using Fellowship.Codex.Components.Tooltip;
 
 namespace Fellowship.Codex.Tests;
 
@@ -16,9 +15,6 @@ public class SocketCardTests : BunitContext
         Services.AddSingleton(export.Tooltip);
         Services.AddSingleton(export.Store);
     }
-
-    private static IQueryCollection Raw(params (string Key, string[] Values)[] asked) =>
-        new QueryCollection(asked.ToDictionary(a => a.Key, a => new StringValues(a.Values)));
 
     private GemDocument AnyGem => export.Store.Entities.OfType<GemDocument>().First(gem => gem.Icon is not null);
 
@@ -42,15 +38,15 @@ public class SocketCardTests : BunitContext
         var (rule, tier) = Socketed;
         var item = new ItemDocument { Id = 1, RuleSet = rule, Slot = "Head" };
         var settings = export.Store.Settings;
-        var rung = settings.Rarities.Single(entry => entry.Tier == tier);
+        var rarity = settings.Rarities.Single(entry => entry.Tier == tier);
 
-        Assert.True(TipSocket.Draws(item, settings, rung, new TooltipQuery()));
-        Assert.False(TipSocket.Draws(item, settings, rung, new TooltipQuery { NoSocket = true }));
-        Assert.False(TipSocket.Draws(item, settings, rung: null, new TooltipQuery()));
+        Assert.True(TipSocket.Draws(item, settings, rarity, new TooltipQuery()));
+        Assert.False(TipSocket.Draws(item, settings, rarity, new TooltipQuery { NoSocket = true }));
+        Assert.False(TipSocket.Draws(item, settings, null, new TooltipQuery()));
 
         var bare = new ItemDocument { Id = 1, Slot = "Head" };
 
-        Assert.False(TipSocket.Draws(bare, settings, rung, new TooltipQuery()));
+        Assert.False(TipSocket.Draws(bare, settings, rarity, new TooltipQuery()));
     }
 
     [Fact]
@@ -111,14 +107,9 @@ public class SocketCardTests : BunitContext
     }
 
     [Fact]
-    public void The_gem_parameter_reaches_the_query_from_the_request()
+    public void The_gem_the_caller_names_reaches_the_query_from_the_request()
     {
-        var query = new ItemTooltipRequest { Id = 1, Gem = 35 }
-            .ToQuery(
-                Raw(),
-                export.Store.Stats,
-                export.Store.Settings.StatCalculation.RandomStatPool,
-                out var error);
+        var query = TooltipRequests.Read(new TooltipRequest { Gem = 35 }, export.Store, out var error);
 
         Assert.Null(error);
         Assert.Equal(35, query.Gem);

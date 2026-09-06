@@ -27,7 +27,7 @@
 @if (Wearer is not { } hero)
 {
     <Panel>
-        <Empty Said="No hero picked.">Choose one above to lay their talent tree out.</Empty>
+        <Empty Message="No hero picked.">Choose one above to lay their talent tree out.</Empty>
     </Panel>
 }
 else
@@ -88,7 +88,7 @@ else
 }
 
 @code {
-    [SupplyParameterFromQuery(Name = "hero")] public string? Asked { get; set; }
+    [SupplyParameterFromQuery(Name = "hero")] public string? Hero { get; set; }
 
     [SupplyParameterFromQuery(Name = "picks")] public string? Picks { get; set; }
 
@@ -129,7 +129,7 @@ else
 
     protected override void OnParametersSet()
     {
-        Wearer = Store.Hero(Asked);
+        Wearer = Store.Hero(Hero);
 
         Tree = Wearer is null || !Enum.TryParse<Hero>(Wearer.Name, out var hero)
             ? []
@@ -138,14 +138,18 @@ else
         Taken = TalentPlan.Read(Picks, Tree);
     }
 
-    private RenderFragment Face(TalentNode node, string state) =>
-        @<span class="cx-tal-face" data-tip="@Ui.Tip(node.Talent)">
+    private RenderFragment Face(TalentNode node, string state)
+    {
+        var link = Ui.Tip(node.Talent);
+
+        return @<span class="cx-tal-face" data-tip="@link.Address" data-tip-ask="@link.Body">
             <span class="cx-tal-art" style="--cx-tal-slot:url(@Ui.Chrome.TalentSlot(state))">
                 <img class="cx-tal-icon" alt="" src="@Ui.Icon(node.Talent.Icon)" />
                 <span class="cx-tal-cost">@node.Cost</span>
             </span>
             <span class="cx-tal-name">@Ui.Name(node.Talent)</span>
         </span>;
+    }
 
     private string Toggled(TalentNode node)
     {
@@ -153,7 +157,7 @@ else
 
         if (!taken.Remove(node.Id)) taken.Add(node.Id);
 
-        return TalentPlan.Written(Tree, taken);
+        return TalentPlan.Write(Tree, taken);
     }
 
     private string Beyond(TalentNode node) =>
@@ -162,11 +166,11 @@ else
 
     private string Address(string? hero, string? picks = null)
     {
-        var carried = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
+        var values = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
 
-        if (hero is { Length: > 0 }) carried["hero"] = hero;
-        if (picks is { Length: > 0 }) carried["picks"] = picks;
+        if (hero is { Length: > 0 }) values["hero"] = hero;
+        if (picks is { Length: > 0 }) values["picks"] = picks;
 
-        return QueryHelpers.AddQueryString(Page, carried);
+        return QueryHelpers.AddQueryString(Page, values);
     }
 }

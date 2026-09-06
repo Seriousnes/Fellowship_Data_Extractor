@@ -9,11 +9,11 @@
 <h1>Nothing here</h1>
 
 <Panel>
-    <Empty Said="@Said"><a href="@Where">@Offer</a></Empty>
+    <Empty Message="@Message"><a href="@Where">@Offer</a></Empty>
 </Panel>
 
 @code {
-    private string Said = string.Empty;
+    private string Message = string.Empty;
     private string Where = "/";
     private string Offer = "Start from the front page.";
     private IReadOnlyList<(string Label, string? Href)> Trail = [("Nothing here", null)];
@@ -26,14 +26,14 @@
             Catalog.Types.FirstOrDefault(t =>
                 string.Equals(t.Slug, Uri.UnescapeDataString(slug), StringComparison.OrdinalIgnoreCase)) is { } kind)
         {
-            Said = $"The build has no {kind.Label} {id}.";
+            Message = $"The build has no {kind.Label} {id}.";
             Where = PublicTypes.Where(kind.Type);
             Offer = $"Browse the {kind.Count:N0} it does have.";
             Trail = [(kind.Label, Where), ("Nothing here", null)];
             return;
         }
 
-        Said = path is ["entity", var unknown, _]
+        Message = path is ["entity", var unknown, _]
             ? PublicTypes.NoSuchType(Uri.UnescapeDataString(unknown))
             : "That address does not name anything in the build.";
     }

@@ -13,7 +13,7 @@ public static class CodexView
 
     public static Rarity? Tier(EntityDocument document) => document switch
     {
-        ItemDocument { Rarities: { Count: > 0 } rungs } => rungs[^1],
+        ItemDocument { Rarities: { Count: > 0 } rarities } => rarities[^1],
         ItemDocument { Rarity: { } stated } => stated,
         CurrencyDocument { Rarity: { } coin } => coin,
         GemDocument gem => gem.Rarity,
