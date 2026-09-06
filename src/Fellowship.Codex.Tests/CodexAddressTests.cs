@@ -44,7 +44,8 @@ public class CodexAddressTests
         var address = CodexAddresses.Tooltip(EntityType.Item, 5218, asked);
         var query = HttpUtility.ParseQueryString(address[(address.IndexOf('?') + 1)..]);
 
-        return [.. query.AllKeys.Select(key => KeyValuePair.Create(key!, query[key]))];
+        return [.. query.AllKeys.SelectMany(key =>
+            (query.GetValues(key) ?? []).Select(value => KeyValuePair.Create(key!, (string?)value)))];
     }
 
     [Fact]
@@ -81,7 +82,7 @@ public class CodexAddressTests
         });
 
         Assert.Equal(
-            ["Strength=400,134", "Haste=100"],
+            ["Strength=400", "Strength=134", "Haste=100"],
             written.Select(pair => $"{pair.Key}={pair.Value}"));
     }
 
