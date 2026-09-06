@@ -71,8 +71,15 @@ public static class Serving
         return builder;
     }
 
-    public static IEndpointConventionBuilder ServePages(this IEndpointConventionBuilder builder) =>
-        new ExceptBlazorHub(builder).Serve();
+    public static IEndpointConventionBuilder ServePages(this IEndpointConventionBuilder builder)
+    {
+        var pages = new ExceptBlazorHub(builder);
+
+        pages.RequireRateLimiting(Policy);
+        pages.WithRequestTimeout(Policy);
+
+        return pages;
+    }
 
     private sealed class VaryByBody : IOutputCachePolicy
     {
