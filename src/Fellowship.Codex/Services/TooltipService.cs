@@ -25,7 +25,7 @@ public sealed class TooltipService(IEntityStoreService store, IFragmentService f
                 title: "No such rarity.",
                 detail: $"'{rarity}' is not a rarity. The rarities are " +
                     string.Join(", ", store.Settings.Rarities.Select(r => $"{r.DisplayName} ({r.Tier})")) +
-                    ", and a gem's are " +
+                    ", and a gem's rarities are " +
                     string.Join(", ", store.Settings.Rarities.Select(r => r.GemDisplayName)) + ".",
                 statusCode: StatusCodes.Status400BadRequest);
         }
