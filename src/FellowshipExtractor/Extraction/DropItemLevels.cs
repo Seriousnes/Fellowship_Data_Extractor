@@ -123,7 +123,7 @@ public sealed class DropItemLevels
         if (steps.Count == 0)
         {
             throw new InvalidOperationException(
-                $"{Table}'s {rowName} row read back with no keys, so the level it levels at is unreadable.");
+                $"{Table}'s {rowName} row read back with no keys, so the item level it pays is unreadable.");
         }
 
         steps.Sort((left, right) => left.Difficulty.CompareTo(right.Difficulty));
