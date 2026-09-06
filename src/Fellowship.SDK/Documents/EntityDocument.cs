@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -15,17 +16,27 @@ public static class EntityDocuments
 {
     public const string Discriminator = "$type";
 
-    public static JsonSerializerOptions Options { get; } = new()
-    {
-        WriteIndented = false,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        AllowOutOfOrderMetadataProperties = true,
-        Converters = { new JsonStringEnumConverter() },
-        TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { Polymorphism } },
-    };
+    private const string Shaped =
+        "A document is read into a class named at run time, so trimming can take that class away.";
 
+    private static JsonSerializerOptions? options;
+
+    public static JsonSerializerOptions Options
+    {
+        [RequiresUnreferencedCode(Shaped)]
+        get => options ??= new()
+        {
+            WriteIndented = false,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            AllowOutOfOrderMetadataProperties = true,
+            Converters = { new JsonStringEnumConverter() },
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { Polymorphism } },
+        };
+    }
+
+    [RequiresUnreferencedCode(Shaped)]
     private static void Polymorphism(JsonTypeInfo info)
     {
         if (info.Type != typeof(EntityDocument)) return;
