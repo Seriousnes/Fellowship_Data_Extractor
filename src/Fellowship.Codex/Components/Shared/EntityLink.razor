@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-<a class="@Class" href="@Ui.Href(Entity)" data-tip="@Ui.Tip(Entity, ShowIcon)" style="@Tone">
+<a class="@Class" href="@Ui.Href(Entity)" data-tip="@link.Address" data-tip-request="@link.Body" style="@Tone">
     @if (ChildContent is null)
     {
         @Ui.Name(Entity)
@@ -20,5 +20,9 @@
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
+    private TooltipLink link = new(string.Empty, null);
+
     private string? Tone => Ui.LinkColour(Entity) is { } colour ? $"color:{colour}" : null;
+
+    protected override void OnParametersSet() => link = Ui.Tip(Entity, ShowIcon);
 }

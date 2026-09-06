@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Fellowship.SDK.Client;
 using Fellowship.Storage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -72,17 +73,21 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
-            var wearer = hero is null ? string.Empty : $"?hero={hero}";
+            var address = $"/api/{slug}/{id}{Wearer(hero)}";
 
-            foreach (var address in new[] { $"/api/{slug}/{id}{wearer}", $"/api/{slug}/{id}/tooltip{wearer}" })
-            {
-                var response = await client.GetAsync(address, Xunit.TestContext.Current.CancellationToken);
-                var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+            var record = await client.GetAsync(address, Xunit.TestContext.Current.CancellationToken);
+            var body = await record.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
 
-                Assert.True(
-                    response.StatusCode == HttpStatusCode.OK,
-                    $"{address} answered {(int)response.StatusCode}, not 200. Body: {body}");
-            }
+            Assert.True(
+                record.StatusCode == HttpStatusCode.OK,
+                $"{address} answered {(int)record.StatusCode}, not 200. Body: {body}");
+
+            using var tooltip = await client.TooltipAsync(type, id, hero: hero);
+            var drawn = await tooltip.BodyAsync();
+
+            Assert.True(
+                tooltip.StatusCode == HttpStatusCode.OK,
+                $"The {slug} tooltip answered {(int)tooltip.StatusCode}, not 200. Body: {drawn}");
         }
     }
 
@@ -93,10 +98,9 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
-            var wearer = hero is null ? string.Empty : $"?hero={hero}";
 
             var body = await client.GetStringAsync(
-                $"/api/{slug}/{id}{wearer}", Xunit.TestContext.Current.CancellationToken);
+                $"/api/{slug}/{id}{Wearer(hero)}", Xunit.TestContext.Current.CancellationToken);
 
             using var reading = JsonDocument.Parse(body);
 
@@ -116,11 +120,10 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     public async Task An_item_answers_its_record_and_its_tooltip_at_its_own_address()
     {
         var (id, hero) = Sample(EntityType.Item);
-        var wearer = hero is null ? string.Empty : $"?hero={hero}";
 
-        var record = await client.GetAsync($"/api/item/{id}{wearer}", Xunit.TestContext.Current.CancellationToken);
-        var tooltip = await client.GetAsync(
-            $"/api/item/{id}/tooltip{wearer}", Xunit.TestContext.Current.CancellationToken);
+        var record = await client.GetAsync(
+            $"/api/item/{id}{Wearer(hero)}", Xunit.TestContext.Current.CancellationToken);
+        using var tooltip = await client.TooltipAsync(id, new ItemTooltipRequest { Hero = hero });
 
         record.EnsureSuccessStatusCode();
         tooltip.EnsureSuccessStatusCode();
@@ -150,12 +153,11 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public async Task An_optional_property_the_binder_fills_reaches_the_card()
+    public async Task An_optional_property_the_body_carries_reaches_the_card()
     {
         var id = Factory.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 }).Id;
 
-        var drawn = await client.GetStringAsync(
-            $"/api/item/{id}/tooltip?armor=303", Xunit.TestContext.Current.CancellationToken);
+        var drawn = await client.TooltipHtmlAsync(id, new ItemTooltipRequest { Armor = 303 });
 
         Assert.Contains("303", drawn, StringComparison.Ordinal);
     }
@@ -165,13 +167,12 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         const int EldrinSignet = 5220;
 
-        var response = await client.GetAsync(
-            $"/api/item/{EldrinSignet}/tooltip?hero=Rime&itemLevel=360&randomStats=Haste,Haste",
-            Xunit.TestContext.Current.CancellationToken);
-
-        var drawn = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
-
-        Assert.True(response.IsSuccessStatusCode, drawn);
+        var drawn = await client.TooltipHtmlAsync(EldrinSignet, new ItemTooltipRequest
+        {
+            Hero = "Rime",
+            ItemLevel = 360,
+            RandomStats = ["Haste", "Haste"],
+        });
 
         var at = drawn.IndexOf("<ul class=\"stats\">", StringComparison.Ordinal);
         var stats = drawn[at..drawn.IndexOf("</ul>", at, StringComparison.Ordinal)];
@@ -186,12 +187,14 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         var (id, _) = Sample(EntityType.Item);
 
-        var response = await client.GetAsync(
-            $"/api/item/{id}/tooltip?randomStats=Armor", Xunit.TestContext.Current.CancellationToken);
+        using var response = await client.TooltipAsync(
+            id, new ItemTooltipRequest { RandomStats = ["Armor"] });
 
-        var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+        var body = await response.BodyAsync();
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(
+            response.StatusCode == HttpStatusCode.BadRequest,
+            $"A random stat of Armor answered {(int)response.StatusCode}, not 400. Body: {body}");
         Assert.Contains("is not a stat a random slot rolls", body, StringComparison.Ordinal);
     }
 
@@ -213,15 +216,32 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     public async Task An_item_level_past_the_ceiling_is_refused_by_the_field_that_states_it()
     {
         var (id, hero) = Sample(EntityType.Item);
-        var wearer = hero is null ? "?" : $"?hero={hero}&";
 
-        var response = await client.GetAsync(
-            $"/api/item/{id}/tooltip{wearer}itemLevel=10001", Xunit.TestContext.Current.CancellationToken);
+        using var response = await client.TooltipAsync(
+            id, new ItemTooltipRequest { Hero = hero, ItemLevel = 10001 });
 
-        var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+        var body = await response.BodyAsync();
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(
+            response.StatusCode == HttpStatusCode.BadRequest,
+            $"An item level of 10001 answered {(int)response.StatusCode}, not 400. Body: {body}");
         Assert.Contains("ItemLevel", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task A_tooltip_route_answers_the_query_method_and_no_other()
+    {
+        var (id, _) = Sample(EntityType.Item);
+        var address = $"/{CodexAddresses.Tooltip(EntityType.Item, id)}";
+
+        using var queried = await client.TooltipAsync(id, new ItemTooltipRequest());
+        using var posted = await client.PostAsync(
+            address, content: null, Xunit.TestContext.Current.CancellationToken);
+        using var got = await client.GetAsync(address, Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, queried.StatusCode);
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, posted.StatusCode);
+        Assert.False(got.IsSuccessStatusCode, $"A GET to {address} was answered.");
     }
 
     [Fact]
@@ -231,16 +251,14 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         {
             var (id, hero) = Sample(type);
             var slug = EntityTypes.Slug(type);
-            var wearer = hero is null ? string.Empty : $"&hero={hero}";
 
-            var address = $"/api/{slug}/{id}/tooltip?{nameof(TooltipQuery.ShowIcon)}=true{wearer}";
+            using var response = await client.TooltipAsync(type, id, showIcon: true, hero: hero);
 
-            var asked = await client.GetAsync(address, Xunit.TestContext.Current.CancellationToken);
-            var body = await asked.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+            var body = await response.BodyAsync();
 
             Assert.True(
-                asked.StatusCode == HttpStatusCode.OK,
-                $"{address} answered {(int)asked.StatusCode}, not 200. Body: {body}");
+                response.StatusCode == HttpStatusCode.OK,
+                $"The {slug} tooltip answered {(int)response.StatusCode}, not 200. Body: {body}");
         }
     }
 
@@ -249,15 +267,13 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         var ability = Factory.Store.Entities.OfType<AbilityDocument>().First(row => row.Icon is not null);
 
-        var bare = await client.GetStringAsync(
-            $"/api/ability/{ability.Id}/tooltip", Xunit.TestContext.Current.CancellationToken);
+        var bare = await client.TooltipHtmlAsync<AbilityTooltipRequest>(ability.Id);
 
-        var asked = await client.GetStringAsync(
-            $"/api/ability/{ability.Id}/tooltip?{nameof(TooltipQuery.ShowIcon)}=true",
-            Xunit.TestContext.Current.CancellationToken);
+        var drawn = await client.TooltipHtmlAsync(
+            ability.Id, new AbilityTooltipRequest { ShowIcon = true });
 
         Assert.DoesNotContain("<figure class=\"fx-slot", bare, StringComparison.Ordinal);
-        Assert.Contains("<figure class=\"fx-slot", asked, StringComparison.Ordinal);
+        Assert.Contains("<figure class=\"fx-slot", drawn, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -265,8 +281,8 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     {
         var trait = Factory.Store.Entities.OfType<TraitDocument>().First(row => row.Icon is not null);
 
-        var drawn = await client.GetStringAsync(
-            $"/api/trait/{trait.Id}/tooltip?state=unavailable", Xunit.TestContext.Current.CancellationToken);
+        var drawn = await client.TooltipHtmlAsync(
+            trait.Id, new TraitTooltipRequest { State = "unavailable" });
 
         Assert.Contains(chrome.TraitNode("unavailable"), drawn, StringComparison.Ordinal);
     }
@@ -288,18 +304,18 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
-    public async Task A_rarity_reaches_a_gem_and_nothing_reaches_it_that_belongs_to_an_item()
+    public async Task A_rarity_the_game_prints_reaches_a_gem()
     {
         var (id, _) = Sample(EntityType.Gem);
+        var ladder = Factory.Store.Settings.Rarities;
 
-        var rung = await client.GetAsync(
-            $"/api/gem/{id}/tooltip?rarity=1", Xunit.TestContext.Current.CancellationToken);
-        var level = await client.GetAsync(
-            $"/api/gem/{id}/tooltip?itemLevel=100", Xunit.TestContext.Current.CancellationToken);
+        var low = await client.TooltipHtmlAsync(
+            id, new GemTooltipRequest { Rarity = ladder[0].GemDisplayName });
 
-        rung.EnsureSuccessStatusCode();
+        var high = await client.TooltipHtmlAsync(
+            id, new GemTooltipRequest { Rarity = ladder[^1].GemDisplayName });
 
-        Assert.Equal(HttpStatusCode.BadRequest, level.StatusCode);
+        Assert.NotEqual(low, high);
     }
 
     [Fact]
@@ -330,10 +346,11 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var document = Factory.Store.Entities.First(candidate => EntityTypes.TypeOf(candidate) == type);
         var readings = Factory.Store.All(type, document.Id);
 
-        var hero = readings.Count > 1 ? Factory.Store.Wearer(document)?.Name : null;
-
-        return (document.Id, hero is null ? null : Uri.EscapeDataString(hero));
+        return (document.Id, readings.Count > 1 ? Factory.Store.Wearer(document)?.Name : null);
     }
+
+    private static string Wearer(string? hero) =>
+        hero is null ? string.Empty : $"?hero={Uri.EscapeDataString(hero)}";
 
     [Fact]
     public async Task An_entity_page_serves_its_name_colour_as_a_custom_property()
@@ -341,7 +358,7 @@ public sealed class RouteTests : IClassFixture<RouteTests.Factory>
         var page = await client.GetStringAsync("/item/5250", Xunit.TestContext.Current.CancellationToken);
 
         Assert.Contains("--cx-name:#", page, StringComparison.Ordinal);
-        Assert.Contains("var(--cx-rung, var(--cx-name))", page, StringComparison.Ordinal);
+        Assert.Contains("var(--cx-rarity, var(--cx-name))", page, StringComparison.Ordinal);
     }
 
     [Fact]

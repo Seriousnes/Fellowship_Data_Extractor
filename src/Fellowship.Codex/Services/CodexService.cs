@@ -148,15 +148,15 @@ public sealed class CodexService : ICodexService
 
             new Facet("rarity", "Rarity", document => document switch
             {
-                ItemDocument { Rarities: { Count: > 0 } carried } =>
-                    carried.Select(rung => RarityWord(store, rung, gem: false)),
+                ItemDocument { Rarities: { Count: > 0 } rarities } =>
+                    rarities.Select(tier => RarityWord(store, tier, gem: false)),
                 ItemDocument { Rarity: { } rarity } => One(RarityWord(store, rarity, gem: false)),
                 CurrencyDocument { Rarity: { } coin } => One(RarityWord(store, coin, gem: false)),
                 GemDocument stone => One(RarityWord(store, stone.Rarity, gem: true)),
                 _ => [],
             })
             {
-                Colour = (t, value) => t.Rarity(Filed(store, value)),
+                Colour = (t, value) => t.Rarity(Stored(store, value)),
                 Primary = true,
             },
         ];
@@ -168,8 +168,8 @@ public sealed class CodexService : ICodexService
             new Flag("described", "Has description text",
                 document => DocumentFields.Text(document, nameof(ItemDocument.Description)) is not null),
             new Flag("legendary", "Is legendary",
-                document => document is ItemDocument { Rarities: { } carried } &&
-                            carried.Contains(Rarity.Legendary)),
+                document => document is ItemDocument { Rarities: { } rarities } &&
+                            rarities.Contains(Rarity.Legendary)),
             new Flag("grants", "Grants an ability", document => document is ItemDocument { Grants: not null }),
             new Flag("socket", "Rolls with a gem socket", document => document is ItemDocument { GemSlot: true }),
             new Flag("unique", "Unique equipped", document => document is ItemDocument { UniqueEquipped: true }),
@@ -343,7 +343,7 @@ public sealed class CodexService : ICodexService
             .. counted
                 .GroupBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
                 .Select(spellings => (
-                    Value: Written(spellings),
+                    Value: Spelling(spellings),
                     Count: spellings.Sum(pair => pair.Value)))
                 .OrderByDescending(value => value.Count)
                 .ThenBy(value => value.Value, StringComparer.OrdinalIgnoreCase)
@@ -355,7 +355,7 @@ public sealed class CodexService : ICodexService
         ]);
     }
 
-    private static string Written(IEnumerable<KeyValuePair<string, int>> spellings) =>
+    private static string Spelling(IEnumerable<KeyValuePair<string, int>> spellings) =>
         spellings
             .OrderByDescending(pair => pair.Value)
             .ThenBy(pair => pair.Key, StringComparer.Ordinal)
@@ -424,7 +424,7 @@ public sealed class CodexService : ICodexService
             ? (gem ? entry.GemDisplayName : entry.DisplayName)
             : rarity.ToString();
 
-    private static string Filed(IEntityStoreService store, string printed) =>
+    private static string Stored(IEntityStoreService store, string printed) =>
         store.Rarity(printed, gem: true)?.Name ?? printed;
 
 }

@@ -1,5 +1,4 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
+using Fellowship.SDK.Client;
 
 namespace Fellowship.Codex.Tests;
 
@@ -175,7 +174,9 @@ public class TooltipTests : BunitContext
     {
         var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1229);
 
-        var card = Card(ability, "strength=100").Find("div.lines").TextContent;
+        var request = new AbilityTooltipRequest { Stats = Stats.Rated("Strength", 100m) };
+
+        var card = Card(ability, request).Find("div.lines").TextContent;
 
         Assert.Contains("1,044 - 1,276", card, StringComparison.Ordinal);
         Assert.Contains("365 - 446", card, StringComparison.Ordinal);
@@ -186,8 +187,10 @@ public class TooltipTests : BunitContext
     {
         var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1260);
 
-        var bare = Damage(ability, "intellect=1000");
-        var sharpened = Damage(ability, "intellect=1000&expertise=5000");
+        var bare = Damage(ability, new AbilityTooltipRequest { Stats = Stats.Rated("Intellect", 1000m) });
+        var sharpened = Damage(
+            ability,
+            new AbilityTooltipRequest { Stats = Stats.Rated("Intellect", 1000m).Rated("Expertise", 5000m) });
 
         Assert.True(
             sharpened > bare,
@@ -199,34 +202,40 @@ public class TooltipTests : BunitContext
     {
         var ability = Store.Entities.OfType<AbilityDocument>().Single(row => row.Id == 1260);
 
-        Assert.Equal(Damage(ability, "intellect=1000"), Damage(ability, "intellect=1000&haste=500"));
+        Assert.Equal(
+            Damage(ability, new AbilityTooltipRequest { Stats = Stats.Rated("Intellect", 1000m) }),
+            Damage(
+                ability,
+                new AbilityTooltipRequest { Stats = Stats.Rated("Intellect", 1000m).Rated("Haste", 500m) }));
     }
 
-    private decimal Damage(EntityDocument entity, string query)
+    private decimal Damage(EntityDocument entity, AbilityTooltipRequest request)
     {
-        var written = Written(entity, query);
-        var number = System.Text.RegularExpressions.Regex.Match(written, @"\d[\d,]*(\.\d+)?");
+        var write = Write(entity, request);
+        var number = System.Text.RegularExpressions.Regex.Match(write, @"\d[\d,]*(\.\d+)?");
 
-        Assert.True(number.Success, $"No number in the rendered description:\n{written}");
+        Assert.True(number.Success, $"No number in the rendered description:\n{write}");
 
         return decimal.Parse(number.Value.Replace(",", ""));
     }
 
-    private string Written(EntityDocument entity, string query) =>
-        Card(entity, query).Find("p.desc").TextContent;
+    private string Write(EntityDocument entity, AbilityTooltipRequest request) =>
+        Card(entity, request).Find("p.desc").TextContent;
 
-    private IRenderedComponent<Components.Tooltip.Tooltip> Card(EntityDocument entity, string query)
+    private IRenderedComponent<Components.Tooltip.Tooltip> Card(
+        EntityDocument entity, AbilityTooltipRequest request)
     {
-        var asked = new QueryCollection(query
-            .Split('&')
-            .Select(pair => pair.Split('='))
-            .ToDictionary(pair => pair[0], pair => new StringValues(pair[1])));
-
-        var parsed = new AbilityTooltipRequest { Id = entity.Id }.ToQuery(asked, Store.Stats, out _);
+        var query = StatQuery.Read(request.Stats, Store.Stats, out _) with
+        {
+            ShowIcon = request.ShowIcon == true,
+            Mobile = request.Mobile == true,
+            Hero = StatQuery.NullIfEmpty(request.Hero),
+            Difficulty = request.Difficulty,
+        };
 
         return Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, entity)
-            .Add(x => x.Query, parsed));
+            .Add(x => x.Query, query));
     }
 
     [Fact]
@@ -270,24 +279,24 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
-    public void Prints_a_gem_rung_under_the_gem_ladders_word()
+    public void Prints_a_gem_rarity_under_the_gem_ladders_word()
     {
-        var rung = Store.Settings.Rarities[^1];
+        var rarity = Store.Settings.Rarities[^1];
 
         var asGem = Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, new GemDocument { Id = 1, Type = GemType.Amethyst, Power = 10, Rarity = Rarity.Champion })
-            .Add(x => x.Query, new TooltipQuery { Rarity = rung.Name }));
+            .Add(x => x.Query, new TooltipQuery { Rarity = rarity.Name }));
 
         var asItem = Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, new ItemDocument { Id = 2, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] })
-            .Add(x => x.Query, new TooltipQuery { Rarity = rung.Name }));
+            .Add(x => x.Query, new TooltipQuery { Rarity = rarity.Name }));
 
-        Assert.Equal(rung.GemDisplayName, asGem.Find("span.rar").TextContent);
-        Assert.Equal(rung.DisplayName, asItem.Find("span.rar").TextContent);
+        Assert.Equal(rarity.GemDisplayName, asGem.Find("span.rar").TextContent);
+        Assert.Equal(rarity.DisplayName, asItem.Find("span.rar").TextContent);
     }
 
     [Fact]
-    public void Answers_an_item_at_the_highest_rung_it_comes_in_when_the_caller_names_none()
+    public void Answers_an_item_at_the_highest_rarity_it_comes_in_when_the_caller_names_none()
     {
         var cut = Draw(new ItemDocument
         {
@@ -299,7 +308,7 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
-    public void Answers_an_item_fixed_at_a_rung_at_that_rung()
+    public void Answers_an_item_fixed_at_a_rarity_at_that_rarity()
     {
         var legendary = Draw(new ItemDocument { Id = 1, Rarity = Rarity.Legendary, Rarities = [Rarity.Legendary] });
         var heroItem = Draw(new ItemDocument { Id = 2, Rarities = [Rarity.Common] });
@@ -309,7 +318,7 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
-    public void Takes_the_rung_the_caller_names_over_the_one_the_item_comes_in()
+    public void Takes_the_rarity_the_caller_names_over_the_one_the_item_comes_in()
     {
         var cut = Render<Components.Tooltip.Tooltip>(p => p
             .Add(x => x.Entity, new ItemDocument { Id = 1, Rarities = [Rarity.Uncommon, Rarity.Heroic] })
@@ -319,7 +328,7 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
-    public void Colours_the_header_of_an_item_that_states_no_rung_of_its_own()
+    public void Colours_the_header_of_an_item_that_states_no_rarity_of_its_own()
     {
         var coloured = Draw(new ItemDocument
         {
@@ -336,7 +345,7 @@ public class TooltipTests : BunitContext
     }
 
     [Fact]
-    public void Answers_a_currency_at_the_rung_its_row_states()
+    public void Answers_a_currency_at_the_rarity_its_row_states()
     {
         var cut = Draw(new CurrencyDocument { Id = 1, Name = "Divine Mithril", Rarity = Rarity.Legendary });
 

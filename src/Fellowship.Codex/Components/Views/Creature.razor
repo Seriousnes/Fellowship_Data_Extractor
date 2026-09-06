@@ -33,9 +33,9 @@
                         </Column>
                         <Column Head="Damage" Class="cx-numeric">
                             <Content Context="slot">
-                                @foreach (var struck in Bands(slot))
+                                @foreach (var band in Bands(slot))
                                 {
-                                    <div>@struck</div>
+                                    <div>@band</div>
                                 }
                             </Content>
                         </Column>
@@ -79,7 +79,7 @@
 
     private IReadOnlyList<IGrouping<string, CreatureAbility>> Phases = [];
 
-    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Reading = [];
+    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Reading = [];
 
     private readonly Dictionary<(EntityType Type, int Id), AbilityDocument> wielded = [];
 
@@ -87,7 +87,7 @@
     {
         Phases = [.. (Entity.Abilities ?? []).GroupBy(slot => slot.Phase, StringComparer.Ordinal)];
 
-        var difficulty = Store.Difficulty(Here.Asked.GetValueOrDefault(DifficultyKnob.Asked));
+        var difficulty = Store.Difficulty(Here.Values.GetValueOrDefault(DifficultyKnob.Key));
 
         Step = Difficulties.At(Store.Settings, difficulty)
             ?? new DifficultyStep(difficulty, string.Empty, difficulty, difficulty.ToString());
@@ -96,13 +96,13 @@
 
         foreach (var slot in Entity.Abilities ?? [])
         {
-            var named = (slot.Ability.Type, slot.Ability.Id);
+            var key = (slot.Ability.Type, slot.Ability.Id);
 
-            if (wielded.ContainsKey(named)) continue;
+            if (wielded.ContainsKey(key)) continue;
 
-            if (Store.All(named.Type, named.Id).OfType<AbilityDocument>().FirstOrDefault() is { } found)
+            if (Store.All(key.Type, key.Id).OfType<AbilityDocument>().FirstOrDefault() is { } found)
             {
-                wielded[named] = found;
+                wielded[key] = found;
             }
         }
 
@@ -112,51 +112,51 @@
     private AbilityDocument? Wielded(CreatureAbility slot) =>
         wielded.GetValueOrDefault((slot.Ability.Type, slot.Ability.Id));
 
-    private IReadOnlyList<AbilityCoefficient> Stated(CreatureAbility slot) => Wielded(slot)?.Coefficients ?? [];
+    private IReadOnlyList<AbilityCoefficient> Coefficients(CreatureAbility slot) => Wielded(slot)?.Coefficients ?? [];
 
-    private IReadOnlyList<(string, string, string?, string?, string?)> Read()
+    private IReadOnlyList<(string, string, string?, string?, TooltipLink?)> Read()
     {
-        var read = new List<(string, string, string?, string?, string?)>(4);
+        var read = new List<(string, string, string?, string?, TooltipLink?)>(4);
 
         if (Difficulties.Health(Entity, Store.Settings, Step.Difficulty) is { } health)
         {
             read.Add(("Health", FellowshipCodex.Magnitude((decimal)health), null, null, null));
         }
 
-        if (Difficulties.HealthScale(Store.Settings, Entity.Scaling, Step.Difficulty) is { } toughness)
+        if (Difficulties.HealthScale(Store.Settings, Entity.Scaling, Step.Difficulty) is { } healthScale)
         {
-            read.Add(("Health scale", FellowshipCodex.Number(toughness), "x", null, null));
+            read.Add(("Health scale", FellowshipCodex.Number(healthScale), "x", null, null));
         }
 
-        if (Difficulties.DamageScale(Store.Settings, Entity.Scaling, Step.Difficulty) is { } hitting)
+        if (Difficulties.DamageScale(Store.Settings, Entity.Scaling, Step.Difficulty) is { } damageScale)
         {
-            read.Add(("Damage scale", FellowshipCodex.Number(hitting), "x", null, null));
+            read.Add(("Damage scale", FellowshipCodex.Number(damageScale), "x", null, null));
         }
 
         if (Entity.FoundIn is { Count: > 0 } dungeons)
         {
-            read.Add(("Location", string.Join(", ", dungeons.Select(Named)), null, null, null));
+            read.Add(("Location", string.Join(", ", dungeons.Select(Name)), null, null, null));
         }
 
         return read;
     }
 
-    private string Named(EntityReference dungeon) =>
+    private string Name(EntityReference dungeon) =>
         Store.All(dungeon.Type, dungeon.Id) is [var found, ..] ? PublicTypes.NameOf(found) : dungeon.Name ?? string.Empty;
 
     private IReadOnlyList<string> Bands(CreatureAbility slot)
     {
-        var stated = Stated(slot);
+        var coefficients = Coefficients(slot);
 
         return
         [
-            .. stated
+            .. coefficients
                 .Select(coefficient =>
-                    (coefficient.Part, Struck: Difficulties.Damage(coefficient, Entity, Store.Settings, Step.Difficulty)))
-                .Where(reading => reading.Struck is not null)
-                .Select(reading => stated.Count > 1 && reading.Part is { Length: > 0 } part
-                    ? $"{part}: {Printed(reading.Struck!)}"
-                    : Printed(reading.Struck!)),
+                    (coefficient.Part, Band: Difficulties.Damage(coefficient, Entity, Store.Settings, Step.Difficulty)))
+                .Where(entry => entry.Band is not null)
+                .Select(entry => coefficients.Count > 1 && entry.Part is { Length: > 0 } part
+                    ? $"{part}: {Printed(entry.Band!)}"
+                    : Printed(entry.Band!)),
         ];
     }
 

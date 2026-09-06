@@ -13,6 +13,8 @@ public sealed record S3Settings(string Bucket, string? PublicUrl, string? Servic
         var section = configuration.GetSection(Section);
 
         return new S3Settings(
-            bucket, StorageDefaults.Named(section["PublicUrl"]), StorageDefaults.Named(section["ServiceUrl"]));
+            bucket,
+            StorageDefaults.NullIfEmpty(section["PublicUrl"]),
+            StorageDefaults.NullIfEmpty(section["ServiceUrl"]));
     }
 }

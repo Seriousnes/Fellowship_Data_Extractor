@@ -16,14 +16,20 @@ public sealed class StatParameterTests
         public int Id { get; init; }
     }
 
-    private static TooltipQuery Parse(out string? error, params (string Key, string Value)[] pairs) =>
-        StatQuery.Read(
-            new Probe(),
+    private static TooltipQuery Parse(out string? error, params (string Key, string Value)[] pairs)
+    {
+        var parameters = Parameters();
+
+        var stats = StatQuery.FromQuery(
             new QueryCollection(pairs
                 .GroupBy(pair => pair.Key, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => new StringValues(group.Select(p => p.Value).ToArray()))),
-            Parameters(),
+            RequestProperties.Of(typeof(Probe)),
+            parameters,
             out error);
+
+        return error is null ? StatQuery.Read(stats, parameters, out error) : new TooltipQuery();
+    }
 
     [Fact]
     public void ASlotKeepsTheNumberTheCallerWrote()

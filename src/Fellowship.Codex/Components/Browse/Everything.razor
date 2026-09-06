@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<EntityDocument>(View, Ui.Codex)">
     <Columns>
         <Column Head="" Class="cx-art">
@@ -32,9 +32,9 @@
 
     [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
 
-    private IReadOnlyList<EntityDocument> Drawn = [];
+    private IReadOnlyList<EntityDocument> Documents = [];
 
-    protected override void OnParametersSet() => Drawn = Rows;
+    protected override void OnParametersSet() => Documents = Rows;
 
     private IEnumerable<string> Sources(EntityDocument row) =>
         Ui.Codex.Facet("source") is { } facet ? facet.Values(row) : [];

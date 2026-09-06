@@ -1,4 +1,5 @@
 using Fellowship.Codex.Components.Tooltip;
+using Fellowship.SDK.Client;
 
 namespace Fellowship.Codex.Tests;
 
@@ -71,17 +72,21 @@ public class DetachedArtTests : BunitContext
     }
 
     [Fact]
-    public void A_tooltip_address_asks_for_no_art_unless_the_caller_says_so()
+    public void A_tooltip_request_asks_for_no_art_unless_the_caller_says_so()
     {
         var document = Beside[0];
         var view = export.View;
 
-        Assert.DoesNotContain(nameof(TooltipQuery.ShowIcon), view.Tip(document), StringComparison.Ordinal);
-        Assert.Contains($"{nameof(TooltipQuery.ShowIcon)}=true", view.Tip(document, true), StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            nameof(ItemTooltipRequest.ShowIcon),
+            view.Tip(document).Body ?? string.Empty,
+            StringComparison.OrdinalIgnoreCase);
+
+        Assert.Contains("\"showIcon\":true", view.Tip(document, true).Body!, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void A_tooltip_address_keeps_the_hero_it_already_carried_beside_the_art_it_asks_for()
+    public void A_tooltip_request_keeps_the_hero_it_already_carried_beside_the_art_it_asks_for()
     {
         var shared = export.Store.Entities
             .OfType<ItemDocument>()
@@ -89,10 +94,10 @@ public class DetachedArtTests : BunitContext
 
         Assert.SkipWhen(shared is null, "No id in this build reads differently per hero.");
 
-        var asked = export.View.Tip(shared!, true);
+        var tip = export.View.Tip(shared!, true);
 
-        Assert.Contains("hero=", asked, StringComparison.Ordinal);
-        Assert.Contains($"&{nameof(TooltipQuery.ShowIcon)}=true", asked, StringComparison.Ordinal);
-        Assert.Equal(1, asked.Count(letter => letter == '?'));
+        Assert.Equal($"/{CodexAddresses.Tooltip(EntityType.Item, shared!.Id)}", tip.Address);
+        Assert.Contains("\"hero\":", tip.Body!, StringComparison.Ordinal);
+        Assert.Contains("\"showIcon\":true", tip.Body!, StringComparison.Ordinal);
     }
 }

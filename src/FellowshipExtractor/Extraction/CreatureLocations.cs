@@ -16,7 +16,7 @@ public sealed class CreatureLocations
 
     public int Placed => _byCreature.Count;
 
-    public int Housed { get; }
+    public int PlacedByFolder { get; }
 
     public int Unplaced { get; }
 
@@ -67,54 +67,54 @@ public sealed class CreatureLocations
             }
         }
 
-        Housed = Housing(provider, wanted, Naming(folders));
+        PlacedByFolder = ByFolder(provider, wanted, TagsByFolder(folders));
 
         Unplaced = wanted.Count - _byCreature.Count;
     }
 
-    private int Housing(
+    private int ByFolder(
         AbstractFileProvider provider,
         IReadOnlyCollection<string> wanted,
-        IReadOnlyDictionary<string, string> naming)
+        IReadOnlyDictionary<string, string> tagsByFolder)
     {
-        var homeless = wanted.Where(creature => !_byCreature.ContainsKey(creature)).ToHashSet(
+        var unplaced = wanted.Where(creature => !_byCreature.ContainsKey(creature)).ToHashSet(
             StringComparer.OrdinalIgnoreCase);
 
-        if (homeless.Count == 0 || naming.Count == 0) return 0;
+        if (unplaced.Count == 0 || tagsByFolder.Count == 0) return 0;
 
-        var housed = 0;
+        var placed = 0;
 
         foreach (var file in provider.Files.Values)
         {
-            var named = Path.GetFileNameWithoutExtension(file.Path);
+            var name = Path.GetFileNameWithoutExtension(file.Path);
 
-            if (!homeless.Contains(named)) continue;
-            if (Housing(file.Path, naming) is not { } tag) continue;
+            if (!unplaced.Contains(name)) continue;
+            if (DungeonOf(file.Path, tagsByFolder) is not { } tag) continue;
 
-            _byCreature[named] = [tag];
-            homeless.Remove(named);
-            housed++;
+            _byCreature[name] = [tag];
+            unplaced.Remove(name);
+            placed++;
         }
 
-        return housed;
+        return placed;
     }
 
-    public static string? Housing(string path, IReadOnlyDictionary<string, string> naming)
+    public static string? DungeonOf(string path, IReadOnlyDictionary<string, string> tagsByFolder)
     {
-        string? found = null;
+        string? dungeon = null;
 
         foreach (var segment in path.Split('/', StringSplitOptions.RemoveEmptyEntries))
         {
-            if (!naming.TryGetValue(segment, out var tag)) continue;
-            if (found is not null && !found.Equals(tag, StringComparison.OrdinalIgnoreCase)) return null;
+            if (!tagsByFolder.TryGetValue(segment, out var tag)) continue;
+            if (dungeon is not null && !dungeon.Equals(tag, StringComparison.OrdinalIgnoreCase)) return null;
 
-            found = tag;
+            dungeon = tag;
         }
 
-        return found;
+        return dungeon;
     }
 
-    public static IReadOnlyDictionary<string, string> Naming(IReadOnlyDictionary<string, string> folders)
+    public static IReadOnlyDictionary<string, string> TagsByFolder(IReadOnlyDictionary<string, string> folders)
     {
         var under = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 

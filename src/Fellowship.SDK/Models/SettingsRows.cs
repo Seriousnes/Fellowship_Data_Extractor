@@ -11,7 +11,7 @@ public sealed record AbilityCategoryEntry(string Name, int Value);
 
 public sealed record TemperCeiling(int ItemLevel, int MaxTempers);
 
-public sealed record DropPlateau(string Row, int Difficulty, int ItemLevel);
+public sealed record DropItemLevel(string Row, int Difficulty, int ItemLevel);
 
 public sealed record BlessingEntry(string Name, string HeroBlessing, string TierLevel, int Tiers);
 

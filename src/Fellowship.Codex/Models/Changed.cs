@@ -41,16 +41,16 @@ public static class Changed
     }
 
     public static string Text(JsonNode? node) =>
-        node is JsonValue value && value.TryGetValue<string>(out var written)
-            ? written
+        node is JsonValue value && value.TryGetValue<string>(out var text)
+            ? text
             : node?.ToJsonString() ?? "null";
 
     private static void Walk(string path, JsonNode? node, List<(string, string)> found)
     {
         switch (node)
         {
-            case JsonObject carried:
-                foreach (var (name, value) in carried)
+            case JsonObject fields:
+                foreach (var (name, value) in fields)
                 {
                     Walk(path.Length == 0 ? name : $"{path}.{name}", value, found);
                 }

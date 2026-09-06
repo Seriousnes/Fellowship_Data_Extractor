@@ -45,13 +45,19 @@ public sealed class RollLineTests
 
     private static IReadOnlyList<StatLine> Lines(params (string Key, string Value)[] pairs)
     {
-        var query = StatQuery.Read(
-            new Probe(),
+        var parameters = Parameters();
+
+        var stats = StatQuery.FromQuery(
             new QueryCollection(pairs
                 .GroupBy(pair => pair.Key, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => new StringValues(group.Select(p => p.Value).ToArray()))),
-            Parameters(),
+            RequestProperties.Of(typeof(Probe)),
+            parameters,
             out var error);
+
+        Assert.Null(error);
+
+        var query = StatQuery.Read(stats, parameters, out error);
 
         Assert.Null(error);
 
@@ -61,7 +67,7 @@ public sealed class RollLineTests
             new HashSet<string>(["Strength", "Intellect", "Agility"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
             Export.Loaded.Settings.DropItemLevels
-                .Single(plateau => plateau.Row == FellowshipExtractor.Extraction.DropItemLevels.DefaultRow).ItemLevel,
+                .Single(level => level.Row == FellowshipExtractor.Extraction.DropItemLevels.DefaultRow).ItemLevel,
             query);
     }
 

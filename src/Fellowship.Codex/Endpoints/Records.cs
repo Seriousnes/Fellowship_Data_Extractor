@@ -17,14 +17,14 @@ public static class Records
         where TRecord : EntityRecord
     {
         var type = EntityRecords.TypeOf(typeof(TRecord));
-        var asked = StatQuery.Given(hero);
+        var request = StatQuery.NullIfEmpty(hero);
 
-        if (asked is not null && store.Hero(asked) is null)
+        if (request is not null && store.Hero(request) is null)
         {
-            return Lookups.NoSuchHero(asked, store.Settings.Heroes);
+            return Lookups.NoSuchHero(request, store.Settings.Heroes);
         }
 
-        var outcome = store.Resolve(type, id, asked, out var document, out var wearer);
+        var outcome = store.Resolve(type, id, request, out var document, out var wearer);
 
         return outcome == Lookup.Found
             ? Results.Ok(RecordProjection.Of<TRecord>(document!, view, Origins.Of(http)))

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -61,10 +62,14 @@ public static class EntityTypes
 
     private const string Suffix = "Document";
 
+    private const string TrimWarning = "The document class is named at run time, so trimming can take it away.";
+
     private static readonly ConcurrentDictionary<EntityType, Type> ByMember = new();
 
+    [RequiresUnreferencedCode(TrimWarning)]
     public static Type Document(EntityType type) => ByMember.GetOrAdd(type, Resolve);
 
+    [RequiresUnreferencedCode(TrimWarning)]
     private static Type Resolve(EntityType type) =>
         typeof(EntityDocument).Assembly.GetType($"{typeof(EntityDocument).Namespace}.{type}{Suffix}")
         ?? throw new InvalidOperationException(

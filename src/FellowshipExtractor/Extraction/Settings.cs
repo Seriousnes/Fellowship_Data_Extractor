@@ -42,7 +42,7 @@ public sealed class Settings
 
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; }
 
-    public IReadOnlyList<DropPlateau> DropItemLevels { get; }
+    public IReadOnlyList<DropItemLevel> DropItemLevels { get; }
 
     public BlessingEntry Blessings { get; }
 
@@ -84,14 +84,14 @@ public sealed class Settings
         RarityOrnaments = ornaments.ByRarity;
         TalentTierPlates = tierPlates.ByRow;
         MaxTempers = tempers.ByRarity;
-        DropItemLevels = drops.Plateaus;
+        DropItemLevels = drops.Levels;
         Blessings = blessings.Wording;
 
         var colours = Colours(provider, assets);
         var moved = HeroRows(colours, heroes);
 
-        RarityColorRows = Drawn(colorRows.ByRarity, moved);
-        SectionHeadingRows = Drawn(headings.BySection, moved);
+        RarityColorRows = Renamed(colorRows.ByRarity, moved);
+        SectionHeadingRows = Renamed(headings.BySection, moved);
 
         Resolvable(RarityColorRows, colours, colorRows.Source);
         Resolvable(SectionHeadingRows, colours, headings.Source);
@@ -198,7 +198,7 @@ public sealed class Settings
         return moved;
     }
 
-    private static Dictionary<string, string> Drawn(
+    private static Dictionary<string, string> Renamed(
         IReadOnlyDictionary<string, string> rows, IReadOnlyDictionary<string, string> moved) =>
         rows.ToDictionary(
             row => row.Key,

@@ -145,15 +145,15 @@ public static class GameplayEffects
     {
         if (PropertyWalk.GetStruct(modifier, TransientIdentifierField) is not { } identifier) return null;
         if (PropertyWalk.GetString(identifier, TagNameField) != SpreadTag) return null;
-        if (Named(modifier, AggregatorTypeField) != TransientAggregator) return null;
-        if (Named(modifier, ModifierOpField) != OverrideOp) return null;
+        if (AsString(modifier, AggregatorTypeField) != TransientAggregator) return null;
+        if (AsString(modifier, ModifierOpField) != OverrideOp) return null;
         if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) return null;
-        if (Named(magnitude, CalculationTypeField) != ScalableFloatCalculation) return null;
+        if (AsString(magnitude, CalculationTypeField) != ScalableFloatCalculation) return null;
 
         return PropertyWalk.GetStruct(magnitude, ScalableFloatField);
     }
 
-    private static string? Named(IPropertyHolder holder, string field) =>
+    private static string? AsString(IPropertyHolder holder, string field) =>
         PropertyWalk.AsString(PropertyWalk.Get(holder, field)?.GenericValue);
 
     private static IReadOnlyList<string>? Combined(IReadOnlyList<string>? own, IReadOnlyList<string> computed)

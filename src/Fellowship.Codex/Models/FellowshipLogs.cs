@@ -94,7 +94,7 @@ public static class FellowshipLogs
 
             if (stat.Equals(ArmorStat, StringComparison.OrdinalIgnoreCase)) { armor = value; continue; }
 
-            stats[stat] = stats.TryGetValue(stat, out var already) ? [.. already, value] : [value];
+            stats[stat] = stats.TryGetValue(stat, out var existing) ? [.. existing, value] : [value];
         }
 
         foreach (var power in Array(gear, "gemPowers"))
@@ -225,7 +225,7 @@ public static class FellowshipLogs
 
         foreach (var (stat, values) in query.Stats)
         {
-            if (Numbered(stat) is not { } id) continue;
+            if (AttributeId(stat) is not { } id) continue;
 
             foreach (var value in values)
             {
@@ -237,7 +237,7 @@ public static class FellowshipLogs
         {
             attributes.Add(new JsonObject
             {
-                ["id"] = Numbered(ArmorStat),
+                ["id"] = AttributeId(ArmorStat),
                 ["name"] = ArmorStat,
                 [AttributeValueField] = armor,
             });
@@ -252,13 +252,13 @@ public static class FellowshipLogs
 
         foreach (var modifier in query.Modifiers.Where(row => row.Kind == ModifierKind.Blessing))
         {
-            if (Ranked(modifier.Id, item, store) is not { } logged) continue;
+            if (RankOf(modifier.Id, item, store) is not { } logged) continue;
 
             blessings.Add(new JsonObject
             {
                 ["id"] = logged,
                 [BlessingLevelField] = modifier.Amount,
-                ["name"] = Named(EntityType.Blessing, modifier.Id, store),
+                ["name"] = Name(EntityType.Blessing, modifier.Id, store),
             });
         }
 
@@ -275,7 +275,7 @@ public static class FellowshipLogs
                     ["id"] = trait.Id + TraitBase,
                     [BlessingLevelField] = 1,
                     [ImbuedPointsField] = trait.Rank,
-                    ["name"] = Named(TooltipView.TraitType, trait.Id, store),
+                    ["name"] = Name(TooltipView.TraitType, trait.Id, store),
                 });
             }
 
@@ -284,19 +284,19 @@ public static class FellowshipLogs
 
         void Kind(ModifierKind kind, string field, int under, string amountField)
         {
-            var written = new JsonArray();
+            var entries = new JsonArray();
 
             foreach (var modifier in query.Modifiers.Where(row => row.Kind == kind))
             {
-                written.Add(new JsonObject
+                entries.Add(new JsonObject
                 {
                     ["id"] = modifier.Id + under,
                     [amountField] = modifier.Amount,
-                    ["name"] = Named(TooltipView.TypeOf(kind), modifier.Id, store),
+                    ["name"] = Name(TooltipView.TypeOf(kind), modifier.Id, store),
                 });
             }
 
-            if (written.Count > 0) entry[field] = written;
+            if (entries.Count > 0) entry[field] = entries;
         }
 
         return entry;
@@ -316,16 +316,16 @@ public static class FellowshipLogs
             return [];
         }
 
-        var carried = Array(gear, field).ToArray();
+        var values = Array(gear, field).ToArray();
 
-        return carried.Length > 0 ? carried : Array(owner, field);
+        return values.Length > 0 ? values : Array(owner, field);
     }
 
-    private static int? Numbered(string stat)
+    private static int? AttributeId(string stat)
     {
-        foreach (var (id, named) in Attributes)
+        foreach (var (id, name) in Attributes)
         {
-            if (named.Equals(stat, StringComparison.OrdinalIgnoreCase)) return id;
+            if (name.Equals(stat, StringComparison.OrdinalIgnoreCase)) return id;
         }
 
         return null;
@@ -339,7 +339,7 @@ public static class FellowshipLogs
         return store.Rarity(rarity, gem: false)?.Tier;
     }
 
-    private static int? Ranked(int blessingId, ItemDocument item, IEntityStoreService store)
+    private static int? RankOf(int blessingId, ItemDocument item, IEntityStoreService store)
     {
         if (store.All(EntityType.Blessing, blessingId).OfType<BlessingDocument>().FirstOrDefault()
             is not { AbilityRanks: { Count: > 0 } ranks })
@@ -357,31 +357,31 @@ public static class FellowshipLogs
             "it grants the item cannot be named.");
     }
 
-    private static string? Named(EntityType type, int id, IEntityStoreService store) =>
-        store.All(type, id).FirstOrDefault() is { } found ? PublicTypes.NameOf(found) : null;
+    private static string? Name(EntityType type, int id, IEntityStoreService store) =>
+        store.All(type, id).FirstOrDefault() is { } document ? PublicTypes.NameOf(document) : null;
 
     private static IEnumerable<JsonElement> Array(JsonElement owner, string field) =>
         owner.ValueKind == JsonValueKind.Object &&
-        owner.TryGetProperty(field, out var found) && found.ValueKind == JsonValueKind.Array
-            ? found.EnumerateArray()
+        owner.TryGetProperty(field, out var value) && value.ValueKind == JsonValueKind.Array
+            ? value.EnumerateArray()
             : [];
 
     private static int? Int(JsonElement owner, string field) =>
-        Number(owner, field) is { } found && found.TryGetInt32(out var value) ? value : null;
+        Number(owner, field) is { } number && number.TryGetInt32(out var value) ? value : null;
 
     private static decimal? Decimal(JsonElement owner, string field) =>
-        Number(owner, field) is { } found && found.TryGetDecimal(out var value) ? value : null;
+        Number(owner, field) is { } number && number.TryGetDecimal(out var value) ? value : null;
 
     private static JsonElement? Number(JsonElement owner, string field) =>
         owner.ValueKind == JsonValueKind.Object &&
-        owner.TryGetProperty(field, out var found) && found.ValueKind == JsonValueKind.Number
-            ? found
+        owner.TryGetProperty(field, out var value) && value.ValueKind == JsonValueKind.Number
+            ? value
             : null;
 
     private static bool? Bool(JsonElement owner, string field) =>
         owner.ValueKind == JsonValueKind.Object &&
-        owner.TryGetProperty(field, out var found) &&
-        found.ValueKind is JsonValueKind.True or JsonValueKind.False
-            ? found.GetBoolean()
+        owner.TryGetProperty(field, out var value) &&
+        value.ValueKind is JsonValueKind.True or JsonValueKind.False
+            ? value.GetBoolean()
             : null;
 }

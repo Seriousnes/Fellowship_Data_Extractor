@@ -31,7 +31,7 @@
                             <button type="button" class="cx-sel-choice" @key="mine.Key"
                                     data-kind="@mine.Candidate.Accepts" data-id="@mine.Candidate.Id"
                                     data-active="@(mine.Key == Active ? "on" : null)"
-                                    data-tip="@mine.Tip"
+                                    data-tip="@mine.Tip?.Address" data-tip-request="@mine.Tip?.Body"
                                     disabled="@(mine.Forbidden is not null)" title="@mine.Forbidden"
                                     @ref="rows[mine.Key]"
                                     @onclick="() => OnPick.InvokeAsync(mine.Candidate)">
@@ -62,7 +62,7 @@
 
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
-    [Parameter] public RarityEntry? Rung { get; set; }
+    [Parameter] public RarityEntry? Rarity { get; set; }
 
     [Parameter] public EventCallback<CraftCandidate> OnPick { get; set; }
 
@@ -78,7 +78,7 @@
         string Label,
         string Value,
         string? Forbidden,
-        string? Tip,
+        TooltipLink? Tip,
         string? Tone)
     {
         public string Key => $"{Candidate.Accepts}:{Candidate.Id}:{Candidate.Name}";
@@ -92,7 +92,7 @@
 
     private List<Choice> flat = [];
 
-    private TooltipQuery standing = new();
+    private TooltipQuery current = new();
 
     private string filter = string.Empty;
 
@@ -118,7 +118,7 @@
 
     protected override void OnParametersSet()
     {
-        standing = ItemCraft.Without(Query, Slot);
+        current = ItemCraft.Without(Query, Slot);
 
         offered = [.. Offers().Select(Group_)];
 
@@ -159,9 +159,9 @@
 
     private bool Matches(Choice choice)
     {
-        if (filter is not { Length: > 0 } asked) return true;
+        if (filter is not { Length: > 0 } request) return true;
 
-        var wanted = asked.Trim();
+        var wanted = request.Trim();
 
         return choice.Label.Contains(wanted, StringComparison.OrdinalIgnoreCase) ||
             (choice.Candidate.Id > 0 &&
@@ -196,7 +196,7 @@
             Document: null,
             Store.StatName(stat),
             Printed(candidate),
-            ItemCraft.Forbids(Item, standing, Slot, candidate, Store),
+            ItemCraft.Forbids(Item, current, Slot, candidate, Store),
             Tip: null,
             Tone: null);
     }
@@ -210,7 +210,7 @@
             document,
             Ui.Name(document),
             Printed(candidate),
-            ItemCraft.Forbids(Item, standing, Slot, candidate, Store),
+            ItemCraft.Forbids(Item, current, Slot, candidate, Store),
             Ui.Tip(document),
             Ui.LinkColour(document) is { } colour ? $"color:{colour}" : null);
     }
@@ -221,7 +221,7 @@
 
         var at = ItemCraft.StatAt(Query, Slot);
 
-        var rolled = Cards.Rolls(Item, ItemCraft.With(Query, Slot, choice), Rung);
+        var rolled = Cards.Rolls(Item, ItemCraft.With(Query, Slot, choice), Rarity);
 
         var line = rolled.FirstOrDefault(row => row.Rolls.Contains(at));
 

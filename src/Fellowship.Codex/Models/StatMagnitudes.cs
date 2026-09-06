@@ -80,8 +80,8 @@ public static class StatMagnitudes
             var named = query.Stats.TryGetValue(declared.Stat, out var values);
             var sent = named ? at < values!.Count ? values[at] : 0m : (decimal?)null;
 
-            var value = sent is { } given
-                ? Round(given, calculation, declared.Stat)
+            var value = sent is { } amount
+                ? Round(amount, calculation, declared.Stat)
                 : Row(declared.Stat, guaranteed: true);
 
             lines.Add(new StatLine(
@@ -89,9 +89,9 @@ public static class StatMagnitudes
         }
 
         var spare = Spare(item, query, taken);
-        var drawn = Math.Max(rolledSlots, spare.Count + query.RandomStats.Count);
+        var rolls = Math.Max(rolledSlots, spare.Count + query.RandomStats.Count);
 
-        for (var index = 0; index < drawn; index++)
+        for (var index = 0; index < rolls; index++)
         {
             if (index < spare.Count)
             {

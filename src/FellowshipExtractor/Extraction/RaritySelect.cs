@@ -25,7 +25,7 @@ internal static class RaritySelect
             {
                 if (Branches(chosen, locals, read) is { Count: > 0 } found)
                 {
-                    return Named(found, rarities, asset, function);
+                    return ByRarity(found, rarities, asset, function);
                 }
             }
 
@@ -56,10 +56,10 @@ internal static class RaritySelect
         throw new InvalidOperationException($"{asset} compiles no {function}. {absence}");
     }
 
-    private static Dictionary<string, string> Named(
+    private static Dictionary<string, string> ByRarity(
         Dictionary<int, string> byTier, RarityNames rarities, string asset, string function)
     {
-        var named = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var byRarity = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var (tier, value) in byTier)
         {
@@ -70,10 +70,10 @@ internal static class RaritySelect
                     "fills would key on nothing.");
             }
 
-            named[name] = value;
+            byRarity[name] = value;
         }
 
-        return named;
+        return byRarity;
     }
 
     private static Dictionary<int, string> Branches(

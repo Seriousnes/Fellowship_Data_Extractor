@@ -117,7 +117,7 @@ public sealed class IconArtTests
             Assert.NotNull(texture);
 
             var decoded = TextureExporter.Export(texture, ETextureFormat.Png);
-            Assert.True(decoded.Written, $"{path} did not decode: {decoded.Error}");
+            Assert.True(decoded.HasContent, $"{path} did not decode: {decoded.Error}");
 
             using var icon = Image.Load<Rgba32>(decoded.Content!);
 

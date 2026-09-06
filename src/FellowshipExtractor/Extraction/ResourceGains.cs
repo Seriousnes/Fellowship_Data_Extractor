@@ -123,8 +123,8 @@ public sealed class ResourceGains(
     private readonly Dictionary<string, UObject?> _defaults = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, HashSet<string>> _runtimeCeilings = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Dictionary<string, Scaler>> _scalers = new(StringComparer.Ordinal);
-    private readonly HashSet<string> _effectNames = Named(tags, EffectTable);
-    private readonly HashSet<string> _abilityNames = Named(tags, AbilityTable);
+    private readonly HashSet<string> _effectNames = Names(tags, EffectTable);
+    private readonly HashSet<string> _abilityNames = Names(tags, AbilityTable);
     private readonly HashSet<string> _barren = new(StringComparer.Ordinal);
     private readonly SortedSet<string> _frames = new(StringComparer.Ordinal);
     private readonly HashSet<string> _granting = new(StringComparer.OrdinalIgnoreCase);
@@ -135,9 +135,9 @@ public sealed class ResourceGains(
 
     private Dictionary<string, List<string>>? _byHero;
 
-    public int Reached { get; private set; }
+    public int Generations { get; private set; }
 
-    public Tally Written { get; private set; }
+    public Tally Totals { get; private set; }
 
     public IReadOnlyDictionary<string, int> Dropped => _dropped;
 
@@ -469,7 +469,7 @@ public sealed class ResourceGains(
         foreach (var entry in modifiers.Properties)
         {
             if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
-            if (Named(modifier) != ceiling) continue;
+            if (Name(modifier) != ceiling) continue;
             if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) continue;
 
             var kind = Kind(magnitude);
@@ -540,7 +540,7 @@ public sealed class ResourceGains(
         foreach (var entry in modifiers.Properties)
         {
             if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
-            if (Named(modifier) != ceiling) continue;
+            if (Name(modifier) != ceiling) continue;
             if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) continue;
             if (Kind(magnitude) != ScalableFloat) return true;
             if (Operation(modifier) == _adds) continue;
@@ -599,7 +599,7 @@ public sealed class ResourceGains(
         foreach (var entry in modifiers.Properties)
         {
             if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
-            if (Named(modifier) is not { } attribute) continue;
+            if (Name(modifier) is not { } attribute) continue;
             if (!Channel(attribute)) continue;
             if (Operation(modifier) != _adds) continue;
             if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) continue;
@@ -704,7 +704,7 @@ public sealed class ResourceGains(
 
             foreach (var reached in Gains(body, cdo, null, 1))
             {
-                Reached++;
+                Generations++;
 
                 var read = Read(reached, body, cdo, walk, locals, chances, gates, repeats, assetName);
 
@@ -714,7 +714,7 @@ public sealed class ResourceGains(
     }
 
     private IEnumerable<Entry> Read(
-        Found reached,
+        Generation reached,
         UStruct body,
         UObject cdo,
         BareStateWalk walk,
@@ -791,7 +791,7 @@ public sealed class ResourceGains(
 
         foreach (var (row, granted) in offered)
         {
-            yield return Held(
+            yield return Build(
                 reached.Channel, null, granted, chance, [row], traced, spelled, product, claim,
                 PoolFraction, unread, reached, body, cdo, assetName);
         }
@@ -800,13 +800,13 @@ public sealed class ResourceGains(
         {
             if (share <= 0) { Drop(Nothing); yield break; }
 
-            yield return Held(
+            yield return Build(
                 reached.Channel, null, share, chance, basis, traced, spelled, product, claim,
                 share == 1 ? PoolCeiling : PoolFraction, unread, reached, body, cdo, assetName);
 
             foreach (var (row, scaler) in selected)
             {
-                yield return Held(
+                yield return Build(
                     reached.Channel, null, Math.Round(share * scaler, 10), chance, [.. basis, row], traced,
                     spelled, product, claim, PoolFraction, unread, reached, body, cdo, assetName);
             }
@@ -814,12 +814,12 @@ public sealed class ResourceGains(
             yield break;
         }
 
-        var read = (reached.Value ?? walk.Number(bare) ?? walk.Reading(bare) ?? Sole(named, unread, bare, locals))
+        var read = (reached.Value ?? walk.Number(bare) ?? walk.Reading(bare) ?? Single(named, unread, bare, locals))
                    * (reached.Factor ?? 1);
 
         if (read is null && Portion(named, unread) is { } portion)
         {
-            yield return Held(
+            yield return Build(
                 reached.Channel, null, portion, chance, named, traced, spelled, product, claim,
                 PoolFraction, unread, reached, body, cdo, assetName);
 
@@ -858,27 +858,27 @@ public sealed class ResourceGains(
 
         if (amount is not { } stated || selected.Count == 0)
         {
-            yield return Held(
+            yield return Build(
                 reached.Channel, amount, null, chance, named, traced, spelled, product, claim, kind, unread,
                 reached, body, cdo, assetName);
 
             yield break;
         }
 
-        yield return Held(
+        yield return Build(
             reached.Channel, stated, null, chance, basis, traced, spelled, product, claim,
             basis.Count switch { 0 => BytecodeLiteral, 1 => ConstantsRow, _ => RowProduct }, unread,
             reached, body, cdo, assetName);
 
         foreach (var (row, scaler) in selected)
         {
-            yield return Held(
+            yield return Build(
                 reached.Channel, Math.Round(stated * scaler, 10), null, chance, [.. basis, row], traced,
                 spelled, product, claim, RowProduct, unread, reached, body, cdo, assetName);
         }
     }
 
-    private double? Sole(
+    private double? Single(
         IReadOnlyList<string> named,
         bool unread,
         KismetExpression? bare,
@@ -928,7 +928,7 @@ public sealed class ResourceGains(
             ? named
             : null;
 
-    private Entry Held(
+    private Entry Build(
         string channel,
         double? amount,
         double? share,
@@ -940,16 +940,16 @@ public sealed class ResourceGains(
         string? claim,
         string kind,
         bool unread,
-        Found reached,
+        Generation reached,
         UStruct body,
         UObject cdo,
         string? assetName)
     {
-        var leaf = named.Count > 0 ? Leaf(named[0]) : reached.Named ?? traced ?? string.Empty;
+        var leaf = named.Count > 0 ? Leaf(named[0]) : reached.Name ?? traced ?? string.Empty;
 
         var source = named.Count > 0
             ? string.Join(Joiner, named)
-            : Declaring(reached.Named)
+            : Declaring(reached.Name)
               ?? $"{Leaf(assetName ?? cdo.Owner?.Name ?? cdo.Name, ClassSuffix)}.{body.Name}" +
                  $"{OffsetMark}{reached.Statement}";
 
@@ -960,7 +960,7 @@ public sealed class ResourceGains(
             chance,
             product || (amount is null && share is null && named.Count > 1)
                 ? null
-                : Per(Apart(named, reached), traced, Apart(spelled, reached)),
+                : Per(Except(named, reached), traced, Except(spelled, reached)),
             Qualified(Rows(source)),
             source,
             kind,
@@ -1106,7 +1106,7 @@ public sealed class ResourceGains(
                 : entity)
             .ToArray();
 
-        Written = Tallied(printed);
+        Totals = Tallied(printed);
 
         return printed;
     }
@@ -1341,7 +1341,7 @@ public sealed class ResourceGains(
             Unread = entry.Unread,
         };
 
-    private IReadOnlyList<Found> Gains(
+    private IReadOnlyList<Generation> Gains(
         UStruct body, UObject cdo, IReadOnlyList<KismetExpression>? arguments, int depth)
     {
         if (depth > MaxChain || body.ScriptBytecode is not { Length: > 0 } bytecode) return [];
@@ -1365,16 +1365,16 @@ public sealed class ResourceGains(
 
         var reachable = Reaching(body, cdo, parameters, arguments, locals);
 
-        var found = new List<Found>();
+        var found = new List<Generation>();
 
         foreach (var applied in vehicles)
         {
             if (applied.Vehicle.Share is { } share)
             {
-                found.Add(new Found(applied.Vehicle.Channel, null, share, 1, applied.Statement, false)
+                found.Add(new Generation(applied.Vehicle.Channel, null, share, 1, applied.Statement, false)
                 {
                     Ceiling = applied.Vehicle.Ceiling,
-                    Named = applied.Vehicle.Source,
+                    Name = applied.Vehicle.Source,
                 });
 
                 continue;
@@ -1442,7 +1442,7 @@ public sealed class ResourceGains(
         return stated.Count > 1 ? Narrowed(stated, reachable) : stated;
     }
 
-    private static IReadOnlyList<Found> Supplying(IReadOnlyList<Found> found)
+    private static IReadOnlyList<Generation> Supplying(IReadOnlyList<Generation> found)
     {
         var supplied = found
             .Where(one => one.Supplied)
@@ -1455,7 +1455,7 @@ public sealed class ResourceGains(
     }
 
     private void Carry(
-        ICollection<Found> found,
+        ICollection<Generation> found,
         Vehicle vehicle,
         KismetExpression? magnitude,
         int statement,
@@ -1470,7 +1470,7 @@ public sealed class ResourceGains(
 
         Carry(
             found,
-            new Found(vehicle.Channel, inner, null, vehicle.Sign * sign * folded, statement, false),
+            new Generation(vehicle.Channel, inner, null, vehicle.Sign * sign * folded, statement, false),
             body,
             cdo,
             locals,
@@ -1479,8 +1479,8 @@ public sealed class ResourceGains(
     }
 
     private void Carry(
-        ICollection<Found> found,
-        Found reached,
+        ICollection<Generation> found,
+        Generation reached,
         UStruct body,
         UObject cdo,
         IReadOnlyDictionary<string, KismetExpression> locals,
@@ -1689,7 +1689,7 @@ public sealed class ResourceGains(
 
         var reached = new HashSet<int>();
 
-        foreach (var statement in walk.Reached())
+        foreach (var statement in walk.Statements())
         {
             reached.Add(statement.StatementIndex);
 
@@ -1699,7 +1699,7 @@ public sealed class ResourceGains(
         return reached;
     }
 
-    private static IReadOnlyList<Found> Narrowed(IReadOnlyList<Found> found, IReadOnlySet<int>? reached)
+    private static IReadOnlyList<Generation> Narrowed(IReadOnlyList<Generation> found, IReadOnlySet<int>? reached)
     {
         if (reached is null) return found;
 
@@ -1728,12 +1728,12 @@ public sealed class ResourceGains(
         return null;
     }
 
-    private IReadOnlyList<(Found Reached, string Property)> Spawned(string actorPath, int depth)
+    private IReadOnlyList<(Generation Reached, string Property)> Spawned(string actorPath, int depth)
     {
         if (depth > MaxChain) return [];
         if (Default(actorPath) is not { } cdo) return [];
 
-        var carried = new List<(Found, string)>();
+        var carried = new List<(Generation, string)>();
 
         foreach (var export in cdo.Owner?.GetExports() ?? [])
         {
@@ -1759,12 +1759,12 @@ public sealed class ResourceGains(
         return carried;
     }
 
-    private IReadOnlyList<Found> Forwarded(string abilityPath, int depth)
+    private IReadOnlyList<Generation> Forwarded(string abilityPath, int depth)
     {
         if (depth > MaxChain) return [];
         if (Default(abilityPath) is not { } cdo) return [];
 
-        var carried = new List<Found>();
+        var carried = new List<Generation>();
 
         foreach (var export in cdo.Owner?.GetExports() ?? [])
         {
@@ -1897,7 +1897,7 @@ public sealed class ResourceGains(
             foreach (var entry in modifiers.Properties)
             {
                 if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
-                if (Named(modifier) is not { } attribute) continue;
+                if (Name(modifier) is not { } attribute) continue;
                 if (!Channel(attribute)) continue;
                 if (Operation(modifier) != _adds) continue;
                 if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) continue;
@@ -1942,13 +1942,13 @@ public sealed class ResourceGains(
 
     private string Kind(IPropertyHolder magnitude)
     {
-        var written = PropertyWalk.GetString(magnitude, CalculationTypeField);
+        var declared = PropertyWalk.GetString(magnitude, CalculationTypeField);
 
-        if (written is null || written.Length == 0) return ScalableFloat;
-        if (EnumOrdinals.Member(mappings, KindEnum, written) is { } member) return member;
+        if (declared is null || declared.Length == 0) return ScalableFloat;
+        if (EnumOrdinals.Member(mappings, KindEnum, declared) is { } member) return member;
 
         throw new InvalidOperationException(
-            $"A modifier writes {KindEnum} {written}, which the mappings name none of " +
+            $"A modifier writes {KindEnum} {declared}, which the mappings name none of " +
             $"({string.Join(", ", _kinds.Order(StringComparer.Ordinal))}), so the magnitude would read as a " +
             "plain scalable float and the generation it carries would vanish. " +
             $"Read the enum out of mappings/{ExtractorOptions.MappingsPattern} with " +
@@ -2099,7 +2099,7 @@ public sealed class ResourceGains(
     }
 
     private double? Sharing(
-        Found reached,
+        Generation reached,
         KismetExpression? bare,
         BareStateWalk walk,
         IReadOnlyDictionary<string, KismetExpression> locals)
@@ -2328,7 +2328,7 @@ public sealed class ResourceGains(
         int depth)
     {
         if (depth > MaxDepth) return;
-        if (Whole(expression, locals, 0) is not EX_CallMath call) return;
+        if (Resolve(expression, locals, 0) is not EX_CallMath call) return;
 
         if (call.StackNode.Name.StartsWith(Multiply, StringComparison.Ordinal))
         {
@@ -2338,8 +2338,8 @@ public sealed class ResourceGains(
         }
 
         if (!call.StackNode.Name.Equals(Select, StringComparison.Ordinal)) return;
-        if (Constant(Whole(call.Parameters.ElementAtOrDefault(1), locals, 0)) is not 1) return;
-        if (Calling(Invoking(Whole(call.Parameters.ElementAtOrDefault(2), locals, 0))) != TagTest) return;
+        if (Constant(Resolve(call.Parameters.ElementAtOrDefault(1), locals, 0)) is not 1) return;
+        if (Calling(Invoking(Resolve(call.Parameters.ElementAtOrDefault(2), locals, 0))) != TagTest) return;
 
         var gathered = new List<string>();
 
@@ -2353,7 +2353,7 @@ public sealed class ResourceGains(
     }
 
     private IReadOnlyList<(string Row, double Value)> Offered(
-        Found reached,
+        Generation reached,
         KismetExpression? expression,
         UObject cdo,
         BareStateWalk walk,
@@ -2367,7 +2367,7 @@ public sealed class ResourceGains(
     }
 
     private void Offered(
-        Found reached,
+        Generation reached,
         KismetExpression? expression,
         UObject cdo,
         BareStateWalk walk,
@@ -2376,11 +2376,11 @@ public sealed class ResourceGains(
         int depth)
     {
         if (depth > MaxDepth) return;
-        if (Whole(expression, locals, 0) is not { } held) return;
+        if (Resolve(expression, locals, 0) is not { } held) return;
 
         if (held is EX_CallMath { StackNode.Name: Select } select &&
-            Constant(Whole(select.Parameters.ElementAtOrDefault(1), locals, 0)) is 0 &&
-            Calling(Invoking(Whole(select.Parameters.ElementAtOrDefault(2), locals, 0))) == TagTest &&
+            Constant(Resolve(select.Parameters.ElementAtOrDefault(1), locals, 0)) is 0 &&
+            Calling(Invoking(Resolve(select.Parameters.ElementAtOrDefault(2), locals, 0))) == TagTest &&
             select.Parameters.ElementAtOrDefault(0) is { } gated)
         {
             var (factor, ceiling) = Fractional(gated, locals);
@@ -2491,7 +2491,7 @@ public sealed class ResourceGains(
         return Row(scalable);
     }
 
-    private static KismetExpression? Whole(
+    private static KismetExpression? Resolve(
         KismetExpression? expression, IReadOnlyDictionary<string, KismetExpression> locals, int depth)
     {
         if (expression is null || depth > MaxDepth) return null;
@@ -2499,15 +2499,15 @@ public sealed class ResourceGains(
         switch (expression)
         {
             case EX_Cast cast:
-                return Whole(cast.Target, locals, depth + 1);
+                return Resolve(cast.Target, locals, depth + 1);
 
             case EX_CallMath call
                 when call.StackNode.Name.StartsWith(Convert, StringComparison.Ordinal) ||
                      call.StackNode.Name.StartsWith(Literal, StringComparison.Ordinal):
-                return Whole(call.Parameters.FirstOrDefault(), locals, depth + 1);
+                return Resolve(call.Parameters.FirstOrDefault(), locals, depth + 1);
         }
 
-        return Bound(expression, locals) is { } assigned ? Whole(assigned, locals, depth + 1) : expression;
+        return Bound(expression, locals) is { } assigned ? Resolve(assigned, locals, depth + 1) : expression;
     }
 
     private static KismetExpression? Bare(
@@ -2842,7 +2842,7 @@ public sealed class ResourceGains(
             ? inline.Properties.OfType<EX_NameConst>().FirstOrDefault()?.Value.Text
             : null;
 
-    private static HashSet<string> Named(IReadOnlyList<TagRecord> tags, string table)
+    private static HashSet<string> Names(IReadOnlyList<TagRecord> tags, string table)
     {
         var named = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -2909,7 +2909,7 @@ public sealed class ResourceGains(
         _ => [],
     };
 
-    private static string? Named(IPropertyHolder modifier) =>
+    private static string? Name(IPropertyHolder modifier) =>
         PropertyWalk.GetStruct(modifier, AttributeField) is { } attribute
             ? PropertyWalk.GetString(attribute, AttributeNameField)
             : null;
@@ -2959,7 +2959,7 @@ public sealed class ResourceGains(
         return found.Count == 1 ? found.Min : null;
     }
 
-    private static IReadOnlyList<string> Apart(IReadOnlyList<string> names, Found reached) =>
+    private static IReadOnlyList<string> Except(IReadOnlyList<string> names, Generation reached) =>
         reached.Factored.Count == 0
             ? names
             : [.. names.Where(name => !reached.Factored.Contains(name, StringComparer.Ordinal))];
@@ -3061,7 +3061,7 @@ public sealed class ResourceGains(
 
     private readonly record struct Repeat(int Start, int End, double Iterations, KismetExpression? Bound);
 
-    private sealed record Found(
+    private sealed record Generation(
         string Channel,
         KismetExpression? Magnitude,
         double? Value,
@@ -3071,7 +3071,7 @@ public sealed class ResourceGains(
     {
         public string? Ceiling { get; init; }
 
-        public string? Named { get; init; }
+        public string? Name { get; init; }
 
         public double? Factor { get; init; }
 

@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<CompanionPetDocument>(View, Ui.Codex)">
     <Columns>
         <Column Head="" Class="cx-art">
@@ -17,7 +17,7 @@
 
     [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
 
-    private IReadOnlyList<CompanionPetDocument> Drawn = [];
+    private IReadOnlyList<CompanionPetDocument> Documents = [];
 
-    protected override void OnParametersSet() => Drawn = [.. Rows.OfType<CompanionPetDocument>()];
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<CompanionPetDocument>()];
 }

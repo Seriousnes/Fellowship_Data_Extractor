@@ -151,7 +151,7 @@ public sealed class ItemSources
     }
 
     public int? DropLevel(bool legendary) =>
-        _drops.Plateau(legendary ? LegendaryRow : DropItemLevels.DefaultRow);
+        _drops.ItemLevel(legendary ? LegendaryRow : DropItemLevels.DefaultRow);
 
     private string Shipped(string codename) => _heroes.Shipped(codename) ?? codename;
 }

@@ -1,4 +1,4 @@
-using System.Net;
+using Fellowship.SDK.Client;
 
 namespace Fellowship.Codex.Tests;
 
@@ -31,11 +31,9 @@ public sealed class AbilityScalingTests : IClassFixture<RouteTests.Factory>
         var (id, _) = Scaling();
         var hero = RouteTests.Factory.Store.Settings.Heroes[0];
 
-        var drawn = await client.GetStringAsync(
-            $"/api/ability/{id}/tooltip?hero={Uri.EscapeDataString(hero.Name)}",
-            Xunit.TestContext.Current.CancellationToken);
+        var html = await client.TooltipHtmlAsync(id, new AbilityTooltipRequest { Hero = hero.Name });
 
-        Assert.Contains(hero.PrimaryStat, drawn, StringComparison.Ordinal);
+        Assert.Contains(hero.PrimaryStat, html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -45,12 +43,11 @@ public sealed class AbilityScalingTests : IClassFixture<RouteTests.Factory>
         var hero = RouteTests.Factory.Store.Settings.Heroes[0];
         var stat = hero.PrimaryStat;
 
-        var named = await client.GetStringAsync(
-            $"/api/ability/{id}/tooltip?hero={Uri.EscapeDataString(hero.Name)}&{stat}=1000",
-            Xunit.TestContext.Current.CancellationToken);
+        var named = await client.TooltipHtmlAsync(
+            id, new AbilityTooltipRequest { Hero = hero.Name, Stats = Stats.Rated(stat, 1000m) });
 
-        var supplied = await client.GetStringAsync(
-            $"/api/ability/{id}/tooltip?{stat}=1000", Xunit.TestContext.Current.CancellationToken);
+        var supplied = await client.TooltipHtmlAsync(
+            id, new AbilityTooltipRequest { Stats = Stats.Rated(stat, 1000m) });
 
         Assert.Equal(named, supplied);
     }
@@ -63,25 +60,18 @@ public sealed class AbilityScalingTests : IClassFixture<RouteTests.Factory>
         var hero = RouteTests.Factory.Store.Settings.Heroes
             .First(candidate => string.Equals(candidate.PrimaryStat, "Strength", StringComparison.Ordinal));
 
-        var both = await client.GetStringAsync(
-            $"/api/ability/{id}/tooltip?hero={Uri.EscapeDataString(hero.Name)}&Strength=1000&Intellect=4000",
-            Xunit.TestContext.Current.CancellationToken);
+        var both = await client.TooltipHtmlAsync(
+            id,
+            new AbilityTooltipRequest
+            {
+                Hero = hero.Name,
+                Stats = Stats.Rated("Strength", 1000m).Rated("Intellect", 4000m),
+            });
 
-        var strengthOnly = await client.GetStringAsync(
-            $"/api/ability/{id}/tooltip?hero={Uri.EscapeDataString(hero.Name)}&Strength=1000",
-            Xunit.TestContext.Current.CancellationToken);
+        var strengthOnly = await client.TooltipHtmlAsync(
+            id, new AbilityTooltipRequest { Hero = hero.Name, Stats = Stats.Rated("Strength", 1000m) });
 
         Assert.Equal(strengthOnly, both);
     }
 
-    [Fact]
-    public async Task An_ability_takes_the_hero_and_nothing_else_the_item_takes()
-    {
-        var (id, _) = Scaling();
-
-        var response = await client.GetAsync(
-            $"/api/ability/{id}/tooltip?itemLevel=200", Xunit.TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
 }

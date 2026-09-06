@@ -13,9 +13,9 @@ builder.AddServiceDefaults();
 builder.Services.AddOpenApi(ApiDocument.Name, options =>
 {
     options.AddDocumentTransformer<ApiInfo>();
+    options.AddDocumentTransformer<QueryOperations>();
     options.AddOperationTransformer<StatsNote>();
     options.AddOperationTransformer<ListParameters>();
-    options.AddOperationTransformer<SwitchParameters>();
     options.AddOperationTransformer<BrowsingParameters>();
     options.AddSchemaTransformer<TypeSlugs>();
 });
@@ -33,7 +33,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 FolderExportSource? folder = null;
 
-if (StorageExtensions.Names(builder.Configuration))
+if (StorageExtensions.Configured(builder.Configuration))
 {
     builder.AddStorage();
     builder.Services.AddSingleton<IExportSource, StorageExportSource>();

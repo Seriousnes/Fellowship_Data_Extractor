@@ -1,5 +1,7 @@
+using System.Reflection;
 using System.Text.Json;
 
+using Fellowship.SDK.Client;
 using Fellowship.SDK.Records;
 
 using Microsoft.AspNetCore.Http;
@@ -8,9 +10,13 @@ namespace Fellowship.Codex.Tests;
 
 public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
 {
+    private static readonly string[] Methods = ["get", "query"];
+
     private readonly JsonDocument document;
 
     private readonly ICodexService codex;
+
+    private readonly IEntityStoreService store;
 
     public ApiDocumentTests(RouteTests.Factory factory)
     {
@@ -18,20 +24,25 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
 
         document = JsonDocument.Parse(client.GetStringAsync(ApiDocument.Route).GetAwaiter().GetResult());
         codex = factory.Services.GetRequiredService<ICodexService>();
+        store = factory.Services.GetRequiredService<IEntityStoreService>();
     }
 
     private IEnumerable<(string Path, JsonElement Operation)> Operations() =>
         document.RootElement.GetProperty("paths").EnumerateObject()
-            .Select(entry => (entry.Name, entry.Value.GetProperty("get")));
+            .SelectMany(entry => Methods
+                .Where(method => entry.Value.TryGetProperty(method, out _))
+                .Select(method => (entry.Name, entry.Value.GetProperty(method))));
 
     private static IEnumerable<JsonElement> Parameters(JsonElement operation) =>
         operation.TryGetProperty("parameters", out var declared) ? declared.EnumerateArray() : [];
 
-    private JsonElement Operation(string path) =>
-        document.RootElement.GetProperty("paths").GetProperty(path).GetProperty("get");
+    private JsonElement PathItem(string path) =>
+        document.RootElement.GetProperty("paths").GetProperty(path);
+
+    private JsonElement Operation(string path, string method) => PathItem(path).GetProperty(method);
 
     private string Description(string path, string parameter) =>
-        Parameters(Operation(path))
+        Parameters(Operation(path, "get"))
             .First(declared => string.Equals(
                 declared.GetProperty("name").GetString(), parameter, StringComparison.OrdinalIgnoreCase))
             .GetProperty("description")
@@ -73,6 +84,101 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
     }
 
     [Fact]
+    public void Every_type_the_codex_lists_publishes_its_tooltip_as_a_query_naming_the_stats_it_reads()
+    {
+        var published = document.RootElement.GetProperty("paths").EnumerateObject()
+            .Where(entry => entry.Name.EndsWith("/tooltip", StringComparison.Ordinal))
+            .Select(entry => entry.Name)
+            .Order(StringComparer.Ordinal);
+
+        var listed = Enum.GetValues<EntityType>().Where(PublicTypes.IsListed).ToArray();
+
+        Assert.Equal(
+            listed.Select(type => $"/api/{EntityTypes.Slug(type)}/{{id}}/tooltip").Order(StringComparer.Ordinal),
+            published);
+
+        foreach (var type in listed)
+        {
+            var path = PathItem($"/api/{EntityTypes.Slug(type)}/{{id}}/tooltip");
+
+            Assert.False(
+                path.TryGetProperty("get", out _),
+                $"{type} still publishes its tooltip as a GET rather than a QUERY.");
+
+            var operation = path.GetProperty("query");
+
+            Assert.Equal($"Query{type}Tooltip", operation.GetProperty("operationId").GetString());
+
+            var described = operation.GetProperty("description").GetString()!;
+
+            Assert.Contains("stats", described, StringComparison.Ordinal);
+
+            foreach (var stat in store.Stats.Names)
+            {
+                Assert.Contains(stat, described, StringComparison.Ordinal);
+            }
+        }
+    }
+
+    [Fact]
+    public void Each_type_takes_its_own_tooltip_request_carrying_only_what_that_card_reads()
+    {
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
+        {
+            var operation = Operation($"/api/{EntityTypes.Slug(type)}/{{id}}/tooltip", "query");
+
+            var reference = operation
+                .GetProperty("requestBody")
+                .GetProperty("content")
+                .GetProperty("application/json")
+                .GetProperty("schema")
+                .GetProperty("$ref")
+                .GetString()!;
+
+            var name = reference[(reference.LastIndexOf('/') + 1)..];
+
+            Assert.Equal($"{type}TooltipRequest", name);
+
+            var record = TooltipRequestTypes.Find(type);
+
+            Assert.NotNull(record);
+
+            Assert.Equal(
+                record.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Select(property => JsonNamingPolicy.CamelCase.ConvertName(property.Name))
+                    .Order(StringComparer.Ordinal),
+                SchemaProperties(name));
+        }
+    }
+
+    [Fact]
+    public void Only_an_item_can_be_asked_for_a_power_potential()
+    {
+        Assert.Contains("potentialPower", SchemaProperties($"{EntityType.Item}TooltipRequest"));
+
+        foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
+        {
+            if (type is EntityType.Item) continue;
+
+            Assert.DoesNotContain(
+                "potentialPower",
+                SchemaProperties($"{type}TooltipRequest"));
+        }
+    }
+
+    private IReadOnlyList<string> SchemaProperties(string name) =>
+    [
+        .. document.RootElement
+            .GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty(name)
+            .GetProperty("properties")
+            .EnumerateObject()
+            .Select(property => property.Name)
+            .Order(StringComparer.Ordinal),
+    ];
+
+    [Fact]
     public void The_search_limit_description_names_the_bounds_the_service_holds_to()
     {
         var described = Description("/api/search", "Limit");
@@ -109,7 +215,7 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
     {
         foreach (var type in Enum.GetValues<EntityType>().Where(PublicTypes.IsListed))
         {
-            var answered = Operation($"/api/{EntityTypes.Slug(type)}/{{id}}")
+            var answered = Operation($"/api/{EntityTypes.Slug(type)}/{{id}}", "get")
                 .GetProperty("responses")
                 .GetProperty("200")
                 .GetProperty("content")
@@ -174,7 +280,7 @@ public sealed class ApiDocumentTests : IClassFixture<RouteTests.Factory>
     {
         var declared = RequestProperties.Of(typeof(EntitiesRequest));
 
-        foreach (var parameter in Parameters(Operation("/api/entities")))
+        foreach (var parameter in Parameters(Operation("/api/entities", "get")))
         {
             var name = parameter.GetProperty("name").GetString()!;
 

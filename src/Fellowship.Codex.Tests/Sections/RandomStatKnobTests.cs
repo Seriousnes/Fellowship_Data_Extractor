@@ -20,15 +20,15 @@ public class RandomStatKnobTests : BunitContext
             Rarities = [Rarity.Uncommon, Rarity.Rare, Rarity.Epic, Rarity.Champion, Rarity.Heroic],
         };
 
-    private IRenderedComponent<Knobs> Panel(params (string Key, string Value)[] asked)
+    private IRenderedComponent<Knobs> Panel(params (string Key, string Value)[] values)
     {
         var wearable = Wearable();
 
         var here = new Bearings
         {
-            Shown = wearable,
+            Entity = wearable,
             Readings = [wearable],
-            Asked = asked.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase),
+            Values = values.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase),
         };
 
         return Render<Knobs>(p => p.AddCascadingValue(here));
@@ -67,22 +67,22 @@ public class RandomStatKnobTests : BunitContext
     }
 
     [Fact]
-    public void Presses_the_rung_the_address_asked_for()
+    public void Presses_the_rarity_the_address_asked_for()
     {
-        var rung = export.Store.Settings.Rarities[^2];
+        var rarity = export.Store.Settings.Rarities[^2];
 
-        var pressed = Panel(("rarity", rung.Name))
+        var pressed = Panel(("rarity", rarity.Name))
             .FindAll("button[data-knob=rarity]")
             .Where(button => button.GetAttribute("aria-pressed") == "true")
             .ToArray();
 
         Assert.Single(pressed);
-        Assert.Equal(rung.Tier.ToString(), pressed[0].GetAttribute("data-value"));
+        Assert.Equal(rarity.Tier.ToString(), pressed[0].GetAttribute("data-value"));
     }
 
     [Fact]
-    public void Leaves_every_rung_unpressed_when_the_address_names_none() =>
+    public void Leaves_every_rarity_unpressed_when_the_address_names_none() =>
         Assert.All(
             Panel().FindAll("button[data-knob=rarity]"),
-            rung => Assert.Equal("false", rung.GetAttribute("aria-pressed")));
+            button => Assert.Equal("false", button.GetAttribute("aria-pressed")));
 }

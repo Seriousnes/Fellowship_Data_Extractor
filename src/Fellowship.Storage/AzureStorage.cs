@@ -95,8 +95,8 @@ public sealed class AzureStorage : IStorage
 
             if (separator > 0 && pair[..separator].Trim().Equals(ContainerKey, StringComparison.OrdinalIgnoreCase))
             {
-                var named = pair[(separator + 1)..].Trim();
-                if (named.Length > 0) name = named;
+                var value = pair[(separator + 1)..].Trim();
+                if (value.Length > 0) name = value;
 
                 continue;
             }

@@ -1,7 +1,7 @@
 namespace FellowshipExtractor.Extraction;
 
 public sealed record SplitNumbers(
-    Dictionary<string, double> Named,
+    Dictionary<string, double> ByName,
     Dictionary<string, object?> Rest,
     HashSet<string> Rows,
     HashSet<string> Own,
@@ -42,7 +42,7 @@ public static class Numbers
     public static double? Own(SplitNumbers split, string field)
     {
         var readings = Spellings(field)
-            .Select(name => split.Named.TryGetValue(name, out var value) ? value : (double?)null)
+            .Select(name => split.ByName.TryGetValue(name, out var value) ? value : (double?)null)
             .OfType<double>()
             .Distinct()
             .ToArray();
@@ -55,7 +55,7 @@ public static class Numbers
 
     public static SplitNumbers Split(IEnumerable<CurveBinding> bindings, string? tuningNamespace)
     {
-        var named = new Dictionary<string, double>(StringComparer.Ordinal);
+        var byName = new Dictionary<string, double>(StringComparer.Ordinal);
         var rest = new Dictionary<string, object?>(StringComparer.Ordinal);
         var rows = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var own = new HashSet<string>(StringComparer.Ordinal);
@@ -77,7 +77,7 @@ public static class Numbers
             if (field is null) continue;
             if (!claimed.TryAdd(field, binding)) continue;
 
-            named[field] = binding.Value.Value;
+            byName[field] = binding.Value.Value;
 
             if (under)
             {
@@ -98,7 +98,7 @@ public static class Numbers
             Place(rest, own, binding.RowName, Value(binding), tuningNamespace);
         }
 
-        return new SplitNumbers(named, rest, rows, own, promoted);
+        return new SplitNumbers(byName, rest, rows, own, promoted);
     }
 
     public static void Add(
@@ -157,13 +157,13 @@ public static class Numbers
     private static object? Value(CurveBinding binding) =>
         binding.Values is { Length: > 1 } ranks ? ranks : binding.Value;
 
-    public static (string Key, double Value)? SoleField(
+    public static (string Key, double Value)? SingleField(
         IReadOnlyDictionary<string, object?> constants,
         IReadOnlySet<string> own,
         IReadOnlySet<string> accountedFor,
         string field)
     {
-        (string Key, double Value)? found = null;
+        (string Key, double Value)? only = null;
 
         foreach (var (key, value) in constants)
         {
@@ -171,11 +171,11 @@ public static class Numbers
             if (!own.Contains(key) || accountedFor.Contains(key)) continue;
             if (Field(key[(key.LastIndexOf('.') + 1)..]) != field) continue;
 
-            if (found is not null) return null;
-            found = (key, number);
+            if (only is not null) return null;
+            only = (key, number);
         }
 
-        return found;
+        return only;
     }
 
     public static string? Field(string name) => Fields.GetValueOrDefault(Normalize(name));

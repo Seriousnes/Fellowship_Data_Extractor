@@ -31,18 +31,18 @@ public static class SearchEndpoint
 
     private static IResult Handle([AsParameters] SearchRequest request, ISuggestionService suggestions)
     {
-        var narrowed = StatQuery.Given(request.Type);
+        var type = StatQuery.NullIfEmpty(request.Type);
 
-        if (narrowed is not null && !EntityTypes.TryParse(narrowed, out _))
+        if (type is not null && !EntityTypes.TryParse(type, out _))
         {
             return Results.Problem(
                 title: "No such type.",
-                detail: PublicTypes.NoSuchType(narrowed),
+                detail: PublicTypes.NoSuchType(type),
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
         var limit = SuggestionService.Limit(request.Limit?.ToString(CultureInfo.InvariantCulture));
 
-        return Results.Ok(suggestions.For(request.Q ?? string.Empty, narrowed, limit));
+        return Results.Ok(suggestions.For(request.Q ?? string.Empty, type, limit));
     }
 }

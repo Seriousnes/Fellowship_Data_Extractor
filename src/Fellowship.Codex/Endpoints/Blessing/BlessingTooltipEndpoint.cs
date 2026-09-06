@@ -1,60 +1,42 @@
 using System.ComponentModel;
 
-using Fellowship.SDK.Documents;
+using Fellowship.SDK.Client;
 
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Endpoints;
 
-public sealed record BlessingTooltipRequest
-{
-    [Description("The id to draw.")]
-    public int Id { get; init; }
-
-    [Description("Given as true when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
-    public bool? ShowIcon { get; init; }
-
-    [Description("Given as true, or bare, when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button and a link to its page.")]
-    public Switch? Mobile { get; init; }
-
-    [Description("The state to draw the row at: allocated or unallocated.")]
-    public string? State { get; init; }
-
-    [Description("Which of a blessing's tiers is equipped. None given reads as none equipped.")]
-    public int? EquippedTier { get; init; }
-
-    public TooltipQuery ToQuery(IQueryCollection raw, StatParameters stats, out string? error) =>
-        StatQuery.Read(this, raw, stats, out error) with
-        {
-            ShowIcon = ShowIcon == true,
-            Mobile = Mobile?.On == true,
-            State = StatQuery.Given(State),
-            EquippedTier = EquippedTier,
-        };
-}
-
 public static class BlessingTooltipEndpoint
 {
     public static RouteHandlerBuilder MapBlessingTooltip(this IEndpointRouteBuilder group) =>
-        group.MapGet("/{id:int}/tooltip", Handle)
-            .WithName("GetBlessingTooltip")
-            .WithSummary($"One {PublicTypes.Noun(EntityType.Blessing)}'s tooltip as a self-contained HTML fragment.")
+        group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
+                [Description("The id to draw.")] int id,
+                BlessingTooltipRequest? request,
+                HttpContext http,
+                ITooltipService tooltips,
+                IEntityStoreService store) =>
+            Handle(id, request, http, tooltips, store))
+            .WithName("QueryBlessingTooltip")
+            .WithSummary(
+                $"One {PublicTypes.Noun(EntityType.Blessing)}'s tooltip as a self-contained HTML fragment.")
             .WithStats()
+            .Accepts<BlessingTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static Task<IResult> Handle(
-        [AsParameters] BlessingTooltipRequest request,
+        int id,
+        BlessingTooltipRequest? request,
         HttpContext http,
         ITooltipService tooltips,
         IEntityStoreService store)
     {
-        var query = request.ToQuery(http.Request.Query, store.Stats, out var error);
+        var query = TooltipRequests.Read(request, out var error);
 
         return error is null
-            ? tooltips.Get(EntityType.Blessing, request.Id, query, Origins.Of(http))
+            ? tooltips.Get(EntityType.Blessing, id, query, Origins.Of(http))
             : Task.FromResult(StatQuery.Unreadable(error, store.Stats));
     }
 }

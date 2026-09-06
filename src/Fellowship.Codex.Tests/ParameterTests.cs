@@ -1,6 +1,8 @@
 using System.Reflection;
 using System.Text.Json;
 
+using Fellowship.SDK.Client;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
@@ -10,8 +12,8 @@ namespace Fellowship.Codex.Tests;
 [Collection(Corpus.Name)]
 public class ParameterTests(Export export)
 {
-    private static IQueryCollection Query(params (string Key, string[] Values)[] asked) =>
-        new QueryCollection(asked.ToDictionary(a => a.Key, a => new StringValues(a.Values)));
+    private static IQueryCollection Query(params (string Key, string[] Values)[] pairs) =>
+        new QueryCollection(pairs.ToDictionary(pair => pair.Key, pair => new StringValues(pair.Values)));
 
     private sealed record Probe
     {
@@ -19,6 +21,8 @@ public class ParameterTests(Export export)
 
         public string? Hero { get; init; }
     }
+
+    private static IReadOnlySet<string> Declared => RequestProperties.Of(typeof(Probe));
 
     [Fact]
     public void A_request_model_declares_its_own_property_names()
@@ -32,7 +36,7 @@ public class ParameterTests(Export export)
     [Fact]
     public void A_key_that_is_neither_a_property_nor_a_stat_is_named_back()
     {
-        StatQuery.Read(new Probe(), Query(("nonesuch", ["1"])), export.Store.Stats, out var error);
+        StatQuery.FromQuery(Query(("nonesuch", ["1"])), Declared, export.Store.Stats, out var error);
 
         Assert.Equal("Unknown parameter 'nonesuch'.", error);
     }
@@ -40,7 +44,11 @@ public class ParameterTests(Export export)
     [Fact]
     public void A_stat_the_build_names_is_read_off_the_raw_query()
     {
-        var query = StatQuery.Read(new Probe(), Query(("Stamina", ["40"])), export.Store.Stats, out var error);
+        var stats = StatQuery.FromQuery(Query(("Stamina", ["40"])), Declared, export.Store.Stats, out var error);
+
+        Assert.Null(error);
+
+        var query = StatQuery.Read(stats, export.Store.Stats, out error);
 
         Assert.Null(error);
         Assert.Equal(40m, query.Total("Stamina"));
@@ -49,7 +57,7 @@ public class ParameterTests(Export export)
     [Fact]
     public void A_property_of_the_model_is_left_for_the_binder()
     {
-        StatQuery.Read(new Probe(), Query(("hero", ["Barbarian"])), export.Store.Stats, out var error);
+        StatQuery.FromQuery(Query(("hero", ["Barbarian"])), Declared, export.Store.Stats, out var error);
 
         Assert.Null(error);
     }
@@ -118,6 +126,8 @@ public class ParameterTests(Export export)
 
 public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
 {
+    private static readonly string[] Methods = ["get", "query"];
+
     private readonly JsonDocument document;
 
     private readonly IReadOnlyList<RouteEndpoint> endpoints;
@@ -141,8 +151,33 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
-    private JsonElement Operation(string path) =>
-        document.RootElement.GetProperty("paths").GetProperty(path).GetProperty("get");
+    private JsonElement Operation(string path, string method) =>
+        document.RootElement.GetProperty("paths").GetProperty(path).GetProperty(method);
+
+    private static IEnumerable<JsonElement> Operations(JsonElement path) =>
+        Methods.Where(method => path.TryGetProperty(method, out _)).Select(method => path.GetProperty(method));
+
+    private IEnumerable<(string Path, JsonElement Operation)> Tooltips() =>
+        document.RootElement.GetProperty("paths").EnumerateObject()
+            .Where(entry => entry.Name.EndsWith("/tooltip", StringComparison.Ordinal))
+            .Select(entry => (entry.Name, entry.Value.GetProperty("query")));
+
+    private JsonElement Component(string name) =>
+        document.RootElement.GetProperty("components").GetProperty("schemas").GetProperty(name);
+
+    private static IReadOnlySet<string> Properties(JsonElement schema) =>
+        schema.GetProperty("properties").EnumerateObject()
+            .Select(property => property.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    private static IReadOnlySet<string> Kinds(JsonElement schema)
+    {
+        if (!schema.TryGetProperty("type", out var type)) return new HashSet<string>(StringComparer.Ordinal);
+
+        return type.ValueKind == JsonValueKind.Array
+            ? type.EnumerateArray().Select(entry => entry.GetString()!).ToHashSet(StringComparer.Ordinal)
+            : new HashSet<string>(StringComparer.Ordinal) { type.GetString()! };
+    }
 
     private static IReadOnlyList<(string Name, bool Required, string? In)> Parameters(JsonElement operation) =>
         operation.TryGetProperty("parameters", out var declared)
@@ -153,24 +188,40 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
             : [];
 
     [Fact]
-    public void An_ability_tooltip_declares_the_id_the_hero_the_difficulty_the_mobile_flag_and_nothing_else()
+    public void A_tooltip_takes_the_id_on_the_route_and_everything_else_off_its_own_request()
     {
-        var names = Parameters(Operation("/api/ability/{id}/tooltip"))
-            .Select(parameter => parameter.Name)
-            .Order(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        var operation = Operation("/api/ability/{id}/tooltip", "query");
 
-        Assert.Equal(["Difficulty", "Hero", "id", "Mobile", "ShowIcon"], names);
+        Assert.Equal(["id"], Parameters(operation).Select(parameter => parameter.Name));
+
+        Assert.Equal(
+            $"#/components/schemas/{nameof(AbilityTooltipRequest)}",
+            operation.GetProperty("requestBody")
+                .GetProperty("content")
+                .GetProperty("application/json")
+                .GetProperty("schema")
+                .GetProperty("$ref")
+                .GetString());
+
+        Assert.Equal(
+            RequestProperties.Of(typeof(AbilityTooltipRequest)).Order(StringComparer.OrdinalIgnoreCase),
+            Properties(Component(nameof(AbilityTooltipRequest))).Order(StringComparer.OrdinalIgnoreCase),
+            StringComparer.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void The_item_alone_declares_the_level_the_tempering_and_the_potential()
+    public void The_item_request_alone_declares_the_level_the_tempering_and_the_potential()
     {
         string[] owned = ["ItemLevel", "Upgrades", "MaxUpgrades", "PotentialPower"];
 
-        foreach (var (path, operation) in document.RootElement.GetProperty("paths").EnumerateObject()
-            .Where(entry => entry.Name.EndsWith("/tooltip", StringComparison.Ordinal))
-            .Select(entry => (entry.Name, entry.Value.GetProperty("get"))))
+        var properties = Properties(Component(nameof(ItemTooltipRequest)));
+
+        foreach (var name in owned)
+        {
+            Assert.True(properties.Contains(name), $"The item request declares no '{name}' property.");
+        }
+
+        foreach (var (path, operation) in Tooltips())
         {
             var names = Parameters(operation)
                 .Select(parameter => parameter.Name)
@@ -178,9 +229,9 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
 
             foreach (var name in owned)
             {
-                if (!names.Contains(name)) continue;
-
-                Assert.Equal("/api/item/{id}/tooltip", path);
+                Assert.False(
+                    names.Contains(name),
+                    $"{path} declares '{name}' as a parameter of its own rather than reading it off the body.");
             }
         }
     }
@@ -204,37 +255,61 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
 
             var declared = RequestProperties.Of(model.ParameterType);
 
-            foreach (var (name, _, _) in Parameters(path.GetProperty("get")))
+            foreach (var operation in Operations(path))
             {
-                Assert.True(
-                    declared.Contains(name) || filters.Contains(name),
-                    $"{published} declares '{name}' and its model has no such property, " +
-                    "and the codex names no such facet or flag.");
+                foreach (var (name, _, _) in Parameters(operation))
+                {
+                    Assert.True(
+                        declared.Contains(name) || filters.Contains(name),
+                        $"{published} declares '{name}' and its model has no such property, " +
+                        "and the codex names no such facet or flag.");
+                }
             }
         }
     }
 
     [Fact]
-    public void A_list_parameter_publishes_the_string_a_caller_writes_rather_than_its_shape()
+    public void A_list_property_publishes_the_entries_it_carries_rather_than_the_string_they_were_written_as()
     {
-        var listed = Operation("/api/item/{id}/tooltip").GetProperty("parameters").EnumerateArray()
-            .ToDictionary(
-                parameter => parameter.GetProperty("name").GetString()!,
-                parameter => parameter.GetProperty("schema"),
-                StringComparer.OrdinalIgnoreCase);
+        var properties = Component(nameof(ItemTooltipRequest)).GetProperty("properties");
 
-        foreach (var (name, example) in new[]
+        foreach (var (name, entry, fields) in new[]
         {
-            ("Modifiers", "trait:412:1,blessing:7:1,essence:3:100"),
-            ("ImbuedTraits", "7:2,12:1"),
+            ("modifiers", nameof(ItemModifier), new[] { "kind", "id", "amount" }),
+            ("imbuedTraits", nameof(ImbuedTrait), new[] { "id", "rank" }),
         })
         {
-            Assert.True(listed.ContainsKey(name), $"The item tooltip declares no '{name}' parameter.");
+            Assert.True(
+                properties.TryGetProperty(name, out var schema), $"The request declares no '{name}' property.");
 
-            var schema = listed[name];
+            Assert.True(Kinds(schema).Contains("array"), $"'{name}' publishes {schema}");
+            Assert.True(schema.TryGetProperty("items", out _), $"'{name}' publishes no shape for its entries.");
 
-            Assert.Equal("string", schema.GetProperty("type").GetString());
-            Assert.Equal(example, schema.GetProperty("example").GetString());
+            var declared = Properties(Component(entry));
+
+            foreach (var field in fields)
+            {
+                Assert.True(declared.Contains(field), $"{entry} declares no '{field}' field.");
+            }
+        }
+    }
+
+    [Fact]
+    public void The_stats_property_publishes_one_list_of_rolls_per_stat()
+    {
+        var stats = Component(nameof(ItemTooltipRequest)).GetProperty("properties").GetProperty("stats");
+
+        Assert.True(Kinds(stats).Contains("object"), $"The stats publish {stats}");
+        Assert.True(
+            stats.TryGetProperty("additionalProperties", out _), "The stats publish no shape per stat name.");
+
+        var rolls = Component(nameof(StatRolls)).GetProperty("properties");
+
+        foreach (var name in new[] { "rating", "percentage" })
+        {
+            var schema = rolls.GetProperty(name);
+
+            Assert.True(Kinds(schema).Contains("array"), $"'{name}' publishes {schema}");
         }
     }
 
@@ -243,12 +318,15 @@ public sealed class PublishedParameterTests : IClassFixture<RouteTests.Factory>
     {
         foreach (var path in document.RootElement.GetProperty("paths").EnumerateObject())
         {
-            foreach (var (name, required, where) in Parameters(path.Value.GetProperty("get")))
+            foreach (var operation in Operations(path.Value))
             {
-                if (!required) continue;
+                foreach (var (name, required, where) in Parameters(operation))
+                {
+                    if (!required) continue;
 
-                Assert.Equal("id", name);
-                Assert.Equal("path", where);
+                    Assert.Equal("id", name);
+                    Assert.Equal("path", where);
+                }
             }
         }
     }

@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
+using Fellowship.SDK.Client;
 using Fellowship.SDK.Documents;
 
 using Microsoft.AspNetCore.Components;
@@ -14,6 +15,9 @@ using Fellowship.Codex.Models;
 using static Fellowship.Codex.Models.CodexView;
 
 namespace Fellowship.Codex.Services;
+
+public sealed record TooltipLink(string Address, string? Body);
+
 public interface ICodexViewService
 {
     IEntityStoreService Store { get; }
@@ -49,7 +53,7 @@ public interface ICodexViewService
 
     string Href(EntityType type, int id);
 
-    string Tip(EntityDocument document, bool ShowIcon = false);
+    TooltipLink Tip(EntityDocument document, bool showIcon = false);
 
     string? Reading(EntityDocument document);
 
@@ -61,10 +65,10 @@ public interface ICodexViewService
 
     string RichTextCss(string scope);
 
-    IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts(
+    IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Facts(
         EntityDocument document);
 
-    (string Href, string? Tip)? Addresses(EntityType type, int id, bool ShowIcon = false);
+    (string Href, TooltipLink? Tip)? Addresses(EntityType type, int id, bool showIcon = false);
 
     string? Rarity(EntityDocument document);
 
@@ -92,18 +96,18 @@ public sealed class CodexViewService(
     [return: NotNullIfNotNull(nameof(icon))]
     public string? Icon(string? icon) => chrome.Art(icon);
 
-    public string? RarityName(EntityDocument document) => Tier(document) is { } rung ? Named(rung) : null;
+    public string? RarityName(EntityDocument document) => Tier(document) is { } tier ? Named(tier) : null;
 
-    public string? RarityName(Rarity? rarity) => rarity is { } rung ? Named(rung) : null;
+    public string? RarityName(Rarity? rarity) => rarity is { } tier ? Named(tier) : null;
 
     private string? Named(Rarity rarity) =>
         store.Settings.Rarities.FirstOrDefault(entry => entry.Tier == (int)rarity)?.Name;
 
     public string? LinkColour(EntityDocument document)
     {
-        var rung = Tier(document);
+        var tier = Tier(document);
 
-        if (rung is { } found && Rung(found) is { } shade) return shade;
+        if (tier is { } found && RarityColour(found) is { } shade) return shade;
 
         return Cut(document) is { } named ? Readable(tokens.Gem(named.ToString())) : null;
     }
@@ -124,9 +128,9 @@ public sealed class CodexViewService(
                 store.Entities.OfType<GemTypeDocument>().FirstOrDefault(type => type.Type == wanted))
             : null;
 
-    private string? Rung(Rarity rarity) =>
-        store.Settings.Rarities.FirstOrDefault(entry => entry.Tier == (int)rarity) is { } rung
-            ? Readable(tokens.Rarity(rung.Name))
+    private string? RarityColour(Rarity rarity) =>
+        store.Settings.Rarities.FirstOrDefault(entry => entry.Tier == (int)rarity) is { } found
+            ? Readable(tokens.Rarity(found.Name))
             : null;
 
     public string NameColour(EntityDocument document) =>
@@ -153,18 +157,45 @@ public sealed class CodexViewService(
     public string Href(EntityType type, int id) =>
         $"/{EntityTypes.Slug(type)}/{id.ToString(CultureInfo.InvariantCulture)}";
 
-    public string Tip(EntityDocument document, bool ShowIcon = false)
+    public TooltipLink Tip(EntityDocument document, bool showIcon = false)
     {
-        var where = $"/api/{EntityTypes.Slug(EntityTypes.TypeOf(document))}/" +
-            document.Id.ToString(CultureInfo.InvariantCulture) + "/tooltip";
+        var type = EntityTypes.TypeOf(document);
+        var address = "/" + CodexAddresses.Tooltip(type, document.Id);
 
-        var asked = new List<string>(2);
+        var icon = showIcon ? true : (bool?)null;
+        var hero = Reading(document);
 
-        if (Reading(document) is { } hero) asked.Add($"hero={Uri.EscapeDataString(hero)}");
+        return new TooltipLink(address, type switch
+        {
+            EntityType.Ability => Body(new AbilityTooltipRequest { ShowIcon = icon, Hero = hero }),
+            EntityType.Blessing => Body(new BlessingTooltipRequest { ShowIcon = icon }),
+            EntityType.CompanionPet => Body(new CompanionPetTooltipRequest { ShowIcon = icon }),
+            EntityType.Creature => Body(new CreatureTooltipRequest { ShowIcon = icon }),
+            EntityType.Currency => Body(new CurrencyTooltipRequest { ShowIcon = icon }),
+            EntityType.Dungeon => Body(new DungeonTooltipRequest { ShowIcon = icon }),
+            EntityType.Effect => Body(new EffectTooltipRequest { ShowIcon = icon }),
+            EntityType.Gem => Body(new GemTooltipRequest { ShowIcon = icon }),
+            EntityType.GemTrait => Body(new GemTraitTooltipRequest { ShowIcon = icon }),
+            EntityType.Item => Body(new ItemTooltipRequest { ShowIcon = icon, Hero = hero }),
+            EntityType.LegendaryPower => Body(new LegendaryPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.Mount => Body(new MountTooltipRequest { ShowIcon = icon }),
+            EntityType.RelicPower => Body(new RelicPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.SetBonus => Body(new SetBonusTooltipRequest { ShowIcon = icon }),
+            EntityType.SetBonusPower => Body(new SetBonusPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.Talent => Body(new TalentTooltipRequest { ShowIcon = icon }),
+            EntityType.Trait => Body(new TraitTooltipRequest { ShowIcon = icon }),
+            EntityType.TraitPower => Body(new TraitPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.WeaponPower => Body(new WeaponPowerTooltipRequest { ShowIcon = icon, Hero = hero }),
+            _ => null,
+        });
+    }
 
-        if (ShowIcon) asked.Add($"{nameof(TooltipQuery.ShowIcon)}=true");
+    private static string? Body<TRequest>(TRequest request)
+        where TRequest : class, ITooltipRequest
+    {
+        var body = JsonSerializer.Serialize(request, CodexJson.Options);
 
-        return asked.Count == 0 ? where : $"{where}?{string.Join('&', asked)}";
+        return body == "{}" ? null : body;
     }
 
     public string? Reading(EntityDocument document) =>
@@ -200,14 +231,14 @@ public sealed class CodexViewService(
 
     public string RichTextCss(string scope) => richText.Css(scope);
 
-    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, string? Tip)> Facts(
+    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Facts(
         EntityDocument document)
     {
-        var facts = new List<(string, string, string?, string?, string?)>();
+        var facts = new List<(string, string, string?, string?, TooltipLink?)>();
 
         foreach (var property in Scalars(document))
         {
-            if (Drawn.Contains(property.Name) || Hidden(document, property.Name)) continue;
+            if (Excluded.Contains(property.Name) || Hidden(document, property.Name)) continue;
 
             var value = property.GetValue(document);
             if (value is null) continue;
@@ -228,9 +259,9 @@ public sealed class CodexViewService(
         return facts;
     }
 
-    public (string Href, string? Tip)? Addresses(EntityType type, int id, bool ShowIcon = false) =>
+    public (string Href, TooltipLink? Tip)? Addresses(EntityType type, int id, bool showIcon = false) =>
         store.All(type, id) is { Count: > 0 } readings
-            ? (Href(type, id), Tip(readings[0], ShowIcon))
+            ? (Href(type, id), Tip(readings[0], showIcon))
             : null;
 
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> ScalarsByType = new();
@@ -245,7 +276,7 @@ public sealed class CodexViewService(
     private static bool IsScalar(Type type) =>
         type == typeof(string) || type.IsPrimitive || type == typeof(decimal) || type.IsEnum;
 
-    private static readonly HashSet<string> Drawn = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> Excluded = new(StringComparer.Ordinal)
     {
         nameof(EntityDocument.Id), nameof(EntityDocument.Name),
         nameof(AbilityDocument.Description), nameof(ItemDocument.Icon), nameof(GemTypeDocument.OverflowDescription),
@@ -276,7 +307,7 @@ public sealed class CodexViewService(
 
     public string? Rarity(EntityDocument document)
     {
-        Rarity? rung = document switch
+        Rarity? tier = document switch
         {
             ItemDocument { Rarity: { } value } => value,
             CurrencyDocument { Rarity: { } coin } => coin,
@@ -284,11 +315,11 @@ public sealed class CodexViewService(
             _ => null,
         };
 
-        if (rung is not { } tier2) return null;
+        if (tier is not { } found) return null;
 
-        var entry = store.Settings.Rarities.FirstOrDefault(r => r.Tier == (int)tier2);
+        var entry = store.Settings.Rarities.FirstOrDefault(r => r.Tier == (int)found);
 
-        return entry is null ? tier2.ToString() : document is GemDocument ? entry.GemDisplayName : entry.DisplayName;
+        return entry is null ? found.ToString() : document is GemDocument ? entry.GemDisplayName : entry.DisplayName;
     }
 
     public IReadOnlyList<TuningRow> Tuning(IReadOnlyDictionary<string, object?>? rows)
@@ -326,7 +357,7 @@ public sealed class CodexViewService(
     private string Knob(string key)
     {
         var segments = key.Split('.');
-        var kept = new List<string>(segments.Length);
+        var parts = new List<string>(segments.Length);
 
         for (var at = 0; at < segments.Length; at++)
         {
@@ -337,10 +368,10 @@ public sealed class CodexViewService(
                 continue;
             }
 
-            kept.Add(Renamed(segment));
+            parts.Add(Renamed(segment));
         }
 
-        return kept.Count > 0 ? string.Join('.', kept) : string.Empty;
+        return parts.Count > 0 ? string.Join('.', parts) : string.Empty;
     }
 
     private static bool NamesAnAsset(string segment)

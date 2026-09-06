@@ -22,7 +22,7 @@ public sealed record GemSize(string TypeName, int Tier, string DisplayName, int 
     public string? IconPath { get; init; }
 }
 
-public sealed record GemLadderNode(string TypeName, int Node, int RequiredPower)
+public sealed record GemNode(string TypeName, int Node, int RequiredPower)
 {
     public string? DisplayName { get; init; }
 
@@ -65,7 +65,7 @@ public sealed class GemDefinitions
 
     private readonly Dictionary<string, GemKind> _byType = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, GemSize> _byTierTag = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, GemLadderNode> _byAugmentation = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, GemNode> _byAugmentation = new(StringComparer.OrdinalIgnoreCase);
 
     public int TypeCount => _byType.Count;
     public int SizeCount => _byTierTag.Count;
@@ -102,14 +102,14 @@ public sealed class GemDefinitions
                 };
 
                 ReadSizes(row, name, rarities);
-                ReadLadder(row, name, constants, augmentations);
+                ReadNodes(row, name, constants, augmentations);
             }
         }
 
         if (_byType.Count == 0)
         {
             throw new InvalidOperationException(
-                $"No table declares {RowStructure}, so no gem type, size or ladder node exports anything at all.");
+                $"No table declares {RowStructure}, so no gem type, size or node exports anything at all.");
         }
     }
 
@@ -117,35 +117,35 @@ public sealed class GemDefinitions
 
     public GemSize? ForSize(string tagName) => _byTierTag.GetValueOrDefault(tagName);
 
-    public IReadOnlyDictionary<int, string> RungByTier(RarityNames rarities)
+    public IReadOnlyDictionary<int, string> RarityByTier(RarityNames rarities)
     {
-        var rungs = new Dictionary<int, string>();
+        var byTier = new Dictionary<int, string>();
 
         foreach (var size in _byTierTag.Values)
         {
-            if (rarities.Label(size.RarityTier) is not { } rung) continue;
+            if (rarities.Label(size.RarityTier) is not { } rarity) continue;
 
-            if (rungs.TryGetValue(size.Tier, out var held) && !held.Equals(rung, StringComparison.Ordinal))
+            if (byTier.TryGetValue(size.Tier, out var stored) && !stored.Equals(rarity, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"Gem tier {size.Tier} sits at both {held} and {rung}, so a score the config states per tier " +
-                    "cannot be filed under the rung a gem prints.");
+                    $"Gem tier {size.Tier} sits at both {stored} and {rarity}, so a score the config states per tier " +
+                    "cannot be stored under the rarity a gem prints.");
             }
 
-            rungs[size.Tier] = rung;
+            byTier[size.Tier] = rarity;
         }
 
-        if (rungs.Count == 0)
+        if (byTier.Count == 0)
         {
             throw new InvalidOperationException(
                 "No gem size names both a tier and a rarity, so nothing joins the per tier scores the item " +
-                "settings state to the rung a gem carries.");
+                "settings state to the rarity a gem carries.");
         }
 
-        return rungs;
+        return byTier;
     }
 
-    public GemLadderNode? ForAugmentation(string assetName) => _byAugmentation.GetValueOrDefault(assetName);
+    public GemNode? ForAugmentation(string assetName) => _byAugmentation.GetValueOrDefault(assetName);
 
     private static GemOverflow? Overflow(IPropertyHolder row, ConstantsTable constants)
     {
@@ -171,18 +171,18 @@ public sealed class GemDefinitions
             var separator = tag.LastIndexOf(TierSegment, StringComparison.OrdinalIgnoreCase);
             if (separator < 0 || !int.TryParse(tag[(separator + TierSegment.Length)..], out var ordinal)) continue;
 
-            var rung = rarities.Tier(PropertyWalk.Get(tier, RarityField)?.GenericValue);
+            var rarityTier = rarities.Tier(PropertyWalk.Get(tier, RarityField)?.GenericValue);
 
             _byTierTag[tag] = new GemSize(typeName, ordinal, name, power)
             {
-                RarityTier = rung,
-                Rarity = rarities.GemLabel(rung),
+                RarityTier = rarityTier,
+                Rarity = rarities.GemLabel(rarityTier),
                 IconPath = PropertyWalk.GetString(tier, TierIconField),
             };
         }
     }
 
-    private void ReadLadder(
+    private void ReadNodes(
         IPropertyHolder row, string typeName, ConstantsTable constants, AugmentationIds augmentations)
     {
         var nodes = Structs(row, NodesField);
@@ -200,7 +200,7 @@ public sealed class GemDefinitions
             if (replaces is not null) ReplacementCount++;
 
             _byAugmentation[AbilityPresentationIndex.AssetName(granted)] =
-                new GemLadderNode(typeName, index + 1, required)
+                new GemNode(typeName, index + 1, required)
                 {
                     DisplayName = PropertyWalk.GetString(node, RankNameField),
                     Description = PropertyWalk.GetText(node, DescriptionField),

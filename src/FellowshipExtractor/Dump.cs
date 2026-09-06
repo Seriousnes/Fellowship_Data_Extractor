@@ -30,7 +30,7 @@ public static class DumpAll
     private const string CalculationEnum = "EGameplayEffectMagnitudeCalculation";
     private const int MaxFileStem = 110;
 
-    private sealed record Resolved(
+    private sealed record Entry(
         string Table,
         int Id,
         string Tag,
@@ -195,13 +195,13 @@ public static class DumpAll
         return 0;
     }
 
-    private static List<Resolved> Resolve(
+    private static List<Entry> Resolve(
         IEnumerable<TagRecord> tags,
         string table,
         IReadOnlyDictionary<string, FAssetData> byPrimary,
         IReadOnlyDictionary<string, List<FAssetData>> byName)
     {
-        var found = new List<Resolved>();
+        var found = new List<Entry>();
 
         foreach (var tag in tags)
         {
@@ -211,7 +211,7 @@ public static class DumpAll
 
             if (byPrimary.TryGetValue(name, out var primary))
             {
-                found.Add(new Resolved(table, tag.NetId, name, primary, "PrimaryAssetName", null, []));
+                found.Add(new Entry(table, tag.NetId, name, primary, "PrimaryAssetName", null, []));
                 continue;
             }
 
@@ -222,7 +222,7 @@ public static class DumpAll
                 name.EndsWith(ClassSuffix, StringComparison.Ordinal) ? name[..^ClassSuffix.Length] : name,
             ];
 
-            Resolved? matched = null;
+            Entry? matched = null;
             string[] ambiguous = [];
 
             foreach (var spelling in spellings.Distinct(StringComparer.OrdinalIgnoreCase))
@@ -231,7 +231,7 @@ public static class DumpAll
 
                 if (same.Count == 1)
                 {
-                    matched = new Resolved(table, tag.NetId, name, same[0], $"AssetName:{spelling}", null, []);
+                    matched = new Entry(table, tag.NetId, name, same[0], $"AssetName:{spelling}", null, []);
                     break;
                 }
 
@@ -240,7 +240,7 @@ public static class DumpAll
                     .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
-                matched = new Resolved(
+                matched = new Entry(
                     table,
                     tag.NetId,
                     name,
@@ -253,7 +253,7 @@ public static class DumpAll
                 break;
             }
 
-            found.Add(matched ?? new Resolved(
+            found.Add(matched ?? new Entry(
                 table, tag.NetId, name, null, null, "no cooked asset carries this name", ambiguous));
         }
 
@@ -308,8 +308,8 @@ public static class DumpAll
 
     private static void WriteIndex(
         string root,
-        IReadOnlyList<Resolved> abilities,
-        IReadOnlyList<Resolved> effects,
+        IReadOnlyList<Entry> abilities,
+        IReadOnlyList<Entry> effects,
         IReadOnlyDictionary<int, SortedSet<int>>? applied,
         IReadOnlyCollection<string>? calculationClasses)
     {
@@ -360,7 +360,7 @@ public static class DumpAll
         writer.WriteEndObject();
     }
 
-    private static void WriteSide(Utf8JsonWriter writer, string side, IReadOnlyList<Resolved> entries)
+    private static void WriteSide(Utf8JsonWriter writer, string side, IReadOnlyList<Entry> entries)
     {
         writer.WritePropertyName($"{side}ById");
         writer.WriteStartObject();
@@ -387,7 +387,7 @@ public static class DumpAll
         writer.WriteEndObject();
     }
 
-    private static string FileName(Resolved entry) => $"{entry.Id}-{Safe(entry.Tag)}.json";
+    private static string FileName(Entry entry) => $"{entry.Id}-{Safe(entry.Tag)}.json";
 
     private static string Safe(string name)
     {
@@ -409,7 +409,7 @@ public static class DumpAll
         AbilityPresentationIndex presentation,
         IReadOnlySet<string> effectNames,
         IReadOnlyDictionary<string, int> idByEffectName,
-        Resolved entry,
+        Entry entry,
         IDictionary<int, SortedSet<int>> applied,
         ISet<string> calculationClasses,
         IDictionary<string, string> packages,
@@ -493,7 +493,7 @@ public static class DumpAll
         ConstantsTable constants,
         TypeMappings mappings,
         IReadOnlySet<string> effectNames,
-        Resolved entry,
+        Entry entry,
         ISet<string> calculationClasses,
         IDictionary<string, string> packages,
         ISet<string> written,
@@ -557,7 +557,7 @@ public static class DumpAll
         counts.Add("effectFiles");
     }
 
-    private static void WriteHead(Utf8JsonWriter writer, Resolved entry, UObject? cdo, string? failure)
+    private static void WriteHead(Utf8JsonWriter writer, Entry entry, UObject? cdo, string? failure)
     {
         writer.WriteNumber("id", entry.Id);
         writer.WriteString("tagTable", entry.Table);
@@ -594,7 +594,7 @@ public static class DumpAll
     }
 
     private static (IPackage? Package, UObject? Cdo, string? Failure) Load(
-        AbstractFileProvider provider, Resolved entry)
+        AbstractFileProvider provider, Entry entry)
     {
         if (entry.PackagePath is not { } path) return (null, null, null);
 
@@ -896,9 +896,9 @@ public static class DumpAll
     {
         writer.WriteStartObject();
 
-        var written = PropertyWalk.GetString(magnitude, "MagnitudeCalculationType");
-        writer.WriteString("calculationTypeWritten", written);
-        writer.WriteString("calculationTypeMember", EnumOrdinals.Member(mappings, CalculationEnum, written));
+        var declared = PropertyWalk.GetString(magnitude, "MagnitudeCalculationType");
+        writer.WriteString("calculationTypeWritten", declared);
+        writer.WriteString("calculationTypeMember", EnumOrdinals.Member(mappings, CalculationEnum, declared));
 
         writer.WritePropertyName("scalableFloatMagnitude");
         WriteScalable(writer, PropertyWalk.GetStruct(magnitude, "ScalableFloatMagnitude"), constants);
@@ -1289,7 +1289,7 @@ public static class DumpAll
 
         foreach (var file in files)
         {
-            var read = new List<(string Section, string Key, string Written)>();
+            var read = new List<(string Section, string Key, string Value)>();
             string? failure = null;
 
             try
@@ -1342,7 +1342,7 @@ public static class DumpAll
                     {
                         if (!entry.Key.Equals(key, StringComparison.Ordinal)) continue;
 
-                        writer.WriteStringValue(entry.Written);
+                        writer.WriteStringValue(entry.Value);
                         keys++;
                     }
 
@@ -1427,8 +1427,8 @@ public static class DumpAll
         string root,
         AbstractFileProvider provider,
         IReadOnlyDictionary<string, string> packages,
-        IReadOnlyList<Resolved> abilities,
-        IReadOnlyList<Resolved> effects,
+        IReadOnlyList<Entry> abilities,
+        IReadOnlyList<Entry> effects,
         Counts counts)
     {
         var folder = Path.Combine(root, "bytecode");
@@ -1646,11 +1646,11 @@ public static class DumpAll
         return value.GetType().Namespace?.StartsWith("CUE4Parse.UE4.Kismet", StringComparison.Ordinal) == true;
     }
 
-    private static readonly Dictionary<Type, (string Name, MemberInfo Member)[]> Reflected = [];
+    private static readonly Dictionary<Type, (string Name, MemberInfo Member)[]> MembersByType = [];
 
     private static (string Name, MemberInfo Member)[] Members(Type type)
     {
-        if (Reflected.TryGetValue(type, out var known)) return known;
+        if (MembersByType.TryGetValue(type, out var known)) return known;
 
         var found = new List<(string, MemberInfo)>();
 
@@ -1670,7 +1670,7 @@ public static class DumpAll
             found.Add((field.Name, field));
         }
 
-        return Reflected[type] = [.. found];
+        return MembersByType[type] = [.. found];
     }
 
     private static object? Read(MemberInfo member, object holder)

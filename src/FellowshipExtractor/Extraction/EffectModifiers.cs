@@ -57,8 +57,8 @@ public static class EffectModifiers
 
         foreach (var slot in slots)
         {
-            var written = PropertyWalk.GetString(slot.Magnitude, CalculationTypeField);
-            var kind = EnumOrdinals.Member(mappings, KindEnum, written) ?? ScalableFloat;
+            var declared = PropertyWalk.GetString(slot.Magnitude, CalculationTypeField);
+            var kind = EnumOrdinals.Member(mappings, KindEnum, declared) ?? ScalableFloat;
             var custom = kind.Equals(CustomCalculationClass, StringComparison.Ordinal);
 
             var gates = custom ? new List<string>() : null;
@@ -97,7 +97,7 @@ public static class EffectModifiers
 
         return slot.Attribute.Equals(DurationField, StringComparison.Ordinal)
             ? read.Low is not null
-            : read.Answered || scaling?.Attribute is not null;
+            : read.HasValue || scaling?.Attribute is not null;
     }
 
     private static List<Slot> Slots(UObject cdo, TypeMappings mappings)

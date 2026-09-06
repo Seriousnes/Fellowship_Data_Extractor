@@ -24,8 +24,8 @@ public static class SetByCallerDurations
         if (effect is null) return null;
         if (PropertyWalk.GetStruct(effect, DurationField) is not { } duration) return null;
 
-        var written = PropertyWalk.GetString(duration, CalculationTypeField);
-        if (EnumOrdinals.Member(mappings, KindEnum, written) != SetByCaller) return null;
+        var kind = PropertyWalk.GetString(duration, CalculationTypeField);
+        if (EnumOrdinals.Member(mappings, KindEnum, kind) != SetByCaller) return null;
         if (PropertyWalk.GetStruct(duration, SetByCallerField) is not { } supplied) return null;
         if (PropertyWalk.GetStruct(supplied, DataTagField) is not { } tag) return null;
 
@@ -37,8 +37,8 @@ public static class SetByCallerDurations
     {
         if (applier is null) return (null, null);
 
-        var answered = new List<double>();
-        var written = new List<string>();
+        var values = new List<double>();
+        var derivations = new List<string>();
         var assignments = 0;
 
         foreach (var export in applier.Owner?.GetExports() ?? [])
@@ -59,20 +59,20 @@ public static class SetByCallerDurations
                     var magnitude = parameters.ElementAtOrDefault(MagnitudeParameter);
                     if (walk.Number(magnitude) is not { } read) continue;
 
-                    answered.Add(read);
-                    written.Add($"{read} = {walk.Written(magnitude)}");
+                    values.Add(read);
+                    derivations.Add($"{read} = {walk.Text(magnitude)}");
                 }
 
                 walk.Bind(statement);
             }
         }
 
-        if (assignments == 0 || answered.Count != assignments) return (null, null);
+        if (assignments == 0 || values.Count != assignments) return (null, null);
 
-        var distinct = answered.Distinct().ToArray();
+        var distinct = values.Distinct().ToArray();
 
         return distinct.Length == 1
-            ? (distinct[0], string.Join(" and ", written.Distinct(StringComparer.Ordinal)))
+            ? (distinct[0], string.Join(" and ", derivations.Distinct(StringComparer.Ordinal)))
             : (null, null);
     }
 
@@ -80,20 +80,20 @@ public static class SetByCallerDurations
         KismetExpression? expression,
         string tag,
         UObject applier,
-        ICollection<KismetExpression[]> found,
+        ICollection<KismetExpression[]> calls,
         int depth)
     {
         if (expression is null || depth > MaxDepth) return;
 
         if (expression is EX_CallMath call && call.StackNode.Name.Equals(Assignment, StringComparison.Ordinal))
         {
-            if (call.Parameters.Any(parameter => Tagged(parameter, applier) == tag)) found.Add(call.Parameters);
+            if (call.Parameters.Any(parameter => Tag(parameter, applier) == tag)) calls.Add(call.Parameters);
         }
 
-        foreach (var child in Children(expression)) Assignments(child, tag, applier, found, depth + 1);
+        foreach (var child in Children(expression)) Assignments(child, tag, applier, calls, depth + 1);
     }
 
-    private static string? Tagged(KismetExpression? expression, UObject applier)
+    private static string? Tag(KismetExpression? expression, UObject applier)
     {
         if (expression is EX_StructConst { Struct.Name: TagStruct } inline)
         {
@@ -101,9 +101,9 @@ public static class SetByCallerDurations
         }
 
         if (DynamicTextFloats.Name(expression) is not { } property) return null;
-        if (PropertyWalk.GetStruct(applier, property) is not { } held) return null;
+        if (PropertyWalk.GetStruct(applier, property) is not { } holder) return null;
 
-        return PropertyWalk.GetString(held, TagNameField);
+        return PropertyWalk.GetString(holder, TagNameField);
     }
 
     private static IEnumerable<KismetExpression?> Children(KismetExpression expression) => expression switch

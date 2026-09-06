@@ -5,7 +5,7 @@ public class ListingTests(Export export)
 {
     private const int Betrayers = 5191;
 
-    private CodexResults Run(params (string Key, string Value)[] asked) => Searching.Run(export, asked);
+    private CodexResults Run(params (string Key, string Value)[] values) => Searching.Run(export, values);
 
     private EntityDocument Find(CodexResults results, int id, string hero) =>
         results.Rows.Single(row => row.Id == id && export.Store.Wearer(row)?.Name == hero);
@@ -54,8 +54,11 @@ public class ListingTests(Export export)
         var hero = export.Store.Wearer(row)!.Name;
         var wearer = Uri.EscapeDataString(hero);
 
+        var tip = export.View.Tip(row);
+
         Assert.Equal($"/item/{Betrayers}?hero={wearer}", export.View.Href(row));
-        Assert.Equal($"/api/item/{Betrayers}/tooltip?hero={wearer}", export.View.Tip(row));
+        Assert.Equal($"/api/item/{Betrayers}/tooltip", tip.Address);
+        Assert.Contains($"\"hero\":\"{hero}\"", tip.Body!, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -124,12 +127,12 @@ public class ListingTests(Export export)
     {
         var facet = export.View.Codex.Facet("rarity")!;
 
-        var carried = Run(("type", "item")).Rows
+        var rarities = Run(("type", "item")).Rows
             .Select(row => facet.Values(row).ToArray())
             .ToArray();
 
-        Assert.All(carried, values => Assert.NotEmpty(values));
-        Assert.Contains(carried, values => values.Length > 1);
+        Assert.All(rarities, values => Assert.NotEmpty(values));
+        Assert.Contains(rarities, values => values.Length > 1);
     }
 
     [Fact]
@@ -138,7 +141,7 @@ public class ListingTests(Export export)
         var facet = export.View.Codex.Facet("rarity")!;
 
         var legendary = export.Store.Settings.Rarities
-            .Single(rung => rung.Tier == (int)Rarity.Legendary)
+            .Single(rarity => rarity.Tier == (int)Rarity.Legendary)
             .DisplayName;
 
         foreach (var row in Run(("type", "item")).Rows)

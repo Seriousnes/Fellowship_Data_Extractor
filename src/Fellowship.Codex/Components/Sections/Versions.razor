@@ -61,7 +61,7 @@
                         .SelectMany(reading => Ui.Codex.Facet("hero")?.Values(reading) ?? [])
                         .Distinct(StringComparer.Ordinal)
                         .OrderBy(hero => hero, StringComparer.OrdinalIgnoreCase)],
-                    version.Any(reading => reading == Here.Shown)))];
+                    version.Any(reading => reading == Here.Entity)))];
 
     private static string? Discriminator(ArmorType? armour, PrimaryStat? stat)
     {

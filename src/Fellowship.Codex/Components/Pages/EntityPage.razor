@@ -2,7 +2,6 @@
 @inject ICodexViewService Ui
 @inject ICodexService Catalog
 @inject IEntityStoreService Store
-@inject ITooltipViewService Cards
 @inject NavigationManager Nav
 
 @if (Readings.Count > 0)
@@ -11,19 +10,19 @@
     <Crumbs Trail="@(new List<(string, string?)> { (PublicTypes.Label(type), Under), (Name, null) })" />
 
     <h1 class="cx-entity-name"
-        style="--cx-name:@Ui.NameColour(Shown);@(Rung is null ? null : $"--cx-rung:{Rung};")color:var(--cx-rung, var(--cx-name))">@Name</h1>
+        style="--cx-name:@Ui.NameColour(Entity);@(Rarity is null ? null : $"--cx-rarity:{Rarity};")color:var(--cx-rarity, var(--cx-name))">@Name</h1>
 
     <CascadingValue Value="Here">
         <div class="cx-entity">
             <div class="cx-entity-top">
-                <Craft Slug="@Slug" Id="Id" Search="@Search" Hero="@Drawn" />
+                <Craft Slug="@Slug" Id="Id" Search="@Search" Hero="@Reading" />
 
                 <div class="cx-entity-side">
                     <Versions />
                 </div>
             </div>
 
-            <Detail Entity="Shown" />
+            <Detail Entity="Entity" />
 
             <Nearby />
         </div>
@@ -35,7 +34,7 @@
 
     [Parameter] public int Id { get; set; }
 
-    [SupplyParameterFromQuery(Name = "hero")] public string? Asked { get; set; }
+    [SupplyParameterFromQuery(Name = "hero")] public string? Hero { get; set; }
 
     [SupplyParameterFromQuery(Name = "state")] public string? State { get; set; }
 
@@ -43,120 +42,94 @@
 
     private IReadOnlyList<EntityDocument> Readings = [];
 
-    private EntityDocument Shown = default!;
+    private EntityDocument Entity = default!;
 
     private Bearings Here = new();
 
-    private string Name => Ui.Name(Shown);
+    private string Name => Ui.Name(Entity);
 
     private string Under => PublicTypes.Where(type);
 
-    private static readonly string[] Own = ["hero", "state"];
-
-    private IReadOnlyDictionary<string, string> Asked_
+    private IReadOnlyDictionary<string, string> Values
     {
         get
         {
-            var asked = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var (key, values) in Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(
+            foreach (var (key, found) in Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(
                 new Uri(Nav.Uri).Query))
             {
-                if (values.FirstOrDefault() is { Length: > 0 } value) asked[key] = value;
+                if (found.FirstOrDefault() is { Length: > 0 } value) values[key] = value;
             }
 
-            return asked;
+            return values;
         }
     }
-
-    private IReadOnlyDictionary<string, string> Forwarded =>
-        Asked_.Where(pair => !Own.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
-            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
     private string Search => new Uri(Nav.Uri).Query;
 
-    private string? Rung =>
-        Asked_.GetValueOrDefault("rarity") is { Length: > 0 } asked &&
-        Store.Rarity(asked, Shown is GemDocument) is { } rung
-            ? CodexView.Readable(Ui.Tokens.Rarity(rung.Name))
+    private string? Rarity =>
+        Values.GetValueOrDefault("rarity") is { Length: > 0 } request &&
+        Store.Rarity(request, Entity is GemDocument) is { } rarity
+            ? CodexView.Readable(Ui.Tokens.Rarity(rarity.Name))
             : null;
 
-    private string Address
-    {
-        get
-        {
-            var where = Ui.Tip(Shown);
+    private TooltipLink Tip => Ui.Tip(Entity);
 
-            var carried = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["hero"] = where.Contains('?') ? null : Drawn,
-                ["state"] = Cards.DrawsState(Shown) && !string.IsNullOrWhiteSpace(State) ? State : null,
-            };
+    private bool PicksHero => Readings.Count > 1 || (Entity as ItemDocument)?.Heroes is { Count: > 1 };
 
-            foreach (var (key, value) in Forwarded) carried[key] = value;
-
-            return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(where, carried);
-        }
-    }
-
-    private bool PicksHero => Readings.Count > 1 || (Shown as ItemDocument)?.Heroes is { Count: > 1 };
-
-    private TooltipQuery Asking => new() { Hero = Drawn, State = State };
-
-    private HeroEntry? Wearer => Drawn is null ? null : Store.Hero(Drawn);
-
-    private string? Drawn
+    private string? Reading
     {
         get
         {
             if (!PicksHero) return null;
 
-            return Store.Hero(Asked) is { } named && EntityStore.Reads(Shown, named)
-                ? named.Name
-                : Ui.Reading(Shown);
+            return Store.Hero(Hero) is { } hero && EntityStore.Reads(Entity, hero)
+                ? hero.Name
+                : Ui.Reading(Entity);
         }
     }
 
     protected override void OnParametersSet()
     {
-        var resolved = EntityTypes.TryParse(Slug, out var named) && PublicTypes.IsListed(named)
-            ? named
+        var resolved = EntityTypes.TryParse(Slug, out var parsed) && PublicTypes.IsListed(parsed)
+            ? parsed
             : (EntityType?)null;
         type = resolved ?? default;
         Readings = resolved is { } t ? Store.All(t, Id) : [];
 
         if (Readings.Count == 0)
         {
-            Shown = default!;
+            Entity = default!;
             Here = new Bearings();
             Nav.NotFound();
             return;
         }
 
-        Shown = Asked is not null && Store.Hero(Asked) is { } wearer
+        Entity = Hero is not null && Store.Hero(Hero) is { } wearer
             ? Readings.FirstOrDefault(reading => EntityStore.Reads(reading, wearer)) ?? Readings[0]
             : Readings[0];
 
         Here = new Bearings
         {
-            Shown = Shown,
+            Entity = Entity,
             Readings = Readings,
-            Reading = Drawn,
-            Address = Address,
+            Reading = Reading,
+            Tip = Tip,
             Page = Ui.Href(type, Id),
             Under = Under,
             Label = PublicTypes.Label(type),
             Noun = PublicTypes.Noun(type),
             Id = Id,
             Related = Nearby(),
-            Asked = Asked_,
+            Values = Values,
         };
     }
 
     private IReadOnlyList<(string, string)> Nearby()
     {
         var nearby = new List<(string, string)>();
-        var named = Catalog.Flag(CodexQuery.NamedFlag);
+        var flag = Catalog.Flag(CodexQuery.NamedFlag);
 
         void Add(string facet, string? value)
         {
@@ -166,7 +139,7 @@
             var count = Store.Entities.Count(row =>
                 EntityTypes.TypeOf(row) == type &&
                 definition.Matches(row, [value]) &&
-                (named is null || named.Predicate(row)));
+                (flag is null || flag.Predicate(row)));
 
             if (count < 2) return;
 
@@ -175,14 +148,14 @@
                 $"{Under}&{facet}={Uri.EscapeDataString(value)}"));
         }
 
-        string? First(string key) => Catalog.Facet(key)?.Values(Shown).FirstOrDefault();
+        string? First(string key) => Catalog.Facet(key)?.Values(Entity).FirstOrDefault();
 
         Add("slot", First("slot"));
         Add("set", First("set"));
         Add("gem", First("gem"));
         Add("trait", First("trait"));
 
-        var heroes = Catalog.Facet("hero")?.Values(Shown).ToArray() ?? [];
+        var heroes = Catalog.Facet("hero")?.Values(Entity).ToArray() ?? [];
         Add("hero", heroes.Length == 1 ? heroes[0] : null);
 
         Add("school", First("school"));

@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
     Group="Grouped.By<ItemDocument>(View, Ui.Codex)">
     <Columns>
         <Column Head="" Class="cx-art">
@@ -59,9 +59,9 @@
 
     private const string WeaponSlot = "Weapon";
 
-    private IReadOnlyList<ItemDocument> Drawn = [];
+    private IReadOnlyList<ItemDocument> Documents = [];
 
-    protected override void OnParametersSet() => Drawn = [.. Rows.OfType<ItemDocument>()];
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<ItemDocument>()];
 
     private bool Armoured(string? slot) =>
         slot is not null &&

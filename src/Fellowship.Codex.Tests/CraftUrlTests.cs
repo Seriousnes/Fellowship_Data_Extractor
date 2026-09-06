@@ -195,7 +195,7 @@ public class CraftUrlTests : BunitContext
         island.Find("textarea.cx-craft-paste").Change("not json");
         island.Find("button.cx-craft-read").Click();
 
-        Assert.False(string.IsNullOrWhiteSpace(island.Find("p.cx-craft-said").TextContent));
+        Assert.False(string.IsNullOrWhiteSpace(island.Find("p.cx-craft-message").TextContent));
     }
 
     [Fact]

@@ -18,16 +18,3 @@ public sealed record EntityFilter
 
     public IReadOnlyDictionary<string, string>? Facets { get; init; }
 }
-
-public sealed record TooltipRequest
-{
-    public bool? ShowIcon { get; init; }
-
-    public bool? Mobile { get; init; }
-
-    public string? Hero { get; init; }
-
-    public int? Difficulty { get; init; }
-
-    public IReadOnlyDictionary<string, string>? Parameters { get; init; }
-}

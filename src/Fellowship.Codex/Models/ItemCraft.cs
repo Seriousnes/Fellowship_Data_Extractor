@@ -77,8 +77,8 @@ public static class ItemCraft
     }
 
     public static int Capacity(ItemDocument item) =>
-        item.Slot is { } worn && TooltipView.ImbuedTraitCapacities.TryGetValue(worn, out var carried)
-            ? carried
+        item.Slot is { } worn && TooltipView.ImbuedTraitCapacities.TryGetValue(worn, out var capacity)
+            ? capacity
             : 0;
 
     public static ModifierKind? KindOf(string accepted) => accepted switch
@@ -96,8 +96,8 @@ public static class ItemCraft
     public static int MaxRank(CraftCandidate candidate, IEntityStoreService store) =>
         KindOf(candidate.Accepts) switch
         {
-            ModifierKind.Blessing => Found<BlessingDocument>(store, EntityType.Blessing, candidate.Id)?.MaxRank ?? 1,
-            ModifierKind.Trait => Found<TraitDocument>(store, TooltipView.TraitType, candidate.Id)?.MaxRank ?? 1,
+            ModifierKind.Blessing => Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id)?.MaxRank ?? 1,
+            ModifierKind.Trait => Find<TraitDocument>(store, TooltipView.TraitType, candidate.Id)?.MaxRank ?? 1,
             _ => int.MaxValue,
         };
 
@@ -129,7 +129,7 @@ public static class ItemCraft
 
         if (kind == ModifierKind.Blessing)
         {
-            if (Found<BlessingDocument>(store, EntityType.Blessing, candidate.Id) is { } blessing &&
+            if (Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id) is { } blessing &&
                 item.Slot is { } worn &&
                 !(blessing.Slots ?? []).Contains(worn, StringComparer.OrdinalIgnoreCase))
             {
@@ -217,14 +217,14 @@ public static class ItemCraft
         },
     };
 
-    public static List<TValue> Set<TValue>(List<TValue> carried, int at, TValue value)
+    public static List<TValue> Set<TValue>(List<TValue> values, int at, TValue value)
     {
-        if (at >= carried.Count) carried.Add(value); else carried[at] = value;
+        if (at >= values.Count) values.Add(value); else values[at] = value;
 
-        return carried;
+        return values;
     }
 
-    private static TDocument? Found<TDocument>(IEntityStoreService store, EntityType type, int id)
+    private static TDocument? Find<TDocument>(IEntityStoreService store, EntityType type, int id)
         where TDocument : EntityDocument =>
         store.All(type, id).OfType<TDocument>().FirstOrDefault();
 }

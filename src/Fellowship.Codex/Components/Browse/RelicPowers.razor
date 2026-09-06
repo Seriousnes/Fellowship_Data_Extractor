@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-<Table Items="Drawn" SortLink="View.SortLink" SortState="View.SortState"
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
        Group="Grouped.By<RelicPowerDocument>(View, Ui.Codex)">
     <Columns>
         <Column Head="" Class="cx-art">
@@ -21,7 +21,7 @@
 
     [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
 
-    private IReadOnlyList<RelicPowerDocument> Drawn = [];
+    private IReadOnlyList<RelicPowerDocument> Documents = [];
 
-    protected override void OnParametersSet() => Drawn = [.. Rows.OfType<RelicPowerDocument>()];
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<RelicPowerDocument>()];
 }

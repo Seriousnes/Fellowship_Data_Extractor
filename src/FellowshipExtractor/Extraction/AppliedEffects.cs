@@ -10,7 +10,7 @@ using CUE4Parse.UE4.Objects.UObject;
 
 namespace FellowshipExtractor.Extraction;
 
-public readonly record struct Reached(string Name, string? Hero);
+public readonly record struct AppliedEffect(string Name, string? Hero);
 
 public static class AppliedEffects
 {
@@ -20,7 +20,7 @@ public static class AppliedEffects
 
     private static readonly Dictionary<Type, Func<object, object?>[]> Reachable = [];
 
-    public static IReadOnlyList<Reached> Named(
+    public static IReadOnlyList<AppliedEffect> Find(
         AbstractFileProvider provider,
         string objectPath,
         IReadOnlySet<string> wanted,
@@ -42,18 +42,18 @@ public static class AppliedEffects
         }
 
         var order = new List<string>();
-        var held = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        var byName = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
         void Hold(string name, string? hero)
         {
-            if (!held.TryGetValue(name, out var already))
+            if (!byName.TryGetValue(name, out var already))
             {
                 order.Add(name);
-                held[name] = hero;
+                byName[name] = hero;
                 return;
             }
 
-            if (already is null && hero is not null) held[name] = hero;
+            if (already is null && hero is not null) byName[name] = hero;
         }
 
         foreach (var export in exports)
@@ -83,7 +83,7 @@ public static class AppliedEffects
             }
         }
 
-        return [.. order.Select(name => new Reached(name, held[name]))];
+        return [.. order.Select(name => new AppliedEffect(name, byName[name]))];
     }
 
     private static Dictionary<string, string?> HeroKeyed(
@@ -147,9 +147,9 @@ public static class AppliedEffects
     {
         if (PropertyWalk.AsTags(value) is { } listed) return listed;
 
-        var held = value is FScriptStruct wrapper ? wrapper.StructType : value;
+        var inner = value is FScriptStruct wrapper ? wrapper.StructType : value;
 
-        return held switch
+        return inner switch
         {
             FGameplayTag tag => tag.TagName.IsNone ? [] : (string[])[tag.TagName.Text],
             IPropertyHolder holder when PropertyWalk.GetString(holder, TagNameField) is { } text => [text],
@@ -178,14 +178,14 @@ public static class AppliedEffects
             return [];
         }
 
-        var named = new List<(string Name, string Path)>();
+        var names = new List<(string Name, string Path)>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var export in exports)
         {
             foreach (var property in PropertyWalk.Walk(export))
             {
-                Take(PropertyWalk.AsString(property.Value), wanted, seen, named);
+                Take(PropertyWalk.AsString(property.Value), wanted, seen, names);
             }
 
             if (export is not UStruct { ScriptBytecode: { Length: > 0 } bytecode }) continue;
@@ -196,21 +196,21 @@ public static class AppliedEffects
                 {
                     if (applyingOnly && !applied) continue;
 
-                    Take(constant, wanted, seen, named);
+                    Take(constant, wanted, seen, names);
                 }
             }
         }
 
-        return named;
+        return names;
     }
 
     private static void Take(
-        string? path, IReadOnlySet<string> wanted, HashSet<string> seen, List<(string Name, string Path)> named)
+        string? path, IReadOnlySet<string> wanted, HashSet<string> seen, List<(string Name, string Path)> names)
     {
         if (path is null) return;
         if (Leaf(path) is not { } name) return;
         if (!wanted.Contains(name)) return;
-        if (seen.Add(name)) named.Add((name, path));
+        if (seen.Add(name)) names.Add((name, path));
     }
 
     private static IEnumerable<(string Path, bool Applied)> Constants(
@@ -218,7 +218,7 @@ public static class AppliedEffects
     {
         if (expression is null || depth > MaxDepth) yield break;
 
-        if (expression is EX_ObjectConst named && PropertyWalk.AsString(named.Value) is { } path)
+        if (expression is EX_ObjectConst constant && PropertyWalk.AsString(constant.Value) is { } path)
         {
             yield return (path, applied);
         }

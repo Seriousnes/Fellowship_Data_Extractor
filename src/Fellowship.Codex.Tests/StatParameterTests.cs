@@ -1,3 +1,5 @@
+using Fellowship.SDK.Client;
+
 namespace Fellowship.Codex.Tests;
 
 [Collection(Corpus.Name)]
@@ -64,10 +66,10 @@ public sealed class PublishedStatTests : IClassFixture<RouteTests.Factory>
         {
             var key = stat.Replace(" ", string.Empty, StringComparison.Ordinal);
 
-            var response = await client.GetAsync(
-                $"/api/ability/{id}/tooltip?{key}=10", Xunit.TestContext.Current.CancellationToken);
+            using var response = await client.TooltipAsync(
+                id, new AbilityTooltipRequest { Stats = Stats.Rated(key, 10m) });
 
-            Assert.True(response.IsSuccessStatusCode, $"?{key}=10 answered {(int)response.StatusCode}.");
+            Assert.True(response.IsSuccessStatusCode, $"'{key}' answered {(int)response.StatusCode}.");
         }
     }
 
@@ -76,10 +78,10 @@ public sealed class PublishedStatTests : IClassFixture<RouteTests.Factory>
     {
         var id = RouteTests.Factory.Store.Entities.First(row => row is AbilityDocument).Id;
 
-        var response = await client.GetAsync(
-            $"/api/ability/{id}/tooltip?Nonesuch=10", Xunit.TestContext.Current.CancellationToken);
+        using var response = await client.TooltipAsync(
+            id, new AbilityTooltipRequest { Stats = Stats.Rated("Nonesuch", 10m) });
 
-        var body = await response.Content.ReadAsStringAsync(Xunit.TestContext.Current.CancellationToken);
+        var body = await response.BodyAsync();
 
         Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Contains("Nonesuch", body, StringComparison.Ordinal);
@@ -93,9 +95,8 @@ public sealed class PublishedStatTests : IClassFixture<RouteTests.Factory>
             .First(row => row.Stats is { Count: > 0 })
             .Id;
 
-        var drawn = await client.GetStringAsync(
-            $"/api/item/{id}/tooltip?armor=303", Xunit.TestContext.Current.CancellationToken);
+        var html = await client.TooltipHtmlAsync(id, new ItemTooltipRequest { Armor = 303m });
 
-        Assert.Contains("303", drawn, StringComparison.Ordinal);
+        Assert.Contains("303", html, StringComparison.Ordinal);
     }
 }

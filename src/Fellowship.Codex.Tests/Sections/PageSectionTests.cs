@@ -45,7 +45,7 @@ public class VersionsTests : BunitContext
     public void Renders_nothing_for_an_id_with_one_reading()
     {
         var only = new ItemDocument { Id = 1 };
-        var here = new Bearings { Shown = only, Readings = [only], Noun = "item" };
+        var here = new Bearings { Entity = only, Readings = [only], Noun = "item" };
 
         var cut = Render<Versions>(p => p.AddCascadingValue(here));
 
@@ -68,7 +68,7 @@ public class VersionsTests : BunitContext
 
         var here = new Bearings
         {
-            Shown = cloth,
+            Entity = cloth,
             Readings = [cloth, leather],
             Reading = "Aeona",
             Page = $"/{EntityTypes.Slug(EntityType.Item)}/1",
@@ -106,7 +106,7 @@ public class VersionsTests : BunitContext
 
         var here = new Bearings
         {
-            Shown = reading, Readings = [reading, reading],
+            Entity = reading, Readings = [reading, reading],
             Page = $"/{EntityTypes.Slug(EntityType.Item)}/1", Noun = "item",
         };
 
@@ -123,7 +123,7 @@ public class VersionsTests : BunitContext
 
         var here = new Bearings
         {
-            Shown = first, Readings = [first, second],
+            Entity = first, Readings = [first, second],
             Page = $"/{EntityTypes.Slug(EntityType.Item)}/1", Noun = "item",
         };
 

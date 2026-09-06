@@ -348,7 +348,7 @@ public sealed class EntityResolver
         }
 
         if (tag.Table.Equals(HeroNames.Table, StringComparison.OrdinalIgnoreCase) &&
-            Heroes.Rostered(tag.Name) is { } hero)
+            Heroes.ForTag(tag.Name) is { } hero)
         {
             entity = WithHero(entity, hero);
         }
@@ -378,7 +378,7 @@ public sealed class EntityResolver
 
         if (entity is { Icon: null, DisplayName: not null })
         {
-            if (EffectIcons.For(tag.Name) is { } source && Written(source.IconPath, icons) is { } file)
+            if (EffectIcons.For(tag.Name) is { } source && IconName(source.IconPath, icons) is { } file)
             {
                 entity = entity with { Icon = file, IconInheritedFrom = source.Origin };
                 IconsInherited++;
@@ -411,7 +411,7 @@ public sealed class EntityResolver
         return codename =>
         [
             .. DynamicVisuals.Icons(mappingKey, codename, slot?.Type)
-                .Select(entry => (entry.Rarity, Image: Written(entry.IconPath, icons, entry.Rarity)))
+                .Select(entry => (entry.Rarity, Image: IconName(entry.IconPath, icons, entry.Rarity)))
                 .Where(entry => entry.Image is not null)
                 .Select(entry => new RarityImage(entry.Rarity, entry.Image!)),
         ];
@@ -445,7 +445,7 @@ public sealed class EntityResolver
                 AllowedRoles = bonus.AllowedRoles,
                 AllowedAttributes = bonus.AllowedAttributes,
                 Augmentation = bonus.Augmentation,
-                Icon = entity.Icon ?? Written(bonus.IconPath, icons),
+                Icon = entity.Icon ?? IconName(bonus.IconPath, icons),
             };
         }
 
@@ -461,7 +461,7 @@ public sealed class EntityResolver
                 RandomChance = trait.RandomChance,
                 Augmentation = trait.Augmentation,
                 RankRuns = trait.Runs,
-                Icon = entity.Icon ?? Written(trait.IconPath, icons),
+                Icon = entity.Icon ?? IconName(trait.IconPath, icons),
             };
         }
 
@@ -486,7 +486,7 @@ public sealed class EntityResolver
                 GemPower = size.Power,
                 Rarity = size.Rarity,
                 RarityTier = size.RarityTier,
-                Icon = entity.Icon ?? Written(size.IconPath, icons),
+                Icon = entity.Icon ?? IconName(size.IconPath, icons),
             };
         }
 
@@ -498,7 +498,7 @@ public sealed class EntityResolver
                 Description = entity.Description ?? row.Description,
                 Rarity = entity.Rarity ?? row.Rarity,
                 RarityTier = entity.RarityTier ?? row.RarityTier,
-                Icon = entity.Icon ?? Written(row.IconPath, icons),
+                Icon = entity.Icon ?? IconName(row.IconPath, icons),
             };
         }
 
@@ -512,14 +512,14 @@ public sealed class EntityResolver
                 TitleText = customization.TitleText,
                 Rarity = entity.Rarity ?? customization.Rarity,
                 RarityTier = entity.RarityTier ?? customization.RarityTier,
-                Icon = entity.Icon ?? Written(customization.IconPath, icons),
+                Icon = entity.Icon ?? IconName(customization.IconPath, icons),
             };
         }
 
         return entity;
     }
 
-    private static Entity WithGemNode(Entity entity, GemLadderNode node, IconWriter? icons) => entity with
+    private static Entity WithGemNode(Entity entity, GemNode node, IconWriter? icons) => entity with
     {
         DisplayName = node.DisplayName ?? entity.DisplayName,
         Description = node.Description ?? entity.Description,
@@ -528,13 +528,13 @@ public sealed class EntityResolver
         GemNode = node.Node,
         RequiredGemPower = node.RequiredPower,
         Replaces = node.Replaces,
-        Icon = Written(node.IconPath, icons) ?? entity.Icon,
+        Icon = IconName(node.IconPath, icons) ?? entity.Icon,
     };
 
     private static GemOverflow? WithOverflow(GemOverflow? overflow, IconWriter? icons) =>
-        overflow is null ? null : overflow with { Icon = Written(overflow.Icon, icons) };
+        overflow is null ? null : overflow with { Icon = IconName(overflow.Icon, icons) };
 
-    private static string? Written(string? iconPath, IconWriter? icons, string? rarity = null) =>
+    private static string? IconName(string? iconPath, IconWriter? icons, string? rarity = null) =>
         iconPath is null ? null : icons?.Invoke(iconPath, rarity);
 
     private IReadOnlyDictionary<string, string>? ArtByRarity(string? iconPath, IconWriter? icons)
@@ -543,9 +543,9 @@ public sealed class EntityResolver
 
         var spread = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        foreach (var rung in Settings.Rarities)
+        foreach (var rarity in Settings.Rarities)
         {
-            if (icons(iconPath, rung.Name) is { } image) spread[rung.Name] = image;
+            if (icons(iconPath, rarity.Name) is { } image) spread[rarity.Name] = image;
         }
 
         return spread.Count == 0 ? null : spread;
@@ -650,7 +650,7 @@ public sealed class EntityResolver
                 ? CreatureStats.For(characterId)
                 : null;
 
-        var slots = Owners.WieldedBy(tag.Name);
+        var slots = Owners.SlotsOf(tag.Name);
 
         var found = Locations.For(tag.Name)
             .Select(level => Dungeons.Find(level) is { } dungeon && FindTag(TypeResolver.LevelTable, level) is { } row
@@ -721,8 +721,8 @@ public sealed class EntityResolver
     {
         DisplayName = entity.DisplayName ?? dungeon.DisplayName,
         Description = entity.Description ?? dungeon.Description,
-        Icon = entity.Icon ?? Written(dungeon.BannerPath, icons),
-        Background = Written(dungeon.BackgroundPath, icons),
+        Icon = entity.Icon ?? IconName(dungeon.BannerPath, icons),
+        Background = IconName(dungeon.BackgroundPath, icons),
         MaxPlayers = dungeon.MaxPlayers,
         QualifierTime = dungeon.QualifierTime,
         RequiredScore = dungeon.RequiredScore,
@@ -749,7 +749,7 @@ public sealed class EntityResolver
     {
         DisplayName = entity.DisplayName ?? modifier.DisplayName,
         Description = entity.Description ?? modifier.Description,
-        Icon = entity.Icon ?? Written(modifier.IconPath, icons),
+        Icon = entity.Icon ?? IconName(modifier.IconPath, icons),
         ModifierKind = modifier.Kind,
         MinimumHeroRank = modifier.MinimumHeroRank,
     };
@@ -807,9 +807,9 @@ public sealed class EntityResolver
             Stats = entity.Stats ?? Empty(item.Stats),
             SetBonus = SetBonuses.ForRow(item.SetBonus),
             UniqueEquipped = item.UniqueEquipped ? true : null,
-            Rarities = entity.Rarities ?? (item.Rarity is { } rung ? [rung] : null),
+            Rarities = entity.Rarities ?? (item.Rarity is { } rarity ? [rarity] : null),
             Heroes = Empty([.. item.Heroes.Select(hero => Heroes.Shipped(hero) ?? hero)]),
-            Icon = entity.Icon ?? Written(art, icons, item.Rarity),
+            Icon = entity.Icon ?? IconName(art, icons, item.Rarity),
             IconByRarity = entity.IconByRarity ?? ArtByRarity(art, icons),
         };
     }
@@ -818,7 +818,7 @@ public sealed class EntityResolver
     {
         DisplayName = talent.DisplayName ?? entity.DisplayName,
         Description = talent.Description ?? entity.Description,
-        Icon = Written(talent.IconPath, icons) ?? entity.Icon,
+        Icon = IconName(talent.IconPath, icons) ?? entity.Icon,
         Heroes = [talent.HeroName],
         TalentSlot = talent.Slot,
         TalentRow = talent.Row,
@@ -831,7 +831,7 @@ public sealed class EntityResolver
     {
         DisplayName = entity.DisplayName ?? name,
         Description = entity.Description ?? description,
-        Icon = entity.Icon ?? Written(iconPath, icons),
+        Icon = entity.Icon ?? IconName(iconPath, icons),
     };
 
     private Entity Body(
@@ -919,15 +919,15 @@ public sealed class EntityResolver
             .Distinct()
             .ToArray();
 
-        if (supersedes.Length == 1 && !split.Named.ContainsKey(Numbers.Duration))
+        if (supersedes.Length == 1 && !split.ByName.ContainsKey(Numbers.Duration))
         {
-            split.Named[Numbers.Duration] = supersedes[0];
+            split.ByName[Numbers.Duration] = supersedes[0];
         }
 
         if (AbilityCosts.Of(cdo, _provider, _constants, tuning) is { } cost &&
-            !split.Named.ContainsKey(Numbers.Cost))
+            !split.ByName.ContainsKey(Numbers.Cost))
         {
-            split.Named[Numbers.Cost] = cost;
+            split.ByName[Numbers.Cost] = cost;
         }
 
         Supplement(split, tuning, boundByEffect);
@@ -1009,7 +1009,7 @@ public sealed class EntityResolver
                     continue;
                 }
             }
-            else if (!own && Numbers.SoleField(reachable, split.Own, taken, wanted) is { } row)
+            else if (!own && Numbers.SingleField(reachable, split.Own, taken, wanted) is { } row)
             {
                 taken.Add(row.Key);
                 placeholders[name] = placeholder with { Value = row.Value, Tickrate = tickrate };
@@ -1022,7 +1022,7 @@ public sealed class EntityResolver
                 continue;
             }
 
-            if (placeholder.Constants is { } selected && Sole(selected) is { } value)
+            if (placeholder.Constants is { } selected && Single(selected) is { } value)
             {
                 placeholders[name] = placeholder with { Value = value, Tickrate = tickrate };
             }
@@ -1041,7 +1041,7 @@ public sealed class EntityResolver
             .Distinct(StringComparer.Ordinal)
             .ToArray();
 
-        if (undeclared is [var only] && SoleMagnitude(magnitudes.Modifiers) is { } stated)
+        if (undeclared is [var only] && SingleMagnitude(magnitudes.Modifiers) is { } stated)
         {
             placeholders[only] = new Placeholder { Value = stated };
             SynthesizedFromModifier++;
@@ -1056,20 +1056,20 @@ public sealed class EntityResolver
             Category = Categories.Of(cdo),
             Description = described,
             Detail = Empty(detail),
-            Icon = Written(display.Icon, icons),
-            CastTime = Named(split, "castTime"),
-            ChannelTime = Named(split, "channelTime"),
-            ChannelTick = Named(split, "channelTick"),
-            Cooldown = Named(split, "cooldown"),
+            Icon = IconName(display.Icon, icons),
+            CastTime = Number(split, "castTime"),
+            ChannelTime = Number(split, "channelTime"),
+            ChannelTick = Number(split, "channelTick"),
+            Cooldown = Number(split, "cooldown"),
             Charges = charges.Charges,
             ChargesByLevelType = charges.ByLevelType,
-            Cost = Named(split, "cost"),
+            Cost = Number(split, "cost"),
             Resource = display.Resource,
-            Range = Named(split, "range"),
-            MinRange = Named(split, "minRange"),
-            Radius = Named(split, "radius"),
-            Duration = Named(split, "duration"),
-            Period = Named(split, "period"),
+            Range = Number(split, "range"),
+            MinRange = Number(split, "minRange"),
+            Radius = Number(split, "radius"),
+            Duration = Number(split, "duration"),
+            Period = Number(split, "period"),
             ScalesWithHaste = ScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             MaxStacks = MaxStacks(cdo),
@@ -1150,7 +1150,7 @@ public sealed class EntityResolver
 
     public int DurationsFromSetByCaller { get; private set; }
 
-    private static double? SoleMagnitude(IReadOnlyList<EffectModifier> modifiers) =>
+    private static double? SingleMagnitude(IReadOnlyList<EffectModifier> modifiers) =>
         modifiers.Count == 1 ? modifiers[0].Value : null;
 
     private Placeholder? Declared(
@@ -1181,7 +1181,7 @@ public sealed class EntityResolver
                     Coefficient = reading.Coefficient,
                     Attribute = reading.Attribute ?? placeholder.Attribute,
                     ScalesWithExpertise = reading.ScalesWithExpertise ? true : null,
-                    Bracket = Written(reading),
+                    Bracket = ToBracket(reading),
                     Tickrate = reading.ScalesWithHaste ? true : null,
                 };
         }
@@ -1200,7 +1200,7 @@ public sealed class EntityResolver
             Attribute = range.Attribute ?? placeholder.Attribute,
             Spread = range.Spread,
             ScalesWithExpertise = range.ScalesWithExpertise ? true : null,
-            Bracket = Written(range),
+            Bracket = ToBracket(range),
         };
     }
 
@@ -1225,7 +1225,7 @@ public sealed class EntityResolver
                     : Scalable(CurveBindings.Collect(referenced, _constants), property)?.Value;
             };
 
-    private static PlaceholderBracket? Written(DynamicTextReading reading) =>
+    private static PlaceholderBracket? ToBracket(DynamicTextReading reading) =>
         reading.Terms is not { Count: > 0 } terms
             ? null
             : new PlaceholderBracket(
@@ -1377,9 +1377,9 @@ public sealed class EntityResolver
             var one = Numbers.Split([binding], tuning);
             split.Rows.Add(record.Key);
 
-            foreach (var (field, value) in one.Named)
+            foreach (var (field, value) in one.ByName)
             {
-                if (!split.Named.TryAdd(field, value)) continue;
+                if (!split.ByName.TryAdd(field, value)) continue;
 
                 if (claimed) NamespaceCorroborated++; else NamespaceSupplied++;
 
@@ -1400,8 +1400,8 @@ public sealed class EntityResolver
         }
     }
 
-    private static double? Named(SplitNumbers split, string field) =>
-        split.Named.TryGetValue(field, out var value) ? value : null;
+    private static double? Number(SplitNumbers split, string field) =>
+        split.ByName.TryGetValue(field, out var value) ? value : null;
 
     private static IReadOnlyDictionary<string, object?> Rejoined(
         Dictionary<string, object?> baseline,
@@ -1417,24 +1417,24 @@ public sealed class EntityResolver
         return Numbers.SplitTalents(all).Baseline;
     }
 
-    private static double? Sole(IReadOnlyDictionary<string, object?> constants)
+    private static double? Single(IReadOnlyDictionary<string, object?> constants)
     {
-        double? found = null;
+        double? only = null;
 
         foreach (var value in constants.Values)
         {
             if (Flat(value) is not { } number) continue;
-            if (found is not null) return null;
-            found = number;
+            if (only is not null) return null;
+            only = number;
         }
 
-        return found;
+        return only;
     }
 
     private static double? Flat(object? value) => value switch
     {
         double number => number,
-        double?[] { Length: > 0 } ladder when ladder[0] is { } first && Array.TrueForAll(ladder, step => step == first) =>
+        double?[] { Length: > 0 } ranks when ranks[0] is { } first && Array.TrueForAll(ranks, step => step == first) =>
             first,
         _ => null,
     };

@@ -62,7 +62,7 @@ public sealed class AbilityOwners
 
     private readonly Dictionary<string, string> _creatures = new(StringComparer.OrdinalIgnoreCase);
 
-    private readonly Dictionary<string, List<CreatureSlot>> _wielded =
+    private readonly Dictionary<string, List<CreatureSlot>> _slots =
         new(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<string, string> _outsiders = new(StringComparer.OrdinalIgnoreCase);
@@ -121,8 +121,8 @@ public sealed class AbilityOwners
 
     public string? CreatureOf(string name) => _creatures.GetValueOrDefault(name);
 
-    public IReadOnlyList<CreatureSlot> WieldedBy(string creature) =>
-        _wielded.TryGetValue(creature, out var slots) ? slots : [];
+    public IReadOnlyList<CreatureSlot> SlotsOf(string creature) =>
+        _slots.TryGetValue(creature, out var slots) ? slots : [];
 
     public string? ApplierOf(string name) => _appliers.GetValueOrDefault(name);
 
@@ -310,7 +310,7 @@ public sealed class AbilityOwners
                 slots.Add(slot);
             }
 
-            if (slots.Count > 0) _wielded[tag.Name] = slots;
+            if (slots.Count > 0) _slots[tag.Name] = slots;
         }
     }
 
@@ -408,7 +408,7 @@ public sealed class AbilityOwners
             if (!tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase)) continue;
             if (!_byName.TryGetValue(tag.Name, out var asset)) continue;
 
-            var applied = AppliedEffects.Named(_provider, asset.ObjectPath, effects, _codenames);
+            var applied = AppliedEffects.Find(_provider, asset.ObjectPath, effects, _codenames);
             if (applied.Count == 0) continue;
 
             _applierTags[tag.Name] = AbilityTypes(asset.ObjectPath);
@@ -451,7 +451,7 @@ public sealed class AbilityOwners
             if (!walked.Add(applier)) continue;
             if (!_byName.TryGetValue(applier, out var asset)) continue;
 
-            var reached = AppliedEffects.Named(_provider, asset.ObjectPath, wanted, _codenames);
+            var reached = AppliedEffects.Find(_provider, asset.ObjectPath, wanted, _codenames);
             if (reached.Count == 0) continue;
 
             var owningHeroes = HeroesOf(applier);

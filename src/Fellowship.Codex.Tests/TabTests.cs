@@ -196,10 +196,7 @@ public class TabRouteTests(RouteTests.Factory factory) : IClassFixture<RouteTest
     {
         string[] addresses =
         [
-            "/api/talent-slot/1", "/api/talent-slot/1/tooltip",
-            "/api/mount-power/445", "/api/mount-power/445/tooltip",
-            "/api/legendary-stat/1", "/api/legendary-stat/1/tooltip",
-            "/api/gem-type/1", "/api/gem-type/1/tooltip",
+            "/api/talent-slot/1", "/api/mount-power/445", "/api/legendary-stat/1", "/api/gem-type/1",
         ];
 
         foreach (var address in addresses)
@@ -207,6 +204,15 @@ public class TabRouteTests(RouteTests.Factory factory) : IClassFixture<RouteTest
             var response = await client.GetAsync(address, Xunit.TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        foreach (var address in addresses)
+        {
+            using var response = await client.TooltipAsync(address + "/tooltip");
+
+            Assert.False(
+                response.IsSuccessStatusCode,
+                $"{address}/tooltip was answered with {(int)response.StatusCode}.");
         }
     }
 

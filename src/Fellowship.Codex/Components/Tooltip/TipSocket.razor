@@ -25,7 +25,7 @@
         Query.Gem is { } id ? Store.All(EntityType.Gem, id).OfType<GemDocument>().FirstOrDefault() : null;
 
     public static bool Draws(
-        ItemDocument entity, SettingsFile settings, RarityEntry? rung, TooltipQuery query) =>
+        ItemDocument entity, SettingsFile settings, RarityEntry? rarity, TooltipQuery query) =>
         !query.NoSocket &&
-        ItemCraft.Slots(entity, settings, rung).Any(slot => slot.SlotName == CraftSlots.GemSocket);
+        ItemCraft.Slots(entity, settings, rarity).Any(slot => slot.SlotName == CraftSlots.GemSocket);
 }

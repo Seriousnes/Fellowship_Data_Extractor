@@ -1,5 +1,7 @@
 using System.Text.Json;
 
+using Fellowship.SDK.Client;
+
 namespace Fellowship.Codex.Tests;
 
 public sealed class DungeonTests : IClassFixture<RouteTests.Factory>
@@ -54,10 +56,9 @@ public sealed class DungeonTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task A_dungeon_answers_its_tooltip_at_its_own_address()
     {
-        var response = await client.GetAsync(
-            $"/api/dungeon/{Any.Id}/tooltip", Xunit.TestContext.Current.CancellationToken);
+        using var response = await client.TooltipAsync<DungeonTooltipRequest>(Any.Id);
 
-        response.EnsureSuccessStatusCode();
+        Assert.True(response.IsSuccessStatusCode, await response.BodyAsync());
     }
 
     [Fact]

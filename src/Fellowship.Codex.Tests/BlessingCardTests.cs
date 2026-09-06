@@ -1,7 +1,6 @@
-using Fellowship.Codex.Components.Tooltip;
+using Fellowship.SDK.Client;
 
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
+using Fellowship.Codex.Components.Tooltip;
 
 namespace Fellowship.Codex.Tests;
 
@@ -62,16 +61,14 @@ public class BlessingCardTests : BunitContext
     }
 
     [Fact]
-    public void The_equipped_tier_a_query_string_names_reaches_the_query()
+    public void The_equipped_tier_the_caller_names_reaches_the_query()
     {
-        var query = new BlessingTooltipRequest { Id = 1, EquippedTier = 3 }
-            .ToQuery(new QueryCollection(), export.Store.Stats, out var error);
+        var query = TooltipRequests.Read(new BlessingTooltipRequest { EquippedTier = 3 }, out var error);
 
         Assert.Null(error);
         Assert.Equal(3, query.EquippedTier);
 
-        Assert.Null(new BlessingTooltipRequest { Id = 1 }
-            .ToQuery(new QueryCollection(), export.Store.Stats, out _).EquippedTier);
+        Assert.Null(TooltipRequests.Read(new BlessingTooltipRequest(), out _).EquippedTier);
     }
 
     [Fact]

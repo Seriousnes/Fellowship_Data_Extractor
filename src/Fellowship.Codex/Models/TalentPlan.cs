@@ -55,7 +55,7 @@ public static class TalentPlan
         return taken;
     }
 
-    public static string Written(IReadOnlyList<TalentRow> tree, IReadOnlySet<int> taken) =>
+    public static string Write(IReadOnlyList<TalentRow> tree, IReadOnlySet<int> taken) =>
         string.Join(
             ',',
             tree.SelectMany(row => row.Nodes)
@@ -69,19 +69,19 @@ public static class TalentPlan
     {
         if (number < 1) return number.ToString(CultureInfo.InvariantCulture);
 
-        var written = new StringBuilder();
+        var built = new StringBuilder();
         var left = number;
 
         foreach (var (value, numeral) in Numerals)
         {
             while (left >= value)
             {
-                written.Append(numeral);
+                built.Append(numeral);
                 left -= value;
             }
         }
 
-        return written.ToString();
+        return built.ToString();
     }
 
     private static readonly (int Value, string Numeral)[] Numerals =

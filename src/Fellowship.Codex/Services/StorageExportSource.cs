@@ -6,10 +6,10 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
 {
     public async Task<ExportHistory> LoadAsync(CancellationToken cancellationToken)
     {
-        var carried = await CarriedAsync(cancellationToken);
-        var builds = Builds(carried);
+        var folders = await FoldersAsync(cancellationToken);
+        var builds = Builds(folders);
 
-        if (builds.Count == 0) throw Absent(carried);
+        if (builds.Count == 0) throw Absent(folders);
 
         var latest = builds[0];
 
@@ -36,9 +36,9 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
             older);
     }
 
-    public static IReadOnlyList<string> Builds(IReadOnlyDictionary<string, HashSet<string>> carried) =>
+    public static IReadOnlyList<string> Builds(IReadOnlyDictionary<string, HashSet<string>> byFolder) =>
         [
-            .. carried
+            .. byFolder
                 .Where(version => Whole(version.Value))
                 .Select(version => version.Key)
                 .OrderByDescending(ExportFolders.Build)
@@ -46,9 +46,9 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
                 .Select(ExportFolders.Id),
         ];
 
-    private async Task<Dictionary<string, HashSet<string>>> CarriedAsync(CancellationToken cancellationToken)
+    private async Task<Dictionary<string, HashSet<string>>> FoldersAsync(CancellationToken cancellationToken)
     {
-        var carried = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var byFolder = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
 
         await foreach (var stored in storage.ListAsync(ExportFolders.Prefix, cancellationToken))
         {
@@ -58,31 +58,31 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
 
             var folder = stored.Name[..separator];
 
-            if (!carried.TryGetValue(folder, out var files))
+            if (!byFolder.TryGetValue(folder, out var files))
             {
-                carried[folder] = files = new HashSet<string>(StringComparer.Ordinal);
+                byFolder[folder] = files = new HashSet<string>(StringComparer.Ordinal);
             }
 
             files.Add(stored.Name[(separator + 1)..]);
         }
 
-        return carried;
+        return byFolder;
     }
 
     private static bool Whole(HashSet<string> files) =>
         files.Contains(ExportReader.Data(ExportReader.EntitiesName)) &&
         files.Contains(ExportReader.Data(ExportReader.SettingsName));
 
-    private const int Named = 4;
+    private const int MaxNames = 4;
 
-    private static InvalidOperationException Absent(IReadOnlyDictionary<string, HashSet<string>> carried)
+    private static InvalidOperationException Absent(IReadOnlyDictionary<string, HashSet<string>> byFolder)
     {
-        if (carried.Count == 0) return ExportReader.Missing(ExportReader.EntitiesName);
+        if (byFolder.Count == 0) return ExportReader.Missing(ExportReader.EntitiesName);
 
-        var folders = string.Join("; ", carried
+        var folders = string.Join("; ", byFolder
             .OrderByDescending(version => ExportFolders.Build(version.Key))
             .ThenByDescending(version => version.Key, StringComparer.Ordinal)
-            .Select(version => $"{version.Key} holds {Held(version.Value)}"));
+            .Select(version => $"{version.Key} holds {Holds(version.Value)}"));
 
         return new InvalidOperationException(
             $"No {ExportFolders.Pattern} folder in the store carries both " +
@@ -94,11 +94,11 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
             "container, '-- --bucket <name>' for an S3 bucket.");
     }
 
-    private static string Held(HashSet<string> files)
+    private static string Holds(HashSet<string> files)
     {
         if (files.Count == 0) return "nothing";
 
-        var named = files.Order(StringComparer.Ordinal).Take(Named).ToArray();
+        var named = files.Order(StringComparer.Ordinal).Take(MaxNames).ToArray();
         var beyond = files.Count - named.Length;
 
         return beyond > 0

@@ -46,7 +46,7 @@ public class KnobsTests : BunitContext
     [Fact]
     public void Turns_the_hero_knob_into_a_hero_parameter()
     {
-        var (panel, turned) = Panel(new Bearings { Shown = AnyHero(), Readings = [AnyHero(), AnyHero()] });
+        var (panel, turned) = Panel(new Bearings { Entity = AnyHero(), Readings = [AnyHero(), AnyHero()] });
 
         var who = export.Store.Settings.Heroes[0].Name;
 
@@ -66,26 +66,26 @@ public class KnobsTests : BunitContext
     };
 
     [Fact]
-    public void Renders_a_rung_for_every_rarity_the_item_drops_at_and_no_other()
+    public void Renders_a_button_for_every_rarity_the_item_drops_at_and_no_other()
     {
         var wearable = Wearable(Droppable);
-        var here = new Bearings { Shown = wearable, Readings = [wearable] };
+        var here = new Bearings { Entity = wearable, Readings = [wearable] };
 
         var cut = Render<Knobs>(p => p.AddCascadingValue(here));
 
-        var rungs = cut.FindAll("button[data-knob=rarity]");
+        var buttons = cut.FindAll("button[data-knob=rarity]");
 
         Assert.Equal(
             [.. export.Store.Settings.Rarities
-                .Where(rung => Droppable.Any(carry => (int)carry == rung.Tier))
-                .Select(rung => rung.DisplayName)],
-            [.. rungs.Select(rung => rung.TextContent.Trim())]);
+                .Where(rarity => Droppable.Any(carry => (int)carry == rarity.Tier))
+                .Select(rarity => rarity.DisplayName)],
+            [.. buttons.Select(button => button.TextContent.Trim())]);
 
-        Assert.All(rungs, rung =>
+        Assert.All(buttons, button =>
         {
-            Assert.Equal("button", rung.GetAttribute("type"));
-            Assert.False(string.IsNullOrEmpty(rung.GetAttribute("data-choice")));
-            Assert.Equal("false", rung.GetAttribute("aria-pressed"));
+            Assert.Equal("button", button.GetAttribute("type"));
+            Assert.False(string.IsNullOrEmpty(button.GetAttribute("data-choice")));
+            Assert.Equal("false", button.GetAttribute("aria-pressed"));
         });
     }
 
@@ -97,7 +97,7 @@ public class KnobsTests : BunitContext
             var wearable = Wearable(only);
 
             var cut = Render<Knobs>(p => p.AddCascadingValue(
-                new Bearings { Shown = wearable, Readings = [wearable] }));
+                new Bearings { Entity = wearable, Readings = [wearable] }));
 
             Assert.Empty(cut.FindAll("button[data-knob=rarity]"));
             Assert.NotNull(cut.Find("input[data-knob=itemLevel]"));
@@ -110,20 +110,20 @@ public class KnobsTests : BunitContext
         var wearable = Wearable(Droppable);
 
         var cut = Render<Knobs>(p => p.AddCascadingValue(
-            new Bearings { Shown = wearable, Readings = [wearable] }));
+            new Bearings { Entity = wearable, Readings = [wearable] }));
 
-        var legendary = export.Store.Settings.Rarities.Single(rung => rung.Tier == (int)Rarity.Legendary);
+        var legendary = export.Store.Settings.Rarities.Single(rarity => rarity.Tier == (int)Rarity.Legendary);
 
         Assert.DoesNotContain(
             cut.FindAll("button[data-knob=rarity]"),
-            rung => rung.TextContent.Trim() == legendary.DisplayName);
+            button => button.TextContent.Trim() == legendary.DisplayName);
     }
 
     [Fact]
     public void Renders_both_number_inputs_under_the_names_the_tooltip_api_reads()
     {
         var wearable = new ItemDocument { Id = 1, Stats = [new StatSlot("Stamina", 40) { Kind = "Primary" }] };
-        var here = new Bearings { Shown = wearable, Readings = [wearable] };
+        var here = new Bearings { Entity = wearable, Readings = [wearable] };
 
         var cut = Render<Knobs>(p => p.AddCascadingValue(here));
 
@@ -141,12 +141,12 @@ public class KnobsTests : BunitContext
         var shared = new ItemDocument { Id = 1, Heroes = heroes };
 
         var one = Render<Knobs>(p => p.AddCascadingValue(
-            new Bearings { Shown = shared, Readings = [shared] }));
+            new Bearings { Entity = shared, Readings = [shared] }));
 
         Assert.Contains(one.FindAll("option"), o => o.GetAttribute("value") == string.Empty);
 
         var two = Render<Knobs>(p => p.AddCascadingValue(
-            new Bearings { Shown = shared, Readings = [shared, shared] }));
+            new Bearings { Entity = shared, Readings = [shared, shared] }));
 
         Assert.DoesNotContain(two.FindAll("option"), o => o.GetAttribute("value") == string.Empty);
     }
@@ -163,7 +163,7 @@ public class KnobsTests : BunitContext
             PrimaryStat = Enum.Parse<PrimaryStat>(who.PrimaryStat),
         };
 
-        var here = new Bearings { Shown = reading, Readings = [reading, reading], Reading = who.Name };
+        var here = new Bearings { Entity = reading, Readings = [reading, reading], Reading = who.Name };
 
         var cut = Render<Knobs>(p => p.AddCascadingValue(here));
 
@@ -179,12 +179,12 @@ public class KnobsTests : BunitContext
         var wearable = Wearable(Droppable);
 
         var asGem = Render<Knobs>(p => p.AddCascadingValue(
-            new Bearings { Shown = gem, Readings = [gem] }));
+            new Bearings { Entity = gem, Readings = [gem] }));
         var asItem = Render<Knobs>(p => p.AddCascadingValue(
-            new Bearings { Shown = wearable, Readings = [wearable] }));
+            new Bearings { Entity = wearable, Readings = [wearable] }));
 
         var ladder = export.Store.Settings.Rarities;
-        var lowest = ladder.Single(rung => rung.Tier == (int)Droppable[0]);
+        var lowest = ladder.Single(rarity => rarity.Tier == (int)Droppable[0]);
 
         Assert.Equal(ladder[0].GemDisplayName, asGem.FindAll("button[data-knob=rarity]")[0].TextContent.Trim());
         Assert.Equal(lowest.DisplayName, asItem.FindAll("button[data-knob=rarity]")[0].TextContent.Trim());

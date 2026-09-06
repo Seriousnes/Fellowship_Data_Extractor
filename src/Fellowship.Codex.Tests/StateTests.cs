@@ -1,6 +1,6 @@
-using Fellowship.Codex.Components.Tooltip;
+using Fellowship.SDK.Client;
 
-using Microsoft.AspNetCore.Http;
+using Fellowship.Codex.Components.Tooltip;
 
 namespace Fellowship.Codex.Tests;
 
@@ -19,7 +19,7 @@ public class StateTests : BunitContext
 
     private TraitDocument Trait => export.Store.Entities.OfType<TraitDocument>().First(t => t.Icon is not null);
 
-    private static TooltipQuery Asked(string? state) => new() { State = state };
+    private static TooltipQuery Query(string? state) => new() { State = state };
 
     private IRenderedComponent<Tooltip> Draw(EntityDocument document, TooltipQuery query) =>
         Render<Tooltip>(p => p.Add(x => x.Entity, document).Add(x => x.Query, query));
@@ -29,7 +29,7 @@ public class StateTests : BunitContext
     {
         Assert.Contains(
             "T_Buttons_TraitNode_SelectedDefault.png",
-            Draw(Trait, Asked(null)).Find(".fx-trait-crest").GetAttribute("style") ?? string.Empty,
+            Draw(Trait, Query(null)).Find(".fx-trait-crest").GetAttribute("style") ?? string.Empty,
             StringComparison.Ordinal);
     }
 
@@ -38,12 +38,12 @@ public class StateTests : BunitContext
     {
         Assert.Contains(
             "T_Buttons_TraitNode_AvailableDefault.png",
-            Draw(Trait, Asked("available")).Find(".fx-trait-crest").GetAttribute("style") ?? string.Empty,
+            Draw(Trait, Query("available")).Find(".fx-trait-crest").GetAttribute("style") ?? string.Empty,
             StringComparison.Ordinal);
 
         Assert.Contains(
             "T_Buttons_TraitNode_UnavailableDefault.png",
-            Draw(Trait, Asked("unavailable")).Find(".fx-trait-crest").GetAttribute("style") ?? string.Empty,
+            Draw(Trait, Query("unavailable")).Find(".fx-trait-crest").GetAttribute("style") ?? string.Empty,
             StringComparison.Ordinal);
     }
 
@@ -63,21 +63,21 @@ public class StateTests : BunitContext
     {
         Assert.Contains(
             "T_Buttons_TraitNode_SelectedDefault.png",
-            Draw(Trait, Asked("allocated")).Find(".fx-trait-crest").GetAttribute("style") ?? string.Empty,
+            Draw(Trait, Query("allocated")).Find(".fx-trait-crest").GetAttribute("style") ?? string.Empty,
             StringComparison.Ordinal);
     }
 
     [Fact]
     public void The_drawn_card_shows_the_node_and_its_padlock()
     {
-        var padlocked = Draw(Trait, Asked("unavailable"));
+        var padlocked = Draw(Trait, Query("unavailable"));
 
         Assert.EndsWith(
             "T_Icons_Locked.png",
             padlocked.Find(".fx-trait-crest .lock").GetAttribute("src") ?? string.Empty,
             StringComparison.Ordinal);
 
-        Assert.Empty(Draw(Trait, Asked(null)).FindAll(".fx-trait-crest .lock"));
+        Assert.Empty(Draw(Trait, Query(null)).FindAll(".fx-trait-crest .lock"));
     }
 
     [Fact]
@@ -85,12 +85,12 @@ public class StateTests : BunitContext
     {
         Assert.Contains(
             "locked",
-            Draw(Trait, Asked("unavailable")).Find(".fx-trait-crest").ClassList,
+            Draw(Trait, Query("unavailable")).Find(".fx-trait-crest").ClassList,
             StringComparer.Ordinal);
 
         Assert.DoesNotContain(
             "locked",
-            Draw(Trait, Asked(null)).Find(".fx-trait-crest").ClassList,
+            Draw(Trait, Query(null)).Find(".fx-trait-crest").ClassList,
             StringComparer.Ordinal);
 
         Assert.Contains(
@@ -102,7 +102,7 @@ public class StateTests : BunitContext
     [Fact]
     public void The_padlock_sits_outside_the_shape_the_art_is_cut_to()
     {
-        var padlocked = Draw(Trait, Asked("unavailable"));
+        var padlocked = Draw(Trait, Query("unavailable"));
 
         Assert.Empty(padlocked.FindAll(".fx-trait-crest .well .lock"));
         Assert.NotNull(padlocked.Find(".fx-trait-crest > .lock"));
@@ -111,7 +111,7 @@ public class StateTests : BunitContext
     [Fact]
     public void The_crest_cuts_its_art_to_the_well_the_plate_leaves_open()
     {
-        var drawn = Draw(Trait, Asked(null));
+        var drawn = Draw(Trait, Query(null));
 
         Assert.Equal(
             export.Tooltip.Art(Trait, null),
@@ -125,10 +125,9 @@ public class StateTests : BunitContext
     }
 
     [Fact]
-    public void The_node_a_query_string_names_reaches_the_query()
+    public void The_node_the_caller_names_reaches_the_query()
     {
-        var query = new TraitTooltipRequest { Id = 1, State = "available" }
-            .ToQuery(new QueryCollection(), export.Store.Stats, out var error);
+        var query = TooltipRequests.Read(new TraitTooltipRequest { State = "available" }, out var error);
 
         Assert.Null(error);
         Assert.Equal("available", query.State);

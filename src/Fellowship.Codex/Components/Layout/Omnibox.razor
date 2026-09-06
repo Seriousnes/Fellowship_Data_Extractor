@@ -21,7 +21,7 @@
         <button type="button" class="cx-omnibox-clear" aria-label="Clear search" @onclick="Clear">&times;</button>
     }
 
-    @if (Open && answer is { } found)
+    @if (Open && response is { } found)
     {
         <div class="cx-omnibox-drop" id="cx-omnibox-drop" role="listbox">
             @if (found.Groups.Count > 1)
@@ -51,7 +51,8 @@
                 var hit = found.Results[at];
                 var mine = at;
 
-                <a class="cx-omnibox-hit" href="@hit.Href" role="option" data-tip="@hit.Tooltip"
+                <a class="cx-omnibox-hit" href="@hit.Href" role="option"
+                   data-tip="@hit.Tooltip" data-tip-request="@hit.TooltipBody"
                    aria-selected="@(active == mine ? "true" : "false")" data-active="@On(active == mine)">
                     <Icon Src="@hit.IconUrl" Rarity="@hit.Rarity" Width="HitPlateWidth" />
                     <span class="cx-t">
@@ -95,7 +96,7 @@
     private string? applied;
 
     private string? scope;
-    private SearchResponse? answer;
+    private SearchResponse? response;
     private int active = -1;
     private bool showing;
 
@@ -105,7 +106,7 @@
 
     private bool Open => showing && typed.Trim().Length >= Least;
 
-    private IReadOnlyList<string> Words => SuggestionService.Words(answer?.Query);
+    private IReadOnlyList<string> Words => SuggestionService.Words(response?.Query);
 
     private string All =>
         "/search?q=" + Uri.EscapeDataString(typed.Trim()) +
@@ -119,7 +120,7 @@
 
         applied = Text;
         typed = Text ?? string.Empty;
-        answer = null;
+        response = null;
         showing = false;
         active = -1;
     }
@@ -130,7 +131,7 @@
 
         if (typed.Trim().Length < Least)
         {
-            answer = null;
+            response = null;
             showing = false;
             return;
         }
@@ -148,7 +149,7 @@
             return;
         }
 
-        answer = Suggest.For(typed.Trim(), scope, Rows);
+        response = Suggest.For(typed.Trim(), scope, Rows);
         showing = true;
         StateHasChanged();
     }
@@ -158,14 +159,14 @@
         touches++;
         scope = type;
         active = -1;
-        answer = Suggest.For(typed.Trim(), scope, Rows);
+        response = Suggest.For(typed.Trim(), scope, Rows);
         showing = true;
     }
 
     private void Focus()
     {
         touches++;
-        if (answer is not null) showing = true;
+        if (response is not null) showing = true;
     }
 
     private async Task Blur()
@@ -181,7 +182,7 @@
 
     private void Key(KeyboardEventArgs key)
     {
-        var hits = answer?.Results.Count ?? 0;
+        var hits = response?.Results.Count ?? 0;
         var last = hits;
 
         switch (key.Key)
@@ -194,7 +195,7 @@
             case "Enter":
                 touches++;
                 if (typed.Trim().Length == 0) return;
-                Nav.NavigateTo(active >= 0 && active < hits ? answer!.Results[active].Href : All);
+                Nav.NavigateTo(active >= 0 && active < hits ? response!.Results[active].Href : All);
                 showing = false;
                 return;
 
@@ -216,7 +217,7 @@
     {
         touches++;
         typed = string.Empty;
-        answer = null;
+        response = null;
         showing = false;
         active = -1;
     }

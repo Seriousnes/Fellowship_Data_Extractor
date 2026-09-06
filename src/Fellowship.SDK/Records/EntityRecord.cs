@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 using Fellowship.SDK.Models;
@@ -19,10 +20,14 @@ public static class EntityRecords
 {
     private const string Suffix = "Record";
 
+    private const string TrimWarning = "The record class is named at run time, so trimming can take it away.";
+
     private static readonly ConcurrentDictionary<EntityType, Type> ByMember = new();
 
+    [RequiresUnreferencedCode(TrimWarning)]
     public static Type Record(EntityType type) => ByMember.GetOrAdd(type, Resolve);
 
+    [RequiresUnreferencedCode(TrimWarning)]
     private static Type Resolve(EntityType type) =>
         typeof(EntityRecord).Assembly.GetType($"{typeof(EntityRecord).Namespace}.{type}{Suffix}")
         ?? throw new InvalidOperationException(

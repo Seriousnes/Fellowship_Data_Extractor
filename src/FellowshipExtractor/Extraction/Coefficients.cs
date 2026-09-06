@@ -25,11 +25,11 @@ public static class Coefficients
 
             var prefix = leaf[..^Marker.Length];
 
-            if (Attributed(prefix) is not { } named) continue;
+            if (Attributed(prefix) is not { } matched) continue;
 
             var path = key.Length > leaf.Length ? key[..^(leaf.Length + 1)] : null;
 
-            var part = (path, named.Qualifier) switch
+            var part = (path, matched.Qualifier) switch
             {
                 (null, "") => null,
                 (null, { } qualifier) => qualifier,
@@ -37,7 +37,7 @@ public static class Coefficients
                 ({ } under, { } qualifier) => $"{under}.{qualifier}",
             };
 
-            found.Add(new NamedCoefficient(key, named.Attribute, part, number));
+            found.Add(new NamedCoefficient(key, matched.Attribute, part, number));
         }
 
         found.Sort((left, right) =>
@@ -52,9 +52,9 @@ public static class Coefficients
     {
         if (NamedByShippedText.GetValueOrDefault(prefix + Marker) is { } shipped) return (shipped, string.Empty);
 
-        foreach (var (row, named) in Attributes)
+        foreach (var (row, name) in Attributes)
         {
-            if (prefix.EndsWith(row, StringComparison.Ordinal)) return (named, prefix[..^row.Length]);
+            if (prefix.EndsWith(row, StringComparison.Ordinal)) return (name, prefix[..^row.Length]);
         }
 
         return null;
@@ -111,9 +111,9 @@ public static class Coefficients
 
     private static string? Attribute(string prefix, IReadOnlyList<string>? scalesOff)
     {
-        foreach (var (row, named) in Attributes)
+        foreach (var (row, name) in Attributes)
         {
-            if (prefix.EndsWith(row, StringComparison.Ordinal)) return named;
+            if (prefix.EndsWith(row, StringComparison.Ordinal)) return name;
         }
 
         string? only = null;
@@ -127,7 +127,7 @@ public static class Coefficients
         return only;
     }
 
-    private static readonly (string Row, string Named)[] Attributes =
+    private static readonly (string Row, string Name)[] Attributes =
     [
         ("PrimaryAttribute", "PrimaryAttribute"),
         ("Intellect", "Intellect"), ("Strength", "Strength"), ("Agility", "Agility"),
@@ -138,16 +138,16 @@ public static class Coefficients
     ];
 
     private static readonly HashSet<string> Known =
-        new(Attributes.Select(a => a.Named), StringComparer.Ordinal);
+        new(Attributes.Select(a => a.Name), StringComparer.Ordinal);
 
     private static readonly string[] Primary = ["Intellect", "Strength", "Agility"];
 
-    public static string Captured(string named, IReadOnlyList<string>? capturedAttributes)
+    public static string Captured(string attribute, IReadOnlyList<string>? capturedAttributes)
     {
-        if (!Primary.Contains(named, StringComparer.Ordinal)) return named;
+        if (!Primary.Contains(attribute, StringComparer.Ordinal)) return attribute;
 
         var only = capturedAttributes?.Where(a => Primary.Contains(a, StringComparer.Ordinal)).ToArray() ?? [];
 
-        return only.Length == 1 ? only[0] : named;
+        return only.Length == 1 ? only[0] : attribute;
     }
 }

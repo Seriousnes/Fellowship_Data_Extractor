@@ -1,11 +1,6 @@
-using System.Reflection;
-
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-using Fellowship.SDK.Documents;
-
-using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Endpoints;
@@ -27,22 +22,16 @@ public sealed class StatsNote(IEntityStoreService store) : IOpenApiOperationTran
 
         if (!metadata.OfType<StatsMarker>().Any()) return Task.CompletedTask;
 
-        var declared = metadata.OfType<MethodInfo>()
-            .SelectMany(method => method.GetParameters())
-            .Where(parameter => parameter.GetCustomAttribute<AsParametersAttribute>() is not null)
-            .SelectMany(parameter => RequestProperties.Of(parameter.ParameterType))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var accepted = store.Stats.Names.Where(name => !declared.Contains(name.Replace(
-            " ", string.Empty, StringComparison.Ordinal))).ToArray();
-
         var note =
-            "Any stat the build names may also be given, as `?Stamina=40`, to state a magnitude the tooltip " +
-            $"prints rather than computes, and a rating may be given as a percentage with the " +
-            $"`{StatConversion.PercentageSuffix}` suffix. The stats are " + string.Join(", ", accepted) + ".";
+            "A magnitude the tooltip prints rather than computes is stated in the request body's `stats` " +
+            "object, keyed by the name the build gives the stat and holding `rating`, `percentage` or both, " +
+            "one number per roll, as `\"stats\": { \"Haste\": { \"rating\": [1000] } }`. A rating is the " +
+            "number the item carries and a percentage is what that rating converts to, read only for a stat " +
+            "that converts, so a percentage stated for a stat that does not is refused. The stats are " +
+            string.Join(", ", store.Stats.Names) + ".";
 
-        operation.Description = operation.Description is { Length: > 0 } already
-            ? already + "\n\n" + note
+        operation.Description = operation.Description is { Length: > 0 } existing
+            ? existing + "\n\n" + note
             : note;
 
         return Task.CompletedTask;

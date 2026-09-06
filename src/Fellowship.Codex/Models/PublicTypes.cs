@@ -26,8 +26,8 @@ public static class Categories
     public static Category? Find(string? slug) =>
         All.FirstOrDefault(category => string.Equals(category.Slug, slug, StringComparison.OrdinalIgnoreCase));
 
-    public static string NoSuchCategory(string? asked) =>
-        $"'{asked}' is not a category. The categories are {string.Join(", ", All.Select(one => one.Slug))}.";
+    public static string NoSuchCategory(string? value) =>
+        $"'{value}' is not a category. The categories are {string.Join(", ", All.Select(one => one.Slug))}.";
 }
 
 public static class PublicTypes
@@ -135,11 +135,11 @@ public static class PublicTypes
 
     public static bool IsListed(EntityType type) => Find(type).Listed;
 
-    public static string NoSuchType(string? asked) =>
-        $"'{asked}' is not a type. The types are {Accepted}.";
+    public static string NoSuchType(string? value) =>
+        $"'{value}' is not a type. The types are {Accepted}.";
 
-    public static string NotInCategory(string? asked, Category category) =>
-        $"'{asked}' is not a {category.Label} type. The {category.Label} types are " +
+    public static string NotInCategory(string? value, Category category) =>
+        $"'{value}' is not a {category.Label} type. The {category.Label} types are " +
         $"{string.Join(", ", In(category).Select(type => type.Slug))}.";
 
     private static readonly string Accepted =

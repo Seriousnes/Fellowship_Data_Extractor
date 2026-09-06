@@ -1,15 +1,15 @@
 @inject ITooltipViewService Ui
 @inject IEntityStoreService Store
 
-<div class="@TooltipView.Root @(Rung is null ? "plain" : null)" style="@Ui.Variables(Rung)">
+<div class="@TooltipView.Root @(Rarity is null ? "plain" : null)" style="@Ui.Variables(Rarity)">
     <style>@Sheet</style>
     @if (Query.ShowIcon && Art is { } art)
     {
-        <Icon Src="@art" Rarity="@Rung?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
+        <Icon Src="@art" Rarity="@Rarity?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
     }
     <div class="card">
         <header class="head">
-            @if (Ui.Ornament(Rung) is { } ornament)
+            @if (Ui.Ornament(Rarity) is { } ornament)
             {
                 <img class="orn" alt="" src="@ornament">
             }
@@ -30,15 +30,15 @@
 </div>
 
 @code {
-    [CascadingParameter] public EntityDocument Shown { get; set; } = default!;
+    [CascadingParameter] public EntityDocument Document { get; set; } = default!;
 
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
     [Parameter] public HeroEntry? Hero { get; set; }
 
-    private ItemDocument Entity => (ItemDocument)Shown;
+    private ItemDocument Entity => (ItemDocument)Document;
 
-    private RarityEntry? Rung;
+    private RarityEntry? Rarity;
 
     private string? Art;
 
@@ -46,7 +46,7 @@
 
     private string? Temper;
 
-    private string? Named;
+    private string? Name;
 
     private string? potential;
 
@@ -64,71 +64,71 @@
 
     protected override void OnParametersSet()
     {
-        Rung = Ui.Rarity(Entity, Query);
-        Art = Ui.Art(Entity, Rung);
+        Rarity = Ui.Rarity(Entity, Query);
+        Art = Ui.Art(Entity, Rarity);
         Level = Ui.Level(Entity, Query);
-        Temper = Ui.Temper(Query, Rung, Level);
-        potential = Ui.Potential(Entity, Query, Rung, Level);
+        Temper = Ui.Temper(Entity, Query, Rarity, Level);
+        potential = Ui.Potential(Entity, Query, Rarity, Level);
         Sheet = new MarkupString(Ui.Style());
         facts = Ui.Facts(Entity, Query);
-        rolls = Ui.Rolls(Entity, Query, Rung);
-        modifiers = Ui.Modifiers(Entity, Query, Rung);
+        rolls = Ui.Rolls(Entity, Query, Rarity);
+        modifiers = Ui.Modifiers(Entity, Query, Rarity);
         granted = Ui.Granted(Entity);
-        Named = granted is null ? null : PublicTypes.DisplayNameOf(granted);
+        Name = granted is null ? null : PublicTypes.DisplayNameOf(granted);
 
         groups = Groups();
     }
 
     private List<RenderFragment> Groups()
     {
-        var drawn = new List<RenderFragment>(8);
+        var sections = new List<RenderFragment>(8);
 
         if (Identity)
         {
-            drawn.Add(@<TipIdentity Entity="Entity" Query="Query" Rung="Rung" Level="Level" Temper="@Temper" />);
+            sections.Add(@<TipIdentity Entity="Entity" Query="Query" Rarity="Rarity" Level="Level" Temper="@Temper" />);
         }
 
-        if (facts.Count > 0) drawn.Add(@<TipFacts Items="facts" />);
+        if (facts.Count > 0) sections.Add(@<TipFacts Items="facts" />);
 
-        if (potential is { } scored) drawn.Add(@<TipPotential Potential="@scored" />);
+        if (potential is { } scored) sections.Add(@<TipPotential Potential="@scored" />);
 
-        if (rolls.Count > 0) drawn.Add(@<TipRolls Lines="rolls" />);
+        if (rolls.Count > 0) sections.Add(@<TipRolls Lines="rolls" />);
 
-        if (TipSocket.Draws(Entity, Store.Settings, Rung, Query))
+        if (TipSocket.Draws(Entity, Store.Settings, Rarity, Query))
         {
-            drawn.Add(@<TipSocket Entity="Entity" Query="Query" />);
+            sections.Add(@<TipSocket Entity="Entity" Query="Query" />);
         }
 
         if (TipImbuedTraits.Capacity(Entity, Query) is not null)
         {
-            drawn.Add(@<TipImbuedTraits Entity="Entity" Query="Query" />);
+            sections.Add(@<TipImbuedTraits Entity="Entity" Query="Query" />);
         }
 
-        if (modifiers.Count > 0) drawn.Add(@<TipModifiers Lines="modifiers" />);
+        if (modifiers.Count > 0) sections.Add(@<TipModifiers Lines="modifiers" />);
 
         if (Entity.Description is not null)
         {
-            drawn.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);
+            sections.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);
         }
 
         if (Grants)
         {
-            drawn.Add(@<TipGranted Entity="Entity" Query="Query" Hero="Hero" Named="@Named" />);
+            sections.Add(@<TipGranted Entity="Entity" Query="Query" Hero="Hero" Name="@Name" />);
         }
 
         if (Ui.LegendaryStats(Entity).Count > 0)
         {
-            drawn.Add(@<TipLegendaries Entity="Entity" Query="Query" Hero="Hero" />);
+            sections.Add(@<TipLegendaries Entity="Entity" Query="Query" Hero="Hero" />);
         }
 
-        if (Entity.SetBonus is { Count: > 0 }) drawn.Add(@<TipSets Entity="Entity" />);
+        if (Entity.SetBonus is { Count: > 0 }) sections.Add(@<TipSets Entity="Entity" />);
 
-        return drawn;
+        return sections;
     }
 
     private bool Identity =>
         Entity.ArmorType is not null || Entity.Slot is not null || Level is not null ||
-        Rung is not null || Temper is not null ||
+        Rarity is not null || Temper is not null ||
         Entity.GemSlot == true || Entity.UniqueEquipped == true;
 
     private bool Grants =>

@@ -6,9 +6,9 @@
     <button type="button" class="cx-picker-face" data-difficulty @ref="face"
             role="combobox" aria-haspopup="listbox" aria-controls="cx-difficulty-drop"
             aria-label="Difficulty" aria-expanded="@(showing ? "true" : "false")"
-            @onclick="Toggle" @onkeydown="Key">
-        <span class="cx-nm">@Standing.Label</span>
-        <span class="cx-ty">@Standing.Difficulty</span>
+            @onclick="Toggle" @onkeydown="Pressed">
+        <span class="cx-nm">@Current.Label</span>
+        <span class="cx-ty">@Current.Difficulty</span>
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round"></path>
@@ -18,24 +18,24 @@
     @if (showing)
     {
         <div class="cx-picker-drop" id="cx-difficulty-drop" role="listbox" aria-label="Difficulty"
-             @onkeydown="Key">
+             @onkeydown="Pressed">
             <div class="cx-picker-chips">
-                <button type="button" class="cx-picker-chip" aria-pressed="@Held(null)"
+                <button type="button" class="cx-picker-chip" aria-pressed="@Scoped(null)"
                         @onclick="() => Scope(null)">
                     All (@ladder.Count)
                 </button>
-                @foreach (var (league, steps) in leagues)
+                @foreach (var (league, count) in leagues)
                 {
-                    <button type="button" class="cx-picker-chip" aria-pressed="@Held(league)"
+                    <button type="button" class="cx-picker-chip" aria-pressed="@Scoped(league)"
                             @onclick="() => Scope(league)">
-                        @league (@steps)
+                        @league (@count)
                     </button>
                 }
             </div>
 
-            @for (var at = 0; at < shown.Count; at++)
+            @for (var at = 0; at < steps.Count; at++)
             {
-                var step = shown[at];
+                var step = steps[at];
                 var mine = at;
 
                 <a class="cx-picker-step" role="option" href="@Href(step)"
@@ -53,12 +53,12 @@
 @code {
     [Parameter] public int Difficulty { get; set; }
 
-    public const string Asked = "difficulty";
+    public const string Key = "difficulty";
 
     private int? applied;
 
     private IReadOnlyList<DifficultyStep> ladder = [];
-    private IReadOnlyList<DifficultyStep> shown = [];
+    private IReadOnlyList<DifficultyStep> steps = [];
     private IReadOnlyList<(string League, int Steps)> leagues = [];
 
     private ElementReference face;
@@ -71,15 +71,15 @@
     private int active = -1;
     private int touches;
 
-    private DifficultyStep Standing =>
+    private DifficultyStep Current =>
         Difficulties.At(Store.Settings, Difficulty)
             ?? new DifficultyStep(Difficulty, string.Empty, Difficulty, Difficulty.ToString());
 
     private static string? On(bool set) => set ? "on" : null;
 
-    private string Held(string? league) => scope == league ? "true" : "false";
+    private string Scoped(string? league) => scope == league ? "true" : "false";
 
-    private string Href(DifficultyStep step) => Nav.GetUriWithQueryParameter(Asked, step.Difficulty);
+    private string Href(DifficultyStep step) => Nav.GetUriWithQueryParameter(Key, step.Difficulty);
 
     protected override void OnParametersSet()
     {
@@ -97,7 +97,7 @@
                 .Select(league => (league.Key, league.Count())),
         ];
 
-        scope = Standing.League is { Length: > 0 } named ? named : null;
+        scope = Current.League is { Length: > 0 } named ? named : null;
 
         Shut();
         Settle();
@@ -105,7 +105,7 @@
 
     private void Settle()
     {
-        shown = scope is null ? ladder : [.. ladder.Where(step => step.League == scope)];
+        steps = scope is null ? ladder : [.. ladder.Where(step => step.League == scope)];
         active = Marked();
     }
 
@@ -117,12 +117,12 @@
 
     private int Marked()
     {
-        for (var at = 0; at < shown.Count; at++)
+        for (var at = 0; at < steps.Count; at++)
         {
-            if (shown[at].Difficulty == Difficulty) return at;
+            if (steps[at].Difficulty == Difficulty) return at;
         }
 
-        return shown.Count > 0 ? 0 : -1;
+        return steps.Count > 0 ? 0 : -1;
     }
 
     private void Toggle()
@@ -161,7 +161,7 @@
         StateHasChanged();
     }
 
-    private async Task Key(KeyboardEventArgs key)
+    private async Task Pressed(KeyboardEventArgs key)
     {
         switch (key.Key)
         {
@@ -177,12 +177,12 @@
                 return;
 
             case "ArrowDown":
-                active = active >= shown.Count - 1 ? 0 : active + 1;
+                active = active >= steps.Count - 1 ? 0 : active + 1;
                 revealing = true;
                 return;
 
             case "ArrowUp":
-                active = active <= 0 ? shown.Count - 1 : active - 1;
+                active = active <= 0 ? steps.Count - 1 : active - 1;
                 revealing = true;
                 return;
 
@@ -192,7 +192,7 @@
                 return;
 
             case "End":
-                active = shown.Count - 1;
+                active = steps.Count - 1;
                 revealing = true;
                 return;
         }
@@ -204,8 +204,8 @@
 
         revealing = false;
 
-        if (!showing || active < 0 || active >= shown.Count) return;
+        if (!showing || active < 0 || active >= steps.Count) return;
 
-        if (rows.TryGetValue(shown[active].Difficulty, out var row)) await row.FocusAsync();
+        if (rows.TryGetValue(steps[active].Difficulty, out var row)) await row.FocusAsync();
     }
 }

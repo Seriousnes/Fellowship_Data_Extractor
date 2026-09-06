@@ -114,20 +114,20 @@ public sealed class CreatureStats
         {
             apart[heroes.Renamed(scope)] = new DifficultyScaling
             {
-                Health = Ladder(scaling, scope, HealthScale, required: false),
-                Damage = Ladder(scaling, scope, DamageScale, required: false),
+                Health = ByDifficulty(scaling, scope, HealthScale, required: false),
+                Damage = ByDifficulty(scaling, scope, DamageScale, required: false),
             };
         }
 
         Scaling = new DifficultyScaling
         {
-            Health = Ladder(scaling, DefaultNamespace, HealthScale, required: true),
-            Damage = Ladder(scaling, DefaultNamespace, DamageScale, required: true),
+            Health = ByDifficulty(scaling, DefaultNamespace, HealthScale, required: true),
+            Damage = ByDifficulty(scaling, DefaultNamespace, DamageScale, required: true),
             Namespaces = apart,
         };
     }
 
-    private static IReadOnlyDictionary<int, double> Ladder(
+    private static IReadOnlyDictionary<int, double> ByDifficulty(
         UCurveTable table, string scope, string attribute, bool required)
     {
         var wanted = $"{scope}.{attribute}";
@@ -152,10 +152,10 @@ public sealed class CreatureStats
                 $"{ScalingTable}'s {wanted} row read back with no keys, so every difficulty would scale the same.");
         }
 
-        var ladder = new Dictionary<int, double>(steps.Count);
-        foreach (var step in steps) ladder[(int)step.Time] = step.Value;
+        var byDifficulty = new Dictionary<int, double>(steps.Count);
+        foreach (var step in steps) byDifficulty[(int)step.Time] = step.Value;
 
-        return ladder;
+        return byDifficulty;
     }
 
     public CreatureAttributes? For(string characterId)

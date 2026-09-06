@@ -55,9 +55,9 @@ public static class RarityImages
                     ref var pixel = ref row[x];
                     var coverage = pixel.A / 255f;
 
-                    pixel.R = Encoded(float.Lerp(LinearByLevel[pixel.R], red, coverage));
-                    pixel.G = Encoded(float.Lerp(LinearByLevel[pixel.G], green, coverage));
-                    pixel.B = Encoded(float.Lerp(LinearByLevel[pixel.B], blue, coverage));
+                    pixel.R = Encode(float.Lerp(LinearByLevel[pixel.R], red, coverage));
+                    pixel.G = Encode(float.Lerp(LinearByLevel[pixel.G], green, coverage));
+                    pixel.B = Encode(float.Lerp(LinearByLevel[pixel.B], blue, coverage));
                     pixel.A = byte.MaxValue;
                 }
             }
@@ -88,7 +88,7 @@ public static class RarityImages
     private static float Linear(float channel) =>
         channel <= 0.04045f ? channel / 12.92f : MathF.Pow((channel + 0.055f) / 1.055f, 2.4f);
 
-    private static byte Encoded(float linear)
+    private static byte Encode(float linear)
     {
         var channel = linear <= 0.0031308f
             ? linear * 12.92f

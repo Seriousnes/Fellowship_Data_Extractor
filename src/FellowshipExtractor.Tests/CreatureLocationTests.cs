@@ -44,7 +44,7 @@ public sealed class CreatureLocationTests
     [Fact]
     public void OnlyTheFolderSegmentASingleDungeonSitsUnderNamesThatDungeon()
     {
-        var naming = CreatureLocations.Naming(Folders);
+        var naming = CreatureLocations.TagsByFolder(Folders);
 
         Assert.Equal("FrozenKingdom", naming["FrozenKingdom"]);
         Assert.Equal("SnowPeak", naming["SnowPeak"]);
@@ -60,7 +60,7 @@ public sealed class CreatureLocationTests
     [InlineData("fellowship/Content/Characters/NPC/SnowPeak/Ancient/BP_Y.uasset", "SnowPeak")]
     [InlineData("fellowship/Content/Characters/NPC/Shared/BP_Z.uasset", null)]
     public void ACreatureIsHousedByTheDungeonFolderItsOwnAssetLivesUnder(string path, string? expected) =>
-        Assert.Equal(expected, CreatureLocations.Housing(path, CreatureLocations.Naming(Folders)));
+        Assert.Equal(expected, CreatureLocations.DungeonOf(path, CreatureLocations.TagsByFolder(Folders)));
 
     [Fact]
     public void ABossNoMapPlacesIsStillHousedByTheDungeonItBelongsTo()

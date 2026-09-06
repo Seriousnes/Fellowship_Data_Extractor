@@ -18,12 +18,12 @@
             }
         </div>
     }
-    @if (Rung is not null || Temper is not null)
+    @if (Rarity is not null || Temper is not null)
     {
         <div class="row">
-            @if (Rung is { } rung)
+            @if (Rarity is { } rarity)
             {
-                <span><span class="rar">@Ui.Rung(Entity, rung)</span></span>
+                <span><span class="rar">@Ui.RarityName(Entity, rarity)</span></span>
             }
             @if (Temper is { } tempered)
             {
@@ -44,7 +44,7 @@
 
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
-    [Parameter] public RarityEntry? Rung { get; set; }
+    [Parameter] public RarityEntry? Rarity { get; set; }
 
     [Parameter] public int? Level { get; set; }
 

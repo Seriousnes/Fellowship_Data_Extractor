@@ -9,6 +9,7 @@ public sealed record SearchResult(
     string? Rarity,
     string Href,
     string Tooltip,
+    string? TooltipBody,
     string? Slot,
     string? ArmorType,
     IReadOnlyList<string>? Heroes);

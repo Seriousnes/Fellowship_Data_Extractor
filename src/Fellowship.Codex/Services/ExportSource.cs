@@ -93,9 +93,9 @@ public static class ExportReader
             if (line.Length == 0) continue;
             if (Key(line) is not { } key) continue;
 
-            if (!grouped.TryGetValue(key, out var carried)) grouped[key] = carried = [];
+            if (!grouped.TryGetValue(key, out var group)) grouped[key] = group = [];
 
-            carried.Add(line);
+            group.Add(line);
         }
 
         return grouped.ToDictionary(entry => entry.Key, entry => (IReadOnlyList<string>)entry.Value);

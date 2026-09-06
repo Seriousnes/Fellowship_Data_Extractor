@@ -12,6 +12,44 @@ public sealed class CodexClientTests : IClassFixture<RouteTests.Factory>
 
     private static CancellationToken Stopping => Xunit.TestContext.Current.CancellationToken;
 
+    private sealed class Recorder : HttpMessageHandler
+    {
+        public HttpMethod? Method { get; private set; }
+
+        public Uri? Address { get; private set; }
+
+        public string? Accept { get; private set; }
+
+        public string? Body { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellation)
+        {
+            Method = request.Method;
+            Address = request.RequestUri;
+            Accept = request.Headers.Accept.ToString();
+            Body = request.Content is null
+                ? null
+                : await request.Content.ReadAsStringAsync(cancellation);
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("<div></div>", System.Text.Encoding.UTF8, "text/html"),
+            };
+        }
+    }
+
+    private static async Task<Recorder> Sent(ItemTooltipRequest? request)
+    {
+        var recorder = new Recorder();
+
+        using var http = new HttpClient(recorder);
+
+        await new CodexClient(http).TooltipAsync(5218, request, Stopping);
+
+        return recorder;
+    }
+
     private static int Sample(EntityType type) =>
         RouteTests.Factory.Store.Entities
             .Where(document => EntityTypes.TypeOf(document) == type)
@@ -131,11 +169,11 @@ public sealed class CodexClientTests : IClassFixture<RouteTests.Factory>
     [Fact]
     public async Task A_tooltip_comes_back_as_the_fragment_the_codex_draws()
     {
-        var drawn = await codex.TooltipAsync(
-            EntityType.Ability, Sample(EntityType.Ability), cancellation: Stopping);
+        var html = await codex.TooltipAsync<AbilityTooltipRequest>(
+            Sample(EntityType.Ability), cancellation: Stopping);
 
-        Assert.Contains("<", drawn, StringComparison.Ordinal);
-        Assert.Contains("style", drawn, StringComparison.Ordinal);
+        Assert.Contains("<", html, StringComparison.Ordinal);
+        Assert.Contains("style", html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -147,13 +185,40 @@ public sealed class CodexClientTests : IClassFixture<RouteTests.Factory>
                 row.Stats is { Count: > 0 } &&
                 RouteTests.Factory.Store.All(EntityType.Item, row.Id).Count == 1);
 
-        var drawn = await codex.TooltipAsync(
-            EntityType.Item,
-            item.Id,
-            new TooltipRequest { Parameters = new Dictionary<string, string> { ["armor"] = "303" } },
-            Stopping);
+        var html = await codex.TooltipAsync(item.Id, new ItemTooltipRequest { Armor = 303m }, Stopping);
 
-        Assert.Contains("303", drawn, StringComparison.Ordinal);
+        Assert.Contains("303", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_tooltip_is_asked_for_with_a_query_that_accepts_html()
+    {
+        var sent = await Sent(null);
+
+        Assert.Equal(HttpMethod.Query, sent.Method);
+        Assert.Equal("api/item/5218/tooltip", sent.Address!.AbsolutePath.TrimStart('/'));
+        Assert.Equal("text/html", sent.Accept);
+        Assert.Null(sent.Body);
+    }
+
+    [Fact]
+    public async Task The_request_the_caller_states_is_the_body_the_query_carries()
+    {
+        var sent = await Sent(
+            new ItemTooltipRequest { Hero = "Rime", ItemLevel = 360, RandomStats = ["Haste", "Haste"] });
+
+        Assert.Equal(
+            """{"hero":"Rime","itemLevel":360,"randomStats":["Haste","Haste"]}""",
+            sent.Body);
+    }
+
+    [Fact]
+    public async Task A_stat_rolled_twice_carries_both_magnitudes_as_separate_entries()
+    {
+        var sent = await Sent(
+            new ItemTooltipRequest { Stats = Stats.Rated("Haste", 100m, 250m).Percent("Haste", 10m) });
+
+        Assert.Equal("""{"stats":{"Haste":{"rating":[100,250],"percentage":[10]}}}""", sent.Body);
     }
 
     [Fact]

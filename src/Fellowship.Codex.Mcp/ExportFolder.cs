@@ -7,15 +7,15 @@ public static class ExportFolder
     public const string Option = "--export";
 
     public static string Locate(IReadOnlyList<string> args) =>
-        Given(args) is { } asked
-            ? FolderExportSource.Carried(asked, $"The {Option} argument names")
+        Argument(args) is { } path
+            ? FolderExportSource.Carried(path, $"The {Option} argument names")
             : FolderExportSource.Located(Option);
 
-    private static string? Given(IReadOnlyList<string> args)
+    private static string? Argument(IReadOnlyList<string> args)
     {
-        for (var at = 0; at < args.Count - 1; at++)
+        for (var index = 0; index < args.Count - 1; index++)
         {
-            if (string.Equals(args[at], Option, StringComparison.Ordinal)) return args[at + 1];
+            if (string.Equals(args[index], Option, StringComparison.Ordinal)) return args[index + 1];
         }
 
         return null;
