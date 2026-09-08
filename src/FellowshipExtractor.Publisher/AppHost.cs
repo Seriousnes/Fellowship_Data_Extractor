@@ -8,13 +8,14 @@ Rebind("ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL", stack.Offset, 24286);
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var blobPort = Port(builder, "Ports:Blob", stack.Offset, 10000);
+var blobPort = Port(builder, "Ports:Blob", 0, SharedBlobPort);
 
 var storage = builder.AddAzureStorage("storage")
     .RunAsEmulator(emulator => emulator
-        .WithDataVolume($"fellowship-azurite-{stack.Name}")
+        .WithDataVolume(SharedVolume)
         .WithBlobPort(blobPort)
-        .WithLifetime(ContainerLifetime.Persistent));
+        .WithLifetime(ContainerLifetime.Persistent)
+        .InSharedStack(SharedContainer, SharedProject));
 
 var icons = storage.AddBlobContainer("icons", "icons");
 

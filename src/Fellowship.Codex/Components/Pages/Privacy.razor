@@ -1,0 +1,29 @@
+@page "/privacy"
+
+<PageTitle>Privacy - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>Privacy</h1>
+
+<Panel Head="Information we collect">
+    <Copy>
+        We do not collect any information about you when you visit this site. We do not use cookies, analytics, or any other tracking technologies.
+        The only information we may collect is the information you voluntarily provide to us, such as when you contact us via email or submit a form.
+    </Copy>
+
+    <Copy>
+        Logs may be collected by the web server, but they are not used for any purpose other than to maintain the security and performance of the site. No personally identifiable information is collected or stored in these logs.
+    </Copy>
+
+    <Copy>
+        We do not share any information or data with any third parties.
+    </Copy>
+    <Note>Last updated 8 September 2026.</Note>
+</Panel>
+
+
+
+@code {
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail = [("Privacy", null)];
+}
