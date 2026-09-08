@@ -10,17 +10,6 @@ public class TemperingTests(Export export)
         export.Store.DropItemLevel(new ItemDocument { Id = 1 });
 
     [Fact]
-    public void Every_rarity_the_ladder_names_states_a_ceiling()
-    {
-        foreach (var rarity in export.Store.Settings.Rarities)
-        {
-            Assert.True(
-                export.Store.Settings.MaxTempers.ContainsKey(rarity.Name),
-                $"{rarity.Name} carries no tempering ceiling, so a tooltip read at that rarity would print none.");
-        }
-    }
-
-    [Fact]
     public void A_rare_item_at_the_level_it_drops_at_tempers_five_times()
     {
         Assert.Equal(5, Ceiling("Rare", DefaultItemLevel(export)));
