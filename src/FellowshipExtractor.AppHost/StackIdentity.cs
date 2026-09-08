@@ -4,7 +4,15 @@ using System.Text;
 
 static class StackIdentity
 {
-    public static (string Name, string Project, int Offset, string Root) Stack(string from)
+    public const string SharedVolume = "fellowship-azurite";
+
+    public const string SharedContainer = "fellowship-azurite";
+
+    public const string SharedProject = "fellowship";
+
+    public const int SharedBlobPort = 10000;
+
+    public static (string Project, int Offset, string Root) Stack(string from)
     {
         var checkout = Checkout(from);
         var root = checkout?.Root ?? from;
@@ -19,7 +27,7 @@ static class StackIdentity
 
         var project = $"fellowship-{checkout?.Name ?? name}";
 
-        return (name, project, offset, root);
+        return (project, offset, root);
     }
 
     public static (string Root, string? Name)? Checkout(string from)
@@ -90,8 +98,14 @@ static class StackIdentity
             : basePort + offset;
 }
 
+sealed record SharedStackAnnotation(string Container, string Project) : IResourceAnnotation;
+
 static class ComposeStackExtensions
 {
+    public static IResourceBuilder<T> InSharedStack<T>(
+        this IResourceBuilder<T> builder, string container, string project) where T : IResource =>
+        builder.WithAnnotation(new SharedStackAnnotation(container, project));
+
     public static IDistributedApplicationBuilder InComposeStack(
         this IDistributedApplicationBuilder builder, string project, string workingDirectory)
     {
@@ -100,18 +114,28 @@ static class ComposeStackExtensions
             if (!resource.Annotations.OfType<ContainerImageAnnotation>().Any() &&
                 !resource.Annotations.OfType<DockerfileBuildAnnotation>().Any()) continue;
 
+            var shared = resource.Annotations.OfType<SharedStackAnnotation>().FirstOrDefault();
+
             var service = resource.Name;
+            var stack = shared?.Project ?? project;
+            var container = shared?.Container ?? $"{project}-{service}";
+            var root = shared is null ? workingDirectory : null;
 
             foreach (var annotation in resource.Annotations.OfType<ContainerNameAnnotation>().ToArray())
                 resource.Annotations.Remove(annotation);
 
-            resource.Annotations.Add(new ContainerNameAnnotation { Name = $"{project}-{service}" });
+            resource.Annotations.Add(new ContainerNameAnnotation { Name = container });
             resource.Annotations.Add(new ContainerRuntimeArgsCallbackAnnotation(runtimeArgs =>
             {
                 runtimeArgs.Add("--label");
-                runtimeArgs.Add($"com.docker.compose.project={project}");
-                runtimeArgs.Add("--label");
-                runtimeArgs.Add($"com.docker.compose.project.working_dir={workingDirectory}");
+                runtimeArgs.Add($"com.docker.compose.project={stack}");
+
+                if (root is not null)
+                {
+                    runtimeArgs.Add("--label");
+                    runtimeArgs.Add($"com.docker.compose.project.working_dir={root}");
+                }
+
                 runtimeArgs.Add("--label");
                 runtimeArgs.Add($"com.docker.compose.service={service}");
                 runtimeArgs.Add("--label");

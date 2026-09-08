@@ -6,8 +6,6 @@ public class HistoryServiceTests
 {
     private static readonly SettingsFile Bare = new() { GemTypes = ["Ruby"] };
 
-    private static readonly DocumentKey Boots = new("item", 5224);
-
     private static ExportHistoryService Reading(params (string Build, string[] Lines)[] older) =>
         new(new ExportHistory(
             "1002",

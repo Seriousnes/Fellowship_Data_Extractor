@@ -1,0 +1,27 @@
+@page "/about"
+
+<PageTitle>About - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>About</h1>
+
+<Panel Head="Fellowship and Chief Rebel">
+    <Copy>
+        Fellowship is developed and published by <b>Chief Rebel</b>.         
+    </Copy>
+
+    <Copy>
+        Fellowship, Chief Rebel and the game's art and text are the intellectual property of
+        Chief Rebel.
+    </Copy>
+
+    <Copy>
+        This site is an unofficial reference, with no affiliation to Chief Rebel. Chief Rebel does not run it,
+        endorse it or sponsor it, and nothing here is an official statement about the game.
+    </Copy>
+</Panel>
+
+@code {
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail = [("About", null)];
+}

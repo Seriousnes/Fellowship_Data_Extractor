@@ -4,10 +4,6 @@ public static class Project
 {
     public static string Folder { get; } = Find();
 
-    public static string Bundle { get; } =
-        Path.Combine(Folder, "obj", "Debug", "net10.0", "scopedcss", "bundle",
-            "Fellowship.Codex.styles.css");
-
     private static string Find()
     {
         for (var here = new DirectoryInfo(AppContext.BaseDirectory); here is not null; here = here.Parent)
@@ -18,7 +14,7 @@ public static class Project
         }
 
         throw new InvalidOperationException(
-            "No src/Fellowship.Codex above the test binary. The generated stylesheets sit in " +
-            "that folder, beside their .scss sources and under wwwroot.");
+            "No src/Fellowship.Codex above the test binary. The web root the tooltip view reads " +
+            "its art through sits in that folder, under wwwroot.");
     }
 }

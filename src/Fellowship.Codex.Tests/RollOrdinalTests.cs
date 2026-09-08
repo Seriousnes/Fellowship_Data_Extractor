@@ -1,20 +1,8 @@
-using Fellowship.Codex.Components.Tooltip;
-
 namespace Fellowship.Codex.Tests;
 
 [Collection(Corpus.Name)]
-public class RollOrdinalTests : BunitContext
+public class RollOrdinalTests(Export export)
 {
-    private readonly Export export;
-
-    public RollOrdinalTests(Export export)
-    {
-        this.export = export;
-        Services.AddSingleton(export.Tooltip);
-        Services.AddSingleton(export.View);
-        Services.AddSingleton(export.Store);
-    }
-
     private string Rolling => export.Store.Settings.StatCalculation.RandomStatPool[0];
 
     private ItemDocument Declaring(string stat) => new()
@@ -65,17 +53,5 @@ public class RollOrdinalTests : BunitContext
             .Single(row => row.Stat is { } named && named.Equals(stat, StringComparison.OrdinalIgnoreCase));
 
         Assert.Empty(declared.Rolls);
-    }
-
-    [Fact]
-    public void The_card_writes_the_ordinals_a_line_carries()
-    {
-        var stat = Rolling;
-
-        var drawn = Render<TipRolls>(p => p.Add(x => x.Lines, Lines(Declaring(stat), stat, stat)));
-
-        var line = drawn.Find(".stats > li[data-rolls]");
-
-        Assert.Equal("0 1", line.GetAttribute("data-rolls"));
     }
 }

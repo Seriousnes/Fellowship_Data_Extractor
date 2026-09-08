@@ -151,5 +151,11 @@ main {
 
 .cx-foot-links {
     display: flex;
-    gap: 14px;    
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 14px;
+}
+
+.cx-foot-credit {
+    margin-left: auto;
 }

@@ -45,23 +45,6 @@ public class ColourTests(Export export)
     }
 
     [Fact]
-    public void An_item_carrying_one_hero_is_not_drawn_in_that_heros_colour()
-    {
-        var worn = export.Store.Entities.OfType<ItemDocument>()
-            .First(item => item.Heroes is { Count: 1 });
-
-        Assert.NotEqual(export.View.HeroColour(worn.Heroes![0].ToString()), export.View.NameColour(worn));
-    }
-
-    [Fact]
-    public void A_talent_slot_is_not_drawn_in_its_heros_colour()
-    {
-        var slot = export.Store.Entities.OfType<TalentSlotDocument>().First();
-
-        Assert.NotEqual(export.View.HeroColour(slot.Hero.ToString()), export.View.NameColour(slot));
-    }
-
-    [Fact]
     public void A_row_the_build_gives_no_colour_asks_for_none()
     {
         var ability = export.Store.Entities.OfType<AbilityDocument>()

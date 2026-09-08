@@ -83,5 +83,3 @@ app.MapRazorComponents<App>().AddInteractiveServerRenderMode().ServePages();
 app.MapGroup(string.Empty).Serve().RequireCors(Serving.Origins).MapApiEndpoints();
 
 app.Run();
-
-public partial class Program;

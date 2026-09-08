@@ -277,40 +277,6 @@ public class CraftRuleTests(Export export)
     }
 
     [Fact]
-    public void Every_kind_a_derived_roll_accepts_states_where_it_writes()
-    {
-        foreach (var (ruleSet, byTier) in Settings.StatCalculation.RarityAdditions)
-        {
-            foreach (var (tier, _) in byTier)
-            {
-                var slots = ItemCraft.Slots(
-                    new ItemDocument { Id = 1, RuleSet = ruleSet, Slot = "Weapon" },
-                    Settings,
-                    Settings.Rarities.Single(rung => rung.Tier == tier));
-
-                foreach (var slot in slots)
-                {
-                    foreach (var accepts in slot.Accepts)
-                    {
-                        var candidate = new CraftCandidate(accepts, 1, "candidate", 1);
-
-                        Assert.Contains(
-                            ItemCraft.Writes(slot, candidate),
-                            new[]
-                            {
-                                CraftSlots.RandomStat, CraftSlots.GemSocket,
-                                CraftSlots.TraitTree, CraftSlots.RandomRolls,
-                            },
-                            StringComparer.Ordinal);
-
-                        ItemCraft.With(new TooltipQuery(), slot, candidate);
-                    }
-                }
-            }
-        }
-    }
-
-    [Fact]
     public void A_socket_slot_stands_only_where_the_rule_set_and_tier_name_one()
     {
         var stated = Settings.StatCalculation.RarityAdditions

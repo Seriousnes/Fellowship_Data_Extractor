@@ -37,22 +37,14 @@ public sealed class Export
 
     public IChromeAssetService Chrome { get; }
 
-    public IExportHistoryService History { get; }
-
-    public IMenuService Menu { get; }
-
-    public string Folder { get; }
-
     public Export()
     {
-        Folder = Environment.GetEnvironmentVariable(FolderExportSource.Variable) ?? Found();
+        var folder = Environment.GetEnvironmentVariable(FolderExportSource.Variable) ?? Found();
 
-        var history = new FolderExportSource(Folder)
+        var history = new FolderExportSource(folder)
             .LoadAsync(CancellationToken.None)
             .GetAwaiter()
             .GetResult();
-
-        History = new ExportHistoryService(history);
 
         Store = new EntityStoreService(history.Snapshot, NullLogger<EntityStoreService>.Instance);
 
@@ -65,17 +57,12 @@ public sealed class Export
 
         var codex = new CodexService(Store, tokens);
 
-        Menu = new MenuService(Store, codex, tokens);
-
         View = new CodexViewService(Store, codex, tokens, chrome, richText, substitutions);
 
         Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, new ApiWebRoot());
     }
 
-    public static string Art() =>
-        Path.Combine(Directory.GetParent(Found())!.FullName, ChromeAssetService.Prefix);
-
-    public static string Found() =>
+    private static string Found() =>
         FolderExportSource.Above(AppContext.BaseDirectory)
         ?? throw new InvalidOperationException(
             $"No output/{ExportFolders.Pattern} carrying both data files above the test binary, and " +
