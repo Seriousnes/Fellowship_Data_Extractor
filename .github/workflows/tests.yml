@@ -21,7 +21,6 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Name the newest export
-        id: export
         run: |
           folder=$(for d in output/export-*/; do
             if [ -f "${d}entities.jsonl" ] && [ -f "${d}settings.json" ]; then printf '%s\n' "${d%/}"; fi
@@ -30,9 +29,6 @@ jobs:
             echo "No output/export-* folder carries both entities.jsonl and settings.json." >&2
             exit 1
           fi
-          echo "folder=$folder" >> "$GITHUB_OUTPUT"
-          echo "build=${folder#output/export-}" >> "$GITHUB_OUTPUT"
-          echo "The checkout carries $(find output/ui -type f | wc -l) art files beside $folder."
 
       - name: Run the codex tests
         run: dotnet test src/Fellowship.Codex.Tests

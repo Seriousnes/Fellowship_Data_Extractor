@@ -1,7 +1,7 @@
 namespace Fellowship.Codex.Tests;
 
 [Collection(Corpus.Name)]
-public class TalentCalculatorTests(Export export)
+public class TalentPlanTests(Export export)
 {
     private IReadOnlyList<TalentRow> Tree(Hero hero) => TalentPlan.Tree(export.Store, hero);
 

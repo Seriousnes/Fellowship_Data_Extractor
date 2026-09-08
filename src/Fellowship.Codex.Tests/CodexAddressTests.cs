@@ -1,4 +1,3 @@
-using Fellowship.SDK;
 using Fellowship.SDK.Client;
 
 namespace Fellowship.Codex.Tests;

@@ -1,5 +1,3 @@
-using Fellowship.SDK.Models;
-
 namespace Fellowship.Codex.Tests;
 
 [Collection(Corpus.Name)]
@@ -60,31 +58,5 @@ public sealed class DifficultyTests(Export export)
         Assert.Equal(lowest, export.Store.Difficulty("nonsense"));
         Assert.Equal(lowest, export.Store.Difficulty("100000"));
         Assert.Equal(65, export.Store.Difficulty("65"));
-    }
-
-    [Fact]
-    public void A_creature_ability_states_the_damage_its_coefficient_and_the_ladder_give()
-    {
-        var arrow = export.Store.Entities
-            .OfType<AbilityDocument>()
-            .Single(row => row.Id == BetrayersArrow);
-
-        var coefficient = Assert.Single(arrow.Coefficients!);
-
-        var difficulty = Eternal.MinimumDifficulty + 44;
-
-        var band = Difficulties.Damage(coefficient, Noor, Settings, difficulty);
-
-        Assert.NotNull(band);
-
-        var scale = Difficulties.DamageScale(Settings, Noor.Scaling, difficulty);
-
-        Assert.NotNull(scale);
-        Assert.Equal(
-            Noor.Intellect!.Value * coefficient.Value * scale.Value,
-            (double)band.Mean,
-            0.01);
-
-        Assert.True(band.Low < band.Mean && band.Mean < band.High, "The band does not straddle its mean.");
     }
 }

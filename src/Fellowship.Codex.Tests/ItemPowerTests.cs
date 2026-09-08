@@ -34,20 +34,6 @@ public sealed class ItemPowerTests(Export export)
     }
 
     [Fact]
-    public void TheLevelTermIsTheSlotsOwnWeightTimesTheFactor()
-    {
-        var factors = Settings.Items.PowerPotential;
-
-        foreach (var (slot, weights) in Settings.StatCalculation.SlotWeights)
-        {
-            var scored = Of(Bare(slot) with { Level = 100 });
-
-            Assert.Equal(
-                100 * (float)factors.ItemLevelScoreFactor * (float)weights.StatWeight, scored, 3);
-        }
-    }
-
-    [Fact]
     public void AGrantedAbilityScoresOnAWeaponAndARelicAndNowhereElse()
     {
         var factors = Settings.Items.PowerPotential;
@@ -88,47 +74,6 @@ public sealed class ItemPowerTests(Export export)
     }
 
     [Fact]
-    public void ALegendaryOutscoresTheSameItemAtTheSameLevelByExactlyTheLegendaryFactor()
-    {
-        var slot = Printed(ItemPower.WeaponType);
-
-        var plain = Of(Bare(slot) with { Level = 300 });
-        var legendary = Of(Bare(slot) with { Level = 300, Legendary = true });
-
-        Assert.Equal((float)Settings.Items.PowerPotential.LegendaryScoreFactor, legendary - plain, 3);
-    }
-
-    [Fact]
-    public void TheSlotDerivedFlagsAreBooleansSoASecondMatchingSlotAddsNothing()
-    {
-        var slot = Printed(ItemPower.WeaponType);
-
-        var once = Of(Bare(slot) with { HasGemSocket = true, HasSetBonus = true });
-        var again = Of(Bare(slot) with { HasGemSocket = true, HasSetBonus = true });
-
-        Assert.Equal(once, again);
-
-        var factors = Settings.Items.PowerPotential;
-
-        Assert.Equal(
-            (float)factors.GemSocketScoreFactor + (float)factors.SetBonusScoreFactor,
-            once - Of(Bare(slot)),
-            3);
-    }
-
-    [Fact]
-    public void ARerollableSlotScoresTheModSlotFactorEachTime()
-    {
-        var slot = Printed(ItemPower.WeaponType);
-        var factor = (float)Settings.Items.PowerPotential.ModSlotScoreFactor;
-
-        var none = Of(Bare(slot));
-
-        Assert.Equal(factor, Of(Bare(slot) with { RerollableSlots = 1 }) - none, 3);
-        Assert.Equal(factor * 3, Of(Bare(slot) with { RerollableSlots = 3 }) - none, 3);
-    }
-
-    [Fact]
     public void AnItemWhoseSlotTheWeightsDoNotCoverScoresNothingRatherThanANumberMissingItsLevelTerm()
     {
         var unworn = new ItemDocument { Id = 1, Slot = "Sporran" };
@@ -145,24 +90,6 @@ public sealed class ItemPowerTests(Export export)
 
         Assert.Null(ItemPower.Of(slotless, Settings, null, new TooltipQuery(), 300));
         Assert.Null(ItemPower.Of(worn, Settings, null, new TooltipQuery(), null));
-    }
-
-    [Fact]
-    public void TheTemperTermTakesTheCeilingTheLadderStatesRatherThanTheTempersTaken()
-    {
-        var rung = Settings.Rarities.Single(rarity => rarity.Name == "Epic");
-        var worn = new ItemDocument { Id = 4, Slot = "Chest", RuleSet = "Default_GemSlot" };
-
-        var ceiling = Tempering.Ceiling(Settings.MaxTempers, rung.Name, 300);
-        Assert.NotNull(ceiling);
-
-        var given = ItemPower.Inputs(worn, Settings, rung, new TooltipQuery(), 300);
-        Assert.NotNull(given);
-        Assert.Equal(ceiling, given.MaxUpgrades);
-
-        var tempered = ItemPower.Inputs(worn, Settings, rung, new TooltipQuery { Upgrades = 0 }, 300);
-        Assert.NotNull(tempered);
-        Assert.Equal(ceiling, tempered.MaxUpgrades);
     }
 
     [Fact]

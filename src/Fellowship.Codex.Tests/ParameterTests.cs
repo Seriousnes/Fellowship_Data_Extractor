@@ -1,5 +1,3 @@
-using Fellowship.SDK.Client;
-
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 

@@ -108,4 +108,3 @@ public class ChangedTests
         Assert.Equal("drop.level: 300 -> 360", Reads(Assert.Single(Changed.Between(older, newer))));
     }
 }
-

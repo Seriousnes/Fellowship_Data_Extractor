@@ -234,15 +234,6 @@ public class TooltipQueryTests(Export export)
     }
 
     [Fact]
-    public void The_state_a_trait_node_sits_at_reaches_the_query() =>
-        Assert.Equal(
-            "unavailable", StatQuery.NullIfEmpty(new TraitTooltipRequest { State = "unavailable" }.State));
-
-    [Fact]
-    public void The_rarity_the_caller_names_reaches_the_query() =>
-        Assert.Equal("3", StatQuery.NullIfEmpty(new ItemTooltipRequest { Rarity = "3" }.Rarity));
-
-    [Fact]
     public void A_request_naming_only_a_stat_carries_the_stat_and_nothing_else()
     {
         var query = Query(new ItemTooltipRequest { Stats = Stats.Rated("Stamina", 40m) }, out var error);

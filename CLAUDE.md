@@ -60,6 +60,4 @@ pass: the documents under `export-<build>/`, and every composed image under `ui/
 variables set, because the committed `mappings/` carries the usmap. It does need the Steam install,
 to read the paks and the appmanifest that names the build, and the first run against a clean `bin/`
 downloads Oodle. A connection string in `ConnectionStrings__icons` replaces that folder with the blob
-container, which is what the Publisher app host does. `RouteTests` calls `Export.Found()` directly
-rather than reading `FELLOWSHIP_EXPORT`, so the tests that run through `WebApplicationFactory` read
-the worktree's own newest `output/export-*` whatever that variable says.
+container, which is what the Publisher app host does.

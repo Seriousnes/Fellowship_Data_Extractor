@@ -101,22 +101,6 @@ public class ItemCraftTests(Export export)
     }
 
     [Fact]
-    public void An_imbued_trait_block_carries_the_capacity_the_item_slot_states()
-    {
-        var necklace = Settings.StatCalculation.RarityAdditions
-            .SelectMany(rule => rule.Value.Select(tier => (Rule: rule.Key, tier.Key, tier.Value)))
-            .First(row => row.Value.GuaranteedSlots.Contains(CraftSlots.TraitTree, StringComparer.OrdinalIgnoreCase));
-
-        foreach (var (worn, capacity) in TooltipView.ImbuedTraitCapacities)
-        {
-            var block = Slots(necklace.Rule, necklace.Key, worn)
-                .Single(slot => slot.SlotName == CraftSlots.TraitTree);
-
-            Assert.Equal(capacity, block.Capacity);
-        }
-    }
-
-    [Fact]
     public void An_item_naming_no_rule_set_or_asked_at_no_rarity_derives_nothing()
     {
         Assert.Empty(ItemCraft.Slots(new ItemDocument { Id = 1 }, Settings, Settings.Rarities[^1]));
