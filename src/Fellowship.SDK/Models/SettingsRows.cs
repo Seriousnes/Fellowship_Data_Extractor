@@ -3,6 +3,8 @@ namespace Fellowship.SDK;
 public sealed record HeroEntry(string Name, string? ArmorType, string PrimaryStat)
 {
     public string? Color { get; init; }
+
+    public string? Portrait { get; init; }
 }
 
 public sealed record RarityEntry(int Tier, string Name, string DisplayName, string GemDisplayName);

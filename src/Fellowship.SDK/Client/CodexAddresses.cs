@@ -13,8 +13,16 @@ public static class CodexAddresses
     /// <summary>The codex origin, serving both the browsable pages and the <c>/api</c> routes.</summary>
     public static Uri Origin { get; } = new("https://codex.fellowshipanalyzer.com/");
 
-    /// <summary>The origin serving codex art, one PNG per name under <c>/ui</c>.</summary>
-    public static Uri ArtOrigin { get; } = new("https://cdn.codex.fellowshipanalyzer.com/");
+    /// <summary>The origin serving codex textures, one WebP per name and size under <c>/ui</c>.</summary>
+    public static Uri Cdn { get; } = new("https://cdn.codex.fellowshipanalyzer.com/");
+
+    /// <summary>
+    /// The <see cref="Cdn"/> address of one image at <paramref name="size"/>. A document's texture field
+    /// carries the name alone, so pass that name here. <see cref="TextureSize.Full"/> is written for every name
+    /// at its native resolution; a square size is written only where the native image is at least that many
+    /// pixels on its shorter edge, so fall back to <see cref="TextureSize.Full"/> when a size answers 404.
+    /// </summary>
+    public static Uri Texture(string name, TextureSize size) => new(Cdn, TextureSizes.Key(name, size));
 
     /// <summary>The browsable page for one entity.</summary>
     public static string Page(EntityType type, int id, string? hero = null) =>

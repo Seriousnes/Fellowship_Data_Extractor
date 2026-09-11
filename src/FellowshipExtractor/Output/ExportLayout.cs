@@ -1,15 +1,19 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Fellowship.SDK;
+
 namespace FellowshipExtractor.Output;
 
 public static class ExportLayout
 {
     public const string DataFolder = "data";
 
-    public const string UiFolder = "ui";
+    public const string UiFolder = TextureSizes.Folder;
 
     public const string EntitiesFile = "entities.jsonl";
+
+    public const string ImageType = "image/webp";
 
     public static readonly JsonSerializerOptions SettingsJson = new()
     {
@@ -19,8 +23,5 @@ public static class ExportLayout
     };
 
     public static string Data(string build, string file) =>
-        $"{ExportFolders.Name(build)}/{DataFolder}/{file}";
-
-    public static string Variant(string image, string rarity) =>
-        $"{Path.GetFileNameWithoutExtension(image)}-{rarity.ToLowerInvariant()}{Path.GetExtension(image)}";
+        $"{DataFolder}/{ExportFolders.Name(build)}/{file}";
 }

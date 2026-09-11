@@ -1,3 +1,5 @@
+using Fellowship.SDK;
+
 using FellowshipExtractor.Output;
 using FellowshipExtractor.Textures;
 
@@ -40,7 +42,8 @@ public sealed class ExportedChromeTests
         ("T_Backgrounds_TooltipSlot_Gradient_Decor", "core.secondary-600"),
     ];
 
-    private static string Ui(string name) => Path.Combine(Export.Loaded.Ui, name);
+    private static string Ui(string name) =>
+        Path.Combine(Export.Loaded.Ui, TextureSizes.File(name, TextureSize.Full));
 
     private static IReadOnlyList<RarityEntry> Ladder => Export.Loaded.Settings.Rarities;
 
@@ -51,7 +54,7 @@ public sealed class ExportedChromeTests
     [Fact]
     public void TheGoldRuleIsWrittenAsFourRowsAndEveryOneOfThemIsPainted()
     {
-        var file = Ui(GoldBand.Texture + ".png");
+        var file = Ui(GoldBand.Texture);
         Assert.True(File.Exists(file), $"{GoldBand.Texture} was not written.");
 
         using var band = Image.Load<Rgba32>(file);
@@ -101,11 +104,11 @@ public sealed class ExportedChromeTests
 
         foreach (var texture in Tinted)
         {
-            if (!File.Exists(Ui(texture + ".png"))) missing.Add($"{texture}.png");
+            if (!File.Exists(Ui(texture))) missing.Add(texture);
 
             foreach (var rung in Ladder)
             {
-                var variant = ExportLayout.Variant(texture + ".png", rung.Name);
+                var variant = TextureSizes.Variant(texture, rung.Name);
                 if (!File.Exists(Ui(variant))) missing.Add(variant);
             }
         }
@@ -120,11 +123,11 @@ public sealed class ExportedChromeTests
 
         foreach (var texture in Tinted)
         {
-            using var source = Image.Load<Rgba32>(Ui(texture + ".png"));
+            using var source = Image.Load<Rgba32>(Ui(texture));
 
             foreach (var rung in Ladder)
             {
-                var variant = ExportLayout.Variant(texture + ".png", rung.Name);
+                var variant = TextureSizes.Variant(texture, rung.Name);
                 using var tinted = Image.Load<Rgba32>(Ui(variant));
 
                 if (Mismatch(source, tinted, Colour(rung.Name)) is { } reading) wrong.Add($"{variant} {reading}");
@@ -138,7 +141,7 @@ public sealed class ExportedChromeTests
     public void EveryTextureTheSlotStackPaintsIsWritten()
     {
         string[] stack = [.. SlotStack, .. Numerals.Select(numeral => NumeralFamily + numeral)];
-        string[] missing = [.. stack.Where(texture => !File.Exists(Ui(texture + ".png")))];
+        string[] missing = [.. stack.Where(texture => !File.Exists(Ui(texture)))];
 
         Assert.Empty(missing);
     }
@@ -146,7 +149,7 @@ public sealed class ExportedChromeTests
     [Fact]
     public void TheEmptySlotPlateAndTheEmptyGemSocketAreWritten()
     {
-        string[] missing = [.. SlotPlates.Where(texture => !File.Exists(Ui(texture + ".png")))];
+        string[] missing = [.. SlotPlates.Where(texture => !File.Exists(Ui(texture)))];
 
         Assert.Empty(missing);
     }
@@ -158,15 +161,15 @@ public sealed class ExportedChromeTests
 
         foreach (var (texture, row) in ModifierChrome)
         {
-            var plain = Ui(texture + ".png");
+            var plain = Ui(texture);
 
             if (!File.Exists(plain))
             {
-                wrong.Add($"{texture}.png was not written");
+                wrong.Add($"{texture} was not written");
                 continue;
             }
 
-            var variant = ExportLayout.Variant(texture + ".png", row.Replace('.', '-'));
+            var variant = TextureSizes.Variant(texture, row.Replace('.', '-'));
 
             if (!File.Exists(Ui(variant)))
             {

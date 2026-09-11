@@ -1,3 +1,5 @@
+using Fellowship.SDK;
+
 using FellowshipExtractor.Output;
 using FellowshipExtractor.Extraction;
 
@@ -78,7 +80,7 @@ public sealed class SettingsTableTests
         Assert.NotEmpty(Ornaments);
 
         Assert.All(Ornaments, ornament => Assert.True(
-            File.Exists(Path.Combine(Export.Loaded.Ui, ornament.Value + ".png")),
+            File.Exists(Path.Combine(Export.Loaded.Ui, TextureSizes.File(ornament.Value, TextureSize.Full))),
             $"{ornament.Key} draws {ornament.Value}, which the export does not write."));
     }
 }

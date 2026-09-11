@@ -11,11 +11,11 @@
                 <SubHead>@phase.Key</SubHead>
                 <Table Items="phase">
                     <Columns>
-                        <Column Head="" Class="cx-art">
+                        <Column Head="" Class="cx-texture">
                             <Content Context="slot">
                                 @if (Wielded(slot) is { } ability)
                                 {
-                                    <Art Entity="ability" />
+                                    <Texture Entity="ability" />
                                 }
                             </Content>
                         </Column>

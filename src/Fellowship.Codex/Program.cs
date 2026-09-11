@@ -37,13 +37,13 @@ if (StorageExtensions.Configured(builder.Configuration))
 {
     builder.AddStorage();
     builder.Services.AddSingleton<IExportSource, StorageExportSource>();
-    builder.Services.AddSingleton<IArtSource, StorageArtSource>();
+    builder.Services.AddSingleton<ITextureSource, StorageTextureSource>();
 }
 else
 {
     folder = new FolderExportSource(FolderExportSource.Located());
     builder.Services.AddSingleton<IExportSource>(folder);
-    builder.Services.AddSingleton<IArtSource, FolderArtSource>();
+    builder.Services.AddSingleton<ITextureSource, FolderTextureSource>();
 }
 
 builder.Services.AddCodexServices();
@@ -67,7 +67,7 @@ app.UseRateLimiter();
 app.UseRequestTimeouts();
 app.MapStaticAssets();
 
-if (folder is not null) app.UseStaticFiles(Art.From(folder.Root));
+if (folder is not null) app.UseStaticFiles(Textures.From(folder.Root));
 
 app.UseSwaggerUI(options =>
 {

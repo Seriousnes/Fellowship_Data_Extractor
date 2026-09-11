@@ -48,7 +48,7 @@ Resources:
     Properties:
       CachePolicyConfig:
         Name: !Sub "${AWS::StackName}-art"
-        Comment: Revalidate art on every request so a rewritten texture is served at once.
+        Comment: Cache art for as long as the origin's Cache-Control asks, so a repeat request is a hit.
         DefaultTTL: 86400
         MinTTL: 0
         MaxTTL: 31536000

@@ -164,7 +164,7 @@ public sealed class CodexService : ICodexService
         Flags =
         [
             new Flag("named", "Named in the game", document => PublicTypes.DisplayNameOf(document) is not null),
-            new Flag("icon", "Has art", document => DocumentFields.Text(document, nameof(ItemDocument.Icon)) is not null),
+            new Flag("icon", "Has texture", document => DocumentFields.Text(document, nameof(ItemDocument.Icon)) is not null),
             new Flag("described", "Has description text",
                 document => DocumentFields.Text(document, nameof(ItemDocument.Description)) is not null),
             new Flag("legendary", "Is legendary",

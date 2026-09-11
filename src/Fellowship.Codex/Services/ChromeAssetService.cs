@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
+using Fellowship.SDK;
 using Fellowship.SDK.Documents;
 
 using Fellowship.Codex.Models;
@@ -61,7 +62,7 @@ public interface IChromeAssetService
     string GemSocketPlate { get; }
 
     [return: NotNullIfNotNull(nameof(icon))]
-    string? Art(string? icon);
+    string? Texture(string? icon);
 
     string TraitNode(string? state);
 
@@ -77,16 +78,16 @@ public interface IChromeAssetService
 
     string BlessingPlate(string? state);
 
-    string? BlessingArt(string? icon, string? state);
+    string? BlessingTexture(string? icon, string? state);
 
     string SlotGlyph(string? slot);
 }
 public sealed class ChromeAssetService(
-    IArtSource art,
+    ITextureSource texture,
     IEntityStoreService store,
     IDesignTokenService tokens) : IChromeAssetService
 {
-    public const string Prefix = "ui";
+    public const string Prefix = TextureSizes.Folder;
 
     private const string FrameMask = "T_Borders_Frame_TooltipRarityFrame";
     private const string IconFrameMask = "T_Borders_RarityFrame";
@@ -128,7 +129,7 @@ public sealed class ChromeAssetService(
     private const string NodeFamily = "T_Buttons_TraitNode_";
     private const string NodeSuffix = "Default";
     private const string BlessingFamily = "T_Buttons_BlessingButton_";
-    private const string BlessingArtFamily = "T_Icons_BlessingRuneIcon_";
+    private const string BlessingTextureFamily = "T_Icons_BlessingRuneIcon_";
     private const string Allocated = "Allocated";
     private const string Unallocated = "Unallocated";
     private const string Unavailable = "Unavailable";
@@ -179,43 +180,43 @@ public sealed class ChromeAssetService(
     public string? Frame(string? rarity) => rarity is null ? null : Url(Name(FrameMask, rarity));
 
     public string Header(string? rarity) =>
-        rarity is null ? Url(Name(NeutralHeaderTexture)) : Url(Name(HeaderMask, rarity));
+        rarity is null ? Url(NeutralHeaderTexture) : Url(Name(HeaderMask, rarity));
 
     public string? Ornament(string rarity) =>
-        store.Settings.RarityOrnaments.TryGetValue(rarity, out var texture) ? Url(Name(texture)) : null;
+        store.Settings.RarityOrnaments.TryGetValue(rarity, out var texture) ? Url(texture) : null;
 
     public string SlotBacking(string? rarity) =>
-        Url(Name(rarity is null ? PlainSlotBackingTexture : SlotBackingTexture));
+        Url(rarity is null ? PlainSlotBackingTexture : SlotBackingTexture);
 
     public string SlotFrame(string? rarity) =>
-        rarity is null ? Url(Name(PlainSlotFrameTexture)) : Url(Name(IconFrameMask, rarity));
+        rarity is null ? Url(PlainSlotFrameTexture) : Url(Name(IconFrameMask, rarity));
 
-    public string? SlotBevel(string? rarity) => rarity is null ? null : Url(Name(SlotBevelTexture));
+    public string? SlotBevel(string? rarity) => rarity is null ? null : Url(SlotBevelTexture);
 
-    public string SlotPlate => Url(Name(SlotPlateTexture));
+    public string SlotPlate => Url(SlotPlateTexture);
 
-    public string GemSocketPlate => Url(Name(GemSocketTexture));
+    public string GemSocketPlate => Url(GemSocketTexture);
 
     [return: NotNullIfNotNull(nameof(icon))]
-    public string? Art(string? icon) => icon is null ? null : Url($"{Prefix}/{icon}");
+    public string? Texture(string? icon) => icon is null ? null : Url(icon);
 
     public string TraitNode(string? state) =>
-        Url(Name(NodeFamily + Chosen(NodeStates, state) + NodeSuffix));
+        Url(NodeFamily + Chosen(NodeStates, state) + NodeSuffix);
 
-    public string TalentBand => Url(Name(TalentBandTexture));
+    public string TalentBand => Url(TalentBandTexture);
 
     public string TalentTier(int row) =>
         store.Settings.TalentTierPlates.TryGetValue(row, out var plate)
-            ? Url(Name(plate))
+            ? Url(plate)
             : throw new InvalidOperationException(
                 $"The build ships no numbered plate for talent row {row}, only rows " +
                 $"{string.Join(", ", store.Settings.TalentTierPlates.Keys)}. A row draws its numeral from that " +
                 "plate, so the row would go unnumbered.");
 
     public string TalentSlot(string? state) =>
-        Url(Name(TalentButtonFamily + Chosen(TalentStates, state)));
+        Url(TalentButtonFamily + Chosen(TalentStates, state));
 
-    public string TalentCost => Url(Name(TalentCostTexture));
+    public string TalentCost => Url(TalentCostTexture);
 
     public string TalentFrame => Url(Tinted(TalentFrameTexture));
 
@@ -223,50 +224,50 @@ public sealed class ChromeAssetService(
         string.Equals(Chosen(NodeStates, state), Unavailable, StringComparison.Ordinal);
 
     public string BlessingPlate(string? state) =>
-        Url(Name(BlessingFamily + Chosen(BlessingStates, state)));
+        Url(BlessingFamily + Chosen(BlessingStates, state));
 
-    public string? BlessingArt(string? icon, string? state) =>
-        icon is { } art &&
-        art.StartsWith(BlessingArtFamily + Unallocated, StringComparison.Ordinal) &&
+    public string? BlessingTexture(string? icon, string? state) =>
+        icon is { } texture &&
+        texture.StartsWith(BlessingTextureFamily + Unallocated, StringComparison.Ordinal) &&
         string.Equals(Chosen(BlessingStates, state), Allocated, StringComparison.Ordinal)
-            ? Art(art.Replace(Unallocated, Allocated, StringComparison.Ordinal))
+            ? Texture(texture.Replace(Unallocated, Allocated, StringComparison.Ordinal))
             : null;
 
-    public string LockGlyph => Url(Name(LockTexture));
+    public string LockGlyph => Url(LockTexture);
 
-    public string GoldDivider => Url(Name(DividerTexture));
+    public string GoldDivider => Url(DividerTexture);
 
-    public string SimpleDivider => Url(Name(SimpleDividerTexture));
+    public string SimpleDivider => Url(SimpleDividerTexture);
 
-    public string Panel => Url(Name(PanelTexture));
+    public string Panel => Url(PanelTexture);
 
-    public string Window => Url(Name(WindowTexture));
+    public string Window => Url(WindowTexture);
 
-    public string RoundedWindow => Url(Name(RoundedWindowTexture));
+    public string RoundedWindow => Url(RoundedWindowTexture);
 
-    public string ThinWindow => Url(Name(ThinWindowTexture));
+    public string ThinWindow => Url(ThinWindowTexture);
 
-    public string WindowFill => Url(Name(WindowFillTexture));
+    public string WindowFill => Url(WindowFillTexture);
 
     public string SlotGlyph(string? slot) =>
-        Url(Name(slot is not null && store.Settings.SlotIcons.TryGetValue(slot, out var gear)
+        Url(slot is not null && store.Settings.SlotIcons.TryGetValue(slot, out var gear)
             ? gear
-            : SlotTexture));
+            : SlotTexture);
 
-    public string ItemPowerGlyph => Url(Name(ItemPowerTexture));
+    public string ItemPowerGlyph => Url(ItemPowerTexture);
 
-    public string Rule => Url(Name(RuleTexture));
+    public string Rule => Url(RuleTexture);
 
-    public string TraitGlyph => Url(Name(TraitTexture));
+    public string TraitGlyph => Url(TraitTexture);
 
-    public string ExpandGlyph => Url(Name(ExpandTexture));
+    public string ExpandGlyph => Url(ExpandTexture);
 
-    public string ModifierPlate => Url(Name(ModifierPlateTexture));
+    public string ModifierPlate => Url(ModifierPlateTexture);
 
     public string ModifierDecor => Url(Tinted(ModifierDecorTexture));
 
     public string ModifierGlyph(ModifierKind? kind) =>
-        kind is { } named ? Url(Tinted(ModifierGlyphs[named])) : Url(Name(RandomModifierTexture));
+        kind is { } named ? Url(Tinted(ModifierGlyphs[named])) : Url(RandomModifierTexture);
 
     private static string Tinted(string texture) =>
         Name(texture, DesignTokenService.Variable(RowTinted[texture]));
@@ -277,17 +278,14 @@ public sealed class ChromeAssetService(
 
     public Badge SetBonusBadge => Section(SetBonusTexture, SetBonusHeading);
 
-    private Badge Section(string texture, string heading) => new(Url(Name(texture)), Colour(heading));
+    private Badge Section(string texture, string heading) => new(Url(texture), Colour(heading));
 
     private string? Colour(string heading) =>
         store.Settings.SectionHeadingRows.TryGetValue(heading, out var row) ? tokens.Color(row) : null;
 
-    private static string Name(string texture) => $"{Prefix}/{texture}.png";
+    private static string Name(string texture, string rarity) => TextureSizes.Variant(texture, rarity);
 
-    private static string Name(string texture, string rarity) =>
-        $"{Prefix}/{texture}-{rarity.ToLowerInvariant()}.png";
-
-    private string Url(string name) => art.Address(name);
+    private string Url(string name) => texture.Address(name, TextureSize.Full);
 
     private static string Chosen(IReadOnlyList<string> states, string? state) =>
         states.FirstOrDefault(known => string.Equals(known, state, StringComparison.OrdinalIgnoreCase))

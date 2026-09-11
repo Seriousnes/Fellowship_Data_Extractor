@@ -34,11 +34,11 @@ public sealed class StorageSelectionTests
     {
         var storage = Configured(new Dictionary<string, string?>
         {
-            [StorageExtensions.ConnectionKey] = $"{Azurite};ContainerName=art",
+            [StorageExtensions.ConnectionKey] = $"{Azurite};ContainerName=texture",
         }).GetRequiredService<IStorage>();
 
         Assert.IsType<AzureStorage>(storage);
-        Assert.Equal("art", storage.Name);
+        Assert.Equal("texture", storage.Name);
     }
 
     [Fact]
@@ -71,12 +71,12 @@ public sealed class StorageSelectionTests
         var settings = Configured(new Dictionary<string, string?>
         {
             [S3Settings.BucketKey] = "icons",
-            ["S3:PublicUrl"] = "https://art.example.com",
+            ["S3:PublicUrl"] = "https://texture.example.com",
             ["S3:ServiceUrl"] = "",
         }).GetRequiredService<S3Settings>();
 
         Assert.Equal("icons", settings.Bucket);
-        Assert.Equal("https://art.example.com", settings.PublicUrl);
+        Assert.Equal("https://texture.example.com", settings.PublicUrl);
         Assert.Null(settings.ServiceUrl);
     }
 

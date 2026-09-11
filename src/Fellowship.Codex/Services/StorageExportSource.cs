@@ -39,7 +39,7 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
     public static IReadOnlyList<string> Builds(IReadOnlyDictionary<string, HashSet<string>> byFolder) =>
         [
             .. byFolder
-                .Where(version => Whole(version.Value))
+                .Where(version => ExportFolders.Build(version.Key) >= 0 && Whole(version.Value))
                 .Select(version => version.Key)
                 .OrderByDescending(ExportFolders.Build)
                 .ThenByDescending(name => name, StringComparer.Ordinal)
@@ -50,28 +50,32 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
     {
         var byFolder = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
 
-        await foreach (var stored in storage.ListAsync(ExportFolders.Prefix, cancellationToken))
+        await foreach (var stored in storage.ListAsync(Beneath, cancellationToken))
         {
-            var separator = stored.Name.IndexOf('/');
+            if (!stored.Name.StartsWith(Beneath, StringComparison.Ordinal)) continue;
 
-            if (separator <= 0) continue;
+            var beneath = stored.Name[Beneath.Length..];
 
-            var folder = stored.Name[..separator];
+            if (beneath.Length == 0) continue;
+
+            var separator = beneath.IndexOf('/');
+            var folder = separator > 0 ? beneath[..separator] : ExportReader.DataFolder;
 
             if (!byFolder.TryGetValue(folder, out var files))
             {
                 byFolder[folder] = files = new HashSet<string>(StringComparer.Ordinal);
             }
 
-            files.Add(stored.Name[(separator + 1)..]);
+            files.Add(separator > 0 ? beneath[(separator + 1)..] : beneath);
         }
 
         return byFolder;
     }
 
     private static bool Whole(HashSet<string> files) =>
-        files.Contains(ExportReader.Data(ExportReader.EntitiesName)) &&
-        files.Contains(ExportReader.Data(ExportReader.SettingsName));
+        files.Contains(ExportReader.EntitiesName) && files.Contains(ExportReader.SettingsName);
+
+    private const string Beneath = $"{ExportReader.DataFolder}/";
 
     private const int MaxNames = 4;
 
@@ -85,9 +89,9 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
             .Select(version => $"{version.Key} holds {Holds(version.Value)}"));
 
         return new InvalidOperationException(
-            $"No {ExportFolders.Pattern} folder in the store carries both " +
-            $"{ExportReader.Data(ExportReader.EntitiesName)} and " +
-            $"{ExportReader.Data(ExportReader.SettingsName)}, which is where an object store's export is " +
+            $"No {ExportReader.Data(ExportFolders.Pattern)} folder in the store carries both " +
+            $"{ExportReader.EntitiesName} and " +
+            $"{ExportReader.SettingsName}, which is where an object store's export is " +
             $"read from. The store holds {folders}. A store filled by an extractor that laid the pair out " +
             "at another depth reads this way until it is filled again in the shape it is read in: 'dotnet " +
             "run --project src/FellowshipExtractor -- --connection-string <value>' for an Azure Blob " +

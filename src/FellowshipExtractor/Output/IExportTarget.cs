@@ -8,5 +8,5 @@ public interface IExportTarget : IAsyncDisposable
 
     Task WriteSettingsAsync(SettingsFile settings, CancellationToken cancellationToken);
 
-    Task WriteImageAsync(string name, byte[] png, CancellationToken cancellationToken);
+    Task WriteImageAsync(string name, byte[] content, CancellationToken cancellationToken);
 }

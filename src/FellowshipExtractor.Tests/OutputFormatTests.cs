@@ -99,14 +99,14 @@ public sealed class OutputFormatTests
 
         await using (var target = new FolderTarget(folder, Build))
         {
-            await target.WriteImageAsync("Firemage_Bolt.png", [1, 2, 3], default);
+            await target.WriteImageAsync("Firemage_Bolt_full.webp", [1, 2, 3], default);
             await target.WriteSettingsAsync(new SettingsFile { GemTypes = ["Ruby"] }, default);
         }
 
         Assert.Equal(
             [1, 2, 3],
             await File.ReadAllBytesAsync(
-                Path.Combine(folder, ExportLayout.UiFolder, "Firemage_Bolt.png")));
+                Path.Combine(folder, ExportLayout.UiFolder, "Firemage_Bolt_full.webp")));
 
         var settings = JsonSerializer.Deserialize<SettingsFile>(
             await File.ReadAllTextAsync(
@@ -123,8 +123,8 @@ public sealed class OutputFormatTests
 
         await using var target = new FolderTarget(folder, Build);
 
-        await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
-        await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
+        await target.WriteImageAsync("T_GoldDivider_full.webp", [7, 7, 7], default);
+        await target.WriteImageAsync("T_GoldDivider_full.webp", [7, 7, 7], default);
 
         Assert.Single(Directory.EnumerateFiles(Path.Combine(folder, ExportLayout.UiFolder)));
     }
@@ -136,12 +136,12 @@ public sealed class OutputFormatTests
 
         await using var target = new FolderTarget(folder, Build);
 
-        await target.WriteImageAsync("T_GoldDivider.png", [7, 7, 7], default);
+        await target.WriteImageAsync("T_GoldDivider_full.webp", [7, 7, 7], default);
 
         var failure = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => target.WriteImageAsync("T_GoldDivider.png", [8, 8, 8], default));
+            () => target.WriteImageAsync("T_GoldDivider_full.webp", [8, 8, 8], default));
 
-        Assert.Contains("T_GoldDivider.png", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("T_GoldDivider_full.webp", failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -166,13 +166,13 @@ public sealed class OutputFormatTests
     }
 
     [Fact]
-    public void AStorageRunFilesItsDataUnderTheBuildItExported()
+    public void AStorageRunFilesTheBuildItExportedUnderData()
     {
         Assert.Equal(
-            $"{ExportFolders.Name(Build)}/{ExportLayout.DataFolder}/{ExportLayout.EntitiesFile}",
+            $"{ExportLayout.DataFolder}/{ExportFolders.Name(Build)}/{ExportLayout.EntitiesFile}",
             ExportLayout.Data(Build, ExportLayout.EntitiesFile));
 
-        Assert.Equal("export-19240315/data/settings.json", ExportLayout.Data(Build, Settings.FileName));
+        Assert.Equal("data/export-19240315/settings.json", ExportLayout.Data(Build, Settings.FileName));
     }
 
     [Fact]
@@ -182,8 +182,8 @@ public sealed class OutputFormatTests
 
         Assert.Equal("snapshots", storage.Name);
         Assert.Equal(
-            "http://localhost:10510/devstoreaccount1/snapshots/ui/T_GoldDivider.png",
-            storage.Address("ui/T_GoldDivider.png").AbsoluteUri);
+            "http://localhost:10510/devstoreaccount1/snapshots/ui/T_GoldDivider_full.webp",
+            storage.Address("ui/T_GoldDivider_full.webp").AbsoluteUri);
     }
 
     [Fact]
@@ -193,8 +193,8 @@ public sealed class OutputFormatTests
 
         Assert.Equal("icons", storage.Name);
         Assert.Equal(
-            "http://localhost:10510/devstoreaccount1/icons/ui/T_GoldDivider.png",
-            storage.Address("ui/T_GoldDivider.png").AbsoluteUri);
+            "http://localhost:10510/devstoreaccount1/icons/ui/T_GoldDivider_full.webp",
+            storage.Address("ui/T_GoldDivider_full.webp").AbsoluteUri);
     }
 
     [Fact]

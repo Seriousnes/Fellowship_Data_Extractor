@@ -222,7 +222,7 @@ public static class ExportRun
 
         var chrome = await ChromeTextures.WriteAsync(provider, resolver.Settings, target, default);
 
-        await target.WriteSettingsAsync(resolver.Settings.ToFile(), default);
+        await target.WriteSettingsAsync(resolver.Settings.ToFile(icons.Writer), default);
 
         Console.WriteLine($"\nwrote {written} documents from {resolved.Count} entities across {scanned} tags");
         Console.WriteLine($"  {withText} entities with a display name, {withIcon} with an icon");

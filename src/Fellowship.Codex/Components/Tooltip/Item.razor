@@ -3,9 +3,9 @@
 
 <div class="@TooltipView.Root @(Rarity is null ? "plain" : null)" style="@Ui.Variables(Rarity)">
     <style>@Sheet</style>
-    @if (Query.ShowIcon && Art is { } art)
+    @if (Query.ShowIcon && Texture is { } texture)
     {
-        <Icon Src="@art" Rarity="@Rarity?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
+        <Icon Src="@texture" Rarity="@Rarity?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
     }
     <div class="card">
         <header class="head">
@@ -40,7 +40,7 @@
 
     private RarityEntry? Rarity;
 
-    private string? Art;
+    private string? Texture;
 
     private int? Level;
 
@@ -65,7 +65,7 @@
     protected override void OnParametersSet()
     {
         Rarity = Ui.Rarity(Entity, Query);
-        Art = Ui.Art(Entity, Rarity);
+        Texture = Ui.Texture(Entity, Rarity);
         Level = Ui.Level(Entity, Query);
         Temper = Ui.Temper(Entity, Query, Rarity, Level);
         potential = Ui.Potential(Entity, Query, Rarity, Level);

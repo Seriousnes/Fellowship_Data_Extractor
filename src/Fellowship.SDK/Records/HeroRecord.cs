@@ -13,4 +13,6 @@ public sealed record HeroRecord : EntityRecord
     public string? Playstyle { get; init; }
 
     public string? SpiritAbility { get; init; }
+
+    public string? Portrait { get; init; }
 }

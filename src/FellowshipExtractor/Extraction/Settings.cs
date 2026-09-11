@@ -109,6 +109,10 @@ public sealed class Settings
 
         _heroByName = Heroes.ToDictionary(hero => hero.Name, StringComparer.OrdinalIgnoreCase);
 
+        _portraitByHero = heroes.Profiles
+            .Where(hero => hero.PortraitPath is not null)
+            .ToDictionary(hero => hero.ShippedName, hero => hero.PortraitPath!, StringComparer.OrdinalIgnoreCase);
+
         if (rarities.MissingRenames.ToArray() is { Length: > 0 } missing)
         {
             throw new InvalidOperationException(
@@ -137,11 +141,16 @@ public sealed class Settings
 
     private readonly Dictionary<string, HeroEntry> _heroByName;
 
+    private readonly Dictionary<string, string> _portraitByHero;
+
     public HeroEntry? Hero(string name) => _heroByName.GetValueOrDefault(name);
 
-    public SettingsFile ToFile() => new()
+    private string? Portrait(string name, IconWriter? icons) =>
+        icons is null || !_portraitByHero.TryGetValue(name, out var path) ? null : icons(path, null);
+
+    public SettingsFile ToFile(IconWriter? icons) => new()
     {
-        Heroes = Heroes,
+        Heroes = [.. Heroes.Select(hero => hero with { Portrait = Portrait(hero.Name, icons) })],
         Rarities = Rarities,
         AbilityCategories = AbilityCategories,
         GemTypes = GemTypes,

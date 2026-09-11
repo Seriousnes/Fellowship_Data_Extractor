@@ -8,7 +8,7 @@ namespace FellowshipExtractor.Tests;
 
 public sealed class S3StorageTests
 {
-    private const string Texture = "ui/T_GoldDivider.png";
+    private const string Texture = "ui/T_GoldDivider_full.webp";
 
     private static IAmazonS3 Client(string region) =>
         new AmazonS3Client(new BasicAWSCredentials("test", "test"), RegionEndpoint.GetBySystemName(region));
@@ -19,7 +19,7 @@ public sealed class S3StorageTests
         var storage = new S3Storage(Client("eu-west-1"), new S3Settings("icons", null, null));
 
         Assert.Equal(
-            "https://icons.s3.eu-west-1.amazonaws.com/ui/T_GoldDivider.png",
+            "https://icons.s3.eu-west-1.amazonaws.com/ui/T_GoldDivider_full.webp",
             storage.Address(Texture).AbsoluteUri);
     }
 
@@ -27,10 +27,10 @@ public sealed class S3StorageTests
     public void A_public_url_addresses_art_under_it_rather_than_the_bucket()
     {
         var storage = new S3Storage(
-            Client("us-east-1"), new S3Settings("icons", "https://art.example.com/", null));
+            Client("us-east-1"), new S3Settings("icons", "https://texture.example.com/", null));
 
         Assert.Equal(
-            "https://art.example.com/ui/T_GoldDivider.png",
+            "https://texture.example.com/ui/T_GoldDivider_full.webp",
             storage.Address(Texture).AbsoluteUri);
     }
 
@@ -41,7 +41,7 @@ public sealed class S3StorageTests
             Client("us-east-1"), new S3Settings("icons", null, "http://127.0.0.1:9000"));
 
         Assert.Equal(
-            "http://127.0.0.1:9000/icons/ui/T_GoldDivider.png",
+            "http://127.0.0.1:9000/icons/ui/T_GoldDivider_full.webp",
             storage.Address(Texture).AbsoluteUri);
     }
 
@@ -49,10 +49,10 @@ public sealed class S3StorageTests
     public void A_public_url_wins_over_a_service_url()
     {
         var storage = new S3Storage(
-            Client("us-east-1"), new S3Settings("icons", "https://art.example.com", "http://127.0.0.1:9000"));
+            Client("us-east-1"), new S3Settings("icons", "https://texture.example.com", "http://127.0.0.1:9000"));
 
         Assert.Equal(
-            "https://art.example.com/ui/T_GoldDivider.png",
+            "https://texture.example.com/ui/T_GoldDivider_full.webp",
             storage.Address(Texture).AbsoluteUri);
     }
 
@@ -91,12 +91,12 @@ public sealed class S3StorageTests
 
         var storage = new S3Storage(
             new AmazonS3Client(new BasicAWSCredentials("test", "test"), config),
-            new S3Settings("codex-art", null, "http://127.0.0.1:1"));
+            new S3Settings("codex-texture", null, "http://127.0.0.1:1"));
 
         var failure = await Assert.ThrowsAsync<InvalidOperationException>(
             () => storage.PrepareAsync(CancellationToken.None));
 
-        Assert.Contains("codex-art", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("codex-texture", failure.Message, StringComparison.Ordinal);
         Assert.Contains("list and put objects", failure.Message, StringComparison.Ordinal);
     }
 }

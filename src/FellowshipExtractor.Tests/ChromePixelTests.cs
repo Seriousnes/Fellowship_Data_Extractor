@@ -33,7 +33,7 @@ public sealed class ChromePixelTests
         return new Reading(
             store,
             new ChromeAssetService(
-                new StorageArtSource(new MemoryStorage()),
+                new StorageTextureSource(new MemoryStorage()),
                 store,
                 new DesignTokenService(store.Settings)));
     }
@@ -179,7 +179,7 @@ public sealed class ChromePixelTests
     [Fact]
     public void TheWellTheStylesheetCutsARaritySlotToIsTheHoleInTheRarityFrame()
     {
-        using var frame = Carried("T_Borders_RarityFrame.png");
+        using var frame = Carried("T_Borders_RarityFrame_full.webp");
 
         Assert.Equal(60, frame.Width);
         Assert.Equal(60, frame.Height);
@@ -237,7 +237,7 @@ public sealed class ChromePixelTests
     {
         using var backing = Carried(Read.Chrome.SlotBacking(Read.Store.Settings.Rarities[0].Name));
 
-        Assert.True(Covers(backing, 4d / 60), "T_Borders_EmptyWithoutFrame no longer hides art drawn under it.");
+        Assert.True(Covers(backing, 4d / 60), "T_Borders_EmptyWithoutFrame no longer hides texture drawn under it.");
     }
 
     [Fact]
@@ -307,7 +307,7 @@ public sealed class ChromePixelTests
 
         Assert.All(blessings, blessing =>
         {
-            var allocated = Read.Chrome.BlessingArt(blessing.Icon, null);
+            var allocated = Read.Chrome.BlessingTexture(blessing.Icon, null);
 
             Assert.NotNull(allocated);
             Assert.True(File.Exists(Texture(allocated)), $"{Texture(allocated)} is not there.");

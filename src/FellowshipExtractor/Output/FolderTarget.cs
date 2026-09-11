@@ -31,14 +31,14 @@ public sealed class FolderTarget(string output, string build) : IExportTarget
             JsonSerializer.Serialize(settings, ExportLayout.SettingsJson),
             cancellationToken);
 
-    public async Task WriteImageAsync(string name, byte[] png, CancellationToken cancellationToken)
+    public async Task WriteImageAsync(string name, byte[] content, CancellationToken cancellationToken)
     {
-        if (_images.Repeats(name, png, out _)) return;
+        if (_images.Repeats(name, content, out _)) return;
 
-        var ui = Path.Combine(output, ExportLayout.UiFolder);
-        Directory.CreateDirectory(ui);
+        var image = Path.Combine(output, ExportLayout.UiFolder, name);
+        Directory.CreateDirectory(Path.GetDirectoryName(image)!);
 
-        await File.WriteAllBytesAsync(Path.Combine(ui, name), png, cancellationToken);
+        await File.WriteAllBytesAsync(image, content, cancellationToken);
     }
 
     public async ValueTask DisposeAsync()

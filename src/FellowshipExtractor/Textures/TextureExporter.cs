@@ -7,7 +7,7 @@ using SixLabors.ImageSharp.PixelFormats;
 namespace FellowshipExtractor.Textures;
 
 public readonly record struct TextureBytes(
-    byte[]? Content, string? Extension, int Width, int Height, string? PixelFormat, string? Error)
+    byte[]? Content, int Width, int Height, string? PixelFormat, string? Error)
 {
     public bool HasContent => Content is not null;
 }
@@ -23,23 +23,23 @@ public static class TextureExporter
             var decoded = texture.Decode(ETexturePlatform.DesktopMobile);
             if (decoded is null)
             {
-                return new TextureBytes(null, null, 0, 0, pixelFormat, "decoder returned nothing");
+                return new TextureBytes(null, 0, 0, pixelFormat, "decoder returned nothing");
             }
 
-            var bytes = decoded.Encode(format, saveHdrAsHdr: false, out var extension);
+            var bytes = decoded.Encode(format, saveHdrAsHdr: false, out _);
             if (bytes is null or { Length: 0 })
             {
                 return new TextureBytes(
-                    null, null, decoded.Width, decoded.Height, pixelFormat, "encoder produced no bytes");
+                    null, decoded.Width, decoded.Height, pixelFormat, "encoder produced no bytes");
             }
 
             if (discardAlpha) bytes = Opaque(bytes);
 
-            return new TextureBytes(bytes, extension, decoded.Width, decoded.Height, pixelFormat, null);
+            return new TextureBytes(bytes, decoded.Width, decoded.Height, pixelFormat, null);
         }
         catch (Exception ex)
         {
-            return new TextureBytes(null, null, 0, 0, pixelFormat, $"{ex.GetType().Name}: {ex.Message}");
+            return new TextureBytes(null, 0, 0, pixelFormat, $"{ex.GetType().Name}: {ex.Message}");
         }
     }
 

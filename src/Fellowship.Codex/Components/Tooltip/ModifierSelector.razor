@@ -37,7 +37,7 @@
                                     @onclick="() => OnPick.InvokeAsync(mine.Candidate)">
                                 @if (mine.Document is { } document)
                                 {
-                                    <span class="cx-sel-art"><Art Entity="document" /></span>
+                                    <span class="cx-sel-texture"><Texture Entity="document" /></span>
                                 }
                                 <span class="cx-sel-name" style="@mine.Tone">@mine.Label</span>
                                 <span class="cx-sel-value">@mine.Value</span>

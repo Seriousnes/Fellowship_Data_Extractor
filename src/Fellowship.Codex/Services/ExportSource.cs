@@ -51,7 +51,7 @@ public static class ExportReader
 
     public static string Data(string name) => $"{DataFolder}/{name}";
 
-    public static string Data(string build, string name) => $"{ExportFolders.Name(build)}/{Data(name)}";
+    public static string Data(string build, string name) => Data($"{ExportFolders.Name(build)}/{name}");
 
     public static InvalidOperationException Missing(string name) =>
         new($"The export carries no {name}. Run 'dotnet run --project src/FellowshipExtractor' to " +

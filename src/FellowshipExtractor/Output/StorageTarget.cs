@@ -9,7 +9,7 @@ namespace FellowshipExtractor.Output;
 
 public sealed class StorageTarget(IStorage storage, string build) : IExportTarget
 {
-    private const string CacheControl = "no-cache";
+    private const string CacheControl = "public, max-age=604800, stale-while-revalidate=2592000";
 
     private readonly WrittenNames _names = new();
 
@@ -74,8 +74,8 @@ public sealed class StorageTarget(IStorage storage, string build) : IExportTarge
         return Task.CompletedTask;
     }
 
-    public Task WriteImageAsync(string name, byte[] png, CancellationToken cancellationToken) =>
-        PublishAsync($"{ExportLayout.UiFolder}/{name}", png, "image/png", cancellationToken);
+    public Task WriteImageAsync(string name, byte[] content, CancellationToken cancellationToken) =>
+        PublishAsync($"{ExportLayout.UiFolder}/{name}", content, ExportLayout.ImageType, cancellationToken);
 
     public async ValueTask DisposeAsync()
     {

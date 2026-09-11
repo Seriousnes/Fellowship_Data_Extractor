@@ -31,7 +31,7 @@ public sealed class IconImages(
         if (name is null) return null;
         if (!renders.Contains(iconPath)) return name;
 
-        return ExportLayout.Variant(name, rarity is null ? rarities[^1].Rarity : Check(rarity));
+        return TextureSizes.Variant(name, rarity is null ? rarities[^1].Rarity : Check(rarity));
     }
 
     private string Check(string rarity)
@@ -62,7 +62,7 @@ public sealed class IconImages(
             return null;
         }
 
-        var name = $"{texture.Name}.{encoded.Extension}";
+        var name = texture.Name;
 
         if (!renders.Contains(iconPath))
         {
@@ -74,7 +74,7 @@ public sealed class IconImages(
 
         foreach (var entry in rarities)
         {
-            _pending.Add((ExportLayout.Variant(name, entry.Rarity), RarityImages.Compose(icon, entry.Colour)));
+            _pending.Add((TextureSizes.Variant(name, entry.Rarity), RarityImages.Compose(icon, entry.Colour)));
             Composed++;
         }
 

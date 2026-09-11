@@ -63,7 +63,7 @@ $plain-slot-well-chamfer: 16;
 
 $plate-brush-width: 148;
 $plate-brush-height: 188;
-$plate-art-share: 45%;
+$plate-texture-share: 45%;
 
 $node-brush-width: 208;
 $node-brush-height: 240;
@@ -80,7 +80,7 @@ $node-well-bottom: 100% - $node-well-top;
 $node-well-shoulder: math.percentage(math.div($node-well-height, 4 * $node-brush-height));
 $node-well-upper: $node-well-top + $node-well-shoulder;
 $node-well-lower: $node-well-bottom - $node-well-shoulder;
-$node-art-share: math.percentage(math.div($node-well-height, $node-brush-width));
+$node-texture-share: math.percentage(math.div($node-well-height, $node-brush-width));
 
 @mixin blessing-crest {
   .fx-blessing-crest {
@@ -96,7 +96,7 @@ $node-art-share: math.percentage(math.div($node-well-height, $node-brush-width))
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: $plate-art-share;
+      width: $plate-texture-share;
       aspect-ratio: 1;
       object-fit: contain;
     }
@@ -130,7 +130,7 @@ $node-art-share: math.percentage(math.div($node-well-height, $node-brush-width))
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: $node-art-share;
+      width: $node-texture-share;
       aspect-ratio: 1;
       object-fit: contain;
     }

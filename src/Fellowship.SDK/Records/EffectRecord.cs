@@ -31,7 +31,7 @@ public sealed record EffectRecord : EntityRecord
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
 
     public RecordReference? NameBorrowedFrom { get; init; }
-    public RecordReference? ArtBorrowedFrom { get; init; }
+    public RecordReference? TextureBorrowedFrom { get; init; }
 
     public IReadOnlyList<Hero>? Heroes { get; init; }
 

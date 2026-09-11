@@ -350,7 +350,7 @@ public sealed class EntityResolver
         if (tag.Table.Equals(HeroNames.Table, StringComparison.OrdinalIgnoreCase) &&
             Heroes.ForTag(tag.Name) is { } hero)
         {
-            entity = WithHero(entity, hero);
+            entity = WithHero(entity, hero, icons);
         }
 
         entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
@@ -399,11 +399,11 @@ public sealed class EntityResolver
             ? ItemVariants.Expand(
                 entity, naming, Heroes, SetBonuses,
                 PropertyWalk.GetString(cdo, SetBonusKeyField),
-                DynamicArt(cdo, icons))
+                DynamicTextures(cdo, icons))
             : [entity];
     }
 
-    private HeroArt DynamicArt(UObject cdo, IconWriter? icons)
+    private HeroTextures DynamicTextures(UObject cdo, IconWriter? icons)
     {
         var mappingKey = PropertyWalk.GetString(cdo, VisualKeyField);
         var slot = SlotNames.ByOrdinal(PropertyWalk.AsOrdinal(PropertyWalk.Get(cdo, SlotOrdinalField)?.GenericValue) ?? 0);
@@ -537,7 +537,7 @@ public sealed class EntityResolver
     private static string? IconName(string? iconPath, IconWriter? icons, string? rarity = null) =>
         iconPath is null ? null : icons?.Invoke(iconPath, rarity);
 
-    private IReadOnlyDictionary<string, string>? ArtByRarity(string? iconPath, IconWriter? icons)
+    private IReadOnlyDictionary<string, string>? TextureByRarity(string? iconPath, IconWriter? icons)
     {
         if (iconPath is null || icons is null || !Collections.Renders.Contains(iconPath)) return null;
 
@@ -729,7 +729,7 @@ public sealed class EntityResolver
         MinimumHeroRank = dungeon.MinimumHeroRank,
     };
 
-    private Entity WithHero(Entity entity, HeroProfile hero)
+    private Entity WithHero(Entity entity, HeroProfile hero, IconWriter? icons)
     {
         var prose = HeroText.For(hero.Codename);
 
@@ -742,6 +742,7 @@ public sealed class EntityResolver
             Biography = prose?.Biography,
             Playstyle = prose?.Playstyle,
             SpiritAbility = prose?.SpiritAbility,
+            Icon = entity.Icon ?? IconName(hero.PortraitPath, icons),
         };
     }
 
@@ -797,7 +798,7 @@ public sealed class EntityResolver
 
     private Entity WithFixedItem(Entity entity, HeroItem item, IconWriter? icons)
     {
-        var art = entity.Icon is null ? item.IconPath : null;
+        var texture = entity.Icon is null ? item.IconPath : null;
 
         return entity with
         {
@@ -809,8 +810,8 @@ public sealed class EntityResolver
             UniqueEquipped = item.UniqueEquipped ? true : null,
             Rarities = entity.Rarities ?? (item.Rarity is { } rarity ? [rarity] : null),
             Heroes = Empty([.. item.Heroes.Select(hero => Heroes.Shipped(hero) ?? hero)]),
-            Icon = entity.Icon ?? IconName(art, icons, item.Rarity),
-            IconByRarity = entity.IconByRarity ?? ArtByRarity(art, icons),
+            Icon = entity.Icon ?? IconName(texture, icons, item.Rarity),
+            IconByRarity = entity.IconByRarity ?? TextureByRarity(texture, icons),
         };
     }
 

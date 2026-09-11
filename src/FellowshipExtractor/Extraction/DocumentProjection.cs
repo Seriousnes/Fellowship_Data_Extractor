@@ -134,7 +134,7 @@ public static class DocumentProjection
             Generates = Generated(entity),
             Talents = entity.Talents,
             NameBorrowedFrom = references.At(entity.NameInheritedFrom),
-            ArtBorrowedFrom = references.At(entity.IconInheritedFrom),
+            TextureBorrowedFrom = references.At(entity.IconInheritedFrom),
             Heroes = Owning(entity),
             Owner = references.At(entity.Owner),
             AppliedBy = references.At(entity.AppliedBy),
@@ -197,6 +197,7 @@ public static class DocumentProjection
             Biography = entity.Biography,
             Playstyle = entity.Playstyle,
             SpiritAbility = entity.SpiritAbility,
+            Portrait = entity.Icon,
         },
 
         EntityType.Mount => new MountDocument

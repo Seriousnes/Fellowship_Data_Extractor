@@ -79,7 +79,7 @@ public static class RecordProjection
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, tags),
             Detail = Lines(document.Detail, view, tokens, tags),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             Category = document.Category,
             CastTime = document.CastTime,
             ChannelTime = document.ChannelTime,
@@ -115,7 +115,7 @@ public static class RecordProjection
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, []),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             Placeholders = Tokens(tokens, [], view),
             ScalesOff = Scaling(document.ScalesOff, view),
             MaxRank = document.MaxRank,
@@ -132,7 +132,7 @@ public static class RecordProjection
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, [], []),
             Acquire = document.Acquire,
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
         };
 
     public static CreatureRecord From(CreatureDocument document, ICodexViewService view, string origin) => new()
@@ -140,7 +140,7 @@ public static class RecordProjection
         Type = EntityType.Creature,
         Id = document.Id,
         Name = PublicTypes.NameOf(document),
-        Icon = Art(document.Icon, view),
+        Icon = Texture(document.Icon, view),
         Rank = document.Rank,
         Health = document.Health,
         Armor = document.Armor,
@@ -164,7 +164,7 @@ public static class RecordProjection
         Name = PublicTypes.NameOf(document),
         Rarity = view.Rarity(document),
         Description = view.PlainText(document.Description, [], []),
-        Icon = Art(document.Icon, view),
+        Icon = Texture(document.Icon, view),
     };
 
     public static DungeonRecord From(DungeonDocument document, ICodexViewService view, string origin) => new()
@@ -173,8 +173,8 @@ public static class RecordProjection
         Id = document.Id,
         Name = PublicTypes.NameOf(document),
         Description = view.PlainText(document.Description, [], []),
-        Icon = Art(document.Icon, view),
-        Background = Art(document.Background, view),
+        Icon = Texture(document.Icon, view),
+        Background = Texture(document.Background, view),
         MaxPlayers = document.MaxPlayers,
         QualifierTime = document.QualifierTime,
         RequiredScore = document.RequiredScore,
@@ -194,7 +194,7 @@ public static class RecordProjection
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, tags),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             Duration = document.Duration,
             Period = document.Period,
             Cooldown = document.Cooldown,
@@ -210,7 +210,7 @@ public static class RecordProjection
             Modifiers = Some(document.Modifiers),
             Talents = document.Talents,
             NameBorrowedFrom = Reference(document.NameBorrowedFrom, view, origin),
-            ArtBorrowedFrom = Reference(document.ArtBorrowedFrom, view, origin),
+            TextureBorrowedFrom = Reference(document.TextureBorrowedFrom, view, origin),
             Heroes = Some(document.Heroes),
             Owner = Reference(document.Owner, view, origin),
             AppliedBy = Reference(document.AppliedBy, view, origin),
@@ -227,7 +227,7 @@ public static class RecordProjection
         GemType = document.Type,
         Power = document.Power,
         Rarity = view.Rarity(document),
-        Icon = Art(document.Icon, view),
+        Icon = Texture(document.Icon, view),
         GemOverflow = Overflow(document, view),
     };
 
@@ -246,7 +246,7 @@ public static class RecordProjection
             Replaces = Reference(document.Replaces, view, origin),
             Grants = References(document.Grants, view, origin),
             Description = view.PlainText(document.Description, tokens, []),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             Placeholders = Tokens(tokens, [], view),
             ScalesOff = Scaling(document.ScalesOff, view),
             GemOverflow = Overflow(document, view),
@@ -264,7 +264,7 @@ public static class RecordProjection
             Name = PublicTypes.NameOf(document),
             GemType = document.Type,
             Attribute = view.Store.StatName(document.Attribute),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             OverflowDescription = view.PlainText(document.OverflowDescription, tokens, []),
             OverflowPlaceholders = Tokens(tokens, [], view),
         };
@@ -281,6 +281,7 @@ public static class RecordProjection
         Biography = document.Biography,
         Playstyle = document.Playstyle,
         SpiritAbility = document.SpiritAbility,
+        Portrait = Texture(document.Portrait, view),
     };
 
     public static ItemRecord From(ItemDocument document, ICodexViewService view, string origin) => new()
@@ -303,7 +304,7 @@ public static class RecordProjection
         Description = view.PlainText(document.Description, [], []),
         Acquire = document.Acquire,
         TitleText = document.TitleText,
-        Icon = Art(document.Icon, view),
+        Icon = Texture(document.Icon, view),
         IconByRarity = IconsByRarity(document, view),
         Grants = Reference(document.Grants, view, origin),
         LegendaryStats = Rolls(document.LegendaryStats, view),
@@ -322,7 +323,7 @@ public static class RecordProjection
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, []),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             Cooldown = document.Cooldown,
             Placeholders = Tokens(tokens, [], view),
             ScalesOff = Scaling(document.ScalesOff, view),
@@ -346,7 +347,7 @@ public static class RecordProjection
         Generates = Generated(document.Generates),
         Name = PublicTypes.NameOf(document),
         Description = view.PlainText(document.Description, [], []),
-        Icon = Art(document.Icon, view),
+        Icon = Texture(document.Icon, view),
         Kind = document.Kind,
         MinimumHeroRank = document.MinimumHeroRank,
     };
@@ -358,7 +359,7 @@ public static class RecordProjection
         Name = PublicTypes.NameOf(document),
         Description = view.PlainText(document.Description, [], []),
         Lore = document.Lore,
-        Icon = Art(document.Icon, view),
+        Icon = Texture(document.Icon, view),
     };
 
     public static MountPowerRecord From(MountPowerDocument document, ICodexViewService view, string origin) => new()
@@ -368,7 +369,7 @@ public static class RecordProjection
         Generates = Generated(document.Generates),
         Name = PublicTypes.NameOf(document),
         Description = view.PlainText(document.Description, [], []),
-        Icon = Art(document.Icon, view),
+        Icon = Texture(document.Icon, view),
     };
 
     public static RelicPowerRecord From(RelicPowerDocument document, ICodexViewService view, string origin)
@@ -382,7 +383,7 @@ public static class RecordProjection
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, [], tags),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             CastTime = document.CastTime,
             Cooldown = document.Cooldown,
             Duration = document.Duration,
@@ -400,7 +401,7 @@ public static class RecordProjection
         Name = PublicTypes.NameOf(document),
         Pieces = document.Pieces,
         Description = view.PlainText(document.Description, [], []),
-        Icon = Art(document.Icon, view),
+        Icon = Texture(document.Icon, view),
         Power = Reference(document.Power, view, origin),
         AllowedRoles = Some(document.AllowedRoles),
         AllowedAttributes = Some(document.AllowedAttributes),
@@ -414,7 +415,7 @@ public static class RecordProjection
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, [], []),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             Cooldown = document.Cooldown,
             ScalesOff = Scaling(document.ScalesOff, view),
         };
@@ -430,7 +431,7 @@ public static class RecordProjection
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, []),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             Placeholders = Tokens(tokens, [], view),
             ScalesOff = Scaling(document.ScalesOff, view),
             Cooldown = document.Cooldown,
@@ -464,7 +465,7 @@ public static class RecordProjection
         RandomChance = document.RandomChance,
         Power = Reference(document.Power, view, origin),
         Description = view.PlainText(document.Description, [], []),
-        Icon = Art(document.Icon, view),
+        Icon = Texture(document.Icon, view),
         RankRuns = Runs(document.RankRuns),
     };
 
@@ -480,7 +481,7 @@ public static class RecordProjection
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, []),
             DescriptionsByHero = Readings(document.DescriptionsByHero, view, tokens),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             Cooldown = document.Cooldown,
             Duration = document.Duration,
             Placeholders = Tokens(tokens, [], view),
@@ -500,7 +501,7 @@ public static class RecordProjection
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, tags),
-            Icon = Art(document.Icon, view),
+            Icon = Texture(document.Icon, view),
             CastTime = document.CastTime,
             ChannelTime = document.ChannelTime,
             ChannelTick = document.ChannelTick,
@@ -516,7 +517,7 @@ public static class RecordProjection
         };
     }
 
-    private static string? Art(string? icon, ICodexViewService view) => icon is null ? null : view.Icon(icon);
+    private static string? Texture(string? icon, ICodexViewService view) => icon is null ? null : view.Icon(icon);
 
     private static IReadOnlyList<T>? Some<T>(IReadOnlyList<T>? values) => values is { Count: > 0 } list ? list : null;
 
@@ -608,11 +609,11 @@ public static class RecordProjection
     private static IReadOnlyDictionary<string, string>? IconsByRarity(
         ItemDocument document, ICodexViewService view)
     {
-        if (document.IconByRarity is not { Count: > 0 } art) return null;
+        if (document.IconByRarity is not { Count: > 0 } texture) return null;
 
         var printed = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        foreach (var (rarity, icon) in art)
+        foreach (var (rarity, icon) in texture)
         {
             var known = view.Store.Settings.Rarities.FirstOrDefault(entry =>
                 string.Equals(entry.Name, rarity, StringComparison.OrdinalIgnoreCase));
@@ -632,7 +633,7 @@ public static class RecordProjection
         return new GemOverflowRecord(view.PlainText(description, tokens, [])!)
         {
             Placeholders = Tokens(tokens, [], view),
-            Icon = Art(gem.Icon, view),
+            Icon = Texture(gem.Icon, view),
         };
     }
 

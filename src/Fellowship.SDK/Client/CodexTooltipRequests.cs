@@ -35,9 +35,9 @@ public sealed record AbilityTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Ability;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -72,9 +72,9 @@ public sealed record BlessingTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Blessing;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -100,9 +100,9 @@ public sealed record CompanionPetTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.CompanionPet;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -120,9 +120,9 @@ public sealed record CreatureTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Creature;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -144,9 +144,9 @@ public sealed record CurrencyTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Currency;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -168,9 +168,9 @@ public sealed record DungeonTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Dungeon;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -188,9 +188,9 @@ public sealed record EffectTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Effect;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -217,9 +217,9 @@ public sealed record GemTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Gem;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -241,9 +241,9 @@ public sealed record GemTraitTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.GemTrait;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -261,9 +261,9 @@ public sealed record ItemTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Item;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -357,9 +357,9 @@ public sealed record LegendaryPowerTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.LegendaryPower;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -377,9 +377,9 @@ public sealed record MountTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Mount;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -397,9 +397,9 @@ public sealed record RelicPowerTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.RelicPower;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -426,9 +426,9 @@ public sealed record SetBonusTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.SetBonus;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -446,9 +446,9 @@ public sealed record SetBonusPowerTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.SetBonusPower;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -466,9 +466,9 @@ public sealed record TalentTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Talent;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -486,9 +486,9 @@ public sealed record TraitTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Trait;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -510,9 +510,9 @@ public sealed record TraitPowerTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.TraitPower;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>
@@ -530,9 +530,9 @@ public sealed record WeaponPowerTooltipRequest : ITooltipRequest
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.WeaponPower;
 
-    /// <summary>Draw the entity's art beside the card. A card that draws its art inside ignores it.</summary>
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
-        "True when the entity's art is to be drawn beside the card. A card that draws its art inside ignores it.")]
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
     /// <summary>

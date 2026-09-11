@@ -49,19 +49,19 @@ public class StorageExportSourceTests
     }
 
     [Fact]
-    public async Task A_prefix_carrying_the_pair_at_another_depth_names_the_folder_and_what_it_holds()
+    public async Task A_pair_under_data_naming_no_build_names_the_folder_and_what_it_holds()
     {
         var source = Reading(new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            [$"{ExportFolders.Name("1001")}/{ExportReader.EntitiesName}"] = Newer,
-            [$"{ExportFolders.Name("1001")}/{ExportReader.SettingsName}"] = Settings,
+            [ExportReader.Data(ExportReader.EntitiesName)] = Newer,
+            [ExportReader.Data(ExportReader.SettingsName)] = Settings,
         });
 
         var failure = await Assert.ThrowsAsync<InvalidOperationException>(
             () => source.LoadAsync(Xunit.TestContext.Current.CancellationToken));
 
         Assert.Contains(
-            $"{ExportFolders.Name("1001")} holds {ExportReader.EntitiesName}",
+            $"{ExportReader.DataFolder} holds {ExportReader.EntitiesName}",
             failure.Message,
             StringComparison.Ordinal);
     }

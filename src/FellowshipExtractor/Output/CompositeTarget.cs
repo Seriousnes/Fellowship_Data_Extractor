@@ -14,9 +14,9 @@ public sealed class CompositeTarget(IReadOnlyList<IExportTarget> targets) : IExp
         foreach (var target in targets) await target.WriteSettingsAsync(settings, cancellationToken);
     }
 
-    public async Task WriteImageAsync(string name, byte[] png, CancellationToken cancellationToken)
+    public async Task WriteImageAsync(string name, byte[] content, CancellationToken cancellationToken)
     {
-        foreach (var target in targets) await target.WriteImageAsync(name, png, cancellationToken);
+        foreach (var target in targets) await target.WriteImageAsync(name, content, cancellationToken);
     }
 
     public async ValueTask DisposeAsync()

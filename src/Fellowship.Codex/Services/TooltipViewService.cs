@@ -19,7 +19,7 @@ public interface ITooltipViewService
 
     string Variables(RarityEntry? rarity);
 
-    string? Art(EntityDocument document, RarityEntry? rarity);
+    string? Texture(EntityDocument document, RarityEntry? rarity);
 
     string? Ornament(RarityEntry? rarity);
 
@@ -109,15 +109,15 @@ public sealed class TooltipViewService(
             ";";
     }
 
-    public string? Art(EntityDocument document, RarityEntry? rarity)
+    public string? Texture(EntityDocument document, RarityEntry? rarity)
     {
         var icon = rarity is not null &&
                    document is ItemDocument { IconByRarity: { } byRarity } &&
-                   byRarity.GetValueOrDefault(rarity.Name) is { } art
-            ? art
+                   byRarity.GetValueOrDefault(rarity.Name) is { } texture
+            ? texture
             : DocumentFields.Text(document, nameof(ItemDocument.Icon));
 
-        return chrome.Art(icon);
+        return chrome.Texture(icon);
     }
 
     public string? Ornament(RarityEntry? rarity) => rarity is null ? null : chrome.Ornament(rarity.Name);

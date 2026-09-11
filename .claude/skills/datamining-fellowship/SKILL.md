@@ -34,7 +34,7 @@ tables (`ECRGemTier`, `ECRGemSocketTier`, `ECRHeroItemType`) rather than trusted
 `[/Script/fellowship.CRItemStaticDataSubsystem]` names `DT_SlotWeights`, `DT_AttributeProperties`,
 `DT_HeroItems` and the drop curves. `DynamicLootSystem.ini` names the loot plugin's seven assets.
 
-The extractor ships no inspection commands: the only command is `usmap`, and a bare run writes the
+The extractor has no inspection commands: the only command is `usmap`, and a bare run writes the
 export. Looking at a raw asset, a locres table, the CSV tuning tables or the Blueprint function index
 means writing the reader that needs them, which is a standing approval under `CLAUDE.md`. The CSV
 tables are already parsed in memory by `CsvTables.ReadTags` and `CsvTables.ReadConstants`.
@@ -101,7 +101,7 @@ through the struct that holds it, never through the enum whose name reads closes
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
-ships three of eight fields per block; the rest are real values: `PrimaryWeight` 0.25,
+has three of eight fields per block; the rest are real values: `PrimaryWeight` 0.25,
 `SecondaryWeight` 0.3, `StaminaWeight` 0.5, `PrimaryMultiplier` 0.7, `WeightMultiplier` 0.15,
 `StaminaMultiplierItemLevelThreshold` 315, and `SecondaryMultiplier` 0.6 on the base block, 1.5 on the
 fixed block. They live in `StatRows` because no shipped file carries them. `SecondaryBaseMultiplier` is

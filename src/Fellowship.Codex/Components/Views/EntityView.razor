@@ -9,7 +9,7 @@
     <Ranks />
     <Overflow />
     <BorrowedName Href="@(NameSource?.Href)" Tip="@(NameSource?.Tip)" Name="@(NameSource?.Name)" />
-    <BorrowedArt Href="@(ArtSource?.Href)" Tip="@(ArtSource?.Tip)" Name="@(ArtSource?.Name)" />
+    <BorrowedTexture Href="@(TextureSource?.Href)" Tip="@(TextureSource?.Tip)" Name="@(TextureSource?.Name)" />
     @ChildContent
     @if (ByVersion.Count > 0)
     {
@@ -41,7 +41,7 @@
 
     private (string Href, TooltipLink? Tip, string Name)? NameSource;
 
-    private (string Href, TooltipLink? Tip, string Name)? ArtSource;
+    private (string Href, TooltipLink? Tip, string Name)? TextureSource;
 
     private const string SchoolFacet = "school";
 
@@ -57,7 +57,7 @@
         Schools = [.. schools.Select(school => (school, Filter(school)))];
 
         NameSource = Borrowed((Entity as EffectDocument)?.NameBorrowedFrom);
-        ArtSource = Borrowed((Entity as EffectDocument)?.ArtBorrowedFrom);
+        TextureSource = Borrowed((Entity as EffectDocument)?.TextureBorrowedFrom);
     }
 
     private (string Href, TooltipLink? Tip, string Name)? Borrowed(EntityReference? source) =>

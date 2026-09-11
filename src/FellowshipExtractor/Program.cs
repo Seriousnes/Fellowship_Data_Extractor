@@ -69,9 +69,9 @@ switch (command)
         if (bucket is not null)
             destinations.Add(new StorageTarget(S3Storage.FromBucket(bucket), Build()));
 
-        await using (IExportTarget target = destinations.Count == 1
+        await using (IExportTarget target = new VariantTarget(destinations.Count == 1
             ? destinations[0]
-            : new CompositeTarget(destinations))
+            : new CompositeTarget(destinations)))
         {
             await ExportRun.RunAsync(options, target);
         }

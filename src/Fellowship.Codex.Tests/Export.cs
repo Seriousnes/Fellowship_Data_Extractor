@@ -53,7 +53,7 @@ public sealed class Export
 
         var substitutions = new PlaceholderService(Store, richText);
 
-        var chrome = Chrome = new ChromeAssetService(new StorageArtSource(new MemoryStorage()), Store, tokens);
+        var chrome = Chrome = new ChromeAssetService(new StorageTextureSource(new MemoryStorage()), Store, tokens);
 
         var codex = new CodexService(Store, tokens);
 

@@ -56,11 +56,11 @@ public class ChangedTests
     [Fact]
     public void A_changed_string_reads_both_sides_unquoted()
     {
-        var older = JsonNode.Parse("""{"icon":"T_Wrists_A_Crit.png"}""");
-        var newer = JsonNode.Parse("""{"icon":"T_Wrists_A_Crit_02.png"}""");
+        var older = JsonNode.Parse("""{"icon":"T_Wrists_A_Crit"}""");
+        var newer = JsonNode.Parse("""{"icon":"T_Wrists_A_Crit_02"}""");
 
         Assert.Equal(
-            "icon: T_Wrists_A_Crit.png -> T_Wrists_A_Crit_02.png",
+            "icon: T_Wrists_A_Crit -> T_Wrists_A_Crit_02",
             Reads(Assert.Single(Changed.Between(older, newer))));
     }
 

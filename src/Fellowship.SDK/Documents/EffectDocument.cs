@@ -31,7 +31,7 @@ public sealed class EffectDocument : EntityDocument
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
 
     public EntityReference? NameBorrowedFrom { get; init; }
-    public EntityReference? ArtBorrowedFrom { get; init; }
+    public EntityReference? TextureBorrowedFrom { get; init; }
 
     public IReadOnlyList<Hero>? Heroes { get; init; }
 

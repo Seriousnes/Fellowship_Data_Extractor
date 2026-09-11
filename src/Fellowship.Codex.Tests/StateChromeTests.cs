@@ -22,11 +22,11 @@ public class StateChromeTests(Export export)
         {
             var twin = blessing.Icon!.Replace("Unallocated", "Allocated", StringComparison.Ordinal);
 
-            Assert.Equal(export.Chrome.Art(twin), export.Chrome.BlessingArt(blessing.Icon, null));
+            Assert.Equal(export.Chrome.Texture(twin), export.Chrome.BlessingTexture(blessing.Icon, null));
         });
 
-        Assert.Null(export.Chrome.BlessingArt("Berserker16.png", null));
-        Assert.Null(export.Chrome.BlessingArt(null, null));
+        Assert.Null(export.Chrome.BlessingTexture("Berserker16", null));
+        Assert.Null(export.Chrome.BlessingTexture(null, null));
     }
 
     [Fact]

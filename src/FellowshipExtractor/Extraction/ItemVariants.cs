@@ -2,7 +2,7 @@ namespace FellowshipExtractor.Extraction;
 
 public readonly record struct RarityImage(string Rarity, string Image);
 
-public delegate IReadOnlyList<RarityImage> HeroArt(string heroCodename);
+public delegate IReadOnlyList<RarityImage> HeroTextures(string heroCodename);
 
 public static class ItemVariants
 {
@@ -12,7 +12,7 @@ public static class ItemVariants
         HeroNames heroes,
         ItemSetBonuses setBonuses,
         string? setBonusMappingKey,
-        HeroArt art)
+        HeroTextures texture)
     {
         var declared = item.Variants is { Count: > 0 } variants ? variants : null;
         var eligible = declared?.Select(variant => variant.Hero) ?? heroes.Codenames;
@@ -42,7 +42,7 @@ public static class ItemVariants
                 Stats = stats,
                 Grants = variant?.Grants ?? item.Grants,
                 GrantsId = variant?.GrantsId ?? item.GrantsId,
-                Art = art(codename),
+                Texture = texture(codename),
             });
         }
 
@@ -64,32 +64,32 @@ public static class ItemVariants
                     Stats = card.Stats,
                     Grants = card.Grants,
                     GrantsId = card.GrantsId,
-                    Icon = Best(card.Art, item.Rarities) ?? item.Icon,
-                    IconByRarity = Spread(card.Art) ?? item.IconByRarity,
+                    Icon = Best(card.Texture, item.Rarities) ?? item.Icon,
+                    IconByRarity = Spread(card.Texture) ?? item.IconByRarity,
                     Variants = null,
                 }),
         ];
     }
 
-    private static string? Best(IReadOnlyList<RarityImage> art, IReadOnlyList<string>? dropsAt)
+    private static string? Best(IReadOnlyList<RarityImage> texture, IReadOnlyList<string>? dropsAt)
     {
-        if (art.Count == 0) return null;
-        if (dropsAt is not { Count: > 0 }) return art[^1].Image;
+        if (texture.Count == 0) return null;
+        if (dropsAt is not { Count: > 0 }) return texture[^1].Image;
 
-        for (var at = art.Count - 1; at >= 0; at--)
+        for (var at = texture.Count - 1; at >= 0; at--)
         {
-            if (dropsAt.Contains(art[at].Rarity, StringComparer.OrdinalIgnoreCase)) return art[at].Image;
+            if (dropsAt.Contains(texture[at].Rarity, StringComparer.OrdinalIgnoreCase)) return texture[at].Image;
         }
 
-        return art[^1].Image;
+        return texture[^1].Image;
     }
 
-    private static IReadOnlyDictionary<string, string>? Spread(IReadOnlyList<RarityImage> art)
+    private static IReadOnlyDictionary<string, string>? Spread(IReadOnlyList<RarityImage> texture)
     {
-        if (art.Count == 0) return null;
+        if (texture.Count == 0) return null;
 
         var spread = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var entry in art) spread[entry.Rarity] = entry.Image;
+        foreach (var entry in texture) spread[entry.Rarity] = entry.Image;
         return spread;
     }
 
@@ -124,6 +124,6 @@ public static class ItemVariants
         public IReadOnlyList<StatSlot>? Stats { get; init; }
         public Entity? Grants { get; init; }
         public int? GrantsId { get; init; }
-        public required IReadOnlyList<RarityImage> Art { get; init; }
+        public required IReadOnlyList<RarityImage> Texture { get; init; }
     }
 }

@@ -85,7 +85,7 @@
                                       <li class="cx-menu-row">
                                           <a href="@under.Href"
                                              style="@(under.Colour is null ? null : $"color:{under.Colour}")">@under.Label</a>
-                                          @Flyout(under, Keyed(link.Label))
+                                          @Flyout(under, $"{group}-{Keyed(link.Label)}")
                                       </li>
                                   }
                               </ul>

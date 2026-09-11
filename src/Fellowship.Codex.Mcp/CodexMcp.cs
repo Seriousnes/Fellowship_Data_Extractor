@@ -22,7 +22,8 @@ public static class CodexMcp
         "under each slug. Names match by prefix, not by substring. A record's damage and healing " +
         "coefficients read as text such as '180% of Intellect' rather than a number, because a record " +
         "is not parameterised by hero, item level or rarity. A record's resource paths are the codex " +
-        "API's own, rooted at /api, and its art fields name an image file rather than address one.";
+        "API's own, rooted at /api, and its texture fields carry a texture name, which addresses a file at " +
+        "ui/<name>_<size>.webp for a size of small, medium, large or full.";
 
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
@@ -34,7 +35,7 @@ public static class CodexMcp
     public static IMcpServerBuilder AddCodexMcp(this IHostApplicationBuilder builder, string export)
     {
         builder.Services.AddSingleton<IExportSource>(new FolderExportSource(export));
-        builder.Services.AddSingleton<IArtSource, NamedArtSource>();
+        builder.Services.AddSingleton<ITextureSource, NamedTextureSource>();
         builder.Services.AddCodexServices();
 
         return builder.Services

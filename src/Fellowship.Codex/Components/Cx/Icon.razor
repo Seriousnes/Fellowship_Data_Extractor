@@ -1,9 +1,9 @@
 @inject ICodexViewService Ui
 
 <figure class="fx-slot @(Rarity is null ? "plain" : null)" style="@Chrome">
-    @if (Src is { } art)
+    @if (Src is { } texture)
     {
-        <img alt="" loading="@(Lazy ? "lazy" : "eager")" src="@art" />
+        <img alt="" loading="@(Lazy ? "lazy" : "eager")" src="@texture" />
     }
 </figure>
 

@@ -94,7 +94,7 @@ public sealed class CodexViewService(
     public IChromeAssetService Chrome => chrome;
 
     [return: NotNullIfNotNull(nameof(icon))]
-    public string? Icon(string? icon) => chrome.Art(icon);
+    public string? Icon(string? icon) => chrome.Texture(icon);
 
     public string? RarityName(EntityDocument document) => Tier(document) is { } tier ? Named(tier) : null;
 

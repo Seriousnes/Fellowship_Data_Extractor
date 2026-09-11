@@ -175,7 +175,6 @@ public static class ChromeTextures
                 continue;
             }
 
-            var image = $"{name}.{encoded.Extension}";
             var content = encoded.Content!;
 
             if (name.Equals(GoldBand.Texture, StringComparison.Ordinal))
@@ -184,7 +183,7 @@ public static class ChromeTextures
                 content = GoldBand.Crop(canvas);
             }
 
-            await target.WriteImageAsync(image, content, cancellationToken);
+            await target.WriteImageAsync(name, content, cancellationToken);
             written++;
 
             if (RowTinted.TryGetValue(name, out var row))
@@ -192,7 +191,7 @@ public static class ChromeTextures
                 using var glyph = Image.Load<Rgba32>(content);
 
                 await target.WriteImageAsync(
-                    ExportLayout.Variant(image, Variable(row)),
+                    TextureSizes.Variant(name, Variable(row)),
                     RarityImages.Tint(glyph, Colour(settings, row)),
                     cancellationToken);
 
@@ -206,7 +205,7 @@ public static class ChromeTextures
             foreach (var entry in ladder)
             {
                 await target.WriteImageAsync(
-                    ExportLayout.Variant(image, entry.Rarity),
+                    TextureSizes.Variant(name, entry.Rarity),
                     RarityImages.Tint(mask, entry.Colour),
                     cancellationToken);
 
