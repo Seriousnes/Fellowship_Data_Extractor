@@ -4,6 +4,8 @@ public static class Project
 {
     public static string Folder { get; } = Find();
 
+    public static string Repository { get; } = Path.GetFullPath(Path.Combine(Folder, "..", ".."));
+
     private static string Find()
     {
         for (var here = new DirectoryInfo(AppContext.BaseDirectory); here is not null; here = here.Parent)

@@ -22,9 +22,42 @@ env:
   TEXTURES: ui
   SOURCE: output/ui
   STAGE: texture-staging
+  EXPORTS: data
 
 jobs:
+  export:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BUCKET: ${{ secrets.S3_BUCKET }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish every export the checkout carries
+        run: |
+          published=0
+          for folder in output/export-*/; do
+            if [ ! -f "${folder}entities.jsonl" ] || [ ! -f "${folder}settings.json" ]; then continue; fi
+            build=$(basename "$folder")
+            aws s3 cp "${folder}entities.jsonl" "s3://$BUCKET/$EXPORTS/$build/entities.jsonl" \
+              --content-type application/x-ndjson --cache-control no-cache --only-show-errors
+            aws s3 cp "${folder}settings.json" "s3://$BUCKET/$EXPORTS/$build/settings.json" \
+              --content-type application/json --cache-control no-cache --only-show-errors
+            published=$((published + 1))
+            echo "Published $build to s3://$BUCKET/$EXPORTS/$build/."
+          done
+          if [ "$published" -eq 0 ]; then
+            echo "No output/export-* folder in the checkout carries both entities.jsonl and settings.json, which is the pair this job publishes." >&2
+            exit 1
+          fi
+          echo "Published $published export(s) to s3://$BUCKET/$EXPORTS/."
+
   deploy:
+    needs: export
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -156,8 +189,8 @@ jobs:
           fi
           cd "$SOURCE"
           find . -maxdepth 1 -type f -print0 | xargs -0 md5sum > "$RUNNER_TEMP/local.md5"
-          awk -v prefix="$TEXTURES" '
-            NR == FNR {
+          awk -v prefix="$TEXTURES" -v pub="$RUNNER_TEMP/published.tsv" '
+            FILENAME == pub {
               tag = $2
               gsub(/"/, "", tag)
               if (tag ~ /^[0-9a-f]{32}$/) published[$1] = tag
@@ -196,3 +229,14 @@ jobs:
               --content-type "$type" --cache-control no-cache --only-show-errors
           done
           echo "Published $(wc -l < "$RUNNER_TEMP/changed.txt") texture file(s) to s3://$BUCKET/$TEXTURES/."
+
+      - name: Confirm the bucket carries every texture
+        run: |
+          carried=$(find "$SOURCE" -maxdepth 1 -type f | wc -l)
+          stored=$(aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "$TEXTURES/" \
+            --query 'length(Contents || `[]`)' --output text | awk '{ total += $1 } END { print total + 0 }')
+          echo "The bucket carries $stored object(s) under $TEXTURES/, beside $carried file(s) in $SOURCE."
+          if [ "$stored" -lt "$carried" ]; then
+            echo "The bucket carries fewer objects under $TEXTURES/ than $SOURCE carries files, so a texture a page asks for is a 404." >&2
+            exit 1
+          fi
