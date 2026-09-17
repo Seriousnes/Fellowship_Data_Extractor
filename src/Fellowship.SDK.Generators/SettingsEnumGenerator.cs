@@ -37,7 +37,7 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor IllegalMember = new(
         "FSDK003",
         "The settings state a word that is not a legal C# identifier",
-        "{0} states \"{1}\" for {2}, which is not a legal C# identifier and cannot be an enum member",
+        "{0} states \"{1}\" for {2}, not a legal C# identifier",
         Category,
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);

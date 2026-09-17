@@ -14,8 +14,7 @@ public sealed class ResourcePools
 
     private const string Attribute = "CRHeroAttributeSet.MaxResources";
 
-    private const string States =
-        "the resource pool a hero fills, which is what a cost stated as a fraction of it is a fraction of";
+    private const string States = "the resource pool a hero fills";
 
     private readonly Dictionary<string, Dictionary<string, double>> _byHero;
 

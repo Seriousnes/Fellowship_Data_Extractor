@@ -1,4 +1,3 @@
-using Fellowship.SDK;
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
 

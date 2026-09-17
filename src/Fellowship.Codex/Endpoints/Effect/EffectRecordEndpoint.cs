@@ -1,8 +1,5 @@
 using System.ComponentModel;
 
-using Fellowship.SDK.Documents;
-using Fellowship.SDK.Records;
-
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
@@ -10,7 +7,7 @@ namespace Fellowship.Codex.Endpoints;
 
 public sealed record EffectRecordRequest
 {
-    [Description("The id to answer.")]
+    [Description("The id.")]
     public int Id { get; init; }
 }
 
@@ -19,7 +16,7 @@ public static class EffectRecordEndpoint
     public static RouteHandlerBuilder MapEffectRecord(this IEndpointRouteBuilder group) =>
         group.MapGet("/{id:int}", Handle)
             .WithName("GetEffect")
-            .WithSummary($"One {PublicTypes.Noun(EntityType.Effect)}'s record.")
+            .WithSummary($"Get {PublicTypes.Noun(EntityType.Effect)} by ID.")
             .Produces<EffectRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 

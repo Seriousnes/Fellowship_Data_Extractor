@@ -99,7 +99,7 @@ switch (command)
     {
         if (args.Length < 2)
         {
-            Console.Error.WriteLine("dump-all needs a destination folder, which it must not share with output/.");
+            Console.Error.WriteLine("dump-all needs a destination folder. That folder must not be output/.");
             return 2;
         }
 

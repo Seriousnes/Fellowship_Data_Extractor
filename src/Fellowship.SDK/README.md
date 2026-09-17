@@ -30,7 +30,7 @@ The package is published to GitHub Packages.
 ## Read the codex
 
 `CodexClient` takes an `HttpClient` and addresses codex.fellowshipanalyzer.com unless the
-`HttpClient` already carries a `BaseAddress`:
+`HttpClient` already has a `BaseAddress`:
 
 ```csharp
 using Fellowship.SDK;

@@ -422,8 +422,8 @@ public sealed class TooltipViewService(
         if (!file.Exists || file.Length == 0)
         {
             throw new InvalidOperationException(
-                $"{sheet} is missing from the web root, so the tooltip has no rules to carry. " +
-                $"Sass writes it from {source} on build, which pulls in {partial}.");
+                $"{sheet} is missing from the web root. Sass writes it from {source} on build. " +
+                $"That source pulls in {partial}.");
         }
 
         using var reading = new StreamReader(file.CreateReadStream());

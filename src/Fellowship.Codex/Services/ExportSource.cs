@@ -31,7 +31,7 @@ public sealed class ExportHistoryHolder
     {
         get => loaded ?? throw new InvalidOperationException(
             "The export history is not loaded yet. Program.cs awaits IExportSource.LoadAsync after " +
-            "builder.Build() and before app.Run(), so everything the store is built from reads a loaded one.");
+            "builder.Build() and before app.Run().");
         set => loaded = value;
     }
 }
@@ -57,7 +57,7 @@ public static class ExportReader
         new($"The export carries no {name}. Run 'dotnet run --project src/FellowshipExtractor' to " +
             "write it: with no destination it writes the output/export-<build> folder the codex and the " +
             "MCP server read, '--bucket <name>' fills an S3 bucket, and '--connection-string' fills an " +
-            "Azure Blob container, which is what the FellowshipExtractor.Publisher app host runs. The " +
+            "Azure Blob container. The FellowshipExtractor.Publisher app host runs that one. The " +
             "codex reads whichever of the two its own configuration names.");
 
     public static SettingsFile ReadSettings(string? json)
@@ -140,7 +140,7 @@ public static class ExportReader
         {
             throw new InvalidOperationException(
                 $"Line {number} of {EntitiesName} does not read as a document: {failure.Message} An " +
-                $"export written before a document carried the '{EntityDocuments.Discriminator}' it is read " +
+                $"export written before a document had the '{EntityDocuments.Discriminator}' it is read " +
                 "back as reads this way. Write it again with 'dotnet run --project " +
                 "src/FellowshipExtractor'.",
                 failure);

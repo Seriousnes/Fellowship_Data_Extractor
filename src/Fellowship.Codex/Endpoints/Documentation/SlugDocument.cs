@@ -1,7 +1,5 @@
 using System.Text.Json.Nodes;
 
-using Fellowship.SDK.Documents;
-
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 

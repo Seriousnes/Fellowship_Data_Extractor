@@ -49,7 +49,7 @@ public sealed class SectionHeadingRows
             PropertyWalk.GetString(colour, RowField) is not { } row)
         {
             throw new InvalidOperationException(
-                $"{widget}'s {element} carries no {ColorField}.{RowField}, so its section heading would print in " +
+                $"{widget}'s {element} has no {ColorField}.{RowField}, so its section heading would print in " +
                 "the plain body colour.");
         }
 

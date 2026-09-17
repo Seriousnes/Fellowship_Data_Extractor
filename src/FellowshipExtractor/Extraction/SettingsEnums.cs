@@ -1,5 +1,3 @@
-using FellowshipExtractor.Output;
-
 namespace FellowshipExtractor.Extraction;
 
 public static class SettingsEnums

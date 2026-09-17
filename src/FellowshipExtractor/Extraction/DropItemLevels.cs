@@ -38,8 +38,8 @@ public sealed class DropItemLevels
             f.Path.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase) &&
             Path.GetFileNameWithoutExtension(f.Path).Equals(Table, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException(
-                $"No {Table} package in the build. It is the only thing that states the item level a drop pays at " +
-                "a difficulty, so every tooltip would compute its stat magnitudes at a level nothing states.");
+                $"No {Table} package in the build. It is the only thing that states the item level a drop has " +
+                "at a difficulty, so every tooltip would compute its stat magnitudes at a level nothing states.");
 
         var curves = provider.LoadPackage(file).GetExports().OfType<UCurveTable>().FirstOrDefault()
             ?? throw new InvalidOperationException(
@@ -59,8 +59,8 @@ public sealed class DropItemLevels
             var row = curves.RowMap.FirstOrDefault(entry =>
                 entry.Key.Text.Equals(wantedRow, StringComparison.OrdinalIgnoreCase)).Value
                 ?? throw new InvalidOperationException(
-                    $"{Table} carries no {wantedRow} row, which a droptable group reads, so a drop reading that " +
-                    "group would pay an item level nothing states.");
+                    $"{Table} has no {wantedRow} row. A droptable group reads that row, so a drop reading " +
+                    "that group would have an item level nothing states.");
 
             levels.Add(Read(wantedRow, row));
         }
@@ -91,13 +91,13 @@ public sealed class DropItemLevels
             is not LinearInterpolation)
         {
             throw new InvalidOperationException(
-                $"{Table}'s {rowName} row no longer interpolates linearly, so the level it pays between two " +
+                $"{Table}'s {rowName} row no longer interpolates linearly, so the level it states between two " +
                 "difficulties is no longer the lerp the ladder is read as.");
         }
 
         if (PropertyWalk.Get(row, KeysField)?.GenericValue is not UScriptArray keys)
         {
-            throw new InvalidOperationException($"{Table}'s {rowName} row carries no {KeysField} array.");
+            throw new InvalidOperationException($"{Table}'s {rowName} row has no {KeysField} array.");
         }
 
         var steps = new List<(int Difficulty, int ItemLevel)>(keys.Properties.Count);
@@ -123,7 +123,7 @@ public sealed class DropItemLevels
         if (steps.Count == 0)
         {
             throw new InvalidOperationException(
-                $"{Table}'s {rowName} row read back with no keys, so the item level it pays is unreadable.");
+                $"{Table}'s {rowName} row read back with no keys, so the item level it states is unreadable.");
         }
 
         steps.Sort((left, right) => left.Difficulty.CompareTo(right.Difficulty));

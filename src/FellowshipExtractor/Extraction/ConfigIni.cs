@@ -60,7 +60,7 @@ public sealed class ConfigIni
         {
             throw new FileNotFoundException(
                 $"{path} is not in the containers, so the section [{section}] cannot be read. A " +
-                "UDeveloperSettings class ships no asset, and this file is the only place its values live.",
+                "UDeveloperSettings class has no asset, and this file is the only place its values are stated.",
                 path);
         }
 
@@ -94,8 +94,8 @@ public sealed class ConfigIni
         if (keys.Count == 0)
         {
             throw new InvalidOperationException(
-                $"{path} declares no section [{section}], or the section is empty. Every value the section " +
-                "carries would read back as a constructor default that no shipped file states.");
+                $"{path} declares no section [{section}], or the section is empty. Every value in the " +
+                "section would read back as a constructor default that no shipped file states.");
         }
 
         return new ConfigIni(keys, path, section);
@@ -106,7 +106,7 @@ public sealed class ConfigIni
             ? values[^1]
             : throw new InvalidOperationException(
                 $"[{Section}] in {Path} does not set {key}. Its value would come from a C++ constructor that " +
-                "ships in no file, so nothing here can state it.");
+                "is in no file, so nothing here can state it.");
 
     public ConfigValue Required(string key) => Parse(Text(key));
 
@@ -120,7 +120,7 @@ public sealed class ConfigIni
         int.TryParse(Text(key), System.Globalization.CultureInfo.InvariantCulture, out var value)
             ? value
             : throw new InvalidOperationException(
-                $"[{Section}] in {Path} sets {key} to '{Text(key)}', which is not a whole number.");
+                $"[{Section}] in {Path} sets {key} to '{Text(key)}', not a whole number.");
 
     public static ConfigValue Parse(string text)
     {
@@ -183,7 +183,7 @@ public sealed class ConfigIni
             }
 
             throw new InvalidOperationException(
-                $"'{text}' has '{text[at]}' at {at}, where a ',' or a ')' has to be.");
+                $"'{text}' has '{text[at]}' at {at}. A ',' or a ')' has to be there.");
         }
     }
 

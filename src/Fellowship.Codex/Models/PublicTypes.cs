@@ -108,7 +108,7 @@ public static class PublicTypes
         {
             throw new InvalidOperationException(
                 $"{string.Join(", ", twice)} {(twice.Length == 1 ? "has" : "have")} more than one row in " +
-                $"{nameof(PublicTypes)}.{nameof(Table)}, which states each type once.");
+                $"{nameof(PublicTypes)}.{nameof(Table)}. That table states each type once.");
         }
 
         var unnamed = Unlisted.Except(table.Select(type => type.Type)).ToArray();

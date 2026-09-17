@@ -9,7 +9,7 @@ public enum ModifierKind
     Essence,
 }
 
-/// <summary>A modifier an item carries, written as <c>kind:id:amount</c>.</summary>
+/// <summary>An item's modifier, written as <c>kind:id:amount</c>.</summary>
 public readonly record struct ItemModifier(ModifierKind Kind, int Id, int Amount)
 {
     private static readonly IReadOnlyDictionary<string, ModifierKind> Tokens =

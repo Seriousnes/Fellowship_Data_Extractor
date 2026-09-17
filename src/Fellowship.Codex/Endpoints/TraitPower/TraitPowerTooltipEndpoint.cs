@@ -11,7 +11,7 @@ public static class TraitPowerTooltipEndpoint
 {
     public static RouteHandlerBuilder MapTraitPowerTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 TraitPowerTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class TraitPowerTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QueryTraitPowerTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.TraitPower)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.TraitPower)}.")
             .WithStats()
             .Accepts<TraitPowerTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

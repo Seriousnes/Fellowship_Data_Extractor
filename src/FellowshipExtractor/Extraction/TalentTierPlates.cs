@@ -33,8 +33,8 @@ public sealed class TalentTierPlates
         if (plates.Count == 0)
         {
             throw new InvalidOperationException(
-                $"No {Family}<tier>{Suffix} texture ships, so no talent row has the numbered plate the tree " +
-                "draws at its left edge and every row would go unnumbered.");
+                $"No {Family}<tier>{Suffix} texture is in the build, so no talent row has the numbered plate " +
+                "the tree draws at its left edge.");
         }
 
         ByRow = plates;

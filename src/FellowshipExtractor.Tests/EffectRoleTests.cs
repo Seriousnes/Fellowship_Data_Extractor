@@ -1,6 +1,3 @@
-using Fellowship.SDK;
-using Fellowship.SDK.Models;
-
 using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;

@@ -26,7 +26,7 @@ public sealed class StatsNote(IEntityStoreService store) : IOpenApiOperationTran
             "A magnitude the tooltip prints rather than computes is stated in the request body's `stats` " +
             "object, keyed by the name the build gives the stat and holding `rating`, `percentage` or both, " +
             "one number per roll, as `\"stats\": { \"Haste\": { \"rating\": [1000] } }`. A rating is the " +
-            "number the item carries and a percentage is what that rating converts to, read only for a stat " +
+            "number the item has and a percentage is what that rating converts to, read only for a stat " +
             "that converts, so a percentage stated for a stat that does not is refused. The stats are " +
             string.Join(", ", store.Stats.Names) + ".";
 

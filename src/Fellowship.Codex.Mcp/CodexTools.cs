@@ -1,7 +1,5 @@
 using System.ComponentModel;
 using System.Text.Json;
-
-using Fellowship.SDK.Documents;
 using Fellowship.SDK.Records;
 
 using Fellowship.Codex.Endpoints;
@@ -21,7 +19,7 @@ public sealed class CodexTools(
     ICodexViewService view)
 {
     [McpServerTool(Name = "list_types", ReadOnly = true), Description(
-        "Lists every entity type the build carries, with the hero and rarity names other tools accept.")]
+        "Lists every entity type in the build, with the hero and rarity names other tools accept.")]
     public TypesResult ListTypes() => new(
         codex.Count,
         [.. codex.Types.Select(type => new TypeSummary(type.Slug, type.Label, type.Category.Slug, type.Count))],
@@ -53,7 +51,7 @@ public sealed class CodexTools(
     public CallToolResult GetEntity(
         [Description("An entity type slug from list_types, for example ability or item.")] string slug,
         [Description("The entity id, as returned by find_entity.")] int id,
-        [Description("The hero to read the entity as, when one id reads differently per hero.")]
+        [Description("Hero to resolve the id against. One id resolves to a different entity per hero.")]
         string? hero = null)
     {
         if (!EntityTypes.TryParse(slug, out var type) || !PublicTypes.IsListed(type))

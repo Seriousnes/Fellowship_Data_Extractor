@@ -70,7 +70,7 @@ public sealed class TemperCeilings
 
         if (PropertyWalk.Get(row, KeysField)?.GenericValue is not UScriptArray keys)
         {
-            throw new InvalidOperationException($"{Table}'s {rarity} row carries no {KeysField} array.");
+            throw new InvalidOperationException($"{Table}'s {rarity} row has no {KeysField} array.");
         }
 
         var steps = new List<TemperCeiling>(keys.Properties.Count);

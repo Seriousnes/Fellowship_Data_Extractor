@@ -20,7 +20,7 @@ public static class Reductions
             throw new InvalidOperationException(
                 $"{GameplayEffects.OpEnum} in the mappings declares no {string.Join(" and no ", missing)}, so a " +
                 "modifier that multiplies cannot be told from one that adds. Read the enum out of " +
-                $"mappings/{ExtractorOptions.MappingsPattern} and name the members this build ships.");
+                $"mappings/{ExtractorOptions.MappingsPattern} and name the members in this build.");
         }
 
         return members.Intersect(GameplayEffects.MultiplyingOps, StringComparer.Ordinal)

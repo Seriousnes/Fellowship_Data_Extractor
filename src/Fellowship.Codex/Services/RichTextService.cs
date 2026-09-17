@@ -2,8 +2,6 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Text;
 
-using Fellowship.SDK.Documents;
-
 using Fellowship.Codex.Models;
 
 namespace Fellowship.Codex.Services;

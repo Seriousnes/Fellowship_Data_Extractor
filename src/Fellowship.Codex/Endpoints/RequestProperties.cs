@@ -3,10 +3,6 @@ using System.Collections.Frozen;
 using System.Reflection;
 
 using Fellowship.SDK.Client;
-using Fellowship.SDK.Documents;
-
-using Fellowship.Codex.Models;
-using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Endpoints;
 

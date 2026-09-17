@@ -78,8 +78,8 @@ public static class RarityImages
         if (!settings.Colors.TryGetValue(row, out var hex))
         {
             throw new InvalidOperationException(
-                $"{rarity} draws in {row}, which the named colour table does not hold, so its chrome and its icons " +
-                "would be composed against no colour at all.");
+                $"{rarity} draws in {row}, and the named colour table does not hold it, so its chrome and " +
+                "its icons would be composed against no colour at all.");
         }
 
         return Color.ParseHex(hex).ToPixel<Rgba32>();

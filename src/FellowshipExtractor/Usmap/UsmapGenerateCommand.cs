@@ -121,7 +121,7 @@ public static class UsmapGenerateCommand
             return Task.FromResult(false);
         }
 
-        Console.WriteLine($"\nWrote {target}, which the extractor reads with no environment set.");
+        Console.WriteLine($"\nWrote {target}. The extractor reads it with no environment set.");
         return Task.FromResult(true);
     }
 

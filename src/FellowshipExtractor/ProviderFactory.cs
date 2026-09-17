@@ -15,8 +15,8 @@ public static class ProviderFactory
         if (mappings is not null && !File.Exists(mappings))
         {
             throw new FileNotFoundException(
-                $"FELLOWSHIP_USMAP names {mappings}, which does not exist. Write the mappings for this build " +
-                "with 'dotnet run --project src/FellowshipExtractor -- usmap'.",
+                $"FELLOWSHIP_USMAP names {mappings}, and that file does not exist. Write the mappings for " +
+                "this build with 'dotnet run --project src/FellowshipExtractor -- usmap'.",
                 mappings);
         }
 

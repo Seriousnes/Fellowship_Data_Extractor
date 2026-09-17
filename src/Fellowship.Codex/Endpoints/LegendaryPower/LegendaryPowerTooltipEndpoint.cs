@@ -11,7 +11,7 @@ public static class LegendaryPowerTooltipEndpoint
 {
     public static RouteHandlerBuilder MapLegendaryPowerTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 LegendaryPowerTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class LegendaryPowerTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QueryLegendaryPowerTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.LegendaryPower)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.LegendaryPower)}.")
             .WithStats()
             .Accepts<LegendaryPowerTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

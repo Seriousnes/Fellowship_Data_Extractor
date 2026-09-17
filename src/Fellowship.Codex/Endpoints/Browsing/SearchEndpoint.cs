@@ -1,8 +1,6 @@
 using System.ComponentModel;
 using System.Globalization;
 
-using Fellowship.SDK.Documents;
-
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
@@ -13,7 +11,7 @@ public sealed record SearchRequest
     [Description("The text to match. An empty one answers no results.")]
     public string? Q { get; init; }
 
-    [Description("One entity type slug, to narrow the results to it.")]
+    [Description("One entity type slug.")]
     public string? Type { get; init; }
 
     [Description("How many results to answer, 1 to 100. Defaults to 10.")]

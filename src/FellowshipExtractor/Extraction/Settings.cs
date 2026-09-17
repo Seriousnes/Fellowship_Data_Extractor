@@ -224,8 +224,8 @@ public sealed class Settings
             if (colours.ContainsKey(row)) continue;
 
             throw new InvalidOperationException(
-                $"{source} draws {key} in {row}, which no named colour table declares, so it would resolve to no " +
-                "hex at all.");
+                $"{source} draws {key} in {row}, and no named colour table declares it, so it would resolve " +
+                "to no hex at all.");
         }
     }
 

@@ -11,7 +11,7 @@ public static class CompanionPetTooltipEndpoint
 {
     public static RouteHandlerBuilder MapCompanionPetTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 CompanionPetTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class CompanionPetTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QueryCompanionPetTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.CompanionPet)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.CompanionPet)}.")
             .WithStats()
             .Accepts<CompanionPetTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

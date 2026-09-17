@@ -1948,9 +1948,9 @@ public sealed class ResourceGains(
         if (EnumOrdinals.Member(mappings, KindEnum, declared) is { } member) return member;
 
         throw new InvalidOperationException(
-            $"A modifier writes {KindEnum} {declared}, which the mappings name none of " +
+            $"A modifier writes {KindEnum} {declared}, and the mappings name none of " +
             $"({string.Join(", ", _kinds.Order(StringComparer.Ordinal))}), so the magnitude would read as a " +
-            "plain scalable float and the generation it carries would vanish. " +
+            "plain scalable float and the export would state no generation for it. " +
             $"Read the enum out of mappings/{ExtractorOptions.MappingsPattern} with " +
             "'dotnet run --project src/FellowshipExtractor -- usmap'.");
     }

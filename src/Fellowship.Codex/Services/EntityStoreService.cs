@@ -284,8 +284,8 @@ public sealed class EntityStoreService : IEntityStoreService
         Settings.DropItemLevels.FirstOrDefault(
             level => level.Row.Equals(row, StringComparison.OrdinalIgnoreCase))?.ItemLevel
         ?? throw new InvalidOperationException(
-            $"The settings state no {row} drop item level, so there is no item level to answer a request that " +
-            "names none. Write it again with 'dotnet run --project src/FellowshipExtractor'.");
+            $"The settings state no {row} drop item level. Write it again with 'dotnet run --project " +
+            "src/FellowshipExtractor'.");
 
     public RarityEntry? Rarity(string? word, bool gem)
     {

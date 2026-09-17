@@ -11,7 +11,7 @@ public static class ItemTooltipEndpoint
 {
     public static RouteHandlerBuilder MapItemTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 ItemTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class ItemTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QueryItemTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.Item)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.Item)}.")
             .WithStats()
             .Accepts<ItemTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

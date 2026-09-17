@@ -1,5 +1,3 @@
-using Fellowship.SDK;
-
 namespace Fellowship.Codex.Models;
 
 public sealed record StatBlock(

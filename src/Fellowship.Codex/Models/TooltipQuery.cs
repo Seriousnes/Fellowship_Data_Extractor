@@ -1,7 +1,5 @@
 using System.Globalization;
 
-using Fellowship.SDK;
-
 namespace Fellowship.Codex.Models;
 
 public sealed class ImbuedTraits

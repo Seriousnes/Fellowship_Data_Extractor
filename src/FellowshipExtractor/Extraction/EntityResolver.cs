@@ -6,8 +6,6 @@ using CUE4Parse.UE4.Assets.Objects;
 
 using Fellowship.SDK.Models;
 
-using FellowshipExtractor.Extraction;
-
 namespace FellowshipExtractor.Extraction;
 
 public delegate string? IconWriter(string iconObjectPath, string? rarity);

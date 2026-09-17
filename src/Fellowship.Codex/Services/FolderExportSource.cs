@@ -22,7 +22,7 @@ public sealed class FolderExportSource(string folder) : IExportSource
         return Carries(full)
             ? full
             : throw new InvalidOperationException(
-                $"{source} {full}, which carries no {ExportReader.EntitiesName}.");
+                $"{source} {full}. That folder carries no {ExportReader.EntitiesName}.");
     }
 
     public static InvalidOperationException Unlocated(string? option = null) =>

@@ -3,7 +3,6 @@ using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Engine;
 using CUE4Parse.UE4.Assets.Objects;
-using Fellowship.SDK;
 
 namespace FellowshipExtractor.Extraction;
 
@@ -59,8 +58,8 @@ public sealed class Leagues
         if (kind is null || !Enum.IsDefined(typeof(LeagueKind), kind.Value))
         {
             throw new InvalidOperationException(
-                $"{RowStructure} row {row} states {KindField} {kind?.ToString() ?? "nothing"}, which names no " +
-                "league kind, so nothing says whether its difficulties are ranked, eternal or pinnacle.");
+                $"{RowStructure} row {row} states {KindField} {kind?.ToString() ?? "nothing"}, and that names " +
+                "no league kind, so nothing says whether its difficulties are ranked, eternal or pinnacle.");
         }
 
         return new LeagueEntry(row, named, tag, (LeagueKind)kind.Value)

@@ -1,8 +1,5 @@
 using System.ComponentModel;
 
-using Fellowship.SDK.Documents;
-using Fellowship.SDK.Records;
-
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
@@ -10,7 +7,7 @@ namespace Fellowship.Codex.Endpoints;
 
 public sealed record WeaponPowerRecordRequest
 {
-    [Description("The id to answer.")]
+    [Description("The id.")]
     public int Id { get; init; }
 }
 
@@ -19,7 +16,7 @@ public static class WeaponPowerRecordEndpoint
     public static RouteHandlerBuilder MapWeaponPowerRecord(this IEndpointRouteBuilder group) =>
         group.MapGet("/{id:int}", Handle)
             .WithName("GetWeaponPower")
-            .WithSummary($"One {PublicTypes.Noun(EntityType.WeaponPower)}'s record.")
+            .WithSummary($"Get {PublicTypes.Noun(EntityType.WeaponPower)} by ID.")
             .Produces<WeaponPowerRecord>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 

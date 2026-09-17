@@ -65,8 +65,8 @@ public sealed class TalentTrees
             if (heroes.Profile(codename) is not { } hero)
             {
                 throw new InvalidOperationException(
-                    $"The talent tree names hero {codename}, which no metadata asset ships. Their whole grid " +
-                    "would export without a hero on it.");
+                    $"The talent tree names hero {codename}, and no metadata asset names them. Their whole " +
+                    "grid would export without a hero on it.");
             }
 
             HeroCount++;
@@ -219,7 +219,7 @@ public sealed class TalentTrees
 
             throw new InvalidOperationException(
                 $"{hero.ShippedName}'s live talents are not the front of their tree in row-major order: entry {i} " +
-                $"sits at array index {live[i].Index} in row {live[i].GridRow}. A talent's column is its ordinal " +
+                $"is at array index {live[i].Index} in row {live[i].GridRow}. A talent's column is its ordinal " +
                 "within its row in array order and that reading no longer holds.");
         }
     }

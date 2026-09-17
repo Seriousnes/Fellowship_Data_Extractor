@@ -11,7 +11,7 @@ public static class EffectTooltipEndpoint
 {
     public static RouteHandlerBuilder MapEffectTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 EffectTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class EffectTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QueryEffectTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.Effect)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.Effect)}.")
             .WithStats()
             .Accepts<EffectTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

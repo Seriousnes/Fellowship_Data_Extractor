@@ -1,5 +1,3 @@
-using Fellowship.SDK.Documents;
-
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
@@ -10,7 +8,7 @@ public static class CatalogEndpoint
     public static RouteHandlerBuilder MapCatalog(this IEndpointRouteBuilder group) =>
         group.MapGet("/catalog", Handle)
             .WithName("GetCatalog")
-            .WithSummary("The menus, entity types and filter facets the browser is driven by.")
+            .WithSummary("The menus, entity types and filter facets the browser reads.")
             .Produces<CatalogResponse>();
 
     private static IResult Handle(ICodexService codex, IMenuService menus, IEntityStoreService store)

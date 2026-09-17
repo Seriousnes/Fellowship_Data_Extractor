@@ -11,7 +11,7 @@ public static class CurrencyTooltipEndpoint
 {
     public static RouteHandlerBuilder MapCurrencyTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 CurrencyTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class CurrencyTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QueryCurrencyTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.Currency)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.Currency)}.")
             .WithStats()
             .Accepts<CurrencyTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

@@ -130,13 +130,13 @@ public sealed class BareStateWalk(
                     if (Number(returned.ReturnExpression) is { } answer) return answer;
                     if (ByLevelType is not null || Range is not null) return null;
 
-                    return Refuse($"returns {Describe(returned.ReturnExpression)}, which is no number");
+                    return Refuse($"returns {Describe(returned.ReturnExpression)} rather than a number");
 
                 case EX_JumpIfNot branch:
                     if (Boolean(branch.BooleanExpression) is not { } taken)
                     {
                         return Refuse(
-                            $"branches on {Describe(branch.BooleanExpression)}, which is neither " +
+                            $"branches on {Describe(branch.BooleanExpression)}, and that is neither " +
                             "true nor false for a character holding no talents");
                     }
 
@@ -193,7 +193,7 @@ public sealed class BareStateWalk(
             if (_bytecode[index].StatementIndex == (int)offset) return index;
         }
 
-        Refuse($"jumps to code offset {offset}, which starts none of its statements " +
+        Refuse($"jumps to code offset {offset}, and no statement of its own starts there " +
                $"({string.Join(", ", _bytecode.Select(statement => statement.StatementIndex))})");
 
         return -1;
@@ -571,8 +571,8 @@ public sealed class BareStateWalk(
     {
         if (mappings is null || Enumerated(chosen.IndexTerm) is not { } enumerated)
         {
-            Refuse($"answers a different value per {Describe(chosen.IndexTerm)}, which names no enum, so the " +
-                   "values cannot be keyed by anything the export states");
+            Refuse($"answers a different value per {Describe(chosen.IndexTerm)}, and that names no enum, so " +
+                   "the values cannot be keyed by anything the export states");
 
             return null;
         }
@@ -584,7 +584,7 @@ public sealed class BareStateWalk(
         {
             if (!members.TryGetValue(ordinal, out var member))
             {
-                Refuse($"answers a value for {enumerated} {ordinal}, which that enum has no member for");
+                Refuse($"answers a value for {enumerated} {ordinal}, and that enum has no member for it");
 
                 return null;
             }
@@ -626,7 +626,7 @@ public sealed class BareStateWalk(
         if (constants.Lookup(row).Record?.Value is not { } value)
         {
             return Refuse(
-                $"reads its value off row {row}, which no ability constants table gives a number for");
+                $"reads its value off row {row}, and no ability constants table gives a number for it");
         }
 
         return multiplier * value;

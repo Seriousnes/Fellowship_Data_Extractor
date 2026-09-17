@@ -1,6 +1,4 @@
 using System.Text.Json;
-
-using Fellowship.Codex.Endpoints;
 using Fellowship.Codex.Models;
 
 using Fellowship.SDK.Documents;
