@@ -152,7 +152,7 @@ public static class UeJson
                 writer.WriteStringValue(name.Text);
                 return;
             case FText text:
-                writer.WriteStringValue(text.Text);
+                writer.WriteStringValue(StringTables.Resolve(text) ?? "");
                 return;
             case FPackageIndex index:
                 writer.WriteStringValue(index.ResolvedObject?.GetPathName() ?? index.Name);

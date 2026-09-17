@@ -32,6 +32,8 @@ public static class ProviderFactory
 
         provider.LoadVirtualPaths();
 
+        StringTables.Read(provider);
+
         if (mappings is not null)
         {
             provider.MappingsContainer = new FileUsmapTypeMappingsProvider(mappings);
