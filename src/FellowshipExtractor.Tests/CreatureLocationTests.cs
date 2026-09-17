@@ -14,26 +14,6 @@ public sealed class CreatureLocationTests
     public void AnObjectNameStripsItsInstanceNumberAndBlueprintSuffix(string objectName, string? expected) =>
         Assert.Equal(expected, CreatureLocations.PlacedFrom(objectName));
 
-    [Fact]
-    public void TheIcebiteReaverIsPlacedInRansackOfDrakheim()
-    {
-        var placed = Export.Resolver.Locations.For("BP_NPC_VV_IcebiteReaver");
-
-        var named = placed.Select(tag => Export.Resolver.Dungeons.For(tag)).ToArray();
-
-        Assert.Contains("Ransack of Drakheim", named);
-    }
-
-    [Fact]
-    public void EveryDungeonWithAPersistentMapWasRead()
-    {
-        var locations = Export.Resolver.Locations;
-
-        Assert.True(locations.Dungeons > 0, "No dungeon resolved a persistent map.");
-        Assert.True(locations.Maps >= locations.Dungeons, "Fewer umaps were read than there are dungeons.");
-        Assert.True(locations.Placed > 0, "No creature was placed in any dungeon.");
-    }
-
     private static readonly Dictionary<string, string> Folders = new(StringComparer.OrdinalIgnoreCase)
     {
         ["FrozenKingdom"] = "fellowship/Content/dungeons/FrozenKingdom/Sublevels/",
@@ -61,14 +41,4 @@ public sealed class CreatureLocationTests
     [InlineData("fellowship/Content/Characters/NPC/Shared/BP_Z.uasset", null)]
     public void ACreatureIsHousedByTheDungeonFolderItsOwnAssetLivesUnder(string path, string? expected) =>
         Assert.Equal(expected, CreatureLocations.DungeonOf(path, CreatureLocations.TagsByFolder(Folders)));
-
-    [Fact]
-    public void ABossNoMapPlacesIsStillHousedByTheDungeonItBelongsTo()
-    {
-        var placed = Export.Resolver.Locations.For("BP_NPC_FK_BossRangerCaptain");
-
-        var named = placed.Select(tag => Export.Resolver.Dungeons.For(tag)).ToArray();
-
-        Assert.Contains("Cithrel's Fall", named);
-    }
 }

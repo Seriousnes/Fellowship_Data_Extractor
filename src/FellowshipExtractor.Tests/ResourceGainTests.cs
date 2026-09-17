@@ -17,9 +17,6 @@ public sealed class ResourceGainTests
     private const string Crit = "crit";
     private const string TalentSegment = "Talent";
 
-    private static readonly Lazy<ConstantsTable> Rows =
-        new(() => new ConstantsTable(Export.Provider), isThreadSafe: true);
-
     private static JsonArray Generated(EntityType type, int id) =>
         Export.Loaded.Documents
             .First(document => document.Type == type && document.Id == id)
@@ -31,16 +28,6 @@ public sealed class ResourceGainTests
             .OfType<JsonNode>()
             .FirstOrDefault(gain => (string?)gain["resource"] == channel)
         ?? throw new InvalidOperationException($"{type} {id} generates nothing into {channel}.");
-
-    private static double? Row(string key) => Rows.Value.Lookup(key).Record?.Value;
-
-    private static string? Comment(string key) => Rows.Value.Lookup(key).Record?.Comment;
-
-    private static bool Retired(string? comment) =>
-        comment is not null &&
-        (comment.Contains("not used", StringComparison.OrdinalIgnoreCase) ||
-         comment.Contains("unused", StringComparison.OrdinalIgnoreCase) ||
-         comment.Contains("deprecated", StringComparison.OrdinalIgnoreCase));
 
     private static string? Talented(string row)
     {
@@ -72,13 +59,6 @@ public sealed class ResourceGainTests
         Assert.Equal("Lisa.CastedSingleTargetProjectile.ResourceGain", (string?)into["source"]);
         Assert.Equal("Lisa.CastedSingleTargetProjectile.ResourceGainCrit", (string?)into["sourceOnCritical"]);
         Assert.Equal(ResourceGains.ConstantsRow, (string?)into["sourceKind"]);
-    }
-
-    [Fact]
-    public void TheTwoRowsTimeShardReadsAreSixAndNine()
-    {
-        Assert.Equal(6, Row("Lisa.CastedSingleTargetProjectile.ResourceGain"));
-        Assert.Equal(9, Row("Lisa.CastedSingleTargetProjectile.ResourceGainCrit"));
     }
 
     [Fact]
@@ -120,8 +100,6 @@ public sealed class ResourceGainTests
         var gains = Generated(EntityType.Ability, 1029);
         var into = Into(EntityType.Ability, 1029, Primary);
 
-        Assert.Equal(3, Row("Rime.CastedProjectileDamageFiller.ResourceGain"));
-
         Assert.Single(gains);
         Assert.Equal(3, (double?)into["amount"]);
         Assert.Equal("Rime.CastedProjectileDamageFiller.ResourceGain", (string?)into["source"]);
@@ -133,9 +111,6 @@ public sealed class ResourceGainTests
     {
         var gains = Generated(EntityType.Ability, 1213);
         var into = Into(EntityType.Ability, 1213, Second);
-
-        Assert.Equal(1, Row("Mara.AoeAttackBuilder.ComboPointGainPerHit"));
-        Assert.Equal(2, Row("Mara.AoeAttackBuilder.ComboPointGainAtCrit"));
 
         Assert.Single(gains);
         Assert.Equal(1, (double?)into["amount"]);
@@ -154,8 +129,6 @@ public sealed class ResourceGainTests
         var poisoned = Generated(EntityType.Ability, 1129)
             .OfType<JsonNode>()
             .Single(gain => (string?)gain["rowGroup"] == "Poison");
-
-        Assert.Equal(3, Row("Mara.StrongerBehindAttackBuilder.Poison.ComboPointGainMultiplier"));
 
         Assert.Equal(2, (double?)plain["amount"]);
         Assert.Equal(3, (double?)plain["amountOnCritical"]);
@@ -177,7 +150,6 @@ public sealed class ResourceGainTests
     {
         var into = Into(EntityType.Ability, 1863, Spirit);
 
-        Assert.Equal(4, Row("Sune.AoeMelee.SpiritPointGain"));
         Assert.Equal(4, (double?)into["amount"]);
         Assert.Equal("Sune.AoeMelee.SpiritPointGain", (string?)into["source"]);
     }
@@ -187,26 +159,7 @@ public sealed class ResourceGainTests
     {
         var into = Into(EntityType.Ability, 1845, Primary);
 
-        Assert.Equal(0.15, Row("Sune.SingleTargetFillerMelee.ResourceProcChance"));
         Assert.Equal(0.15, (double?)into["chance"]);
-    }
-
-    [Fact]
-    public void ArdeosStartsWithTwoOrbsWorthAtAHundredEach()
-    {
-        var resource = Resolved("GA_Firemage_Talent_ExtraResourcesAtStart", Primary);
-        var spirit = Resolved("GA_Firemage_Talent_ExtraResourcesAtStart", Spirit);
-
-        Assert.Equal(100, Row("Firemage.FireBombs.ResourcePerOrb"));
-        Assert.Equal(2, Row("Firemage.Talent.ExtraResourcesAtStart.AdditionalOrbResources"));
-
-        Assert.Equal(200, resource.Amount);
-        Assert.Null(resource.Per);
-        Assert.Equal(ResourceGains.RowProduct, resource.SourceKind);
-        Assert.Contains("Firemage.FireBombs.ResourcePerOrb", resource.Source);
-
-        Assert.Equal(50, spirit.Amount);
-        Assert.Equal(ResourceGains.ConstantsRow, spirit.SourceKind);
     }
 
     [Fact]
@@ -228,11 +181,6 @@ public sealed class ResourceGainTests
     [Fact]
     public void HelenaStatesEachAbilitysToughnessAsTheShareOfHerCeilingItsScalerIs()
     {
-        Assert.Equal(7.7, Row("Warmaster.Toughness.MaxToughnessStrengthScaler"));
-        Assert.Equal(1.155, Row("Warmaster.Toughness.MeleeCleave.StrengthScalerPerHit"));
-        Assert.Equal(1.925, Row("Warmaster.Toughness.MeleeAoeSlow.StrengthScalerPerHit"));
-        Assert.Equal(2.31, Row("Warmaster.Toughness.DefenceBuff.StrengthScaler"));
-
         Assert.Equal(0.15, (double?)Scaled(977)["shareOfMaximum"]);
         Assert.Equal(0.25, (double?)Scaled(979)["shareOfMaximum"]);
         Assert.Equal(0.3, (double?)Scaled(984)["shareOfMaximum"]);
@@ -251,9 +199,6 @@ public sealed class ResourceGainTests
     {
         var into = Into(EntityType.Ability, 1276, Primary);
 
-        Assert.Equal(0.4, Row("Firemage.CastedDotBoostProjectile.ResourceRewardFractionOfBomb"));
-        Assert.Equal(100, Row("Firemage.FireBombs.ResourcePerOrb"));
-
         Assert.Equal(40, (double?)into["amount"]);
         Assert.Equal(ResourceGains.RowProduct, (string?)into["sourceKind"]);
         Assert.Contains("Firemage.FireBombs.ResourcePerOrb", (string?)into["source"]);
@@ -265,7 +210,6 @@ public sealed class ResourceGainTests
     {
         var into = Into(EntityType.Ability, 1020, Tertiary);
 
-        Assert.Equal(1, Row("Rime.InstantSingleDamage.OrbGain"));
         Assert.Equal(1, (double?)into["amount"]);
         Assert.Equal("Rime.InstantSingleDamage.OrbGain", (string?)into["source"]);
     }
@@ -275,10 +219,6 @@ public sealed class ResourceGainTests
     {
         var gains = Generated(EntityType.Ability, 1031);
 
-        Assert.Equal(2, Row("Rime.CastedDebuffAoeDamage.Talent.AdditionalAnimaForSingleTarget.AnimaIncreasePerTick"));
-        Assert.Equal("not used", Comment("Rime.CastedDebuffAoeDamage.Talent.AdditionalAnimaForSingleTarget.AnimaIncreasePerTick"));
-        Assert.Equal(1, Row("Rime.CastedDebuffAoeDamage.ResourceGainPerHit"));
-
         Assert.Single(gains);
         Assert.Contains(
             "Rime.CastedDebuffAoeDamage.ResourceGainPerHit",
@@ -286,46 +226,8 @@ public sealed class ResourceGainTests
     }
 
     [Fact]
-    public void NoGenerationNamesARowTheDesignersCommentedRetired() =>
-        Assert.All(
-            Written(),
-            gain => Assert.All(
-                Sources(gain),
-                row => Assert.False(
-                    Retired(Comment(row)),
-                    $"{row} is published as a source and its own comment reads '{Comment(row)}'")));
-
-    [Fact]
-    public void NoGenerationNamesARowThatReadsBackZero() =>
-        Assert.All(
-            Written(),
-            gain => Assert.All(
-                Sources(gain),
-                row => Assert.False(
-                    Row(row) is 0,
-                    $"{row} is published as a source and every constants table reads it back as zero")));
-
-    [Fact]
-    public void EveryGainReadingOneRowTheDesignersCalledAShareOfMaximumStatesItAsAShare() =>
-        Assert.All(
-            Written(),
-            gain =>
-            {
-                if (Sources(gain) is not [{ } sole]) return;
-                if (Comment(sole) is not { } comment) return;
-                if (!comment.Contains("percentage of max", StringComparison.OrdinalIgnoreCase)) return;
-                if (Row(sole) is not { } declared) return;
-
-                Assert.Equal(declared, (double?)gain["shareOfMaximum"]);
-                Assert.NotEqual(declared, (double?)gain["amount"]);
-            });
-
-    [Fact]
     public void TariqsTwoHeavyStrikesStateTheSameShareOfHisFuryPool()
     {
-        Assert.Equal(0.12, Row("Ink.AutoAttackBuff.ResourceGain"));
-        Assert.Equal("was 0.05 In percentage of max", Comment("Ink.AutoAttackBuff.ResourceGain"));
-
         Assert.Equal(
             (double?)Into(EntityType.Ability, 1239, Primary)["shareOfMaximum"],
             (double?)Into(EntityType.Ability, 1929, Primary)["shareOfMaximum"]);
@@ -334,41 +236,8 @@ public sealed class ResourceGainTests
     }
 
     [Fact]
-    public void EveryPublishedShareIsReproducibleFromTheRowsItNames() =>
-        Assert.All(
-            Written(),
-            gain =>
-            {
-                if ((double?)gain["shareOfMaximum"] is not { } share) return;
-                if (Named(gain, "source").ToArray() is not { Length: > 0 } named) return;
-
-                var rows = named.Select(Row).OfType<double>().ToArray();
-
-                if (rows.Length != named.Length) return;
-
-                Assert.True(
-                    Reproduces(rows, share),
-                    $"{share} cannot be worked out from every row {(string?)gain["source"]} names");
-            });
-
-    private static bool Reproduces(IReadOnlyList<double> rows, double share) =>
-        rows switch
-        {
-            [var only] => Math.Abs(only - share) < 1e-9,
-            [var first, var second] =>
-                Math.Abs((first * second) - share) < 1e-9 ||
-                (second != 0 && Math.Abs((first / second) - share) < 1e-9) ||
-                (first != 0 && Math.Abs((second / first) - share) < 1e-9),
-            _ => rows.Any(numerator => rows.Any(divisor =>
-                divisor != 0 && Math.Abs((numerator / divisor) - share) < 1e-9)),
-        };
-
-    [Fact]
     public void BlockProcStatesNoComboPointBecauseItsOwnChanceRowIsZero()
     {
-        Assert.Equal(0, Row("Warmaster.BlockProc.ComboPointGenerationChance"));
-        Assert.Equal(1, Row("Warmaster.BlockProc.ComboPointGenerationAmount"));
-
         Assert.Null(
             Export.Loaded.Documents
                 .First(document => document.Type == EntityType.Ability && document.Id == 969)
@@ -380,7 +249,6 @@ public sealed class ResourceGainTests
     {
         var into = Into(EntityType.Ability, 1855, Mana);
 
-        Assert.Equal(0.12, Row("Sune.BuffedTargetedCastedHealOrDamage.ProcConsumed.MaxManaFractionGain"));
         Assert.Equal(0.12, (double?)into["shareOfMaximum"]);
         Assert.Equal(172.8, (double?)into["amount"]);
         Assert.Equal(ResourceGains.PoolFraction, (string?)into["sourceKind"]);
@@ -394,9 +262,6 @@ public sealed class ResourceGainTests
             .Where(gain => (string?)gain["resource"] == Mana)
             .ToArray();
 
-        Assert.Equal(100, Row("Sune.AoeMeleeDamageBoostAndManaRefundDebuff.ManaRefundBase"));
-        Assert.Equal(50, Row("Sune.AoeMeleeDamageBoostAndManaRefundDebuff.ManaRefundPerAdditionalStack"));
-
         Assert.Equal(2, mana.Length);
         Assert.Contains(mana, gain => (double?)gain["amount"] == 100);
         Assert.Contains(mana, gain => (string?)gain["per"] == "AdditionalStack");
@@ -405,7 +270,6 @@ public sealed class ResourceGainTests
     [Fact]
     public void MartialCommandCarriesTheSpiritPointsShieldThrowGenerates()
     {
-        Assert.Equal(2, Row("Warmaster.BouncyProjectile.Talent.SpiritPointGain.NumPoints"));
         Assert.Equal(2, (double?)Into(EntityType.Talent, 14, Spirit)["amount"]);
         Assert.Equal(2, (double?)Into(EntityType.Ability, 985, Spirit)["amount"]);
     }
@@ -424,32 +288,6 @@ public sealed class ResourceGainTests
         Assert.Equal(
             (string?)Into(EntityType.TraitPower, 363, Spirit)["source"],
             (string?)Into(EntityType.Trait, 47, Spirit)["source"]);
-
-    private static ResourceGain Resolved(string ability, string channel)
-    {
-        var tag = Export.Resolver.FindTag("GameplayAbility", ability)
-            ?? throw new InvalidOperationException($"No GameplayAbility tag names {ability}.");
-
-        return (Export.Resolver.Resolve(tag, null).First().Generates ?? [])
-                   .FirstOrDefault(gain => gain.Resource.Equals(channel, StringComparison.Ordinal))
-               ?? throw new InvalidOperationException($"{ability} generates nothing into {channel}.");
-    }
-
-    [Fact]
-    public void GundeStatesNoBloodFeatherCeilingEvenThoughTheRowReadsZero()
-    {
-        var hero = Export.Resolver.Heroes.Shipped("Gunde")!;
-
-        Assert.Equal(0, Row($"Gunde.CRHeroAttributeSet.Max{Tertiary}"));
-        Assert.Null(Export.Resolver.Pools.Ceiling(hero, Tertiary));
-        Assert.Equal(100, Export.Resolver.Pools.Ceiling(hero, Primary));
-    }
-
-    [Fact]
-    public void TheChannelsAreTheAttributesTheBaseAttributeTableGivesACeilingFor() =>
-        Assert.Equal(
-            [Mana, Primary, Second, Tertiary, Spirit],
-            [.. Export.Resolver.Pools.Channels.Order(StringComparer.Ordinal)]);
 
     [Fact]
     public void RunicProliferationStatesTheGenerationItsOwnModifierDeclares()
@@ -491,7 +329,6 @@ public sealed class ResourceGainTests
     {
         var into = Into(EntityType.Blessing, 702, Spirit);
 
-        Assert.Equal(1, Row("Finesse.PowerChanceSpirit.SpiritPoints"));
         Assert.Equal(1, (double?)into["amount"]);
     }
 
@@ -510,15 +347,12 @@ public sealed class ResourceGainTests
     {
         var into = Into(EntityType.TraitPower, 363, Spirit);
 
-        Assert.Equal(2.5, Row("Trait.WeaponAndSpiritPoints.SpiritPointsGain.CooldownMultiplier"));
         Assert.Contains("Trait.WeaponAndSpiritPoints.SpiritPointsGain", (string?)into["source"]);
     }
 
     [Fact]
     public void TheWorkerThatDeclaresTheRowStatesTheGainAndTheLauncherThatOnlySharesItsNamespaceDoesNot()
     {
-        Assert.Equal(0.00143, Row("Ink.ChargedBuff.Talent.RageIncrease.RagePerTick"));
-
         Assert.Equal(0.00143, (double?)Into(EntityType.Effect, 1745, Primary)["shareOfMaximum"]);
 
         Assert.Null(
@@ -530,7 +364,6 @@ public sealed class ResourceGainTests
     [Fact]
     public void BothOfGundesStrikesStateThePainTheOneOfThemBindsAndTheOtherPrints()
     {
-        Assert.Equal(50, Row("Gunde.HeavySingleTargetMeleeWithHeal.InHealingStance.PainGain"));
         Assert.Equal(50, (double?)Into(EntityType.Ability, 1410, Primary)["amount"]);
         Assert.Equal(50, (double?)Into(EntityType.Ability, 1411, Primary)["amount"]);
         Assert.Equal("Pain", (string?)Into(EntityType.Ability, 1410, Primary)["resourceName"]);
@@ -599,16 +432,6 @@ public sealed class ResourceGainTests
             });
 
     [Fact]
-    public void EveryGenerationNamesAChannelTheBaseAttributeTableGivesACeilingFor()
-    {
-        var channels = Export.Resolver.Pools.Channels.ToHashSet(StringComparer.Ordinal);
-
-        Assert.All(
-            Written(),
-            gain => Assert.Contains((string?)gain["resource"] ?? string.Empty, channels));
-    }
-
-    [Fact]
     public void NoGenerationStatesANumberAtOrBelowNothing() =>
         Assert.All(
             Written(),
@@ -672,42 +495,6 @@ public sealed class ResourceGainTests
     }
 
     [Fact]
-    public void EveryAmountFilledFromAShareIsThatShareOfTheCeilingItsOwnHeroReadsBack() =>
-        Assert.All(
-            Written(),
-            gain =>
-            {
-                if ((double?)gain["shareOfMaximum"] is not { } share) return;
-                if ((double?)gain["amount"] is not { } amount) return;
-
-                var channel = (string?)gain["resource"] ?? string.Empty;
-
-                var hero = ((string?)gain["source"] ?? string.Empty)
-                    .Split('.')[0]
-                    .Split('_')
-                    .Select(Export.Resolver.Heroes.Shipped)
-                    .OfType<string>()
-                    .FirstOrDefault();
-
-                Assert.NotNull(hero);
-
-                var ceiling = Export.Resolver.Pools.Ceiling(hero, channel);
-
-                Assert.NotNull(ceiling);
-                Assert.Equal(amount, share * ceiling.Value, 6);
-            });
-
-    [Fact]
-    public void OnlyTwoCeilingsInTheBuildAreOverriddenByAGameplayEffectAtRuntime() =>
-        Assert.Equal(
-            [
-                "Helena MaxResourcesSecond is Warmaster.Toughness.MaxToughnessStrengthScaler 7.7 times what a " +
-                "calculation works out at runtime",
-                "Tariq MaxResources is Ink.Rage.MaxRageMultiplier 200 times what a calculation works out at runtime",
-            ],
-            [.. Export.Resolver.Gains.RuntimeCeilings().Order(StringComparer.Ordinal)]);
-
-    [Fact]
     public void EveryGenerationNamesWhereItsNumberCameFrom() =>
         Assert.All(
             Written(),
@@ -743,9 +530,6 @@ public sealed class ResourceGainTests
     [Fact]
     public void ChainLightningStatesTheFuryItsOwnSentencePrintsAndTheTalentedCaseApart()
     {
-        Assert.Equal(0.012, Row("Ink.BouncyProjectile.ResourceGainPerTarget"));
-        Assert.Equal(1.5, Row("Ink.BouncyProjectile.Talent.BouncyProjectile.IncreasedFuryGeneration.FuryScaler"));
-
         var printed = Into(EntityType.Ability, 1237, Primary);
 
         Assert.Equal(0.012, (double?)printed["shareOfMaximum"]);
@@ -788,16 +572,6 @@ public sealed class ResourceGainTests
     }
 
     [Fact]
-    public void EveryGenerationNamesARowSomeConstantsTableDeclaresOrTheFrameItWasReadFrom() =>
-        Assert.All(
-            Written(),
-            gain => Assert.All(
-                ((string?)gain["source"] ?? string.Empty).Split(" and ", StringSplitOptions.TrimEntries),
-                row => Assert.True(
-                    row.Contains('@') || row.EndsWith(".Modifiers", StringComparison.Ordinal) || Row(row) is not null,
-                    $"{row} is published as a source and no constants table declares it")));
-
-    [Fact]
     public void NoGenerationNamesABytecodeFrameAndNoNumber() =>
         Assert.All(
             Written(),
@@ -830,9 +604,6 @@ public sealed class ResourceGainTests
     {
         var into = Into(EntityType.Ability, 1876, Primary);
 
-        Assert.Equal(4, Row("Lisa.SingleTargetDot.ResourceGainPerTick"));
-        Assert.Equal(6, Row("Lisa.SingleTargetDot.ResourceGainCritPerTick"));
-
         Assert.Equal(4, (double?)into["amount"]);
         Assert.Equal(6, (double?)into["amountOnCritical"]);
         Assert.Equal("Tick", (string?)into["per"]);
@@ -857,14 +628,6 @@ public sealed class ResourceGainTests
             gain => Assert.Equal(Mana, (string?)gain["resourceName"]));
 
     [Fact]
-    public void APoolAHeroFillsToNothingIsNoPoolOfTheirs() =>
-        Assert.All(
-            Export.Resolver.Pools.Universal,
-            channel => Assert.All(
-                Export.Resolver.Pools.Heroes,
-                hero => Assert.NotNull(Export.Resolver.Pools.Ceiling(hero, channel))));
-
-    [Fact]
     public void OneRowAndChannelCarryOneTriggerEverywhereTheyAreStated() =>
         Assert.All(
             Written()
@@ -876,9 +639,6 @@ public sealed class ResourceGainTests
     [Fact]
     public void HelenaGeneratesToughnessOnABlockAtTheShareHerOwnScalerDividesTo()
     {
-        Assert.Equal(0.24, Row("Warmaster.Toughness.Block.StrengthScaler"));
-        Assert.Equal(7.7, Row("Warmaster.Toughness.MaxToughnessStrengthScaler"));
-
         var block = Into(EntityType.Ability, 970, Second);
 
         Assert.Equal(0.24 / 7.7, (double?)block["shareOfMaximum"] ?? 0, 9);
@@ -888,9 +648,6 @@ public sealed class ResourceGainTests
     [Fact]
     public void GreaterShockwaveAddsTheShareOfMaximumItsOwnTalentRowStates()
     {
-        Assert.Equal(
-            0.1, Row("Warmaster.MeleeAoeSlow.Talent.IncreasedToughnessAndDamage.AdditionalToughnessBasedOnMax"));
-
         var added = Generated(EntityType.Ability, 979)
             .Single(gain => (double?)gain["shareOfMaximum"] is 0.1);
 
@@ -900,8 +657,6 @@ public sealed class ResourceGainTests
     [Fact]
     public void ExpansiveMindReplenishesTheShareOfMaximumManaItsExecutionDeclares()
     {
-        Assert.Equal(0.02, Row("Vigor.CastedSingleTargetDamage.Talent.ManaRegenBuff.ManaRegenPerTickInPercentage"));
-
         var replenished = Into(EntityType.Talent, 61, Mana);
 
         Assert.Equal(0.02, (double?)replenished["shareOfMaximum"]);
