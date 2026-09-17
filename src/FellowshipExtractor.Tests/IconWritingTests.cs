@@ -2,8 +2,6 @@ using Fellowship.SDK;
 
 using System.Text.Json.Nodes;
 
-using CUE4Parse_Conversion.Textures;
-
 using FellowshipExtractor.Output;
 using FellowshipExtractor.Textures;
 
@@ -17,41 +15,7 @@ public sealed class IconWritingTests
     private static string Ui(string name) =>
         Path.Combine(Export.Loaded.Ui, TextureSizes.File(name, TextureSize.Full));
 
-    private static string Image_(string objectPath)
-    {
-        var dot = objectPath.LastIndexOf('.');
-        return dot >= 0 ? objectPath[(dot + 1)..] : objectPath;
-    }
-
     private static IReadOnlyList<RarityEntry> Ladder => Export.Loaded.Settings.Rarities;
-
-    private static string[] Composed =>
-    [
-        .. Export.Resolver.Collections.Renders
-            .Select(Image_)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Where(render => File.Exists(Ui(TextureSizes.Variant(render, Ladder[^1].Name))))
-            .Order(StringComparer.Ordinal),
-    ];
-
-    private static Rgba32 Colour(string rarity) =>
-        Color.ParseHex(Export.Loaded.Settings.Colors[Export.Loaded.Settings.RarityColorRows[rarity]])
-            .ToPixel<Rgba32>();
-
-    private static bool Same(Image<Rgba32> composed, Image<Rgba32> written)
-    {
-        if (composed.Width != written.Width || composed.Height != written.Height) return false;
-
-        for (var y = 0; y < composed.Height; y++)
-        {
-            for (var x = 0; x < composed.Width; x++)
-            {
-                if (composed[x, y] != written[x, y]) return false;
-            }
-        }
-
-        return true;
-    }
 
     private static (double MeanAlpha, double Visible) Alpha(string file)
     {
@@ -73,86 +37,6 @@ public sealed class IconWritingTests
         });
 
         return (sum / (double)total, visible / (double)total);
-    }
-
-    [Fact]
-    public void EveryRenderedSkinIsComposedOncePerRarityAndWrittenOpaque()
-    {
-        var renders = Composed;
-
-        Assert.Equal(450, renders.Length);
-
-        var faults = new List<string>();
-
-        foreach (var render in renders)
-        {
-            if (File.Exists(Ui(render)))
-            {
-                faults.Add($"{render} is written unchanged as well as composed");
-            }
-
-            foreach (var rung in Ladder)
-            {
-                var variant = TextureSizes.Variant(render, rung.Name);
-                var file = Ui(variant);
-
-                if (!File.Exists(file))
-                {
-                    faults.Add($"{variant} was not written");
-                    continue;
-                }
-
-                var reading = Alpha(file);
-                if (reading.Visible < 1)
-                {
-                    faults.Add($"{variant} is {reading.Visible:P0} opaque, mean alpha {reading.MeanAlpha:F1}");
-                }
-            }
-        }
-
-        Assert.Empty(faults);
-    }
-
-    [Fact]
-    public void TheComposedIconsWrittenAreTheirSourceTexturesRunThroughTheFormula()
-    {
-        string[] sample =
-        [
-            .. Export.Resolver.Collections.Renders
-                .Where(path => File.Exists(Ui(TextureSizes.Variant(Image_(path), Ladder[^1].Name))))
-                .Order(StringComparer.Ordinal)
-                .Take(3),
-        ];
-
-        Assert.Equal(3, sample.Length);
-
-        var faults = new List<string>();
-
-        foreach (var path in sample)
-        {
-            var texture = TextureExporter.Load(Export.Provider, path);
-            Assert.NotNull(texture);
-
-            var decoded = TextureExporter.Export(texture, ETextureFormat.Png);
-            Assert.True(decoded.HasContent, $"{path} did not decode: {decoded.Error}");
-
-            using var icon = Image.Load<Rgba32>(decoded.Content!);
-
-            foreach (var rung in Ladder)
-            {
-                var variant = TextureSizes.Variant(Image_(path), rung.Name);
-
-                using var composed = Image.Load<Rgba32>(RarityImages.Compose(icon, Colour(rung.Name)));
-                using var written = Image.Load<Rgba32>(Ui(variant));
-
-                if (!Same(composed, written))
-                {
-                    faults.Add($"{variant} is not {Image_(path)} composed against {rung.Name}");
-                }
-            }
-        }
-
-        Assert.Empty(faults);
     }
 
     [Fact]

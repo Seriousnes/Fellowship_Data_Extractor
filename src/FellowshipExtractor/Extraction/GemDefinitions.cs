@@ -128,7 +128,7 @@ public sealed class GemDefinitions
             if (byTier.TryGetValue(size.Tier, out var stored) && !stored.Equals(rarity, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"Gem tier {size.Tier} sits at both {stored} and {rarity}, so a score the config states per tier " +
+                    $"Gem tier {size.Tier} names both {stored} and {rarity}, so a score the config states per tier " +
                     "cannot be stored under the rarity a gem prints.");
             }
 
@@ -139,7 +139,7 @@ public sealed class GemDefinitions
         {
             throw new InvalidOperationException(
                 "No gem size names both a tier and a rarity, so nothing joins the per tier scores the item " +
-                "settings state to the rarity a gem carries.");
+                "settings state to the rarity a gem has.");
         }
 
         return byTier;

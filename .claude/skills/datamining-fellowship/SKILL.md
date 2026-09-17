@@ -6,8 +6,7 @@ description: Use when a Fellowship tooltip number is wrong or missing, when a va
 # Datamining Fellowship
 
 The general method is the `datamining-unreal-builds` skill. The asset-level data model, the tag join
-and the export contract are `extracting-fellowship-data`. This skill is what the method resolves to in
-this build, and what has already been recovered so nobody pays for it twice.
+and the export contract are `extracting-fellowship-data`.
 
 **The failure this prevents:** fitting a formula to screenshots. It cost a full session here. Three
 independent mistakes cancelled to within 1 per cent on ratings and 12 per cent on Stamina, so only one
@@ -18,25 +17,25 @@ was four instructions in the binary.
 
 | Rung | Where | What it gives |
 | --- | --- | --- |
-| 0. Already done? | `output/export-<build>/entities.jsonl` | Whether the value is already projected onto a document. This is the **output** of extraction, not a view of the build: it answers "does the export carry this entity's cast time", never "what fields does `DA_StatCalculationSettings` ship". A miss here means keep going, not that the asset lacks it. |
+| 0. Already done? | `output/export-<build>/entities.jsonl` | Whether the value is already projected onto a document. This is the **output** of extraction, not a view of the build: it answers "does the export have this entity's cast time", never "what fields does `DA_StatCalculationSettings` declare". A miss here means keep going, not that the asset lacks it. |
 | 1. Schema | `UsmapParser` on `mappings/fellowship-<build>.usmap` | The **complete** input set of a system. `CRDynamicItemSettings` enumerates eight things and there is no ninth. Do this before searching the asset tree; it is what tells you when to stop. |
 | 2. Config and assets | a reader under `src/FellowshipExtractor/Extraction/` | `ProviderFactory.CreateAsync` mounts the containers; `AssetRegistry.ReadAssets` is the index and `provider.LoadPackageObject<T>` reads a package. `.ini` files are container files like any other. Read rows, never file names. |
-| 3. Binary | see below | Everything the first three do not carry. |
+| 3. Binary | see below | Everything the first three do not state. |
 
-What the config already gave up, so nobody reads it twice:
+What the config already states, so nobody reads it twice:
 `[/Script/fellowship.CRItemSettings]` in `DefaultGame.ini` holds `StatPoolCalculation`,
 `ItemLevelsPerUpgrade`, `MaxItemLevel`, the tempering **cost** mods, `GemSocketPowerMultipliers`,
 `ItemGemPowers` and, as of build 24952830, all fourteen fields of `HeroItemPowerPotentialSettings`.
 `ItemSettings.cs` reads that section; `ConfigIni.cs` is the paren-depth-aware literal parser it needs,
-because `ScorePerGemType=((Tier1, 20),…)` sits inside the `HeroItemPowerPotentialSettings=(…)` struct
-and a split on commas shreds it. Map keys are enum **member names**, checked against the usmap enum
+because `ScorePerGemType=((Tier1, 20),…)` is inside the `HeroItemPowerPotentialSettings=(…)` struct
+and a split on commas breaks it. Map keys are enum **member names**, checked against the usmap enum
 tables (`ECRGemTier`, `ECRGemSocketTier`, `ECRHeroItemType`) rather than trusted as text.
 `[/Script/fellowship.CRItemStaticDataSubsystem]` names `DT_SlotWeights`, `DT_AttributeProperties`,
 `DT_HeroItems` and the drop curves. `DynamicLootSystem.ini` names the loot plugin's seven assets.
 
 The extractor has no inspection commands: the only command is `usmap`, and a bare run writes the
 export. Looking at a raw asset, a locres table, the CSV tuning tables or the Blueprint function index
-means writing the reader that needs them, which is a standing approval under `CLAUDE.md`. The CSV
+means writing the reader that needs them. That is a standing approval under `CLAUDE.md`. The CSV
 tables are already parsed in memory by `CsvTables.ReadTags` and `CsvTables.ReadConstants`.
 
 ## Reading the shipping binary
@@ -104,7 +103,7 @@ through the struct that holds it, never through the enum whose name reads closes
 has three of eight fields per block; the rest are real values: `PrimaryWeight` 0.25,
 `SecondaryWeight` 0.3, `StaminaWeight` 0.5, `PrimaryMultiplier` 0.7, `WeightMultiplier` 0.15,
 `StaminaMultiplierItemLevelThreshold` 315, and `SecondaryMultiplier` 0.6 on the base block, 1.5 on the
-fixed block. They live in `StatRows` because no shipped file carries them. `SecondaryBaseMultiplier` is
+fixed block. They are in `StatRows` because no shipped file states them. `SecondaryBaseMultiplier` is
 72 and `PrimaryDivisible` is 15 the same way.
 
 **A Blueprint function can be named right, wired through config, and never called.**
@@ -116,17 +115,17 @@ is native.
 **A parser that raises no exception has told you nothing.** Cooked packages degrade silently. Verify
 values, never the absence of errors.
 
-**Screenshot annotations are reconstructions.** Only the printed total is observed. Two readings
-recorded as "declared plus one roll" were declared plus two, and one recorded as carrying a roll
-carried none. Let the recovered formula tell you the split.
+**Screenshot annotations are reconstructions.** Only the printed total is on the screenshot. Two
+readings recorded as "declared plus one roll" were declared plus two, and one recorded as having a
+roll had none. Let the recovered formula tell you the split.
 
 ## Known unreachable
 
 Native C++ bodies called from Blueprint bytecode are visible as a call with its arguments, never as
 what the callee computes.
 
-**Re-test a "no `.ini` sets it" claim against the build in front of you.** For 24736527 the record here
-said `HeroItemPowerPotentialSettings` was fourteen compiled-in defaults; 24952830's `DefaultGame.ini`
+**Re-test a "no `.ini` sets it" claim against the build in front of you.** For 24736527 the claim here
+was that `HeroItemPowerPotentialSettings` was fourteen compiled-in defaults; 24952830's `DefaultGame.ini`
 writes all fourteen. The schema was byte-identical across the two builds, so nothing in the mappings
 signalled the change — only re-reading the config did.
 
@@ -139,11 +138,11 @@ signalled the change — only re-reading the config did.
 ## Delegating it
 
 Anchor strategies are independent, so this parallelises. One agent builds the harness while others
-chase anchors; one lead each, told plainly that a dead end is an acceptable answer and that guessing a
-formula from the observed numbers would corrupt the evidence; then adversarial verification on separate
+follow anchors; one lead each, told plainly that a dead end is an acceptable answer and that guessing a
+formula from the printed numbers would corrupt the evidence; then adversarial verification on separate
 lenses, with a fidelity lens that re-decodes every cited address rather than trusting the summary. Here
 the refutation lens found a gate the synthesis missed and the fidelity lens found a double rounding in
-the port. Neither surfaced from a single pass.
+the port. Neither came from a single pass.
 
 ## Red flags
 

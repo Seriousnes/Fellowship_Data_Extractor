@@ -11,7 +11,7 @@ public static class WeaponPowerTooltipEndpoint
 {
     public static RouteHandlerBuilder MapWeaponPowerTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 WeaponPowerTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class WeaponPowerTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QueryWeaponPowerTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.WeaponPower)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.WeaponPower)}.")
             .WithStats()
             .Accepts<WeaponPowerTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

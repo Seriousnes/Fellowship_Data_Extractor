@@ -1,36 +1,27 @@
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Fellowship.SDK.Client;
 
-/// <summary>
-/// What one type's tooltip is to be drawn for. Each entity type declares its own request, carrying
-/// only what that type's card reads, so a parameter one card has no use for cannot be sent to it.
-/// </summary>
-public interface ITooltipRequest
-{
-    /// <summary>The entity type whose tooltip this request draws.</summary>
-    static abstract EntityType Type { get; }
-}
-
-/// <summary>What one stat rolled: its ratings, its percentages, or both.</summary>
+/// <summary>Rolls for one stat: its ratings, its percentages, or both.</summary>
 public sealed record StatRolls
 {
-    /// <summary>The rating the stat stands at, one number per roll.</summary>
-    [Description("The rating the stat stands at, one number per roll.")]
+    /// <summary>The stat's rating, one number per roll.</summary>
+    [Description("The stat's rating, one number per roll.")]
     public IReadOnlyList<decimal>? Rating { get; init; }
 
     /// <summary>
-    /// The percentage the stat stands at, one number per roll, for a rating that converts to a percentage.
+    /// The stat's percentage, one number per roll, for a rating that converts to a percentage.
     /// </summary>
     [Description(
-        "The percentage the stat stands at, one number per roll, for a rating that converts to a percentage.")]
+        "The stat's percentage, one number per roll, for a rating that converts to a percentage.")]
     public IReadOnlyList<decimal>? Percentage { get; init; }
 }
 
-/// <summary>What one ability's tooltip is to be drawn for.</summary>
-public sealed record AbilityTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for an ability.</summary>
+public sealed record AbilityTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Ability;
@@ -57,17 +48,17 @@ public sealed record AbilityTooltipRequest : ITooltipRequest
     public int? Difficulty { get; init; }
 
     /// <summary>
-    /// The magnitude each stat stands at, by the name the build gives the stat. A stat rolled more
-    /// times than the item declares slots for it fills a rolled slot with each magnitude stated.
+    /// Each stat's magnitude, by the name the build gives the stat. A stat rolled more times than the
+    /// item declares slots for it fills a rolled slot with each magnitude stated.
     /// </summary>
     [Description(
-        "The magnitude each stat stands at, by the name the build gives the stat, to state a magnitude the " +
-        "tooltip prints rather than computes.")]
+        "Each stat's magnitude, by the name the build gives the stat, to state a magnitude the tooltip " +
+        "prints rather than computes.")]
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
 }
 
-/// <summary>What one blessing's tooltip is to be drawn for.</summary>
-public sealed record BlessingTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a blessing.</summary>
+public sealed record BlessingTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Blessing;
@@ -94,8 +85,8 @@ public sealed record BlessingTooltipRequest : ITooltipRequest
     public int? EquippedTier { get; init; }
 }
 
-/// <summary>What one companion pet's tooltip is to be drawn for.</summary>
-public sealed record CompanionPetTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a companion pet.</summary>
+public sealed record CompanionPetTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.CompanionPet;
@@ -114,8 +105,8 @@ public sealed record CompanionPetTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>What one creature's tooltip is to be drawn for.</summary>
-public sealed record CreatureTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a creature.</summary>
+public sealed record CreatureTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Creature;
@@ -138,8 +129,8 @@ public sealed record CreatureTooltipRequest : ITooltipRequest
     public int? Difficulty { get; init; }
 }
 
-/// <summary>What one currency's tooltip is to be drawn for.</summary>
-public sealed record CurrencyTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a currency.</summary>
+public sealed record CurrencyTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Currency;
@@ -162,8 +153,8 @@ public sealed record CurrencyTooltipRequest : ITooltipRequest
     public string? Rarity { get; init; }
 }
 
-/// <summary>What one dungeon's tooltip is to be drawn for.</summary>
-public sealed record DungeonTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a dungeon.</summary>
+public sealed record DungeonTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Dungeon;
@@ -182,8 +173,8 @@ public sealed record DungeonTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>What one effect's tooltip is to be drawn for.</summary>
-public sealed record EffectTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for an effect.</summary>
+public sealed record EffectTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Effect;
@@ -202,17 +193,17 @@ public sealed record EffectTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 
     /// <summary>
-    /// The magnitude each stat stands at, by the name the build gives the stat. A stat rolled more
-    /// times than the item declares slots for it fills a rolled slot with each magnitude stated.
+    /// Each stat's magnitude, by the name the build gives the stat. A stat rolled more times than the
+    /// item declares slots for it fills a rolled slot with each magnitude stated.
     /// </summary>
     [Description(
-        "The magnitude each stat stands at, by the name the build gives the stat, to state a magnitude the " +
-        "tooltip prints rather than computes.")]
+        "Each stat's magnitude, by the name the build gives the stat, to state a magnitude the tooltip " +
+        "prints rather than computes.")]
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
 }
 
-/// <summary>What one gem's tooltip is to be drawn for.</summary>
-public sealed record GemTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a gem.</summary>
+public sealed record GemTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Gem;
@@ -235,8 +226,8 @@ public sealed record GemTooltipRequest : ITooltipRequest
     public string? Rarity { get; init; }
 }
 
-/// <summary>What one gem trait's tooltip is to be drawn for.</summary>
-public sealed record GemTraitTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a gem trait.</summary>
+public sealed record GemTraitTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.GemTrait;
@@ -255,8 +246,8 @@ public sealed record GemTraitTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>What one item's tooltip is to be drawn for.</summary>
-public sealed record ItemTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for an item.</summary>
+public sealed record ItemTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Item;
@@ -274,8 +265,8 @@ public sealed record ItemTooltipRequest : ITooltipRequest
         "and a link to its page.")]
     public bool? Mobile { get; init; }
 
-    /// <summary>The hero whose reading of the id to draw, where one id reads differently per hero.</summary>
-    [Description("The hero whose reading of the id to draw, where one id reads differently per hero.")]
+    /// <summary>Hero to resolve the id against. One id resolves to a different entity per hero.</summary>
+    [Description("Hero to resolve the id against. One id resolves to a different entity per hero.")]
     public string? Hero { get; init; }
 
     /// <summary>The rarity to read at, by the name the game prints or by tier.</summary>
@@ -315,44 +306,44 @@ public sealed record ItemTooltipRequest : ITooltipRequest
     public decimal? Armor { get; init; }
 
     /// <summary>
-    /// The stats a random slot rolled, named once per roll and without a magnitude, which the tooltip
-    /// computes. A caller holding the magnitudes states them in <see cref="Stats"/> instead.
+    /// The stats a random slot rolled, named once per roll and without a magnitude. The tooltip computes
+    /// the magnitude. A caller holding the magnitudes states them in <see cref="Stats"/> instead.
     /// </summary>
     [Description(
-        "The stats a random slot rolled, named once per roll and without a magnitude, which the tooltip " +
-        "computes. Rolling a stat the item already declares aggregates into that line.")]
+        "The stats a random slot rolled, named once per roll and without a magnitude. The tooltip computes " +
+        "the magnitude. Rolling a stat the item already declares aggregates into that line.")]
     public IReadOnlyList<string>? RandomStats { get; init; }
 
-    /// <summary>The modifiers the item carries.</summary>
+    /// <summary>The item's modifiers.</summary>
     [Description(
-        "The modifiers the item carries, each a kind, an id and an amount. The kinds are trait, blessing " +
+        "The item's modifiers, each a kind, an id and an amount. The kinds are trait, blessing " +
         "and essence.")]
     public IReadOnlyList<ItemModifier>? Modifiers { get; init; }
 
     /// <summary>The traits imbued into the item.</summary>
-    [Description("The traits imbued into the item, each an id and the rank it sits at.")]
+    [Description("The traits imbued into the item, each an id and a rank.")]
     public IReadOnlyList<ImbuedTrait>? ImbuedTraits { get; init; }
 
     /// <summary>How many imbued trait slots are filled.</summary>
     [Description("How many imbued trait slots are filled.")]
     public int? AllocatedTraits { get; init; }
 
-    /// <summary>Draw the imbued traits line whatever slot the item sits in.</summary>
-    [Description("True when the imbued traits line is to be drawn whatever slot the item sits in.")]
+    /// <summary>Draw the imbued traits line whatever slot the item is in.</summary>
+    [Description("True when the imbued traits line is to be drawn whatever slot the item is in.")]
     public bool? HasImbuedTraits { get; init; }
 
     /// <summary>
-    /// The magnitude each stat stands at, by the name the build gives the stat. A stat rolled more
-    /// times than the item declares slots for it fills a rolled slot with each magnitude stated.
+    /// Each stat's magnitude, by the name the build gives the stat. A stat rolled more times than the
+    /// item declares slots for it fills a rolled slot with each magnitude stated.
     /// </summary>
     [Description(
-        "The magnitude each stat stands at, by the name the build gives the stat, to state a magnitude the " +
-        "tooltip prints rather than computes.")]
+        "Each stat's magnitude, by the name the build gives the stat, to state a magnitude the tooltip " +
+        "prints rather than computes.")]
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
 }
 
-/// <summary>What one legendary power's tooltip is to be drawn for.</summary>
-public sealed record LegendaryPowerTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a legendary power.</summary>
+public sealed record LegendaryPowerTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.LegendaryPower;
@@ -371,8 +362,8 @@ public sealed record LegendaryPowerTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>What one mount's tooltip is to be drawn for.</summary>
-public sealed record MountTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a mount.</summary>
+public sealed record MountTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Mount;
@@ -391,8 +382,8 @@ public sealed record MountTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>What one relic power's tooltip is to be drawn for.</summary>
-public sealed record RelicPowerTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a relic power.</summary>
+public sealed record RelicPowerTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.RelicPower;
@@ -411,17 +402,17 @@ public sealed record RelicPowerTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 
     /// <summary>
-    /// The magnitude each stat stands at, by the name the build gives the stat. A stat rolled more
-    /// times than the item declares slots for it fills a rolled slot with each magnitude stated.
+    /// Each stat's magnitude, by the name the build gives the stat. A stat rolled more times than the
+    /// item declares slots for it fills a rolled slot with each magnitude stated.
     /// </summary>
     [Description(
-        "The magnitude each stat stands at, by the name the build gives the stat, to state a magnitude the " +
-        "tooltip prints rather than computes.")]
+        "Each stat's magnitude, by the name the build gives the stat, to state a magnitude the tooltip " +
+        "prints rather than computes.")]
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
 }
 
-/// <summary>What one set bonus's tooltip is to be drawn for.</summary>
-public sealed record SetBonusTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a set bonus.</summary>
+public sealed record SetBonusTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.SetBonus;
@@ -440,8 +431,8 @@ public sealed record SetBonusTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>What one set bonus power's tooltip is to be drawn for.</summary>
-public sealed record SetBonusPowerTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a set bonus power.</summary>
+public sealed record SetBonusPowerTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.SetBonusPower;
@@ -460,8 +451,8 @@ public sealed record SetBonusPowerTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>What one talent's tooltip is to be drawn for.</summary>
-public sealed record TalentTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a talent.</summary>
+public sealed record TalentTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Talent;
@@ -480,8 +471,8 @@ public sealed record TalentTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>What one trait's tooltip is to be drawn for.</summary>
-public sealed record TraitTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a trait.</summary>
+public sealed record TraitTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.Trait;
@@ -504,8 +495,8 @@ public sealed record TraitTooltipRequest : ITooltipRequest
     public string? State { get; init; }
 }
 
-/// <summary>What one trait power's tooltip is to be drawn for.</summary>
-public sealed record TraitPowerTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a trait power.</summary>
+public sealed record TraitPowerTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.TraitPower;
@@ -524,8 +515,8 @@ public sealed record TraitPowerTooltipRequest : ITooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>What one weapon power's tooltip is to be drawn for.</summary>
-public sealed record WeaponPowerTooltipRequest : ITooltipRequest
+/// <summary>Tooltip for a weapon power.</summary>
+public sealed record WeaponPowerTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
     public static EntityType Type => EntityType.WeaponPower;
@@ -548,26 +539,48 @@ public sealed record WeaponPowerTooltipRequest : ITooltipRequest
     public string? Hero { get; init; }
 
     /// <summary>
-    /// The magnitude each stat stands at, by the name the build gives the stat. A stat rolled more
-    /// times than the item declares slots for it fills a rolled slot with each magnitude stated.
+    /// Each stat's magnitude, by the name the build gives the stat. A stat rolled more times than the
+    /// item declares slots for it fills a rolled slot with each magnitude stated.
     /// </summary>
     [Description(
-        "The magnitude each stat stands at, by the name the build gives the stat, to state a magnitude the " +
-        "tooltip prints rather than computes.")]
+        "Each stat's magnitude, by the name the build gives the stat, to state a magnitude the tooltip " +
+        "prints rather than computes.")]
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
 }
 
-/// <summary>The request record each entity type's tooltip takes, where that type draws one.</summary>
+/// <summary>
+/// The request record each entity type's tooltip takes, where that type draws one. Each record is
+/// named for its entity type, and that name is the join in both directions.
+/// </summary>
 public static class TooltipRequestTypes
 {
     private const string Suffix = "TooltipRequest";
+
+    private const string TrimWarning =
+        "A request is read into a type named at run time, so trimming can take that type away.";
+
+    private static readonly ConcurrentDictionary<Type, EntityType> ByRequest = new();
 
     /// <summary>
     /// The record naming what <paramref name="type"/>'s tooltip is drawn for, or null where the type
     /// draws no tooltip.
     /// </summary>
-    [RequiresUnreferencedCode(
-        "A request is read into a type named at run time, so trimming can take that type away.")]
+    [RequiresUnreferencedCode(TrimWarning)]
     public static Type? Find(EntityType type) =>
-        typeof(ITooltipRequest).Assembly.GetType($"{typeof(ITooltipRequest).Namespace}.{type}{Suffix}");
+        typeof(TooltipRequestTypes).Assembly.GetType(
+            $"{typeof(TooltipRequestTypes).Namespace}.{type}{Suffix}");
+
+    /// <summary>The entity type whose tooltip <typeparamref name="TRequest"/> is drawn for.</summary>
+    public static EntityType TypeOf<TRequest>() where TRequest : class =>
+        ByRequest.GetOrAdd(typeof(TRequest), Resolve);
+
+    private static EntityType Resolve(Type request)
+    {
+        var name = request.Name;
+        var member = name.EndsWith(Suffix, StringComparison.Ordinal) ? name[..^Suffix.Length] : name;
+
+        return Enum.TryParse<EntityType>(member, out var type)
+            ? type
+            : throw new InvalidOperationException($"{name} names no {nameof(EntityType)}.");
+    }
 }

@@ -55,10 +55,10 @@ public sealed class CodexClient
     [RequiresUnreferencedCode(TrimWarning)]
     public async Task<string> TooltipAsync<TRequest>(
         int id, TRequest? request = null, CancellationToken cancellation = default)
-        where TRequest : class, ITooltipRequest
+        where TRequest : class
     {
         using var message = new HttpRequestMessage(
-            HttpMethod.Query, CodexAddresses.Tooltip(TRequest.Type, id));
+            HttpMethod.Query, CodexAddresses.Tooltip(TooltipRequestTypes.TypeOf<TRequest>(), id));
 
         message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
 

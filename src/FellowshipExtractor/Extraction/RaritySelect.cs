@@ -1,5 +1,4 @@
 using CUE4Parse.FileProvider;
-using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
 
@@ -66,8 +65,8 @@ internal static class RaritySelect
             if (rarities.Label(tier) is not { } name)
             {
                 throw new InvalidOperationException(
-                    $"{asset}.{function} answers rarity {tier}, which no loot rule set row names, so the table it " +
-                    "fills would key on nothing.");
+                    $"{asset}.{function} answers rarity {tier}, and no loot rule set row names it, so the " +
+                    "table it fills would key on nothing.");
             }
 
             byRarity[name] = value;

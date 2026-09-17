@@ -1,8 +1,5 @@
 using System.ComponentModel;
 
-using Fellowship.SDK.Documents;
-using Fellowship.SDK.Records;
-
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
@@ -10,10 +7,10 @@ namespace Fellowship.Codex.Endpoints;
 
 public sealed record ItemRecordRequest
 {
-    [Description("The id to answer.")]
+    [Description("The Item id.")]
     public int Id { get; init; }
 
-    [Description("The hero whose reading of the id to answer, where one id reads differently per hero.")]
+    [Description("Hero variant of the Item.")]
     public string? Hero { get; init; }
 }
 
@@ -22,7 +19,7 @@ public static class ItemRecordEndpoint
     public static RouteHandlerBuilder MapItemRecord(this IEndpointRouteBuilder group) =>
         group.MapGet("/{id:int}", Handle)
             .WithName("GetItem")
-            .WithSummary($"One {PublicTypes.Noun(EntityType.Item)}'s record.")
+            .WithSummary($"Get {PublicTypes.Noun(EntityType.Item)} by ID.")
             .Produces<ItemRecord>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);

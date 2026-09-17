@@ -100,13 +100,13 @@ public sealed class ItemSettings
     private static double Number(string text, string what, string path) =>
         double.TryParse(text, CultureInfo.InvariantCulture, out var value)
             ? value
-            : throw new InvalidOperationException($"{what} in {path} reads '{text}', which is not a number.");
+            : throw new InvalidOperationException($"{what} in {path} reads '{text}', not a number.");
 
     private static int Integer(string text, string what, string path) =>
         int.TryParse(text, CultureInfo.InvariantCulture, out var value)
             ? value
             : throw new InvalidOperationException(
-                $"{what} in {path} reads '{text}', which is not a whole number.");
+                $"{what} in {path} reads '{text}', not a whole number.");
 
     private static Dictionary<int, TValue> ByTier<TValue>(
         ConfigIni config,
@@ -123,8 +123,8 @@ public sealed class ItemSettings
             if (!members.Values.Contains(key, StringComparer.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"[{SettingsSection}] in {config.Path} keys a map by '{key}', which {enumName} does not " +
-                    "declare. The tier it names cannot be read back.");
+                    $"[{SettingsSection}] in {config.Path} keys a map by '{key}', and {enumName} does not " +
+                    "declare it. The tier it names cannot be read back.");
             }
 
             byTier[Tier(key, enumName)] = read(value.Text, $"{enumName}::{key}", config.Path);
@@ -150,8 +150,8 @@ public sealed class ItemSettings
             if (!rarityByTier.TryGetValue(tier, out var rarity))
             {
                 throw new InvalidOperationException(
-                    $"[{SettingsSection}] in {config.Path} scores gem tier {tier}, which no shipped gem sits at, " +
-                    "so the score belongs to no rarity a gem prints.");
+                    $"[{SettingsSection}] in {config.Path} scores gem tier {tier}, and no shipped gem is at " +
+                    "that tier, so the score belongs to no rarity a gem prints.");
             }
 
             scores[rarity] = score;
@@ -170,7 +170,7 @@ public sealed class ItemSettings
         return int.TryParse(member[digits..], CultureInfo.InvariantCulture, out var tier)
             ? tier
             : throw new InvalidOperationException(
-                $"{enumName} declares '{member}', whose trailing digits are not the tier it names.");
+                $"{enumName} declares '{member}', and its trailing digits are not the tier it names.");
     }
 
     private static Dictionary<string, double> Slots(
@@ -184,15 +184,15 @@ public sealed class ItemSettings
             if (!members.Values.Contains(key, StringComparer.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"[{SettingsSection}] in {config.Path} keys {GemPowersKey} by '{key}', which {ItemTypeEnum} " +
-                    "does not declare.");
+                    $"[{SettingsSection}] in {config.Path} keys {GemPowersKey} by '{key}', and {ItemTypeEnum} " +
+                    "does not declare it.");
             }
 
             if (slots.Find(key) is not { } slot)
             {
                 throw new InvalidOperationException(
-                    $"[{SettingsSection}] in {config.Path} keys {GemPowersKey} by '{key}', which the shipped slot " +
-                    "names do not cover, so the entry would be filed under a slot no item is in.");
+                    $"[{SettingsSection}] in {config.Path} keys {GemPowersKey} by '{key}', and the shipped " +
+                    "slot names do not cover it, so the entry would belong to a slot no item is in.");
             }
 
             powers[slot.Shipped] = Number(value.Text, $"{GemPowersKey}.{key}", config.Path);

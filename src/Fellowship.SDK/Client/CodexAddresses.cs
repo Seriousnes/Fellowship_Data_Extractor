@@ -33,9 +33,9 @@ public static class CodexAddresses
         WithQuery(new StringBuilder($"api/{EntityTypes.Slug(type)}/{Number(id)}"), [("hero", hero)]);
 
     /// <summary>
-    /// The <c>/api</c> route answering one entity's tooltip as a self-contained HTML fragment. The route
-    /// takes a <c>QUERY</c> carrying that type's own <see cref="ITooltipRequest"/> body, so the address
-    /// carries no parameters of its own.
+    /// The <c>/api</c> route answering one entity's self-contained HTML tooltip fragment. The route takes
+    /// a <c>QUERY</c> whose body is that type's own tooltip request record, so the address has no
+    /// parameters of its own.
     /// </summary>
     public static string Tooltip(EntityType type, int id) =>
         $"api/{EntityTypes.Slug(type)}/{Number(id)}/tooltip";
@@ -74,7 +74,7 @@ public static class CodexAddresses
         return WithQuery(new StringBuilder("api/entities"), parameters);
     }
 
-    /// <summary>The <c>/api</c> route answering the catalogue of everything the build carries.</summary>
+    /// <summary>The <c>/api</c> route answering the catalogue of everything in the build.</summary>
     public const string Catalog = "api/catalog";
 
     private static string WithQuery(

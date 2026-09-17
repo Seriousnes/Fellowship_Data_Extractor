@@ -4,11 +4,10 @@
 
 **Replacement.** The float returned by `ModifyAbilityCostForUI` is the cost the UI displays. The
 game's own caller passes the base cost in and writes the return straight back over the stack slot
-that held it, with no arithmetic between the two. No `mulsd` or `mulss` touches the return anywhere
-in the calling routine.
+that held it, with no arithmetic between the two. No `mulsd` or `mulss` has the return as an operand
+anywhere in the calling routine.
 
-Confidence: high. Two independent lines of evidence agree, and the second does not rest on the
-first.
+Confidence: high. Two independent lines of evidence agree.
 
 Read from `fellowship-Win64-Shipping.exe` (177,222,144 bytes) at
 `C:\Program Files (x86)\Steam\steamapps\common\Fellowship\fellowship\Binaries\Win64\`.
@@ -35,9 +34,9 @@ Call site `14509CB4D` to `14509CB7D`:
 
 `1451E53F0` is the base cost provider. Its prologue writes `mov byte [r8],0` at `1451E540A` and
 `mov dword [r9],0` at `1451E5411`, so `r8` is an out parameter for the cost type byte and `r9` an
-out parameter for the cost float. The call site hands it `[rbp-7Ch]` and `[rbp-78h]`.
+out parameter for the cost float. The call site passes it `[rbp-7Ch]` and `[rbp-78h]`.
 
-`[rbp-78h]` is then read into `xmm3` at `14509CB64`, which is the `BaseCost` argument of
+`[rbp-78h]` is then read into `xmm3` at `14509CB64`, the `BaseCost` argument of
 `ModifyAbilityCostForUI`, and the wrapper's return in `xmm0` is stored back into the same
 `[rbp-78h]` at `14509CB7D`. Same slot in, same slot out, no multiply.
 
@@ -85,7 +84,7 @@ the implementation through the vtable:
 144FAEA97  movss [rbp],xmm0
 ```
 
-So vtable slot `+4B8h` takes its float argument in `xmm3`. Two adjacent identity stubs sit in the
+So vtable slot `+4B8h` takes its float argument in `xmm3`. Two adjacent identity stubs are in the
 `UCRGameplayAbility` vtable region:
 
 ```
@@ -100,30 +99,28 @@ So vtable slot `+4B8h` takes its float argument in `xmm3`. Two adjacent identity
 
 Only `14509E9F0` can occupy slot `+4B8h`, because only it returns the `xmm3` argument. `14509EA00`
 returns `xmm2`, matching the two neighbouring registrations `ModifyCastingDuration` and
-`ModifyChannelingDuration`, whose float is the second argument. The vtable arithmetic agrees:
-taking the vtable base as `148AC3708`, slot `+4B8h` is `148AC3BC0`, which holds `14509E9F0`, and the
+`ModifyChannelingDuration`. Their float is the second argument. The vtable arithmetic agrees:
+taking the vtable base as `148AC3708`, slot `+4B8h` is `148AC3BC0` and holds `14509E9F0`, and the
 following slots `148AC3BC8` and `148AC3BD0` both hold `14509EA00`. That base is confirmed by slot
-`+278h` at `148AC3980`, which holds `141569180`, the function the wrapper calls with a `UFunction*`
-and a parameter block and which appears in 4453 vtables across the image.
+`+278h` at `148AC3980`. It holds `141569180`, the function the wrapper calls with a `UFunction*`
+and a parameter block, and that function appears in 4453 vtables across the image.
 
 `UCRGameplayAbility::ModifyAbilityCostForUI_Implementation` therefore returns its `BaseCost`
 argument unchanged. A multiplier contract would make the neutral native default `1.0f`.
-
-The primary evidence above stands without any of this vtable arithmetic.
 
 ## The anchor chain
 
 **1. The name literal.** Exactly one ANSI occurrence of `ModifyAbilityCostForUI`, at `148AC2DE8`
 (file offset `0x8AC17E8`, `.rdata`), null terminated on both sides. Exactly one UTF-16 occurrence,
 at `148AC2C50` (file offset `0x8AC1650`, `.rdata`). The chain runs through the UTF-16 form: the ANSI
-literal has zero code references and lives only in registration data.
+literal has zero code references and is only in registration data.
 
 **2. What holds the ANSI literal.** Three data pointers, all registration records:
 
 - `148ABFE18`, paired with `144FAC0A0`, a lazy `UFunction` construct thunk whose parameter block is
   at `149E52FF0`.
 - `148AC3EC0`, paired with `144FAE990`, the exec thunk quoted above.
-- `149E52FC0` in `.data`, whose property array pointer at `149E52FD8` is `148AC2DB0`.
+- `149E52FC0` in `.data`. Its property array pointer at `149E52FD8` is `148AC2DB0`.
 
 The property array at `148AC2DB0` lists the signature, each record's name pointer first and its
 parameter offset in the low half of the qword at `+0x30`:
@@ -193,26 +190,26 @@ BaseCost)`.
 ```
 
 This is the generated wrapper that resolves the function by name. `141560CF0` takes the object in
-`rcx` and the FName in `rdx` and returns the `UFunction`, which is kept in `rbp` and handed to the
+`rcx` and the FName in `rdx` and returns the `UFunction`. That is kept in `rbp` and passed to the
 dispatch below. `141435950` derives a second object from that `UFunction`, and bit 7 of the dword at
-its `+0D4h` picks the path: build the parameter block and dispatch through `[r10+278h]`, which runs
-a Blueprint override, or call the native implementation directly through `[r10+4B8h]`. Bit 7
-corresponds to `CLASS_Native` in the engine's `EClassFlags`, which is consistent with the branch:
+its `+0D4h` picks the path: build the parameter block and dispatch through `[r10+278h]` for a
+Blueprint override, or call the native implementation directly through `[r10+4B8h]`. Bit 7
+corresponds to `CLASS_Native` in the engine's `EClassFlags`, and the branch agrees:
 a native owner class takes the direct call and a Blueprint generated one takes the dispatch. The
 parameter block it builds at `rsp+20h` matches the reflection offsets exactly: the component at
 `+0`, the cost type byte at `+8`, `xmm6` holding `BaseCost` at `+0Ch`, and `ReturnValue` read back
 from `+10h`.
 
-Both paths return the float in `xmm0` untouched, which the listing above shows to the `ret`. The
-dispatch path loads it at `144FACC3B` and jumps to `144FACC54`; the native path leaves it in `xmm0`
-from the call at `144FACC4D` and falls into the same address. From `144FACC54` to the `ret` at
-`144FACC6D` the wrapper only restores `rbx`, `rbp`, `rsi` and `xmm6`, unwinds the frame and pops
-`rdi`. Nothing scales or replaces `xmm0` between the two calls and the return.
+Both paths return the float in `xmm0` untouched. The dispatch path loads it at `144FACC3B` and jumps
+to `144FACC54`; the native path leaves it in `xmm0` from the call at `144FACC4D` and falls into the
+same address. From `144FACC54` to the `ret` at `144FACC6D` the wrapper only restores `rbx`, `rbp`,
+`rsi` and `xmm6`, unwinds the frame and pops `rdi`. Nothing scales or replaces `xmm0` between the
+two calls and the return.
 
-**5. The wrapper's caller.** `144FACBC0` has exactly one caller in the image, `14509CB74`. It sits
+**5. The wrapper's caller.** `144FACBC0` has exactly one caller in the image, `14509CB74`. It is
 in a function whose entry is `14509C760` and whose body runs to `14509CE05` across four `.pdata`
 regions (`14509C760-14509C7C4`, `14509C7C4-14509C7CC`, `14509C7CC-14509CA8B`,
-`14509CA8B-14509CE05`). That function is itself a virtual, held in seven vtables and sitting at
+`14509CA8B-14509CE05`). That function is itself a virtual, held in seven vtables and at
 offset `+4D0h` in the `148AC3708` one, and it fills a UI record at `rdi`: four floats at `+40h`, the cost type byte at `+54h`, the
 cost at `+58h`, another float at `+5Ch`, and packed flags at `+64h`. Its call site is the
 disassembly quoted at the top.
@@ -226,7 +223,7 @@ wide literal at `148ABEAC2` and the package through the wide literal at `1489815
 ## Scope of the read
 
 Everything above was parsed statically out of the shipping executable. The game was never launched
-and no debugger was attached. Blueprint side callers in the cooked assets were not examined, which
+and no debugger was attached. Blueprint side callers in the cooked assets were not examined. That
 does not weaken the verdict: the single native call site found here is the UI data path itself, it
 takes the base cost from the game's own cost provider and it writes the override's return into the
 UI record it fills.
@@ -240,7 +237,7 @@ a console project that compiles `src/FellowshipExtractor/Usmap/PeImage.cs` and
 
 `xref` decodes every `.pdata` function range and matches RIP relative operands and branch targets.
 `hunt` sweeps `.text` byte by byte for any displacement that could encode a reference to a target
-and back decodes to confirm, which is what recovers references from code with no unwind data, such
+and back decodes to confirm. That recovers references from code with no unwind data, such
 as the FName stub in step 3. `hunt` reports the address of the innermost decode that matches, so an
-instruction carrying a REX prefix is reported one byte high; every address in this document was
+instruction with a REX prefix is reported one byte high; every address in this document was
 re-derived with `dis` or `func`.

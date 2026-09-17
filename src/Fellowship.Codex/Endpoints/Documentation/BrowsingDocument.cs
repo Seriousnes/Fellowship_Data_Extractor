@@ -1,9 +1,5 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-
-using Fellowship.SDK.Documents;
-
-using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Endpoints;

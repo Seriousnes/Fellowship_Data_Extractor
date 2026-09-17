@@ -209,9 +209,9 @@ public sealed class ChromeAssetService(
         store.Settings.TalentTierPlates.TryGetValue(row, out var plate)
             ? Url(plate)
             : throw new InvalidOperationException(
-                $"The build ships no numbered plate for talent row {row}, only rows " +
-                $"{string.Join(", ", store.Settings.TalentTierPlates.Keys)}. A row draws its numeral from that " +
-                "plate, so the row would go unnumbered.");
+                $"The build has no numbered plate for talent row {row}, only rows " +
+                $"{string.Join(", ", store.Settings.TalentTierPlates.Keys)}. A row draws its numeral from " +
+                "that plate.");
 
     public string TalentSlot(string? state) =>
         Url(TalentButtonFamily + Chosen(TalentStates, state));

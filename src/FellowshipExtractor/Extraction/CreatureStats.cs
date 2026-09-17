@@ -90,7 +90,7 @@ public sealed class CreatureStats
         _defaultBaseHealth = _base.TryGetValue($"{DefaultNamespace}.{BaseHealth}", out var shipped)
             ? shipped
             : throw new InvalidOperationException(
-                $"{BaseTable} carries no {DefaultNamespace}.{BaseHealth} row, so every creature that states only a " +
+                $"{BaseTable} has no {DefaultNamespace}.{BaseHealth} row, so every creature that states only a " +
                 "health multiplier would multiply a number nothing states.");
 
         var scaling = CurveRows.Load(
@@ -139,7 +139,7 @@ public sealed class CreatureStats
         {
             return required
                 ? throw new InvalidOperationException(
-                    $"{ScalingTable} carries no {wanted} row, so a creature's reading at a difficulty other than " +
+                    $"{ScalingTable} has no {wanted} row, so a creature's reading at a difficulty other than " +
                     "the first has no curve behind it.")
                 : new Dictionary<int, double>();
         }

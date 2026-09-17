@@ -11,7 +11,7 @@ public static class CreatureTooltipEndpoint
 {
     public static RouteHandlerBuilder MapCreatureTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 CreatureTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class CreatureTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QueryCreatureTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.Creature)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.Creature)}.")
             .WithStats()
             .Accepts<CreatureTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

@@ -191,7 +191,7 @@ public sealed class CodexViewService(
     }
 
     private static string? Body<TRequest>(TRequest request)
-        where TRequest : class, ITooltipRequest
+        where TRequest : class
     {
         var body = JsonSerializer.Serialize(request, CodexJson.Options);
 
@@ -525,7 +525,7 @@ public sealed class CodexViewService(
 
         if (token.Value is null && token.Percent == true) parts.Add("shown as a share");
 
-        if (token.ShowDamageType == true) parts.Add("speaks its damage school");
+        if (token.ShowDamageType == true) parts.Add("shows its damage school");
 
         if (codex.Scaling(token.ScalesOff).ToArray() is { Length: > 0 } scaling)
         {
@@ -537,7 +537,7 @@ public sealed class CodexViewService(
 
     private static string Printed(string format) => format switch
     {
-        Plain => "printed as it stands",
+        Plain => "printed as a number",
         Share => "printed as a share",
         Excess => "printed as its excess over 1",
         Removed => "printed as the share its multiplier removes",

@@ -235,7 +235,7 @@ public static class CraftReasons
 {
     public const string TwoOfAKind = "Two of one is the most an item rolls.";
 
-    public const string TwoBlessings = "Two blessings is the most an item carries.";
+    public const string TwoBlessings = "Two blessings is the most an item has.";
 
     public const string AlreadyImbued = "Already imbued.";
 

@@ -26,9 +26,9 @@ public sealed class Blessings
         if (Wanted.Where(key => !shipped.ContainsKey(key)).ToArray() is { Length: > 0 } missing)
         {
             throw new InvalidOperationException(
-                $"The {TextNamespace} locres namespace no longer holds {string.Join(" or ", missing)}, which is " +
-                "where a blessing tooltip takes its heading and its tier line from, so the card would print words " +
-                "this app chose rather than the ones the build ships.");
+                $"The {TextNamespace} locres namespace no longer holds {string.Join(" or ", missing)}. A " +
+                "blessing tooltip takes its heading and its tier line from those keys, so the card would print " +
+                "words this app chose rather than the ones in the build.");
         }
 
         Wording = new BlessingEntry(

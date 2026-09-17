@@ -1,7 +1,5 @@
 using System.Globalization;
 
-using Fellowship.SDK.Documents;
-
 namespace Fellowship.Codex.Models;
 
 public static class TooltipView

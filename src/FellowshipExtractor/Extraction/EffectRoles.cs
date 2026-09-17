@@ -1,5 +1,3 @@
-using Fellowship.SDK.Models;
-
 namespace FellowshipExtractor.Extraction;
 
 public sealed class EffectRoles

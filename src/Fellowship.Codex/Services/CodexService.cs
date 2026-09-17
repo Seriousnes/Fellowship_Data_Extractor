@@ -405,7 +405,7 @@ public sealed class CodexService : ICodexService
         {
             throw new InvalidOperationException(
                 $"{string.Join(", ", missing)} {(missing.Length == 1 ? "is" : "are")} not a slot the build weights, " +
-                $"so {nameof(CodexService)}.{nameof(Kind)} would read an armour type onto a slot that carries none. " +
+                $"so {nameof(CodexService)}.{nameof(Kind)} would read an armour type onto a slot that has none. " +
                 $"The slots are {string.Join(", ", slots)}.");
         }
     }

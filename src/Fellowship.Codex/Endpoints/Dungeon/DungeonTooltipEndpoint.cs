@@ -11,7 +11,7 @@ public static class DungeonTooltipEndpoint
 {
     public static RouteHandlerBuilder MapDungeonTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 DungeonTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class DungeonTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QueryDungeonTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.Dungeon)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.Dungeon)}.")
             .WithStats()
             .Accepts<DungeonTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

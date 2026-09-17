@@ -11,7 +11,7 @@ public static class SetBonusPowerTooltipEndpoint
 {
     public static RouteHandlerBuilder MapSetBonusPowerTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 SetBonusPowerTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class SetBonusPowerTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QuerySetBonusPowerTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.SetBonusPower)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.SetBonusPower)}.")
             .WithStats()
             .Accepts<SetBonusPowerTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

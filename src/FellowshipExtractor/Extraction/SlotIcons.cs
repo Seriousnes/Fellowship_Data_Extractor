@@ -26,7 +26,7 @@ public sealed class SlotIcons
             {
                 throw new InvalidOperationException(
                     $"{Widget} draws {texture} for the {type} slot, and no shipped slot name is called {type}. " +
-                    "The icon a slot line carries is keyed on that name, so every item would draw the wrong one.");
+                    "The icon on a slot line is keyed on that name, so every item would draw the wrong one.");
             }
 
             _bySlot[slot.Shipped] = texture;
@@ -42,7 +42,7 @@ public sealed class SlotIcons
             Path.GetFileNameWithoutExtension(f.Path).Equals(Widget, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException(
                 $"No {Widget} package in the build. Its {MapField} map is the only thing that says which icon " +
-                "stands for which equipment slot.");
+                "belongs to which equipment slot.");
 
         var defaults = provider.LoadPackage(file).GetExports()
             .FirstOrDefault(export => export.Name.StartsWith(DefaultObjectPrefix, StringComparison.Ordinal))
@@ -52,7 +52,7 @@ public sealed class SlotIcons
         if (PropertyWalk.Get(defaults, MapField)?.GenericValue is not UScriptMap map)
         {
             throw new InvalidOperationException(
-                $"{Widget} no longer holds a {MapField} map, so no slot line would carry its own icon.");
+                $"{Widget} no longer holds a {MapField} map, so no slot line would have its own icon.");
         }
 
         var found = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

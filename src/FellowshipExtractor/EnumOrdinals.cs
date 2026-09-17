@@ -53,7 +53,7 @@ public static class EnumOrdinals
         mappings.Enums.TryGetValue(name, out var members)
             ? members
             : throw new InvalidOperationException(
-                $"The mappings carry no enum named {name}, so its members cannot be read back. Rewrite " +
+                $"The mappings have no enum named {name}, so its members cannot be read back. Rewrite " +
                 $"mappings/{ExtractorOptions.MappingsPattern} with " +
                 "'dotnet run --project src/FellowshipExtractor -- usmap'.");
 }

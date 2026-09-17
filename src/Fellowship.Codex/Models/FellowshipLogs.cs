@@ -143,7 +143,7 @@ public static class FellowshipLogs
 
             if (store.All(type, id).Count == 0)
             {
-                missing.Add($"{kind} id {logged} names nothing the export carries.");
+                missing.Add($"{kind} id {logged} names nothing in the export.");
                 return;
             }
 
@@ -353,8 +353,7 @@ public static class FellowshipLogs
         }
 
         throw new InvalidOperationException(
-            $"Blessing {blessingId} states a rank for none of {string.Join(", ", item.Heroes ?? [])}, so the rank " +
-            "it grants the item cannot be named.");
+            $"Blessing {blessingId} states a rank for none of {string.Join(", ", item.Heroes ?? [])}.");
     }
 
     private static string? Name(EntityType type, int id, IEntityStoreService store) =>

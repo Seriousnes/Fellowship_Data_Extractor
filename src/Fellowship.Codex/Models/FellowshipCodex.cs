@@ -62,7 +62,7 @@ internal static class DocumentFields
             double number => number,
             int number => number,
             var boxed => throw new InvalidOperationException(
-                $"{document.GetType().Name}.{name} is {boxed.GetType().Name}, which DocumentFields.Number does not unbox."),
+                $"{document.GetType().Name}.{name} is {boxed.GetType().Name}, and DocumentFields.Number does not unbox it."),
         };
 
     public static string? Text(EntityDocument document, string name) =>

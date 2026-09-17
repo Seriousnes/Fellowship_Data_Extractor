@@ -42,7 +42,7 @@ public sealed class IconImages(
         }
 
         throw new InvalidOperationException(
-            $"An icon was asked for at rarity {rarity}, which is no rarity the settings publish, so it " +
+            $"An icon was asked for at rarity {rarity}, and the settings publish no such rarity, so it " +
             "would name a variant no run writes.");
     }
 

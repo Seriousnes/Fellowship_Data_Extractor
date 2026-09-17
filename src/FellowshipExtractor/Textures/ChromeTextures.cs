@@ -245,6 +245,6 @@ public static class ChromeTextures
         settings.Colors.TryGetValue(row, out var hex)
             ? Color.ParseHex(hex).ToPixel<Rgba32>()
             : throw new InvalidOperationException(
-                $"{row} is not a row the named colour table carries, so the modifier chrome it paints would be " +
+                $"{row} is not a row in the named colour table, so the modifier chrome it paints would be " +
                 "multiplied by no colour at all.");
 }

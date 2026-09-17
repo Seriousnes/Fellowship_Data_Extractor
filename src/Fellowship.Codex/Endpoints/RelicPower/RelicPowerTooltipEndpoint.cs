@@ -11,7 +11,7 @@ public static class RelicPowerTooltipEndpoint
 {
     public static RouteHandlerBuilder MapRelicPowerTooltip(this IEndpointRouteBuilder group) =>
         group.MapMethods("/{id:int}/tooltip", [HttpMethods.Query], (
-                [Description("The id to draw.")] int id,
+                [Description("The id.")] int id,
                 RelicPowerTooltipRequest? request,
                 HttpContext http,
                 ITooltipService tooltips,
@@ -19,7 +19,7 @@ public static class RelicPowerTooltipEndpoint
             Handle(id, request, http, tooltips, store))
             .WithName("QueryRelicPowerTooltip")
             .WithSummary(
-                $"One {PublicTypes.Noun(EntityType.RelicPower)}'s tooltip as a self-contained HTML fragment.")
+                $"Self-contained HTML tooltip fragment for one {PublicTypes.Noun(EntityType.RelicPower)}.")
             .WithStats()
             .Accepts<RelicPowerTooltipRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK, "text/html")

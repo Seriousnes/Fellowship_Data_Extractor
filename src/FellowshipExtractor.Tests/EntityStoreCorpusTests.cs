@@ -1,9 +1,6 @@
 using System.Reflection;
 
 using Fellowship.SDK.Documents;
-
-using Fellowship.Codex;
-using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
 using Microsoft.Extensions.Logging.Abstractions;
