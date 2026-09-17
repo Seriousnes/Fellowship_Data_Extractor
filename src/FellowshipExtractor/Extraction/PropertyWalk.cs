@@ -2,6 +2,7 @@ using System.Globalization;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Objects.Properties;
+using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.UE4.Objects.GameplayTags;
 using CUE4Parse.UE4.Objects.UObject;
 
@@ -108,6 +109,7 @@ public static class PropertyWalk
             : path,
         FPackageIndex index => index.IsNull ? null : index.ResolvedObject?.GetPathName() ?? index.Name,
         string s => s.Length == 0 ? null : s,
+        FText text => StringTables.Resolve(text) is { Length: > 0 } resolved && resolved != "None" ? resolved : null,
         FScriptStruct scriptStruct => AsString(scriptStruct.StructType),
         IPropertyHolder holder when Get(holder, "TagName") is { } tagName => AsString(tagName.GenericValue),
         _ => value.ToString() is { Length: > 0 } text && text != "None" ? text : null,

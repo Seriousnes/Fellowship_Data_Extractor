@@ -20,6 +20,7 @@ public readonly record struct ConstantRecord(
 public static partial class CsvTables
 {
     private const string GuidTableDir = "Content/guid/";
+    private const string StringTableDir = "Content/Localization/StringTables/";
 
     public static IEnumerable<TagRecord> ReadTags(AbstractFileProvider provider)
     {
@@ -42,7 +43,9 @@ public static partial class CsvTables
 
     public static IEnumerable<ConstantRecord> ReadConstants(AbstractFileProvider provider)
     {
-        foreach (var file in CsvFiles(provider).Where(f => !f.Path.Contains(GuidTableDir, StringComparison.OrdinalIgnoreCase)))
+        foreach (var file in CsvFiles(provider).Where(f =>
+            !f.Path.Contains(GuidTableDir, StringComparison.OrdinalIgnoreCase) &&
+            !f.Path.Contains(StringTableDir, StringComparison.OrdinalIgnoreCase)))
         {
             var table = Path.GetFileNameWithoutExtension(file.Path);
             string[]? columns = null;
