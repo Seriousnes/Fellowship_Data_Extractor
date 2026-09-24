@@ -12,7 +12,7 @@ Exports the game data of Fellowship, by Chief Rebel AB, and serves that export a
 - **`src/Fellowship.Codex.Mcp`**: an MCP server that answers an agent from the same export over
   standard input and output.
 - **`src/Fellowship.SDK`**: the published package with data models and a HTTP API client with structured request and response models for the website. For installation, see
-  [Fellowship.SDK](src/Fellowship.SDK/README.md).
+  [Codex.FellowshipAnalyzer.SDK](src/Fellowship.SDK/README.md).
 
 ## Prerequisites
 

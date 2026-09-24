@@ -1,4 +1,4 @@
-# Fellowship.SDK
+# Codex.FellowshipAnalyzer.SDK
 
 All entity documents and API request/response models, plus a strongly-typed .NET API client for accessing codex.fellowshipanalyzer.com.
 
@@ -24,7 +24,7 @@ The package is published to GitHub Packages.
 3. Add the package to your project:
 
    ```powershell
-   dotnet add package Fellowship.SDK
+   dotnet add package Codex.FellowshipAnalyzer.SDK
    ```
 
 ## Read the codex
