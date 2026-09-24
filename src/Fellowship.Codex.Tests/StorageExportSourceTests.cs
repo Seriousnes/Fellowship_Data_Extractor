@@ -34,6 +34,23 @@ public class StorageExportSourceTests
     }
 
     [Fact]
+    public async Task The_newer_pair_is_kept_as_the_bytes_a_download_answers()
+    {
+        var source = Reading(new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [ExportReader.Data("1000", ExportReader.EntitiesName)] = Older,
+            [ExportReader.Data("1000", ExportReader.SettingsName)] = Settings,
+            [ExportReader.Data("1001", ExportReader.EntitiesName)] = Newer,
+            [ExportReader.Data("1001", ExportReader.SettingsName)] = Settings,
+        });
+
+        var history = await source.LoadAsync(Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Equal(Newer, System.Text.Encoding.UTF8.GetString(history.Files.Entities.Span));
+        Assert.Equal(Settings, System.Text.Encoding.UTF8.GetString(history.Files.Settings.Span));
+    }
+
+    [Fact]
     public async Task A_prefix_carrying_documents_without_settings_names_the_file_it_lacks()
     {
         var source = Reading(new Dictionary<string, string>(StringComparer.Ordinal)

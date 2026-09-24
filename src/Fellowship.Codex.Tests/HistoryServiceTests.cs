@@ -10,6 +10,7 @@ public class HistoryServiceTests
         new(new ExportHistory(
             "1002",
             new ExportSnapshot(Bare, []),
+            new ExportFiles(ReadOnlyMemory<byte>.Empty, ReadOnlyMemory<byte>.Empty),
             older.ToDictionary(
                 version => version.Build,
                 version => new ExportVersion(

@@ -53,6 +53,18 @@ public sealed class CodexClient
         ReadAsync<CatalogResponse>(CodexAddresses.Catalog, cancellation);
 
     [RequiresUnreferencedCode(TrimWarning)]
+    public Task<ExportResponse> ExportAsync(CancellationToken cancellation = default) =>
+        ReadAsync<ExportResponse>(CodexAddresses.Export, cancellation);
+
+    [RequiresUnreferencedCode(TrimWarning)]
+    public Task<byte[]> ExportEntitiesAsync(CancellationToken cancellation = default) =>
+        DownloadAsync(CodexAddresses.ExportEntities, cancellation);
+
+    [RequiresUnreferencedCode(TrimWarning)]
+    public Task<byte[]> ExportSettingsAsync(CancellationToken cancellation = default) =>
+        DownloadAsync(CodexAddresses.ExportSettings, cancellation);
+
+    [RequiresUnreferencedCode(TrimWarning)]
     public async Task<string> TooltipAsync<TRequest>(
         int id, TRequest? request = null, CancellationToken cancellation = default)
         where TRequest : class
@@ -99,6 +111,16 @@ public sealed class CodexClient
             ?? throw new CodexException(
                 response.StatusCode,
                 new CodexFault { Title = "The codex answered nothing.", Detail = $"{address} answered null." });
+    }
+
+    [RequiresUnreferencedCode(TrimWarning)]
+    private async Task<byte[]> DownloadAsync(string address, CancellationToken cancellation)
+    {
+        using var response = await http.GetAsync(address, cancellation).ConfigureAwait(false);
+
+        await ThrowIfFailed(response, cancellation).ConfigureAwait(false);
+
+        return await response.Content.ReadAsByteArrayAsync(cancellation).ConfigureAwait(false);
     }
 
     [RequiresUnreferencedCode(TrimWarning)]

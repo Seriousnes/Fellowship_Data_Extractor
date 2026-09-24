@@ -21,6 +21,13 @@ public class CodexAddressTests
     }
 
     [Fact]
+    public void The_export_routes_name_the_files_the_extractor_writes()
+    {
+        Assert.Equal($"{CodexAddresses.Export}/{ExportReader.EntitiesName}", CodexAddresses.ExportEntities);
+        Assert.Equal($"{CodexAddresses.Export}/{ExportReader.SettingsName}", CodexAddresses.ExportSettings);
+    }
+
+    [Fact]
     public void A_page_and_a_record_address_the_same_entity()
     {
         Assert.Equal("item/5218?hero=Gunde", CodexAddresses.Page(EntityType.Item, 5218, "Gunde"));

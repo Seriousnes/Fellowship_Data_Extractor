@@ -70,6 +70,9 @@ public sealed class FolderExportSource(string folder) : IExportSource
         return new ExportHistory(
             ExportFolders.Id(here.Name),
             new ExportSnapshot(settings, ExportReader.ReadEntities(lines)),
+            new ExportFiles(
+                await File.ReadAllBytesAsync(Path.Combine(Folder, ExportReader.EntitiesName), cancellationToken),
+                await File.ReadAllBytesAsync(Path.Combine(Folder, ExportReader.SettingsName), cancellationToken)),
             await OlderAsync(here, cancellationToken));
     }
 
