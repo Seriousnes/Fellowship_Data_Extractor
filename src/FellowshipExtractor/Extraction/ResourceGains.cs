@@ -29,6 +29,14 @@ public sealed class ResourceGains(
     public const string ModifierMagnitude = "ModifierMagnitude";
 
     private const string ModifiersField = "Modifiers";
+
+    private const string AdditionalEffectsComponent = "AdditionalEffectsGameplayEffectComponent";
+
+    private const string CopiesSpecField = "bOnApplicationCopyDataFromOriginalSpec";
+
+    private const string OnApplicationField = "OnApplicationGameplayEffects";
+
+    private const string EffectClassField = "EffectClass";
     private const string ExecutionsField = "Executions";
     private const string ScopedField = "CalculationModifiers";
     private const string AggregatorField = "TransientAggregatorIdentifier";
@@ -1889,8 +1897,15 @@ public sealed class ResourceGains(
         if (_vehicles.TryGetValue(classPath, out var cached)) return cached;
         if (Default(classPath) is not { } effect) return _vehicles[classPath] = [];
 
+        _vehicles[classPath] = [];
+
         var carried = new List<Vehicle>();
         var owner = Leaf(effect.Owner?.Name ?? effect.Name, ClassSuffix);
+
+        foreach (var forwarded in Forwarded(effect))
+        {
+            carried.AddRange(Vehicles(forwarded).Where(vehicle => vehicle.Tag is not null));
+        }
 
         if (PropertyWalk.Get(effect, ModifiersField)?.GenericValue is UScriptArray modifiers)
         {
@@ -1938,6 +1953,22 @@ public sealed class ResourceGains(
         }
 
         return _vehicles[classPath] = carried;
+    }
+
+    private static IEnumerable<string> Forwarded(UObject effect)
+    {
+        foreach (var export in effect.Owner?.GetExports() ?? [])
+        {
+            if (export.ExportType != AdditionalEffectsComponent) continue;
+            if (PropertyWalk.Get(export, CopiesSpecField)?.GenericValue is not true) continue;
+            if (PropertyWalk.Get(export, OnApplicationField)?.GenericValue is not UScriptArray applied) continue;
+
+            foreach (var entry in applied.Properties)
+            {
+                if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder conditional }) continue;
+                if (PropertyWalk.GetString(conditional, EffectClassField) is { Length: > 0 } path) yield return path;
+            }
+        }
     }
 
     private string Kind(IPropertyHolder magnitude)

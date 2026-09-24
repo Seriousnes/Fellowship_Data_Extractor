@@ -664,12 +664,13 @@ public sealed class ResourceGainTests
     }
 
     [Fact]
-    public void OwedInBloodStatesTheOrbItsOwnModifierDeclares()
+    public void OwedInBloodStatesTheOrbTheAbilityAssignsThroughTheForwardedEffect()
     {
-        var owed = Into(EntityType.Effect, 3245, Tertiary);
+        var owed = Into(EntityType.Ability, 2297, Tertiary);
 
         Assert.Equal(1, (double?)owed["amount"]);
-        Assert.Equal(ResourceGains.ModifierMagnitude, (string?)owed["sourceKind"]);
+        Assert.Equal("Orb", (string?)owed["per"]);
+        Assert.Equal("Gunde.DotTransfer.Orb.NumOfStacksPerOrb", (string?)owed["source"]);
     }
 
     [Fact]
