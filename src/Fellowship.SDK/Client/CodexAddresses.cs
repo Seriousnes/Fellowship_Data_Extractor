@@ -77,6 +77,12 @@ public static class CodexAddresses
     /// <summary>The <c>/api</c> route answering the catalogue of everything in the build.</summary>
     public const string Catalog = "api/catalog";
 
+    public const string Export = "api/export";
+
+    public const string ExportEntities = $"{Export}/entities.jsonl";
+
+    public const string ExportSettings = $"{Export}/settings.json";
+
     private static string WithQuery(
         StringBuilder address, IReadOnlyList<(string Key, string? Value)> parameters)
     {

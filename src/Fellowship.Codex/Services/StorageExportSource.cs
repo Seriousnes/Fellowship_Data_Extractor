@@ -1,3 +1,5 @@
+using System.Text;
+
 using Fellowship.Storage;
 
 namespace Fellowship.Codex.Services;
@@ -13,8 +15,10 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
 
         var latest = builds[0];
 
-        var settings = ExportReader.ReadSettings(
-            await TextAsync(latest, ExportReader.SettingsName, cancellationToken));
+        var settingsText = await TextAsync(latest, ExportReader.SettingsName, cancellationToken)
+            ?? throw ExportReader.Missing(ExportReader.SettingsName);
+
+        var settings = ExportReader.ReadSettings(settingsText);
 
         var entities = await TextAsync(latest, ExportReader.EntitiesName, cancellationToken)
             ?? throw ExportReader.Missing(ExportReader.EntitiesName);
@@ -33,6 +37,7 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
         return new ExportHistory(
             latest,
             new ExportSnapshot(settings, ExportReader.ReadEntities(ExportReader.Lines(entities))),
+            new ExportFiles(Encoding.UTF8.GetBytes(entities), Encoding.UTF8.GetBytes(settingsText)),
             older);
     }
 

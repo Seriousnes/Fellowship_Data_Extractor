@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using CUE4Parse.FileProvider;
+
 using Fellowship.Codex.Services;
 using FellowshipExtractor.Extraction;
 using FellowshipExtractor.Output;
@@ -16,6 +18,31 @@ public sealed class Export
     private static readonly Lazy<Export> Instance = new(Load, isThreadSafe: true);
 
     public static Export Loaded => Instance.Value;
+
+    private const string Mappings = "FELLOWSHIP_USMAP";
+
+    private static readonly Lazy<AbstractFileProvider> ProviderInstance = new(Mount, isThreadSafe: true);
+
+    public static AbstractFileProvider Provider => ProviderInstance.Value;
+
+    private static AbstractFileProvider Mount()
+    {
+        var options = new ExtractorOptions
+        {
+            MappingsFile = Environment.GetEnvironmentVariable(Mappings),
+            Game = ExtractorOptions.ParseGame(Environment.GetEnvironmentVariable("FELLOWSHIP_UE_VERSION")),
+        };
+
+        if (options.ResolvedMappingsFile is null)
+        {
+            throw new InvalidOperationException(
+                $"No mappings to read the build with. Set {Mappings} to a .usmap for this build, or write " +
+                $"mappings/{ExtractorOptions.MappingsPattern} with " +
+                "'dotnet run --project src/FellowshipExtractor -- usmap'.");
+        }
+
+        return ProviderFactory.CreateAsync(options).GetAwaiter().GetResult();
+    }
 
     public required SettingsFile Settings { get; init; }
     public required IReadOnlyList<(EntityType Type, int Id, string? Name, JsonObject Body)> Documents { get; init; }

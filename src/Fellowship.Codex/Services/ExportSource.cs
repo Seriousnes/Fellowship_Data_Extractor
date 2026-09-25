@@ -13,9 +13,12 @@ public sealed record ExportVersion(
     IReadOnlyDictionary<DocumentKey, IReadOnlyList<string>> Documents,
     string Settings);
 
+public sealed record ExportFiles(ReadOnlyMemory<byte> Entities, ReadOnlyMemory<byte> Settings);
+
 public sealed record ExportHistory(
     string Latest,
     ExportSnapshot Snapshot,
+    ExportFiles Files,
     IReadOnlyDictionary<string, ExportVersion> Older);
 
 public interface IExportSource
