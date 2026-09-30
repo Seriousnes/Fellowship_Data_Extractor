@@ -59,7 +59,8 @@ public static class ExportRun
         var resolver = new EntityResolver(provider);
 
         Console.WriteLine(
-            $"presentation index: {resolver.Presentation.RowCount} rows across {resolver.Presentation.TableCount} tables");
+            $"presentation index: {resolver.Presentation.RowCount} rows across {resolver.Presentation.TableCount} tables, " +
+            $"{resolver.Presentation.AdditionalAssetCount} additional abilities");
         Console.WriteLine($"tuning constants:   {resolver.ConstantCount} keys");
         Console.WriteLine(
             $"granted abilities:  {resolver.Mappings.RowCount} mappings naming " +

@@ -44,6 +44,8 @@ public sealed class ResourceNames(ResourcePools pools, HeroNames heroes)
         _heroesOf.Clear();
         _triggers.Clear();
 
+        var learned = new HashSet<(string Description, string Channel, double? Amount, double? Share, string? Hero)>();
+
         foreach (var entity in entities)
         {
             if (entity.Generates is not { Count: > 0 } gains) continue;
@@ -54,6 +56,8 @@ public sealed class ResourceNames(ResourcePools pools, HeroNames heroes)
             foreach (var gain in gains)
             {
                 var hero = Owning(gain, entity.OwningHeroes) is [{ } only] ? only : null;
+
+                if (!learned.Add((description, gain.Resource, gain.Amount, gain.ShareOfMaximum, hero))) continue;
 
                 Triggering(segments, gain);
 

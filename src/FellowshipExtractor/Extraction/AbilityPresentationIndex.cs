@@ -16,10 +16,12 @@ public sealed class AbilityPresentationIndex
 
     private readonly Dictionary<string, AbilityPresentation> _byRowName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AbilityPresentation> _byAbilityAsset = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, AbilityPresentation?> _byAdditionalAsset = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _names = new(StringComparer.OrdinalIgnoreCase);
 
     public int TableCount { get; }
     public int RowCount { get; }
+    public int AdditionalAssetCount => _byAdditionalAsset.Values.Count(p => p is not null);
 
     public IReadOnlyCollection<string> AbilityNames => _names;
 
@@ -60,6 +62,17 @@ public sealed class AbilityPresentationIndex
                     _byAbilityAsset.TryAdd(StripClassSuffix(AssetName(asset)), presentation);
                 }
 
+                if (PropertyWalk.Get(row, "AdditionalGameplayAbilityAssets")?.GenericValue is UScriptArray additional)
+                {
+                    foreach (var element in additional.Properties)
+                    {
+                        if (PropertyWalk.AsString(element?.GenericValue) is not { } path) continue;
+
+                        var key = StripClassSuffix(AssetName(path));
+                        if (!_byAdditionalAsset.TryAdd(key, presentation)) _byAdditionalAsset[key] = null;
+                    }
+                }
+
                 if (PropertyWalk.GetString(row, "Name") is { } shown) _names.Add(shown);
             }
         }
@@ -75,6 +88,11 @@ public sealed class AbilityPresentationIndex
         if (_byAbilityAsset.TryGetValue(StripClassSuffix(abilityName), out var viaAsset))
         {
             return viaAsset with { MatchedBy = "GameplayAbilityAsset" };
+        }
+
+        if (_byAdditionalAsset.GetValueOrDefault(StripClassSuffix(abilityName)) is { } viaAdditional)
+        {
+            return viaAdditional with { MatchedBy = "AdditionalGameplayAbilityAssets" };
         }
 
         return null;

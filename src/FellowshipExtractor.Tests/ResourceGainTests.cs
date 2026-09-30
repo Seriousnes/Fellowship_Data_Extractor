@@ -622,6 +622,13 @@ public sealed class ResourceGainTests
     }
 
     [Fact]
+    public void ASentenceTwoAbilitiesShareCountsOnceTowardTheirChannelsName()
+    {
+        Assert.Equal("Combo Points", (string?)Into(EntityType.Ability, 1213, Second)["resourceName"]);
+        Assert.Equal("Combo Points", (string?)Into(EntityType.Ability, 2309, Second)["resourceName"]);
+    }
+
+    [Fact]
     public void ManaIsNamedOnEveryChannelEntryBecauseNoHerosSentencesCallItAnythingElse() =>
         Assert.All(
             Written().Where(gain => (string?)gain["resource"] == Mana),
