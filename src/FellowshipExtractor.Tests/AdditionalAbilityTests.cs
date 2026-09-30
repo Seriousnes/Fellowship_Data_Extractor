@@ -12,7 +12,7 @@ public sealed class AdditionalAbilityTests
     [Theory]
     [InlineData(2308, 1129, "Backstab", "Mara_backstab")]
     [InlineData(2309, 1213, "Skittering Blades", "Mara_AOEBuilder")]
-    public void AnAdditionalAbilityCarriesTheNameIconAndDescriptionOfTheRowListingIt(
+    public void AnAdditionalAbilityHasTheNameIconAndDescriptionOfTheRowListingIt(
         int additional, int listing, string name, string icon)
     {
         var body = Ability(additional);

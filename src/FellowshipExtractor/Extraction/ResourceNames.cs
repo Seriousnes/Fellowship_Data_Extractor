@@ -57,9 +57,9 @@ public sealed class ResourceNames(ResourcePools pools, HeroNames heroes)
             {
                 var hero = Owning(gain, entity.OwningHeroes) is [{ } only] ? only : null;
 
-                if (!learned.Add((description, gain.Resource, gain.Amount, gain.ShareOfMaximum, hero))) continue;
-
                 Triggering(segments, gain);
+
+                if (!learned.Add((description, gain.Resource, gain.Amount, gain.ShareOfMaximum, hero))) continue;
 
                 foreach (var printed in Printed(segments, gain))
                 {
