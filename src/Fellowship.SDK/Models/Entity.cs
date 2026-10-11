@@ -85,7 +85,13 @@ public sealed record Entity
     public double? Duration { get; init; }
     public double? Period { get; init; }
 
-    public bool? ScalesWithHaste { get; init; }
+    public bool? CastTimeScalesWithHaste { get; init; }
+
+    public IReadOnlyList<string>? CooldownDurationScalesOff { get; init; }
+
+    public IReadOnlyList<string>? CooldownTimeRateScalesOff { get; init; }
+
+    public IReadOnlyList<int>? CooldownHasteGrantedBy { get; init; }
 
     public bool? TickrateIgnoresHaste { get; init; }
 

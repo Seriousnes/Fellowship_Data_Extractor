@@ -40,6 +40,8 @@ public sealed class EntityResolver
     private readonly FAssetData[] _assets;
     private readonly ConstantsTable _constants;
     private readonly EffectCalculationPresets _presets;
+    private readonly CooldownScaling _cooldowns;
+    private Dictionary<string, List<int>>? _augmentationsByGrantedTag;
 
     private readonly Dictionary<string, bool> _spreadSources = new(StringComparer.OrdinalIgnoreCase);
 
@@ -136,6 +138,7 @@ public sealed class EntityResolver
         _tags = [.. CsvTables.ReadTags(provider)];
         _constants = new ConstantsTable(provider);
         _presets = new EffectCalculationPresets(provider, _assets);
+        _cooldowns = new CooldownScaling(provider, _assets, _constants);
         _multiplyingOps = Reductions.MultiplyingOps(mappings);
 
         IndexAssets();
@@ -936,6 +939,9 @@ public sealed class EntityResolver
 
         var charges = Charged(cdo);
 
+        var cooldown = Number(split, "cooldown");
+        var timing = cdo is null || cooldown is null ? null : _cooldowns.Of(cdo, charges.Charges);
+
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
         var (baseline, talents) = Numbers.SplitTalents(split.Rest);
 
@@ -1059,9 +1065,12 @@ public sealed class EntityResolver
             CastTime = Number(split, "castTime"),
             ChannelTime = Number(split, "channelTime"),
             ChannelTick = Number(split, "channelTick"),
-            Cooldown = Number(split, "cooldown"),
+            Cooldown = cooldown,
             Charges = charges.Charges,
             ChargesByLevelType = charges.ByLevelType,
+            CooldownDurationScalesOff = timing?.DurationScalesOff,
+            CooldownTimeRateScalesOff = timing?.TimeRateScalesOff,
+            CooldownHasteGrantedBy = cdo is null || cooldown is null ? null : Empty(HasteGrantedBy(cdo, charges.Charges)),
             Cost = Number(split, "cost"),
             Resource = display.Resource,
             Range = Number(split, "range"),
@@ -1069,7 +1078,7 @@ public sealed class EntityResolver
             Radius = Number(split, "radius"),
             Duration = Number(split, "duration"),
             Period = Number(split, "period"),
-            ScalesWithHaste = ScalesWithHaste(cdo) ? true : null,
+            CastTimeScalesWithHaste = CastTimeScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             MaxStacks = MaxStacks(cdo),
             Infinite = Infinite(cdo) ? true : null,
@@ -1308,10 +1317,45 @@ public sealed class EntityResolver
         return counts.Charges == SingleCast ? counts with { Charges = null } : counts;
     }
 
-    private static bool ScalesWithHaste(UObject? cdo) =>
-        cdo is not null && PropertyWalk.Get(cdo, HasteScalingField)?.GenericValue is true;
+    private bool CastTimeScalesWithHaste(UObject? cdo) =>
+        cdo is not null && ClassDefaults.Inherited(cdo, HasteScalingField, _provider)?.GenericValue is true;
 
     private const string HasteScalingField = "ScaleTimeWithHaste";
+
+    private IReadOnlyList<int> HasteGrantedBy(UObject cdo, double? charges)
+    {
+        if (charges > 1) return [];
+        if (_cooldowns.Charged(cdo)?.TimeRateScalesOff?.Contains(CooldownScaling.HasteAttribute) is not true) return [];
+
+        return
+        [
+            .. MaximumCharges.Raising(cdo, _constants, _mappings)
+                .SelectMany(tag => AugmentationsGranting().GetValueOrDefault(tag) ?? [])
+                .Distinct()
+                .Order(),
+        ];
+    }
+
+    private Dictionary<string, List<int>> AugmentationsGranting()
+    {
+        if (_augmentationsByGrantedTag is { } built) return built;
+
+        var granting = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+
+        foreach (var tag in _tags)
+        {
+            if (!tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase)) continue;
+            if (LoadDefaultObject(FindAsset(tag.Name)) is not { } augmentation) continue;
+
+            foreach (var granted in PropertyWalk.GetTags(augmentation, GrantedTagsField) ?? [])
+            {
+                if (!granting.TryGetValue(granted, out var ids)) granting[granted] = ids = [];
+                if (!ids.Contains(tag.NetId)) ids.Add(tag.NetId);
+            }
+        }
+
+        return _augmentationsByGrantedTag = granting;
+    }
 
     private static Dictionary<string, string> TalentGates(UObject cdo, IEnumerable<string> groups)
     {
@@ -1443,12 +1487,17 @@ public sealed class EntityResolver
         var filled = outer;
         foreach (var ability in inner) filled = Fill(filled, ability);
 
+        var cooldown = Agreed(outer.Cooldown, inner, ability => ability.Cooldown);
+
         return filled with
         {
             CastTime = Agreed(outer.CastTime, inner, ability => ability.CastTime),
             ChannelTime = Agreed(outer.ChannelTime, inner, ability => ability.ChannelTime),
             ChannelTick = Agreed(outer.ChannelTick, inner, ability => ability.ChannelTick),
-            Cooldown = Agreed(outer.Cooldown, inner, ability => ability.Cooldown),
+            Cooldown = cooldown,
+            CooldownDurationScalesOff = cooldown is null ? null : filled.CooldownDurationScalesOff,
+            CooldownTimeRateScalesOff = cooldown is null ? null : filled.CooldownTimeRateScalesOff,
+            CooldownHasteGrantedBy = cooldown is null ? null : filled.CooldownHasteGrantedBy,
             Charges = Agreed(outer.Charges, inner, ability => ability.Charges),
             Cost = Agreed(outer.Cost, inner, ability => ability.Cost),
             Range = Agreed(outer.Range, inner, ability => ability.Range),
@@ -1486,7 +1535,10 @@ public sealed class EntityResolver
         Category = outer.Category ?? inner.Category,
         ChargesByLevelType = outer.ChargesByLevelType ?? inner.ChargesByLevelType,
         Resource = outer.Resource ?? inner.Resource,
-        ScalesWithHaste = outer.ScalesWithHaste ?? inner.ScalesWithHaste,
+        CastTimeScalesWithHaste = outer.CastTimeScalesWithHaste ?? inner.CastTimeScalesWithHaste,
+        CooldownDurationScalesOff = outer.CooldownDurationScalesOff ?? inner.CooldownDurationScalesOff,
+        CooldownTimeRateScalesOff = outer.CooldownTimeRateScalesOff ?? inner.CooldownTimeRateScalesOff,
+        CooldownHasteGrantedBy = outer.CooldownHasteGrantedBy ?? inner.CooldownHasteGrantedBy,
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
         Coefficients = Union(outer.Coefficients, inner.Coefficients),
         Generates = Union(outer.Generates, inner.Generates),

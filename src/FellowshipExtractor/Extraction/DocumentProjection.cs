@@ -38,6 +38,9 @@ public static class DocumentProjection
             Cooldown = entity.Cooldown,
             Charges = entity.Charges,
             ChargesByLevelType = entity.ChargesByLevelType,
+            CooldownDurationScalesOff = entity.CooldownDurationScalesOff,
+            CooldownTimeRateScalesOff = entity.CooldownTimeRateScalesOff,
+            CooldownHasteGrantedBy = Augmentations(entity.CooldownHasteGrantedBy, references),
             Cost = entity.Cost,
             Resource = entity.Resource,
             Generates = Generated(entity),
@@ -46,7 +49,7 @@ public static class DocumentProjection
             Radius = entity.Radius,
             Duration = entity.Duration,
             Period = entity.Period,
-            ScalesWithHaste = entity.ScalesWithHaste,
+            CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             ScalesOff = entity.ScalesOff,
             Coefficients = entity.Coefficients,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
@@ -351,9 +354,12 @@ public static class DocumentProjection
             Icon = entity.Icon,
             CastTime = entity.CastTime,
             Cooldown = entity.Cooldown,
+            CooldownDurationScalesOff = entity.CooldownDurationScalesOff,
+            CooldownTimeRateScalesOff = entity.CooldownTimeRateScalesOff,
+            CooldownHasteGrantedBy = Augmentations(entity.CooldownHasteGrantedBy, references),
             Duration = entity.Duration,
             Range = entity.Range,
-            ScalesWithHaste = entity.ScalesWithHaste,
+            CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             Schools = Schools(entity.Tags),
             ScalesOff = entity.ScalesOff,
             Generates = Generated(entity),
@@ -369,11 +375,14 @@ public static class DocumentProjection
             ChannelTime = entity.ChannelTime,
             ChannelTick = entity.ChannelTick,
             Cooldown = entity.Cooldown,
+            CooldownDurationScalesOff = entity.CooldownDurationScalesOff,
+            CooldownTimeRateScalesOff = entity.CooldownTimeRateScalesOff,
+            CooldownHasteGrantedBy = Augmentations(entity.CooldownHasteGrantedBy, references),
             Duration = entity.Duration,
             Period = entity.Period,
             Range = entity.Range,
             Radius = entity.Radius,
-            ScalesWithHaste = entity.ScalesWithHaste,
+            CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             Schools = Schools(entity.Tags),
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
@@ -420,6 +429,9 @@ public static class DocumentProjection
 
     private static IconSource? Augmentation(int? netId) =>
         netId is { } id ? new IconSource(TalentTrees.AugmentationTable, id, string.Empty) : null;
+
+    private static IReadOnlyList<EntityReference>? Augmentations(IReadOnlyList<int>? ids, References references) =>
+        Referenced(ids?.Select(id => Augmentation(id)).OfType<IconSource>().ToArray(), references);
 
     private static IReadOnlyList<EntityReference>? Referenced(
         IReadOnlyList<IconSource>? sources, References references) =>
