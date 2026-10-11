@@ -23,9 +23,8 @@ An ability with more than one charge recharges on its charge effect, and every o
 on its cooldown effect. `CRGameplayAbility` names both classes: `ChargeGameplayEffectClass` and
 `CooldownEffectBaseClass`. The charge count is the document's `charges`.
 
-The reader takes both classes through the ability's Blueprint parents.
-`GA_Gunde_HealingStance_InHealingStance` and `GA_Gunde_HeavySingleTargetMeleeWithHeal_InHealingStance`
-inherit `GE_Shared_Cooldown_DefaultScale` from their parents.
+The reader takes both classes from the ability's class default object, and from its Blueprint parents
+when the ability declares neither.
 
 ## Duration
 
@@ -95,6 +94,11 @@ from one charge to two and recharge on `CRChargeEffect`:
 | Luminous Barrier (996) | `Talents.Vigor.SingleTargetAbsorb.Charges` | Sacred Barrier, talent 566 |
 | Ironleaf Ward (116) | `Talents.Mosse.CastedSingleTargetDamageReduction.AddCharges` | Unrelenting Thicket, legendary power 609 |
 | Hold the Line (975) | `Talents.Warmaster.MoveSpeedBuff.Charges` | Iron Sentinel, legendary power 625 |
+| Chain Lightning (1237) | `Talents.Ink.BouncyProjectile.Charged` | Ace of Spades, talent 675 |
+| Heart Splitter (2294) | `Talents.Gunde.HeavyMeleeDotBased.Charges` | Bleeding Hearts, legendary power 698 |
+
+Luminous Barrier, Chain Lightning and Heart Splitter cool down on `GE_Shared_Cooldown_HasteScale`
+without the tag. With it, Haste moves from their duration to their time rate.
 
 `cooldownHasteGrantedBy` names the augmentation that grants the tag. An augmentation is listed when its
 tag lifts the ability from one charge to more, and the ability's charge effect has Haste in its time
