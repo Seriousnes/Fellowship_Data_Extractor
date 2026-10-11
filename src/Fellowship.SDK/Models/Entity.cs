@@ -93,6 +93,8 @@ public sealed record Entity
 
     public IReadOnlyList<int>? CooldownHasteGrantedBy { get; init; }
 
+    public IReadOnlyList<int>? CooldownAccelerationGrantedBy { get; init; }
+
     public bool? TickrateIgnoresHaste { get; init; }
 
     public int? MaxStacks { get; init; }

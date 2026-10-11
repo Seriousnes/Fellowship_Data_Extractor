@@ -11,6 +11,7 @@ public sealed class RelicPowerDocument : EntityDocument
     public IReadOnlyList<string>? CooldownDurationScalesOff { get; init; }
     public IReadOnlyList<string>? CooldownTimeRateScalesOff { get; init; }
     public IReadOnlyList<EntityReference>? CooldownHasteGrantedBy { get; init; }
+    public IReadOnlyList<EntityReference>? CooldownAccelerationGrantedBy { get; init; }
     public double? Duration { get; init; }
     public double? Range { get; init; }
     public bool? CastTimeScalesWithHaste { get; init; }

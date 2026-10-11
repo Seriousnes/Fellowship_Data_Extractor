@@ -11,6 +11,8 @@ The documents carry the following fields:
   while it runs.
 - **`cooldownHasteGrantedBy`**: the talents and legendary powers granting the tag that lifts the
   ability above one charge, onto a charge effect with Haste in its time rate.
+- **`cooldownAccelerationGrantedBy`**: the augmentations whose granted effect adds Cooldown Acceleration
+  to every cooldown in the ability's category.
 - **`castTimeScalesWithHaste`**: `CRGameplayAbility.ScaleTimeWithHaste`. The codex divides the cast
   time by 1 plus the Haste percentage when it is set.
 
@@ -108,6 +110,39 @@ without the tag. With it, Haste moves from their duration to their time rate.
 tag lifts the ability from one charge to more, and the ability's charge effect has Haste in its time
 rate. Apocalypse rises to two charges on `GE_Shared_ChargeCooldownNoHaste`, so its talent brings no
 Haste.
+
+## Category acceleration
+
+A Major ability's cooldown carries `CooldownType.Regular.Major`. The shipping binary declares the tag,
+and it is the only category tag under `CooldownType.Regular`.
+
+`cooldownAccelerationGrantedBy` lists an augmentation when the following conditions hold:
+
+- An effect in its `GrantedGameplayEffects` has a `TimeRate` modifier for a tag under `CooldownType`.
+- The tag's last segment is the ability's `AbilityCategory`.
+- The ability has a cooldown effect.
+
+The Monarch (blessing 705) meets them for every Major ability. Its effect,
+`GE_Finesse_MajorIncreasedCooldownRecoveryPerHaste`, adds the following to the time rate of a
+`CooldownType.Regular.Major` cooldown:
+
+```text
+CooldownAcceleration + min(Haste - 1, HasteThreshold) x BonusIncreasePerHasteInPercentage
+```
+
+The constants are rows under `Finesse.MajorIncreasedCooldownRecoveryPerHaste` in `FinesseConstants`:
+
+| Row | Rank 1 | Rank 2 | Rank 3 | Rank 4 |
+| --- | --- | --- | --- | --- |
+| `CooldownAcceleration` | 0.03 | 0.05 | 0.08 | 0.12 |
+| `HasteThreshold` | 0.5 | 0.5 | 0.5 | 0.5 |
+| `BonusIncreasePerHasteInPercentage` | 0.1 | 0.1 | 0.1 | 0.1 |
+
+The Haste term is at most 0.05, reached at 50% Haste.
+
+`GMMC_Finesse_MajorIncreasedCooldownRecoveryPerHaste` subtracts 1 from its first captured attribute,
+and its class defaults list no captured attribute. The blessing's text, "increased by +0.1% for every 1%
+Haste", names that attribute as Haste.
 
 ## Cast time flag
 

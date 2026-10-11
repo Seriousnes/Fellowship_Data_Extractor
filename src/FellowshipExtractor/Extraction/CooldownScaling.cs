@@ -35,6 +35,7 @@ public sealed class CooldownScaling
     private const string AddedField = "Added";
     private const string RemovedField = "Removed";
     private const string ParentClassTag = "ParentClass";
+    private const string CooldownTypeRoot = "CooldownType.";
     private const string ScriptRoot = "/Script/";
     private const char Quote = '\'';
 
@@ -45,6 +46,7 @@ public sealed class CooldownScaling
     private readonly IReadOnlyDictionary<string, string> _timeRateAttributes;
     private readonly ILookup<string, string> _childrenByParent;
     private readonly Dictionary<string, CooldownTiming?> _timings = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, IReadOnlyList<string>> _cooldownTypes = new(StringComparer.OrdinalIgnoreCase);
 
     public CooldownScaling(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, ConstantsTable constants)
     {
@@ -175,12 +177,39 @@ public sealed class CooldownScaling
             ]
             : [];
 
+    public IReadOnlyList<string> CooldownTypesAccelerated(string effectClass)
+    {
+        if (_cooldownTypes.TryGetValue(effectClass, out var known)) return known;
+
+        IReadOnlyList<string> tags = ClassDefaults.Load(effectClass, _provider)?.Owner is { } package
+            ?
+            [
+                .. TimeRateMods(package.GetExports())
+                    .Select(mod => mod.Tag)
+                    .Where(tag => tag.StartsWith(CooldownTypeRoot, StringComparison.Ordinal))
+                    .Distinct(StringComparer.Ordinal),
+            ]
+            : [];
+
+        return _cooldownTypes[effectClass] = tags;
+    }
+
     private static Dictionary<string, string> TimeRateAttributes(AbstractFileProvider provider, string package)
     {
         var attributes = new Dictionary<string, string>(StringComparer.Ordinal);
         if (!provider.TryLoadPackage(package, out var loaded)) return attributes;
 
-        foreach (var export in loaded.GetExports())
+        foreach (var (tag, mod) in TimeRateMods(loaded.GetExports()))
+        {
+            if (Backing(mod) is { } attribute) attributes.TryAdd(tag, attribute);
+        }
+
+        return attributes;
+    }
+
+    private static IEnumerable<(string Tag, IPropertyHolder Mod)> TimeRateMods(IEnumerable<UObject> exports)
+    {
+        foreach (var export in exports)
         {
             if (PropertyWalk.Get(export, ModsField)?.GenericValue is not UScriptArray mods) continue;
 
@@ -189,13 +218,10 @@ public sealed class CooldownScaling
                 if (Struct(element) is not { } mod) continue;
                 if (PropertyWalk.GetString(mod, AttributeTypeField) != TimeRate) continue;
                 if (PropertyWalk.GetString(mod, EffectTagField) is not { } tag) continue;
-                if (Backing(mod) is not { } attribute) continue;
 
-                attributes.TryAdd(tag, attribute);
+                yield return (tag, mod);
             }
         }
-
-        return attributes;
     }
 
     private static string? Backing(IPropertyHolder mod) =>

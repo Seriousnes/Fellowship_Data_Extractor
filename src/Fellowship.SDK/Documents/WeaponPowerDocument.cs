@@ -13,6 +13,7 @@ public sealed class WeaponPowerDocument : EntityDocument
     public IReadOnlyList<string>? CooldownDurationScalesOff { get; init; }
     public IReadOnlyList<string>? CooldownTimeRateScalesOff { get; init; }
     public IReadOnlyList<EntityReference>? CooldownHasteGrantedBy { get; init; }
+    public IReadOnlyList<EntityReference>? CooldownAccelerationGrantedBy { get; init; }
     public double? Duration { get; init; }
     public double? Period { get; init; }
     public double? Range { get; init; }

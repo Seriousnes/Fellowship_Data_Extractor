@@ -23,6 +23,7 @@ public sealed class EntityResolver
     private const string TalentTagPrefix = "Talents.";
     private const string TagSuffix = "Tag";
     private const string GrantedTagsField = "GrantedGameplayTags";
+    private const string GrantedEffectsField = "GrantedGameplayEffects";
     private const string DynamicDefinitionClass = "CRDynamicHeroItemDefinition";
     private const string SpecificDungeonsField = "DropsInSpecificDungeons";
     private const string CreatureTable = "CRAICharacter";
@@ -41,7 +42,7 @@ public sealed class EntityResolver
     private readonly ConstantsTable _constants;
     private readonly EffectCalculationPresets _presets;
     private readonly CooldownScaling _cooldowns;
-    private Dictionary<string, List<int>>? _augmentationsByGrantedTag;
+    private AugmentationIndex? _augmentations;
 
     private readonly Dictionary<string, bool> _spreadSources = new(StringComparer.OrdinalIgnoreCase);
 
@@ -941,6 +942,7 @@ public sealed class EntityResolver
 
         var cooldown = Number(split, "cooldown");
         var timing = cdo is null || cooldown is null ? null : _cooldowns.Of(cdo, charges.Charges);
+        var category = Categories.Of(cdo);
 
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
         var (baseline, talents) = Numbers.SplitTalents(split.Rest);
@@ -1058,7 +1060,7 @@ public sealed class EntityResolver
         {
             DisplayName = display.Name,
             Tags = cdo is null ? null : Empty(AbilityTypes(cdo)),
-            Category = Categories.Of(cdo),
+            Category = category,
             Description = described,
             Detail = Empty(detail),
             Icon = IconName(display.Icon, icons),
@@ -1071,6 +1073,7 @@ public sealed class EntityResolver
             CooldownDurationScalesOff = timing?.DurationScalesOff,
             CooldownTimeRateScalesOff = timing?.TimeRateScalesOff,
             CooldownHasteGrantedBy = cdo is null || cooldown is null ? null : Empty(HasteGrantedBy(cdo, charges.Charges)),
+            CooldownAccelerationGrantedBy = timing is null ? null : Empty(AccelerationGrantedBy(category)),
             Cost = Number(split, "cost"),
             Resource = display.Resource,
             Range = Number(split, "range"),
@@ -1336,11 +1339,19 @@ public sealed class EntityResolver
         ];
     }
 
-    private Dictionary<string, List<int>> AugmentationsGranting()
+    private IReadOnlyList<int> AccelerationGrantedBy(string? category) =>
+        category is null ? [] : AugmentationsAccelerating().GetValueOrDefault(category) ?? [];
+
+    private Dictionary<string, List<int>> AugmentationsGranting() => IndexAugmentations().ByGrantedTag;
+
+    private Dictionary<string, List<int>> AugmentationsAccelerating() => IndexAugmentations().ByAcceleratedCategory;
+
+    private AugmentationIndex IndexAugmentations()
     {
-        if (_augmentationsByGrantedTag is { } built) return built;
+        if (_augmentations is { } built) return built;
 
         var granting = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+        var accelerating = new Dictionary<string, List<int>>(StringComparer.Ordinal);
 
         foreach (var tag in _tags)
         {
@@ -1349,13 +1360,39 @@ public sealed class EntityResolver
 
             foreach (var granted in PropertyWalk.GetTags(augmentation, GrantedTagsField) ?? [])
             {
-                if (!granting.TryGetValue(granted, out var ids)) granting[granted] = ids = [];
-                if (!ids.Contains(tag.NetId)) ids.Add(tag.NetId);
+                Index(granting, granted, tag.NetId);
+            }
+
+            foreach (var effect in ClassPaths(augmentation, GrantedEffectsField))
+            {
+                foreach (var cooldownType in _cooldowns.CooldownTypesAccelerated(effect))
+                {
+                    if (Categories.NamedBy(cooldownType) is { } category) Index(accelerating, category, tag.NetId);
+                }
             }
         }
 
-        return _augmentationsByGrantedTag = granting;
+        return _augmentations = new AugmentationIndex(granting, accelerating);
     }
+
+    private static void Index(Dictionary<string, List<int>> index, string key, int netId)
+    {
+        if (!index.TryGetValue(key, out var ids)) index[key] = ids = [];
+        if (!ids.Contains(netId)) ids.Add(netId);
+    }
+
+    private static IEnumerable<string> ClassPaths(IPropertyHolder holder, string field)
+    {
+        if (PropertyWalk.Get(holder, field)?.GenericValue is not UScriptArray listed) yield break;
+
+        foreach (var entry in listed.Properties)
+        {
+            if (PropertyWalk.AsString(entry?.GenericValue) is { } path && path.Contains('/')) yield return path;
+        }
+    }
+
+    private sealed record AugmentationIndex(
+        Dictionary<string, List<int>> ByGrantedTag, Dictionary<string, List<int>> ByAcceleratedCategory);
 
     private static Dictionary<string, string> TalentGates(UObject cdo, IEnumerable<string> groups)
     {
@@ -1498,6 +1535,7 @@ public sealed class EntityResolver
             CooldownDurationScalesOff = cooldown is null ? null : filled.CooldownDurationScalesOff,
             CooldownTimeRateScalesOff = cooldown is null ? null : filled.CooldownTimeRateScalesOff,
             CooldownHasteGrantedBy = cooldown is null ? null : filled.CooldownHasteGrantedBy,
+            CooldownAccelerationGrantedBy = cooldown is null ? null : filled.CooldownAccelerationGrantedBy,
             Charges = Agreed(outer.Charges, inner, ability => ability.Charges),
             Cost = Agreed(outer.Cost, inner, ability => ability.Cost),
             Range = Agreed(outer.Range, inner, ability => ability.Range),
@@ -1539,6 +1577,7 @@ public sealed class EntityResolver
         CooldownDurationScalesOff = outer.CooldownDurationScalesOff ?? inner.CooldownDurationScalesOff,
         CooldownTimeRateScalesOff = outer.CooldownTimeRateScalesOff ?? inner.CooldownTimeRateScalesOff,
         CooldownHasteGrantedBy = outer.CooldownHasteGrantedBy ?? inner.CooldownHasteGrantedBy,
+        CooldownAccelerationGrantedBy = outer.CooldownAccelerationGrantedBy ?? inner.CooldownAccelerationGrantedBy,
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
         Coefficients = Union(outer.Coefficients, inner.Coefficients),
         Generates = Union(outer.Generates, inner.Generates),

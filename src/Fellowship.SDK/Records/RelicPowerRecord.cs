@@ -11,6 +11,7 @@ public sealed record RelicPowerRecord : EntityRecord
     public IReadOnlyList<string>? CooldownDurationScalesOff { get; init; }
     public IReadOnlyList<string>? CooldownTimeRateScalesOff { get; init; }
     public IReadOnlyList<RecordReference>? CooldownHasteGrantedBy { get; init; }
+    public IReadOnlyList<RecordReference>? CooldownAccelerationGrantedBy { get; init; }
     public double? Duration { get; init; }
     public double? Range { get; init; }
     public bool? CastTimeScalesWithHaste { get; init; }

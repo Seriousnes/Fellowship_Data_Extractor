@@ -9,6 +9,13 @@ public sealed class CooldownHasteTests
     private const int PowerStrike = 982;
     private const int Stagger = 1116;
     private const int TwilightSkybolt = 156;
+    private const int IronleafWard = 116;
+    private const int TheMonarch = 705;
+
+    private const string HasteGrantedBy = "cooldownHasteGrantedBy";
+    private const string AccelerationGrantedBy = "cooldownAccelerationGrantedBy";
+    private const string Blessing = "blessing";
+    private const string Major = "Major";
 
     private const string Haste = "Haste";
     private const string CooldownRecovery = "CooldownRecovery";
@@ -81,13 +88,54 @@ public sealed class CooldownHasteTests
     [InlineData(975, "legendary-power", 625)]
     public void ChargeGrantingAugmentationsBringHaste(int ability, string type, int augmentation)
     {
-        var granted = Ability(ability)["cooldownHasteGrantedBy"]?.AsArray() ?? [];
-
-        Assert.Contains(
-            granted.OfType<JsonObject>(),
-            reference => reference["type"]?.GetValue<string>() == type &&
-                         reference["id"]?.GetValue<int>() == augmentation);
-
+        Assert.True(Names(ability, HasteGrantedBy, type, augmentation));
         Assert.DoesNotContain(Haste, TimeRate(ability) ?? []);
     }
+
+    [Theory]
+    [InlineData(973)]
+    [InlineData(1233)]
+    [InlineData(1235)]
+    [InlineData(1001)]
+    [InlineData(111)]
+    public void TheMonarchAcceleratesMajorCooldowns(int ability)
+    {
+        Assert.Equal(Major, Ability(ability)["category"]?.GetValue<string>());
+        Assert.True(Names(ability, AccelerationGrantedBy, Blessing, TheMonarch));
+    }
+
+    [Theory]
+    [InlineData(981)]
+    [InlineData(1465)]
+    [InlineData(1857)]
+    [InlineData(1917)]
+    public void OtherCategoriesHaveNoCooldownAcceleration(int ability)
+    {
+        Assert.NotEqual(Major, Ability(ability)["category"]?.GetValue<string>());
+        Assert.Null(Ability(ability)[AccelerationGrantedBy]);
+    }
+
+    [Fact]
+    public void IronleafWardNamesBothItsLegendaryPowerAndTheMonarch()
+    {
+        Assert.True(Names(IronleafWard, HasteGrantedBy, "legendary-power", 609));
+        Assert.True(Names(IronleafWard, AccelerationGrantedBy, Blessing, TheMonarch));
+    }
+
+    [Fact]
+    public void OnlyMajorAbilitiesNameTheMonarch()
+    {
+        var accelerated = Export.Loaded.Documents
+            .Where(document => document.Type == EntityType.Ability && document.Body[AccelerationGrantedBy] is not null)
+            .Select(document => document.Body["category"]?.GetValue<string>())
+            .ToArray();
+
+        Assert.NotEmpty(accelerated);
+        Assert.All(accelerated, category => Assert.Equal(Major, category));
+    }
+
+    private static bool Names(int ability, string field, string type, int id) =>
+        (Ability(ability)[field]?.AsArray() ?? [])
+        .OfType<JsonObject>()
+        .Any(reference => reference["type"]?.GetValue<string>() == type && reference["id"]?.GetValue<int>() == id);
 }
