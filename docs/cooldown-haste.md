@@ -46,8 +46,10 @@ cooldown lists nothing.
 `Haste` and `CooldownRecovery` hold 1 plus the percentage, so 30% Haste is 1.3. `GE_HeroAttributesBase`
 subtracts 1 from each before it reaches a time rate.
 
-A charge's duration calculation is in C++. `CRChargeEffect` is native, and its Blueprint subclasses
-declare tags alone. A document recharging on a charge effect has no `cooldownDurationScalesOff`.
+A charge's duration is computed in C++. `CRChargeEffect` is native, and its Blueprint subclasses
+declare tags alone, so a document recharging on a charge effect carries no `cooldownDurationScalesOff`.
+Cooldown Reduction still shortens a charge: Prickly Vine's fastest recharges in issue #23 group by
+Cooldown Reduction.
 
 ## Time rate
 
@@ -76,12 +78,14 @@ the tag they remove, and `CombinedTags + Removed - Added` gives the parent's tag
 
 ## Haste placement
 
-`GE_Shared_Cooldown_HasteScale` divides the duration by Haste once, when the cooldown starts. The
-cooldown then runs at the Cooldown Recovery time rate. `CRChargeEffect` adds Haste to the time rate
-beside Cooldown Recovery for the whole recharge.
+`GE_Shared_Cooldown_HasteScale` divides the duration by Haste once, when the cooldown starts:
+`GEC_CooldownReductionAndHasteMagnitude` captures both attributes with `bSnapshot` set. The cooldown
+then runs at the Cooldown Recovery time rate. `CRChargeEffect` takes Haste into the time rate beside
+Cooldown Recovery for the whole recharge.
 
-A cooldown on `GE_Shared_Cooldown_HasteScale` therefore divides by Haste and by the Cooldown Recovery
-rate in turn. A recharge on `CRChargeEffect` divides once, by a rate holding both.
+A cooldown on `GE_Shared_Cooldown_HasteScale` divides by Haste and by the Cooldown Recovery rate in
+turn. The time rate modifiers combine in C++. Cold Snap's cast pairs in issue #23 fit a single rate of
+`1 + (Haste - 1) + (CooldownRecovery - 1)` on `CRChargeEffect`.
 
 ## Talents and legendary powers
 
