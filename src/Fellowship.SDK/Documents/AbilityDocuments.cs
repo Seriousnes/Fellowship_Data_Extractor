@@ -16,6 +16,10 @@ public sealed class AbilityDocument : EntityDocument
     public double? Cooldown { get; init; }
     public double? Charges { get; init; }
     public IReadOnlyDictionary<string, double>? ChargesByLevelType { get; init; }
+    public IReadOnlyList<string>? CooldownDurationScalesOff { get; init; }
+    public IReadOnlyList<string>? CooldownTimeRateScalesOff { get; init; }
+    public IReadOnlyList<EntityReference>? CooldownHasteGrantedBy { get; init; }
+    public IReadOnlyList<EntityReference>? CooldownAccelerationGrantedBy { get; init; }
     public double? Cost { get; init; }
 
     public string? Resource { get; init; }
@@ -28,7 +32,7 @@ public sealed class AbilityDocument : EntityDocument
     public double? Duration { get; init; }
     public double? Period { get; init; }
 
-    public bool? ScalesWithHaste { get; init; }
+    public bool? CastTimeScalesWithHaste { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }

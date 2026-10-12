@@ -304,7 +304,7 @@ public sealed class TooltipViewService(
 
     private static (double? Value, string? Title) Hastened(EntityDocument document, double? value, TooltipQuery query)
     {
-        if (value is not { } seconds || ScalesWithHaste(document) is not true) return (value, null);
+        if (value is not { } seconds || CastTimeScalesWithHaste(document) is not true) return (value, null);
         if (query.Haste is not { } haste || haste <= 0) return (value, null);
 
         var text = (haste * 100m).Normalize().ToString(CultureInfo.InvariantCulture);
@@ -315,11 +315,11 @@ public sealed class TooltipViewService(
             $"divided by {(1m + haste).Normalize().ToString(CultureInfo.InvariantCulture)} for {text}% haste");
     }
 
-    private static bool? ScalesWithHaste(EntityDocument document) => document switch
+    private static bool? CastTimeScalesWithHaste(EntityDocument document) => document switch
     {
-        AbilityDocument ability => ability.ScalesWithHaste,
-        RelicPowerDocument relic => relic.ScalesWithHaste,
-        WeaponPowerDocument weapon => weapon.ScalesWithHaste,
+        AbilityDocument ability => ability.CastTimeScalesWithHaste,
+        RelicPowerDocument relic => relic.CastTimeScalesWithHaste,
+        WeaponPowerDocument weapon => weapon.CastTimeScalesWithHaste,
         _ => null,
     };
 

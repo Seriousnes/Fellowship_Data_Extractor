@@ -85,7 +85,15 @@ public sealed record Entity
     public double? Duration { get; init; }
     public double? Period { get; init; }
 
-    public bool? ScalesWithHaste { get; init; }
+    public bool? CastTimeScalesWithHaste { get; init; }
+
+    public IReadOnlyList<string>? CooldownDurationScalesOff { get; init; }
+
+    public IReadOnlyList<string>? CooldownTimeRateScalesOff { get; init; }
+
+    public IReadOnlyList<int>? CooldownHasteGrantedBy { get; init; }
+
+    public IReadOnlyList<int>? CooldownAccelerationGrantedBy { get; init; }
 
     public bool? TickrateIgnoresHaste { get; init; }
 
@@ -98,6 +106,8 @@ public sealed record Entity
     public IReadOnlyDictionary<string, Placeholder>? Placeholders { get; init; }
 
     public IReadOnlyDictionary<string, object?>? Constants { get; init; }
+
+    public IReadOnlyDictionary<string, IReadOnlyList<double?>>? ConstantsByRank { get; init; }
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
 

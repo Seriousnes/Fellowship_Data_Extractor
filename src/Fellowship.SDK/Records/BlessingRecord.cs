@@ -14,4 +14,6 @@ public sealed record BlessingRecord : EntityRecord
     public IReadOnlyList<string>? Slots { get; init; }
 
     public IReadOnlyDictionary<string, int>? AbilityRanks { get; init; }
+
+    public IReadOnlyDictionary<string, IReadOnlyList<double?>>? Constants { get; init; }
 }

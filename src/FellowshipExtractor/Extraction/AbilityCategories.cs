@@ -9,6 +9,7 @@ public sealed class AbilityCategories
     public const string Field = "AbilityCategory";
 
     private const string Scope = "::";
+    private const char TagSeparator = '.';
 
     private readonly HashSet<string> _members;
 
@@ -59,6 +60,9 @@ public sealed class AbilityCategories
                 : $"{named.Count} enums are written in a property named {Field} ({string.Join(", ", named)}), so " +
                   "which one an ability states its category in is no longer decided by the mappings.");
     }
+
+    public string? NamedBy(string tag) =>
+        tag[(tag.LastIndexOf(TagSeparator) + 1)..] is var last && _members.Contains(last) ? last : null;
 
     public string? Of(IPropertyHolder? cdo)
     {

@@ -16,8 +16,8 @@ public sealed class HasteScalingTests
             $"{type} {id} is not in the export. Either the id moved or the entity is gone.");
 
     [Fact]
-    public void IncinerateDeclaresHasteScaling() =>
-        Assert.True(Document(EntityType.Ability, Incinerate)["scalesWithHaste"]?.GetValue<bool>());
+    public void IncinerateCastTimeScalesWithHaste() =>
+        Assert.True(Document(EntityType.Ability, Incinerate)["castTimeScalesWithHaste"]?.GetValue<bool>());
 
     [Fact]
     public void IncinerateTicksEveryHalfSecond()

@@ -24,6 +24,26 @@ public static class MaximumCharges
         return new ChargeCounts(walk.Answer(), walk.ByLevelType);
     }
 
+    public static IReadOnlyList<string> Raising(UObject cdo, ConstantsTable constants, TypeMappings mappings)
+    {
+        if (BareStateWalk.Compiled(cdo, Function) is not { ScriptBytecode.Length: > 0 } body) return [];
+
+        var bare = new BareStateWalk(body, cdo, constants, mappings);
+        if (bare.Answer() is not { } count || count > SingleCharge) return [];
+
+        return
+        [
+            .. bare.Gates
+                .Where(gate => new BareStateWalk(body, cdo, constants, mappings)
+                {
+                    AssumedTags = new HashSet<string>(StringComparer.Ordinal) { gate },
+                }.Answer() > SingleCharge)
+                .Order(StringComparer.Ordinal),
+        ];
+    }
+
+    private const double SingleCharge = 1;
+
     private static Func<string, InvalidOperationException> Unreadable(UObject cdo) =>
         what => new InvalidOperationException(
             $"{cdo.Owner?.Name ?? cdo.Name}.{Function} {what}. The charge count a tooltip prints is what that " +
