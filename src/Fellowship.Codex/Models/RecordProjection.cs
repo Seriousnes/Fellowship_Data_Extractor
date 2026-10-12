@@ -124,6 +124,7 @@ public static class RecordProjection
             MaxRank = document.MaxRank,
             Slots = Some(document.Slots),
             AbilityRanks = document.AbilityRanks,
+            Constants = document.Constants,
         };
     }
 

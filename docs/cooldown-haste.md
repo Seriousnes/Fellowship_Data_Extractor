@@ -130,7 +130,9 @@ The Monarch (blessing 705) meets them for every Major ability. Its effect,
 CooldownAcceleration + min(Haste - 1, HasteThreshold) x BonusIncreasePerHasteInPercentage
 ```
 
-The constants are rows under `Finesse.MajorIncreasedCooldownRecoveryPerHaste` in `FinesseConstants`:
+The class defaults of `GMMC_Finesse_MajorIncreasedCooldownRecoveryPerHaste` bind `Cooldown Acceleration`,
+`Haste Threshold` and `Increase Per Haste In Percentage` to rows under
+`Finesse.MajorIncreasedCooldownRecoveryPerHaste` in `FinesseConstants`. Each rank has its own value:
 
 | Row | Rank 1 | Rank 2 | Rank 3 | Rank 4 |
 | --- | --- | --- | --- | --- |
@@ -139,6 +141,9 @@ The constants are rows under `Finesse.MajorIncreasedCooldownRecoveryPerHaste` in
 | `BonusIncreasePerHasteInPercentage` | 0.1 | 0.1 | 0.1 | 0.1 |
 
 The Haste term is at most 0.05, reached at 50% Haste.
+
+Each blessing document has `constants`: the blessing's tuning rows under their full names, with one value per
+rank. The Monarch's has the three rows in the preceding table.
 
 `GMMC_Finesse_MajorIncreasedCooldownRecoveryPerHaste` subtracts 1 from its first captured attribute,
 and its class defaults list no captured attribute. The blessing's text, "increased by +0.1% for every 1%

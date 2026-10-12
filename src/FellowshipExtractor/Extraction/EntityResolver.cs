@@ -1093,6 +1093,7 @@ public sealed class EntityResolver
             Tuning = tuning,
             Declares = Empty(Bound(bindings)),
             Constants = baseline.Count == 0 ? null : baseline,
+            ConstantsByRank = Ranked(split.Rows),
             Talents = talents.Count == 0 ? null : Renamed(talents),
             TalentGates = cdo is null ? null : Empty(TalentGates(cdo, talents.Keys)),
             GrantedTags = Empty(grantedTags),
@@ -1585,6 +1586,7 @@ public sealed class EntityResolver
         Declares = Union(outer.Declares, inner.Declares),
         Placeholders = Union(outer.Placeholders, inner.Placeholders),
         Constants = Union(outer.Constants, inner.Constants),
+        ConstantsByRank = Union(outer.ConstantsByRank, inner.ConstantsByRank),
         Talents = UnionTalents(outer.Talents, inner.Talents),
         TalentGates = Union(outer.TalentGates, inner.TalentGates),
         GrantedTags = Union(outer.GrantedTags, inner.GrantedTags),
@@ -1798,6 +1800,18 @@ public sealed class EntityResolver
     }
 
     private static IReadOnlyList<T>? Empty<T>(IReadOnlyList<T> items) => items.Count == 0 ? null : items;
+
+    private SortedDictionary<string, IReadOnlyList<double?>>? Ranked(IEnumerable<string> rows)
+    {
+        var ranked = new SortedDictionary<string, IReadOnlyList<double?>>(StringComparer.Ordinal);
+
+        foreach (var row in rows)
+        {
+            if (_constants.Lookup(row).Record is { Values.Length: > 1 } record) ranked[record.Key] = record.Values;
+        }
+
+        return ranked.Count == 0 ? null : ranked;
+    }
 
     private IReadOnlyList<string> Bound(IReadOnlyList<CurveBinding> bindings) =>
     [

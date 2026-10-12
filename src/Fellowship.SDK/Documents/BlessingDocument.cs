@@ -16,4 +16,6 @@ public sealed class BlessingDocument : EntityDocument
     public IReadOnlyList<string>? Slots { get; init; }
 
     public IReadOnlyDictionary<string, int>? AbilityRanks { get; init; }
+
+    public IReadOnlyDictionary<string, IReadOnlyList<double?>>? Constants { get; init; }
 }

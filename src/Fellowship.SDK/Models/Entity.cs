@@ -107,6 +107,8 @@ public sealed record Entity
 
     public IReadOnlyDictionary<string, object?>? Constants { get; init; }
 
+    public IReadOnlyDictionary<string, IReadOnlyList<double?>>? ConstantsByRank { get; init; }
+
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
 
     public IReadOnlyDictionary<string, string>? TalentGates { get; init; }

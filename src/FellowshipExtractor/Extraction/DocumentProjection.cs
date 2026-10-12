@@ -305,6 +305,7 @@ public static class DocumentProjection
             MaxRank = entity.AbilityMaxRank,
             Slots = entity.PoolSlots,
             AbilityRanks = entity.AbilityRanks,
+            Constants = entity.ConstantsByRank,
             Generates = Generated(entity),
         },
 
