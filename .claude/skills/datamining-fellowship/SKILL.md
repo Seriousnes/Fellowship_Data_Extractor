@@ -33,10 +33,17 @@ tables (`ECRGemTier`, `ECRGemSocketTier`, `ECRHeroItemType`) rather than trusted
 `[/Script/fellowship.CRItemStaticDataSubsystem]` names `DT_SlotWeights`, `DT_AttributeProperties`,
 `DT_HeroItems` and the drop curves. `DynamicLootSystem.ini` names the loot plugin's seven assets.
 
-The extractor has no inspection commands: the only command is `usmap`, and a bare run writes the
-export. Looking at a raw asset, a locres table, the CSV tuning tables or the Blueprint function index
-means writing the reader that needs them. That is a standing approval under `CLAUDE.md`. The CSV
-tables are already parsed in memory by `CsvTables.ReadTags` and `CsvTables.ReadConstants`.
+A bare run writes the export. Three commands inspect the build:
+
+- `usmap` recovers the mappings without exporting.
+- `dump <filter> [count]` writes every export of the matching cooked assets as JSON under
+  `output/dump/`.
+- `dump-all <folder>` writes the evidence base for every ability and gameplay effect the export
+  carries: property trees, expanded modifier magnitudes, Blueprint bytecode, the constants and tag
+  tables, every curve table, the locres and the config.
+
+A fact outside those dumps needs a reader of its own. That is a standing approval under
+`CLAUDE.md`. `CsvTables.ReadTags` and `CsvTables.ReadConstants` parse the CSV tables in memory.
 
 ## Reading the shipping binary
 
@@ -69,11 +76,11 @@ re-anchor from the name-literal chain before reusing one.
 | Dynamic slot, stride 0x18 | SlotType 0x00, ContentType 0x01, RerollableSlotIndex 0x04, ContentVariantData 0x08 |
 | `ECRItemStat` ordinals | table at 0x148B176D0; Stamina 1, Strength 2, Intellect 3, Agility 4, Power 18 |
 
-The formula and every in-game reading it reproduces are in `docs/item-stat-calibration.md`, implemented
-in `StatRows`/`StatMagnitudes` and pinned by `GroundTruthTests`.
+`StatRows` and `StatMagnitudes` in `Fellowship.Codex/Models/` implement the formula.
+`GroundTruthTests` in `FellowshipExtractor.Tests` pins each in-game reading it reproduces.
 
-Decoded against **24952830**, written up in `docs/item-power-potential.md` and implemented in
-`Fellowship.Codex/Models/ItemPower.cs`:
+Decoded against **24952830**, implemented in `Fellowship.Codex/Models/ItemPower.cs` and pinned
+against printed cards by `ItemPowerTests` in `Fellowship.Codex.Tests`:
 
 | What | Where |
 | --- | --- |
