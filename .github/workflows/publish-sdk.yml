@@ -32,6 +32,13 @@ jobs:
       - name: Pack the SDK
         run: dotnet pack src/Fellowship.SDK -c Release -p:BuildNumber=${{ github.run_number }} -o package
 
+      - name: Keep the package with the run
+        uses: actions/upload-artifact@v7
+        with:
+          name: package
+          path: package/*.nupkg
+          if-no-files-found: error
+
       - name: Exchange the workflow's identity for a NuGet key
         id: login
         uses: NuGet/login@v1
@@ -41,4 +48,4 @@ jobs:
       - name: Push the package to the feed
         env:
           TOKEN: ${{ steps.login.outputs.NUGET_API_KEY }}
-        run: dotnet nuget push 'package/*.nupkg' --source "$FEED" --api-key "$TOKEN" --skip-duplicate
+        run: dotnet nuget push 'package/*.nupkg' --source "$FEED" --api-key "$TOKEN"
