@@ -1,11 +1,11 @@
-# Codex.FellowshipAnalyzer.SDK
+# FellowshipAnalyzer.Codex.SDK
 
 A .NET client and models for the codex.fellowshipanalyzer.com API.
 
 ## Install
 
 ```powershell
-dotnet add package Codex.FellowshipAnalyzer.SDK
+dotnet add package FellowshipAnalyzer.Codex.SDK
 ```
 
 ## Use

@@ -14,7 +14,7 @@ the export as a website, an HTTP API, an MCP server and a NuGet package.
   standard input and output.
 - **`src/Fellowship.SDK`**: the published package. It contains the data models and an HTTP API
   client for the website, with structured request and response models. For installation, see
-  [Codex.FellowshipAnalyzer.SDK](src/Fellowship.SDK/README.md).
+  [FellowshipAnalyzer.Codex.SDK](src/Fellowship.SDK/README.md).
 
 ## Prerequisites
 

@@ -13,7 +13,7 @@
     <VersionPrefix>1.0.$(BuildNumber)</VersionPrefix>
     <Authors>Seriousnes</Authors>
     <Description>The documents the Fellowship data export is written as and read back through, the records the codex API answers with, a client that reads them from codex.fellowshipanalyzer.com, and the settings enums generated from the build it was extracted from.</Description>
-    <PackageId>Codex.FellowshipAnalyzer.SDK</PackageId>
+    <PackageId>FellowshipAnalyzer.Codex.SDK</PackageId>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/Seriousnes/Fellowship_Data_Extractor</RepositoryUrl>
