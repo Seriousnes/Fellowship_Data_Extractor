@@ -1,0 +1,12 @@
+@inject ITooltipViewService Tips
+
+@if (Tips.Granted(Entity) is { } grants)
+{
+    <Panel Head="Grants an ability" Badge="@PublicTypes.DisplayNameOf(grants)">
+        <Detail Entity="grants" />
+    </Panel>
+}
+
+@code {
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
+}

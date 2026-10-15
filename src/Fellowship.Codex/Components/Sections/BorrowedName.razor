@@ -1,0 +1,16 @@
+@if (Href is not null)
+{
+    <Panel Head="Borrowed name">
+        <Note>
+            This record has no name of its own. The heading above belongs to <a href="@Href" data-tip="@Tip?.Address" data-tip-request="@Tip?.Body">@Name</a>
+        </Note>
+    </Panel>
+}
+
+@code {
+    [Parameter] public string? Href { get; set; }
+
+    [Parameter] public TooltipLink? Tip { get; set; }
+
+    [Parameter] public string? Name { get; set; }
+}

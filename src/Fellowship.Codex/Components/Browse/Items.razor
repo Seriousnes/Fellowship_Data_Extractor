@@ -1,0 +1,70 @@
+@inject ICodexViewService Ui
+
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
+    Group="Grouped.By<ItemDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column Head="" Class="cx-texture">
+            <Content Context="row"><Texture Entity="row" /></Content>
+        </Column>
+        <Column Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column Head="ILvl" Key="ilvl" Numeric Value="row => row.ItemLevel" />
+        <Column Head="Slot" Key="slot" Value="row => row.Slot" />
+        <Column Head="Source" Key="source" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var source in row.Sources ?? [])
+                {
+                    <Chip>@source.Name</Chip>
+                }
+            </Content>
+        </Column>
+        <Column Head="Type" Key="kind" Class="cx-tags">
+            <Content Context="row">
+                @if (string.Equals(row.Slot, WeaponSlot, StringComparison.Ordinal))
+                {
+                    @foreach (var hero in row.Heroes ?? [])
+                    {
+                        <Chip Colour="@Ui.HeroColour(hero.ToString())">@hero</Chip>
+                    }
+                }
+                else if (Armoured(row.Slot))
+                {
+                    @if (row.ArmorType is { } armor)
+                    {
+                        <Chip>@armor</Chip>
+                    }
+                }
+                else
+                {
+                    @row.Slot
+                }
+            </Content>
+        </Column>
+        <Column Head="Set" Key="set" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var set in row.SetBonus ?? [])
+                {
+                    <Chip><Ref Entity="set" /></Chip>
+                }
+            </Content>
+        </Column>
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private const string WeaponSlot = "Weapon";
+
+    private IReadOnlyList<ItemDocument> Documents = [];
+
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<ItemDocument>()];
+
+    private bool Armoured(string? slot) =>
+        slot is not null &&
+        Ui.Store.Settings.StatCalculation.SlotWeights.TryGetValue(slot, out var weight) &&
+        weight.ArmorWeight > 0;
+}

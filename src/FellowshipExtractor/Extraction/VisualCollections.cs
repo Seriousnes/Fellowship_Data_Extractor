@@ -1,0 +1,81 @@
+using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.AssetRegistry.Objects;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
+
+namespace FellowshipExtractor.Extraction;
+
+public sealed class VisualCollections
+{
+    private const string CollectionClass = "CRVisualCollection";
+    private const string SkinsField = "Skins";
+    private const string SkinMeshesField = "SkinMeshes";
+    private const string IconFieldPrefix = "Icon";
+
+    private readonly AbstractFileProvider _provider;
+    private readonly Dictionary<string, UScriptArray?> _skins = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string?> _icons = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _renders = new(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlySet<string> Renders => _renders;
+
+    public VisualCollections(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+    {
+        _provider = provider;
+
+        foreach (var asset in assets)
+        {
+            if (!asset.AssetClass.Text.Equals(CollectionClass, StringComparison.OrdinalIgnoreCase)) continue;
+            if (Skins(asset.ObjectPath) is not { } skins) continue;
+
+            foreach (var skin in skins.Properties)
+            {
+                if (skin?.GenericValue is not FScriptStruct { StructType: IPropertyHolder holder }) continue;
+                if (PropertyWalk.GetStruct(holder, SkinMeshesField) is not { } meshes) continue;
+
+                foreach (var property in PropertyWalk.Walk(meshes))
+                {
+                    if (!property.Name.StartsWith(IconFieldPrefix, StringComparison.Ordinal)) continue;
+                    if (PropertyWalk.AsString(property.Value) is { Length: > 0 } path) _renders.Add(path);
+                }
+            }
+        }
+    }
+
+    public int SkinCount(string collectionPath) => Skins(collectionPath)?.Properties.Count ?? 0;
+
+    public string? Icon(string collectionPath, int index, string slotType)
+    {
+        var key = $"{collectionPath}#{index}#{slotType}";
+        if (_icons.TryGetValue(key, out var cached)) return cached;
+
+        return _icons[key] = Read();
+
+        string? Read()
+        {
+            if (Skins(collectionPath) is not { } skins) return null;
+            if (index < 0 || index >= skins.Properties.Count) return null;
+
+            if (skins.Properties[index]?.GenericValue is not FScriptStruct { StructType: IPropertyHolder skin })
+            {
+                return null;
+            }
+
+            return PropertyWalk.GetStruct(skin, SkinMeshesField) is { } meshes
+                ? PropertyWalk.GetString(meshes, IconFieldPrefix + slotType)
+                : null;
+        }
+    }
+
+    private UScriptArray? Skins(string collectionPath)
+    {
+        if (_skins.TryGetValue(collectionPath, out var cached)) return cached;
+
+        _provider.TryLoadPackageObject<UObject>(
+            AbilityPresentationIndex.PackagePath(collectionPath), out var collection);
+
+        return _skins[collectionPath] = collection is null
+            ? null
+            : PropertyWalk.Get(collection, SkinsField)?.GenericValue as UScriptArray;
+    }
+}

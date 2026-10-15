@@ -1,0 +1,21 @@
+@using Fellowship.Codex.Components.Views
+
+<DynamicComponent Type="Component(EntityTypes.TypeOf(Entity))" Parameters="Knobs" />
+
+@code {
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    private Dictionary<string, object?> Knobs => new(StringComparer.Ordinal) { ["Entity"] = Entity };
+
+    private static System.Type Component(EntityType type) => type switch
+    {
+        EntityType.Item => typeof(Views.Item),
+        EntityType.Creature => typeof(Views.Creature),
+        EntityType.Dungeon => typeof(Views.Dungeon),
+        EntityType.Trait => typeof(Views.Trait),
+        EntityType.SetBonus => typeof(Views.SetBonus),
+        EntityType.TalentSlot => typeof(Views.TalentSlot),
+        EntityType.GemTrait => typeof(Views.GemTrait),
+        _ => typeof(EntityView),
+    };
+}

@@ -1,0 +1,40 @@
+@inject ICodexViewService Ui
+
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<SetBonusDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column Head="" Class="cx-texture">
+            <Content Context="row"><Texture Entity="row" /></Content>
+        </Column>
+        <Column Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column Head="Required" Key="pieces" Numeric Value="row => row.Pieces" />
+        <Column Head="Attribute" Key="attribute" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var allowed in row.AllowedAttributes ?? [])
+                {
+                    <Chip>@allowed</Chip>
+                }
+            </Content>
+        </Column>
+        <Column Head="Role" Key="role" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var role in row.AllowedRoles ?? [])
+                {
+                    <Chip Colour="@CodexView.Readable(Ui.Tokens.Role(role))">@role</Chip>
+                }
+            </Content>
+        </Column>
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<SetBonusDocument> Documents = [];
+
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<SetBonusDocument>()];
+}

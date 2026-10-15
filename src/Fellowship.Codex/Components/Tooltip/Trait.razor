@@ -1,0 +1,34 @@
+@inject ITooltipViewService Ui
+
+<div class="@TooltipView.Root plain fx-trait" style="@Ui.Variables(null)">
+    <style>@Sheet</style>
+    <div class="card">
+        <header class="head">
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+        </header>
+        @if (Entity.Icon is not null)
+        {
+            <TraitCrest Entity="Entity" State="@Query.State" />
+        }
+        @if (Entity.Description is not null)
+        {
+            <div class="lines">
+                <TipProse Entity="Entity" Query="Query" Hero="Hero" />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public EntityDocument Document { get; set; } = default!;
+
+    private TraitDocument Entity => (TraitDocument)Document;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    private MarkupString Sheet;
+
+    protected override void OnParametersSet() => Sheet = new MarkupString(Ui.Style());
+}

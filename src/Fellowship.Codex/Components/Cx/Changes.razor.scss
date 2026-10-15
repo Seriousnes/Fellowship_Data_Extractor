@@ -1,0 +1,27 @@
+.cx-changes {
+  font-size: 13px;
+
+  .cx-change-build {
+    color: var(--core-secondary-100); font: 12px/1.6 var(--mono); margin: 8px 0 4px;
+  }
+
+  .cx-change-current {
+    color: var(--muted); font-size: 11px; margin-left: 6px; text-transform: uppercase;
+  }
+
+  .cx-change-note { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+
+  .cx-change-leaves { list-style: none; margin: 0 0 8px; padding: 0; }
+
+  .cx-change-leaves li {
+    align-items: baseline; column-gap: 8px; display: flex; flex-wrap: wrap; padding: 2px 0;
+  }
+
+  .cx-change-path { color: var(--muted); font: 12px/1.5 var(--mono); }
+
+  .cx-was { color: var(--semantic-negative); font: 12px/1.5 var(--mono); }
+
+  .cx-change-arrow { color: var(--muted); font-size: 11px; }
+
+  .cx-now { color: var(--semantic-positive); font: 12px/1.5 var(--mono); }
+}

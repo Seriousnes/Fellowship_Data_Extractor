@@ -1,0 +1,8 @@
+<EntityView Entity="Entity">
+    <Grants />
+    <Legendaries />
+</EntityView>
+
+@code {
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+}

@@ -1,0 +1,35 @@
+@inject ICodexViewService Ui
+
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<TalentDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column Head="" Class="cx-texture">
+            <Content Context="row"><Texture Entity="row" /></Content>
+        </Column>
+        <Column Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column Head="Hero" Key="hero">
+            <Content Context="row">
+                @if (Slot(row.Id)?.Hero is { } hero)
+                {
+                    <Chip Colour="@Ui.HeroColour(hero.ToString())">@hero</Chip>
+                }
+            </Content>
+        </Column>
+        <Column Head="Cost" Key="cost" Numeric Value="row => Slot(row.Id)?.Cost" />
+        <Column Head="Tier" Key="tier" Numeric Value="row => Slot(row.Id)?.Row" />
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<TalentDocument> Documents = [];
+
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<TalentDocument>()];
+
+    private TalentSlotDocument? Slot(int talentId) => Ui.Store.Slot(talentId);
+}

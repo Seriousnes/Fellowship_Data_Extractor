@@ -1,0 +1,51 @@
+name: Publish the SDK
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - src/Fellowship.SDK/**
+      - src/Fellowship.SDK.Generators/**
+      - .github/workflows/publish-sdk.yml
+  workflow_dispatch:
+
+concurrency:
+  group: publish-sdk
+
+env:
+  FEED: https://api.nuget.org/v3/index.json
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Pack the SDK
+        run: dotnet pack src/Fellowship.SDK -c Release -p:BuildNumber=${{ github.run_number }} -o package
+
+      - name: Keep the package with the run
+        uses: actions/upload-artifact@v7
+        with:
+          name: package
+          path: package/*.nupkg
+          if-no-files-found: error
+
+      - name: Exchange the workflow's identity for a NuGet key
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push the package to the feed
+        env:
+          TOKEN: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: dotnet nuget push 'package/*.nupkg' --source "$FEED" --api-key "$TOKEN"

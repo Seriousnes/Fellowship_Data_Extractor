@@ -1,0 +1,21 @@
+@page "/contact"
+
+<PageTitle>Contact - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>Contact</h1>
+
+<Panel Head="Discord">
+    <Copy>
+        Reach me on Discord, at <a href="@Profile">@Discord</a>.
+    </Copy>
+</Panel>
+
+@code {
+    private const string Discord = "@Seriousnes";
+
+    private const string Profile = $"https://discord.com/users/127324136560263169";
+
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail = [("Contact", null)];
+}

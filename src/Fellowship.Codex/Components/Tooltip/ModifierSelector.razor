@@ -1,0 +1,275 @@
+@using Microsoft.JSInterop
+@inject IEntityStoreService Store
+@inject ITooltipViewService Cards
+@inject ICodexViewService Ui
+@inject IJSRuntime Js
+@implements IAsyncDisposable
+
+<dialog class="cx-sel" @ref="frame" @onclick="Shut" @onclose="Shut" @onkeydown="Walk">
+    <div class="cx-sel-body" @onclick:stopPropagation="true">
+        <header class="cx-sel-head">
+            <h2>@Heading</h2>
+            <button type="button" class="cx-sel-close" aria-label="Close" @onclick="Shut">&times;</button>
+        </header>
+
+        <div class="cx-sel-search">
+            <input type="search" class="cx-sel-find" autocomplete="off" aria-label="Filter by name or id"
+                   placeholder="@Placeholder" value="@filter" @oninput="Filter" />
+        </div>
+
+        @foreach (var group in shown)
+        {
+            <section>
+                <h3 class="cx-sel-kind">@group.Label</h3>
+
+                <ul class="cx-sel-list">
+                    @foreach (var choice in group.Choices)
+                    {
+                        var mine = choice;
+
+                        <li>
+                            <button type="button" class="cx-sel-choice" @key="mine.Key"
+                                    data-kind="@mine.Candidate.Accepts" data-id="@mine.Candidate.Id"
+                                    data-active="@(mine.Key == Active ? "on" : null)"
+                                    data-tip="@mine.Tip?.Address" data-tip-request="@mine.Tip?.Body"
+                                    disabled="@(mine.Forbidden is not null)" title="@mine.Forbidden"
+                                    @ref="rows[mine.Key]"
+                                    @onclick="() => OnPick.InvokeAsync(mine.Candidate)">
+                                @if (mine.Document is { } document)
+                                {
+                                    <span class="cx-sel-texture"><Texture Entity="document" /></span>
+                                }
+                                <span class="cx-sel-name" style="@mine.Tone">@mine.Label</span>
+                                <span class="cx-sel-value">@mine.Value</span>
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+
+        @if (flat.Count == 0)
+        {
+            <p class="cx-sel-none">Nothing here matches @filter.</p>
+        }
+    </div>
+</dialog>
+
+@code {
+    [Parameter, EditorRequired] public CraftSlot Slot { get; set; } = default!;
+
+    [Parameter, EditorRequired] public ItemDocument Item { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public RarityEntry? Rarity { get; set; }
+
+    [Parameter] public EventCallback<CraftCandidate> OnPick { get; set; }
+
+    [Parameter] public EventCallback OnShut { get; set; }
+
+    private ElementReference frame;
+
+    private IJSObjectReference? module;
+
+    private sealed record Choice(
+        CraftCandidate Candidate,
+        EntityDocument? Document,
+        string Label,
+        string Value,
+        string? Forbidden,
+        TooltipLink? Tip,
+        string? Tone)
+    {
+        public string Key => $"{Candidate.Accepts}:{Candidate.Id}:{Candidate.Name}";
+    }
+
+    private sealed record Group(string Label, IReadOnlyList<Choice> Choices);
+
+    private IReadOnlyList<Group> offered = [];
+
+    private IReadOnlyList<Group> shown = [];
+
+    private List<Choice> flat = [];
+
+    private TooltipQuery current = new();
+
+    private string filter = string.Empty;
+
+    private int active;
+
+    private readonly Dictionary<string, ElementReference> rows = [];
+
+    private bool revealing;
+
+    private string? Active => active >= 0 && active < flat.Count ? flat[active].Key : null;
+
+    private string Heading => Slot.SlotName switch
+    {
+        CraftSlots.RandomStat => "Random stat",
+        CraftSlots.GemSocket => "Gem socket",
+        CraftSlots.TraitTree => "Imbued trait",
+        _ => "Modifier",
+    };
+
+    private string Placeholder => Slot.SlotName == CraftSlots.RandomStat
+        ? "Filter by name"
+        : "Filter by name or id";
+
+    protected override void OnParametersSet()
+    {
+        current = ItemCraft.Without(Query, Slot);
+
+        offered = [.. Offers().Select(Group_)];
+
+        Settle();
+    }
+
+    private IEnumerable<string> Offers() => Slot.SlotName switch
+    {
+        CraftSlots.RandomStat => Slot.Accepts.Where(
+            accepts => accepts == CraftSlots.RandomStat),
+
+        CraftSlots.GemSocket => Slot.Accepts.Where(
+            accepts => accepts == CraftSlots.GemSocket),
+
+        _ => Slot.Accepts.Where(accepts => ItemCraft.KindOf(accepts) is not null),
+    };
+
+    private void Filter(ChangeEventArgs typed)
+    {
+        filter = typed.Value?.ToString() ?? string.Empty;
+        Settle();
+    }
+
+    private void Settle()
+    {
+        shown =
+        [
+            .. offered
+                .Select(group => new Group(group.Label, [.. group.Choices.Where(Matches)]))
+                .Where(group => group.Choices.Count > 0),
+        ];
+
+        flat = [.. shown.SelectMany(group => group.Choices)];
+
+        active = 0;
+        rows.Clear();
+    }
+
+    private bool Matches(Choice choice)
+    {
+        if (filter is not { Length: > 0 } request) return true;
+
+        var wanted = request.Trim();
+
+        return choice.Label.Contains(wanted, StringComparison.OrdinalIgnoreCase) ||
+            (choice.Candidate.Id > 0 &&
+                choice.Candidate.Id.ToString(CultureInfo.InvariantCulture)
+                    .StartsWith(wanted, StringComparison.Ordinal));
+    }
+
+    private Group Group_(string accepts) => accepts switch
+    {
+        CraftSlots.RandomStat => new Group(
+            "Random stat",
+            [.. Store.Settings.StatCalculation.RandomStatPool.Select(
+                stat => Stat(accepts, stat))]),
+
+        CraftSlots.GemSocket => new Group(
+            "Gem",
+            [.. Store.Entities.OfType<GemDocument>().Select(gem => Entity(accepts, gem))]),
+
+        _ => new Group(
+            TooltipView.Label(ItemCraft.KindOf(accepts)!.Value),
+            [.. Store.Entities
+                .Where(row => EntityTypes.TypeOf(row) == TooltipView.TypeOf(ItemCraft.KindOf(accepts)!.Value))
+                .Select(row => Entity(accepts, row))]),
+    };
+
+    private Choice Stat(string accepts, string stat)
+    {
+        var candidate = new CraftCandidate(accepts, 0, stat, 1);
+
+        return new Choice(
+            candidate,
+            Document: null,
+            Store.StatName(stat),
+            Printed(candidate),
+            ItemCraft.Forbids(Item, current, Slot, candidate, Store),
+            Tip: null,
+            Tone: null);
+    }
+
+    private Choice Entity(string accepts, EntityDocument document)
+    {
+        var candidate = new CraftCandidate(accepts, document.Id, PublicTypes.NameOf(document), 1);
+
+        return new Choice(
+            candidate,
+            document,
+            Ui.Name(document),
+            Printed(candidate),
+            ItemCraft.Forbids(Item, current, Slot, candidate, Store),
+            Ui.Tip(document),
+            Ui.LinkColour(document) is { } colour ? $"color:{colour}" : null);
+    }
+
+    private string Printed(CraftCandidate choice)
+    {
+        if (choice.Accepts != CraftSlots.RandomStat) return $"+{choice.Amount}";
+
+        var at = ItemCraft.StatAt(Query, Slot);
+
+        var rolled = Cards.Rolls(Item, ItemCraft.With(Query, Slot, choice), Rarity);
+
+        var line = rolled.FirstOrDefault(row => row.Rolls.Contains(at));
+
+        return line is null ? string.Empty : TooltipView.Magnitude(line);
+    }
+
+    private Task Shut() => OnShut.InvokeAsync();
+
+    private void Walk(KeyboardEventArgs key)
+    {
+        var last = flat.Count - 1;
+
+        switch (key.Key)
+        {
+            case "ArrowDown": active = active >= last ? 0 : active + 1; revealing = true; return;
+            case "ArrowUp": active = active <= 0 ? last : active - 1; revealing = true; return;
+            case "Home": active = 0; revealing = true; return;
+            case "End": active = last; revealing = true; return;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (first)
+        {
+            module ??= await Js.InvokeAsync<IJSObjectReference>("import", "/js/craft.js");
+            await module.InvokeVoidAsync("show", frame);
+        }
+
+        if (!revealing) return;
+
+        revealing = false;
+
+        if (Active is not { } key) return;
+
+        if (rows.TryGetValue(key, out var row)) await row.FocusAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module is null) return;
+
+        try
+        {
+            await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+}

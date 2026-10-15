@@ -1,0 +1,13 @@
+<p class="cx-empty">
+    @if (Message is not null)
+    {
+        <b>@Message</b><br />
+    }
+    @ChildContent
+</p>
+
+@code {
+    [Parameter] public string? Message { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

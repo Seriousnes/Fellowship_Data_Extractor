@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "fellowship-codex": {
+      "type": "stdio",
+      "command": "src/Fellowship.Codex.Mcp/bin/Release/net10.0/Fellowship.Codex.Mcp.exe"
+    }
+  }
+}

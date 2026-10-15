@@ -1,0 +1,40 @@
+@inject ICodexViewService Ui
+
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<CreatureDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column Head="" Class="cx-texture">
+            <Content Context="row"><Texture Entity="row" /></Content>
+        </Column>
+        <Column Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column Head="Rank" Key="rank" Class="cx-tags">
+            <Content Context="row">
+                @if (row.Rank is { } rank)
+                {
+                    <Chip>@rank</Chip>
+                }
+            </Content>
+        </Column>
+        <Column Head="Health" Key="health" Numeric Value="row => row.Health" />
+        <Column Head="Location" Key="location" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var dungeon in row.FoundIn ?? [])
+                {
+                    <Chip><Ref Entity="dungeon" /></Chip>
+                }
+            </Content>
+        </Column>
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<CreatureDocument> Documents = [];
+
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<CreatureDocument>()];
+}

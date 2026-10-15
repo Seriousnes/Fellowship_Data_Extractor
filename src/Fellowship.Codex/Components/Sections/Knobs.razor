@@ -1,0 +1,118 @@
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+
+@if (PicksHero || Wearable || IsGem || Rarities.Count > 1 || PicksDifficulty)
+{
+    <Panel>
+        @if (PicksDifficulty)
+        {
+            <Knob Caption="Difficulty" As="div">
+                <DifficultyKnob Difficulty="Difficulty" />
+            </Knob>
+        }
+
+        @if (PicksHero)
+        {
+            <Knob Caption="Hero">
+                <select data-knob="hero" value="@(Here.Reading ?? string.Empty)" @onchange="Wearer">
+                    @if (Here.Readings.Count == 1)
+                    {
+                        <option value="">Any</option>
+                    }
+                    @foreach (var who in Store.Settings.Heroes
+                        .Where(who => Here.Readings.Any(reading => EntityStore.Reads(reading, who)))
+                        .OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        <option value="@who.Name" selected="@(who.Name == Here.Reading)">
+                            @who.Name
+                        </option>
+                    }
+                </select>
+            </Knob>
+        }
+
+        @if (Rarities.Count > 1)
+        {
+            <Knob Caption="Rarity" As="div">
+                <div class="cx-rarities">
+                    @foreach (var rarity in Rarities)
+                    {
+                        var colour = CodexView.Readable(Ui.Tokens.Rarity(rarity.Name));
+                        <button type="button" data-knob="rarity" data-choice="@rarity.Tier"
+                                aria-pressed="@(Chosen("rarity", rarity) ? "true" : "false")"
+                                data-value="@(Chosen("rarity", rarity) ? rarity.Tier.ToString() : null)"
+                                style="@(colour is null ? null : $"color:{colour}")"
+                                @onclick="() => Rarity(rarity)">
+                            @(IsGem ? rarity.GemDisplayName : rarity.DisplayName)
+                        </button>
+                    }
+                </div>
+            </Knob>
+        }
+
+        @if (Wearable)
+        {
+            <Knob Caption="Item level">
+                <input type="number" min="1" max="1000" step="1" data-knob="itemLevel"
+                       value="@(Value("itemLevel") ?? DropItemLevel.ToString())" @onchange="Level" />
+            </Knob>
+
+            <Knob Caption="Tempered">
+                <input type="number" min="0" max="20" step="1" placeholder="none" data-knob="upgrades"
+                       value="@Value("upgrades")" @onchange="Temper" />
+            </Knob>
+
+            <Knob Caption="Random stats">
+                <input type="text" placeholder="@RollablePlaceholder" data-knob="randomStats"
+                       value="@Value("randomStats")" @onchange="Rolled" />
+            </Knob>
+        }
+    </Panel>
+}
+
+@code {
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+
+    [Parameter] public EventCallback<KnobTurn> OnTurn { get; set; }
+
+    private Task Turn(string key, string? value) => OnTurn.InvokeAsync(new KnobTurn(key, value));
+
+    private Task Wearer(ChangeEventArgs who) => Turn("hero", who.Value?.ToString());
+
+    private Task Rarity(RarityEntry rarity) =>
+        Turn("rarity", Chosen("rarity", rarity) ? null : rarity.Tier.ToString());
+
+    private Task Level(ChangeEventArgs level) => Turn("itemLevel", level.Value?.ToString());
+
+    private Task Temper(ChangeEventArgs temper) => Turn("upgrades", temper.Value?.ToString());
+
+    private Task Rolled(ChangeEventArgs rolled) => Turn("randomStats", rolled.Value?.ToString());
+
+    private bool IsGem => Here.Entity is GemDocument;
+
+    private bool Wearable => (Here.Entity as ItemDocument)?.Stats is { Count: > 0 };
+
+    private IReadOnlyList<RarityEntry> Rarities =>
+        IsGem
+            ? Store.Settings.Rarities
+            : Here.Entity is ItemDocument { Rarities: { Count: > 0 } rarities }
+                ? [.. Store.Settings.Rarities.Where(entry => rarities.Any(rarity => (int)rarity == entry.Tier))]
+                : [];
+
+    private int DropItemLevel => Here.Entity is { } entity ? Store.DropItemLevel(entity) : 0;
+
+    private bool PicksHero => Here.Readings.Count > 1 || (Here.Entity as ItemDocument)?.Heroes is { Count: > 1 };
+
+    private bool PicksDifficulty => Here.Entity is CreatureDocument || Store.Menacing(Here.Entity) is not null;
+
+    private int Difficulty => Store.Difficulty(Value(DifficultyKnob.Key));
+
+    private string? Value(string knob) => Here.Values.GetValueOrDefault(knob);
+
+    private bool Chosen(string knob, RarityEntry rarity) =>
+        Value(knob) is { } value &&
+        (value == rarity.Tier.ToString() || value.Equals(rarity.Name, StringComparison.OrdinalIgnoreCase));
+
+    private string RollablePlaceholder =>
+        string.Join(", ", Store.Settings.StatCalculation.RandomStatPool.Take(2)) + ", one per roll";
+}

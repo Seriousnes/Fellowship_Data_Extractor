@@ -1,0 +1,12 @@
+<EntityView Entity="Entity">
+    @if (Entity.Power is { } power)
+    {
+        <Panel Head="@PublicTypes.Label(EntityType.SetBonusPower)">
+            <Ref Entity="power" />
+        </Panel>
+    }
+</EntityView>
+
+@code {
+    [Parameter, EditorRequired] public SetBonusDocument Entity { get; set; } = default!;
+}

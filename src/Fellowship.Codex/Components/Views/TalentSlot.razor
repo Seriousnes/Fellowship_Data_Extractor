@@ -1,0 +1,9 @@
+<EntityView Entity="Entity">
+    <Panel Head="@PublicTypes.Label(EntityType.Talent)">
+        <Ref Entity="Entity.Talent" />
+    </Panel>
+</EntityView>
+
+@code {
+    [Parameter, EditorRequired] public TalentSlotDocument Entity { get; set; } = default!;
+}

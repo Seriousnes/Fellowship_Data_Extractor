@@ -1,0 +1,22 @@
+@if (As == "div")
+{
+    <div class="cx-knob">
+        <span>@Caption</span>
+        @ChildContent
+    </div>
+}
+else
+{
+    <label class="cx-knob">
+        <span>@Caption</span>
+        @ChildContent
+    </label>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Caption { get; set; } = string.Empty;
+
+    [Parameter] public string As { get; set; } = "label";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

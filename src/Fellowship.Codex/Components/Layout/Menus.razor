@@ -1,0 +1,102 @@
+@inject ICodexViewService Ui
+@inject IMenuService Nav
+
+<nav class="cx-menus" aria-label="Site">
+    <button type="button" class="cx-menus-toggle" aria-expanded="false" aria-controls="cx-menus-drawer" aria-label="Menu">
+        <span class="cx-menus-bars" aria-hidden="true"></span>
+    </button>
+
+    <div class="cx-menus-drawer" id="cx-menus-drawer">
+        <button type="button" class="cx-menus-shut" aria-label="Close menu">&times;</button>
+
+        <details class="cx-menu" name="cx-menu">
+            <summary class="cx-menu-open">Database</summary>
+            <div class="cx-menu-panel">
+                <section class="cx-menu-group">
+                    <ul>
+                        @foreach (var category in Nav.Menu)
+                        {
+                            <li class="cx-menu-row">
+                                <a href="@category.Href">@category.Label</a>
+                                @Flyout(category, "database")
+                            </li>
+                        }
+                    </ul>
+                </section>
+            </div>
+        </details>
+
+        <details class="cx-menu" name="cx-menu">
+            <summary class="cx-menu-open">Tools</summary>
+            <div class="cx-menu-panel">
+                <section class="cx-menu-group">
+                    <ul>
+                        <li class="cx-menu-row">
+                            <a href="@Potential">Power Potential</a>
+                        </li>
+                        <li class="cx-menu-row">
+                            <a href="@Calculator">Talent Calculator</a>
+                            <details class="cx-menu-fly" name="cx-fly-tools">
+                                <summary class="cx-menu-more" aria-label="Talent Calculator by hero"></summary>
+                                <div class="cx-menu-fly-panel">
+                                    <div class="cx-menu-sec">
+                                        <p class="cx-menu-sec-head">Hero</p>
+                                        <ul>
+                                            @foreach (var who in Nav.Roster)
+                                            {
+                                                <li>
+                                                    <a href="@Calculator?hero=@Uri.EscapeDataString(who)"
+                                                       style="color:@(Ui.HeroColour(who) ?? "var(--muted)")">@who</a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                            </details>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </details>
+    </div>
+</nav>
+
+@code {
+    private const string Calculator = "/tools/talents";
+
+    private const string Potential = "/tools/power-potential";
+
+    private RenderFragment? Flyout(MenuLink link, string group) =>
+        link.Sections.Count == 0
+            ? null
+            : @<details class="cx-menu-fly" name="@("cx-fly-" + group)">
+                  <summary class="cx-menu-more" aria-label="@Says(link)"></summary>
+                  <div class="cx-menu-fly-panel">
+                      @foreach (var section in link.Sections)
+                      {
+                          <div class="cx-menu-sec">
+                              @if (section.Head is { } head)
+                              {
+                                  <p class="cx-menu-sec-head">@head</p>
+                              }
+                              <ul>
+                                  @foreach (var under in section.Links)
+                                  {
+                                      <li class="cx-menu-row">
+                                          <a href="@under.Href"
+                                             style="@(under.Colour is null ? null : $"color:{under.Colour}")">@under.Label</a>
+                                          @Flyout(under, $"{group}-{Keyed(link.Label)}")
+                                      </li>
+                                  }
+                              </ul>
+                          </div>
+                      }
+                  </div>
+              </details>;
+
+    private static string Says(MenuLink link) =>
+        link.Sections is [{ Head: { } only }] ? $"{link.Label} by {only}" : $"More under {link.Label}";
+
+    private static string Keyed(string label) =>
+        new([.. label.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant)]);
+}

@@ -1,0 +1,51 @@
+using CUE4Parse.MappingsProvider;
+using CUE4Parse.UE4.Assets.Exports;
+
+namespace FellowshipExtractor.Extraction;
+
+public sealed record ChargeCounts(double? Charges, IReadOnlyDictionary<string, double>? ByLevelType)
+{
+    public static readonly ChargeCounts None = new(null, null);
+}
+
+public static class MaximumCharges
+{
+    private const string Function = "GetMaximumCharges";
+
+    public static ChargeCounts Of(UObject cdo, ConstantsTable constants, TypeMappings mappings)
+    {
+        if (BareStateWalk.Compiled(cdo, Function) is not { ScriptBytecode.Length: > 0 } body)
+        {
+            return ChargeCounts.None;
+        }
+
+        var walk = new BareStateWalk(body, cdo, constants, mappings) { Unreadable = Unreadable(cdo) };
+
+        return new ChargeCounts(walk.Answer(), walk.ByLevelType);
+    }
+
+    public static IReadOnlyList<string> Raising(UObject cdo, ConstantsTable constants, TypeMappings mappings)
+    {
+        if (BareStateWalk.Compiled(cdo, Function) is not { ScriptBytecode.Length: > 0 } body) return [];
+
+        var bare = new BareStateWalk(body, cdo, constants, mappings);
+        if (bare.Answer() is not { } count || count > SingleCharge) return [];
+
+        return
+        [
+            .. bare.Gates
+                .Where(gate => new BareStateWalk(body, cdo, constants, mappings)
+                {
+                    AssumedTags = new HashSet<string>(StringComparer.Ordinal) { gate },
+                }.Answer() > SingleCharge)
+                .Order(StringComparer.Ordinal),
+        ];
+    }
+
+    private const double SingleCharge = 1;
+
+    private static Func<string, InvalidOperationException> Unreadable(UObject cdo) =>
+        what => new InvalidOperationException(
+            $"{cdo.Owner?.Name ?? cdo.Name}.{Function} {what}. The charge count a tooltip prints is what that " +
+            "function returns for a character holding no talents, and it cannot be guessed from a row name.");
+}

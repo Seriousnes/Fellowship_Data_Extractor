@@ -1,0 +1,14 @@
+tr { border-bottom: 1px solid var(--line-soft); }
+
+th {
+  text-align: left; font-weight: 600; color: var(--muted); padding: 6px 12px 6px 0; width: 1%;
+  white-space: nowrap;
+}
+
+td {
+  padding: 6px 0;
+
+  ::deep code { font: 12px/1.5 var(--mono); color: var(--core-secondary-100); }
+}
+
+.cx-unit { color: var(--faint); }

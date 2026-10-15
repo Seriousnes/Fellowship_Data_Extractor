@@ -1,0 +1,6 @@
+{
+  "appHost": {
+    "path": "src/FellowshipExtractor.AppHost/FellowshipExtractor.AppHost.csproj"
+  },
+  "channel": "stable"
+}

@@ -1,0 +1,34 @@
+@inject ICodexViewService Ui
+
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<GemDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column Head="" Class="cx-texture">
+            <Content Context="row"><Texture Entity="row" /></Content>
+        </Column>
+        <Column Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column Head="Type" Key="gem">
+            <Content Context="row">
+                <span style="color:@CodexView.Readable(Ui.Tokens.Gem(row.Type.ToString()))">@row.Type</span>
+            </Content>
+        </Column>
+        <Column Head="Power" Key="power" Numeric Value="row => row.Power" />
+        <Column Head="Rarity" Key="rarity">
+            <Content Context="row">
+                <span style="color:@Ui.LinkColour(row)">@Ui.RarityName(row.Rarity)</span>
+            </Content>
+        </Column>
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<GemDocument> Documents = [];
+
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<GemDocument>()];
+}

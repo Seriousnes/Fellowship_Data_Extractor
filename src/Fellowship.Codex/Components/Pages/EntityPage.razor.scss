@@ -1,0 +1,11 @@
+.cx-entity { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+
+.cx-entity-top { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+
+.cx-entity-tip { flex: 0 0 auto; min-width: 340px; }
+
+.cx-entity-side {
+  flex: 1 1 420px; min-width: 0;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;
+  align-items: start;
+}

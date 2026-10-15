@@ -1,0 +1,9 @@
+<p class="cx-sub-head" style="@Tone">@ChildContent</p>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [Parameter] public string? Colour { get; set; }
+
+    private string? Tone => Colour is null ? null : $"color:{Colour}";
+}

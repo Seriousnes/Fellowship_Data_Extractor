@@ -1,0 +1,74 @@
+@use "../../Styles/shared" as *;
+
+.cx-craft {
+  display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start;
+  flex: 1 1 100%; min-width: 0;
+}
+
+.cx-craft-tip { position: relative; flex: 0 0 auto; min-width: 340px; }
+
+.cx-craft-side {
+  flex: 1 1 300px; min-width: 0;
+  display: grid; gap: 10px; align-items: start;
+}
+
+.cx-craft-copy,
+.cx-craft-import,
+.cx-craft-export,
+.cx-craft-read {
+  appearance: none; cursor: pointer; border: 1px solid transparent; border-radius: 2px;
+  background: var(--raised); color: var(--muted); font: 600 11px/1 var(--sans);
+  padding: 6px 9px; letter-spacing: .04em;
+
+  &:hover { color: var(--ink); }
+  &:focus-visible { @include edged; }
+}
+
+.cx-craft-paste {
+  width: 100%; appearance: none; resize: vertical;
+  @include sunken;
+  font: 400 12px/1.5 var(--mono); padding: 8px 9px; border-radius: 2px;
+
+  &:focus { @include edged; }
+}
+
+.cx-craft-pieces {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 4px;
+
+  button {
+    appearance: none; cursor: pointer; width: 100%; text-align: left;
+    background: var(--sunken); border: 1px solid var(--line); border-radius: 2px;
+    padding: 6px 9px; font: 400 12px/1 var(--sans); color: var(--ink);
+
+    &:hover { background: var(--raised); }
+  }
+}
+
+.cx-craft-message { color: var(--muted); font-size: 12px; margin: 0; }
+
+.cx-craft-hits {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cx-craft-hit {
+  position: absolute;
+  left: var(--x, 0);
+  top: var(--y, 0);
+  width: var(--w, 0);
+  height: var(--h, 0);
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+
+  &:hover,
+  &:focus-visible {
+    outline: 1px solid var(--gold-deep);
+    background: rgb(255 255 255 / 8%);
+  }
+}

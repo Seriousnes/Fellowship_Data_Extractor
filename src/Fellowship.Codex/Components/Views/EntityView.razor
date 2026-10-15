@@ -1,0 +1,70 @@
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+@inject IExportHistoryService History
+
+<CascadingValue Value="Entity">
+    <Wording />
+    <Particulars Facts="Facts" Schools="Schools" Scaling="Scaling" />
+    <Substitutions Tokens="Tokens" />
+    <Ranks />
+    <Overflow />
+    <BorrowedName Href="@(NameSource?.Href)" Tip="@(NameSource?.Tip)" Name="@(NameSource?.Name)" />
+    <BorrowedTexture Href="@(TextureSource?.Href)" Tip="@(TextureSource?.Tip)" Name="@(TextureSource?.Name)" />
+    @ChildContent
+    @if (ByVersion.Count > 0)
+    {
+        <Panel Head="Changes">
+            <Changes ByVersion="ByVersion" />
+        </Panel>
+    }
+</CascadingValue>
+
+@code {
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+
+    [Parameter]
+    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Extra { get; set; } = [];
+
+    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Facts = [];
+
+    private IReadOnlyList<(string Label, string Href)> Schools = [];
+
+    private IReadOnlyList<string> Scaling = [];
+
+    private IReadOnlyList<TokenReading> Tokens = [];
+
+    private IReadOnlyList<VersionValue> ByVersion = [];
+
+    private (string Href, TooltipLink? Tip, string Name)? NameSource;
+
+    private (string Href, TooltipLink? Tip, string Name)? TextureSource;
+
+    private const string SchoolFacet = "school";
+
+    protected override void OnParametersSet()
+    {
+        Facts = [.. Extra, .. Ui.Facts(Entity)];
+        Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(AbilityDocument.ScalesOff)))];
+        Tokens = Ui.Substitutions(Entity);
+        ByVersion = ReferenceEquals(Entity, Here.Entity) ? History.Of(Entity) : [];
+
+        IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
+
+        Schools = [.. schools.Select(school => (school, Filter(school)))];
+
+        NameSource = Borrowed((Entity as EffectDocument)?.NameBorrowedFrom);
+        TextureSource = Borrowed((Entity as EffectDocument)?.TextureBorrowedFrom);
+    }
+
+    private (string Href, TooltipLink? Tip, string Name)? Borrowed(EntityReference? source) =>
+        source is not null && Ui.Addresses(source.Type, source.Id, showIcon: true) is { } found
+            ? (found.Href, found.Tip, Ui.Name(source.Type, source.Id))
+            : null;
+
+    private string Filter(string school) =>
+        $"{PublicTypes.Where(EntityTypes.TypeOf(Entity))}&{SchoolFacet}={Uri.EscapeDataString(school)}";
+}

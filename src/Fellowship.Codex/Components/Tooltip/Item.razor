@@ -1,0 +1,137 @@
+@inject ITooltipViewService Ui
+@inject IEntityStoreService Store
+
+<div class="@TooltipView.Root @(Rarity is null ? "plain" : null)" style="@Ui.Variables(Rarity)">
+    <style>@Sheet</style>
+    @if (Query.ShowIcon && Texture is { } texture)
+    {
+        <Icon Src="@texture" Rarity="@Rarity?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
+    }
+    <div class="card">
+        <header class="head">
+            @if (Ui.Ornament(Rarity) is { } ornament)
+            {
+                <img class="orn" alt="" src="@ornament">
+            }
+
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+        </header>
+        @if (groups.Count > 0)
+        {
+            <div class="lines">
+                @for (var at = 0; at < groups.Count; at++)
+                {
+                    @if (at > 0) { <hr class="rule"> }
+                    @groups[at]
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public EntityDocument Document { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    private ItemDocument Entity => (ItemDocument)Document;
+
+    private RarityEntry? Rarity;
+
+    private string? Texture;
+
+    private int? Level;
+
+    private string? Temper;
+
+    private string? Name;
+
+    private string? potential;
+
+    private MarkupString Sheet;
+
+    private EntityDocument? granted;
+
+    private IReadOnlyList<TooltipView.Fact> facts = [];
+
+    private IReadOnlyList<StatLine> rolls = [];
+
+    private IReadOnlyList<TooltipView.ModifierLine> modifiers = [];
+
+    private IReadOnlyList<RenderFragment> groups = [];
+
+    protected override void OnParametersSet()
+    {
+        Rarity = Ui.Rarity(Entity, Query);
+        Texture = Ui.Texture(Entity, Rarity);
+        Level = Ui.Level(Entity, Query);
+        Temper = Ui.Temper(Entity, Query, Rarity, Level);
+        potential = Ui.Potential(Entity, Query, Rarity, Level);
+        Sheet = new MarkupString(Ui.Style());
+        facts = Ui.Facts(Entity, Query);
+        rolls = Ui.Rolls(Entity, Query, Rarity);
+        modifiers = Ui.Modifiers(Entity, Query, Rarity);
+        granted = Ui.Granted(Entity);
+        Name = granted is null ? null : PublicTypes.DisplayNameOf(granted);
+
+        groups = Groups();
+    }
+
+    private List<RenderFragment> Groups()
+    {
+        var sections = new List<RenderFragment>(8);
+
+        if (Identity)
+        {
+            sections.Add(@<TipIdentity Entity="Entity" Query="Query" Rarity="Rarity" Level="Level" Temper="@Temper" />);
+        }
+
+        if (facts.Count > 0) sections.Add(@<TipFacts Items="facts" />);
+
+        if (potential is { } scored) sections.Add(@<TipPotential Potential="@scored" />);
+
+        if (rolls.Count > 0) sections.Add(@<TipRolls Lines="rolls" />);
+
+        if (TipSocket.Draws(Entity, Store.Settings, Rarity, Query))
+        {
+            sections.Add(@<TipSocket Entity="Entity" Query="Query" />);
+        }
+
+        if (TipImbuedTraits.Capacity(Entity, Query) is not null)
+        {
+            sections.Add(@<TipImbuedTraits Entity="Entity" Query="Query" />);
+        }
+
+        if (modifiers.Count > 0) sections.Add(@<TipModifiers Lines="modifiers" />);
+
+        if (Entity.Description is not null)
+        {
+            sections.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);
+        }
+
+        if (Grants)
+        {
+            sections.Add(@<TipGranted Entity="Entity" Query="Query" Hero="Hero" Name="@Name" />);
+        }
+
+        if (Ui.LegendaryStats(Entity).Count > 0)
+        {
+            sections.Add(@<TipLegendaries Entity="Entity" Query="Query" Hero="Hero" />);
+        }
+
+        if (Entity.SetBonus is { Count: > 0 }) sections.Add(@<TipSets Entity="Entity" />);
+
+        return sections;
+    }
+
+    private bool Identity =>
+        Entity.ArmorType is not null || Entity.Slot is not null || Level is not null ||
+        Rarity is not null || Temper is not null ||
+        Entity.GemSlot == true || Entity.UniqueEquipped == true;
+
+    private bool Grants =>
+        granted is { } power &&
+        (power.Name ?? DocumentFields.Text(power, nameof(AbilityDocument.Description))) is not null;
+}

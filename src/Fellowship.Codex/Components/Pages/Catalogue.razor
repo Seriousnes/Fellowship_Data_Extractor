@@ -1,0 +1,307 @@
+@page "/search"
+@page "/{Slug}"
+@inject ICodexService Catalog
+@inject ICodexSearchService Search
+@inject NavigationManager Nav
+
+@if (Missing)
+{
+    return;
+}
+
+<PageTitle>@Heading - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@(new List<(string, string?)> { (Heading, null) })" />
+
+<h1>@Heading</h1>
+
+@if (Error is { } error)
+{
+    <Panel>
+        <Empty Message="That filter could not be read.">@error</Empty>
+    </Panel>
+}
+else
+{
+    <div class="cx-tabs">
+        <a class="cx-tab" href="@View.Replace("type", null)" aria-current="@(Results.Chosen is null ? "page" : null)">
+            All
+            @if (Query.Text is not null)
+            {
+                <CountBadge Text="@Results.Types.Values.Sum().ToString("N0")" />
+            }
+        </a>
+        @foreach (var type in Tabs)
+        {
+            <a class="cx-tab" href="@View.Replace("type", type.Slug)"
+               aria-current="@(Results.Chosen == type.Type ? "page" : null)">
+                @type.Label
+                @if (Query.Text is not null)
+                {
+                    <CountBadge Text="@Results.Types.GetValueOrDefault(type.Type).ToString("N0")" />
+                }
+            </a>
+        }
+    </div>
+
+    <div class="cx-browse">
+        <Panel As="aside" Class="cx-rail" Aria="Filters" Head="Refine" Collapsible="true"
+               Badge="@(View.Chosen.Count > 0 ? View.Chosen.Count.ToString("N0") : null)">
+            @if (View.Chosen.Count > 0)
+            {
+                <ul class="cx-chosen">
+                    @foreach (var (label, href) in View.Chosen)
+                    {
+                        <li><a href="@href" title="Remove this filter">@label</a></li>
+                    }
+                    <li class="cx-clear-all"><a href="@View.Bare">clear all</a></li>
+                </ul>
+            }
+
+            @foreach (var facet in View.Primary)
+            {
+                <details class="cx-facet" open>
+                    <summary>@facet.Label</summary>
+                    @Values(facet)
+                </details>
+            }
+
+            @foreach (var facet in View.More)
+            {
+                <details class="cx-facet" data-more="@("facet-" + facet.Key)" hidden="@(!View.Selected(facet.Key))" open>
+                    <summary>@facet.Label <FilterOff Clear="@(View.Selected(facet.Key) ? View.Replace(facet.Key, null) : null)" /></summary>
+                    @Values(facet)
+                </details>
+            }
+
+            @foreach (var flag in View.Flags)
+            {
+                var answer = View.Answer(flag.Key);
+
+                <details class="cx-facet" data-more="@("flag-" + flag.Key)" hidden="@(!View.Stated(flag.Key))" open>
+                    <summary>@flag.Label <FilterOff Clear="@(View.Stated(flag.Key) ? View.Replace(flag.Key, null) : null)" /></summary>
+                    <ul class="cx-facet-values">
+                        <li><a href="@View.Replace(flag.Key, "1")" class="@BrowseView.On(answer == true)">Yes</a></li>
+                        <li><a href="@View.Replace(flag.Key, "0")" class="@BrowseView.On(answer == false)">No</a></li>
+                    </ul>
+                </details>
+            }
+
+            @if (View.Ranges.Count > 0)
+            {
+                <form class="cx-ranges" method="get" action="@View.Where">
+                    @foreach (var (name, value) in Query.Fields())
+                    {
+                        <input type="hidden" name="@name" value="@value" />
+                    }
+                    @foreach (var measure in View.Ranges)
+                    {
+                        <details class="cx-facet" data-more="@("range-" + measure.Key)" hidden="@(!View.Bounded(measure.Key))" open>
+                            <summary>@Name(measure) <FilterOff Clear="@(View.Bounded(measure.Key) ? View.Unbound(measure.Key) : null)" /></summary>
+                            <div class="cx-range">
+                                <input type="number" step="any" name="@(measure.Key)Min" placeholder="min"
+                                       value="@(Query.Bound(measure.Key, false) is { } low ? FellowshipCodex.Number(low) : null)" />
+                                <input type="number" step="any" name="@(measure.Key)Max" placeholder="max"
+                                       value="@(Query.Bound(measure.Key, true) is { } high ? FellowshipCodex.Number(high) : null)" />
+                            </div>
+                        </details>
+                    }
+                    <button type="submit">Apply</button>
+                </form>
+            }
+
+            <select class="cx-more" aria-label="Additional filters">
+                <option value="">Additional filters…</option>
+                @if (View.More.Any(facet => !View.Selected(facet.Key)))
+                {
+                    <optgroup label="Filter by">
+                        @foreach (var facet in View.More.Where(facet => !View.Selected(facet.Key)))
+                        {
+                            <option value="@("facet-" + facet.Key)">@facet.Label</option>
+                        }
+                    </optgroup>
+                }
+                @if (View.Flags.Any(flag => !View.Stated(flag.Key)))
+                {
+                    <optgroup label="Only rows that">
+                        @foreach (var flag in View.Flags.Where(flag => !View.Stated(flag.Key)))
+                        {
+                            <option value="@("flag-" + flag.Key)">@flag.Label</option>
+                        }
+                    </optgroup>
+                }
+                @if (View.Ranges.Any(measure => !View.Bounded(measure.Key)))
+                {
+                    <optgroup label="Between">
+                        @foreach (var measure in View.Ranges.Where(measure => !View.Bounded(measure.Key)))
+                        {
+                            <option value="@("range-" + measure.Key)">@Name(measure)</option>
+                        }
+                    </optgroup>
+                }
+            </select>
+
+            <details class="cx-facet cx-group" open="@(Query.Group is not null)">
+                <summary>Group results by</summary>
+                <ul class="cx-facet-values">
+                    <li>
+                        <a href="@View.Replace("group", null)" class="@BrowseView.On(Query.Group is null)">Nothing</a>
+                    </li>
+                    @foreach (var facet in View.Rail)
+                    {
+                        var grouping = string.Equals(Query.Group, facet.Key, StringComparison.OrdinalIgnoreCase);
+                        <li>
+                            <a href="@View.Replace("group", facet.Key)" class="@BrowseView.On(grouping)">@facet.Label</a>
+                        </li>
+                    }
+                </ul>
+            </details>
+        </Panel>
+
+        <section>
+            @Pager()
+
+            @if (Results.Rows.Count == 0)
+            {
+                <Panel>
+                    <Empty Message="Nothing in the build answers that.">
+                        @(Query.IsEmpty
+                            ? "Pick a category from the menus above, or type a name into the search box."
+                            : "Remove a filter and try again.")
+                    </Empty>
+                </Panel>
+            }
+            else
+            {
+                <Rows Type="Results.Chosen" Documents="Results.Rows" View="View" />
+
+                @Pager()
+            }
+        </section>
+    </div>
+}
+
+@code {
+    [CascadingParameter] private HttpContext? Http { get; set; }
+
+    [Parameter] public string? Slug { get; set; }
+
+    private CodexQuery Query = new();
+
+    private CodexResults Results =
+        new(0, 1, 1, [], [], new Dictionary<EntityType, int>(), null, [], []);
+
+    private BrowseView View = default!;
+
+    private Category? Here;
+
+    private bool Missing;
+
+    private string? Error;
+
+    private string Where => Here is { } category ? "/" + category.Slug : "/search";
+
+    private string Heading =>
+        Query.Text is { } text
+            ? $"Search results for “{text}”"
+            : Results.Chosen is { } chosen
+                ? FellowshipCodex.Label(chosen)
+                : Here?.Label ?? "Search the codex";
+
+    private IReadOnlyList<TypeView> Tabs
+    {
+        get
+        {
+            var types = Here is { } category
+                ? Catalog.Tabs(category)
+                : [.. Catalog.Types.OrderBy(type => type.Position)];
+
+            return [.. types.Where(type => Results.Types.ContainsKey(type.Type) || Results.Chosen == type.Type)];
+        }
+    }
+
+    private Facet? Grouping => Query.Group is null ? null : Catalog.Facet(Query.Group);
+
+    private static string Name(Measure measure) =>
+        measure.Unit is null ? measure.Label : $"{measure.Label} ({measure.Unit})";
+
+    private RenderFragment Values(FacetView facet) =>
+        @<ul class="cx-facet-values">
+            @foreach (var value in facet.Values)
+            {
+                var chosen = Query.Chosen(facet.Key, value.Value);
+
+                <li>
+                    <a href="@View.Toggle(facet.Key, value.Value)" class="@BrowseView.On(chosen)"
+                       style="@(chosen || value.Colour is null ? null : $"color:{value.Colour}")">@value.Label</a>
+                </li>
+            }
+        </ul>;
+
+    private RenderFragment Pager() =>
+        @<nav class="cx-pager" aria-label="Pagination">
+            <div class="cx-count">
+                <b>@Results.Total.ToString("N0")</b> @(Results.Total == 1 ? "entity" : "entities")
+                @if (Grouping is { } grouped)
+                {
+                    <span>&middot; grouped by @grouped.Label</span>
+                }
+            </div>
+            @if (Results.Pages > 1)
+            {
+                <div class="cx-pager-links">
+                    @if (Results.Page > 1)
+                    {
+                        <a href="@View.PageLink(1)">&laquo; First</a>
+                        <a href="@View.PageLink(Results.Page - 1)">&lsaquo; Prev</a>
+                    }
+                    @foreach (var number in BrowseView.Window(Results.Page, Results.Pages))
+                    {
+                        if (number < 0)
+                        {
+                            <span class="cx-gap">&hellip;</span>
+                        }
+                        else if (number == Results.Page)
+                        {
+                            <span aria-current="page">@number</span>
+                        }
+                        else
+                        {
+                            <a href="@View.PageLink(number)">@number</a>
+                        }
+                    }
+                    @if (Results.Page < Results.Pages)
+                    {
+                        <a href="@View.PageLink(Results.Page + 1)">Next &rsaquo;</a>
+                        <a href="@View.PageLink(Results.Pages)">Last &raquo;</a>
+                    }
+                </div>
+            }
+        </nav>;
+
+    protected override void OnParametersSet()
+    {
+        Here = Slug is null ? null : Categories.Find(Slug);
+        Missing = Slug is not null && Here is null;
+
+        if (Missing)
+        {
+            Nav.NotFound();
+            return;
+        }
+
+        var request = Http?.Request.Query ?? Microsoft.AspNetCore.Http.QueryCollection.Empty;
+
+        Query = CodexQuery.Parse(request, Catalog, RequestProperties.Of(typeof(EntitiesRequest)), Here, out Error);
+
+        if (Error is null && request.Any(p => p.Value.All(string.IsNullOrEmpty)))
+        {
+            Nav.NavigateTo(Where + Query.ToQueryString(), replace: true);
+            return;
+        }
+
+        if (Error is null) Results = Search.Run(Query);
+
+        View = new BrowseView(Catalog, Query, Results, Where);
+    }
+}

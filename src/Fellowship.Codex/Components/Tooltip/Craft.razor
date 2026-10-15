@@ -1,0 +1,394 @@
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.Extensions.Primitives
+@using System.Text.Json
+@using Microsoft.JSInterop
+@using Fellowship.SDK.Client
+@inject IEntityStoreService Store
+@inject ITooltipViewService Cards
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+@implements IAsyncDisposable
+
+@if (Entity is not null)
+{
+    <CascadingValue Value="Here">
+        <div class="cx-craft">
+            <div class="cx-craft-tip" aria-live="polite" @ref="layer">
+                <Tooltip Entity="Entity" Query="Current" Hero="Wearer" />
+
+                <div class="cx-craft-hits">
+                    @foreach (var slot in Editable)
+                    {
+                        var mine = slot;
+
+                        <button type="button" class="cx-craft-hit" @key="mine.Key"
+                                data-craft="@mine.SlotName" data-at="@mine.Ordinal"
+                                aria-haspopup="dialog" aria-label="@Label(mine)"
+                                @ref="hits[mine.Key]"
+                                @onclick="() => Open(mine)"></button>
+                    }
+                </div>
+            </div>
+
+            <div class="cx-craft-side">
+                <Knobs OnTurn="Turn" />
+
+                <button type="button" class="cx-craft-copy" @onclick="Copy">Copy link</button>
+
+                <button type="button" class="cx-craft-import" @onclick="() => pasting = true">Import</button>
+                <button type="button" class="cx-craft-export" @onclick="Export">Export</button>
+
+                @if (pasting || paste is { Length: > 0 })
+                {
+                    <textarea class="cx-craft-paste" rows="6" @bind="paste"></textarea>
+                    <button type="button" class="cx-craft-read" @onclick="Import">Read</button>
+                }
+
+                @if (pieces.Count > 0)
+                {
+                    <ul class="cx-craft-pieces">
+                        @foreach (var piece in pieces)
+                        {
+                            var mine = piece;
+
+                            <li>
+                                <button type="button" @onclick="() => Take(mine.Raw)">@mine.Label</button>
+                            </li>
+                        }
+                    </ul>
+                }
+
+                @if (message is { Length: > 0 })
+                {
+                    <p class="cx-craft-message">@message</p>
+                }
+            </div>
+        </div>
+
+        @if (opened is { } editing && Entity is ItemDocument wearing)
+        {
+            <ModifierSelector Slot="editing" Item="wearing" Query="Current" Rarity="Cards.Rarity(wearing, Current)"
+                              OnPick="candidate => Pick(editing, candidate)" OnShut="Shut" />
+        }
+    </CascadingValue>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = string.Empty;
+
+    [Parameter] public int Id { get; set; }
+
+    [Parameter] public string? Search { get; set; }
+
+    [Parameter] public string? Hero { get; set; }
+
+    private EntityDocument? Entity;
+
+    private Bearings Here = new();
+
+    private TooltipQuery Current = new();
+
+    private IReadOnlyDictionary<string, string> values =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    private Dictionary<string, StringValues> raw = [];
+
+    private ElementReference layer;
+
+    private readonly Dictionary<string, ElementReference> hits = [];
+
+    private IJSObjectReference? module;
+
+    private IReadOnlyList<CraftSlot> Editable { get; set; } = [];
+
+    private CraftSlot? opened;
+
+    private string Page => $"/{Slug}/{Id}";
+
+    private HeroEntry? Wearer => Current.Hero is null ? null : Store.Hero(Current.Hero);
+
+    protected override void OnParametersSet()
+    {
+        raw = QueryHelpers.ParseQuery(Search ?? string.Empty);
+        values = First(raw);
+
+        var type = EntityTypes.TryParse(Slug, out var parsed) ? parsed : (EntityType?)null;
+        var readings = type is { } entityType ? Store.All(entityType, Id) : [];
+
+        Entity = Store.Hero(values.GetValueOrDefault("hero")) is { } wearer
+            ? readings.FirstOrDefault(reading => EntityStore.Reads(reading, wearer)) ?? readings.FirstOrDefault()
+            : readings.FirstOrDefault();
+
+        if (Entity is null)
+        {
+            Here = new Bearings();
+            Current = new TooltipQuery();
+            Editable = [];
+            return;
+        }
+
+        Current = Query(values);
+
+        Here = new Bearings
+        {
+            Entity = Entity,
+            Readings = readings,
+            Reading = Hero,
+            Page = Page,
+            Id = Id,
+            Values = values,
+        };
+
+        Editable = Entity is ItemDocument item
+            ? [.. ItemCraft.Slots(item, Store.Settings, Cards.Rarity(item, Current)).Where(slot => slot.Accepts.Count > 0)]
+            : [];
+    }
+
+    private static string Label(CraftSlot slot) => slot.SlotName switch
+    {
+        CraftSlots.RandomStat => $"Random stat {slot.Ordinal + 1}",
+        CraftSlots.GemSocket => "Gem socket",
+        CraftSlots.TraitTree => "Imbued traits",
+        _ => $"Modifier {slot.Ordinal + 1}",
+    };
+
+    private void Open(CraftSlot slot) => opened = slot;
+
+    private async Task Shut()
+    {
+        var key = opened?.Key;
+        opened = null;
+
+        if (key is not null && hits.TryGetValue(key, out var hit)) await hit.FocusAsync();
+    }
+
+    private void Pick(CraftSlot slot, CraftCandidate candidate)
+    {
+        opened = null;
+
+        var query = ItemCraft.With(Current, slot, candidate);
+
+        var (key, value) = ItemCraft.Writes(slot, candidate) switch
+        {
+            CraftSlots.RandomStat => ("randomStats", string.Join(',', query.RandomStats)),
+
+            CraftSlots.GemSocket => ("gem", candidate.Id.ToString(CultureInfo.InvariantCulture)),
+
+            CraftSlots.TraitTree => ("imbuedTraits", string.Join(
+                ',', query.ImbuedTraits.Select(trait => $"{trait.Id}:{trait.Rank}"))),
+
+            _ => ("modifiers", string.Join(
+                ',',
+                query.Modifiers.Select(modifier =>
+                    $"{modifier.Kind.ToString().ToLowerInvariant()}:{modifier.Id}:{modifier.Amount}"))),
+        };
+
+        Nav.NavigateTo(Href(key, value), replace: true);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        module ??= await Js.InvokeAsync<IJSObjectReference>("import", "/js/craft.js");
+
+        await module.InvokeVoidAsync("watch", layer);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module is null) return;
+
+        try
+        {
+            await module.InvokeVoidAsync("unwatch", layer);
+            await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    private static IReadOnlyDictionary<string, string> First(Dictionary<string, StringValues> parsed)
+    {
+        var first = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (key, values) in parsed)
+        {
+            if (values.FirstOrDefault() is { Length: > 0 } value) first[key] = value;
+        }
+
+        return first;
+    }
+
+    private TooltipQuery Query(IReadOnlyDictionary<string, string> values)
+    {
+        var stats = StatQuery.FromQuery(
+            new QueryCollection(raw), RequestProperties.OfEveryTooltip, Store.Stats, out _);
+
+        var rolled = StatQuery.Rolled(
+            RolledStats.TryParse(values.GetValueOrDefault("randomStats"), out var names) ? names.Values : null,
+            Store.Stats,
+            Store.Settings.StatCalculation.RandomStatPool,
+            out _);
+
+        return StatQuery.Read(stats, Store.Stats, out _) with
+        {
+            ShowIcon = true,
+            Hero = StatQuery.NullIfEmpty(values.GetValueOrDefault("hero")),
+            Rarity = StatQuery.NullIfEmpty(values.GetValueOrDefault("rarity")),
+            ItemLevel = Number(values, "itemLevel"),
+            Upgrades = Number(values, "upgrades"),
+            MaxUpgrades = Number(values, "maxUpgrades"),
+            NoSocket = values.ContainsKey("noSocket"),
+            Gem = Number(values, "gem"),
+            AllocatedTraits = Number(values, "allocatedTraits"),
+            RandomStats = rolled,
+            Modifiers = ItemModifiers.TryParse(values.GetValueOrDefault("modifiers"), out var modifiers)
+                ? modifiers.Values
+                : [],
+            ImbuedTraits = ImbuedTraits.TryParse(values.GetValueOrDefault("imbuedTraits"), out var imbued)
+                ? imbued.Values
+                : [],
+            State = StatQuery.NullIfEmpty(values.GetValueOrDefault("state")),
+            Difficulty = Number(values, "difficulty"),
+        };
+    }
+
+    private static int? Number(IReadOnlyDictionary<string, string> values, string key) =>
+        values.GetValueOrDefault(key) is { } value && int.TryParse(value, out var number) ? number : null;
+
+    public string Href(string key, string? value)
+    {
+        var parameters = new Dictionary<string, StringValues>(raw, StringComparer.OrdinalIgnoreCase);
+
+        if (string.IsNullOrEmpty(value)) parameters.Remove(key); else parameters[key] = value;
+
+        return QueryHelpers.AddQueryString(Page, parameters);
+    }
+
+    private void Turn(KnobTurn turn) => Nav.NavigateTo(Href(turn.Key, turn.Value), replace: true);
+
+    private async Task Copy()
+    {
+        module ??= await Js.InvokeAsync<IJSObjectReference>("import", "/js/craft.js");
+
+        await module.InvokeVoidAsync("copy", Nav.Uri);
+    }
+
+    private bool pasting;
+
+    private string? paste;
+
+    private string? message;
+
+    private IReadOnlyList<(string Label, string Raw)> pieces = [];
+
+    private void Import()
+    {
+        message = null;
+        pieces = [];
+
+        JsonDocument document;
+
+        try
+        {
+            document = JsonDocument.Parse(paste ?? string.Empty);
+        }
+        catch (JsonException error)
+        {
+            message = error.Message;
+            return;
+        }
+
+        using (document)
+        {
+            var gear = FellowshipLogs.Gear(document.RootElement);
+
+            if (gear.Count == 0)
+            {
+                message = "That paste has no gear entry.";
+                return;
+            }
+
+            if (gear.Count > 1)
+            {
+                pieces = [.. gear.Select(entry => (Name(entry), entry.GetRawText()))];
+                return;
+            }
+
+            Take(gear[0].GetRawText());
+        }
+    }
+
+    private void Take(string raw)
+    {
+        using var entry = JsonDocument.Parse(raw);
+
+        var query = FellowshipLogs.Read(entry.RootElement, Store, out var itemId, out var unresolved);
+
+        message = unresolved.Count == 0 ? null : string.Join(" ", unresolved);
+        pieces = [];
+        pasting = false;
+
+        Nav.NavigateTo(Address(itemId, query), replace: true);
+    }
+
+    private void Export()
+    {
+        if (Entity is not ItemDocument item) return;
+
+        pasting = true;
+        paste = FellowshipLogs.Write(item, Current, Store).ToJsonString();
+    }
+
+    private static string Name(JsonElement entry) =>
+        entry.TryGetProperty("name", out var name) && name.GetString() is { Length: > 0 } value
+            ? value
+            : entry.TryGetProperty("id", out var id) ? id.ToString() : "gear";
+
+    private string Address(int itemId, TooltipQuery query)
+    {
+        var parameters = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["hero"] = values.GetValueOrDefault("hero") ?? default,
+            ["rarity"] = query.Rarity ?? default,
+            ["itemLevel"] = Text(query.ItemLevel),
+            ["upgrades"] = Text(query.Upgrades),
+            ["maxUpgrades"] = Text(query.MaxUpgrades),
+            ["noSocket"] = query.NoSocket ? "true" : default,
+            ["gem"] = Text(query.Gem),
+            ["potentialPower"] = Text(query.PotentialPower),
+            ["armor"] = Text(query.Armor),
+            ["allocatedTraits"] = Text(query.AllocatedTraits),
+            ["randomStats"] = Empty(string.Join(',', query.RandomStats)),
+            ["modifiers"] = Empty(string.Join(
+                ',',
+                query.Modifiers.Select(modifier =>
+                    $"{modifier.Kind.ToString().ToLowerInvariant()}:{modifier.Id}:{modifier.Amount}"))),
+            ["imbuedTraits"] = Empty(string.Join(
+                ',', query.ImbuedTraits.Select(trait => $"{trait.Id}:{trait.Rank}"))),
+        };
+
+        foreach (var (stat, magnitudes) in query.Stats)
+        {
+            parameters[stat] = new StringValues(
+                [.. magnitudes.Select(value => value.ToString(CultureInfo.InvariantCulture))]);
+        }
+
+        foreach (var empty in parameters.Where(pair => pair.Value.Count == 0).Select(pair => pair.Key).ToArray())
+        {
+            parameters.Remove(empty);
+        }
+
+        return QueryHelpers.AddQueryString($"/{Slug}/{itemId}", parameters);
+    }
+
+    private static StringValues Text(int? value) =>
+        value is { } number ? number.ToString(CultureInfo.InvariantCulture) : default;
+
+    private static StringValues Text(decimal? value) =>
+        value is { } number ? number.ToString(CultureInfo.InvariantCulture) : default;
+
+    private static StringValues Empty(string value) => value.Length == 0 ? default : value;
+}

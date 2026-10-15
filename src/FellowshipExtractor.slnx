@@ -1,0 +1,15 @@
+<Solution>
+  <Project Path="Fellowship.Codex.Mcp/Fellowship.Codex.Mcp.csproj">
+    <BuildType Project="Release" />
+  </Project>
+  <Project Path="Fellowship.Codex.Tests/Fellowship.Codex.Tests.csproj" />
+  <Project Path="Fellowship.Codex/Fellowship.Codex.csproj" />
+  <Project Path="Fellowship.SDK.Generators/Fellowship.SDK.Generators.csproj" />
+  <Project Path="Fellowship.SDK/Fellowship.SDK.csproj" />
+  <Project Path="Fellowship.Storage/Fellowship.Storage.csproj" />
+  <Project Path="FellowshipExtractor.AppHost/FellowshipExtractor.AppHost.csproj" />
+  <Project Path="FellowshipExtractor.Publisher/FellowshipExtractor.Publisher.csproj" />
+  <Project Path="FellowshipExtractor.ServiceDefaults/FellowshipExtractor.ServiceDefaults.csproj" />
+  <Project Path="FellowshipExtractor.Tests/FellowshipExtractor.Tests.csproj" />
+  <Project Path="FellowshipExtractor/FellowshipExtractor.csproj" />
+</Solution>

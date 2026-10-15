@@ -1,0 +1,12 @@
+<EntityView Entity="Entity">
+    @if (Entity.Power is { } power)
+    {
+        <Panel Head="@PublicTypes.Label(EntityType.TraitPower)">
+            <Ref Entity="power" />
+        </Panel>
+    }
+</EntityView>
+
+@code {
+    [Parameter, EditorRequired] public TraitDocument Entity { get; set; } = default!;
+}

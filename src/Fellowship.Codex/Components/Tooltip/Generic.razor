@@ -1,0 +1,96 @@
+@inject ITooltipViewService Ui
+@inject ICodexViewService View
+
+<div class="@TooltipView.Root @(Rarity is null ? "plain" : null)" style="@Ui.Variables(Rarity)">
+    <style>@Sheet</style>
+    @if (Query.ShowIcon && Texture is { } texture)
+    {
+        <Icon Src="@texture" Rarity="@Rarity?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
+    }
+    <div class="card">
+        <header class="head">
+            @if (Ui.Ornament(Rarity) is { } ornament)
+            {
+                <img class="orn" alt="" src="@ornament">
+            }
+
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+        </header>
+        @if (groups.Count > 0)
+        {
+            <div class="lines">
+                @for (var at = 0; at < groups.Count; at++)
+                {
+                    @if (at > 0) { <hr class="rule"> }
+                    @groups[at]
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public EntityDocument Entity { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    private RarityEntry? Rarity;
+
+    private string? Texture;
+
+    private int? Level;
+
+    private string? Temper;
+
+    private MarkupString Sheet;
+
+    private IReadOnlyList<TooltipView.Fact> facts = [];
+
+    private IReadOnlyList<RenderFragment> groups = [];
+
+    protected override void OnParametersSet()
+    {
+        Rarity = Ui.Rarity(Entity, Query);
+        Texture = Ui.Texture(Entity, Rarity);
+        Level = Ui.Level(Entity, Query);
+        Temper = Ui.Temper(Entity, Query, Rarity, Level);
+        Sheet = new MarkupString(Ui.Style());
+        facts = Ui.Facts(Entity, Query);
+
+        groups = Groups();
+    }
+
+    private List<RenderFragment> Groups()
+    {
+        var sections = new List<RenderFragment>(6);
+
+        if (Kind || Level is not null || Rarity is not null || Temper is not null)
+        {
+            sections.Add(@<TipIdentity Entity="Entity" Query="Query" Rarity="Rarity" Level="Level" Temper="@Temper" />);
+        }
+
+        if (facts.Count > 0) sections.Add(@<TipFacts Items="facts" />);
+
+        if (Ui.Potential(Entity, Query, null, null) is { } scored)
+        {
+            sections.Add(@<TipPotential Potential="@scored" />);
+        }
+
+        if (Prose) sections.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);
+
+        if (View.Stone(Entity) is { OverflowDescription: not null })
+        {
+            sections.Add(@<TipOverflow Entity="Entity" Query="Query" Hero="Hero" />);
+        }
+
+        return sections;
+    }
+
+    private bool Kind => Entity is GemDocument or GemTraitDocument or GemTypeDocument;
+
+    private bool Prose =>
+        DocumentFields.Text(Entity, nameof(AbilityDocument.Description)) is not null ||
+        DocumentFields.Words(Entity, nameof(AbilityDocument.Detail)) is { Count: > 0 };
+}

@@ -1,0 +1,165 @@
+@page "/{slug}/{id:int}"
+@inject ICodexViewService Ui
+@inject ICodexService Catalog
+@inject IEntityStoreService Store
+@inject NavigationManager Nav
+
+@if (Readings.Count > 0)
+{
+    <PageTitle>@Name - Fellowship Codex</PageTitle>
+    <Crumbs Trail="@(new List<(string, string?)> { (PublicTypes.Label(type), Under), (Name, null) })" />
+
+    <h1 class="cx-entity-name"
+        style="--cx-name:@Ui.NameColour(Entity);@(Rarity is null ? null : $"--cx-rarity:{Rarity};")color:var(--cx-rarity, var(--cx-name))">@Name</h1>
+
+    <CascadingValue Value="Here">
+        <div class="cx-entity">
+            <div class="cx-entity-top">
+                <Craft Slug="@Slug" Id="Id" Search="@Search" Hero="@Reading" />
+
+                <div class="cx-entity-side">
+                    <Versions />
+                </div>
+            </div>
+
+            <Detail Entity="Entity" />
+
+            <Nearby />
+        </div>
+    </CascadingValue>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = string.Empty;
+
+    [Parameter] public int Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "hero")] public string? Hero { get; set; }
+
+    [SupplyParameterFromQuery(Name = "state")] public string? State { get; set; }
+
+    private EntityType type;
+
+    private IReadOnlyList<EntityDocument> Readings = [];
+
+    private EntityDocument Entity = default!;
+
+    private Bearings Here = new();
+
+    private string Name => Ui.Name(Entity);
+
+    private string Under => PublicTypes.Where(type);
+
+    private IReadOnlyDictionary<string, string> Values
+    {
+        get
+        {
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (key, found) in Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(
+                new Uri(Nav.Uri).Query))
+            {
+                if (found.FirstOrDefault() is { Length: > 0 } value) values[key] = value;
+            }
+
+            return values;
+        }
+    }
+
+    private string Search => new Uri(Nav.Uri).Query;
+
+    private string? Rarity =>
+        Values.GetValueOrDefault("rarity") is { Length: > 0 } request &&
+        Store.Rarity(request, Entity is GemDocument) is { } rarity
+            ? CodexView.Readable(Ui.Tokens.Rarity(rarity.Name))
+            : null;
+
+    private TooltipLink Tip => Ui.Tip(Entity);
+
+    private bool PicksHero => Readings.Count > 1 || (Entity as ItemDocument)?.Heroes is { Count: > 1 };
+
+    private string? Reading
+    {
+        get
+        {
+            if (!PicksHero) return null;
+
+            return Store.Hero(Hero) is { } hero && EntityStore.Reads(Entity, hero)
+                ? hero.Name
+                : Ui.Reading(Entity);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        var resolved = EntityTypes.TryParse(Slug, out var parsed) && PublicTypes.IsListed(parsed)
+            ? parsed
+            : (EntityType?)null;
+        type = resolved ?? default;
+        Readings = resolved is { } t ? Store.All(t, Id) : [];
+
+        if (Readings.Count == 0)
+        {
+            Entity = default!;
+            Here = new Bearings();
+            Nav.NotFound();
+            return;
+        }
+
+        Entity = Hero is not null && Store.Hero(Hero) is { } wearer
+            ? Readings.FirstOrDefault(reading => EntityStore.Reads(reading, wearer)) ?? Readings[0]
+            : Readings[0];
+
+        Here = new Bearings
+        {
+            Entity = Entity,
+            Readings = Readings,
+            Reading = Reading,
+            Tip = Tip,
+            Page = Ui.Href(type, Id),
+            Under = Under,
+            Label = PublicTypes.Label(type),
+            Noun = PublicTypes.Noun(type),
+            Id = Id,
+            Related = Nearby(),
+            Values = Values,
+        };
+    }
+
+    private IReadOnlyList<(string, string)> Nearby()
+    {
+        var nearby = new List<(string, string)>();
+        var flag = Catalog.Flag(CodexQuery.NamedFlag);
+
+        void Add(string facet, string? value)
+        {
+            if (value is null) return;
+            if (Catalog.Facet(facet) is not { } definition) return;
+
+            var count = Store.Entities.Count(row =>
+                EntityTypes.TypeOf(row) == type &&
+                definition.Matches(row, [value]) &&
+                (flag is null || flag.Predicate(row)));
+
+            if (count < 2) return;
+
+            nearby.Add((
+                $"{definition.Label}: {Catalog.Printed(definition, value)}",
+                $"{Under}&{facet}={Uri.EscapeDataString(value)}"));
+        }
+
+        string? First(string key) => Catalog.Facet(key)?.Values(Entity).FirstOrDefault();
+
+        Add("slot", First("slot"));
+        Add("set", First("set"));
+        Add("gem", First("gem"));
+        Add("trait", First("trait"));
+
+        var heroes = Catalog.Facet("hero")?.Values(Entity).ToArray() ?? [];
+        Add("hero", heroes.Length == 1 ? heroes[0] : null);
+
+        Add("school", First("school"));
+
+        return nearby;
+    }
+}

@@ -1,0 +1,25 @@
+@inject ICodexViewService Ui
+
+<figure class="fx-trait-crest @(Padlocked ? "locked" : null)" style="--fx-node:url(@Plate);--fx-node-width:@WidthPx">
+    <div class="well">@if (Texture is { } texture) { <img alt="" src="@texture"> }</div>
+    @if (Padlocked)
+    {
+        <img class="lock" alt="" src="@Ui.Chrome.LockGlyph">
+    }
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public TraitDocument Entity { get; set; } = default!;
+
+    [Parameter] public string? State { get; set; }
+
+    [Parameter] public int Width { get; set; } = 72;
+
+    private bool Padlocked => ChromeAssetService.Padlocked(State);
+
+    private string Plate => Ui.Chrome.TraitNode(State);
+
+    private string? Texture => Ui.Icon(Entity.Icon);
+
+    private string WidthPx => Width.ToString(CultureInfo.InvariantCulture) + "px";
+}

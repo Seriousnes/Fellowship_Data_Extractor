@@ -1,0 +1,49 @@
+@inject ICodexViewService Codex
+@inject ITooltipViewService Cards
+
+@if (Query.Mobile)
+{
+    <div class="fx-modal" style="@Codex.Tokens.CssVariables()">
+        <style>@((MarkupString)Cards.ModalStyle())</style>
+        <button type="button" class="shut" data-dismiss aria-label="Close">&times;</button>
+        <div class="scrim" data-dismiss>
+            <div class="sheet" data-dismiss>
+                <div class="body">
+                    @Card
+                </div>
+                <a class="open" href="@(Origin + Codex.Href(Entity))">Open @PublicTypes.Noun(EntityTypes.TypeOf(Entity))</a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    @Card
+}
+
+@code {
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    [Parameter] public string? Origin { get; set; }
+
+    private Dictionary<string, object?> Knobs =>
+        new(StringComparer.Ordinal) { ["Query"] = Query, ["Hero"] = Hero };
+
+    private RenderFragment Card =>
+        @<CascadingValue Value="Entity">
+            <DynamicComponent Type="GetTooltipComponent(Entity)" Parameters="Knobs" />
+        </CascadingValue>;
+
+    private static Type GetTooltipComponent(EntityDocument document) => document switch
+    {
+        BlessingDocument => typeof(Blessing),
+        TraitDocument => typeof(Trait),
+        ItemDocument => typeof(Item),
+        AbilityDocument or EffectDocument => typeof(Ability),
+        _ => typeof(Generic),
+    };
+}

@@ -1,0 +1,31 @@
+@inject ITooltipViewService Ui
+@inject IEntityStoreService Store
+
+<div class="grp">
+    <div class="sock">
+        @if (Gem is { } gem)
+        {
+            <img class="gi" alt="" src="@Ui.Chrome.Texture(gem.Icon)">
+            <span class="gn">@PublicTypes.NameOf(gem)</span>
+        }
+        else
+        {
+            <img class="gi" alt="" src="@Ui.Chrome.GemSocketPlate">
+            <span class="gn">@TooltipView.GemSocketLabel</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ItemDocument Entity { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    private GemDocument? Gem =>
+        Query.Gem is { } id ? Store.All(EntityType.Gem, id).OfType<GemDocument>().FirstOrDefault() : null;
+
+    public static bool Draws(
+        ItemDocument entity, SettingsFile settings, RarityEntry? rarity, TooltipQuery query) =>
+        !query.NoSocket &&
+        ItemCraft.Slots(entity, settings, rarity).Any(slot => slot.SlotName == CraftSlots.GemSocket);
+}

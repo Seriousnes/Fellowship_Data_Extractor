@@ -1,0 +1,33 @@
+$gutter: clamp(12px, 2.4vw, 28px);
+
+$on-gold: #0b141d;
+
+@mixin plated {
+  border: 2px solid transparent;
+  border-image: var(--chrome-panel) 2 fill stretch;
+  padding: 14px 16px;
+}
+
+@mixin sunken {
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+@mixin edged {
+  border-color: var(--gold-deep);
+  outline: none;
+}
+
+@mixin gold-slab {
+  background: var(--gold-deep);
+  color: $on-gold;
+}
+
+@mixin eyebrow {
+  margin: 0 0 3px;
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}

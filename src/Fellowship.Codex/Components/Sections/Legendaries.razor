@@ -1,0 +1,22 @@
+@inject ITooltipViewService Tips
+
+@if (Rolls.Count > 0)
+{
+    var badge = Rolls.Count.ToString();
+    <Panel Head="Legendary stats" Badge="@badge">
+        @for (var index = 0; index < Rolls.Count; index++)
+        {
+            var roll = Rolls[index];
+
+            <Rule />
+            <SubHead>@PublicTypes.NameOf(roll)</SubHead>
+            <Detail Entity="roll" @key="index" />
+        }
+    </Panel>
+}
+
+@code {
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
+
+    private IReadOnlyList<EntityDocument> Rolls => Tips.LegendaryStats(Entity);
+}

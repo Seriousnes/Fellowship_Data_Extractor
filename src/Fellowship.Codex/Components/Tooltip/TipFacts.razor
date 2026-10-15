@@ -1,0 +1,16 @@
+<div class="grp">
+    @for (var at = 0; at < Items.Count; at += 2)
+    {
+        <div class="row">
+            <span><span class="k">@Items[at].Label</span><span class="v" title="@Items[at].Title">@Items[at].Value</span></span>
+            @if (at + 1 < Items.Count)
+            {
+                <span><span class="k">@Items[at + 1].Label</span><span class="v" title="@Items[at + 1].Title">@Items[at + 1].Value</span></span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<TooltipView.Fact> Items { get; set; } = [];
+}

@@ -1,0 +1,14 @@
+<li><span class="cx-k">@Key</span><span class="@Classes">@ChildContent</span></li>
+
+@code {
+    [Parameter, EditorRequired] public string Key { get; set; } = string.Empty;
+
+    [Parameter] public bool Missing { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string Classes =>
+        "cx-v" + (Class is null ? null : " " + Class) + (Missing ? " cx-miss" : null);
+}

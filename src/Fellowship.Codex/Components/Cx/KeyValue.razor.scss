@@ -1,0 +1,12 @@
+li {
+  display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--line-soft);
+
+  &:last-child { border-bottom: 0; }
+
+  ::deep code { font: 12px/1.5 var(--mono); color: var(--core-secondary-100); }
+}
+
+.cx-k { color: var(--muted); flex: 1 1 auto; min-width: 0; word-break: break-word; }
+.cx-v { flex: 0 0 auto; font-weight: 600; }
+
+.cx-v.cx-miss { font-weight: 400; color: var(--faint); font-style: italic; }

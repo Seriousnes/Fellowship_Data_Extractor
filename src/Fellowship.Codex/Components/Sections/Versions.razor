@@ -1,0 +1,73 @@
+@inject ICodexViewService Ui
+
+@if (Named.Count > 0)
+{
+    var badge = $"{Named.Count} {(Named.Count == 1 ? "version" : "versions")}";
+    <Panel Head="@($"Who can use this {Here.Noun}")" Badge="@badge">
+        <Note>
+            One id, several @(Here.Noun)s. The name follows the armour type, the primary stat slot
+            holds whatever the wearer's own stat is, and the texture is their armour set, so each hero
+            below is handed the version named over them.
+        </Note>
+        @foreach (var version in Named)
+        {
+            <Rule />
+            <SubHead Colour="@(version.OnScreen ? "var(--gold-bright)" : null)">
+                @version.Name
+                @if (version.Discriminator is { } pair)
+                {
+                    <CountBadge Text="@pair" />
+                }
+            </SubHead>
+            <div class="cx-roster">
+                @foreach (var hero in version.Heroes)
+                {
+                    var where = $"{Here.Page}?hero={Uri.EscapeDataString(hero)}";
+                    var ink = $"color:{Ui.HeroColour(hero) ?? "var(--muted)"}";
+                    var swatch = $"background:{Ui.HeroSwatch(hero) ?? "var(--muted)"}";
+
+                    <a href="@where" style="@ink" aria-current="@(hero == Here.Reading ? "page" : null)">
+                        <span class="cx-pip" style="@swatch"></span>
+                        <span class="cx-who">@hero</span>
+                    </a>
+                }
+            </div>
+        }
+    </Panel>
+}
+
+@code {
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+
+    private IReadOnlyList<Version> Named = [];
+
+    private sealed record Version(
+        string Name, string? Discriminator, IReadOnlyList<string> Heroes, bool OnScreen);
+
+    protected override void OnParametersSet() => Named = Split();
+
+    private IReadOnlyList<Version> Split() =>
+        Here.Readings.Count < 2
+            ? []
+            : [.. Here.Readings
+                .GroupBy(reading => (
+                    Name: Ui.Name(reading),
+                    ArmorType: (reading as ItemDocument)?.ArmorType,
+                    PrimaryStat: (reading as ItemDocument)?.PrimaryStat))
+                .Select(version => new Version(
+                    version.Key.Name,
+                    Discriminator(version.Key.ArmorType, version.Key.PrimaryStat),
+                    [.. version
+                        .SelectMany(reading => Ui.Codex.Facet("hero")?.Values(reading) ?? [])
+                        .Distinct(StringComparer.Ordinal)
+                        .OrderBy(hero => hero, StringComparer.OrdinalIgnoreCase)],
+                    version.Any(reading => reading == Here.Entity)))];
+
+    private static string? Discriminator(ArmorType? armour, PrimaryStat? stat)
+    {
+        string?[] halves = [armour?.ToString(), stat?.ToString()];
+        var pair = string.Join(" / ", halves.Where(half => !string.IsNullOrEmpty(half)));
+
+        return pair.Length == 0 ? null : pair;
+    }
+}

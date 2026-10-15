@@ -1,0 +1,83 @@
+@if (As == "details")
+{
+    <details class="@Classes" aria-label="@Aria">
+        @if (Head is not null)
+        {
+            <summary class="cx-panel-head">
+                @Head
+                @if (Badge is not null)
+                {
+                    <CountBadge Text="@Badge" />
+                }
+            </summary>
+        }
+        @ChildContent
+    </details>
+}
+else if (As == "aside")
+{
+    <aside class="@Classes" aria-label="@Aria">
+        @if (Head is not null)
+        {
+            <div class="cx-panel-head">
+                @Head
+                @if (Badge is not null)
+                {
+                    <CountBadge Text="@Badge" />
+                }
+            </div>
+        }
+        @if (Collapsible)
+        {
+            <button type="button" class="cx-panel-head cx-panel-toggle" aria-expanded="false">
+                @Head
+                @if (Badge is not null)
+                {
+                    <CountBadge Text="@Badge" />
+                }
+            </button>
+            <div class="cx-panel-body">
+                @ChildContent
+            </div>
+        }
+        else
+        {
+            @ChildContent
+        }
+    </aside>
+}
+else
+{
+    <div class="@Classes" aria-label="@Aria">
+        @if (Head is not null)
+        {
+            <div class="cx-panel-head">
+                @Head
+                @if (Badge is not null)
+                {
+                    <CountBadge Text="@Badge" />
+                }
+            </div>
+        }
+        @ChildContent
+    </div>
+}
+
+@code {
+    [Parameter] public string? Head { get; set; }
+
+    [Parameter] public string? Badge { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public string As { get; set; } = "div";
+
+    [Parameter] public string? Aria { get; set; }
+
+    [Parameter] public bool Collapsible { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string Classes =>
+        (Class is null ? "cx-panel" : $"cx-panel {Class}") + (Collapsible ? " cx-panel-collapsible" : string.Empty);
+}

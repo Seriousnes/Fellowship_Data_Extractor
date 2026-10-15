@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FellowshipExtractor.ServiceDefaults\FellowshipExtractor.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Fellowship.SDK\Fellowship.SDK.csproj" />
+    <ProjectReference Include="..\Fellowship.Storage\Fellowship.Storage.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Fellowship.SDK" />
+    <Using Include="Fellowship.SDK.Records" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.SassCompiler" Version="1.102.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+
+    <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.2.3" />
+  </ItemGroup>
+
+</Project>

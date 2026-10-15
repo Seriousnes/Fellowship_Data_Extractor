@@ -1,0 +1,15 @@
+@if (Here.Related.Count > 0)
+{
+    <Panel Head="More like this">
+        <Pills>
+            @foreach (var (label, href) in Here.Related)
+            {
+                <Pill Href="@href">@label</Pill>
+            }
+        </Pills>
+    </Panel>
+}
+
+@code {
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+}

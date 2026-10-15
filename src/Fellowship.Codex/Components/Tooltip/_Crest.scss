@@ -1,0 +1,149 @@
+@use "sass:math";
+
+$slot-canvas: 60;
+$slot-well-inset: 4;
+$slot-well-chamfer: 9;
+
+$plain-slot-canvas: 128;
+$plain-slot-well-inset: 10;
+$plain-slot-well-chamfer: 16;
+
+@function well($canvas, $inset, $chamfer) {
+  $near-edge: math.percentage(math.div($inset, $canvas));
+  $far-edge: 100% - $near-edge;
+  $near-cut: math.percentage(math.div($chamfer, $canvas));
+  $far-cut: 100% - $near-cut;
+
+  @return polygon(
+    $near-cut $near-edge,
+    $far-cut $near-edge,
+    $far-edge $near-cut,
+    $far-edge $far-cut,
+    $far-cut $far-edge,
+    $near-cut $far-edge,
+    $near-edge $far-cut,
+    $near-edge $near-cut
+  );
+}
+
+@mixin slot-chrome {
+  .fx-slot {
+    position: relative;
+    display: block;
+    flex: 0 0 auto;
+    margin: 0;
+    width: var(--fx-slot-width);
+    aspect-ratio: 1;
+    background: var(--fx-slot-backing) 0 0/100% 100% no-repeat;
+
+    img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      clip-path: well($slot-canvas, $slot-well-inset, $slot-well-chamfer);
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        var(--fx-slot-bevel, none) 0 0/100% 100% no-repeat,
+        var(--fx-slot-frame) 0 0/100% 100% no-repeat;
+    }
+
+    &.plain img {
+      clip-path: well($plain-slot-canvas, $plain-slot-well-inset, $plain-slot-well-chamfer);
+    }
+  }
+}
+
+$plate-brush-width: 148;
+$plate-brush-height: 188;
+$plate-texture-share: 45%;
+
+$node-brush-width: 208;
+$node-brush-height: 240;
+$node-well-width: 154;
+$node-well-height: 180;
+$node-lock-size: 16px;
+$node-lock-rise: 4px;
+$node-locked-desaturation: 1;
+
+$node-well-left: math.percentage(math.div($node-brush-width - $node-well-width, 2 * $node-brush-width));
+$node-well-right: 100% - $node-well-left;
+$node-well-top: math.percentage(math.div($node-brush-height - $node-well-height, 2 * $node-brush-height));
+$node-well-bottom: 100% - $node-well-top;
+$node-well-shoulder: math.percentage(math.div($node-well-height, 4 * $node-brush-height));
+$node-well-upper: $node-well-top + $node-well-shoulder;
+$node-well-lower: $node-well-bottom - $node-well-shoulder;
+$node-texture-share: math.percentage(math.div($node-well-height, $node-brush-width));
+
+@mixin blessing-crest {
+  .fx-blessing-crest {
+    position: relative;
+    display: block;
+    margin: 0;
+    width: var(--fx-plate-width);
+    aspect-ratio: math.div($plate-brush-width, $plate-brush-height);
+    background: var(--fx-plate) 0 0/100% 100% no-repeat;
+
+    img {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: $plate-texture-share;
+      aspect-ratio: 1;
+      object-fit: contain;
+    }
+  }
+}
+
+@mixin trait-crest {
+  .fx-trait-crest {
+    position: relative;
+    display: block;
+    margin: 0;
+    width: var(--fx-node-width);
+    aspect-ratio: math.div($node-brush-width, $node-brush-height);
+    background: var(--fx-node) 0 0/100% 100% no-repeat;
+
+    .well {
+      position: absolute;
+      inset: 0;
+      clip-path: polygon(
+        50% $node-well-top,
+        $node-well-right $node-well-upper,
+        $node-well-right $node-well-lower,
+        50% $node-well-bottom,
+        $node-well-left $node-well-lower,
+        $node-well-left $node-well-upper
+      );
+    }
+
+    .well img {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: $node-texture-share;
+      aspect-ratio: 1;
+      object-fit: contain;
+    }
+
+    &.locked .well img { filter: grayscale($node-locked-desaturation); }
+
+    .lock {
+      position: absolute;
+      top: -$node-lock-rise;
+      left: 50%;
+      transform: translateX(-50%);
+      width: $node-lock-size;
+      height: $node-lock-size;
+    }
+  }
+}

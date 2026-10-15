@@ -1,0 +1,12 @@
+@use "Crest" as *;
+
+$trait-crest-top: 12px;
+$trait-crest-bottom: 4px;
+
+.fx-tip.fx-trait {
+  @include trait-crest;
+
+  .fx-trait-crest {
+    margin: $trait-crest-top auto $trait-crest-bottom;
+  }
+}

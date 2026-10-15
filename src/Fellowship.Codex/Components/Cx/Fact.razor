@@ -1,0 +1,17 @@
+<tr>
+    <th>@Label</th><td>
+        @ChildContent
+        @if (Unit is not null)
+        {
+            <span class="cx-unit">@Unit</span>
+        }
+    </td>
+</tr>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+
+    [Parameter] public string? Unit { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

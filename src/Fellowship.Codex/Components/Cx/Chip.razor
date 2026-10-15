@@ -1,0 +1,9 @@
+<span class="cx-chip" style="@Tone">@ChildContent</span>
+
+@code {
+    [Parameter] public string? Colour { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string? Tone => Colour is null ? null : $"color:{Colour}";
+}

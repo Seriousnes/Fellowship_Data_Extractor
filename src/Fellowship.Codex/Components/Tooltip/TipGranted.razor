@@ -1,0 +1,22 @@
+@inject ITooltipViewService Ui
+
+@if (Ui.Granted(Entity) is { } grants)
+{
+    <div class="grp">
+        <div class="sec ability"><img class="gi" alt="" src="@Ui.Chrome.AbilityBadge.Url"><span>Ability@(Name is { } name ? ": " + name : null)</span></div>
+        @if (DocumentFields.Text(grants, nameof(AbilityDocument.Description)) is { } text)
+        {
+            <p class="desc">@Ui.Text(text, CodexView.PlaceholdersOf(grants), Query, Hero, FellowshipCodex.Schools(grants))</p>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    [Parameter] public string? Name { get; set; }
+}

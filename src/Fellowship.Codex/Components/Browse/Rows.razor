@@ -1,0 +1,38 @@
+<DynamicComponent Type="Component(Type)" Parameters="Knobs" />
+
+@code {
+    [Parameter] public EntityType? Type { get; set; }
+
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Documents { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private Dictionary<string, object?> Knobs =>
+        new(StringComparer.Ordinal) { ["Rows"] = Documents, ["View"] = View };
+
+    private static System.Type Component(EntityType? type) => type switch
+    {
+        null => typeof(Everything),
+        EntityType.Item => typeof(Items),
+        EntityType.Ability => typeof(Abilities),
+        EntityType.Effect => typeof(Effects),
+        EntityType.Talent => typeof(Talents),
+        EntityType.Blessing => typeof(Blessings),
+        EntityType.GemTrait => typeof(GemTraits),
+        EntityType.Trait => typeof(Traits),
+        EntityType.SetBonus => typeof(SetBonuses),
+        EntityType.Gem => typeof(Gems),
+        EntityType.Creature => typeof(Creatures),
+        EntityType.Dungeon => typeof(Dungeons),
+        EntityType.Mount => typeof(Mounts),
+        EntityType.CompanionPet => typeof(CompanionPets),
+        EntityType.Currency => typeof(Currencies),
+        EntityType.LegendaryPower => typeof(LegendaryPowers),
+        EntityType.WeaponPower => typeof(WeaponPowers),
+        EntityType.RelicPower => typeof(RelicPowers),
+        EntityType.TraitPower => typeof(TraitPowers),
+        EntityType.SetBonusPower => typeof(SetBonusPowers),
+        _ => throw new InvalidOperationException(
+            $"{PublicTypes.Label(type.Value)} is not a type the codex lists, so no browse component draws it."),
+    };
+}

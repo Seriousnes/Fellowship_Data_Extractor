@@ -1,0 +1,67 @@
+@inject ITooltipViewService Ui
+
+<div class="grp">
+    @if (Kind is { } kind)
+    {
+        <p class="kind">@kind</p>
+    }
+    @if (Slot is not null || Level is not null)
+    {
+        <div class="row">
+            @if (Slot is { } slot)
+            {
+                <span><img class="gi" alt="" src="@Ui.Chrome.SlotGlyph(slot)">@slot</span>
+            }
+            @if (Level is { } power)
+            {
+                <span><img class="gi" alt="" src="@Ui.Chrome.ItemPowerGlyph"><span class="power">@power</span></span>
+            }
+        </div>
+    }
+    @if (Rarity is not null || Temper is not null)
+    {
+        <div class="row">
+            @if (Rarity is { } rarity)
+            {
+                <span><span class="rar">@Ui.RarityName(Entity, rarity)</span></span>
+            }
+            @if (Temper is { } tempered)
+            {
+                <span><span class="temper">Tempered</span>@tempered</span>
+            }
+        </div>
+    }
+    @if (UniqueEquipped == true)
+    {
+        <div class="row">
+            <span><span class="k">Unique Equipped</span></span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public RarityEntry? Rarity { get; set; }
+
+    [Parameter] public int? Level { get; set; }
+
+    [Parameter] public string? Temper { get; set; }
+
+    private const string RingSlot = "Ring";
+
+    private string? Kind => Entity switch
+    {
+        ItemDocument { ArmorType: { } armor, Slot: not RingSlot } => armor.ToString(),
+        GemDocument gem => gem.Type.ToString(),
+        GemTraitDocument trait => trait.Gem.ToString(),
+        GemTypeDocument type => type.Type.ToString(),
+        _ => null,
+    };
+
+    private string? Slot => (Entity as ItemDocument)?.Slot;
+
+    private bool? UniqueEquipped => (Entity as ItemDocument)?.UniqueEquipped;
+}

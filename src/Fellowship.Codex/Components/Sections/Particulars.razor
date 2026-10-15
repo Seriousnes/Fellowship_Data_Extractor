@@ -1,0 +1,125 @@
+@inject ICodexViewService Ui
+
+@if (Facts.Count > 0 || Schools.Count > 0 || Heroes.Count > 0 ||
+     SetBonus.Count > 0 || Scaling.Count > 0 ||
+     AllowedRoles.Count > 0 || AllowedAttributes.Count > 0)
+{
+    <Panel Head="Details">
+        @if (Facts.Count > 0)
+        {
+            <div class="cx-pairs">
+                @for (var half = 0; half < 2; half++)
+                {
+                    var split = (Facts.Count + 1) / 2;
+                    var slice = half == 0 ? Facts.Take(split) : Facts.Skip(split);
+
+                    <Facts>
+                        @foreach (var fact in slice)
+                        {
+                            <Fact Label="@fact.Label" Unit="@fact.Unit">
+                                @if (fact.Href is null)
+                                {
+                                    @fact.Value
+                                }
+                                else
+                                {
+                                    <a href="@fact.Href" data-tip="@fact.Tip?.Address"
+                                       data-tip-request="@fact.Tip?.Body">@fact.Value</a>
+                                }
+                            </Fact>
+                        }
+                    </Facts>
+                }
+            </div>
+        }
+
+        @if (Schools.Count > 0)
+        {
+            <Rule />
+            <SubHead>@(Schools.Count == 1 ? "School" : "Schools")</SubHead>
+            <Pills>
+                @foreach (var school in Schools)
+                {
+                    <Pill Href="@school.Href">@school.Label</Pill>
+                }
+            </Pills>
+        }
+
+        @if (Heroes.Count > 0)
+        {
+            <Rule />
+            <SubHead>Heroes</SubHead>
+            <Pills>
+                @foreach (var hero in Heroes)
+                {
+                    var where = $"/search?hero={Uri.EscapeDataString(hero)}";
+                    <Pill Href="@where" Colour="@Ui.HeroColour(hero)">@hero</Pill>
+                }
+            </Pills>
+        }
+
+        @if (SetBonus.Count > 0)
+        {
+            <Rule />
+            <SubHead>Set</SubHead>
+            <Pills>
+                @foreach (var set in SetBonus)
+                {
+                    <Pill><Ref Entity="set" /></Pill>
+                }
+            </Pills>
+        }
+
+        @if (Scaling.Count > 0)
+        {
+            <Rule />
+            <SubHead>Scales off</SubHead>
+            <Pills>
+                @foreach (var stat in Scaling)
+                {
+                    <Pill>@stat</Pill>
+                }
+            </Pills>
+        }
+
+        @if (AllowedRoles.Count > 0)
+        {
+            <Rule />
+            <SubHead>Offered to</SubHead>
+            <Pills>
+                @foreach (var role in AllowedRoles)
+                {
+                    var tone = Ui.Tokens.Role(role) ?? "inherit";
+                    <Pill Colour="@tone">@role</Pill>
+                }
+                @foreach (var stat in AllowedAttributes)
+                {
+                    <Pill>@stat</Pill>
+                }
+            </Pills>
+        }
+    </Panel>
+}
+
+@code {
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Facts { get; set; } = [];
+
+    [Parameter] public IReadOnlyList<(string Label, string Href)> Schools { get; set; } = [];
+
+    [Parameter] public IReadOnlyList<string> Scaling { get; set; } = [];
+
+    private IReadOnlyList<string> Heroes => [.. Ui.Codex.Facet("hero")?.Values(Entity) ?? []];
+
+    private IReadOnlyList<Fellowship.SDK.Models.EntityReference> SetBonus =>
+        (Entity as ItemDocument)?.SetBonus ?? [];
+
+    private IReadOnlyList<string> AllowedRoles => (Entity as Fellowship.SDK.Documents.SetBonusDocument)?.AllowedRoles ?? [];
+
+    private IReadOnlyList<string> AllowedAttributes =>
+        (Entity as Fellowship.SDK.Documents.SetBonusDocument)?.AllowedAttributes is { } attributes
+            ? [.. attributes.Select(stat => stat.ToString())]
+            : [];
+}

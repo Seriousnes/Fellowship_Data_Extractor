@@ -1,0 +1,176 @@
+@page "/tools/talents"
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.Extensions.Primitives
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+
+<PageTitle>Talent calculator - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>Talent calculator</h1>
+
+<Panel Head="Hero" Badge="@Roster">
+    <div class="cx-roster">
+        @foreach (var who in Heroes)
+        {
+            <a href="@Address(who.Name, who.Name == Wearer?.Name ? Picks : null)"
+               aria-current="@(who.Name == Wearer?.Name ? "page" : null)"
+               style="color:@(Ui.HeroColour(who.Name) ?? "var(--muted)")">
+                <span class="cx-pip" style="background:@(Ui.HeroSwatch(who.Name) ?? "var(--muted)")"></span>
+                <span class="cx-who">@who.Name</span>
+            </a>
+        }
+    </div>
+</Panel>
+
+@if (Wearer is not { } hero)
+{
+    <Panel>
+        <Empty Message="No hero picked.">Choose one above to lay their talent tree out.</Empty>
+    </Panel>
+}
+else
+{
+    <Panel Head="@($"{hero.Name}’s talents")">
+        <div class="cx-tal-bar">
+            <p class="cx-tal-spend">
+                <b style="color:@Tone">@Spent</b> of @TalentPlan.Points points spent, @Left left
+            </p>
+
+            @if (Taken.Count == 0)
+            {
+                <span class="cx-tal-act" aria-disabled="true">Reset</span>
+            }
+            else
+            {
+                <a class="cx-tal-act" href="@Address(hero.Name)">Reset</a>
+            }
+
+            <button type="button" class="cx-tal-act" data-copy>Copy link</button>
+        </div>
+
+        <div class="cx-talents" style="@Frame">
+            @foreach (var row in Tree)
+            {
+                <div class="cx-tal-band">
+                    <span class="cx-tal-rank" style="--cx-tal-plate:url(@Ui.Chrome.TalentTier(row.Number))">
+                        <span class="cx-tal-row">@row.Numeral</span>
+                    </span>
+
+                    <div class="cx-tal-cells" style="@Columns(row)">
+                        @foreach (var node in row.Nodes)
+                        {
+                            var mine = node;
+
+                            if (Taken.Contains(mine.Id))
+                            {
+                                <a class="cx-tal" href="@Address(hero.Name, Toggled(mine))"
+                                   aria-current="true">@Face(mine, Picked)</a>
+                            }
+                            else if (mine.Cost <= Left)
+                            {
+                                <a class="cx-tal" href="@Address(hero.Name, Toggled(mine))">@Face(mine, Unpicked)</a>
+                            }
+                            else
+                            {
+                                <span class="cx-tal" aria-disabled="true" tabindex="0"
+                                      title="@Beyond(mine)">@Face(mine, Unpicked)</span>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <Note>Hover a talent for its full tooltip. A picked talent spends its cost from the fourteen.</Note>
+    </Panel>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "hero")] public string? Hero { get; set; }
+
+    [SupplyParameterFromQuery(Name = "picks")] public string? Picks { get; set; }
+
+    private const string Page = "/tools/talents";
+
+    private const string Picked = "selected";
+
+    private const string Unpicked = "disabled";
+
+    private HeroEntry? Wearer;
+
+    private IReadOnlyList<TalentRow> Tree = [];
+
+    private IReadOnlySet<int> Taken = new HashSet<int>();
+
+    private IReadOnlyList<HeroEntry> Heroes =>
+        [.. Store.Settings.Heroes.OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase)];
+
+    private string Roster => $"{Store.Settings.Heroes.Count} heroes";
+
+    private int Spent => TalentPlan.Spent(Tree, Taken);
+
+    private int Left => TalentPlan.Points - Spent;
+
+    private string Tone => Wearer is null ? "var(--gold-bright)" : Ui.HeroColour(Wearer.Name) ?? "var(--gold-bright)";
+
+    private string Frame =>
+        $"--cx-hero:{Tone};" +
+        $"--cx-tal-band:url({Ui.Chrome.TalentBand});" +
+        $"--cx-tal-cost:url({Ui.Chrome.TalentCost});" +
+        $"--cx-tal-frame:url({Ui.Chrome.TalentFrame})";
+
+    private static string Columns(TalentRow row) =>
+        $"grid-template-columns:repeat({row.Nodes.Count}, minmax(0, 1fr))";
+
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail =
+        [("Tools", null), ("Talent calculator", null)];
+
+    protected override void OnParametersSet()
+    {
+        Wearer = Store.Hero(Hero);
+
+        Tree = Wearer is null || !Enum.TryParse<Hero>(Wearer.Name, out var hero)
+            ? []
+            : TalentPlan.Tree(Store, hero);
+
+        Taken = TalentPlan.Read(Picks, Tree);
+    }
+
+    private RenderFragment Face(TalentNode node, string state)
+    {
+        var link = Ui.Tip(node.Talent);
+
+        return @<span class="cx-tal-face" data-tip="@link.Address" data-tip-request="@link.Body">
+            <span class="cx-tal-texture" style="--cx-tal-slot:url(@Ui.Chrome.TalentSlot(state))">
+                <img class="cx-tal-icon" alt="" src="@Ui.Icon(node.Talent.Icon)" />
+                <span class="cx-tal-cost">@node.Cost</span>
+            </span>
+            <span class="cx-tal-name">@Ui.Name(node.Talent)</span>
+        </span>;
+    }
+
+    private string Toggled(TalentNode node)
+    {
+        var taken = new HashSet<int>(Taken);
+
+        if (!taken.Remove(node.Id)) taken.Add(node.Id);
+
+        return TalentPlan.Write(Tree, taken);
+    }
+
+    private string Beyond(TalentNode node) =>
+        $"{Ui.Name(node.Talent)} costs {node.Cost}, and only {Left} of the " +
+        $"{TalentPlan.Points} points are left.";
+
+    private string Address(string? hero, string? picks = null)
+    {
+        var values = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
+
+        if (hero is { Length: > 0 }) values["hero"] = hero;
+        if (picks is { Length: > 0 }) values["picks"] = picks;
+
+        return QueryHelpers.AddQueryString(Page, values);
+    }
+}

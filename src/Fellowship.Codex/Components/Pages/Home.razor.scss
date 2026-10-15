@@ -1,0 +1,19 @@
+.cx-home {
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  padding: clamp(48px, 16vh, 150px) 0 60px; text-align: center;
+}
+
+.cx-home-mark {
+  width: 54px; height: 54px;
+  background: var(--chrome-arrow) center/contain no-repeat;
+  filter: drop-shadow(0 0 8px #00000090);
+  opacity: .9;
+}
+
+.cx-home-name {
+  margin: 0 0 10px;
+  font-family: var(--display); font-weight: 400; letter-spacing: .14em; text-transform: uppercase;
+  font-size: clamp(26px, 6vw, 46px); line-height: 1.1;
+  color: var(--core-secondary-000);
+}
+.cx-home-name b { color: var(--gold-bright); font-weight: 600; }

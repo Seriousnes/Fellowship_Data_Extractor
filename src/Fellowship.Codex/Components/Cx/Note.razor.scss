@@ -1,0 +1,5 @@
+.cx-note {
+  color: var(--muted); font-size: 12px; margin: 0 0 8px;
+
+  ::deep code { font: 12px/1.5 var(--mono); color: var(--core-secondary-100); }
+}

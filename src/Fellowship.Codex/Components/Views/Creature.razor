@@ -1,0 +1,167 @@
+@using Fellowship.SDK.Models
+@inject IEntityStoreService Store
+
+<EntityView Entity="Entity" Extra="Reading">
+    @if (Phases.Count > 0)
+    {
+        <Panel Head="Abilities" Badge="@Entity.Abilities!.Count.ToString()">
+            @foreach (var phase in Phases)
+            {
+                <Rule />
+                <SubHead>@phase.Key</SubHead>
+                <Table Items="phase">
+                    <Columns>
+                        <Column Head="" Class="cx-texture">
+                            <Content Context="slot">
+                                @if (Wielded(slot) is { } ability)
+                                {
+                                    <Texture Entity="ability" />
+                                }
+                            </Content>
+                        </Column>
+                        <Column Head="Name">
+                            <Content Context="slot">
+                                @if (Wielded(slot) is { } ability)
+                                {
+                                    <EntityLink Entity="ability" Class="cx-nm" />
+                                }
+                                else
+                                {
+                                    <Ref Entity="slot.Ability" />
+                                }
+                            </Content>
+                        </Column>
+                        <Column Head="Damage" Class="cx-numeric">
+                            <Content Context="slot">
+                                @foreach (var band in Bands(slot))
+                                {
+                                    <div>@band</div>
+                                }
+                            </Content>
+                        </Column>
+                        <Column Head="Range" Numeric Value="slot => Wielded(slot)?.Range" />
+                        <Column Head="Cooldown" Numeric Unit="s" Value="slot => Wielded(slot)?.Cooldown" />
+                        <Column Head="" Class="cx-tags">
+                            <Content Context="slot">
+                                @if (!slot.Shown)
+                                {
+                                    <Chip>@Hidden</Chip>
+                                }
+                            </Content>
+                        </Column>
+                    </Columns>
+                </Table>
+            }
+        </Panel>
+    }
+
+    @if (Entity.Passives is { Count: > 0 } passives)
+    {
+        <Panel Head="Passives" Badge="@passives.Count.ToString()">
+            <Pills>
+                @foreach (var slot in passives)
+                {
+                    <Pill><Ref Entity="slot.Ability" /></Pill>
+                }
+            </Pills>
+        </Panel>
+    }
+</EntityView>
+
+@code {
+    [Parameter, EditorRequired] public CreatureDocument Entity { get; set; } = default!;
+
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+
+    private const string Hidden = "hidden";
+
+    private DifficultyStep Step = new(1, string.Empty, 1, "1");
+
+    private IReadOnlyList<IGrouping<string, CreatureAbility>> Phases = [];
+
+    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Reading = [];
+
+    private readonly Dictionary<(EntityType Type, int Id), AbilityDocument> wielded = [];
+
+    protected override void OnParametersSet()
+    {
+        Phases = [.. (Entity.Abilities ?? []).GroupBy(slot => slot.Phase, StringComparer.Ordinal)];
+
+        var difficulty = Store.Difficulty(Here.Values.GetValueOrDefault(DifficultyKnob.Key));
+
+        Step = Difficulties.At(Store.Settings, difficulty)
+            ?? new DifficultyStep(difficulty, string.Empty, difficulty, difficulty.ToString());
+
+        wielded.Clear();
+
+        foreach (var slot in Entity.Abilities ?? [])
+        {
+            var key = (slot.Ability.Type, slot.Ability.Id);
+
+            if (wielded.ContainsKey(key)) continue;
+
+            if (Store.All(key.Type, key.Id).OfType<AbilityDocument>().FirstOrDefault() is { } found)
+            {
+                wielded[key] = found;
+            }
+        }
+
+        Reading = Read();
+    }
+
+    private AbilityDocument? Wielded(CreatureAbility slot) =>
+        wielded.GetValueOrDefault((slot.Ability.Type, slot.Ability.Id));
+
+    private IReadOnlyList<AbilityCoefficient> Coefficients(CreatureAbility slot) => Wielded(slot)?.Coefficients ?? [];
+
+    private IReadOnlyList<(string, string, string?, string?, TooltipLink?)> Read()
+    {
+        var read = new List<(string, string, string?, string?, TooltipLink?)>(4);
+
+        if (Difficulties.Health(Entity, Store.Settings, Step.Difficulty) is { } health)
+        {
+            read.Add(("Health", FellowshipCodex.Magnitude((decimal)health), null, null, null));
+        }
+
+        if (Difficulties.HealthScale(Store.Settings, Entity.Scaling, Step.Difficulty) is { } healthScale)
+        {
+            read.Add(("Health scale", FellowshipCodex.Number(healthScale), "x", null, null));
+        }
+
+        if (Difficulties.DamageScale(Store.Settings, Entity.Scaling, Step.Difficulty) is { } damageScale)
+        {
+            read.Add(("Damage scale", FellowshipCodex.Number(damageScale), "x", null, null));
+        }
+
+        if (Entity.FoundIn is { Count: > 0 } dungeons)
+        {
+            read.Add(("Location", string.Join(", ", dungeons.Select(Name)), null, null, null));
+        }
+
+        return read;
+    }
+
+    private string Name(EntityReference dungeon) =>
+        Store.All(dungeon.Type, dungeon.Id) is [var found, ..] ? PublicTypes.NameOf(found) : dungeon.Name ?? string.Empty;
+
+    private IReadOnlyList<string> Bands(CreatureAbility slot)
+    {
+        var coefficients = Coefficients(slot);
+
+        return
+        [
+            .. coefficients
+                .Select(coefficient =>
+                    (coefficient.Part, Band: Difficulties.Damage(coefficient, Entity, Store.Settings, Step.Difficulty)))
+                .Where(entry => entry.Band is not null)
+                .Select(entry => coefficients.Count > 1 && entry.Part is { Length: > 0 } part
+                    ? $"{part}: {Printed(entry.Band!)}"
+                    : Printed(entry.Band!)),
+        ];
+    }
+
+    private static string Printed(DamageBand band) =>
+        band.Low == band.High
+            ? FellowshipCodex.Magnitude(band.Mean)
+            : $"{FellowshipCodex.Magnitude(band.Low)} to {FellowshipCodex.Magnitude(band.High)}";
+}

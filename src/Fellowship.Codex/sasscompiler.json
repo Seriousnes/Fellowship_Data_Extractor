@@ -1,0 +1,9 @@
+{
+  "Source": "Styles",
+  "Target": "wwwroot/css",
+  "GenerateScopedCss": true,
+  "ScopedCssFolders": [ "Components" ],
+  "Configurations": {
+    "Debug": { "Arguments": "--style=expanded --no-source-map" }
+  }
+}

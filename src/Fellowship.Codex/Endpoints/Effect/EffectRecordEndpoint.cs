@@ -1,0 +1,26 @@
+using System.ComponentModel;
+
+using Fellowship.Codex.Models;
+using Fellowship.Codex.Services;
+
+namespace Fellowship.Codex.Endpoints;
+
+public sealed record EffectRecordRequest
+{
+    [Description("The id.")]
+    public int Id { get; init; }
+}
+
+public static class EffectRecordEndpoint
+{
+    public static RouteHandlerBuilder MapEffectRecord(this IEndpointRouteBuilder group) =>
+        group.MapGet("/{id:int}", Handle)
+            .WithName("GetEffect")
+            .WithSummary($"Get {PublicTypes.Noun(EntityType.Effect)} by ID.")
+            .Produces<EffectRecord>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+    private static IResult Handle(
+        [AsParameters] EffectRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
+        Records.One<EffectRecord>(request.Id, null, http, store, view);
+}

@@ -1,0 +1,20 @@
+<div class="grp">
+    <ul class="stats">
+        @foreach (var line in Lines)
+        {
+            <li class="@SlotClass(line)" data-rolls="@Ordinals(line)"><span class="@MagnitudeClass(line)">@TooltipView.Magnitude(line)</span><span>@line.DisplayName</span></li>
+        }
+    </ul>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<StatLine> Lines { get; set; } = [];
+
+    private static string SlotClass(StatLine line) =>
+        (line.Guaranteed ? "guaranteed" : "random") + (line.Unresolved ? " unresolved" : string.Empty);
+
+    private static string MagnitudeClass(StatLine line) => line.Rolled ? "v random" : "v";
+
+    private static string? Ordinals(StatLine line) =>
+        line.Rolls.Count == 0 ? null : string.Join(' ', line.Rolls);
+}

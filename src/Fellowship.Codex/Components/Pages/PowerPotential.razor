@@ -1,0 +1,94 @@
+@page "/tools/power-potential"
+@inject IEntityStoreService Store
+
+<PageTitle>Power potential - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<Panel Head="Power potential">
+    <div class="cx-pp-eq">
+        <div class="cx-pp-row">
+            <span class="cx-pp-op">=</span>
+            <span class="cx-pp-term">
+                <span class="cx-pp-expr"><span class="k">Level</span> <span class="x">&times;</span> <span class="f">@Factor(Factors.ItemLevelScoreFactor)</span> <span class="x">&times;</span> <span class="k">W</span></span>
+                <span class="cx-pp-when">see table below for slot weights</span>
+            </span>
+        </div>
+
+        <div class="cx-pp-row">
+            <span class="cx-pp-op">+</span>
+            <span class="cx-pp-term">
+                <span class="cx-pp-expr"><span class="k">Temper</span> <span class="x">&times;</span> <span class="f">@Factor(Factors.TemperScoreFactor)</span></span>
+                <span class="cx-pp-when">maximum temper, e.g. 4/6/8</span>
+            </span>
+        </div>
+
+        <div class="cx-pp-row">
+            <span class="cx-pp-op">+</span>
+            <span class="cx-pp-term">
+                <span class="cx-pp-expr"><span class="k">Rerolls</span> <span class="x">&times;</span> <span class="f">@Factor(Factors.ModSlotScoreFactor)</span></span>
+                <span class="cx-pp-when">per rerollable slot</span>
+            </span>
+        </div>
+
+        <div class="cx-pp-once">
+            <div class="cx-pp-once-lead"><span class="cx-pp-op">+</span> <span>once per instance of the following</span></div>
+            <div class="cx-pp-chips">
+                @foreach (var once in Once)
+                {
+                    <div class="cx-pp-chip">
+                        <span class="cx-pp-chip-name">@(once.Primary)@if (once.Qualifier is { } qualifier){<text> <span class="cx-pp-chip-q">@qualifier</span></text>}</span>
+                        <span class="cx-pp-chip-val">@Factor(once.Factor)</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="cx-pp-foot"><span class="cx-pp-op">&rarr;</span> <span class="cx-pp-expr">round to a whole number</span></div>
+    </div>
+</Panel>
+
+<Panel Head="Slot weights">
+    <div class="cx-pp-scroll">
+        <table class="cx-pp-slots">
+            <thead>
+                <tr><th>Slot</th><th class="cx-pp-w">Stat weight</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Weights)
+                {
+                    <tr><td class="cx-pp-slot">@row.Slot</td><td class="cx-pp-w">@row.Weight</td></tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr><td>Sum</td><td class="cx-pp-w">@TotalWeight</td></tr>
+            </tfoot>
+        </table>
+    </div>
+</Panel>
+
+@code {
+    private sealed record WeightRow(string Slot, string Weight);
+
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail =
+        [("Tools", null), ("Power potential", null)];
+
+    private SettingsFile Settings => Store.Settings;
+
+    private ItemPowerPotential Factors => Settings.Items.PowerPotential;
+
+    private static string Factor(double value) => CodexView.Number(value);
+
+    private string TotalWeight =>
+        CodexView.Number(Settings.StatCalculation.SlotWeights.Values.Sum(slot => slot.StatWeight));
+
+    private IReadOnlyList<OnceScore> Once => ItemPower.OnceScores(Settings);
+
+    private IReadOnlyList<WeightRow> Weights =>
+    [
+        .. Settings.StatCalculation.SlotWeights
+            .OrderByDescending(pair => pair.Value.StatWeight)
+            .ThenBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(pair => new WeightRow(pair.Key, CodexView.Number(pair.Value.StatWeight)))
+    ];
+}

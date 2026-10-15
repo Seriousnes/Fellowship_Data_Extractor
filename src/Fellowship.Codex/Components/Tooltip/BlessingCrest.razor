@@ -1,0 +1,19 @@
+@inject ICodexViewService Ui
+
+<figure class="fx-blessing-crest" style="--fx-plate:url(@Plate);--fx-plate-width:@WidthPx">
+    @if (Texture is { } texture) { <img alt="" src="@texture"> }
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public BlessingDocument Entity { get; set; } = default!;
+
+    [Parameter] public string? State { get; set; }
+
+    [Parameter] public int Width { get; set; } = 60;
+
+    private string Plate => Ui.Chrome.BlessingPlate(State);
+
+    private string? Texture => Ui.Chrome.BlessingTexture(Entity.Icon, State) ?? Ui.Icon(Entity.Icon);
+
+    private string WidthPx => Width.ToString(CultureInfo.InvariantCulture) + "px";
+}

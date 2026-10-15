@@ -1,0 +1,101 @@
+@inject ITooltipViewService Ui
+
+<div class="@TooltipView.Root @(overview.Stated ? TooltipView.AbilityCard : null) @(Rarity is null ? "plain" : null)" style="@Ui.Variables(Rarity)">
+    <style>@Sheet</style>
+    @if (Query.ShowIcon && Texture is { } texture)
+    {
+        <Icon Src="@texture" Rarity="@Rarity?.Name" Width="TooltipView.SlotWidth" Lazy="false" />
+    }
+    <div class="card">
+        <header class="head">
+            @if (Ui.Ornament(Rarity) is { } ornament)
+            {
+                <img class="orn" alt="" src="@ornament">
+            }
+
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+            @if (Category is { } category)
+            {
+                <p class="cat">@category</p>
+            }
+        </header>
+        @if (overview.Stated)
+        {
+            <TipOverview Overview="overview" />
+        }
+        @if (groups.Count > 0)
+        {
+            <div class="lines">
+                @for (var at = 0; at < groups.Count; at++)
+                {
+                    @if (at > 0) { <hr class="rule"> }
+                    @groups[at]
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public EntityDocument Entity { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    private RarityEntry? Rarity;
+
+    private string? Texture;
+
+    private int? Level;
+
+    private string? Temper;
+
+    private MarkupString Sheet;
+
+    private IReadOnlyList<TooltipView.Fact> facts = [];
+
+    private TooltipView.Overview overview = new([], []);
+
+    private IReadOnlyList<RenderFragment> groups = [];
+
+    protected override void OnParametersSet()
+    {
+        Rarity = Ui.Rarity(Entity, Query);
+        Texture = Ui.Texture(Entity, Rarity);
+        Level = Ui.Level(Entity, Query);
+        Temper = Ui.Temper(Entity, Query, Rarity, Level);
+        Sheet = new MarkupString(Ui.Style());
+        overview = Ui.Overview(Entity, Query);
+        facts = Ui.Facts(Entity, Query, overview);
+
+        groups = Groups();
+    }
+
+    private string? Category => (Entity as AbilityDocument)?.Category?.ToString();
+
+    private List<RenderFragment> Groups()
+    {
+        var sections = new List<RenderFragment>(5);
+
+        if (Level is not null || Rarity is not null || Temper is not null)
+        {
+            sections.Add(@<TipIdentity Entity="Entity" Query="Query" Rarity="Rarity" Level="Level" Temper="@Temper" />);
+        }
+
+        if (facts.Count > 0) sections.Add(@<TipFacts Items="facts" />);
+
+        if (Ui.Potential(Entity, Query, null, null) is not null)
+        {
+            sections.Add(@<TipPotential Potential="@Ui.Potential(Entity, Query, null, null)" />);
+        }
+
+        if (Prose) sections.Add(@<TipProse Entity="Entity" Query="Query" Hero="Hero" />);
+
+        return sections;
+    }
+
+    private bool Prose =>
+        DocumentFields.Text(Entity, nameof(AbilityDocument.Description)) is not null ||
+        DocumentFields.Words(Entity, nameof(AbilityDocument.Detail)) is { Count: > 0 };
+}

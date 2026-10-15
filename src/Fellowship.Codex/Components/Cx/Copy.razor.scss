@@ -1,0 +1,8 @@
+.cx-copy {
+  margin: 0 0 10px; max-width: 76ch; color: var(--ink);
+
+  ::deep b { color: var(--gold-bright); font-weight: 600; }
+  ::deep code { font: 12.5px/1.5 var(--mono); color: var(--core-secondary-100); }
+}
+
+.cx-copy:last-child { margin-bottom: 0; }

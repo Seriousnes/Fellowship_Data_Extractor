@@ -1,0 +1,6 @@
+.cx-num { font-size: 10.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+.cx-panel-head .cx-num { margin-left: auto; }
+.cx-facet-values .cx-num { margin-left: auto; }
+.cx-tab[aria-current] .cx-num { color: var(--gold-deep); }
+.cx-pills .cx-num { border: 0; background: none; padding: 0 0 0 4px; }

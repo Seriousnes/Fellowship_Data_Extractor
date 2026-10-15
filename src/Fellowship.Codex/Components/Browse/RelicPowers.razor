@@ -1,0 +1,27 @@
+@inject ICodexViewService Ui
+
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<RelicPowerDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column Head="" Class="cx-texture">
+            <Content Context="row"><Texture Entity="row" /></Content>
+        </Column>
+        <Column Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column Head="Cooldown" Key="cooldown" Unit="s" Numeric Value="row => row.Cooldown" />
+        <Column Head="Cast" Key="cast" Unit="s" Numeric Value="row => row.CastTime" />
+        <Column Head="Range" Key="range" Numeric Value="row => row.Range" />
+        <Column Head="Duration" Key="duration" Unit="s" Numeric Value="row => row.Duration" />
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<RelicPowerDocument> Documents = [];
+
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<RelicPowerDocument>()];
+}
