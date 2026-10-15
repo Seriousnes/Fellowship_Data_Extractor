@@ -8,28 +8,12 @@ every C# namespace have the name `Fellowship.SDK`. Thus `using Fellowship.SDK;` 
 
 ## Install the package
 
-The package is published to GitHub Packages.
+The package is published to [nuget.org](https://www.nuget.org/packages/Codex.FellowshipAnalyzer.SDK).
+Add it to your project:
 
-1. Create a GitHub personal access token (classic) with the `read:packages` scope. For more
-   information, see
-   [Managing your personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-secure/managing-your-personal-access-tokens).
-
-2. Add the feed as a NuGet source:
-
-   ```powershell
-   dotnet nuget add source https://nuget.pkg.github.com/Seriousnes/index.json --name fellowship --username GITHUB_USERNAME --password GITHUB_TOKEN --store-password-in-clear-text
-   ```
-
-   Replace the following:
-
-   - `GITHUB_USERNAME`: your GitHub account name
-   - `GITHUB_TOKEN`: the personal access token
-
-3. Add the package to your project:
-
-   ```powershell
-   dotnet add package Codex.FellowshipAnalyzer.SDK
-   ```
+```powershell
+dotnet add package Codex.FellowshipAnalyzer.SDK
+```
 
 ## Read the codex
 
