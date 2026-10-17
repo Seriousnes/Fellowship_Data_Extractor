@@ -69,6 +69,11 @@ public sealed class ResourcePools
     public double? Ceiling(string hero, string channel) =>
         Stated(hero, channel) is { } pool && pool != 0 ? pool : null;
 
+    public double? Captured(string hero, string attribute) =>
+        attribute.StartsWith(CeilingPrefix, StringComparison.Ordinal)
+            ? Ceiling(hero, attribute[CeilingPrefix.Length..])
+            : null;
+
     private double? Stated(string hero, string channel) =>
         _byHero.TryGetValue(hero, out var filled) && filled.TryGetValue(channel, out var pool) ? pool : null;
 

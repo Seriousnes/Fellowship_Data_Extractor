@@ -18,6 +18,8 @@ public sealed record AbilityRecord : EntityRecord
     public double? Cooldown { get; init; }
     public double? Charges { get; init; }
     public IReadOnlyDictionary<string, double>? ChargesByLevelType { get; init; }
+    public IReadOnlyList<TargetCountFalloffRecord>? TargetCountFalloff { get; init; }
+    public double? MaxTargets { get; init; }
     public IReadOnlyList<string>? CooldownDurationScalesOff { get; init; }
     public IReadOnlyList<string>? CooldownTimeRateScalesOff { get; init; }
     public IReadOnlyList<RecordReference>? CooldownHasteGrantedBy { get; init; }

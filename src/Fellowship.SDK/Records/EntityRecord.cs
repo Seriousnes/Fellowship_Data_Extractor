@@ -107,3 +107,8 @@ public sealed record ItemSourceRecord(SourceKind Kind, string Name)
 }
 
 public sealed record StatSlotRecord(string Stat, int Weight, string Kind);
+
+public sealed record TargetCountFalloffRecord(double Threshold)
+{
+    public RecordReference? Effect { get; init; }
+}

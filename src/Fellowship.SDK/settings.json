@@ -1258,6 +1258,10 @@
       }
     }
   },
+  "multiTargetDamageFalloff": {
+    "latex": "s = \\begin{cases} \\sqrt{\\dfrac{T}{N}} \u0026 N \u003E T \\\\ 1 \u0026 N \\le T \\end{cases}",
+    "displayText": "Each target takes full damage while N \u2264 T. When N \u003E T, each target takes \u221A(T \u00F7 N) of the damage. T is the threshold and N is the number of targets hit."
+  },
   "leagues": [
     {
       "row": "League1",

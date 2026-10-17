@@ -35,6 +35,9 @@
                             <a href="@Potential">Power Potential</a>
                         </li>
                         <li class="cx-menu-row">
+                            <a href="@Falloff">Multi-Target Damage Falloff</a>
+                        </li>
+                        <li class="cx-menu-row">
                             <a href="@Calculator">Talent Calculator</a>
                             <details class="cx-menu-fly" name="cx-fly-tools">
                                 <summary class="cx-menu-more" aria-label="Talent Calculator by hero"></summary>
@@ -65,6 +68,8 @@
     private const string Calculator = "/tools/talents";
 
     private const string Potential = "/tools/power-potential";
+
+    private const string Falloff = "/tools/multi-target-falloff";
 
     private RenderFragment? Flyout(MenuLink link, string group) =>
         link.Sections.Count == 0

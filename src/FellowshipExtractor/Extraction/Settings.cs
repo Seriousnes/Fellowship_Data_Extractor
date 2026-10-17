@@ -48,6 +48,13 @@ public sealed class Settings
 
     public DifficultyScaling DifficultyScaling { get; }
 
+    public static readonly MultiTargetDamageFalloff MultiTargetDamageFalloff = new()
+    {
+        Latex = @"s = \begin{cases} \sqrt{\dfrac{T}{N}} & N > T \\ 1 & N \le T \end{cases}",
+        DisplayText = "Each target takes full damage while N ≤ T. When N > T, each target takes √(T ÷ N) of " +
+                      "the damage. T is the threshold and N is the number of targets hit.",
+    };
+
     public IReadOnlyList<LeagueEntry> Leagues { get; }
 
     public ItemSettingsFile Items { get; }
@@ -158,6 +165,7 @@ public sealed class Settings
         DropItemLevels = DropItemLevels,
         Blessings = Blessings,
         DifficultyScaling = DifficultyScaling,
+        MultiTargetDamageFalloff = MultiTargetDamageFalloff,
         Leagues = Leagues,
         Items = Items,
         SlotIcons = SlotIcons,

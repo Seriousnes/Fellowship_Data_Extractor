@@ -19,6 +19,7 @@ public sealed class EntityResolver
     private const string VisualKeyField = "VisualCollectionMappingKey";
     private const string SlotOrdinalField = "HeroItemType";
     private const string EffectTable = "GameplayEffect";
+    private const string CostEffectClass = "/Script/fellowship.CRCostEffect";
     private const string AbilityTypePrefix = "AbilityType.";
     private const string TalentTagPrefix = "Talents.";
     private const string TagSuffix = "Tag";
@@ -78,6 +79,8 @@ public sealed class EntityResolver
     public ResourcePools Pools { get; }
     public ResourceNames ResourceNames { get; }
     public ResourceGains Gains { get; }
+
+    public TargetCountFalloffs Falloffs { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
@@ -225,6 +228,8 @@ public sealed class EntityResolver
         Gains = new ResourceGains(
             provider, mappings, _constants, Pools, Owners, Heroes, ResourceNames, _tags,
             name => LoadDefaultObject(FindAsset(name)));
+
+        Falloffs = new TargetCountFalloffs(mappings, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
     }
 
     private string? PrintedName(TagRecord tag, UObject cdo)
@@ -306,7 +311,7 @@ public sealed class EntityResolver
         entity = WithProvenance(entity, tag, asset, cdo);
         entity = WithOwners(entity, tag);
 
-        entity = WithSpentResource(entity, display, tag);
+        entity = WithSpentResource(entity, display, tag, cdo);
         entity = WithGeneratedResources(entity);
         entity = WithSuppliedDuration(entity, cdo, tag);
 
@@ -578,9 +583,24 @@ public sealed class EntityResolver
 
     public int SpentResourcesResolved { get; private set; }
 
-    private Entity WithSpentResource(Entity entity, Display display, TagRecord tag)
+    private readonly HashSet<UObject> _pooledCosts = [];
+
+    private Func<string, double?> CapturedBy(string? assetName) => attribute =>
+    {
+        if (assetName is null) return null;
+
+        var values = Owners.HeroesOf(assetName)
+            .Select(hero => Pools.Captured(Heroes.Shipped(hero) ?? hero, attribute))
+            .Distinct()
+            .ToArray();
+
+        return values is [{ } value] ? value : null;
+    };
+
+    private Entity WithSpentResource(Entity entity, Display display, TagRecord tag, UObject? cdo)
     {
         if (entity.Cost is not { } fraction || fraction == 0) return entity;
+        if (cdo is not null && _pooledCosts.Contains(cdo)) return entity;
         if (!display.CostIsFraction && !Fractional(tag)) return entity;
 
         var pools = (entity.OwningHeroes ?? [])
@@ -852,10 +872,12 @@ public sealed class EntityResolver
         if (cdo is not null) bindings.InsertRange(0, TooltipPayload.Bindings(cdo, _constants));
 
         var tuning = TuningNamespace.For(assetName, _constants);
+        var costing = false;
 
         if (tuning is null && TuningNamespace.FromBindings(bindings, _constants) is { } shared)
         {
             tuning = shared;
+            costing = cdo is not null && ClassDefaults.NativeParent(cdo, _provider) == CostEffectClass;
             NamespaceFromBindings++;
         }
 
@@ -927,13 +949,14 @@ public sealed class EntityResolver
             split.ByName[Numbers.Duration] = supersedes[0];
         }
 
-        if (AbilityCosts.Of(cdo, _provider, _constants, tuning) is { } cost &&
+        if (AbilityCosts.Of(cdo, _provider, _constants, tuning, CapturedBy(assetName)) is { } cost &&
             !split.ByName.ContainsKey(Numbers.Cost))
         {
-            split.ByName[Numbers.Cost] = cost;
+            split.ByName[Numbers.Cost] = cost.Amount;
+            if (cost.ReadsPool) _pooledCosts.Add(cdo!);
         }
 
-        Supplement(split, tuning, boundByEffect);
+        if (!costing) Supplement(split, tuning, boundByEffect);
 
         var grantedTags = cdo is null ? [] : PropertyWalk.GetTags(cdo, GrantedTagsField) ?? [];
         foreach (var tag in grantedTags) SupplementTalent(split, tag);
@@ -947,7 +970,7 @@ public sealed class EntityResolver
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
         var (baseline, talents) = Numbers.SplitTalents(split.Rest);
 
-        var magnitudes = EffectModifiers.Of(cdo, _provider, _constants, _mappings);
+        var magnitudes = EffectModifiers.Of(cdo, _provider, _constants, _mappings, CapturedBy(assetName));
         ModifiersRead += magnitudes.Modifiers.Count;
 
         foreach (var (name, fields) in magnitudes.Talents)
@@ -1070,6 +1093,8 @@ public sealed class EntityResolver
             Cooldown = cooldown,
             Charges = charges.Charges,
             ChargesByLevelType = charges.ByLevelType,
+            TargetCountFalloff = Falloffs.Of(cdo),
+            MaxTargets = Falloffs.MaxTargets(cdo),
             CooldownDurationScalesOff = timing?.DurationScalesOff,
             CooldownTimeRateScalesOff = timing?.TimeRateScalesOff,
             CooldownHasteGrantedBy = cdo is null || cooldown is null ? null : Empty(HasteGrantedBy(cdo, charges.Charges)),
@@ -1573,6 +1598,8 @@ public sealed class EntityResolver
         Tags = outer.Tags ?? inner.Tags,
         Category = outer.Category ?? inner.Category,
         ChargesByLevelType = outer.ChargesByLevelType ?? inner.ChargesByLevelType,
+        TargetCountFalloff = Union(outer.TargetCountFalloff, inner.TargetCountFalloff),
+        MaxTargets = outer.MaxTargets ?? inner.MaxTargets,
         Resource = outer.Resource ?? inner.Resource,
         CastTimeScalesWithHaste = outer.CastTimeScalesWithHaste ?? inner.CastTimeScalesWithHaste,
         CooldownDurationScalesOff = outer.CooldownDurationScalesOff ?? inner.CooldownDurationScalesOff,
@@ -1623,6 +1650,13 @@ public sealed class EntityResolver
 
     private static IReadOnlyList<AbilityCoefficient>? Union(
         IReadOnlyList<AbilityCoefficient>? first, IReadOnlyList<AbilityCoefficient>? second)
+    {
+        if (first is null || second is null) return first ?? second;
+        return [.. first.Concat(second).Distinct()];
+    }
+
+    private static IReadOnlyList<TargetCountFalloffSource>? Union(
+        IReadOnlyList<TargetCountFalloffSource>? first, IReadOnlyList<TargetCountFalloffSource>? second)
     {
         if (first is null || second is null) return first ?? second;
         return [.. first.Concat(second).Distinct()];

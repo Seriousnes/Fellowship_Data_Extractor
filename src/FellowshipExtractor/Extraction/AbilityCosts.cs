@@ -4,6 +4,8 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Extraction;
 
+public sealed record AbilityCost(double Amount, bool ReadsPool);
+
 public static class AbilityCosts
 {
     private const string CostEffectField = "CostGameplayEffectClass";
@@ -19,29 +21,41 @@ public static class AbilityCosts
 
     private static readonly string[] TalentSegments = ["Talent", "Talents"];
 
-    public static double? Of(UObject? cdo, AbstractFileProvider provider, ConstantsTable constants, string? tuning)
+    public static AbilityCost? Of(
+        UObject? cdo,
+        AbstractFileProvider provider,
+        ConstantsTable constants,
+        string? tuning,
+        Func<string, double?>? captured)
     {
-        var stated = FromCostEffect(cdo, provider, constants) ?? FromNamespace(constants, tuning);
+        var spent = FromCostEffect(cdo, provider, constants, captured);
+        var stated = spent?.Amount ?? FromNamespace(constants, tuning);
 
-        return Adjusted(cdo, constants, stated);
+        if (Adjusted(cdo, constants, stated) is not { } amount) return null;
+
+        return new AbilityCost(amount, spent is { ReadsPool: true } && amount == spent.Amount);
     }
 
-    private static double? FromCostEffect(UObject? cdo, AbstractFileProvider provider, ConstantsTable constants)
+    private static AbilityCost? FromCostEffect(
+        UObject? cdo, AbstractFileProvider provider, ConstantsTable constants, Func<string, double?>? captured)
     {
         if (cdo is null) return null;
         if (PropertyWalk.GetString(cdo, CostEffectField) is not { } classPath) return null;
         if (Effect(provider, classPath) is not { } effect) return null;
         if (PropertyWalk.Get(effect, ModifiersField)?.GenericValue is not UScriptArray modifiers) return null;
 
+        var context = EffectContext.For(effect, captured);
+
         foreach (var entry in modifiers.Properties)
         {
             if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
             if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) continue;
 
-            var spent = Scalable(magnitude, constants)
-                ?? MagnitudeCalculations.Custom(magnitude, provider, constants);
+            if (Scalable(magnitude, constants) is { } stated) return new AbilityCost(Math.Abs(stated), false);
 
-            if (spent is { } cost) return Math.Abs(cost);
+            var custom = MagnitudeCalculations.Custom(magnitude, provider, constants, context);
+
+            if (custom.Value is { } cost) return new AbilityCost(Math.Abs(cost), custom.ReadsCapture);
         }
 
         return null;

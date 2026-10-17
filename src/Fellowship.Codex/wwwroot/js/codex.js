@@ -547,9 +547,46 @@ window.addEventListener('resize', () => {
     if (isDesktop()) shutDrawer();
 });
 
+const KATEX = 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/';
+const KATEX_SCRIPT = 'sha512-UPFOadao2nEorjtjl0xUTtN3w20Ja143UPEU6EyJ1mi5MB2bDtMkiWmqGDqi47xNLB5z1dy31GKJDEWhjUJFiQ==';
+const KATEX_STYLE = 'sha512-aOFyMMzZF7l7ei3vOKgQiRhZnYqk9YC/uMzl4T0j5N5D3Kul+QAFU8ssENDRMAqr/lxDOjMF69dSYJ8HYqY+WQ==';
+
+let katex = null;
+
+function fetched(tag, attributes) {
+    return new Promise((resolve, reject) => {
+        const node = Object.assign(document.createElement(tag), attributes, { crossOrigin: 'anonymous' });
+        node.addEventListener('load', resolve, { once: true });
+        node.addEventListener('error', reject, { once: true });
+        document.head.append(node);
+    });
+}
+
+function typesetter() {
+    katex ??= Promise.all([
+        fetched('link', { rel: 'stylesheet', href: `${KATEX}katex.min.css`, integrity: KATEX_STYLE }),
+        fetched('script', { src: `${KATEX}katex.min.js`, integrity: KATEX_SCRIPT }),
+    ]).then(() => window.katex).catch(() => (katex = null));
+
+    return katex;
+}
+
+async function typeset() {
+    const formulas = [...document.querySelectorAll('[data-latex]')].filter(node => node.dataset.latex);
+    if (formulas.length === 0) return;
+
+    const renderer = await typesetter();
+    if (!renderer) return;
+
+    for (const node of formulas) {
+        renderer.render(node.dataset.latex, node, { displayMode: true, throwOnError: false });
+    }
+}
+
 function arrived() {
     hide();
     shutAll();
+    typeset();
 }
 
 if (document.readyState === 'loading') {

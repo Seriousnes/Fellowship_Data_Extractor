@@ -86,6 +86,8 @@ public static class RecordProjection
             Cooldown = document.Cooldown,
             Charges = document.Charges,
             ChargesByLevelType = document.ChargesByLevelType,
+            TargetCountFalloff = Falloff(document.TargetCountFalloff, view, origin),
+            MaxTargets = document.MaxTargets,
             CooldownDurationScalesOff = Scaling(document.CooldownDurationScalesOff, view),
             CooldownTimeRateScalesOff = Scaling(document.CooldownTimeRateScalesOff, view),
             CooldownHasteGrantedBy = References(document.CooldownHasteGrantedBy, view, origin),
@@ -568,6 +570,16 @@ public static class RecordProjection
         sources?.Select(source => Referenced(source.Type, source.Id, view, origin)).ToArray()
             is { Length: > 0 } named
             ? named
+            : null;
+
+    private static IReadOnlyList<TargetCountFalloffRecord>? Falloff(
+        IReadOnlyList<TargetCountFalloff>? entries, ICodexViewService view, string origin) =>
+        entries?.Select(entry => new TargetCountFalloffRecord(entry.Threshold)
+            {
+                Effect = Reference(entry.Effect, view, origin),
+            })
+            .ToArray() is { Length: > 0 } scaled
+            ? scaled
             : null;
 
     private static IReadOnlyList<CreatureAbilityRecord>? Wielded(
