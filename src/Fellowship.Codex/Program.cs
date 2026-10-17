@@ -15,6 +15,7 @@ builder.Services.AddOpenApi(ApiDocument.Name, options =>
     options.AddOperationTransformer<ListParameters>();
     options.AddOperationTransformer<BrowsingParameters>();
     options.AddSchemaTransformer<TypeSlugs>();
+    options.AddSchemaTransformer<ParameterNumbers>();
 });
 builder.Services.AddProblemDetails();
 builder.Services.AddValidation();
