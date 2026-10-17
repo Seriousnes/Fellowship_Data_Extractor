@@ -40,7 +40,10 @@ public static class AbilityCosts
         UObject? cdo, AbstractFileProvider provider, ConstantsTable constants, Func<string, double?>? captured)
     {
         if (cdo is null) return null;
-        if (PropertyWalk.GetString(cdo, CostEffectField) is not { } classPath) return null;
+        if (PropertyWalk.AsString(ClassDefaults.Inherited(cdo, CostEffectField, provider)?.GenericValue) is not { } classPath)
+        {
+            return null;
+        }
         if (Effect(provider, classPath) is not { } effect) return null;
         if (PropertyWalk.Get(effect, ModifiersField)?.GenericValue is not UScriptArray modifiers) return null;
 
