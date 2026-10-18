@@ -597,6 +597,13 @@ public sealed class EntityResolver
         return values is [{ } value] ? value : null;
     };
 
+    private Func<string, double?> SpentFrom(string? assetName)
+    {
+        var captured = CapturedBy(assetName);
+
+        return attribute => Pools.Channels.Contains(attribute) ? 0 : captured(attribute);
+    }
+
     private Entity WithSpentResource(Entity entity, Display display, TagRecord tag, UObject? cdo)
     {
         if (entity.Cost is not { } fraction || fraction == 0) return entity;
@@ -949,7 +956,7 @@ public sealed class EntityResolver
             split.ByName[Numbers.Duration] = supersedes[0];
         }
 
-        if (AbilityCosts.Of(cdo, _provider, _constants, tuning, CapturedBy(assetName)) is { } cost &&
+        if (AbilityCosts.Of(cdo, _provider, _constants, tuning, SpentFrom(assetName)) is { } cost &&
             !split.ByName.ContainsKey(Numbers.Cost))
         {
             split.ByName[Numbers.Cost] = cost.Amount;

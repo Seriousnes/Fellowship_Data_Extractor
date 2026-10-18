@@ -31,7 +31,7 @@ public static class AbilityCosts
         var spent = FromCostEffect(cdo, provider, constants, captured);
         var stated = spent?.Amount ?? FromNamespace(constants, tuning);
 
-        if (Adjusted(cdo, constants, stated) is not { } amount) return null;
+        if (Adjusted(cdo, constants, stated) is not { } amount || amount == 0) return null;
 
         return new AbilityCost(amount, spent is { ReadsPool: true } && amount == spent.Amount);
     }
