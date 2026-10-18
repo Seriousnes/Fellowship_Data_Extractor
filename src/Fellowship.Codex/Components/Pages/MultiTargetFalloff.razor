@@ -1,0 +1,158 @@
+@page "/tools/multi-target-falloff"
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+
+<PageTitle>Multi-target damage falloff - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>Multi-target damage falloff</h1>
+
+@if (Formula.DisplayText.Length > 0)
+{
+    <Panel Head="Formula">
+        <div class="cx-fo-formula" role="img" aria-label="@Formula.DisplayText"
+             data-latex="@Formula.Latex">@Formula.DisplayText</div>
+    </Panel>
+}
+
+<Panel Head="Ability">
+    <FalloffPicker Ability="Picked?.Id" />
+
+    @if (Entries.Count > 1)
+    {
+        <div class="cx-fo-entries">
+            <Knob Caption="Effect" As="div">
+                <div class="cx-roster">
+                    @for (var at = 0; at < Entries.Count; at++)
+                    {
+                        var entry = Entries[at];
+
+                        <a href="@Address(Picked!.Id, at, Damage, Targets)"
+                           aria-current="@(at == Chosen ? "page" : null)">
+                            <span class="cx-who">@Named(at)</span>
+                            <span class="cx-fo-at">@CodexView.Number(entry.Threshold)</span>
+                        </a>
+                    }
+                </div>
+            </Knob>
+        </div>
+    }
+</Panel>
+
+@if (Picked is not { } ability || Entry is not { } falloff)
+{
+    <Panel>
+        <Empty Message="No ability picked.">Choose one above.</Empty>
+    </Panel>
+}
+else
+{
+    var split = DamageFalloff.Split(falloff.Threshold, ability.MaxTargets, Damage, Targets);
+
+    <Panel Head="@Named(Chosen)">
+        <form class="cx-fo-form" method="get" action="@Page">
+            <input type="hidden" name="@FalloffPicker.Key" value="@ability.Id" />
+            @if (Entries.Count > 1)
+            {
+                <input type="hidden" name="@FalloffPicker.Entry" value="@Chosen" />
+            }
+
+            <Knob Caption="Single-target damage">
+                <input type="number" name="@DamageKey" min="0" step="any" required
+                       value="@Damage.ToString(CultureInfo.InvariantCulture)" />
+            </Knob>
+
+            <Knob Caption="Targets">
+                <input type="number" name="@TargetsKey" min="0" step="1" required
+                       value="@Targets" />
+            </Knob>
+
+            <button type="submit">Calculate</button>
+        </form>
+
+        <div class="cx-pairs">
+            <Facts>
+                <Fact Label="Threshold">@split.Threshold</Fact>
+                @if (ability.MaxTargets is { } cap)
+                {
+                    <Fact Label="Max targets">@CodexView.Number(cap)</Fact>
+                }
+                <Fact Label="Targets hit">@CodexView.Number(split.Targets)</Fact>
+            </Facts>
+            <Facts>
+                <Fact Label="Scaler">@Scaled(split.Scaler)</Fact>
+                <Fact Label="Damage per target">@CodexView.Number(split.PerTarget)</Fact>
+                <Fact Label="Total damage">@CodexView.Number(split.Total)</Fact>
+            </Facts>
+        </div>
+    </Panel>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = FalloffPicker.Key)] public string? Ability { get; set; }
+
+    [SupplyParameterFromQuery(Name = FalloffPicker.Entry)] public string? Index { get; set; }
+
+    [SupplyParameterFromQuery(Name = DamageKey)] public string? Given { get; set; }
+
+    [SupplyParameterFromQuery(Name = TargetsKey)] public string? Hit { get; set; }
+
+    private const string Page = "/tools/multi-target-falloff";
+
+    private const string DamageKey = "damage";
+
+    private const string TargetsKey = "targets";
+
+    private const double StartingDamage = 1000;
+
+    private const int StartingTargets = 1;
+
+    private const string Unestablished = "Threshold";
+
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail =
+        [("Tools", null), ("Multi-target damage falloff", null)];
+
+    private AbilityDocument? Picked;
+
+    private IReadOnlyList<TargetCountFalloff> Entries = [];
+
+    private int Chosen;
+
+    private TargetCountFalloff? Entry => Chosen < Entries.Count ? Entries[Chosen] : null;
+
+    private MultiTargetDamageFalloff Formula => Store.Settings.MultiTargetDamageFalloff;
+
+    private double Damage =>
+        double.TryParse(Given, NumberStyles.Float, CultureInfo.InvariantCulture, out var amount) &&
+        double.IsFinite(amount) && amount >= 0
+            ? amount
+            : StartingDamage;
+
+    private int Targets => Whole(Hit) is { } count && count >= 0 ? count : StartingTargets;
+
+    protected override void OnParametersSet()
+    {
+        Picked = DamageFalloff.Ability(Store, Whole(Ability));
+        Entries = Picked?.TargetCountFalloff ?? [];
+        Chosen = Whole(Index) is { } at && at >= 0 && at < Entries.Count ? at : 0;
+    }
+
+    private static int? Whole(string? value) =>
+        int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
+
+    private string Named(int at) =>
+        Entries[at].Effect is { } effect
+            ? Ui.Name(effect.Type, effect.Id)
+            : Entries.Count(entry => entry.Effect is null) > 1
+                ? $"{Unestablished} {at + 1}"
+                : Unestablished;
+
+    private static string Scaled(double scaler) =>
+        Math.Round(scaler, 6).ToString(CultureInfo.InvariantCulture);
+
+    private static string Address(int ability, int entry, double damage, int targets) =>
+        $"{Page}?{FalloffPicker.Key}={ability}&{FalloffPicker.Entry}={entry}" +
+        $"&{DamageKey}={damage.ToString(CultureInfo.InvariantCulture)}&{TargetsKey}={targets}";
+}

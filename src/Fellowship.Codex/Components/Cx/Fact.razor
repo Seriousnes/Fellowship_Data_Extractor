@@ -1,5 +1,14 @@
 <tr>
-    <th>@Label</th><td>
+    <th>
+        @if (Head is null)
+        {
+            @Label
+        }
+        else
+        {
+            @Head
+        }
+    </th><td>
         @ChildContent
         @if (Unit is not null)
         {
@@ -9,7 +18,9 @@
 </tr>
 
 @code {
-    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public string Label { get; set; } = string.Empty;
+
+    [Parameter] public RenderFragment? Head { get; set; }
 
     [Parameter] public string? Unit { get; set; }
 

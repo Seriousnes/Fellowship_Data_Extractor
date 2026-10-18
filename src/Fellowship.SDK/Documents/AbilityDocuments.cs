@@ -16,6 +16,8 @@ public sealed class AbilityDocument : EntityDocument
     public double? Cooldown { get; init; }
     public double? Charges { get; init; }
     public IReadOnlyDictionary<string, double>? ChargesByLevelType { get; init; }
+    public IReadOnlyList<TargetCountFalloff>? TargetCountFalloff { get; init; }
+    public double? MaxTargets { get; init; }
     public IReadOnlyList<string>? CooldownDurationScalesOff { get; init; }
     public IReadOnlyList<string>? CooldownTimeRateScalesOff { get; init; }
     public IReadOnlyList<EntityReference>? CooldownHasteGrantedBy { get; init; }

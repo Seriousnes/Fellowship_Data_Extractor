@@ -16,6 +16,7 @@ public static class AppliedEffects
 {
     private const string ClassSuffix = "_C";
     private const string ScriptRoot = "/Script/";
+    private const string RelabelField = "LogAsADifferentAbility";
     private const int MaxDepth = 12;
 
     private static readonly Dictionary<Type, Func<object, object?>[]> Reachable = [];
@@ -63,6 +64,7 @@ public static class AppliedEffects
 
             foreach (var property in properties)
             {
+                if (property.Name.Equals(RelabelField, StringComparison.Ordinal)) continue;
                 if (Leaf(PropertyWalk.AsString(property.Value)) is not { } name) continue;
                 if (!wanted.Contains(name)) continue;
 

@@ -319,6 +319,16 @@ public static class ExportRun
         {
             Console.WriteLine($"    {recovered}");
         }
+
+        Console.WriteLine(
+            $"  {resolver.Falloffs.Thresholds} of {resolver.Falloffs.Calls} multi-target damage falloff calls read " +
+            $"a threshold, {resolver.Falloffs.EffectsVerified} tied to the one effect reading the scaler's tag, " +
+            $"{resolver.Falloffs.EffectsAmbiguous} read by several; {resolver.Falloffs.Caps} target caps stated");
+
+        foreach (var unread in resolver.Falloffs.Unread.Distinct(StringComparer.Ordinal))
+        {
+            Console.WriteLine($"    {unread}");
+        }
         Console.WriteLine(
             $"  {resolver.SpreadOverrides} coefficient rows banded by the Spread row their effect overrides " +
             $"with, {resolver.SpreadPresetDefaults} by an effect's calculation preset");

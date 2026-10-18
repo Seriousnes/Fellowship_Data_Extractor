@@ -38,6 +38,15 @@ public static class DocumentProjection
             Cooldown = entity.Cooldown,
             Charges = entity.Charges,
             ChargesByLevelType = entity.ChargesByLevelType,
+            TargetCountFalloff = entity.TargetCountFalloff?
+                .Select(source => new TargetCountFalloff
+                {
+                    Effect = references.At(source.Effect),
+                    Threshold = source.Threshold,
+                })
+                .Distinct()
+                .ToArray(),
+            MaxTargets = entity.MaxTargets,
             CooldownDurationScalesOff = entity.CooldownDurationScalesOff,
             CooldownTimeRateScalesOff = entity.CooldownTimeRateScalesOff,
             CooldownHasteGrantedBy = Augmentations(entity.CooldownHasteGrantedBy, references),

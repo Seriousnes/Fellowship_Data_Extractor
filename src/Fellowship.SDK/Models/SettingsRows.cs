@@ -44,3 +44,10 @@ public sealed record LeagueEntry(string Row, string Name, string Tag, LeagueKind
 
     public IReadOnlyList<int> Difficulties { get; init; } = [];
 }
+
+public sealed record MultiTargetDamageFalloff
+{
+    public string Latex { get; init; } = string.Empty;
+
+    public string DisplayText { get; init; } = string.Empty;
+}

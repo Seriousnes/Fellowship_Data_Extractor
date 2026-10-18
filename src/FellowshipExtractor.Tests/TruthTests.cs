@@ -30,7 +30,9 @@ public sealed class TruthTests
     [Theory]
     [InlineData(1229, 25)]
     [InlineData(1242, 50)]
-    [InlineData(1970, 0)]
+    [InlineData(1970, 30)]
+    [InlineData(1964, 30)]
+    [InlineData(1973, 50)]
     public void AFractionOfTheResourceIsWrittenAsTheAmountItSpends(int id, double expected) =>
         Assert.Equal(expected, (double?)Record(EntityType.Ability, id)["cost"]);
     [Fact]

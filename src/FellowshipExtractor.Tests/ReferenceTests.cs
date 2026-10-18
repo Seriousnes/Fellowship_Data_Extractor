@@ -38,6 +38,14 @@ public sealed class ReferenceTests
                         }
 
                         break;
+
+                    case IReadOnlyList<TargetCountFalloff> falloffs:
+                        foreach (var falloff in falloffs)
+                        {
+                            if (falloff.Effect is { } effect) yield return (document, property.Name, effect);
+                        }
+
+                        break;
                 }
             }
         }
@@ -50,7 +58,8 @@ public sealed class ReferenceTests
                 property.PropertyType == typeof(EntityReference) ||
                 property.PropertyType == typeof(IReadOnlyList<EntityReference>) ||
                 property.PropertyType == typeof(IReadOnlyList<CreatureAbility>) ||
-                property.PropertyType == typeof(IReadOnlyList<ItemSource>)),
+                property.PropertyType == typeof(IReadOnlyList<ItemSource>) ||
+                property.PropertyType == typeof(IReadOnlyList<TargetCountFalloff>)),
     ];
 
     [Fact]

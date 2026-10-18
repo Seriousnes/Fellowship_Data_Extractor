@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-@if (Facts.Count > 0 || Schools.Count > 0 || Heroes.Count > 0 ||
+@if (Facts.Count > 0 || Falloff.Count > 0 || Schools.Count > 0 || Heroes.Count > 0 ||
      SetBonus.Count > 0 || Scaling.Count > 0 ||
      AllowedRoles.Count > 0 || AllowedAttributes.Count > 0)
 {
@@ -31,6 +31,30 @@
                     </Facts>
                 }
             </div>
+        }
+
+        @if (Falloff.Count > 0)
+        {
+            <Rule />
+            <SubHead>Target count falloff</SubHead>
+            <Facts>
+                @foreach (var entry in Falloff)
+                {
+                    <Fact>
+                        <Head>
+                            @if (entry.Effect is null)
+                            {
+                                <text>Threshold</text>
+                            }
+                            else
+                            {
+                                <Ref Entity="entry.Effect" />
+                            }
+                        </Head>
+                        <ChildContent>@CodexView.Number(entry.Threshold)</ChildContent>
+                    </Fact>
+                }
+            </Facts>
         }
 
         @if (Schools.Count > 0)
@@ -112,6 +136,9 @@
     [Parameter] public IReadOnlyList<string> Scaling { get; set; } = [];
 
     private IReadOnlyList<string> Heroes => [.. Ui.Codex.Facet("hero")?.Values(Entity) ?? []];
+
+    private IReadOnlyList<Fellowship.SDK.Models.TargetCountFalloff> Falloff =>
+        (Entity as AbilityDocument)?.TargetCountFalloff ?? [];
 
     private IReadOnlyList<Fellowship.SDK.Models.EntityReference> SetBonus =>
         (Entity as ItemDocument)?.SetBonus ?? [];

@@ -77,6 +77,50 @@ public sealed class ClassScanner(PeImage image, IReadOnlyList<PropertyRecord> re
         return classes;
     }
 
+    public List<ClassParams> ScanPropertylessClasses(
+        IReadOnlyDictionary<ulong, string> registrations, ISet<string> known)
+    {
+        var classes = new List<ClassParams>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var section in image.Sections)
+        {
+            if (section.RawSize == 0 || section.Name is ".text" or ".pdata" or ".reloc" or ".rsrc") continue;
+            var end = section.RawOffset + Math.Min(section.RawSize, section.VirtualSize);
+
+            for (var offset = (int)section.RawOffset - NoRegisterFuncOffset; offset + 8 <= end; offset += 8)
+            {
+                if (image.ReadPointer(offset) != 0) continue;
+
+                var noRegister = image.ReadPointer(offset + NoRegisterFuncOffset);
+                if (!registrations.TryGetValue(noRegister, out var cppName)) continue;
+                if (cppName[0] is not ('U' or 'A')) continue;
+
+                var name = StripPrefix(cppName);
+                if (known.Contains(name) || !seen.Add(name)) continue;
+
+                var configVa = image.ReadPointer(offset + ConfigNameOffset);
+                if (configVa != 0 && image.ReadUtf8(configVa, 64) is null) continue;
+
+                if (!HasFunctionList(offset + DependencySingletonsOffset)) continue;
+
+                var super = ReadSuperFunc(offset, registrations);
+                if (super == 0)
+                {
+                    seen.Remove(name);
+                    continue;
+                }
+
+                classes.Add(new ClassParams(image.VirtualAddress(offset), name, noRegister, [])
+                {
+                    SuperFuncVa = super,
+                });
+            }
+        }
+
+        return classes;
+    }
+
     private bool HasFunctionList(int pointerFieldOffset)
     {
         var listVa = image.ReadPointer(pointerFieldOffset);

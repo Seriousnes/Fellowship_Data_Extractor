@@ -45,13 +45,15 @@ public static class EffectModifiers
     private readonly record struct Slot(string Attribute, string? Op, IPropertyHolder Magnitude, bool Declared);
 
     public static EffectMagnitudes Of(
-        UObject? cdo, AbstractFileProvider provider, ConstantsTable constants, TypeMappings mappings)
+        UObject? cdo, AbstractFileProvider provider, ConstantsTable constants, TypeMappings mappings,
+        Func<string, double?>? capturedBy)
     {
         if (cdo is null) return EffectMagnitudes.None;
 
         var slots = Slots(cdo, mappings);
         if (slots.Count == 0) return EffectMagnitudes.None;
 
+        var effect = EffectContext.For(cdo, capturedBy);
         var modifiers = new List<EffectModifier>();
         var talents = new Dictionary<string, Dictionary<string, double>>(StringComparer.Ordinal);
 
@@ -62,7 +64,7 @@ public static class EffectModifiers
             var custom = kind.Equals(CustomCalculationClass, StringComparison.Ordinal);
 
             var gates = custom ? new List<string>() : null;
-            var read = Read(slot.Magnitude, kind, provider, constants, gates);
+            var read = Read(slot.Magnitude, kind, provider, constants, gates, effect);
             var scaling = kind.Equals(AttributeBased, StringComparison.Ordinal)
                 ? Captured(slot.Magnitude, constants)
                 : null;
@@ -80,7 +82,7 @@ public static class EffectModifiers
                 });
             }
 
-            if (gates is { Count: > 0 }) Vary(slot, read, gates, provider, constants, talents);
+            if (gates is { Count: > 0 }) Vary(slot, read, gates, provider, constants, talents, effect);
         }
 
         return new EffectMagnitudes(
@@ -152,7 +154,8 @@ public static class EffectModifiers
         string kind,
         AbstractFileProvider provider,
         ConstantsTable constants,
-        ICollection<string>? gates)
+        ICollection<string>? gates,
+        EffectContext? effect)
     {
         if (kind.Equals(ScalableFloat, StringComparison.Ordinal))
         {
@@ -163,7 +166,7 @@ public static class EffectModifiers
         }
 
         return kind.Equals(CustomCalculationClass, StringComparison.Ordinal)
-            ? MagnitudeCalculations.Reduced(magnitude, provider, constants, null, gates)
+            ? MagnitudeCalculations.Reduced(magnitude, provider, constants, null, gates, effect)
             : MagnitudeReading.None;
     }
 
@@ -190,7 +193,8 @@ public static class EffectModifiers
         IReadOnlyList<string> bareGates,
         AbstractFileProvider provider,
         ConstantsTable constants,
-        Dictionary<string, Dictionary<string, double>> talents)
+        Dictionary<string, Dictionary<string, double>> talents,
+        EffectContext? effect)
     {
         var seen = new HashSet<string>(bareGates, StringComparer.Ordinal);
         var pending = new Queue<string>(seen);
@@ -201,7 +205,7 @@ public static class EffectModifiers
             var found = new List<string>();
 
             var read = MagnitudeCalculations.Reduced(
-                slot.Magnitude, provider, constants, new HashSet<string>([gate], StringComparer.Ordinal), found);
+                slot.Magnitude, provider, constants, new HashSet<string>([gate], StringComparer.Ordinal), found, effect);
 
             foreach (var next in found)
             {

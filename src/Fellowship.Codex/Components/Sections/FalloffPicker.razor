@@ -1,0 +1,187 @@
+@rendermode InteractiveServer
+@inject IEntityStoreService Store
+@inject ICodexViewService Ui
+@inject NavigationManager Nav
+
+<div class="cx-picker" @onfocusin="Focus" @onfocusout="Blur">
+    <button type="button" class="cx-picker-face" @ref="face"
+            role="combobox" aria-haspopup="listbox" aria-controls="cx-falloff-drop"
+            aria-label="Ability" aria-expanded="@(showing ? "true" : "false")"
+            @onclick="Toggle" @onkeydown="Pressed">
+        <span class="cx-nm">@(Current is { } picked ? Ui.Name(picked) : "Choose an ability")</span>
+        @if (Current is { } current)
+        {
+            <span class="cx-ty">@current.Id</span>
+        }
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+    </button>
+
+    @if (showing)
+    {
+        <div class="cx-picker-drop" id="cx-falloff-drop" role="listbox" aria-label="Ability"
+             @onkeydown="Pressed">
+            <div class="cx-picker-find">
+                <input type="search" autocomplete="off" aria-label="Filter by name or id"
+                       placeholder="Filter by name or id" value="@filter" @ref="find" @oninput="Filter" />
+            </div>
+
+            @for (var at = 0; at < shown.Count; at++)
+            {
+                var ability = shown[at];
+                var mine = at;
+                var link = Ui.Tip(ability);
+
+                <a class="cx-picker-step" role="option" href="@Href(ability)"
+                   data-tip="@link.Address" data-tip-request="@link.Body"
+                   @key="ability.Id" @ref="rows[ability.Id]"
+                   aria-selected="@(ability.Id == Ability ? "true" : "false")"
+                   data-active="@On(active == mine)">
+                    <span class="cx-nm">@Ui.Name(ability)</span>
+                    <span class="cx-ty">@ability.Id</span>
+                </a>
+            }
+
+            @if (shown.Count == 0)
+            {
+                <p class="cx-picker-none">No ability with target count falloff matches @filter.</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int? Ability { get; set; }
+
+    public const string Key = "ability";
+
+    public const string Entry = "entry";
+
+    private IReadOnlyList<AbilityDocument> offered = [];
+    private IReadOnlyList<AbilityDocument> shown = [];
+
+    private ElementReference face;
+    private ElementReference find;
+
+    private readonly Dictionary<int, ElementReference> rows = [];
+
+    private string filter = string.Empty;
+    private bool showing;
+    private bool revealing;
+    private bool finding;
+    private int active = -1;
+    private int touches;
+
+    private AbilityDocument? Current => offered.FirstOrDefault(ability => ability.Id == Ability);
+
+    private static string? On(bool set) => set ? "on" : null;
+
+    private string Href(AbilityDocument ability) =>
+        Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            [Key] = ability.Id,
+            [Entry] = null,
+        });
+
+    protected override void OnInitialized() => offered = DamageFalloff.Abilities(Store);
+
+    private void Filter(ChangeEventArgs typed)
+    {
+        filter = typed.Value?.ToString() ?? string.Empty;
+        Settle();
+    }
+
+    private void Settle()
+    {
+        shown = [.. offered.Where(Matches)];
+        active = -1;
+    }
+
+    private bool Matches(AbilityDocument ability)
+    {
+        if (filter.Trim() is not { Length: > 0 } wanted) return true;
+
+        return Ui.Name(ability).Contains(wanted, StringComparison.OrdinalIgnoreCase) ||
+            ability.Id.ToString(CultureInfo.InvariantCulture).StartsWith(wanted, StringComparison.Ordinal);
+    }
+
+    private void Shut()
+    {
+        showing = false;
+        rows.Clear();
+    }
+
+    private void Toggle()
+    {
+        touches++;
+
+        if (showing)
+        {
+            Shut();
+            return;
+        }
+
+        showing = true;
+        filter = string.Empty;
+        Settle();
+        finding = true;
+    }
+
+    private void Focus() => touches++;
+
+    private async Task Blur()
+    {
+        var mine = ++touches;
+        await Task.Delay(200);
+
+        if (mine != touches) return;
+
+        Shut();
+        StateHasChanged();
+    }
+
+    private async Task Pressed(KeyboardEventArgs key)
+    {
+        switch (key.Key)
+        {
+            case "Escape":
+                Shut();
+                await face.FocusAsync();
+                return;
+
+            case "ArrowDown" or "ArrowUp" when !showing:
+                Toggle();
+                return;
+
+            case "ArrowDown" when shown.Count > 0:
+                active = active >= shown.Count - 1 ? 0 : active + 1;
+                revealing = true;
+                return;
+
+            case "ArrowUp" when shown.Count > 0:
+                active = active <= 0 ? shown.Count - 1 : active - 1;
+                revealing = true;
+                return;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (finding && showing)
+        {
+            finding = false;
+            await find.FocusAsync();
+            return;
+        }
+
+        if (!revealing) return;
+
+        revealing = false;
+
+        if (!showing || active < 0 || active >= shown.Count) return;
+
+        if (rows.TryGetValue(shown[active].Id, out var row)) await row.FocusAsync();
+    }
+}

@@ -7,7 +7,7 @@ public static class UsmapGenerateCommand
     private static readonly string[] Required =
     [
         "GameplayTag", "ScalableFloat", "CRMountData", "CRTalentData", "DataTable", "Object",
-        "PrimaryDataAsset",
+        "PrimaryDataAsset", "CRAbilityTargetSelectionPolicy_RandomActorSet",
     ];
 
     public static Task<bool> RunAsync(ExtractorOptions options)
@@ -21,6 +21,11 @@ public static class UsmapGenerateCommand
         var registrations = classScanner.ScanRegistrations();
         var claimed = structs.Where(s => s.Properties.Count > 0).Select(s => s.Properties[0].Va).ToHashSet();
         var classes = classScanner.ScanClasses(registrations, claimed);
+        var propertyless = classScanner.ScanPropertylessClasses(
+            registrations,
+            structs.Select(s => s.Name).Concat(classes.Select(c => c.Name)).ToHashSet(StringComparer.Ordinal));
+        Console.WriteLine($"classes declaring no properties of their own: {propertyless.Count}");
+        classes.AddRange(propertyless);
 
         var paramsByVa = structs.ToDictionary(s => s.Va, s => s.Name);
         foreach (var declaring in enums) paramsByVa.TryAdd(declaring.Va, declaring.Name);

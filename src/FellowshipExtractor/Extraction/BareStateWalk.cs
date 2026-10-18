@@ -1,5 +1,6 @@
 using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
 
@@ -16,6 +17,13 @@ public sealed class BareStateWalk(
     private const string NoRow = "None";
     private const string TagStruct = "GameplayTag";
     private const string TagNameField = "TagName";
+    private const string AssetTagsRead = "GetAllAssetTagsForThisEffect";
+    private const string EffectRead = "GetGameplayEffectDef";
+    private const string CaptureRead = "GetCapturedAttribute";
+    private const string ElementRead = "Array_Get";
+    private const string EntryRead = "Map_Find";
+    private const string CaptureField = "AttributeToCapture";
+    private const string AttributeNameField = "AttributeName";
     private const int Budget = 1024;
     private const int MaxDepth = 32;
 
@@ -39,6 +47,10 @@ public sealed class BareStateWalk(
     private bool Inlined { get; init; }
 
     public IReadOnlySet<string> AssumedTags { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+
+    public EffectContext? Effect { get; init; }
+
+    public bool ReadsCapture { get; private set; }
 
     public IReadOnlySet<string> Gates => _gates;
 
@@ -92,6 +104,7 @@ public sealed class BareStateWalk(
         {
             Inlined = true,
             AssumedTags = AssumedTags,
+            Effect = Effect,
         };
 
         foreach (var _ in inside.Statements()) { }
@@ -169,6 +182,12 @@ public sealed class BareStateWalk(
 
     public bool Bind(KismetExpression statement)
     {
+        if (Written(statement) is { } written)
+        {
+            _locals[written.Name] = written.Call;
+            if (statement is EX_Context) return true;
+        }
+
         var assignment = statement switch
         {
             EX_Let let => (Variable: let.Variable, Value: let.Assignment),
@@ -182,6 +201,23 @@ public sealed class BareStateWalk(
 
         _locals[name] = assignment.Value;
         return true;
+    }
+
+    private static (string Name, EX_FinalFunction Call)? Written(KismetExpression statement)
+    {
+        var context = statement switch
+        {
+            EX_Context direct => direct,
+            EX_Let { Assignment: EX_Context assigned } => assigned,
+            EX_LetBool { Assignment: EX_Context assigned } => assigned,
+            _ => null,
+        };
+
+        if (context?.ContextExpression is not EX_FinalFunction call) return null;
+        if (call.StackNode.Name is not (ElementRead or EntryRead)) return null;
+        if (DynamicTextFloats.Name(call.Parameters.ElementAtOrDefault(2)) is not { } name) return null;
+
+        return (name, call);
     }
 
     public void Holds(string name, KismetExpression value) => _locals[name] = value;
@@ -223,6 +259,7 @@ public sealed class BareStateWalk(
             case EX_LocalVirtualFunction call: return TagBoolean(call.VirtualFunctionName.Text, call.Parameters);
             case EX_VirtualFunction call: return TagBoolean(call.VirtualFunctionName.Text, call.Parameters);
             case EX_LocalFinalFunction call: return TagBoolean(call.StackNode.Name, call.Parameters);
+            case EX_FinalFunction { StackNode.Name: EntryRead } call: return Entry(call) is not null;
             case EX_FinalFunction call: return TagBoolean(call.StackNode.Name, call.Parameters);
         }
 
@@ -242,6 +279,11 @@ public sealed class BareStateWalk(
     private bool? TagBoolean(string invoked, IReadOnlyList<KismetExpression> parameters)
     {
         if (!TagTests.Contains(invoked, StringComparer.Ordinal)) return null;
+
+        if (Effect is { } effect && Calls(parameters.FirstOrDefault(), AssetTagsRead))
+        {
+            return parameters.Skip(1).Select(Tag).OfType<string>().Any(effect.AssetTags.Contains);
+        }
 
         var matched = false;
 
@@ -415,6 +457,11 @@ public sealed class BareStateWalk(
         if (invoked.StartsWith(ScalableRead, StringComparison.Ordinal))
         {
             return Scalable(call.Parameters.FirstOrDefault(), depth + 1);
+        }
+
+        if (invoked.Equals(CaptureRead, StringComparison.Ordinal))
+        {
+            return Capture(call.Parameters.ElementAtOrDefault(1), depth + 1);
         }
 
         if (invoked.StartsWith("Multiply_", StringComparison.Ordinal))
@@ -632,10 +679,71 @@ public sealed class BareStateWalk(
         return multiplier * value;
     }
 
+    private bool Calls(KismetExpression? expression, string function, int depth = 0)
+    {
+        if (expression is null || depth > MaxDepth) return false;
+        if (expression is EX_CallMath call) return call.StackNode.Name.Equals(function, StringComparison.Ordinal);
+
+        return Bound(expression) is { } assigned && Calls(assigned, function, depth + 1);
+    }
+
+    private double? Capture(KismetExpression? element, int depth)
+    {
+        if (Effect?.Captured is not { } captured) return null;
+        if (Resolved(element, depth) is not EX_FinalFunction { StackNode.Name: ElementRead } read) return null;
+        if (DynamicTextFloats.Name(read.Parameters.ElementAtOrDefault(0)) is not { } field) return null;
+        if (Number(read.Parameters.ElementAtOrDefault(1), depth + 1) is not { } index) return null;
+        if (PropertyWalk.Get(cdo, field)?.GenericValue is not UScriptArray captures) return null;
+        if (captures.Properties.ElementAtOrDefault((int)index)?.GenericValue is not FScriptStruct { StructType: IPropertyHolder capture }) return null;
+        if (PropertyWalk.GetStruct(capture, CaptureField) is not { } attribute) return null;
+        if (PropertyWalk.GetString(attribute, AttributeNameField) is not { } name) return null;
+
+        ReadsCapture = true;
+        return captured(name);
+    }
+
+    private IPropertyHolder? Entry(EX_FinalFunction find)
+    {
+        if (Effect is not { } effect) return null;
+        if (!Calls(Resolved(find.Parameters.ElementAtOrDefault(1), 0) is EX_MetaCast cast ? cast.Target : null, EffectRead)) return null;
+        if (DynamicTextFloats.Name(find.Parameters.ElementAtOrDefault(0)) is not { } field) return null;
+        if (PropertyWalk.Get(cdo, field)?.GenericValue is not UScriptMap map) return null;
+
+        foreach (var (key, value) in map.Properties)
+        {
+            if (!effect.Class.Equals(PropertyWalk.AsString(key?.GenericValue), StringComparison.OrdinalIgnoreCase)) continue;
+
+            return value?.GenericValue switch
+            {
+                FScriptStruct { StructType: IPropertyHolder held } => held,
+                IPropertyHolder held => held,
+                _ => null,
+            };
+        }
+
+        return null;
+    }
+
+    private KismetExpression? Resolved(KismetExpression? expression, int depth)
+    {
+        while (expression is not null && depth++ <= MaxDepth && Bound(expression) is { } assigned) expression = assigned;
+
+        return expression;
+    }
+
     private (double Multiplier, string? Row)? Struct(KismetExpression? expression, int depth)
     {
         if (expression is null || depth > MaxDepth) return null;
         if (expression is EX_StructConst constant) return Inline(constant);
+
+        if (expression is EX_FinalFunction { StackNode.Name: EntryRead } find)
+        {
+            return Entry(find) is { } entry
+                ? (PropertyWalk.AsNumber(PropertyWalk.Get(entry, ValueField)?.GenericValue) ?? 1,
+                    Name(PropertyWalk.GetStruct(entry, CurveField) is { } held ? PropertyWalk.GetString(held, RowField) : null))
+                : null;
+        }
+
         if (Bound(expression) is { } assigned) return Struct(assigned, depth + 1);
         if (DynamicTextFloats.Name(expression) is not { } property) return null;
         if (PropertyWalk.GetStruct(cdo, property) is not { } scalable) return null;

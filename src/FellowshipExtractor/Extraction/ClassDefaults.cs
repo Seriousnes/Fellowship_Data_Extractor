@@ -37,6 +37,22 @@ public static class ClassDefaults
         return package.GetExports().FirstOrDefault(export => export.Name.StartsWith(DefaultPrefix, StringComparison.Ordinal));
     }
 
+    public static string? NativeParent(UObject cdo, AbstractFileProvider provider)
+    {
+        var holder = cdo;
+
+        for (var depth = 0; holder is not null && depth < MaxDepth; depth++)
+        {
+            if (holder.Class?.Load() is not UStruct type) return null;
+            if (type.SuperStruct?.ResolvedObject?.GetPathName() is not { } parent) return null;
+            if (parent.StartsWith(ScriptRoot, StringComparison.Ordinal)) return parent;
+
+            holder = Load(parent, provider);
+        }
+
+        return null;
+    }
+
     private static UObject? Parent(UObject cdo, AbstractFileProvider provider) =>
         cdo.Class?.Load() is UStruct type && type.SuperStruct?.ResolvedObject?.GetPathName() is { } parent
             ? Load(parent, provider)

@@ -3,7 +3,6 @@ using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Objects.Properties;
-using CUE4Parse.UE4.Kismet;
 
 namespace FellowshipExtractor.Extraction;
 
@@ -29,8 +28,6 @@ public sealed class CooldownScaling
     private const string CustomField = "CustomMagnitude";
     private const string CalculationField = "CalculationClassMagnitude";
     private const string CalculationFunction = "CalculateBaseMagnitude";
-    private const string CapturesField = "RelevantAttributesToCapture";
-    private const string CaptureRead = "GetCapturedAttribute";
     private const string CombinedField = "CombinedTags";
     private const string AddedField = "Added";
     private const string RemovedField = "Removed";
@@ -125,12 +122,18 @@ public sealed class CooldownScaling
         return agreed;
     }
 
+    public static IReadOnlySet<string> AssetTags(UObject effect) => Containers(effect, CombinedField);
+
     private static HashSet<string> Containers(UObject effect, string field)
     {
         var tags = new HashSet<string>(StringComparer.Ordinal);
+        var exports = effect.Owner?.GetExports().ToArray() ?? [effect];
+        var componentsCarry = exports.Any(export => export != effect && Carries(export));
 
-        foreach (var export in effect.Owner?.GetExports() ?? [effect])
+        foreach (var export in exports)
         {
+            if (componentsCarry && export == effect) continue;
+
             foreach (var container in TagContainers)
             {
                 if (PropertyWalk.GetStruct(export, container) is not { } inherited) continue;
@@ -141,6 +144,9 @@ public sealed class CooldownScaling
 
         return tags;
     }
+
+    private static bool Carries(UObject export) =>
+        TagContainers.Any(container => PropertyWalk.GetStruct(export, container) is not null);
 
     private IEnumerable<string> DurationReads(string classPath)
     {
@@ -154,28 +160,13 @@ public sealed class CooldownScaling
             yield break;
         }
 
-        var captured = Captured(calculation);
+        var statements = new BareStateWalk(body, calculation, _constants, null).Statements();
 
-        foreach (var statement in new BareStateWalk(body, calculation, _constants, null).Statements())
+        foreach (var attribute in MagnitudeCalculations.ReadCaptures(calculation, _provider, statements))
         {
-            if (statement is not EX_Let { Assignment: EX_CallMath call }) continue;
-            if (!call.StackNode.Name.Equals(CaptureRead, StringComparison.Ordinal)) continue;
-            if (call.Parameters.ElementAtOrDefault(1) is not EX_ArrayGetByRef { ArrayIndex: EX_IntConst index }) continue;
-
-            if (captured.ElementAtOrDefault(index.Value) is { } attribute) yield return attribute;
+            yield return attribute;
         }
     }
-
-    private string?[] Captured(UObject calculation) =>
-        ClassDefaults.Inherited(calculation, CapturesField, _provider)?.GenericValue is UScriptArray captures
-            ?
-            [
-                .. captures.Properties.Select(element =>
-                    Struct(element) is { } capture && PropertyWalk.GetStruct(capture, CaptureField) is { } attribute
-                        ? PropertyWalk.GetString(attribute, AttributeNameField)
-                        : null),
-            ]
-            : [];
 
     public IReadOnlyList<string> CooldownTypesAccelerated(string effectClass)
     {

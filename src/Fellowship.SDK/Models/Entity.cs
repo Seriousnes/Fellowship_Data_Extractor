@@ -67,6 +67,8 @@ public sealed record Entity
     public double? Cooldown { get; init; }
     public double? Charges { get; init; }
     public IReadOnlyDictionary<string, double>? ChargesByLevelType { get; init; }
+    public IReadOnlyList<TargetCountFalloffSource>? TargetCountFalloff { get; init; }
+    public double? MaxTargets { get; init; }
     public double? Cost { get; init; }
 
     public string? Resource { get; init; }
@@ -357,3 +359,5 @@ public enum TokenQuantity
 
     ExecutionMagnitude,
 }
+
+public sealed record TargetCountFalloffSource(IconSource? Effect, double Threshold, string? Row);

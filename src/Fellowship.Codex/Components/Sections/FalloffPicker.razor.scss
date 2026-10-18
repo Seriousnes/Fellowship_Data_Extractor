@@ -1,0 +1,51 @@
+@use "../../Styles/shared" as *;
+
+.cx-picker { position: relative; }
+
+.cx-picker-face {
+  display: flex; align-items: center; gap: 8px; width: 100%; appearance: none; cursor: pointer;
+  @include sunken;
+  border-radius: 3px; font: 400 13px/1 var(--sans); padding: 9px 10px 9px 12px; text-align: left;
+}
+.cx-picker-face:hover { border-color: var(--gold-deep); }
+.cx-picker-face:focus,
+.cx-picker-face[aria-expanded="true"] { @include edged; box-shadow: 0 0 0 1px var(--gold-deep); }
+.cx-picker-face .cx-nm {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cx-picker-face .cx-ty { flex: 0 0 auto; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.cx-picker-face svg { flex: 0 0 auto; width: 14px; height: 14px; color: var(--faint); }
+
+.cx-picker-drop {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; min-width: 240px;
+  background: #0d1721; border: 1px solid var(--line); border-top-color: var(--gold-deep);
+  box-shadow: 0 26px 40px -22px #000; z-index: 70;
+  max-height: min(70vh, 560px); overflow-y: auto; overscroll-behavior: contain;
+}
+
+.cx-picker-find {
+  position: sticky; top: 0; z-index: 1; background: #0d1721;
+  padding: 8px; border-bottom: 1px solid var(--line-soft);
+
+  input {
+    width: 100%; appearance: none;
+    @include sunken;
+    border-radius: 3px; font: 400 13px/1 var(--sans); padding: 8px 10px;
+
+    &:focus { @include edged; }
+  }
+}
+
+.cx-picker-step {
+  display: flex; align-items: center; gap: 10px; padding: 6px 10px; scroll-margin-top: 60px;
+  border-bottom: 1px solid var(--line-soft); color: var(--ink);
+}
+.cx-picker-step:hover,
+.cx-picker-step[data-active] { background: var(--raised); text-decoration: none; }
+.cx-picker-step .cx-nm {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cx-picker-step .cx-ty { flex: 0 0 auto; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.cx-picker-step[aria-selected="true"] .cx-nm { font-weight: 600; color: var(--gold-bright); }
+
+.cx-picker-none { margin: 0; padding: 14px 12px; color: var(--muted); font-size: 12px; }

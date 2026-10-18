@@ -1,5 +1,6 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Kismet;
 
 namespace FellowshipExtractor.Extraction;
@@ -14,6 +15,8 @@ public sealed record MagnitudeReading(double? Value, double? Low, double? High)
     public static readonly MagnitudeReading None = new(null, null, null);
 
     public bool HasValue => Value is not null || Low is not null;
+
+    public bool ReadsCapture { get; init; }
 }
 
 public static class MagnitudeCalculations
@@ -28,16 +31,22 @@ public static class MagnitudeCalculations
     {
         CurveBinding? duration = null;
         List<string>? captures = null;
+        var properties = PropertyWalk.Walk(cdo).ToArray();
+        var gated = TalentGated(properties);
 
-        foreach (var property in PropertyWalk.Walk(cdo))
+        foreach (var property in properties)
         {
             if (!property.Name.Equals(ClassField, StringComparison.Ordinal)) continue;
             if (PropertyWalk.AsString(property.Value) is not { } classPath) continue;
             if (Calculation(provider, classPath) is not { } calculation) continue;
 
-            foreach (var attribute in GameplayEffects.Captures(calculation) ?? [])
+            if (!gated.Any(scope => property.Path.StartsWith(scope, StringComparison.Ordinal)) &&
+                BareStateWalk.Compiled(calculation, Function) is { ScriptBytecode: { Length: > 0 } read })
             {
-                if (!(captures ??= []).Contains(attribute)) captures.Add(attribute);
+                foreach (var attribute in ReadCaptures(calculation, provider, read))
+                {
+                    if (!(captures ??= []).Contains(attribute)) captures.Add(attribute);
+                }
             }
 
             if (duration is not null) continue;
@@ -63,16 +72,104 @@ public static class MagnitudeCalculations
             : new CustomMagnitudes(duration, captures ?? []);
     }
 
-    public static double? Custom(
-        IPropertyHolder magnitude, AbstractFileProvider provider, ConstantsTable constants) =>
-        Reduced(magnitude, provider, constants, null, null).Value;
+    private const string RequireTagsField = "RequireTags";
+    private const string TalentTagPrefix = "Talents.";
+    private const string CapturesField = "RelevantAttributesToCapture";
+    private const string CaptureField = "AttributeToCapture";
+    private const string AttributeNameField = "AttributeName";
+    private const string CaptureRead = "GetCapturedAttribute";
+    private const string ElementRead = "Array_Get";
+
+    private static string[] TalentGated(IEnumerable<WalkedProperty> properties) =>
+    [
+        .. properties
+            .Where(property =>
+                property.Name.Equals(RequireTagsField, StringComparison.Ordinal) &&
+                PropertyWalk.AsTags(property.Value)?.Any(tag => tag.StartsWith(TalentTagPrefix, StringComparison.Ordinal)) is true)
+            .Select(property => property.Path.Split('.') is { Length: > 2 } segments
+                ? string.Join('.', segments[..^2]) + '.'
+                : null)
+            .OfType<string>(),
+    ];
+
+    public static IEnumerable<string> ReadCaptures(
+        UObject calculation, AbstractFileProvider provider, IEnumerable<KismetExpression> statements)
+    {
+        var declared = Declared(calculation, provider);
+        var elements = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var statement in statements)
+        {
+            if (statement is EX_Context { ContextExpression: EX_FinalFunction { StackNode.Name: ElementRead } element } &&
+                DynamicTextFloats.Name(element.Parameters.ElementAtOrDefault(2)) is { } item)
+            {
+                elements[item] = element.Parameters.ElementAtOrDefault(1) is EX_IntConst at ? at.Value : -1;
+            }
+
+            foreach (var call in Calls(statement, 0))
+            {
+                int? index = call.Parameters.ElementAtOrDefault(1) switch
+                {
+                    EX_ArrayGetByRef { ArrayIndex: EX_IntConst constant } => constant.Value,
+                    EX_ArrayGetByRef => -1,
+                    var local when DynamicTextFloats.Name(local) is { } name && elements.TryGetValue(name, out var bound) => bound,
+                    _ => null,
+                };
+
+                if (index is -1)
+                {
+                    foreach (var any in declared.OfType<string>()) yield return any;
+                }
+                else if (index is { } found && declared.ElementAtOrDefault(found) is { } attribute)
+                {
+                    yield return attribute;
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<EX_CallMath> Calls(KismetExpression? expression, int depth)
+    {
+        if (expression is null || depth > 24) yield break;
+
+        if (expression is EX_CallMath call && call.StackNode.Name.Equals(CaptureRead, StringComparison.Ordinal))
+        {
+            yield return call;
+        }
+
+        foreach (var child in Children(expression))
+        {
+            foreach (var found in Calls(child, depth + 1)) yield return found;
+        }
+    }
+
+    private static string?[] Declared(UObject calculation, AbstractFileProvider provider) =>
+        ClassDefaults.Inherited(calculation, CapturesField, provider)?.GenericValue is UScriptArray captures
+            ?
+            [
+                .. captures.Properties.Select(element =>
+                    element?.GenericValue switch
+                    {
+                        FScriptStruct { StructType: IPropertyHolder capture } => capture,
+                        IPropertyHolder capture => capture,
+                        _ => null,
+                    } is { } held && PropertyWalk.GetStruct(held, CaptureField) is { } attribute
+                        ? PropertyWalk.GetString(attribute, AttributeNameField)
+                        : null),
+            ]
+            : [];
+
+    public static MagnitudeReading Custom(
+        IPropertyHolder magnitude, AbstractFileProvider provider, ConstantsTable constants, EffectContext? effect) =>
+        Reduced(magnitude, provider, constants, null, null, effect);
 
     public static MagnitudeReading Reduced(
         IPropertyHolder magnitude,
         AbstractFileProvider provider,
         ConstantsTable constants,
         IReadOnlySet<string>? assumed,
-        ICollection<string>? gates)
+        ICollection<string>? gates,
+        EffectContext? effect)
     {
         if (PropertyWalk.GetStruct(magnitude, CustomField) is not { } custom) return MagnitudeReading.None;
         if (PropertyWalk.GetString(custom, ClassField) is not { } classPath) return MagnitudeReading.None;
@@ -86,6 +183,7 @@ public static class MagnitudeCalculations
         var walk = new BareStateWalk(body, calculation, constants, null)
         {
             AssumedTags = assumed ?? new HashSet<string>(StringComparer.Ordinal),
+            Effect = effect,
         };
 
         var computed = walk.Answer();
@@ -95,7 +193,10 @@ public static class MagnitudeCalculations
             foreach (var gate in walk.Gates) gates.Add(gate);
         }
 
-        if (computed is { } answer) return new MagnitudeReading(Folded(custom, answer, constants), null, null);
+        if (computed is { } answer)
+        {
+            return new MagnitudeReading(Folded(custom, answer, constants), null, null) { ReadsCapture = walk.ReadsCapture };
+        }
         if (walk.Range is not { } range) return MagnitudeReading.None;
 
         return new MagnitudeReading(
