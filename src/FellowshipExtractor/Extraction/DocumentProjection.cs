@@ -38,14 +38,7 @@ public static class DocumentProjection
             Cooldown = entity.Cooldown,
             Charges = entity.Charges,
             ChargesByLevelType = entity.ChargesByLevelType,
-            TargetCountFalloff = entity.TargetCountFalloff?
-                .Select(source => new TargetCountFalloff
-                {
-                    Effect = references.At(source.Effect),
-                    Threshold = source.Threshold,
-                })
-                .Distinct()
-                .ToArray(),
+            TargetCountFalloff = Falloff(entity, references),
             MaxTargets = entity.MaxTargets,
             CooldownDurationScalesOff = entity.CooldownDurationScalesOff,
             CooldownTimeRateScalesOff = entity.CooldownTimeRateScalesOff,
@@ -300,6 +293,7 @@ public static class DocumentProjection
             Range = entity.Range,
             Radius = entity.Radius,
             Cost = entity.Cost,
+            TargetCountFalloff = Falloff(entity, references),
             Generates = Generated(entity),
         },
 
@@ -538,4 +532,14 @@ public static class DocumentProjection
 
     private static IReadOnlyList<ResourceGain>? Generated(Entity entity) =>
         entity.Generates is { Count: > 0 } gains ? gains : null;
+
+    private static IReadOnlyList<TargetCountFalloff>? Falloff(Entity entity, References references) =>
+        entity.TargetCountFalloff?
+            .Select(source => new TargetCountFalloff
+            {
+                Effect = references.At(source.Effect),
+                Threshold = source.Threshold,
+            })
+            .Distinct()
+            .ToArray();
 }

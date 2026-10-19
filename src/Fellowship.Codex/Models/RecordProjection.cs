@@ -449,6 +449,7 @@ public static class RecordProjection
             Range = document.Range,
             Radius = document.Radius,
             Cost = document.Cost,
+            TargetCountFalloff = Falloff(document.TargetCountFalloff, view, origin),
         };
     }
 

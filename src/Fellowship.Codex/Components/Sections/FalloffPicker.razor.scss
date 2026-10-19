@@ -49,3 +49,7 @@
 .cx-picker-step[aria-selected="true"] .cx-nm { font-weight: 600; color: var(--gold-bright); }
 
 .cx-picker-none { margin: 0; padding: 14px 12px; color: var(--muted); font-size: 12px; }
+
+@media (pointer: coarse) {
+  .cx-picker-step { padding: 12px 12px; }
+}

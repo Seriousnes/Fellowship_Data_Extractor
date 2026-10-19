@@ -14,4 +14,6 @@ public sealed record TalentRecord : EntityRecord
     public double? Range { get; init; }
     public double? Radius { get; init; }
     public double? Cost { get; init; }
+
+    public IReadOnlyList<TargetCountFalloffRecord>? TargetCountFalloff { get; init; }
 }
