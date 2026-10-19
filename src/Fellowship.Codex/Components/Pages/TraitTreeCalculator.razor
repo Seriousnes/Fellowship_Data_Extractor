@@ -11,36 +11,27 @@
 
 <h1>Trait trees</h1>
 
-<Panel Head="Item" Badge="@Roster">
-    @foreach (var slot in Slots)
-    {
-        <SubHead>@slot.Key</SubHead>
-        <div class="cx-roster cx-tree-roster">
-            @foreach (var choice in slot)
-            {
-                <a href="@Address(choice.Id)"
-                   aria-current="@(choice.Id == Chosen?.Id ? "page" : null)"
-                   style="color:@Colour(choice)">
-                    @if (Ui.Icon(choice.Icon) is { } icon)
-                    {
-                        <img class="cx-tree-roster-icon" alt="" src="@icon" />
-                    }
-                    <span class="cx-who">@PublicTypes.NameOf(choice)</span>
-                </a>
-            }
-        </div>
-    }
+<Panel Head="Slot" Badge="@Roster">
+    <div class="cx-roster cx-tree-roster">
+        @foreach (var (slot, _) in Slots)
+        {
+            <a href="@Address(slot)" aria-current="@(slot.Equals(Chosen, StringComparison.OrdinalIgnoreCase) ? "page" : null)">
+                <img class="cx-tree-roster-icon" alt="" src="@Ui.Chrome.SlotGlyph(slot)" />
+                <span class="cx-who">@slot</span>
+            </a>
+        }
+    </div>
 </Panel>
 
 @if (Chosen is not { } item || Tree is not { Layout: { } layout } tree)
 {
     <Panel>
-        <Empty Message="No item picked.">Choose one above to lay its trait tree out.</Empty>
+        <Empty Message="No slot picked.">Choose one above to lay its trait tree out.</Empty>
     </Panel>
 }
 else
 {
-    <Panel Head="@($"{PublicTypes.NameOf(item)}’s trait tree")">
+    <Panel Head="@($"{item} trait tree")">
         <div class="cx-tal-bar">
             <p class="cx-tal-spend">
                 <b>@Picks.Count</b> of @Capacity traits infused
@@ -52,7 +43,7 @@ else
             }
             else
             {
-                <a class="cx-tal-act" href="@Address(item.Id)">Reset</a>
+                <a class="cx-tal-act" href="@Address(item)">Reset</a>
             }
 
             <button type="button" class="cx-tal-act" data-copy>Copy link</button>
@@ -73,15 +64,10 @@ else
                 }
             </svg>
 
-            <span class="cx-tree-root" style="@($"{Placed(layout, layout.Root)};{Spread(layout)}")"
-                  data-tip="@ItemTip.Address" data-tip-request="@ItemTip.Body">
+            <span class="cx-tree-root" style="@($"{Placed(layout, layout.Root)};{Spread(layout)}")">
                 @foreach (var layer in layout.RootLayers)
                 {
-                    if (layer.Item)
-                    {
-                        <img class="cx-tree-layer item" alt="" src="@Ui.Icon(item.Icon)" style="@Sized(layout, layer)" />
-                    }
-                    else if (layer.Texture is { } texture)
+                    if (layer.Texture is { } texture)
                     {
                         <img class="cx-tree-layer" alt="" src="@Ui.Chrome.Texture(texture)" style="@Sized(layout, layer)" />
                     }
@@ -98,13 +84,13 @@ else
                 {
                     var tip = Ui.Tip(trait);
 
-                    <a class="cx-tree-node" href="@Address(item.Id, Picks, mine.UITreeIndex)" style="@Placed(layout, spot)"
+                    <a class="cx-tree-node" href="@Address(item, Picks, mine.UITreeIndex)" style="@Placed(layout, spot)"
                        aria-current="@(At == mine.UITreeIndex ? "true" : null)"
                        data-tip="@tip.Address" data-tip-request="@tip.Body">@Face(mine, trait, Selected)</a>
                 }
                 else if (TraitTrees.Allocatable(tree, Picks, mine))
                 {
-                    <a class="cx-tree-node" href="@Address(item.Id, Picks, mine.UITreeIndex)" style="@Placed(layout, spot)"
+                    <a class="cx-tree-node" href="@Address(item, Picks, mine.UITreeIndex)" style="@Placed(layout, spot)"
                        aria-current="@(At == mine.UITreeIndex ? "true" : null)"
                        title="@Offer(mine)">@Face(mine, null, Available)</a>
                 }
@@ -116,17 +102,6 @@ else
             }
         </div>
 
-        <div class="cx-tree-item">
-            @if (Ui.Icon(item.Icon) is { } icon)
-            {
-                <img alt="" src="@icon" />
-            }
-            <div>
-                <b>@PublicTypes.NameOf(item)</b>
-                <span>@item.Slot</span>
-            </div>
-        </div>
-
         <Note>Choose a lit node to infuse a trait into it. Each row takes one trait, and a node opens once a node it follows is infused.</Note>
     </Panel>
 
@@ -136,7 +111,7 @@ else
             <div class="cx-tree-choices">
                 @if (Picks.ContainsKey(choosing.UITreeIndex))
                 {
-                    <a class="cx-tal-act" href="@Address(item.Id, Without(tree, choosing.UITreeIndex))">Remove</a>
+                    <a class="cx-tal-act" href="@Address(item, Without(tree, choosing.UITreeIndex))">Remove</a>
                 }
 
                 @foreach (var offered in Offered)
@@ -156,7 +131,7 @@ else
                     }
                     else
                     {
-                        <a class="cx-tree-choice" href="@Address(item.Id, With(tree, choosing.UITreeIndex, choice))"
+                        <a class="cx-tree-choice" href="@Address(item, With(tree, choosing.UITreeIndex, choice))"
                            data-tip="@tip.Address" data-tip-request="@tip.Body">@Choice(choosing, choice)</a>
                     }
                 }
@@ -180,7 +155,7 @@ else
 }
 
 @code {
-    [SupplyParameterFromQuery(Name = "item")] public int? Item { get; set; }
+    [SupplyParameterFromQuery(Name = "slot")] public string? Slot { get; set; }
 
     [SupplyParameterFromQuery(Name = "picks")] public string? Picked { get; set; }
 
@@ -199,11 +174,9 @@ else
     private static readonly IReadOnlyList<(string Label, string? Href)> Trail =
         [("Tools", null), ("Trait trees", null)];
 
-    private IReadOnlyList<ItemDocument> Choices = [];
+    private IReadOnlyList<(string Slot, TraitTreeEntry Tree)> Slots = [];
 
-    private IReadOnlyList<IGrouping<string, ItemDocument>> Slots = [];
-
-    private ItemDocument? Chosen;
+    private string? Chosen;
 
     private TraitTreeEntry? Tree;
 
@@ -213,34 +186,24 @@ else
 
     private IReadOnlyList<TraitDocument> Offered = [];
 
-    private TooltipLink ItemTip = default!;
-
-    private string Roster => $"{Choices.Count} items";
+    private string Roster => $"{Slots.Count} trees";
 
     private int Capacity => TraitTrees.Capacity(Tree?.Tag, Store.Settings) ?? 0;
 
     protected override void OnParametersSet()
     {
-        Choices = TraitTrees.Items(Store);
+        Slots = TraitTrees.BySlot(Store);
 
-        Slots =
-        [
-            .. Choices
-                .OrderBy(choice => choice.Hero?.ToString(), StringComparer.OrdinalIgnoreCase)
-                .ThenBy(choice => PublicTypes.NameOf(choice), StringComparer.OrdinalIgnoreCase)
-                .GroupBy(choice => choice.Slot ?? string.Empty),
-        ];
+        var chosen = Slots.FirstOrDefault(entry => entry.Slot.Equals(Slot, StringComparison.OrdinalIgnoreCase));
 
-        Chosen = Item is { } id ? Choices.FirstOrDefault(choice => choice.Id == id) : null;
-        Tree = TraitTrees.Find(Chosen?.TraitTree, Store.Settings);
+        Chosen = chosen.Slot;
+        Tree = chosen.Tree;
         Picks = Tree is null ? new Dictionary<int, TraitDocument>() : TraitTrees.Read(Picked, Tree, Store);
 
         Choosing = Tree?.Nodes.FirstOrDefault(node =>
             node.UITreeIndex == At && (Picks.ContainsKey(node.UITreeIndex) || TraitTrees.Allocatable(Tree, Picks, node)));
 
         Offered = Choosing is null ? [] : TraitTrees.Offered(Choosing, Store);
-
-        if (Chosen is not null) ItemTip = Ui.Tip(Chosen, showIcon: true);
     }
 
     private RenderFragment Face(TraitTreeNode node, TraitDocument? trait, string state) =>
@@ -266,11 +229,6 @@ else
             </span>
             <span class="cx-tree-option-name">@Ui.Name(trait)</span>
         </span>;
-
-    private string Colour(ItemDocument choice) =>
-        Store.All(EntityType.Item, choice.Id).Count() == 1 && choice.Hero is { } hero
-            ? Ui.HeroColour(hero.ToString()) ?? "var(--muted)"
-            : "var(--muted)";
 
     private string Categories(TraitTreeNode node) =>
         string.Join(" or ", node.TraitCategories.Select(category =>
@@ -343,11 +301,11 @@ else
         return TraitTrees.Allocated(tree, asked);
     }
 
-    private string Address(int item, IReadOnlyDictionary<int, TraitDocument>? picks = null, int? at = null)
+    private string Address(string slot, IReadOnlyDictionary<int, TraitDocument>? picks = null, int? at = null)
     {
         var values = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
         {
-            ["item"] = item.ToString(CultureInfo.InvariantCulture),
+            ["slot"] = slot,
         };
 
         if (picks is { Count: > 0 }) values["picks"] = TraitTrees.Write(picks);

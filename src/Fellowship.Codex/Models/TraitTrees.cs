@@ -58,6 +58,19 @@ public static class TraitTrees
             .OrderBy(item => PublicTypes.NameOf(item), StringComparer.OrdinalIgnoreCase),
     ];
 
+    public static IReadOnlyList<(string Slot, TraitTreeEntry Tree)> BySlot(IEntityStoreService store) =>
+    [
+        .. Items(store)
+            .Where(item => item.Slot is not null)
+            .GroupBy(item => item.Slot!, StringComparer.OrdinalIgnoreCase)
+            .Select(slot => slot.Select(item => item.TraitTree!).Distinct(StringComparer.OrdinalIgnoreCase).ToArray() is [var tag]
+                ? (slot.Key, Find(tag, store.Settings)!)
+                : throw new InvalidOperationException(
+                    $"{slot.Key} items name {slot.Select(item => item.TraitTree).Distinct().Count()} trait trees, so " +
+                    "the slot no longer names one tree."))
+            .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase),
+    ];
+
     public static IReadOnlyDictionary<int, TraitDocument> Read(
         string? picks, TraitTreeEntry tree, IEntityStoreService store)
     {

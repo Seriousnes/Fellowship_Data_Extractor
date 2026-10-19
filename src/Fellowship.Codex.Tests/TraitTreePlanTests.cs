@@ -53,6 +53,12 @@ public class TraitTreePlanTests(Export export)
     }
 
     [Fact]
+    public void Each_slot_with_a_trait_tree_names_one_tree() =>
+        Assert.Equal(
+            [("Neck", "ItemTraitTrees.EASeason3Necklace"), ("Weapon", Weapon)],
+            TraitTrees.BySlot(export.Store).Select(entry => (entry.Slot, entry.Tree.Tag)));
+
+    [Fact]
     public void Every_trait_tree_item_names_a_tree_with_a_layout() =>
         Assert.All(
             TraitTrees.Items(export.Store),

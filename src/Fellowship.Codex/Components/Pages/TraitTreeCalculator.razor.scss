@@ -2,8 +2,6 @@
 @use "../../Styles/shared" as *;
 @use "../Tooltip/Crest" as crest;
 
-$item-share: .6;
-
 @include tool-bar;
 
 .cx-tree-roster a { padding: 4px 12px 4px 4px; }
@@ -31,8 +29,6 @@ $item-share: .6;
 .cx-tree-layer {
   position: absolute; left: 50%; top: 50%; aspect-ratio: 1; transform: translate(-50%, -50%);
   pointer-events: none;
-
-  &.item { transform: translate(-50%, -50%) scale($item-share); object-fit: cover; }
 }
 
 .cx-tree-node {
@@ -71,21 +67,6 @@ $item-share: .6;
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
     width: crest.$node-texture-share; aspect-ratio: 1; object-fit: contain;
   }
-}
-
-.cx-tree-item {
-  display: flex; align-items: center; gap: 10px; width: fit-content; max-width: 100%;
-  margin: 8px auto 0; padding: 6px 14px 6px 6px;
-  @include sunken;
-  border-radius: 2px;
-
-  img { width: 40px; height: 40px; border-radius: 2px; flex: 0 0 auto; }
-
-  div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-
-  b { font-family: var(--display); font-weight: 400; font-size: 15px; color: var(--gold-bright); }
-
-  span { @include eyebrow; margin: 0; }
 }
 
 .cx-tree-choices {
