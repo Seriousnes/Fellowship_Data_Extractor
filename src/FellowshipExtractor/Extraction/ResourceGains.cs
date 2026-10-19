@@ -251,7 +251,7 @@ public sealed class ResourceGains(
         return granted.Distinct(StringComparer.OrdinalIgnoreCase);
     }
 
-    private static void Granted(UObject cdo, ICollection<string> granted)
+    internal static void Granted(UObject cdo, ICollection<string> granted)
     {
         foreach (var export in cdo.Owner?.GetExports() ?? [])
         {

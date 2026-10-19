@@ -57,6 +57,12 @@ public sealed class Settings
         Latex = @"s = \begin{cases} \sqrt{\dfrac{T}{N}} & N > T \\ 1 & N \le T \end{cases}",
         DisplayText = "Each target takes full damage while N ≤ T. When N > T, each target takes √(T ÷ N) of " +
                       "the damage. T is the threshold and N is the number of targets hit.",
+        Symbols =
+        [
+            new("s", "Scaler on the damage each target takes."),
+            new("T", "Threshold, truncated to a whole number. Up to T targets each take full damage."),
+            new("N", "Number of targets hit. An ability with max targets hits at most that many."),
+        ],
     };
 
     public IReadOnlyList<LeagueEntry> Leagues { get; }

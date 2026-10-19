@@ -1,3 +1,4 @@
+using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Kismet;
@@ -7,6 +8,7 @@ using Fellowship.SDK;
 namespace FellowshipExtractor.Extraction;
 
 public sealed class TargetCountFalloffs(
+    AbstractFileProvider provider,
     TypeMappings mappings,
     ConstantsTable constants,
     IReadOnlyList<TagRecord> tags,
@@ -14,8 +16,14 @@ public sealed class TargetCountFalloffs(
 {
     private const string Falloff = "MultiTargetDamageFalloffScaler";
     private const string Assigning = "CalculateAndSet";
-    private const string SpecMaking = "MakeEffectSpec";
-    private const string OutgoingSpecMaking = "MakeOutgoing";
+    private const string Making = "Make";
+    private const string SpecMaking = "EffectSpec";
+    private const string EffectApplying = "ApplyGameplayEffect";
+    private const string SpawnBeginning = "BeginSpawningActor";
+    private const string DeferredSpawnBeginning = "BeginDeferredActorSpawn";
+    private const string ComponentLookup = "GetComponentByClass";
+    private const string PropertySetting = "SetStructurePropertyByName";
+    private const string DefaultPrefix = "Default__";
     private const string EffectTable = "GameplayEffect";
     private const string ClassSuffix = "_C";
     private const string CapField = "MaxNumberOfTargets";
@@ -34,6 +42,7 @@ public sealed class TargetCountFalloffs(
     private const int SpecParameter = 2;
     private const int TagParameter = 3;
     private const int MaxDepth = 16;
+    private const int MaxChain = 2;
 
     private readonly Dictionary<string, TagRecord> _effects = tags
         .Where(tag => tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
@@ -44,9 +53,15 @@ public sealed class TargetCountFalloffs(
 
     private readonly Dictionary<string, bool> _capped = new(StringComparer.Ordinal);
 
+    private static readonly EX_False Lowered = new();
+
+    private readonly Dictionary<string, UObject?> _defaults = new(StringComparer.OrdinalIgnoreCase);
+
     public int Calls { get; private set; }
 
     public int Thresholds { get; private set; }
+
+    public int ReachedThresholds { get; private set; }
 
     public int EffectsVerified { get; private set; }
 
@@ -58,7 +73,34 @@ public sealed class TargetCountFalloffs(
 
     public IReadOnlyList<TargetCountFalloffSource>? Of(UObject? cdo)
     {
-        if (cdo?.Owner is not { } package) return null;
+        if (cdo?.Owner is null) return null;
+
+        var found = new List<TargetCountFalloffSource>();
+
+        Collect(cdo, new Dictionary<string, KismetExpression>(StringComparer.Ordinal), cdo, found, [], 0);
+
+        var kept = found
+            .GroupBy(source => (source.Effect?.NetId, source.Row, source.Threshold))
+            .Select(group => group.First())
+            .ToList();
+
+        kept.RemoveAll(source => source.Effect is null &&
+                                 kept.Any(other => other.Effect is not null &&
+                                                   other.Row == source.Row &&
+                                                   other.Threshold.Equals(source.Threshold)));
+
+        return kept.Count == 0 ? null : kept;
+    }
+
+    private void Collect(
+        UObject cdo,
+        IReadOnlyDictionary<string, KismetExpression> handed,
+        UObject spawner,
+        List<TargetCountFalloffSource> found,
+        HashSet<string> visited,
+        int depth)
+    {
+        if (cdo.Owner is not { } package || !visited.Add(package.Name)) return;
 
         var bodies = package.GetExports()
             .OfType<UStruct>()
@@ -68,6 +110,10 @@ public sealed class TargetCountFalloffs(
         var members = new Dictionary<string, List<(KismetExpression Value, Dictionary<string, KismetExpression> Locals)>>(
             StringComparer.Ordinal);
         var locals = new Dictionary<UStruct, Dictionary<string, KismetExpression>>();
+        var spawned = new List<string>();
+        var settings = new Dictionary<string, KismetExpression>(StringComparer.Ordinal);
+        var applied = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var raised = new Dictionary<string, List<(UStruct Body, int At, KismetExpression Value)>>(StringComparer.Ordinal);
 
         foreach (var body in bodies)
         {
@@ -76,6 +122,19 @@ public sealed class TargetCountFalloffs(
 
             foreach (var statement in body.ScriptBytecode!)
             {
+                if (statement is EX_LetBool { Variable: var tested } test && DynamicTextFloats.Name(tested) is { } flag)
+                {
+                    if (tested is EX_InstanceVariable)
+                    {
+                        if (!raised.TryGetValue(flag, out var raising)) raised[flag] = raising = [];
+                        raising.Add((body, statement.StatementIndex, test.Assignment));
+                    }
+                    else
+                    {
+                        held.TryAdd(flag, test.Assignment);
+                    }
+                }
+
                 if (DynamicTextFloats.Assigned(statement) is not var (variable, assignment)) continue;
                 if (DynamicTextFloats.Name(variable) is not { } name) continue;
 
@@ -91,25 +150,54 @@ public sealed class TargetCountFalloffs(
             }
         }
 
-        var found = new List<TargetCountFalloffSource>();
+        var none = new HashSet<string>(StringComparer.Ordinal);
+        var bare = bodies.ToDictionary(body => body, body => Gated(body, cdo, locals[body], none));
+
+        var flags = raised
+            .Where(pair => PropertyWalk.Get(cdo, pair.Key)?.GenericValue is not true &&
+                           pair.Value.All(set => set.Value is EX_False || bare[set.Body].Contains(set.At)))
+            .Select(pair => pair.Key)
+            .ToHashSet(StringComparer.Ordinal);
 
         foreach (var body in bodies)
         {
-            foreach (var statement in body.ScriptBytecode!)
+            var bytecode = body.ScriptBytecode!;
+            var gated = Gated(body, cdo, locals[body], flags);
+
+            for (var at = 0; at < bytecode.Length; at++)
             {
+                if (gated.Contains(bytecode[at].StatementIndex)) continue;
+
+                Spawning(bytecode[at], spawned, settings, 0);
+                Applying(bytecode[at], cdo, applied, 0);
+            }
+
+            foreach (var statement in bytecode)
+            {
+                if (depth > 0 && gated.Contains(statement.StatementIndex)) continue;
+
                 foreach (var call in Falling(statement, 0))
                 {
                     Calls++;
 
                     var where = $"{package.Name}.{body.Name}";
+                    var argument = call.Parameters.ElementAtOrDefault(ThresholdParameter);
 
-                    if (Threshold(call.Parameters.ElementAtOrDefault(ThresholdParameter), cdo) is not var (threshold, row))
+                    var threshold = argument is EX_InstanceVariable &&
+                                    DynamicTextFloats.Name(argument) is { } property &&
+                                    handed.TryGetValue(property, out var supplied)
+                        ? Threshold(supplied, spawner)
+                        : Threshold(argument, cdo);
+
+                    if (threshold is not var (value, row) || value <= 0)
                     {
                         Unread.Add($"{where}: threshold argument is not a readable scalable float");
                         continue;
                     }
 
                     Thresholds++;
+
+                    if (depth > 0) ReachedThresholds++;
 
                     IconSource? effect = null;
 
@@ -133,22 +221,140 @@ public sealed class TargetCountFalloffs(
                         }
                     }
 
-                    found.Add(new TargetCountFalloffSource(effect, threshold, row));
+                    found.Add(new TargetCountFalloffSource(effect, value, row));
                 }
             }
         }
 
-        var kept = found
-            .GroupBy(source => (source.Effect?.NetId, source.Row, source.Threshold))
-            .Select(group => group.First())
-            .ToList();
+        if (depth >= MaxChain) return;
 
-        kept.RemoveAll(source => source.Effect is null &&
-                                 kept.Any(other => other.Effect is not null &&
-                                                   other.Row == source.Row &&
-                                                   other.Threshold.Equals(source.Threshold)));
+        foreach (var actor in spawned.Distinct(StringComparer.Ordinal))
+        {
+            if (Default(actor) is { } spawnedDefault) Collect(spawnedDefault, settings, cdo, found, visited, depth + 1);
+        }
 
-        return kept.Count == 0 ? null : kept;
+        var granting = new Dictionary<string, KismetExpression>(StringComparer.Ordinal);
+
+        var granted = new List<string>();
+
+        foreach (var effect in applied)
+        {
+            if (Default(effect) is { } loaded) ResourceGains.Granted(loaded, granted);
+        }
+
+        foreach (var ability in granted.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (Default(ability) is { } given) Collect(given, granting, given, found, visited, depth + 1);
+        }
+    }
+
+    private HashSet<int> Gated(
+        UStruct body,
+        UObject cdo,
+        IReadOnlyDictionary<string, KismetExpression> held,
+        IReadOnlySet<string> flags)
+    {
+        var gated = new HashSet<int>();
+
+        if (BytecodeGates.Of(body, cdo) is not { } gates) return gated;
+
+        var walk = new BareStateWalk(body, cdo, constants, null);
+
+        foreach (var (name, value) in held) walk.Holds(name, value);
+        foreach (var flag in flags) walk.Holds(flag, Lowered);
+
+        foreach (var (condition, at) in gates.Branches)
+        {
+            if (walk.Boolean(condition) is false) gated.UnionWith(gates.Only(at));
+        }
+
+        return gated;
+    }
+
+    private void Applying(KismetExpression? expression, UObject cdo, HashSet<string> applied, int depth)
+    {
+        if (expression is null || depth > MaxDepth) return;
+
+        if (Invoked(expression) is var (function, parameters) &&
+            (function.Contains(EffectApplying, StringComparison.Ordinal) ||
+             function.Contains(Making, StringComparison.Ordinal) && function.Contains(SpecMaking, StringComparison.Ordinal)))
+        {
+            foreach (var parameter in parameters)
+            {
+                var path = parameter switch
+                {
+                    EX_ObjectConst constant => PropertyWalk.AsString(constant.Value),
+                    EX_InstanceVariable when DynamicTextFloats.Name(parameter) is { } member =>
+                        PropertyWalk.GetString(cdo, member),
+                    _ => null,
+                };
+
+                if (path is not null && _effects.ContainsKey(Leaf(path))) applied.Add(path);
+            }
+        }
+
+        foreach (var child in ResourceGains.Children(expression))
+        {
+            Applying(child, cdo, applied, depth + 1);
+        }
+    }
+
+    private static string Leaf(string path)
+    {
+        var leaf = path[(path.LastIndexOfAny(['.', '/']) + 1)..];
+
+        return leaf.EndsWith(ClassSuffix, StringComparison.Ordinal) ? leaf[..^ClassSuffix.Length] : leaf;
+    }
+
+    private static void Spawning(
+        KismetExpression? expression, List<string> spawned, Dictionary<string, KismetExpression> settings, int depth)
+    {
+        if (expression is null || depth > MaxDepth) return;
+
+        switch (expression)
+        {
+            case EX_FinalFunction { StackNode.Name: SpawnBeginning or DeferredSpawnBeginning or ComponentLookup } spawn:
+                foreach (var parameter in spawn.Parameters)
+                {
+                    if (parameter is EX_ObjectConst constant && PropertyWalk.AsString(constant.Value) is { } actor)
+                    {
+                        spawned.Add(actor);
+                    }
+                }
+
+                break;
+
+            case EX_FinalFunction { StackNode.Name: PropertySetting } set
+                when set.Parameters.ElementAtOrDefault(1) is EX_NameConst named &&
+                     set.Parameters.ElementAtOrDefault(2) is { } value:
+                settings[named.Value.Text] = value;
+                break;
+        }
+
+        foreach (var child in ResourceGains.Children(expression))
+        {
+            Spawning(child, spawned, settings, depth + 1);
+        }
+    }
+
+    private UObject? Default(string objectPath)
+    {
+        if (_defaults.TryGetValue(objectPath, out var cached)) return cached;
+
+        if (!provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(objectPath), out var package))
+        {
+            return _defaults[objectPath] = null;
+        }
+
+        try
+        {
+            return _defaults[objectPath] = package.GetExports()
+                .FirstOrDefault(export => export.Name.StartsWith(DefaultPrefix, StringComparison.Ordinal));
+        }
+        catch (Exception)
+        {
+            return _defaults[objectPath] = null;
+        }
     }
 
     public double? MaxTargets(UObject? cdo)
@@ -290,10 +496,14 @@ public sealed class TargetCountFalloffs(
 
         if (Invoked(expression) is not var (function, parameters) || parameters.Count == 0) yield break;
 
-        if (function.Contains(SpecMaking, StringComparison.Ordinal) ||
-            function.StartsWith(OutgoingSpecMaking, StringComparison.Ordinal))
+        if (function.Contains(Making, StringComparison.Ordinal) &&
+            function.Contains(SpecMaking, StringComparison.Ordinal))
         {
-            if (EffectClass(parameters[0], locals, cdo, depth) is { } effect) yield return effect;
+            var effect = parameters
+                .Select(parameter => EffectClass(parameter, locals, cdo, depth))
+                .FirstOrDefault(name => name is not null && _effects.ContainsKey(name));
+
+            if (effect is not null) yield return effect;
             yield break;
         }
 
@@ -322,11 +532,7 @@ public sealed class TargetCountFalloffs(
             _ => null,
         };
 
-        if (path is null) return null;
-
-        var leaf = path[(path.LastIndexOfAny(['.', '/']) + 1)..];
-
-        return leaf.EndsWith(ClassSuffix, StringComparison.Ordinal) ? leaf[..^ClassSuffix.Length] : leaf;
+        return path is null ? null : Leaf(path);
     }
 
     private bool Reads(string effect, string tag)

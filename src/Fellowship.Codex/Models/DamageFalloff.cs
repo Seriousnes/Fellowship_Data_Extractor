@@ -1,4 +1,5 @@
 using Fellowship.SDK.Documents;
+using Fellowship.SDK.Models;
 
 using Fellowship.Codex.Services;
 
@@ -6,24 +7,40 @@ namespace Fellowship.Codex.Models;
 
 public sealed record DamageFalloffSplit(int Threshold, double Targets, double Scaler, double PerTarget, double Total);
 
+public sealed record FalloffSource(EntityDocument Document, IReadOnlyList<TargetCountFalloff> Entries, double? MaxTargets)
+{
+    public EntityType Type => EntityTypes.TypeOf(Document);
+
+    public string Key => EntityTypes.Slug(Type);
+}
+
 public static class DamageFalloff
 {
-    public static IReadOnlyList<AbilityDocument> Abilities(IEntityStoreService store) =>
+    public static FalloffSource? Source(EntityDocument document) => document switch
+    {
+        AbilityDocument { TargetCountFalloff: { Count: > 0 } entries } ability =>
+            new FalloffSource(ability, entries, ability.MaxTargets),
+        TalentDocument { TargetCountFalloff: { Count: > 0 } entries } talent =>
+            new FalloffSource(talent, entries, null),
+        _ => null,
+    };
+
+    public static IReadOnlyList<FalloffSource> Sources(IEntityStoreService store) =>
     [
         .. store.Entities
-            .OfType<AbilityDocument>()
-            .Where(ability => ability.TargetCountFalloff is { Count: > 0 })
-            .DistinctBy(ability => ability.Id)
-            .OrderBy(ability => PublicTypes.NameOf(ability), StringComparer.OrdinalIgnoreCase)
-            .ThenBy(ability => ability.Id),
+            .Select(Source)
+            .OfType<FalloffSource>()
+            .DistinctBy(source => (source.Type, source.Document.Id))
+            .OrderBy(source => PublicTypes.NameOf(source.Document), StringComparer.OrdinalIgnoreCase)
+            .ThenBy(source => source.Type)
+            .ThenBy(source => source.Document.Id),
     ];
 
-    public static AbilityDocument? Ability(IEntityStoreService store, int? id) =>
+    public static FalloffSource? Source(IEntityStoreService store, EntityType type, int? id) =>
         id is { } wanted
-            ? store.All(EntityType.Ability, wanted)
-                .OfType<AbilityDocument>()
-                .FirstOrDefault(ability => ability.TargetCountFalloff is { Count: > 0 })
+            ? store.All(type, wanted).Select(Source).OfType<FalloffSource>().FirstOrDefault()
             : null;
+
     public static int Whole(double value) => Math.Max(0, (int)Math.Truncate(value));
 
     public static double Hit(int targets, double? maxTargets) =>
