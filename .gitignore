@@ -17,3 +17,4 @@ obj/
 /deploy/codex.env
 /deploy/.env
 *.pubxml
+src/Fellowship.SDK/inputs.sha256

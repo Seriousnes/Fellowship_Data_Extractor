@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="inputs.sha256" Pack="true" PackagePath="\" Condition="Exists('inputs.sha256')" />
   </ItemGroup>
 
   <ItemGroup>

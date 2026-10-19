@@ -15,6 +15,8 @@ concurrency:
 
 env:
   FEED: https://api.nuget.org/v3/index.json
+  PACKAGES: https://api.nuget.org/v3-flatcontainer/fellowshipanalyzer.codex.sdk
+  INPUTS: src/Fellowship.SDK/inputs.sha256
 
 jobs:
   publish:
@@ -25,14 +27,42 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Hash the files the package is built from
+        id: inputs
+        run: |
+          hash=$(git ls-files -s src/Fellowship.SDK src/Fellowship.SDK.Generators | sha256sum | cut -d' ' -f1)
+          echo "$hash" > "$INPUTS"
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+
+      - name: Compare them with the newest package on the feed
+        id: published
+        env:
+          HASH: ${{ steps.inputs.outputs.hash }}
+        run: |
+          latest=$(curl -fsS "$PACKAGES/index.json" | jq -r '.versions[-1] // empty' || true)
+          shipped=""
+          if [ -n "$latest" ]; then
+            curl -fsSL "$PACKAGES/$latest/fellowshipanalyzer.codex.sdk.$latest.nupkg" -o latest.nupkg || true
+            shipped=$(unzip -p latest.nupkg inputs.sha256 2>/dev/null | tr -d '[:space:]' || true)
+          fi
+          if [ "$shipped" = "$HASH" ]; then
+            echo "$latest is built from the same files, so no package is pushed."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-dotnet@v6
+        if: steps.published.outputs.changed == 'true'
         with:
           dotnet-version: 10.0.x
 
       - name: Pack the SDK
+        if: steps.published.outputs.changed == 'true'
         run: dotnet pack src/Fellowship.SDK -c Release -p:BuildNumber=${{ github.run_number }} -o package
 
       - name: Keep the package with the run
+        if: steps.published.outputs.changed == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: package
@@ -40,12 +70,14 @@ jobs:
           if-no-files-found: error
 
       - name: Exchange the workflow's identity for a NuGet key
+        if: steps.published.outputs.changed == 'true'
         id: login
         uses: NuGet/login@v1
         with:
           user: ${{ secrets.NUGET_USER }}
 
       - name: Push the package to the feed
+        if: steps.published.outputs.changed == 'true'
         env:
           TOKEN: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: dotnet nuget push 'package/*.nupkg' --source "$FEED" --api-key "$TOKEN"
