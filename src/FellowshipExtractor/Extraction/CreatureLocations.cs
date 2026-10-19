@@ -6,7 +6,6 @@ namespace FellowshipExtractor.Extraction;
 public sealed class CreatureLocations
 {
     private const string MapExtension = ".umap";
-    private const string BlueprintSuffix = "_C";
 
     private readonly Dictionary<string, List<string>> _byCreature = new(StringComparer.OrdinalIgnoreCase);
 
@@ -135,34 +134,6 @@ public sealed class CreatureLocations
     public IReadOnlyList<string> For(string creature) =>
         _byCreature.TryGetValue(creature, out var found) ? found : [];
 
-    private static IEnumerable<string> Placements(IPackage package)
-    {
-        var names = package switch
-        {
-            IoPackage io => io.ExportMap.Select(export => io.CreateFNameFromMappedName(export.ObjectName).Text),
-            Package legacy => legacy.ExportMap.Select(export => export.ObjectName.Text),
-            _ => [],
-        };
-
-        return names.Select(PlacedFrom).OfType<string>();
-    }
-
-    public static string? PlacedFrom(string objectName)
-    {
-        var instance = objectName.LastIndexOf('_');
-        if (instance <= 0) return null;
-
-        for (var at = instance + 1; at < objectName.Length; at++)
-        {
-            if (!char.IsAsciiDigit(objectName[at])) return null;
-        }
-
-        if (instance + 1 == objectName.Length) return null;
-
-        var placed = objectName[..instance];
-
-        return placed.EndsWith(BlueprintSuffix, StringComparison.Ordinal)
-            ? placed[..^BlueprintSuffix.Length]
-            : null;
-    }
+    private static IEnumerable<string> Placements(IPackage package) =>
+        DungeonLayouts.Classes(package).Select(DungeonLayouts.CreatureOf).OfType<string>();
 }

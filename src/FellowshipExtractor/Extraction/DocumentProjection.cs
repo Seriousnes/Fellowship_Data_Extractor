@@ -28,6 +28,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Detail = entity.Detail,
             Icon = entity.Icon,
@@ -80,6 +81,7 @@ public static class DocumentProjection
             Rarities = entity.Rarities?.Select(Enum.Parse<Rarity>).Order().ToArray(),
 
             RuleSet = entity.RuleSet,
+            TraitTree = entity.TraitTree,
             SetBonus = Referenced(entity.SetBonus, references),
             Stats = entity.Stats,
             Description = entity.Description,
@@ -123,6 +125,7 @@ public static class DocumentProjection
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Description = entity.Description,
+            EffectTags = entity.EffectTags,
             Icon = entity.Icon,
             Duration = entity.Duration,
             Period = entity.Period,
@@ -180,6 +183,25 @@ public static class DocumentProjection
             QualifierTime = entity.QualifierTime,
             RequiredScore = entity.RequiredScore,
             MinimumHeroRank = entity.MinimumHeroRank,
+            LevelType = entity.LevelType,
+            SeasonalPinnacle = entity.SeasonalPinnacle,
+            MinimumDifficulty = entity.MinimumDifficulty,
+            Difficulties = entity.Difficulties,
+            Floors = entity.Floors,
+            Placements = entity.Placements?.Select(placed => references.At(placed.Creature) is { } creature
+                    ? new DungeonPlacement(creature, placed.Position)
+                    {
+                        Floor = placed.Floor,
+                        MapX = placed.MapX,
+                        MapY = placed.MapY,
+                        Patrol = placed.Patrol,
+                    }
+                    : null)
+                .OfType<DungeonPlacement>()
+                .ToArray() is { Length: > 0 } placements
+                ? placements
+                : null,
+            Patrols = entity.Patrols,
         },
 
         EntityType.Modifier => new ModifierDocument
@@ -204,6 +226,12 @@ public static class DocumentProjection
             Playstyle = entity.Playstyle,
             SpiritAbility = entity.SpiritAbility,
             Portrait = entity.Icon,
+            Role = entity.Role,
+            OverallDifficulty = entity.OverallDifficulty,
+            Offense = entity.Offense,
+            Defense = entity.Defense,
+            Control = entity.Control,
+            BaseAttributes = entity.BaseAttributes,
         },
 
         EntityType.Mount => new MountDocument
@@ -213,6 +241,8 @@ public static class DocumentProjection
             Description = entity.Description,
             Lore = entity.Lore,
             Icon = entity.Icon,
+            Rarity = entity.RarityTier is { } mountTier ? (Rarity)mountTier : null,
+            Acquire = entity.Acquire,
         },
 
         EntityType.Currency => new CurrencyDocument
@@ -317,6 +347,7 @@ public static class DocumentProjection
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Category = entity.TraitCategory,
+            CategoryTag = entity.TraitCategoryTag,
             MaxRank = entity.MaxRank,
             RandomChance = entity.RandomChance,
             Power = references.At(Augmentation(entity.Augmentation)),
@@ -448,6 +479,14 @@ public static class DocumentProjection
         IReadOnlyList<PhaseAbility>? held, References references) =>
         held?.Select(slot => references.At(slot.Ability) is { } ability
                 ? new CreatureAbility(ability, slot.Phase, slot.Shown)
+                {
+                    EnabledByDefault = slot.EnabledByDefault,
+                    InitialCooldown = slot.InitialCooldown,
+                    Cooldown = slot.Cooldown,
+                    InterruptCooldown = slot.InterruptCooldown,
+                    CCCooldown = slot.CCCooldown,
+                    PostAbilityPadding = slot.PostAbilityPadding,
+                }
                 : null)
             .OfType<CreatureAbility>()
             .ToArray() is { Length: > 0 } wielded

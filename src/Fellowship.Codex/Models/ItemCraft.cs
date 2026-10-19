@@ -54,7 +54,7 @@ public static class ItemCraft
             {
                 CraftSlots.TraitTree => new CraftSlot(name, ordinal, [CraftSlots.ItemTrait])
                 {
-                    Capacity = Capacity(item),
+                    Capacity = TraitTrees.Capacity(item.TraitTree, settings) ?? 0,
                 },
                 CraftSlots.RandomStat => new CraftSlot(name, ordinal, [CraftSlots.RandomStat]),
                 CraftSlots.GemSocket => new CraftSlot(name, ordinal, [CraftSlots.GemSocket]),
@@ -75,11 +75,6 @@ public static class ItemCraft
 
         return slots;
     }
-
-    public static int Capacity(ItemDocument item) =>
-        item.Slot is { } worn && TooltipView.ImbuedTraitCapacities.TryGetValue(worn, out var capacity)
-            ? capacity
-            : 0;
 
     public static ModifierKind? KindOf(string accepted) => accepted switch
     {

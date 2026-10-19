@@ -1,3 +1,4 @@
+using CUE4Parse.MappingsProvider;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
@@ -6,7 +7,10 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Extraction;
 
-public readonly record struct CreatureSlot(string Ability, string Phase, bool Shown, bool Passive);
+public readonly record struct CreatureSlot(string Ability, string Phase, bool Shown, bool Passive)
+{
+    public PhaseTiming? Timing { get; init; }
+}
 
 public sealed class AbilityOwners
 {
@@ -51,6 +55,8 @@ public sealed class AbilityOwners
     private const string AbilityTypePrefix = "AbilityType.";
 
     private readonly AbstractFileProvider _provider;
+    private readonly ConstantsTable _constants;
+    private readonly TypeMappings _mappings;
     private readonly IReadOnlyList<FAssetData> _assets;
     private readonly Dictionary<string, string> _codenames;
 
@@ -73,6 +79,10 @@ public sealed class AbilityOwners
 
     private readonly HashSet<string> _shared = new(StringComparer.OrdinalIgnoreCase);
 
+    private readonly HashSet<string> _disabled = new(StringComparer.OrdinalIgnoreCase);
+
+    public const string EnabledInGameField = "EnabledInGame";
+
     public int Heroes => _heroes.Count;
 
     public int Creatures => _creatures.Count;
@@ -87,9 +97,14 @@ public sealed class AbilityOwners
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
         IReadOnlyList<TagRecord> tags,
-        HeroNames heroes)
+        HeroNames heroes,
+        ConstantsTable constants)
     {
         _provider = provider;
+        _constants = constants;
+        _mappings = provider.MappingsContainer?.MappingsForGame
+            ?? throw new InvalidOperationException(
+                "No mappings are loaded, so nothing states which kind of cooldown a creature's phase ability has.");
         _assets = assets;
         _codenames = heroes.Codenames.ToDictionary(
             codename => codename, codename => codename, StringComparer.OrdinalIgnoreCase);
@@ -130,6 +145,8 @@ public sealed class AbilityOwners
 
     public string? OutsiderOf(string name) => _outsiders.GetValueOrDefault(name);
 
+    public bool DisabledInSet(string name) => _disabled.Contains(name);
+
     private void HoldOutShared()
     {
         if (!_byName.TryGetValue(UniversalSet, out var universal)) return;
@@ -150,6 +167,8 @@ public sealed class AbilityOwners
             if (PropertyWalk.GetString(slot, AbilityClassField) is not { } path) continue;
 
             members.Add(Leaf(path));
+
+            if (PropertyWalk.Get(slot, EnabledInGameField)?.GenericValue is false) _disabled.Add(Leaf(path));
         }
 
         return members;
@@ -351,7 +370,7 @@ public sealed class AbilityOwners
         }
     }
 
-    private static IEnumerable<CreatureSlot> Slotted(
+    private IEnumerable<CreatureSlot> Slotted(
         IPropertyHolder holder, string field, string member, string phase)
     {
         if (PropertyWalk.Get(holder, field)?.GenericValue is not UScriptArray listed) yield break;
@@ -363,7 +382,12 @@ public sealed class AbilityOwners
             if (!path.Contains('/')) continue;
 
             yield return new CreatureSlot(
-                Leaf(path), phase, PropertyWalk.Get(slot, ShowOnUiField)?.GenericValue is not false, Passive: false);
+                Leaf(path), phase, PropertyWalk.Get(slot, ShowOnUiField)?.GenericValue is not false, Passive: false)
+            {
+                Timing = field.Equals(AbilitiesField, StringComparison.Ordinal)
+                    ? PhaseCooldowns.Read(slot, _mappings, _constants)
+                    : null,
+            };
         }
     }
 

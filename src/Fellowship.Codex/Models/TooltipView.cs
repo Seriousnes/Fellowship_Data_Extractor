@@ -18,13 +18,6 @@ public static class TooltipView
 
     public const string GemSocketLabel = "Gem Socket";
 
-    public static readonly IReadOnlyDictionary<string, int> ImbuedTraitCapacities =
-        new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["Weapon"] = 5,
-            ["Neck"] = 2,
-        };
-
     public static EntityType TypeOf(ModifierKind kind) => kind switch
     {
         ModifierKind.Trait => TraitType,

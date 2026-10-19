@@ -75,6 +75,12 @@ public sealed record SettingsFile
 
     public IReadOnlyList<LeagueEntry> Leagues { get; init; } = [];
 
+    public IReadOnlyList<TraitTreeEntry> TraitTrees { get; init; } = [];
+
+    public IReadOnlyList<TraitNodeUpgradeCost> TraitNodeUpgradeCosts { get; init; } = [];
+
+    public TraitNodeColorRows? TraitNodeColorRows { get; init; }
+
     public StatCalculationFile StatCalculation { get; init; } = new();
 
     public ItemSettingsFile Items { get; init; } = new();

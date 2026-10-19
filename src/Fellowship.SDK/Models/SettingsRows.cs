@@ -17,11 +17,75 @@ public sealed record DropItemLevel(string Row, int Difficulty, int ItemLevel);
 
 public sealed record BlessingEntry(string Name, string HeroBlessing, string TierLevel, int Tiers);
 
+public sealed record TraitTreeEntry(string Tag)
+{
+    public bool UseRecipeRowUnlocks { get; init; }
+
+    public int? RowsUnlockedAtItemGeneration { get; init; }
+
+    public IReadOnlyDictionary<int, int> RowToUpgradeRequirement { get; init; } = new Dictionary<int, int>();
+
+    public IReadOnlyList<TraitTreeNode> Nodes { get; init; } = [];
+
+    public TraitTreeLayout? Layout { get; init; }
+}
+
+public sealed record TraitTreePoint(double X, double Y);
+
+public sealed record TraitTreeLayout(string Widget, double Width, double Height)
+{
+    public required TraitTreePoint Root { get; init; }
+
+    public IReadOnlyList<TraitTreeRootLayer> RootLayers { get; init; } = [];
+
+    public double NodeWidth { get; init; }
+
+    public double NodeHeight { get; init; }
+
+    public IReadOnlyDictionary<int, TraitTreePoint> Nodes { get; init; } = new Dictionary<int, TraitTreePoint>();
+}
+
+public sealed record TraitTreeRootLayer(double Width, double Height)
+{
+    public string? Texture { get; init; }
+
+    public bool Item { get; init; }
+}
+
+public sealed record TraitNodeColorRows(string Otherwise)
+{
+    public IReadOnlyDictionary<string, string> ByCategory { get; init; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed record TraitTreeNode(int UITreeIndex, int TraitRowIndex)
+{
+    public IReadOnlyList<int> ParentNodes { get; init; } = [];
+
+    public IReadOnlyList<int> ChildrenNodes { get; init; } = [];
+
+    public IReadOnlyList<string> TraitCategories { get; init; } = [];
+
+    public bool RandomizedTraitFromTraitCategories { get; init; }
+
+    public int? MinDungeonRatingAtGenerationTime { get; init; }
+
+    public int? EnableAtItemLevel { get; init; }
+
+    public int? MaxTraitRankOverride { get; init; }
+}
+
+public sealed record TraitNodeUpgradeCost(int Rank, double Cost, int Currency);
+
 public sealed record DifficultyScaling
 {
     public IReadOnlyDictionary<int, double> Health { get; init; } = new Dictionary<int, double>();
 
     public IReadOnlyDictionary<int, double> Damage { get; init; } = new Dictionary<int, double>();
+
+    public IReadOnlyDictionary<int, double>? MaxDungeonScore { get; init; }
+
+    public int? ModifierAbilityUnlock { get; init; }
 
     public IReadOnlyDictionary<string, DifficultyScaling> Namespaces { get; init; } =
         new Dictionary<string, DifficultyScaling>(StringComparer.OrdinalIgnoreCase);

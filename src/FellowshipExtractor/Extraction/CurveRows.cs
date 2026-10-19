@@ -57,5 +57,18 @@ public static class CurveRows
 
     public static double? First(FStructFallback row) => Keys(row) is [var only, ..] ? only.Value : null;
 
+    public static double Evaluate(IReadOnlyList<CurveKey> keys, double time)
+    {
+        if (time <= keys[0].Time) return keys[0].Value;
+        if (time >= keys[^1].Time) return keys[^1].Value;
+
+        var after = 1;
+        while (keys[after].Time < time) after++;
+
+        var (left, right) = (keys[after - 1], keys[after]);
+
+        return left.Value + (right.Value - left.Value) * (time - left.Time) / (right.Time - left.Time);
+    }
+
     private static double Widened(float value) => PropertyWalk.AsNumber(value)!.Value;
 }

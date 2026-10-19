@@ -10,6 +10,8 @@ public sealed class AbilityDocument : EntityDocument
 
     public AbilityCategory? Category { get; init; }
 
+    public bool? EnabledInGame { get; init; }
+
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }

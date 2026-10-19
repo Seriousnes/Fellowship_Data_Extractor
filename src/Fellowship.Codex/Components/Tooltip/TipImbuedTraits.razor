@@ -1,6 +1,7 @@
 @inject ITooltipViewService Ui
+@inject IEntityStoreService Store
 
-@if (Capacity(Entity, Query) is { } total)
+@if (Capacity(Entity, Query, Store.Settings) is { } total)
 {
     <div class="grp">
         <div class="sec imbued"><img class="gi" alt="" src="@Ui.Chrome.TraitGlyph"><span>Imbued Traits</span><span class="n">(<span class="alloc">@Filled(Query)</span>/@total)</span></div>
@@ -12,16 +13,13 @@
 
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
-    public static int? Capacity(ItemDocument entity, TooltipQuery query)
+    public static int? Capacity(ItemDocument entity, TooltipQuery query, SettingsFile settings)
     {
         if (query.HasImbuedTraits == false) return null;
 
-        if (entity.Slot is { } slot && TooltipView.ImbuedTraitCapacities.TryGetValue(slot, out var capacity))
-        {
-            return capacity;
-        }
+        if (TraitTrees.Capacity(entity.TraitTree, settings) is { } capacity) return capacity;
 
-        return query.HasImbuedTraits == true ? TooltipView.ImbuedTraitCapacities.Values.Max() : null;
+        return query.HasImbuedTraits == true ? TraitTrees.LargestCapacity(settings) : null;
     }
 
     public static int Filled(TooltipQuery query) =>

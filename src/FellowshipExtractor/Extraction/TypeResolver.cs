@@ -10,9 +10,12 @@ public sealed class TypeResolver(
     DungeonNames dungeons,
     ProgressionItems progression,
     CustomizationItems customizations,
-    HeroNames heroes)
+    HeroNames heroes,
+    IEnumerable<string> mounts)
 {
     public const string LevelTable = "Level.ID";
+
+    private readonly HashSet<string> _mounts = new(mounts, StringComparer.OrdinalIgnoreCase);
 
     private readonly HashSet<string> _augmentations = new(
         tags.Where(tag => tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
@@ -111,7 +114,9 @@ public sealed class TypeResolver(
 
         if (!ItemSegments.TryGetValue(segments[1], out var type)) return null;
 
-        return type is EntityType.Mount && !PairsWithAugmentation(segments) ? null : type;
+        return type is EntityType.Mount && !_mounts.Contains(tag.Name) && !PairsWithAugmentation(segments)
+            ? null
+            : type;
     }
 
     private bool PairsWithAugmentation(string[] segments) =>

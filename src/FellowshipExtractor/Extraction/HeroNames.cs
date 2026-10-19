@@ -17,6 +17,24 @@ public sealed record HeroProfile(string Codename, string ShippedName)
     public string? Mechanics { get; init; }
 
     public string? PortraitPath { get; init; }
+
+    public string? Title { get; init; }
+
+    public string? Biography { get; init; }
+
+    public string? Playstyle { get; init; }
+
+    public string? SpiritAbility { get; init; }
+
+    public string? Role { get; init; }
+
+    public int? OverallDifficulty { get; init; }
+
+    public double? Offense { get; init; }
+
+    public double? Defense { get; init; }
+
+    public double? Control { get; init; }
 }
 
 public sealed class HeroNames
@@ -31,6 +49,16 @@ public sealed class HeroNames
     private const string HeroIdField = "HeroID";
     private const string MechanicsField = "HeroMechanics";
     private const string PortraitField = "PortraitTexture";
+    private const string TitleField = "HeroTitle";
+    private const string BiographyField = "Biography";
+    private const string PlaystyleField = "HeroDescription";
+    private const string SpiritAbilityField = "SpiritDescription";
+    private const string RoleField = "CharacterRole";
+    private const string RoleEnum = "EPlayerRole";
+    private const string DifficultyField = "OverallDifficulty";
+    private const string OffenseField = "Offense";
+    private const string DefenseField = "Defense";
+    private const string ControlField = "Control";
 
     private readonly Dictionary<string, HeroProfile> _byCodename = new(StringComparer.OrdinalIgnoreCase);
 
@@ -58,6 +86,12 @@ public sealed class HeroNames
         }
 
         var declared = MainStats(provider, assets, primaryStatByHero);
+
+        var mappings = provider.MappingsContainer?.MappingsForGame
+            ?? throw new InvalidOperationException(
+                $"No mappings are loaded, so nothing states which member of {RoleEnum} a hero left at its " +
+                "default holds.");
+        var roles = EnumOrdinals.Members(mappings, RoleEnum);
 
         foreach (var asset in assets)
         {
@@ -93,8 +127,28 @@ public sealed class HeroNames
                 ColorRow = colourRow,
                 Mechanics = PropertyWalk.GetString(metadata, MechanicsField),
                 PortraitPath = PropertyWalk.GetString(metadata, PortraitField),
+                Title = PropertyWalk.GetText(metadata, TitleField),
+                Biography = PropertyWalk.GetText(metadata, BiographyField),
+                Playstyle = PropertyWalk.GetText(metadata, PlaystyleField),
+                SpiritAbility = PropertyWalk.GetText(metadata, SpiritAbilityField),
+                Role = ItemSetBonuses.Titled(
+                    EnumOrdinals.Member(mappings, RoleEnum, PropertyWalk.AsString(Declared(metadata, RoleField, provider)))
+                    ?? roles[roles.Keys.Min()]),
+                OverallDifficulty = PropertyWalk.AsOrdinal(Declared(metadata, DifficultyField, provider)),
+                Offense = PropertyWalk.AsNumber(Declared(metadata, OffenseField, provider)),
+                Defense = PropertyWalk.AsNumber(Declared(metadata, DefenseField, provider)),
+                Control = PropertyWalk.AsNumber(Declared(metadata, ControlField, provider)),
             };
         }
+    }
+
+    private static object? Declared(UObject metadata, string field, AbstractFileProvider provider)
+    {
+        if (PropertyWalk.Get(metadata, field) is { } own) return own.GenericValue;
+
+        return metadata.Class?.GetPathName() is { } classPath && ClassDefaults.Load(classPath, provider) is { } cdo
+            ? ClassDefaults.Inherited(cdo, field, provider)?.GenericValue
+            : null;
     }
 
     private static Dictionary<string, string> MainStats(

@@ -66,6 +66,8 @@ public interface IChromeAssetService
 
     string TraitNode(string? state);
 
+    string TraitNodeColor(IReadOnlyList<string> categories);
+
     string TalentBand { get; }
 
     string TalentTier(int row);
@@ -128,6 +130,7 @@ public sealed class ChromeAssetService(
 
     private const string NodeFamily = "T_Buttons_TraitNode_";
     private const string NodeSuffix = "Default";
+    private const string NodeColorTexture = "T_Buttons_TraitNode_Color";
     private const string BlessingFamily = "T_Buttons_BlessingButton_";
     private const string BlessingTextureFamily = "T_Icons_BlessingRuneIcon_";
     private const string Allocated = "Allocated";
@@ -202,6 +205,19 @@ public sealed class ChromeAssetService(
 
     public string TraitNode(string? state) =>
         Url(NodeFamily + Chosen(NodeStates, state) + NodeSuffix);
+
+    public string TraitNodeColor(IReadOnlyList<string> categories)
+    {
+        var rows = store.Settings.TraitNodeColorRows
+            ?? throw new InvalidOperationException(
+                "The settings name no trait node colour rows, so a trait tree node has no category colour.");
+
+        var row = categories
+            .Select(category => rows.ByCategory.GetValueOrDefault(category))
+            .FirstOrDefault(found => found is not null) ?? rows.Otherwise;
+
+        return Url(Name(NodeColorTexture, DesignTokenService.Variable(row)));
+    }
 
     public string TalentBand => Url(TalentBandTexture);
 

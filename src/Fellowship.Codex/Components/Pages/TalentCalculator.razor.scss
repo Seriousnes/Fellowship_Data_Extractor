@@ -7,26 +7,7 @@ $slot-canvas: 48;
 $slot-frame-px: 3;
 $slot-frame: math.percentage(math.div($slot-frame-px, $slot-canvas));
 
-.cx-tal-bar {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 12px;
-}
-
-.cx-tal-spend {
-  margin: 0 auto 0 0; color: var(--muted); font-size: 13px;
-
-  b { font-size: 17px; font-family: var(--display); font-weight: 400; }
-}
-
-.cx-tal-act {
-  appearance: none; cursor: pointer; background: var(--sunken); border: 1px solid var(--line);
-  border-radius: 2px; padding: 6px 11px; font: 600 12px/1 var(--sans); color: var(--muted);
-
-  &:hover { border-color: var(--gold-deep); color: var(--gold-bright); text-decoration: none; }
-  &:focus-visible { @include edged; }
-
-  &[aria-disabled="true"] { opacity: .4; cursor: default; }
-  &[aria-disabled="true"]:hover { border-color: var(--line); color: var(--muted); }
-}
+@include tool-bar;
 
 .cx-talents { display: flex; flex-direction: column; gap: 6px; overflow-x: auto; }
 

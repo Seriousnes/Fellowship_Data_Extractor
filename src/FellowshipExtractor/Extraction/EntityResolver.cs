@@ -57,6 +57,14 @@ public sealed class EntityResolver
     private readonly Dictionary<string, FAssetData> _byPrimaryAssetName = new(StringComparer.Ordinal);
     private readonly Dictionary<string, FAssetData> _byAssetName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, FAssetData> _petsByTag = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, FAssetData> _mountsByTag = new(StringComparer.OrdinalIgnoreCase);
+
+    private const string MountClass = "CRMountData";
+    private const string TextureClass = "Texture2D";
+    private const string EffectTagsField = "InheritableGameplayEffectTags";
+    private const string CombinedTagsField = "CombinedTags";
+    private const string MountIdField = "MountID";
+    private const string MountRarityField = "Rarity";
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
 
     public AbilityPresentationIndex Presentation { get; }
@@ -91,7 +99,8 @@ public sealed class EntityResolver
     public CustomizationItems Customizations { get; }
     public LocalizedText Localized { get; }
     public MountLore Lore { get; }
-    public HeroLocres HeroText { get; }
+    public HeroAttributes HeroAttributes { get; }
+    public ItemTraitTrees TraitTrees { get; }
     public DynamicItemRuleSets RuleSets { get; }
     public DynamicAbilityRanks AbilityRanks { get; }
     public TalentTrees Talents { get; }
@@ -103,6 +112,8 @@ public sealed class EntityResolver
     public TypeResolver Types { get; }
     public CreatureStats CreatureStats { get; }
     public CreatureLocations Locations { get; }
+    public DungeonLayouts Layouts { get; }
+    public DungeonDifficulties DungeonDifficulties { get; }
     public Leagues Leagues { get; }
 
     public int NamespaceSupplied { get; private set; }
@@ -147,6 +158,7 @@ public sealed class EntityResolver
 
         IndexAssets();
         IndexPets();
+        IndexMounts();
 
         foreach (var tag in _tags)
         {
@@ -175,6 +187,8 @@ public sealed class EntityResolver
         Traits = new ItemTraits(
             provider, _assets, _constants, _augmentationIds, new TraitCategoryNames(provider, _assets));
 
+        TraitTrees = new ItemTraitTrees(provider, _assets, _tags, Traits.MaxRank);
+
         AbilityRanks = new DynamicAbilityRanks(provider, _assets, _tags, _augmentationIds, SlotNames);
 
         StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor);
@@ -182,7 +196,7 @@ public sealed class EntityResolver
         Collections = new VisualCollections(provider, _assets);
         HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, Collections, rarities);
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
-        HeroText = new HeroLocres(Localized, Heroes);
+        HeroAttributes = new HeroAttributes(provider, Heroes);
         DynamicText = new DynamicTextRows(provider, _assets, _constants, Heroes);
 
         DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities);
@@ -197,11 +211,15 @@ public sealed class EntityResolver
         CreatureStats = new CreatureStats(provider, Heroes);
         Leagues = new Leagues(provider, _assets);
 
-        Locations = new CreatureLocations(
-            provider,
-            Dungeons,
-            [.. _tags.Where(tag => tag.Table.Equals(CreatureTable, StringComparison.OrdinalIgnoreCase))
-                .Select(tag => tag.Name)]);
+        string[] creatures =
+        [
+            .. _tags.Where(tag => tag.Table.Equals(CreatureTable, StringComparison.OrdinalIgnoreCase))
+                .Select(tag => tag.Name),
+        ];
+
+        Locations = new CreatureLocations(provider, Dungeons, creatures);
+        Layouts = new DungeonLayouts(provider, Dungeons, creatures);
+        DungeonDifficulties = new DungeonDifficulties(provider, _assets);
 
         Categories = new AbilityCategories(provider);
 
@@ -210,7 +228,7 @@ public sealed class EntityResolver
             SlotGlyphs, new RarityOrnaments(provider, rarities), new TalentTierPlates(provider),
             new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
-            CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities));
+            CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), TraitTrees);
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -219,9 +237,10 @@ public sealed class EntityResolver
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
 
         Types = new TypeResolver(
-            _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations, Heroes);
+            _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations, Heroes,
+            _mountsByTag.Keys);
 
-        Owners = new AbilityOwners(provider, _assets, _tags, Heroes);
+        Owners = new AbilityOwners(provider, _assets, _tags, Heroes, _constants);
         Pools = new ResourcePools(provider, Heroes, _constants);
         ResourceNames = new ResourceNames(Pools, Heroes);
 
@@ -293,6 +312,7 @@ public sealed class EntityResolver
             Name = tag.Name,
             Slot = SlotNames.FromTag(tag.Name)?.Shipped,
             GemSlot = RuleSets.HasGemSocket(ruleSet) ? true : null,
+            TraitTree = cdo is null ? null : TraitTrees.Named(PropertyWalk.GetString(cdo, ItemTraitTrees.ItemField)),
             RuleSet = ruleSet is null ? null : ShortRuleSet(ruleSet),
             Rarities = cdo is null ? null : Empty(DynamicVisuals.Rarities(cdo)),
             Stats = cdo is null ? null : Empty(Slots.For(cdo, StatCalculation)),
@@ -314,6 +334,11 @@ public sealed class EntityResolver
         entity = WithSpentResource(entity, display, tag, cdo);
         entity = WithGeneratedResources(entity);
         entity = WithSuppliedDuration(entity, cdo, tag);
+
+        if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
+        {
+            entity = entity with { EffectTags = Empty(EffectTags(cdo)) };
+        }
 
         if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
         {
@@ -362,13 +387,35 @@ public sealed class EntityResolver
 
         entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
 
+        if (Owners.DisabledInSet(tag.Name) ||
+            (presentation is not null &&
+             PropertyWalk.Get(presentation.Row, AbilityOwners.EnabledInGameField)?.GenericValue is false))
+        {
+            entity = entity with { EnabledInGame = false };
+        }
+
         if (entity.Type is EntityType.CompanionPet &&
             LoadDefaultObject(_petsByTag.GetValueOrDefault(tag.Name)) is { } pet)
         {
             entity = entity with { Acquire = PropertyWalk.GetText(pet, UnlockCriteriaField) };
         }
 
-        if (entity.Type is EntityType.Mount) entity = entity with { Lore = Lore.For(tag.Name) };
+        if (entity.Type is EntityType.Mount)
+        {
+            entity = entity with { Lore = Lore.For(tag.Name) };
+
+            if (LoadDefaultObject(_mountsByTag.GetValueOrDefault(tag.Name)) is { } mount)
+            {
+                var tier = _rarities.Tier(PropertyWalk.Get(mount, MountRarityField)?.GenericValue);
+
+                entity = entity with
+                {
+                    Acquire = PropertyWalk.GetText(mount, UnlockCriteriaField),
+                    Rarity = _rarities.Label(tier),
+                    RarityTier = tier,
+                };
+            }
+        }
 
         if (entity.DisplayName is null)
         {
@@ -722,7 +769,15 @@ public sealed class EntityResolver
 
             if (source is null) continue;
 
-            held.Add(new PhaseAbility(source, DocumentProjection.Spaced(slot.Phase), slot.Shown));
+            held.Add(new PhaseAbility(source, DocumentProjection.Spaced(slot.Phase), slot.Shown)
+            {
+                EnabledByDefault = slot.Timing?.EnabledByDefault,
+                InitialCooldown = slot.Timing?.InitialCooldown,
+                Cooldown = slot.Timing?.Cooldown,
+                InterruptCooldown = slot.Timing?.InterruptCooldown,
+                CCCooldown = slot.Timing?.CCCooldown,
+                PostAbilityPadding = slot.Timing?.PostAbilityPadding,
+            });
         }
 
         return held;
@@ -746,31 +801,61 @@ public sealed class EntityResolver
         ("ActorTypeTags.Enemy", CreatureRank.Enemy),
     ];
 
-    private static Entity WithDungeon(Entity entity, Dungeon dungeon, IconWriter? icons) => entity with
+    private Entity WithDungeon(Entity entity, Dungeon dungeon, IconWriter? icons)
     {
-        DisplayName = entity.DisplayName ?? dungeon.DisplayName,
-        Description = entity.Description ?? dungeon.Description,
-        Icon = entity.Icon ?? IconName(dungeon.BannerPath, icons),
-        Background = IconName(dungeon.BackgroundPath, icons),
-        MaxPlayers = dungeon.MaxPlayers,
-        QualifierTime = dungeon.QualifierTime,
-        RequiredScore = dungeon.RequiredScore,
-        MinimumHeroRank = dungeon.MinimumHeroRank,
-    };
+        var layout = Layouts.For(dungeon.Tag);
+
+        return entity with
+        {
+            DisplayName = entity.DisplayName ?? dungeon.DisplayName,
+            Description = entity.Description ?? dungeon.Description,
+            Icon = entity.Icon ?? IconName(dungeon.BannerPath, icons),
+            Background = IconName(dungeon.BackgroundPath, icons),
+            MaxPlayers = dungeon.MaxPlayers,
+            QualifierTime = dungeon.QualifierTime,
+            RequiredScore = dungeon.RequiredScore,
+            MinimumHeroRank = dungeon.MinimumHeroRank,
+            LevelType = dungeon.LevelType,
+            SeasonalPinnacle = dungeon.SeasonalPinnacle,
+            MinimumDifficulty = dungeon.MinimumDifficulty,
+            Difficulties = DungeonDifficulties.For(dungeon.Tag),
+            Floors = layout is null
+                ? null
+                : Empty([.. layout.Floors.Select(floor => new DungeonFloor(
+                    floor.Name, IconName(floor.MapPath, icons), floor.Center, floor.Extent))]),
+            Placements = layout is null
+                ? null
+                : Empty([.. layout.Placements.Select(placed => Owned(placed.Creature, CreatureTable) is { } creature
+                        ? new PlacedCreature(creature, placed.Position)
+                        {
+                            Floor = placed.Floor,
+                            MapX = placed.MapX,
+                            MapY = placed.MapY,
+                            Patrol = placed.Patrol,
+                        }
+                        : null)
+                    .OfType<PlacedCreature>()]),
+            Patrols = layout is null ? null : Empty(layout.Patrols),
+        };
+    }
 
     private Entity WithHero(Entity entity, HeroProfile hero, IconWriter? icons)
     {
-        var prose = HeroText.For(hero.Codename);
-
         return entity with
         {
             DisplayName = entity.DisplayName ?? hero.ShippedName,
             PrimaryStat = hero.PrimaryStat,
             HeroColor = Settings.Hero(hero.ShippedName)?.Color,
-            HeroTitle = prose?.Title,
-            Biography = prose?.Biography,
-            Playstyle = prose?.Playstyle,
-            SpiritAbility = prose?.SpiritAbility,
+            HeroTitle = hero.Title,
+            Biography = hero.Biography,
+            Playstyle = hero.Playstyle,
+            SpiritAbility = hero.SpiritAbility,
+            Role = hero.Role,
+            OverallDifficulty = hero.OverallDifficulty,
+            Offense = hero.Offense,
+            Defense = hero.Defense,
+            Control = hero.Control,
+            BaseAttributes = HeroAttributes.For(hero.Codename),
             Icon = entity.Icon ?? IconName(hero.PortraitPath, icons),
         };
     }
@@ -1724,6 +1809,15 @@ public sealed class EntityResolver
     private string Locate(string effectName, string path) =>
         path.Contains('/') ? path : FindAsset(effectName)?.ObjectPath ?? path;
 
+    private static readonly string[] EffectTagFamilies = ["EffectType.", "EffectLogic.", "EffectVisualization."];
+
+    private static List<string> EffectTags(UObject cdo) =>
+        [.. (PropertyWalk.GetStruct(cdo, EffectTagsField) is { } inherited
+                ? PropertyWalk.GetTags(inherited, CombinedTagsField) ?? []
+                : [])
+            .Where(tag => EffectTagFamilies.Any(family => tag.StartsWith(family, StringComparison.Ordinal)))
+            .Order(StringComparer.Ordinal)];
+
     private static List<string> AbilityTypes(UObject cdo) =>
         [.. (PropertyWalk.GetTags(cdo, "AbilityTags") ?? [])
             .Where(t => t.StartsWith(AbilityTypePrefix, StringComparison.Ordinal))
@@ -1790,7 +1884,24 @@ public sealed class EntityResolver
     {
         if (_byPrimaryAssetName.TryGetValue(name, out var primary)) return primary;
         if (_byAssetName.TryGetValue(name, out var byName)) return byName;
-        return _petsByTag.GetValueOrDefault(name);
+        return _petsByTag.GetValueOrDefault(name) ?? _mountsByTag.GetValueOrDefault(name);
+    }
+
+    private void IndexMounts()
+    {
+        foreach (var asset in _assets)
+        {
+            if (!asset.AssetClass.Text.Equals(MountClass, StringComparison.Ordinal)) continue;
+            if (LoadDefaultObject(asset) is not { } mount) continue;
+            if (PropertyWalk.GetString(mount, MountIdField) is not { } tag) continue;
+
+            if (!_mountsByTag.TryAdd(tag, asset))
+            {
+                throw new InvalidOperationException(
+                    $"Two {MountClass} assets declare {tag} as their {MountIdField}, so the mount it names has " +
+                    "two definitions.");
+            }
+        }
     }
 
     private void IndexPets()
@@ -1816,6 +1927,8 @@ public sealed class EntityResolver
             {
                 _byPrimaryAssetName.TryAdd(primary, asset);
             }
+
+            if (asset.AssetClass.Text.Equals(TextureClass, StringComparison.Ordinal)) continue;
 
             var name = asset.AssetName.Text;
             if (ambiguous.Contains(name)) continue;

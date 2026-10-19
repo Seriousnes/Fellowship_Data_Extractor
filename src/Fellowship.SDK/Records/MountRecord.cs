@@ -7,4 +7,8 @@ public sealed record MountRecord : EntityRecord
     public string? Lore { get; init; }
 
     public string? Icon { get; init; }
+
+    public string? Rarity { get; init; }
+
+    public string? Acquire { get; init; }
 }

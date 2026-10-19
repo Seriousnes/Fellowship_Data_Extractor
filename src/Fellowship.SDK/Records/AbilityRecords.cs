@@ -6,6 +6,8 @@ public sealed record AbilityRecord : EntityRecord
 {
     public IReadOnlyList<ResourceGainRecord>? Generates { get; init; }
 
+    public bool? EnabledInGame { get; init; }
+
     public string? Description { get; init; }
     public IReadOnlyList<string>? Detail { get; init; }
     public string? Icon { get; init; }
