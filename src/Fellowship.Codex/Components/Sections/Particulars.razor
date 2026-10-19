@@ -138,7 +138,7 @@
     private IReadOnlyList<string> Heroes => [.. Ui.Codex.Facet("hero")?.Values(Entity) ?? []];
 
     private IReadOnlyList<Fellowship.SDK.Models.TargetCountFalloff> Falloff =>
-        (Entity as AbilityDocument)?.TargetCountFalloff ?? [];
+        DamageFalloff.Source(Entity)?.Entries ?? [];
 
     private IReadOnlyList<Fellowship.SDK.Models.EntityReference> SetBonus =>
         (Entity as ItemDocument)?.SetBonus ?? [];

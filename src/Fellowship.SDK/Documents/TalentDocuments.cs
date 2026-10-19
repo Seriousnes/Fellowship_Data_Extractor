@@ -15,5 +15,7 @@ public sealed class TalentDocument : EntityDocument
     public double? Radius { get; init; }
     public double? Cost { get; init; }
 
+    public IReadOnlyList<TargetCountFalloff>? TargetCountFalloff { get; init; }
+
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 }

@@ -6,12 +6,12 @@
 <div class="cx-picker" @onfocusin="Focus" @onfocusout="Blur">
     <button type="button" class="cx-picker-face" @ref="face"
             role="combobox" aria-haspopup="listbox" aria-controls="cx-falloff-drop"
-            aria-label="Ability" aria-expanded="@(showing ? "true" : "false")"
+            aria-label="Ability or talent" aria-expanded="@(showing ? "true" : "false")"
             @onclick="Toggle" @onkeydown="Pressed">
-        <span class="cx-nm">@(Current is { } picked ? Ui.Name(picked) : "Choose an ability")</span>
+        <span class="cx-nm">@(Current is { } picked ? Ui.Name(picked.Document) : "Choose an ability or talent")</span>
         @if (Current is { } current)
         {
-            <span class="cx-ty">@current.Id</span>
+            <span class="cx-ty">@Kind(current)</span>
         }
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"
@@ -21,7 +21,7 @@
 
     @if (showing)
     {
-        <div class="cx-picker-drop" id="cx-falloff-drop" role="listbox" aria-label="Ability"
+        <div class="cx-picker-drop" id="cx-falloff-drop" role="listbox" aria-label="Ability or talent"
              @onkeydown="Pressed">
             <div class="cx-picker-find">
                 <input type="search" autocomplete="off" aria-label="Filter by name or id"
@@ -30,42 +30,44 @@
 
             @for (var at = 0; at < shown.Count; at++)
             {
-                var ability = shown[at];
+                var source = shown[at];
                 var mine = at;
-                var link = Ui.Tip(ability);
 
-                <a class="cx-picker-step" role="option" href="@Href(ability)"
-                   data-tip="@link.Address" data-tip-request="@link.Body"
-                   @key="ability.Id" @ref="rows[ability.Id]"
-                   aria-selected="@(ability.Id == Ability ? "true" : "false")"
+                <a class="cx-picker-step" role="option" href="@Href(source)"
+                   @key="(source.Type, source.Document.Id)" @ref="rows[(source.Type, source.Document.Id)]"
+                   aria-selected="@(Picked(source) ? "true" : "false")"
                    data-active="@On(active == mine)">
-                    <span class="cx-nm">@Ui.Name(ability)</span>
-                    <span class="cx-ty">@ability.Id</span>
+                    <span class="cx-nm">@Ui.Name(source.Document)</span>
+                    <span class="cx-ty">@Kind(source)</span>
                 </a>
             }
 
             @if (shown.Count == 0)
             {
-                <p class="cx-picker-none">No ability with target count falloff matches @filter.</p>
+                <p class="cx-picker-none">No ability or talent with target count falloff matches @filter.</p>
             }
         </div>
     }
 </div>
 
 @code {
-    [Parameter] public int? Ability { get; set; }
+    [Parameter] public EntityType? Type { get; set; }
 
-    public const string Key = "ability";
+    [Parameter] public int? Id { get; set; }
+
+    public const string AbilityKey = "ability";
+
+    public const string TalentKey = "talent";
 
     public const string Entry = "entry";
 
-    private IReadOnlyList<AbilityDocument> offered = [];
-    private IReadOnlyList<AbilityDocument> shown = [];
+    private IReadOnlyList<FalloffSource> offered = [];
+    private IReadOnlyList<FalloffSource> shown = [];
 
     private ElementReference face;
     private ElementReference find;
 
-    private readonly Dictionary<int, ElementReference> rows = [];
+    private readonly Dictionary<(EntityType, int), ElementReference> rows = [];
 
     private string filter = string.Empty;
     private bool showing;
@@ -74,18 +76,24 @@
     private int active = -1;
     private int touches;
 
-    private AbilityDocument? Current => offered.FirstOrDefault(ability => ability.Id == Ability);
+    private FalloffSource? Current => offered.FirstOrDefault(Picked);
+
+    private bool Picked(FalloffSource source) => source.Type == Type && source.Document.Id == Id;
+
+    private static string Kind(FalloffSource source) =>
+        $"{source.Key} {source.Document.Id.ToString(CultureInfo.InvariantCulture)}";
 
     private static string? On(bool set) => set ? "on" : null;
 
-    private string Href(AbilityDocument ability) =>
+    private string Href(FalloffSource source) =>
         Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
-            [Key] = ability.Id,
+            [AbilityKey] = source.Type == EntityType.Ability ? source.Document.Id : null,
+            [TalentKey] = source.Type == EntityType.Talent ? source.Document.Id : null,
             [Entry] = null,
         });
 
-    protected override void OnInitialized() => offered = DamageFalloff.Abilities(Store);
+    protected override void OnInitialized() => offered = DamageFalloff.Sources(Store);
 
     private void Filter(ChangeEventArgs typed)
     {
@@ -99,12 +107,12 @@
         active = -1;
     }
 
-    private bool Matches(AbilityDocument ability)
+    private bool Matches(FalloffSource source)
     {
         if (filter.Trim() is not { Length: > 0 } wanted) return true;
 
-        return Ui.Name(ability).Contains(wanted, StringComparison.OrdinalIgnoreCase) ||
-            ability.Id.ToString(CultureInfo.InvariantCulture).StartsWith(wanted, StringComparison.Ordinal);
+        return Ui.Name(source.Document).Contains(wanted, StringComparison.OrdinalIgnoreCase) ||
+            source.Document.Id.ToString(CultureInfo.InvariantCulture).StartsWith(wanted, StringComparison.Ordinal);
     }
 
     private void Shut()
@@ -182,6 +190,6 @@
 
         if (!showing || active < 0 || active >= shown.Count) return;
 
-        if (rows.TryGetValue(shown[active].Id, out var row)) await row.FocusAsync();
+        if (rows.TryGetValue((shown[active].Type, shown[active].Document.Id), out var row)) await row.FocusAsync();
     }
 }

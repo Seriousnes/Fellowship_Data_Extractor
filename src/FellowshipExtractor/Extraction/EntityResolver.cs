@@ -229,7 +229,7 @@ public sealed class EntityResolver
             provider, mappings, _constants, Pools, Owners, Heroes, ResourceNames, _tags,
             name => LoadDefaultObject(FindAsset(name)));
 
-        Falloffs = new TargetCountFalloffs(mappings, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
+        Falloffs = new TargetCountFalloffs(provider, mappings, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
     }
 
     private string? PrintedName(TagRecord tag, UObject cdo)

@@ -14,11 +14,26 @@
     <Panel Head="Formula">
         <div class="cx-fo-formula" role="img" aria-label="@Formula.DisplayText"
              data-latex="@Formula.Latex">@Formula.DisplayText</div>
+
+        @if (Formula.Symbols.Count > 0)
+        {
+            <div class="cx-fo-symbols">
+                <Facts>
+                    @foreach (var symbol in Formula.Symbols)
+                    {
+                        <Fact>
+                            <Head><var>@symbol.Symbol</var></Head>
+                            <ChildContent>@symbol.Meaning</ChildContent>
+                        </Fact>
+                    }
+                </Facts>
+            </div>
+        }
     </Panel>
 }
 
-<Panel Head="Ability">
-    <FalloffPicker Ability="Picked?.Id" />
+<Panel Head="Ability or talent">
+    <FalloffPicker Type="Picked?.Type" Id="Picked?.Document.Id" />
 
     @if (Entries.Count > 1)
     {
@@ -29,7 +44,7 @@
                     {
                         var entry = Entries[at];
 
-                        <a href="@Address(Picked!.Id, at, Damage, Targets)"
+                        <a href="@Address(Picked!, at, Damage, Targets)"
                            aria-current="@(at == Chosen ? "page" : null)">
                             <span class="cx-who">@Named(at)</span>
                             <span class="cx-fo-at">@CodexView.Number(entry.Threshold)</span>
@@ -41,19 +56,19 @@
     }
 </Panel>
 
-@if (Picked is not { } ability || Entry is not { } falloff)
+@if (Picked is not { } source || Entry is not { } falloff)
 {
     <Panel>
-        <Empty Message="No ability picked.">Choose one above.</Empty>
+        <Empty Message="No ability or talent picked.">Choose one above.</Empty>
     </Panel>
 }
 else
 {
-    var split = DamageFalloff.Split(falloff.Threshold, ability.MaxTargets, Damage, Targets);
+    var split = DamageFalloff.Split(falloff.Threshold, source.MaxTargets, Damage, Targets);
 
     <Panel Head="@Named(Chosen)">
         <form class="cx-fo-form" method="get" action="@Page">
-            <input type="hidden" name="@FalloffPicker.Key" value="@ability.Id" />
+            <input type="hidden" name="@source.Key" value="@source.Document.Id" />
             @if (Entries.Count > 1)
             {
                 <input type="hidden" name="@FalloffPicker.Entry" value="@Chosen" />
@@ -75,7 +90,7 @@ else
         <div class="cx-pairs">
             <Facts>
                 <Fact Label="Threshold">@split.Threshold</Fact>
-                @if (ability.MaxTargets is { } cap)
+                @if (source.MaxTargets is { } cap)
                 {
                     <Fact Label="Max targets">@CodexView.Number(cap)</Fact>
                 }
@@ -91,7 +106,9 @@ else
 }
 
 @code {
-    [SupplyParameterFromQuery(Name = FalloffPicker.Key)] public string? Ability { get; set; }
+    [SupplyParameterFromQuery(Name = FalloffPicker.AbilityKey)] public string? Ability { get; set; }
+
+    [SupplyParameterFromQuery(Name = FalloffPicker.TalentKey)] public string? Talent { get; set; }
 
     [SupplyParameterFromQuery(Name = FalloffPicker.Entry)] public string? Index { get; set; }
 
@@ -114,7 +131,7 @@ else
     private static readonly IReadOnlyList<(string Label, string? Href)> Trail =
         [("Tools", null), ("Multi-target damage falloff", null)];
 
-    private AbilityDocument? Picked;
+    private FalloffSource? Picked;
 
     private IReadOnlyList<TargetCountFalloff> Entries = [];
 
@@ -134,8 +151,9 @@ else
 
     protected override void OnParametersSet()
     {
-        Picked = DamageFalloff.Ability(Store, Whole(Ability));
-        Entries = Picked?.TargetCountFalloff ?? [];
+        Picked = DamageFalloff.Source(Store, EntityType.Ability, Whole(Ability)) ??
+            DamageFalloff.Source(Store, EntityType.Talent, Whole(Talent));
+        Entries = Picked?.Entries ?? [];
         Chosen = Whole(Index) is { } at && at >= 0 && at < Entries.Count ? at : 0;
     }
 
@@ -152,7 +170,7 @@ else
     private static string Scaled(double scaler) =>
         Math.Round(scaler, 6).ToString(CultureInfo.InvariantCulture);
 
-    private static string Address(int ability, int entry, double damage, int targets) =>
-        $"{Page}?{FalloffPicker.Key}={ability}&{FalloffPicker.Entry}={entry}" +
+    private static string Address(FalloffSource source, int entry, double damage, int targets) =>
+        $"{Page}?{source.Key}={source.Document.Id}&{FalloffPicker.Entry}={entry}" +
         $"&{DamageKey}={damage.ToString(CultureInfo.InvariantCulture)}&{TargetsKey}={targets}";
 }

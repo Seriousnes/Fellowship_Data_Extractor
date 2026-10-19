@@ -50,4 +50,8 @@ public sealed record MultiTargetDamageFalloff
     public string Latex { get; init; } = string.Empty;
 
     public string DisplayText { get; init; } = string.Empty;
+
+    public IReadOnlyList<FormulaSymbol> Symbols { get; init; } = [];
 }
+
+public sealed record FormulaSymbol(string Symbol, string Meaning);
