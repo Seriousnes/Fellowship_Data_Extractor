@@ -24,6 +24,8 @@ public sealed class ItemDocument : EntityDocument
 
     public string? RuleSet { get; init; }
 
+    public string? TraitTree { get; init; }
+
     public string? Description { get; init; }
 
     public string? Acquire { get; init; }

@@ -22,6 +22,8 @@ public sealed record ItemRecord : EntityRecord
 
     public string? RuleSet { get; init; }
 
+    public TraitTreeRecord? TraitTree { get; init; }
+
     public string? Description { get; init; }
 
     public string? Acquire { get; init; }

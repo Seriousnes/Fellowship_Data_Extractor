@@ -1019,6 +1019,160 @@
       "150": 748.85,
       "151": 763.83
     },
+    "maxDungeonScore": {
+      "1": 140,
+      "2": 155,
+      "3": 170,
+      "4": 185,
+      "5": 200,
+      "6": 215,
+      "7": 230,
+      "8": 245,
+      "9": 260,
+      "10": 275,
+      "11": 290,
+      "12": 305,
+      "13": 320,
+      "14": 350,
+      "15": 365,
+      "16": 380,
+      "17": 395,
+      "18": 410,
+      "19": 425,
+      "20": 440,
+      "21": 455,
+      "22": 470,
+      "23": 485,
+      "24": 500,
+      "25": 515,
+      "26": 530,
+      "27": 545,
+      "28": 560,
+      "29": 575,
+      "30": 590,
+      "31": 605,
+      "32": 620,
+      "33": 635,
+      "34": 650,
+      "35": 665,
+      "36": 680,
+      "37": 695,
+      "38": 710,
+      "39": 725,
+      "40": 740,
+      "41": 755,
+      "42": 770,
+      "43": 785,
+      "44": 800,
+      "45": 815,
+      "46": 830,
+      "47": 845,
+      "48": 860,
+      "49": 875,
+      "50": 890,
+      "51": 905,
+      "52": 920,
+      "53": 935,
+      "54": 950,
+      "55": 965,
+      "56": 980,
+      "57": 995,
+      "58": 1010,
+      "59": 1025,
+      "60": 1040,
+      "61": 1055,
+      "62": 1070,
+      "63": 1085,
+      "64": 1100,
+      "65": 1115,
+      "66": 1130,
+      "67": 1145,
+      "68": 1160,
+      "69": 1175,
+      "70": 1190,
+      "71": 1205,
+      "72": 1220,
+      "73": 1235,
+      "74": 1250,
+      "75": 1265,
+      "76": 1280,
+      "77": 1295,
+      "78": 1310,
+      "79": 1325,
+      "80": 1340,
+      "81": 1355,
+      "82": 1370,
+      "83": 1385,
+      "84": 1400,
+      "85": 1415,
+      "86": 1430,
+      "87": 1445,
+      "88": 1460,
+      "89": 1475,
+      "90": 1490,
+      "91": 1505,
+      "92": 1520,
+      "93": 1535,
+      "94": 1550,
+      "95": 1565,
+      "96": 1580,
+      "97": 1595,
+      "98": 1610,
+      "99": 1625,
+      "100": 1640,
+      "101": 1655,
+      "102": 1670,
+      "103": 1685,
+      "104": 1700,
+      "105": 1715,
+      "106": 1730,
+      "107": 1745,
+      "108": 1760,
+      "109": 1775,
+      "110": 1790,
+      "111": 1805,
+      "112": 1820,
+      "113": 1835,
+      "114": 1850,
+      "115": 1865,
+      "116": 1880,
+      "117": 1895,
+      "118": 1910,
+      "119": 1925,
+      "120": 1940,
+      "121": 1955,
+      "122": 1970,
+      "123": 1985,
+      "124": 2000,
+      "125": 2015,
+      "126": 2030,
+      "127": 2045,
+      "128": 2060,
+      "129": 2075,
+      "130": 2090,
+      "131": 2105,
+      "132": 2120,
+      "133": 2135,
+      "134": 2150,
+      "135": 2165,
+      "136": 2180,
+      "137": 2195,
+      "138": 2210,
+      "139": 2225,
+      "140": 2240,
+      "141": 2255,
+      "142": 2270,
+      "143": 2285,
+      "144": 2300,
+      "145": 2315,
+      "146": 2330,
+      "147": 2345,
+      "148": 2360,
+      "149": 2375,
+      "150": 2390,
+      "151": 2390
+    },
+    "modifierAbilityUnlock": 19,
     "namespaces": {
       "Hatchling": {
         "health": {
@@ -1471,6 +1625,306 @@
         43,
         60
       ]
+    }
+  ],
+  "traitTrees": [
+    {
+      "tag": "ItemTraitTrees.EASeason3Necklace",
+      "useRecipeRowUnlocks": true,
+      "rowToUpgradeRequirement": {
+        "0": 0,
+        "1": 0,
+        "2": 1
+      },
+      "nodes": [
+        {
+          "uiTreeIndex": 0,
+          "traitRowIndex": 0,
+          "parentNodes": [],
+          "childrenNodes": [
+            1,
+            2
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Necklace"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 1,
+          "traitRowIndex": 1,
+          "parentNodes": [
+            0
+          ],
+          "childrenNodes": [
+            3,
+            4
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Necklace"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 2,
+          "traitRowIndex": 1,
+          "parentNodes": [
+            0
+          ],
+          "childrenNodes": [
+            3,
+            4
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Necklace"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 3,
+          "traitRowIndex": 2,
+          "parentNodes": [
+            1,
+            2
+          ],
+          "childrenNodes": [],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Necklace"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 4,
+          "traitRowIndex": 2,
+          "parentNodes": [
+            1,
+            2
+          ],
+          "childrenNodes": [],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Necklace"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        }
+      ]
+    },
+    {
+      "tag": "ItemTraitTrees.EASeason3Weapon",
+      "useRecipeRowUnlocks": true,
+      "rowToUpgradeRequirement": {},
+      "nodes": [
+        {
+          "uiTreeIndex": 0,
+          "traitRowIndex": 0,
+          "parentNodes": [],
+          "childrenNodes": [
+            1,
+            2
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.WeaponAbility"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 1,
+          "traitRowIndex": 1,
+          "parentNodes": [
+            0
+          ],
+          "childrenNodes": [
+            3,
+            4
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Heroic"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 2,
+          "traitRowIndex": 1,
+          "parentNodes": [
+            0
+          ],
+          "childrenNodes": [
+            4,
+            5
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Heroic"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 3,
+          "traitRowIndex": 2,
+          "parentNodes": [
+            1
+          ],
+          "childrenNodes": [
+            6
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Defensive"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 4,
+          "traitRowIndex": 2,
+          "parentNodes": [
+            1,
+            2
+          ],
+          "childrenNodes": [
+            6,
+            7
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Defensive"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 5,
+          "traitRowIndex": 2,
+          "parentNodes": [
+            2
+          ],
+          "childrenNodes": [
+            7
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Defensive"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 6,
+          "traitRowIndex": 3,
+          "parentNodes": [
+            3,
+            4
+          ],
+          "childrenNodes": [
+            8,
+            9
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Heroic"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 7,
+          "traitRowIndex": 3,
+          "parentNodes": [
+            4,
+            5
+          ],
+          "childrenNodes": [
+            9,
+            10
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Heroic"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 8,
+          "traitRowIndex": 4,
+          "parentNodes": [
+            6
+          ],
+          "childrenNodes": [
+            11
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Defensive"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 9,
+          "traitRowIndex": 4,
+          "parentNodes": [
+            6,
+            7
+          ],
+          "childrenNodes": [
+            11,
+            12
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Defensive"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 10,
+          "traitRowIndex": 4,
+          "parentNodes": [
+            7
+          ],
+          "childrenNodes": [
+            12
+          ],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Defensive"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 11,
+          "traitRowIndex": 5,
+          "parentNodes": [
+            8,
+            9
+          ],
+          "childrenNodes": [],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Major"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        },
+        {
+          "uiTreeIndex": 12,
+          "traitRowIndex": 5,
+          "parentNodes": [
+            9,
+            10
+          ],
+          "childrenNodes": [],
+          "traitCategories": [
+            "ItemTrait.TraitCategory.Major"
+          ],
+          "randomizedTraitFromTraitCategories": false
+        }
+      ]
+    }
+  ],
+  "traitNodeUpgradeCosts": [
+    {
+      "rank": 1,
+      "cost": 1000,
+      "currency": 4
+    },
+    {
+      "rank": 2,
+      "cost": 2000,
+      "currency": 4
+    },
+    {
+      "rank": 3,
+      "cost": 3000,
+      "currency": 4
+    },
+    {
+      "rank": 4,
+      "cost": 3000,
+      "currency": 4
     }
   ],
   "statCalculation": {

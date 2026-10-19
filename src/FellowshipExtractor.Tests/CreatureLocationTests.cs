@@ -5,14 +5,12 @@ namespace FellowshipExtractor.Tests;
 public sealed class CreatureLocationTests
 {
     [Theory]
-    [InlineData("BP_NPC_VV_IcebiteReaver_C_10", "BP_NPC_VV_IcebiteReaver")]
-    [InlineData("BP_NPC_VV_BlackburnSlaver_C_6", "BP_NPC_VV_BlackburnSlaver")]
-    [InlineData("BP_NPC_VV_IcebiteReaver_C", null)]
-    [InlineData("PersistentLevel", null)]
-    [InlineData("CharacterMaterialHandler", null)]
-    [InlineData("NODE_AddArrowComponent_0", null)]
-    public void AnObjectNameStripsItsInstanceNumberAndBlueprintSuffix(string objectName, string? expected) =>
-        Assert.Equal(expected, CreatureLocations.PlacedFrom(objectName));
+    [InlineData("BP_NPC_DR_BloodfangMauler_C", "BP_NPC_DR_BloodfangMauler")]
+    [InlineData("BP_NPC_VV_IcebiteReaver_C", "BP_NPC_VV_IcebiteReaver")]
+    [InlineData("CapsuleComponent", null)]
+    [InlineData("LevelStreamingAlwaysLoaded", null)]
+    public void APlacedCreatureIsNamedByTheBlueprintClassOfItsActor(string className, string? expected) =>
+        Assert.Equal(expected, DungeonLayouts.CreatureOf(className));
 
     private static readonly Dictionary<string, string> Folders = new(StringComparer.OrdinalIgnoreCase)
     {

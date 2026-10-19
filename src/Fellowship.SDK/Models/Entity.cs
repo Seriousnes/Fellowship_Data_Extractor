@@ -37,6 +37,8 @@ public sealed record Entity
 
     public string? RuleSet { get; init; }
 
+    public string? TraitTree { get; init; }
+
     public IReadOnlyList<string>? Rarities { get; init; }
 
     public string? Description { get; init; }
@@ -60,6 +62,8 @@ public sealed record Entity
     public IconSource? NameInheritedFrom { get; init; }
 
     public string? Category { get; init; }
+
+    public bool? EnabledInGame { get; init; }
 
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
@@ -233,6 +237,12 @@ public sealed record Entity
 
     public int? MinimumHeroRank { get; init; }
 
+    public IReadOnlyList<DungeonFloor>? Floors { get; init; }
+
+    public IReadOnlyList<PlacedCreature>? Placements { get; init; }
+
+    public IReadOnlyList<IReadOnlyList<WorldPoint>>? Patrols { get; init; }
+
     public string? ModifierKind { get; init; }
 
     public string? HeroTitle { get; init; }
@@ -245,13 +255,38 @@ public sealed record Entity
 
     public string? SpiritAbility { get; init; }
 
+    public string? Role { get; init; }
+
+    public int? OverallDifficulty { get; init; }
+
+    public double? Offense { get; init; }
+
+    public double? Defense { get; init; }
+
+    public double? Control { get; init; }
+
+    public IReadOnlyDictionary<string, double>? BaseAttributes { get; init; }
+
     [JsonIgnore]
     public IReadOnlyList<Variant>? Variants { get; init; }
 }
 
 public sealed record IconSource(string Table, int NetId, string Name);
 
-public sealed record PhaseAbility(IconSource Ability, string Phase, bool Shown);
+public sealed record PhaseAbility(IconSource Ability, string Phase, bool Shown)
+{
+    public bool? EnabledByDefault { get; init; }
+
+    public PhaseCooldown? InitialCooldown { get; init; }
+
+    public PhaseCooldown? Cooldown { get; init; }
+
+    public PhaseCooldown? InterruptCooldown { get; init; }
+
+    public PhaseCooldown? CCCooldown { get; init; }
+
+    public PhaseCooldown? PostAbilityPadding { get; init; }
+}
 
 public sealed record GemOverflow(string Description)
 {

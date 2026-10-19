@@ -155,7 +155,7 @@ public sealed class ItemSetBonuses
         return named.Length == 0 ? null : named;
     }
 
-    private static string Titled(string value)
+    public static string Titled(string value)
     {
         var leaf = value[(value.LastIndexOf('_') + 1)..];
         return leaf.Length == 0 ? value : char.ToUpperInvariant(leaf[0]) + leaf[1..].ToLowerInvariant();

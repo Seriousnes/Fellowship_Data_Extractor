@@ -1,0 +1,69 @@
+@using Fellowship.SDK.Models
+@inject IEntityStoreService Store
+
+@if (Entity is ItemDocument item && TraitTrees.Find(item.TraitTree, Store.Settings) is { } tree)
+{
+    <Panel Head="Trait tree" Badge="@tree.Nodes.Count.ToString()">
+        @foreach (var row in TraitTrees.Rows(tree))
+        {
+            var number = row[0].TraitRowIndex;
+
+            <Rule />
+            <SubHead>@RowHead(tree, number)</SubHead>
+            <Table Items="row">
+                <Columns>
+                    <Column Head="Node" Numeric Value="node => node.UITreeIndex + 1" />
+                    <Column Head="Follows">
+                        <Content Context="node">@Follows(node)</Content>
+                    </Column>
+                    <Column Head="Category">
+                        <Content Context="node">
+                            @foreach (var category in node.TraitCategories)
+                            {
+                                <div>@(TraitTrees.CategoryName(category, Store) ?? Leaf(category))</div>
+                            }
+                        </Content>
+                    </Column>
+                    <Column Head="Traits">
+                        <Content Context="node">
+                            <Pills>
+                                @foreach (var trait in node.TraitCategories.SelectMany(category => TraitTrees.InCategory(category, Store)))
+                                {
+                                    <Pill><EntityLink Entity="trait" /></Pill>
+                                }
+                            </Pills>
+                        </Content>
+                    </Column>
+                </Columns>
+            </Table>
+        }
+
+        @if (Store.Settings.TraitNodeUpgradeCosts.Count > 0)
+        {
+            <Rule />
+            <SubHead>Upgrade costs</SubHead>
+            <KeyValues>
+                @foreach (var cost in Store.Settings.TraitNodeUpgradeCosts)
+                {
+                    <KeyValue Key="@($"Rank {cost.Rank}")">
+                        @cost.Cost.ToString("N0") <Ref Entity="new EntityReference(EntityType.Currency, cost.Currency, null)" />
+                    </KeyValue>
+                }
+            </KeyValues>
+        }
+    </Panel>
+}
+
+@code {
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
+
+    private static string RowHead(TraitTreeEntry tree, int row) =>
+        tree.RowToUpgradeRequirement.TryGetValue(row, out var upgrades) && upgrades > 0
+            ? $"Row {row + 1}, unlocked after {upgrades} upgrade{(upgrades == 1 ? null : "s")}"
+            : $"Row {row + 1}";
+
+    private static string Follows(TraitTreeNode node) =>
+        node.ParentNodes.Count == 0 ? "Root" : string.Join(", ", node.ParentNodes.Select(parent => parent + 1));
+
+    private static string Leaf(string tag) => tag[(tag.LastIndexOf('.') + 1)..];
+}

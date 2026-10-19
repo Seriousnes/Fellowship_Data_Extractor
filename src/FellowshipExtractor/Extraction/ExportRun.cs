@@ -66,10 +66,12 @@ public static class ExportRun
             $"granted abilities:  {resolver.Mappings.RowCount} mappings naming " +
             $"{resolver.Mappings.GrantedCount} augmentations");
         Console.WriteLine($"hero names:         {resolver.Heroes.Count}");
+        var profiles = resolver.Heroes.Profiles.ToArray();
         Console.WriteLine(
-            $"hero prose:         {resolver.HeroText.Titled} of {resolver.HeroText.Count} titled, " +
-            $"{resolver.HeroText.WithBiography} with a biography, {resolver.HeroText.WithPlaystyle} with a " +
-            $"playstyle, {resolver.HeroText.WithSpiritAbility} with a spirit ability");
+            $"hero prose:         {profiles.Count(hero => hero.Title is not null)} of {profiles.Length} titled, " +
+            $"{profiles.Count(hero => hero.Biography is not null)} with a biography, " +
+            $"{profiles.Count(hero => hero.Playstyle is not null)} with a playstyle, " +
+            $"{profiles.Count(hero => hero.SpiritAbility is not null)} with a spirit ability");
         Console.WriteLine($"fixed hero items:   {resolver.HeroItems.Count} rows");
         Console.WriteLine($"talents:            {resolver.Talents.Count} across {resolver.Talents.HeroCount} trees");
         Console.WriteLine(

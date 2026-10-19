@@ -6,6 +6,8 @@ public sealed class TraitDocument : EntityDocument
 {
     public string? Category { get; init; }
 
+    public string? CategoryTag { get; init; }
+
     public int? MaxRank { get; init; }
 
     public int? RandomChance { get; init; }

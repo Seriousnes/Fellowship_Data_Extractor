@@ -9,6 +9,46 @@
         </Panel>
     }
 
+    @if (Entity.Floors is { Count: > 0 } floors)
+    {
+        <Panel Head="Map" Badge="@floors.Count.ToString()">
+            @for (var index = 0; index < floors.Count; index++)
+            {
+                var at = index;
+                var floor = floors[at];
+                var placed = (Entity.Placements ?? []).Where(spot => spot.Floor == at).ToArray();
+
+                <Rule />
+                <SubHead>@(floor.Name ?? $"Floor {at + 1}")</SubHead>
+
+                <figure class="cx-dungeon-map" style="@Aspect(floor)">
+                    @if (floor.Map is { } map)
+                    {
+                        <img alt="" loading="lazy" src="@Ui.Icon(map)" />
+                    }
+
+                    <svg class="cx-dungeon-patrols" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
+                        @foreach (var patrol in Patrolled(placed))
+                        {
+                            <polyline points="@Projected(floor, patrol)" />
+                        }
+                    </svg>
+
+                    @foreach (var spot in placed)
+                    {
+                        if (spot is not { MapX: { } x, MapY: { } y }) continue;
+
+                        var creature = Creature(spot.Creature);
+
+                        <a class="cx-dungeon-spot" data-rank="@creature?.Rank" href="@Href(spot.Creature)"
+                           title="@(creature is null ? spot.Creature.Name : PublicTypes.NameOf(creature))"
+                           style="@Position(x, y)"></a>
+                    }
+                </figure>
+            }
+        </Panel>
+    }
+
     @if (Dwelling.Count > 0)
     {
         <Panel Head="Creatures" Badge="@Dwelling.Count.ToString()">
@@ -50,6 +90,29 @@
                 .OrderBy(creature => Ordinal(creature.Rank))
                 .ThenBy(creature => PublicTypes.NameOf(creature), StringComparer.OrdinalIgnoreCase),
         ];
+
+    private CreatureDocument? Creature(EntityReference reference) =>
+        Ui.Store.All(reference.Type, reference.Id).OfType<CreatureDocument>().FirstOrDefault();
+
+    private static string Href(EntityReference reference) =>
+        $"/{EntityTypes.Slug(reference.Type)}/{reference.Id.ToString(CultureInfo.InvariantCulture)}";
+
+    private static string Aspect(DungeonFloor floor) =>
+        string.Create(CultureInfo.InvariantCulture, $"aspect-ratio:{floor.Extent.Y:0.###} / {floor.Extent.X:0.###}");
+
+    private static string Position(double x, double y) =>
+        string.Create(CultureInfo.InvariantCulture, $"left:{x * 100:0.###}%;top:{y * 100:0.###}%");
+
+    private IEnumerable<IReadOnlyList<WorldPoint>> Patrolled(IEnumerable<DungeonPlacement> placed) =>
+        placed.Select(spot => spot.Patrol).OfType<int>().Distinct()
+            .Where(patrol => patrol < (Entity.Patrols?.Count ?? 0))
+            .Select(patrol => Entity.Patrols![patrol]);
+
+    private static string Projected(DungeonFloor floor, IReadOnlyList<WorldPoint> points) =>
+        string.Join(' ', points.Select(point => string.Create(
+            CultureInfo.InvariantCulture,
+            $"{(point.Y - (floor.Center.Y - floor.Extent.Y)) / (2 * floor.Extent.Y):0.#####}," +
+            $"{(floor.Center.X + floor.Extent.X - point.X) / (2 * floor.Extent.X):0.#####}")));
 
     private static readonly CreatureRank[] Order =
         [CreatureRank.Boss, CreatureRank.Elite, CreatureRank.Enemy, CreatureRank.Friendly];

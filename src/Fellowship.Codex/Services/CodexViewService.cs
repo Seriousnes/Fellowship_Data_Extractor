@@ -291,8 +291,10 @@ public sealed class CodexViewService(
             or nameof(CreatureDocument.Agility),
         GemTypeDocument => property == nameof(GemTypeDocument.Attribute),
         ItemDocument => property is nameof(ItemDocument.Rarity) or nameof(ItemDocument.Rarities)
-            or nameof(ItemDocument.RuleSet),
+            or nameof(ItemDocument.RuleSet) or nameof(ItemDocument.TraitTree),
         CurrencyDocument => property == nameof(CurrencyDocument.Rarity),
+        MountDocument => property == nameof(MountDocument.Rarity),
+        TraitDocument => property == nameof(TraitDocument.CategoryTag),
         GemDocument => property == nameof(GemDocument.Rarity),
         _ => false,
     };
@@ -311,6 +313,7 @@ public sealed class CodexViewService(
         {
             ItemDocument { Rarity: { } value } => value,
             CurrencyDocument { Rarity: { } coin } => coin,
+            MountDocument { Rarity: { } mount } => mount,
             GemDocument gem => gem.Rarity,
             _ => null,
         };

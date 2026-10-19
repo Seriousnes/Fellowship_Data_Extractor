@@ -76,6 +76,7 @@ public static class RecordProjection
             Id = document.Id,
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
+            EnabledInGame = document.EnabledInGame,
             Description = view.PlainText(document.Description, tokens, tags),
             Detail = Lines(document.Detail, view, tokens, tags),
             Icon = Texture(document.Icon, view),
@@ -288,6 +289,12 @@ public static class RecordProjection
         Playstyle = document.Playstyle,
         SpiritAbility = document.SpiritAbility,
         Portrait = Texture(document.Portrait, view),
+        Role = document.Role,
+        OverallDifficulty = document.OverallDifficulty,
+        Offense = document.Offense,
+        Defense = document.Defense,
+        Control = document.Control,
+        BaseAttributes = document.BaseAttributes,
     };
 
     public static ItemRecord From(ItemDocument document, ICodexViewService view, string origin) => new()
@@ -307,6 +314,7 @@ public static class RecordProjection
         SetBonus = References(document.SetBonus, view, origin),
         Stats = Slots(document, view),
         RuleSet = document.RuleSet,
+        TraitTree = Tree(document.TraitTree, view, origin),
         Description = view.PlainText(document.Description, [], []),
         Acquire = document.Acquire,
         TitleText = document.TitleText,
@@ -366,6 +374,8 @@ public static class RecordProjection
         Description = view.PlainText(document.Description, [], []),
         Lore = document.Lore,
         Icon = Texture(document.Icon, view),
+        Rarity = view.Rarity(document),
+        Acquire = document.Acquire,
     };
 
     public static MountPowerRecord From(MountPowerDocument document, ICodexViewService view, string origin) => new()
@@ -554,6 +564,47 @@ public static class RecordProjection
             ? entries.ToDictionary(entry => entry.Key, entry => view.PlainText(entry.Value, tokens, [])!)
             : null;
 
+    private static TraitTreeRecord? Tree(string? tag, ICodexViewService view, string origin)
+    {
+        if (TraitTrees.Find(tag, view.Store.Settings) is not { } tree) return null;
+
+        return new TraitTreeRecord(tree.Tag)
+        {
+            UseRecipeRowUnlocks = tree.UseRecipeRowUnlocks,
+            RowsUnlockedAtItemGeneration = tree.RowsUnlockedAtItemGeneration,
+            RowToUpgradeRequirement = tree.RowToUpgradeRequirement,
+            Nodes =
+            [
+                .. tree.Nodes.Select(node => new TraitTreeNodeRecord(node.UITreeIndex, node.TraitRowIndex)
+                {
+                    ParentNodes = node.ParentNodes,
+                    ChildrenNodes = node.ChildrenNodes,
+                    TraitCategories =
+                    [
+                        .. node.TraitCategories.Select(category => new TraitCategoryRecord(category)
+                        {
+                            Name = TraitTrees.CategoryName(category, view.Store),
+                            Traits =
+                            [
+                                .. TraitTrees.InCategory(category, view.Store)
+                                    .Select(trait => Referenced(TooltipView.TraitType, trait.Id, view, origin)),
+                            ],
+                        }),
+                    ],
+                    RandomizedTraitFromTraitCategories = node.RandomizedTraitFromTraitCategories,
+                    MinDungeonRatingAtGenerationTime = node.MinDungeonRatingAtGenerationTime,
+                    EnableAtItemLevel = node.EnableAtItemLevel,
+                    MaxTraitRankOverride = node.MaxTraitRankOverride,
+                }),
+            ],
+            UpgradeCosts =
+            [
+                .. view.Store.Settings.TraitNodeUpgradeCosts.Select(cost => new TraitNodeUpgradeCostRecord(
+                    cost.Rank, cost.Cost, Referenced(EntityType.Currency, cost.Currency, view, origin))),
+            ],
+        };
+    }
+
     internal static RecordReference? Reference(EntityReference? source, ICodexViewService view, string origin) =>
         source is null ? null : Referenced(source.Type, source.Id, view, origin);
 
@@ -585,7 +636,15 @@ public static class RecordProjection
     private static IReadOnlyList<CreatureAbilityRecord>? Wielded(
         IReadOnlyList<CreatureAbility>? abilities, ICodexViewService view, string origin) =>
         abilities?.Select(slot => new CreatureAbilityRecord(
-                Referenced(slot.Ability.Type, slot.Ability.Id, view, origin), slot.Phase, slot.Shown))
+                Referenced(slot.Ability.Type, slot.Ability.Id, view, origin), slot.Phase, slot.Shown)
+            {
+                EnabledByDefault = slot.EnabledByDefault,
+                InitialCooldown = slot.InitialCooldown,
+                Cooldown = slot.Cooldown,
+                InterruptCooldown = slot.InterruptCooldown,
+                CCCooldown = slot.CCCooldown,
+                PostAbilityPadding = slot.PostAbilityPadding,
+            })
             .ToArray() is { Length: > 0 } wielded
             ? wielded
             : null;

@@ -92,7 +92,20 @@ public sealed record RankRunRecord(string Literal, IReadOnlyList<string> Printed
     public bool? Disagrees { get; init; }
 }
 
-public sealed record CreatureAbilityRecord(RecordReference Ability, string Phase, bool Shown);
+public sealed record CreatureAbilityRecord(RecordReference Ability, string Phase, bool Shown)
+{
+    public bool? EnabledByDefault { get; init; }
+
+    public PhaseCooldown? InitialCooldown { get; init; }
+
+    public PhaseCooldown? Cooldown { get; init; }
+
+    public PhaseCooldown? InterruptCooldown { get; init; }
+
+    public PhaseCooldown? CCCooldown { get; init; }
+
+    public PhaseCooldown? PostAbilityPadding { get; init; }
+}
 
 public sealed record GemOverflowRecord(string Description)
 {

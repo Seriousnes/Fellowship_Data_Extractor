@@ -15,4 +15,16 @@ public sealed class HeroDocument : EntityDocument
     public string? SpiritAbility { get; init; }
 
     public string? Portrait { get; init; }
+
+    public string? Role { get; init; }
+
+    public int? OverallDifficulty { get; init; }
+
+    public double? Offense { get; init; }
+
+    public double? Defense { get; init; }
+
+    public double? Control { get; init; }
+
+    public IReadOnlyDictionary<string, double>? BaseAttributes { get; init; }
 }

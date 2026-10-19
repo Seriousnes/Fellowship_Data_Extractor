@@ -78,9 +78,17 @@ public sealed class Settings
         Blessings blessings,
         CreatureStats creatures,
         Leagues leagues,
-        ItemSettings items)
+        ItemSettings items,
+        ItemTraitTrees traitTrees)
     {
-        DifficultyScaling = creatures.Scaling;
+        _traitTrees = traitTrees;
+        var scoring = new DungeonScoring(provider, [.. creatures.Scaling.Health.Keys]);
+
+        DifficultyScaling = creatures.Scaling with
+        {
+            MaxDungeonScore = scoring.MaxDungeonScore,
+            ModifierAbilityUnlock = scoring.ModifierAbilityUnlock,
+        };
         Leagues = leagues.All;
         Items = items.Values;
 
@@ -148,6 +156,8 @@ public sealed class Settings
 
     private readonly Dictionary<string, HeroEntry> _heroByName;
 
+    private readonly ItemTraitTrees _traitTrees;
+
     private readonly Dictionary<string, string> _portraitByHero;
 
     public HeroEntry? Hero(string name) => _heroByName.GetValueOrDefault(name);
@@ -167,6 +177,8 @@ public sealed class Settings
         DifficultyScaling = DifficultyScaling,
         MultiTargetDamageFalloff = MultiTargetDamageFalloff,
         Leagues = Leagues,
+        TraitTrees = _traitTrees.NamedTrees,
+        TraitNodeUpgradeCosts = _traitTrees.UpgradeCosts,
         Items = Items,
         SlotIcons = SlotIcons,
         RarityOrnaments = RarityOrnaments,

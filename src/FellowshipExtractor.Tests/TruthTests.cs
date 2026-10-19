@@ -393,15 +393,37 @@ public sealed class TruthTests
         Assert.Contains("Spirit Refund", (string?)record["spiritAbility"], StringComparison.Ordinal);
     }
     [Theory]
-    [InlineData(7)]
-    [InlineData(17)]
-    public void AHeroWhoseProseHasNoCleanKeyCarriesNoneOfIt(int id)
+    [InlineData(7, "too reckless", "Burning Embers", "costs Burning Embers")]
+    [InlineData(17, null, null, "Spirit Refund")]
+    public void AHeroCarriesTheProseItsMetadataAssetStates(
+        int id, string? biography, string? playstyle, string spiritAbility)
     {
         var record = Record(EntityType.Hero, id);
-        Assert.Null(record["biography"]);
-        Assert.Null(record["playstyle"]);
-        Assert.Null(record["spiritAbility"]);
-        Assert.NotNull((string?)record["title"]);
+        Assert.Contains(biography ?? string.Empty, (string?)record["biography"], StringComparison.Ordinal);
+        Assert.Contains(playstyle ?? string.Empty, (string?)record["playstyle"], StringComparison.Ordinal);
+        Assert.Contains(spiritAbility, (string?)record["spiritAbility"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EveryHeroCarriesItsBiographyPlaystyleAndSpiritAbility() =>
+        Assert.All(
+            Export.Loaded.Documents.Where(document => document.Type == EntityType.Hero),
+            hero =>
+            {
+                Assert.NotNull((string?)hero.Body["biography"]);
+                Assert.NotNull((string?)hero.Body["playstyle"]);
+                Assert.NotNull((string?)hero.Body["spiritAbility"]);
+            });
+
+    [Theory]
+    [InlineData(2, "Dps", 1687)]
+    [InlineData(13, "Tank", 2216)]
+    [InlineData(14, "Healer", 1643)]
+    public void AHeroCarriesTheRoleAndBaseHealthItsAssetsState(int id, string role, double baseHealth)
+    {
+        var record = Record(EntityType.Hero, id);
+        Assert.Equal(role, (string?)record["role"]);
+        Assert.Equal(baseHealth, (double?)record["baseAttributes"]?["BaseHealth"]);
     }
     [Fact]
     public void EveryHeroColourIsTheHexTheSettingsPublishForTheSameName()
@@ -465,4 +487,63 @@ public sealed class TruthTests
         Assert.All(
             Export.Loaded.Documents.Where(document => document.Type == EntityType.Effect),
             document => Assert.True(document.Body["role"] is null || document.Body["partOf"] is not null));
+
+    [Fact]
+    public void AMountWithNoAugmentationTagStatesItsRarityAndHowItIsAcquired()
+    {
+        var record = Record(EntityType.Mount, 2564);
+        Assert.Equal("Ael'dethi Prowler", (string?)record["name"]);
+        Assert.Equal("Champion", (string?)record["rarity"]);
+        Assert.Equal("Unlocked during Steam Next Fest 2025", (string?)record["acquire"]);
+    }
+
+    [Fact]
+    public void ACreatureAbilityCarriesTheReuseCooldownItsBehaviourComponentStates()
+    {
+        var attack = Record(EntityType.Creature, 249)["abilities"]!.AsArray()
+            .First(slot => (string?)slot!["ability"]!["name"] == "Attack")!;
+
+        Assert.Equal("RandomRange", (string?)attack["cooldown"]!["type"]);
+        Assert.Equal(3.5, (double?)attack["cooldown"]!["minSeconds"]);
+        Assert.Equal(3.5, (double?)attack["cooldown"]!["maxSeconds"]);
+    }
+
+    [Fact]
+    public void AWeaponNamesTheTraitTreeTheSettingsLayOut()
+    {
+        Assert.Equal("ItemTraitTrees.EASeason3Weapon", (string?)Record(EntityType.Item, 5312)["traitTree"]);
+
+        var tree = Export.Loaded.Settings.TraitTrees.Single(entry => entry.Tag == "ItemTraitTrees.EASeason3Weapon");
+        Assert.Equal(13, tree.Nodes.Count);
+        Assert.Equal(6, tree.Nodes.Select(node => node.TraitRowIndex).Distinct().Count());
+        Assert.Equal([1, 2], tree.Nodes.Single(node => node.UITreeIndex == 4).ParentNodes);
+        Assert.Equal(["ItemTrait.TraitCategory.WeaponAbility"], tree.Nodes.Single(node => node.UITreeIndex == 0).TraitCategories);
+    }
+
+    [Fact]
+    public void ATraitNodeUpgradeCostsTheCurveInTheCurrencyItsRowNames() =>
+        Assert.Equal(
+            [(1, 1000d), (2, 2000d), (3, 3000d), (4, 3000d)],
+            Export.Loaded.Settings.TraitNodeUpgradeCosts
+                .Where(cost => cost.Currency == 4)
+                .Select(cost => (cost.Rank, cost.Cost)));
+
+    [Fact]
+    public void ADungeonPlacesEveryCreatureItsAlwaysLoadedLevelsHoldOnAFloor()
+    {
+        var dungeon = Record(EntityType.Dungeon, 5);
+        Assert.Equal(4, dungeon["floors"]!.AsArray().Count);
+        Assert.Equal(323, dungeon["placements"]!.AsArray().Count);
+        Assert.All(dungeon["placements"]!.AsArray(), placed => Assert.NotNull(placed!["floor"]));
+    }
+
+    [Fact]
+    public void TheMaxDungeonScoreLadderInterpolatesItsCurve()
+    {
+        var scores = Export.Loaded.Settings.DifficultyScaling.MaxDungeonScore!;
+        Assert.Equal(140, scores[1]);
+        Assert.Equal(350, scores[14]);
+        Assert.Equal(440, scores[20]);
+        Assert.Equal(19, Export.Loaded.Settings.DifficultyScaling.ModifierAbilityUnlock);
+    }
 }

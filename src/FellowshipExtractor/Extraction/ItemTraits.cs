@@ -115,6 +115,8 @@ public sealed class ItemTraits
 
     public ItemTrait? ForTag(string tagName) => _byTag.GetValueOrDefault(tagName);
 
+    public int MaxRank => _byTag.Values.Max(trait => trait.MaxRank ?? 0);
+
     public ItemTrait? ForAugmentation(int netId) => _byAugmentation.GetValueOrDefault(netId);
 
     public bool PointsAt(int netId) => _augmentations.Contains(netId);

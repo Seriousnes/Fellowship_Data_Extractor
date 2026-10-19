@@ -41,6 +41,12 @@
                         </Column>
                         <Column Head="Range" Numeric Value="slot => Wielded(slot)?.Range" />
                         <Column Head="Cooldown" Numeric Unit="s" Value="slot => Wielded(slot)?.Cooldown" />
+                        <Column Head="Recast" Class="cx-numeric">
+                            <Content Context="slot">@Seconds(slot.Cooldown)</Content>
+                        </Column>
+                        <Column Head="First cast" Class="cx-numeric">
+                            <Content Context="slot">@Seconds(slot.InitialCooldown)</Content>
+                        </Column>
                         <Column Head="" Class="cx-tags">
                             <Content Context="slot">
                                 @if (!slot.Shown)
@@ -159,6 +165,15 @@
                     : Printed(entry.Band!)),
         ];
     }
+
+    private static string? Seconds(PhaseCooldown? cooldown) => cooldown switch
+    {
+        { Seconds: { } fixedSeconds } => $"{FellowshipCodex.Number(fixedSeconds)} s",
+        { MinSeconds: { } low, MaxSeconds: { } high } when low == high => $"{FellowshipCodex.Number(low)} s",
+        { MinSeconds: { } low, MaxSeconds: { } high } =>
+            $"{FellowshipCodex.Number(low)} to {FellowshipCodex.Number(high)} s",
+        _ => null,
+    };
 
     private static string Printed(DamageBand band) =>
         band.Low == band.High
