@@ -39,10 +39,10 @@
                         if (spot is not { MapX: { } x, MapY: { } y }) continue;
 
                         var creature = Creature(spot.Creature);
+                        var tip = creature is null ? null : Ui.Tip(creature, showIcon: true);
 
-                        <a class="cx-dungeon-spot" data-rank="@creature?.Rank" href="@Href(spot.Creature)"
-                           title="@(creature is null ? spot.Creature.Name : PublicTypes.NameOf(creature))"
-                           style="@Position(x, y)"></a>
+                        <span class="cx-dungeon-spot" data-rank="@creature?.Rank" style="@Position(x, y)"
+                              data-tip="@tip?.Address" data-tip-request="@tip?.Body"></span>
                     }
                 </figure>
             }
@@ -93,9 +93,6 @@
 
     private CreatureDocument? Creature(EntityReference reference) =>
         Ui.Store.All(reference.Type, reference.Id).OfType<CreatureDocument>().FirstOrDefault();
-
-    private static string Href(EntityReference reference) =>
-        $"/{EntityTypes.Slug(reference.Type)}/{reference.Id.ToString(CultureInfo.InvariantCulture)}";
 
     private static string Aspect(DungeonFloor floor) =>
         string.Create(CultureInfo.InvariantCulture, $"aspect-ratio:{floor.Extent.Y:0.###} / {floor.Extent.X:0.###}");

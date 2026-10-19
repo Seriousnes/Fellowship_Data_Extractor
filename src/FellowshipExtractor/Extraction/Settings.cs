@@ -40,6 +40,10 @@ public sealed class Settings
 
     public IReadOnlyDictionary<string, string> SectionHeadingRows { get; }
 
+    public TraitNodeColorRows TraitNodeColorRows { get; }
+
+    public IEnumerable<string> TraitTreeTextures => _traitTrees.Layouts.Textures;
+
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; }
 
     public IReadOnlyList<DropItemLevel> DropItemLevels { get; }
@@ -111,6 +115,12 @@ public sealed class Settings
         Resolvable(RarityColorRows, colours, colorRows.Source);
         Resolvable(SectionHeadingRows, colours, headings.Source);
 
+        TraitNodeColorRows = traitTrees.Layouts.Colors;
+        Resolvable(
+            new Dictionary<string, string>(TraitNodeColorRows.ByCategory) { [string.Empty] = TraitNodeColorRows.Otherwise },
+            colours,
+            $"{TraitTreeLayouts.NodeWidget}.{TraitTreeLayouts.ColorFunction}");
+
         Heroes =
         [
             .. heroes.Profiles.Select(hero => new HeroEntry(
@@ -179,6 +189,7 @@ public sealed class Settings
         Leagues = Leagues,
         TraitTrees = _traitTrees.NamedTrees,
         TraitNodeUpgradeCosts = _traitTrees.UpgradeCosts,
+        TraitNodeColorRows = TraitNodeColorRows,
         Items = Items,
         SlotIcons = SlotIcons,
         RarityOrnaments = RarityOrnaments,

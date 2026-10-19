@@ -44,6 +44,8 @@ public sealed class ItemTraitTrees
 
     public IReadOnlyList<TraitNodeUpgradeCost> UpgradeCosts { get; }
 
+    public TraitTreeLayouts Layouts { get; }
+
     public int Count => _byTag.Count;
 
     public ItemTraitTrees(
@@ -80,6 +82,7 @@ public sealed class ItemTraitTrees
         }
 
         UpgradeCosts = Costs(provider, tags, maxTraitRank);
+        Layouts = new TraitTreeLayouts(provider);
     }
 
     public string? Named(string? tag)
@@ -97,7 +100,8 @@ public sealed class ItemTraitTrees
         return tag;
     }
 
-    public IReadOnlyList<TraitTreeEntry> NamedTrees => [.. _named.Select(tag => _byTag[tag])];
+    public IReadOnlyList<TraitTreeEntry> NamedTrees =>
+        [.. _named.Select(tag => _byTag[tag]).Select(tree => tree with { Layout = Layouts.For(tree) })];
 
     private static TraitTreeEntry Read(string tag, IReadOnlyList<UObject> exports)
     {

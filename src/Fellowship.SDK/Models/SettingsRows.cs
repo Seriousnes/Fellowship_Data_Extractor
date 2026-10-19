@@ -26,6 +26,36 @@ public sealed record TraitTreeEntry(string Tag)
     public IReadOnlyDictionary<int, int> RowToUpgradeRequirement { get; init; } = new Dictionary<int, int>();
 
     public IReadOnlyList<TraitTreeNode> Nodes { get; init; } = [];
+
+    public TraitTreeLayout? Layout { get; init; }
+}
+
+public sealed record TraitTreePoint(double X, double Y);
+
+public sealed record TraitTreeLayout(string Widget, double Width, double Height)
+{
+    public required TraitTreePoint Root { get; init; }
+
+    public IReadOnlyList<TraitTreeRootLayer> RootLayers { get; init; } = [];
+
+    public double NodeWidth { get; init; }
+
+    public double NodeHeight { get; init; }
+
+    public IReadOnlyDictionary<int, TraitTreePoint> Nodes { get; init; } = new Dictionary<int, TraitTreePoint>();
+}
+
+public sealed record TraitTreeRootLayer(double Width, double Height)
+{
+    public string? Texture { get; init; }
+
+    public bool Item { get; init; }
+}
+
+public sealed record TraitNodeColorRows(string Otherwise)
+{
+    public IReadOnlyDictionary<string, string> ByCategory { get; init; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }
 
 public sealed record TraitTreeNode(int UITreeIndex, int TraitRowIndex)

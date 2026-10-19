@@ -520,6 +520,33 @@ public sealed class TruthTests
         Assert.Equal(["ItemTrait.TraitCategory.WeaponAbility"], tree.Nodes.Single(node => node.UITreeIndex == 0).TraitCategories);
     }
 
+    [Theory]
+    [InlineData("ItemTraitTrees.EASeason3Weapon", "UW_StaticWeaponTree", 4, 0d, 30d)]
+    [InlineData("ItemTraitTrees.EASeason3Necklace", "UW_Static4NodeTree", 3, -94.5, -20d)]
+    public void ATraitTreeIsLaidOutOnTheCanvasItsWidgetPlacesItsNodesOn(
+        string tag, string widget, int node, double x, double y)
+    {
+        var layout = Export.Loaded.Settings.TraitTrees.Single(entry => entry.Tag == tag).Layout!;
+
+        Assert.Equal(widget, layout.Widget);
+        Assert.Equal((586d, 500d), (layout.Width, layout.Height));
+        Assert.Equal(new TraitTreePoint(0, 220), layout.Root);
+        Assert.Equal(new TraitTreePoint(x, y), layout.Nodes[node]);
+        Assert.Equal((71d, 82d), (layout.NodeWidth, layout.NodeHeight));
+        Assert.Contains(layout.RootLayers, layer => layer.Item);
+    }
+
+    [Fact]
+    public void ATraitNodeIsColouredByItsCategoryAndGreyOtherwise()
+    {
+        var rows = Export.Loaded.Settings.TraitNodeColorRows!;
+
+        Assert.Equal("game.rarity-rare", rows.ByCategory["ItemTrait.TraitCategory.Heroic"]);
+        Assert.Equal("game.rarity-uncommon", rows.ByCategory["ItemTrait.TraitCategory.Defensive"]);
+        Assert.Equal("game.rarity-epic", rows.ByCategory["ItemTrait.TraitCategory.Major"]);
+        Assert.Equal("core.disabled-900", rows.Otherwise);
+    }
+
     [Fact]
     public void ATraitNodeUpgradeCostsTheCurveInTheCurrencyItsRowNames() =>
         Assert.Equal(

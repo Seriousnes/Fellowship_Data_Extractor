@@ -133,6 +133,7 @@ public static class ChromeTextures
             .. Chrome,
             .. settings.RarityOrnaments.Values.Order(StringComparer.Ordinal),
             .. settings.TalentTierPlates.Values.Order(StringComparer.Ordinal),
+            .. settings.TraitTreeTextures.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal),
             .. kin,
             .. slotIcons.Values.Order(StringComparer.Ordinal),
         ];
@@ -198,6 +199,21 @@ public static class ChromeTextures
                 painted.Add(name);
             }
 
+            if (name.Equals(NodeColorTexture, StringComparison.Ordinal))
+            {
+                using var well = Image.Load<Rgba32>(content);
+
+                foreach (var category in NodeColorRows(settings))
+                {
+                    await target.WriteImageAsync(
+                        TextureSizes.Variant(name, Variable(category)),
+                        RarityImages.Tint(well, Colour(settings, category)),
+                        cancellationToken);
+
+                    variants++;
+                }
+            }
+
             if (!Array.Exists(Tinted, tinted => tinted.Equals(name, StringComparison.Ordinal))) continue;
 
             using var mask = Image.Load<Rgba32>(content);
@@ -238,6 +254,13 @@ public static class ChromeTextures
 
         return written + variants + painted.Count;
     }
+
+    public const string NodeColorTexture = "T_Buttons_TraitNode_Color";
+
+    private static IEnumerable<string> NodeColorRows(Settings settings) =>
+        settings.TraitNodeColorRows.ByCategory.Values
+            .Append(settings.TraitNodeColorRows.Otherwise)
+            .Distinct(StringComparer.Ordinal);
 
     private static string Variable(string row) => row.Replace('.', '-');
 
