@@ -61,6 +61,8 @@ public sealed class EntityResolver
 
     private const string MountClass = "CRMountData";
     private const string TextureClass = "Texture2D";
+    private const string EffectTagsField = "InheritableGameplayEffectTags";
+    private const string CombinedTagsField = "CombinedTags";
     private const string MountIdField = "MountID";
     private const string MountRarityField = "Rarity";
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
@@ -111,6 +113,7 @@ public sealed class EntityResolver
     public CreatureStats CreatureStats { get; }
     public CreatureLocations Locations { get; }
     public DungeonLayouts Layouts { get; }
+    public DungeonDifficulties DungeonDifficulties { get; }
     public Leagues Leagues { get; }
 
     public int NamespaceSupplied { get; private set; }
@@ -216,6 +219,7 @@ public sealed class EntityResolver
 
         Locations = new CreatureLocations(provider, Dungeons, creatures);
         Layouts = new DungeonLayouts(provider, Dungeons, creatures);
+        DungeonDifficulties = new DungeonDifficulties(provider, _assets);
 
         Categories = new AbilityCategories(provider);
 
@@ -330,6 +334,11 @@ public sealed class EntityResolver
         entity = WithSpentResource(entity, display, tag, cdo);
         entity = WithGeneratedResources(entity);
         entity = WithSuppliedDuration(entity, cdo, tag);
+
+        if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
+        {
+            entity = entity with { EffectTags = Empty(EffectTags(cdo)) };
+        }
 
         if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
         {
@@ -806,6 +815,10 @@ public sealed class EntityResolver
             QualifierTime = dungeon.QualifierTime,
             RequiredScore = dungeon.RequiredScore,
             MinimumHeroRank = dungeon.MinimumHeroRank,
+            LevelType = dungeon.LevelType,
+            SeasonalPinnacle = dungeon.SeasonalPinnacle,
+            MinimumDifficulty = dungeon.MinimumDifficulty,
+            Difficulties = DungeonDifficulties.For(dungeon.Tag),
             Floors = layout is null
                 ? null
                 : Empty([.. layout.Floors.Select(floor => new DungeonFloor(
@@ -1795,6 +1808,15 @@ public sealed class EntityResolver
 
     private string Locate(string effectName, string path) =>
         path.Contains('/') ? path : FindAsset(effectName)?.ObjectPath ?? path;
+
+    private static readonly string[] EffectTagFamilies = ["EffectType.", "EffectLogic.", "EffectVisualization."];
+
+    private static List<string> EffectTags(UObject cdo) =>
+        [.. (PropertyWalk.GetStruct(cdo, EffectTagsField) is { } inherited
+                ? PropertyWalk.GetTags(inherited, CombinedTagsField) ?? []
+                : [])
+            .Where(tag => EffectTagFamilies.Any(family => tag.StartsWith(family, StringComparison.Ordinal)))
+            .Order(StringComparer.Ordinal)];
 
     private static List<string> AbilityTypes(UObject cdo) =>
         [.. (PropertyWalk.GetTags(cdo, "AbilityTags") ?? [])

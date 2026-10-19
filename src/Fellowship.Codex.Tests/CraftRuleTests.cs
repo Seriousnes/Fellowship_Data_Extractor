@@ -148,12 +148,18 @@ public class CraftRuleTests(Export export)
         Assert.Equal(CraftReasons.PastRank(trait.MaxRank.Value), At(trait.MaxRank.Value + 1));
     }
 
+    [Theory]
+    [InlineData("ItemTraitTrees.EASeason3Weapon", 5)]
+    [InlineData("ItemTraitTrees.EASeason3Necklace", 2)]
+    public void A_trait_tree_imbues_one_trait_per_row_below_its_root(string tree, int capacity) =>
+        Assert.Equal(capacity, TraitTrees.Capacity(tree, Settings));
+
     [Fact]
     public void An_imbued_trait_sits_once_and_only_while_a_slot_is_free()
     {
-        var worn = TooltipView.ImbuedTraitCapacities.Keys.First();
-        var capacity = TooltipView.ImbuedTraitCapacities[worn];
-        var item = Worn(worn);
+        var tree = Settings.TraitTrees[0].Tag;
+        var capacity = TraitTrees.Capacity(tree, Settings)!.Value;
+        var item = new ItemDocument { Id = 1, Slot = "Weapon", RuleSet = "Weapon", TraitTree = tree };
         var block = new CraftSlot(CraftSlots.TraitTree, 0, [CraftSlots.ItemTrait]) { Capacity = capacity };
 
         var chosen = Traits.Where(row => row.MaxRank is > 0).Take(capacity + 1).ToArray();

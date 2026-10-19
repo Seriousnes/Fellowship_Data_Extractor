@@ -22,6 +22,12 @@ public sealed record Dungeon(string Tag, string DisplayName)
     public int? RequiredScore { get; init; }
 
     public int? MinimumHeroRank { get; init; }
+
+    public string? LevelType { get; init; }
+
+    public bool? SeasonalPinnacle { get; init; }
+
+    public int? MinimumDifficulty { get; init; }
 }
 
 public sealed class DungeonNames
@@ -40,6 +46,9 @@ public sealed class DungeonNames
     private const string QualifierTimeField = "DungeonQualifierTime";
     private const string RequiredScoreField = "RequiredDungeonScoreToComplete";
     private const string MinimumHeroRankField = "MinimumHeroRankRequired";
+    private const string LevelTypeField = "LevelType";
+    private const string PinnacleField = "IsSeasonalPinnacleDungeon";
+    private const string MinimumDifficultyField = "MinimumDifficulty";
 
     private readonly Dictionary<string, Dungeon> _byTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Dungeon> _byLevelName = new(StringComparer.OrdinalIgnoreCase);
@@ -92,8 +101,14 @@ public sealed class DungeonNames
             QualifierTime = PropertyWalk.AsNumber(PropertyWalk.Get(row, QualifierTimeField)?.GenericValue),
             RequiredScore = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, RequiredScoreField)?.GenericValue),
             MinimumHeroRank = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, MinimumHeroRankField)?.GenericValue),
+            LevelType = Member(PropertyWalk.GetString(row, LevelTypeField)),
+            SeasonalPinnacle = PropertyWalk.Get(row, PinnacleField)?.GenericValue is true ? true : null,
+            MinimumDifficulty = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, MinimumDifficultyField)?.GenericValue),
         };
     }
+
+    private static string? Member(string? value) =>
+        value?.LastIndexOf("::", StringComparison.Ordinal) is { } scoped and >= 0 ? value[(scoped + 2)..] : value;
 
     public string? For(string levelTag) => Find(levelTag)?.DisplayName;
 

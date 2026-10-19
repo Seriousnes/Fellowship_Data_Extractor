@@ -6,6 +6,8 @@ public sealed record EffectRecord : EntityRecord
 {
     public IReadOnlyList<ResourceGainRecord>? Generates { get; init; }
 
+    public IReadOnlyList<string>? EffectTags { get; init; }
+
     public string? Description { get; init; }
     public string? Icon { get; init; }
 

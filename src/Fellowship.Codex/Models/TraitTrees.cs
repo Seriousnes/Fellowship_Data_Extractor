@@ -22,6 +22,15 @@ public static class TraitTrees
     public static string? CategoryName(string categoryTag, IEntityStoreService store) =>
         InCategory(categoryTag, store).Select(trait => trait.Category).FirstOrDefault(name => name is not null);
 
+    public static int? Capacity(string? tag, SettingsFile settings) =>
+        Find(tag, settings) is { } tree ? Imbued(tree) : null;
+
+    public static int? LargestCapacity(SettingsFile settings) =>
+        settings.TraitTrees.Count == 0 ? null : settings.TraitTrees.Max(Imbued);
+
+    private static int Imbued(TraitTreeEntry tree) =>
+        Rows(tree).Count(row => row.Any(node => node.ParentNodes.Count > 0));
+
     public static IReadOnlyList<IReadOnlyList<TraitTreeNode>> Rows(TraitTreeEntry tree) =>
     [
         .. tree.Nodes

@@ -132,6 +132,7 @@ public static class DocumentProjection
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Description = entity.Description,
+            EffectTags = entity.EffectTags,
             Icon = entity.Icon,
             Duration = entity.Duration,
             Period = entity.Period,
@@ -189,6 +190,10 @@ public static class DocumentProjection
             QualifierTime = entity.QualifierTime,
             RequiredScore = entity.RequiredScore,
             MinimumHeroRank = entity.MinimumHeroRank,
+            LevelType = entity.LevelType,
+            SeasonalPinnacle = entity.SeasonalPinnacle,
+            MinimumDifficulty = entity.MinimumDifficulty,
+            Difficulties = entity.Difficulties,
             Floors = entity.Floors,
             Placements = entity.Placements?.Select(placed => references.At(placed.Creature) is { } creature
                     ? new DungeonPlacement(creature, placed.Position)

@@ -7,6 +7,8 @@ public sealed class EffectDocument : EntityDocument
     public string? Description { get; init; }
     public string? Icon { get; init; }
 
+    public IReadOnlyList<string>? EffectTags { get; init; }
+
     public double? Duration { get; init; }
     public double? Period { get; init; }
     public double? Cooldown { get; init; }

@@ -186,7 +186,22 @@ public static class RecordProjection
         QualifierTime = document.QualifierTime,
         RequiredScore = document.RequiredScore,
         MinimumHeroRank = document.MinimumHeroRank,
+        LevelType = document.LevelType,
+        SeasonalPinnacle = document.SeasonalPinnacle,
+        MinimumDifficulty = document.MinimumDifficulty,
+        Difficulties = document.Difficulties,
         Creatures = Dwelling(document, view, origin),
+        Floors = document.Floors?.Select(floor => floor with { Map = Texture(floor.Map, view) }).ToArray(),
+        Placements = document.Placements?.Select(placed => new DungeonPlacementRecord(
+                Referenced(placed.Creature.Type, placed.Creature.Id, view, origin), placed.Position)
+            {
+                Floor = placed.Floor,
+                MapX = placed.MapX,
+                MapY = placed.MapY,
+                Patrol = placed.Patrol,
+            })
+            .ToArray(),
+        Patrols = document.Patrols,
     };
 
     public static EffectRecord From(EffectDocument document, ICodexViewService view, string origin)
@@ -199,6 +214,7 @@ public static class RecordProjection
             Type = EntityType.Effect,
             Id = document.Id,
             Generates = Generated(document.Generates),
+            EffectTags = document.EffectTags,
             Name = PublicTypes.NameOf(document),
             Description = view.PlainText(document.Description, tokens, tags),
             Icon = Texture(document.Icon, view),

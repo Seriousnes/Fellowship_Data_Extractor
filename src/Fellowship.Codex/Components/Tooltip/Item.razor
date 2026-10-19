@@ -99,7 +99,7 @@
             sections.Add(@<TipSocket Entity="Entity" Query="Query" />);
         }
 
-        if (TipImbuedTraits.Capacity(Entity, Query) is not null)
+        if (TipImbuedTraits.Capacity(Entity, Query, Store.Settings) is not null)
         {
             sections.Add(@<TipImbuedTraits Entity="Entity" Query="Query" />);
         }

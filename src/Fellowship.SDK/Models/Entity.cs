@@ -33,6 +33,8 @@ public sealed record Entity
 
     public IReadOnlyList<string>? Tags { get; init; }
 
+    public IReadOnlyList<string>? EffectTags { get; init; }
+
     public IReadOnlyList<StatSlot>? Stats { get; init; }
 
     public string? RuleSet { get; init; }
@@ -236,6 +238,14 @@ public sealed record Entity
     public int? RequiredScore { get; init; }
 
     public int? MinimumHeroRank { get; init; }
+
+    public string? LevelType { get; init; }
+
+    public bool? SeasonalPinnacle { get; init; }
+
+    public int? MinimumDifficulty { get; init; }
+
+    public IReadOnlyList<int>? Difficulties { get; init; }
 
     public IReadOnlyList<DungeonFloor>? Floors { get; init; }
 

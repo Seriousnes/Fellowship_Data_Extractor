@@ -41,10 +41,10 @@
                         </Column>
                         <Column Head="Range" Numeric Value="slot => Wielded(slot)?.Range" />
                         <Column Head="Cooldown" Numeric Unit="s" Value="slot => Wielded(slot)?.Cooldown" />
-                        <Column Head="Recast" Class="cx-numeric">
+                        <Column Head="Phase cooldown" Class="cx-numeric">
                             <Content Context="slot">@Seconds(slot.Cooldown)</Content>
                         </Column>
-                        <Column Head="First cast" Class="cx-numeric">
+                        <Column Head="Initial cooldown" Class="cx-numeric">
                             <Content Context="slot">@Seconds(slot.InitialCooldown)</Content>
                         </Column>
                         <Column Head="" Class="cx-tags">
