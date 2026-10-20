@@ -5,7 +5,7 @@
             @foreach (var row in Rows)
             {
                 <li>
-                    @if (row.Present)
+                    @if (row.Present && PublicTypes.IsListed(Type))
                     {
                         <span class="cx-change-tip" tabindex="0"
                               data-tip="@ExportTooltipEndpoint.Address(row.Build, Type, Entity.Id)"
