@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using Fellowship.SDK.Documents;
 
 namespace Fellowship.Codex.Models;
@@ -162,6 +164,22 @@ public static class PublicTypes
 
         var type = EntityTypes.TypeOf(document);
         return $"{Titled(Find(type).Noun)} {document.Id}";
+    }
+
+    public static string Segment(EntityDocument document)
+    {
+        var segment = new StringBuilder();
+
+        foreach (var letter in NameOf(document).Normalize(NormalizationForm.FormD).ToLowerInvariant())
+        {
+            if (letter is '\'' or '’') continue;
+            if (CharUnicodeInfo.GetUnicodeCategory(letter) == UnicodeCategory.NonSpacingMark) continue;
+
+            if (char.IsAsciiLetterOrDigit(letter)) segment.Append(letter);
+            else if (segment.Length > 0 && segment[^1] != '-') segment.Append('-');
+        }
+
+        return segment.ToString().TrimEnd('-');
     }
 
     private static PublicType Find(EntityType type) => ByType[type];

@@ -22,7 +22,7 @@
             <div class="cx-roster">
                 @foreach (var hero in version.Heroes)
                 {
-                    var where = $"{Here.Page}?hero={Uri.EscapeDataString(hero)}";
+                    var where = Ui.Href(version.Reading, hero);
                     var ink = $"color:{Ui.HeroColour(hero) ?? "var(--muted)"}";
                     var swatch = $"background:{Ui.HeroSwatch(hero) ?? "var(--muted)"}";
 
@@ -42,7 +42,7 @@
     private IReadOnlyList<Version> Named = [];
 
     private sealed record Version(
-        string Name, string? Discriminator, IReadOnlyList<string> Heroes, bool OnScreen);
+        EntityDocument Reading, string Name, string? Discriminator, IReadOnlyList<string> Heroes, bool OnScreen);
 
     protected override void OnParametersSet() => Named = Split();
 
@@ -55,6 +55,7 @@
                     ArmorType: (reading as ItemDocument)?.ArmorType,
                     PrimaryStat: (reading as ItemDocument)?.PrimaryStat))
                 .Select(version => new Version(
+                    version.First(),
                     version.Key.Name,
                     Discriminator(version.Key.ArmorType, version.Key.PrimaryStat),
                     [.. version

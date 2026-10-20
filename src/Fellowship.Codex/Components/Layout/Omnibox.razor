@@ -13,6 +13,7 @@
            aria-label="Search the codex" aria-controls="cx-omnibox-drop" aria-autocomplete="list"
            aria-expanded="@(Open ? "true" : "false")"
            placeholder="Search items, abilities, talents, creatures"
+           autofocus="@Hero" @ref="box"
            @bind="typed" @bind:event="oninput" @bind:after="Typing"
            @onkeydown="Key" @onfocus="Focus" @onblur="Blur" />
 
@@ -92,6 +93,8 @@
 
     private const int Least = 2;
 
+    private ElementReference box;
+
     private string typed = string.Empty;
     private string? applied;
 
@@ -123,6 +126,11 @@
         response = null;
         showing = false;
         active = -1;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (first && Hero) await box.FocusAsync();
     }
 
     private async Task Typing()

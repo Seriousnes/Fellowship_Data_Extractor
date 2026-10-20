@@ -51,7 +51,13 @@ public interface ICodexViewService
 
     string Href(EntityDocument document);
 
+    string Href(EntityDocument document, string? hero);
+
     string Href(EntityType type, int id);
+
+    string Path(EntityDocument document);
+
+    string? AddressedHero(EntityDocument document, string? hero);
 
     TooltipLink Tip(EntityDocument document, bool showIcon = false);
 
@@ -147,14 +153,31 @@ public sealed class CodexViewService(
 
     public string Name(EntityType type, int id) => PublicTypes.NameOf(store.All(type, id)[0]);
 
-    public string Href(EntityDocument document)
-    {
-        var where = Href(EntityTypes.TypeOf(document), document.Id);
+    public string Href(EntityDocument document) => Href(document, Reading(document));
 
-        return Reading(document) is { } hero ? $"{where}?hero={Uri.EscapeDataString(hero)}" : where;
-    }
+    public string Href(EntityDocument document, string? hero) =>
+        AddressedHero(document, hero) is { } addressed
+            ? $"{Path(document)}?hero={Uri.EscapeDataString(addressed)}"
+            : Path(document);
 
     public string Href(EntityType type, int id) =>
+        store.All(type, id) is [var first, ..] ? Path(first) : Bare(type, id);
+
+    public string Path(EntityDocument document) =>
+        $"{Bare(EntityTypes.TypeOf(document), document.Id)}/{PublicTypes.Segment(document)}";
+
+    public string? AddressedHero(EntityDocument document, string? hero)
+    {
+        if (hero is null) return null;
+
+        var segment = PublicTypes.Segment(document);
+        var named = store.All(EntityTypes.TypeOf(document), document.Id)
+            .First(reading => PublicTypes.Segment(reading) == segment);
+
+        return named == document && Reading(named) == hero ? null : hero;
+    }
+
+    private static string Bare(EntityType type, int id) =>
         $"/{EntityTypes.Slug(type)}/{id.ToString(CultureInfo.InvariantCulture)}";
 
     public TooltipLink Tip(EntityDocument document, bool showIcon = false)

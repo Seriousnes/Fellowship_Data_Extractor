@@ -80,6 +80,8 @@
 
     [Parameter] public int Id { get; set; }
 
+    [Parameter] public string Page { get; set; } = string.Empty;
+
     [Parameter] public string? Search { get; set; }
 
     [Parameter] public string? Hero { get; set; }
@@ -105,8 +107,6 @@
 
     private CraftSlot? opened;
 
-    private string Page => $"/{Slug}/{Id}";
-
     private HeroEntry? Wearer => Current.Hero is null ? null : Store.Hero(Current.Hero);
 
     protected override void OnParametersSet()
@@ -117,7 +117,7 @@
         var type = EntityTypes.TryParse(Slug, out var parsed) ? parsed : (EntityType?)null;
         var readings = type is { } entityType ? Store.All(entityType, Id) : [];
 
-        Entity = Store.Hero(values.GetValueOrDefault("hero")) is { } wearer
+        Entity = Store.Hero(Hero ?? values.GetValueOrDefault("hero")) is { } wearer
             ? readings.FirstOrDefault(reading => EntityStore.Reads(reading, wearer)) ?? readings.FirstOrDefault()
             : readings.FirstOrDefault();
 
@@ -235,7 +235,7 @@
         return StatQuery.Read(stats, Store.Stats, out _) with
         {
             ShowIcon = true,
-            Hero = StatQuery.NullIfEmpty(values.GetValueOrDefault("hero")),
+            Hero = Hero ?? StatQuery.NullIfEmpty(values.GetValueOrDefault("hero")),
             Rarity = StatQuery.NullIfEmpty(values.GetValueOrDefault("rarity")),
             ItemLevel = Number(values, "itemLevel"),
             Upgrades = Number(values, "upgrades"),
