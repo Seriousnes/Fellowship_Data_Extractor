@@ -15,12 +15,10 @@
 
     <CascadingValue Value="Here">
         <div class="cx-entity">
-            <div class="cx-entity-top">
-                <Craft Slug="@Slug" Id="Id" Page="@Ui.Path(Entity)" Search="@Search" Hero="@Reading" />
+            <Craft Slug="@Slug" Id="Id" Page="@Ui.Path(Entity)" Search="@Search" Hero="@Reading" />
 
-                <div class="cx-entity-side">
-                    <Versions />
-                </div>
+            <div class="cx-entity-side">
+                <Versions />
             </div>
 
             <Detail Entity="Entity" />

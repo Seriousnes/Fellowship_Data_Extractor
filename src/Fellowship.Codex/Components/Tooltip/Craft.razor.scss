@@ -1,16 +1,10 @@
 @use "../../Styles/shared" as *;
 
-.cx-craft {
-  display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start;
-  flex: 1 1 100%; min-width: 0;
-}
+.cx-craft { display: contents; }
 
-.cx-craft-tip { position: relative; flex: 0 0 auto; min-width: 340px; }
+.cx-craft-tip { position: relative; }
 
-.cx-craft-side {
-  flex: 1 1 300px; min-width: 0;
-  display: grid; gap: 10px; align-items: start;
-}
+.cx-craft-side { min-width: 0; display: grid; gap: 10px; align-items: start; }
 
 .cx-craft-copy,
 .cx-craft-import,

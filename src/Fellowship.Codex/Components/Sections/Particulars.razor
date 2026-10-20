@@ -4,7 +4,7 @@
      SetBonus.Count > 0 || Scaling.Count > 0 ||
      AllowedRoles.Count > 0 || AllowedAttributes.Count > 0)
 {
-    <Panel Head="Details">
+    <Panel Head="Details" Class="@(ReferenceEquals(Entity, Here.Entity) ? "cx-entity-details" : null)">
         @if (Facts.Count > 0)
         {
             <div class="cx-pairs">
@@ -127,6 +127,8 @@
 
 @code {
     [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
+
+    [CascadingParameter] private Bearings Here { get; set; } = new();
 
     [Parameter]
     public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Facts { get; set; } = [];

@@ -35,10 +35,13 @@
             <div class="cx-craft-side">
                 <Knobs OnTurn="Turn" />
 
-                <button type="button" class="cx-craft-copy" @onclick="Copy">Copy link</button>
+                @if (Entity is ItemDocument)
+                {
+                    <button type="button" class="cx-craft-copy" @onclick="Copy">Copy link</button>
 
-                <button type="button" class="cx-craft-import" @onclick="() => pasting = true">Import</button>
-                <button type="button" class="cx-craft-export" @onclick="Export">Export</button>
+                    <button type="button" class="cx-craft-import" @onclick="() => pasting = true">Import</button>
+                    <button type="button" class="cx-craft-export" @onclick="Export">Export</button>
+                }
 
                 @if (pasting || paste is { Length: > 0 })
                 {
