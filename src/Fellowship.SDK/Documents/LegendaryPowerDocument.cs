@@ -10,5 +10,7 @@ public sealed class LegendaryPowerDocument : EntityDocument
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
+    public IReadOnlyList<EntityReference>? Grants { get; init; }
+
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 }

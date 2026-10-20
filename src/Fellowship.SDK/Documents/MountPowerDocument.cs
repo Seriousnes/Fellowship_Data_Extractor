@@ -7,5 +7,7 @@ public sealed class MountPowerDocument : EntityDocument
     public string? Description { get; init; }
     public string? Icon { get; init; }
 
+    public IReadOnlyList<EntityReference>? Grants { get; init; }
+
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 }
