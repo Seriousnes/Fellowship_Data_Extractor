@@ -153,7 +153,7 @@
             if (Catalog.Facet(facet) is not { } definition) return;
 
             var count = Store.Entities.Count(row =>
-                EntityTypes.TypeOf(row) == type &&
+                EntityTypes.TypeOf(row) == type && PublicTypes.IsListed(row) &&
                 definition.Matches(row, [value]) &&
                 (flag is null || flag.Predicate(row)));
 

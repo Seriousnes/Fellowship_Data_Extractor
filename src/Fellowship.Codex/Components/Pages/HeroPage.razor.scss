@@ -1,0 +1,42 @@
+@use "../../Styles/shared" as *;
+
+.cx-hero-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.cx-hero-name { margin: 0; }
+
+.cx-hero-role { flex: 0 0 auto; width: 36px; height: 36px; object-fit: contain; }
+
+.cx-hero-epithet {
+  margin: 0; color: var(--muted); font-family: var(--display); font-size: 18px; letter-spacing: .04em;
+}
+
+.cx-hero {
+  display: grid; grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  column-gap: 18px; align-items: start;
+}
+
+.cx-hero ::deep > * { grid-column: 1 / -1; margin-top: 16px; }
+
+.cx-hero-portrait {
+  grid-column: 1; grid-row: 1; margin: 16px 0 0;
+  @include plated;
+  padding: 0; overflow: hidden; background: var(--sunken);
+
+  img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+}
+
+.cx-hero ::deep .cx-entity-details { grid-column: 2; grid-row: 1; }
+
+.cx-hero ::deep .cx-hero-lore {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start;
+}
+
+.cx-hero ::deep .cx-hero-lore .cx-panel + .cx-panel { margin-top: 0; }
+
+@media (max-width: 860px) {
+  .cx-hero { grid-template-columns: minmax(0, 1fr); }
+
+  .cx-hero-portrait { grid-column: 1; grid-row: auto; max-width: 280px; }
+
+  .cx-hero ::deep .cx-entity-details { grid-column: 1; grid-row: auto; }
+}

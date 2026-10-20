@@ -41,6 +41,16 @@ public static partial class CsvTables
         }
     }
 
+    public static IReadOnlyList<TagRecord> Current(IReadOnlyList<TagRecord> tags)
+    {
+        var current = tags
+            .Where(tag => tag.Flag == 0)
+            .Select(tag => (tag.Table, tag.Name))
+            .ToHashSet();
+
+        return [.. tags.Where(tag => tag.Flag == 0 || !current.Contains((tag.Table, tag.Name)))];
+    }
+
     public static IEnumerable<ConstantRecord> ReadConstants(AbstractFileProvider provider)
     {
         foreach (var file in CsvFiles(provider).Where(f =>

@@ -32,6 +32,8 @@ public sealed class AbilityOwners
 
     private const string AbilitiesField = "Abilities";
     private const string AbilityClassField = "GameplayAbilityClass";
+    private const string AbilitySlotField = "AbilitySlot";
+    private const string NoSlot = "ECRAbilitySlot::None";
     private const string TalentsField = "Talents";
     private const string AugmentationField = "CharacterAugmentationAsset";
     private const string ReplacementsField = "AbilityReplacements";
@@ -80,6 +82,8 @@ public sealed class AbilityOwners
     private readonly HashSet<string> _shared = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly HashSet<string> _disabled = new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly HashSet<string> _slotted = new(StringComparer.OrdinalIgnoreCase);
 
     public const string EnabledInGameField = "EnabledInGame";
 
@@ -147,6 +151,8 @@ public sealed class AbilityOwners
 
     public bool DisabledInSet(string name) => _disabled.Contains(name);
 
+    public bool Slotted(string name) => _slotted.Contains(name);
+
     private void HoldOutShared()
     {
         if (!_byName.TryGetValue(UniversalSet, out var universal)) return;
@@ -169,6 +175,8 @@ public sealed class AbilityOwners
             members.Add(Leaf(path));
 
             if (PropertyWalk.Get(slot, EnabledInGameField)?.GenericValue is false) _disabled.Add(Leaf(path));
+
+            if (PropertyWalk.GetString(slot, AbilitySlotField) is { } held && held != NoSlot) _slotted.Add(Leaf(path));
         }
 
         return members;

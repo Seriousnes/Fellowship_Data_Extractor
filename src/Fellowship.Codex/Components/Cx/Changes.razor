@@ -1,44 +1,74 @@
-<div class="cx-changes">
-    @if (ByVersion.Count > 0)
-    {
-        <p class="cx-change-build">@ByVersion[0].Build<span class="cx-change-current">current</span></p>
-    }
-    @for (var at = 0; at + 1 < ByVersion.Count; at++)
-    {
-        var newer = ByVersion[at];
-        var older = ByVersion[at + 1];
-
-        <p class="cx-change-build">@older.Build</p>
-
-        @if (newer.Value is not null && older.Value is null)
-        {
-            <p class="cx-change-note">added in @newer.Build</p>
-        }
-        else if (newer.Value is null && older.Value is not null)
-        {
-            <p class="cx-change-note">removed in @newer.Build</p>
-        }
-        else if (Changed.Between(older.Value, newer.Value) is { Count: > 0 } leaves)
-        {
-            <ul class="cx-change-leaves">
-                @foreach (var leaf in leaves)
-                {
-                    <li>
-                        <span class="cx-change-path">@leaf.Path</span>
-                        <span class="cx-was">@leaf.Older</span>
-                        <span class="cx-change-arrow">-&gt;</span>
-                        <span class="cx-now">@leaf.Newer</span>
-                    </li>
-                }
-            </ul>
-        }
-        else
-        {
-            <p class="cx-change-note">no change</p>
-        }
-    }
-</div>
+@if (Rows.Count > 1 || Rows is [{ Oldest: false }])
+{
+    <Panel Head="Changes">
+        <ul class="cx-changes">
+            @foreach (var row in Rows)
+            {
+                <li>
+                    @if (row.Present)
+                    {
+                        <span class="cx-change-tip" tabindex="0"
+                              data-tip="@ExportTooltipEndpoint.Address(row.Build, Type, Entity.Id)"
+                              data-tip-request="@Tip?.Body">
+                            <span class="cx-change-build">@row.Build</span>
+                            <span class="cx-change-note">@row.Note</span>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="cx-change-build">@row.Build</span>
+                        <span class="cx-change-note">@row.Note</span>
+                    }
+                </li>
+            }
+        </ul>
+    </Panel>
+}
 
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<VersionValue> ByVersion { get; set; } = [];
+
+    [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
+
+    [Parameter] public TooltipLink? Tip { get; set; }
+
+    private sealed record Row(string Build, string? Note, bool Present, bool Oldest);
+
+    private EntityType Type => EntityTypes.TypeOf(Entity);
+
+    private IReadOnlyList<Row> Rows = [];
+
+    protected override void OnParametersSet()
+    {
+        var rows = new List<Row>();
+
+        for (var at = 0; at < ByVersion.Count; at++)
+        {
+            var newer = ByVersion[at];
+            var older = at + 1 < ByVersion.Count ? ByVersion[at + 1].Value : null;
+            var oldest = at + 1 == ByVersion.Count;
+            var current = at == 0 ? "current" : null;
+
+            if (newer.Value is null)
+            {
+                if (older is not null) rows.Add(new Row(newer.Build, "removed", false, oldest));
+                continue;
+            }
+
+            if (oldest)
+            {
+                rows.Add(new Row(newer.Build, current, true, true));
+            }
+            else if (older is null)
+            {
+                rows.Add(new Row(newer.Build, current is null ? "added" : "current · added", true, false));
+            }
+            else if (Changed.Between(older, newer.Value).Count > 0)
+            {
+                rows.Add(new Row(newer.Build, current, true, false));
+            }
+        }
+
+        Rows = rows;
+    }
 }

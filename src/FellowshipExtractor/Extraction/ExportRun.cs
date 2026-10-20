@@ -205,13 +205,18 @@ public static class ExportRun
             }
         }
 
+        var folded = AdditionalAbilities.Fold(shared, resolver.Presentation);
+
         var references = new DocumentProjection.References(
             (table, netId) => types.GetValueOrDefault((table, netId)),
-            (type, id) => names.GetValueOrDefault((type, id)));
+            (type, id) => names.GetValueOrDefault((type, id)),
+            folded.Redirects);
 
         var roles = new EffectRoles(shared, resolver.Heroes.Codenames);
 
-        foreach (var record in shared)
+        var marked = SlottedNames.Mark(folded.Entities, resolver.Owners.Slotted);
+
+        foreach (var record in marked)
         {
             await target.WriteDocumentAsync(DocumentProjection.From(record, references, roles), default);
             written++;
@@ -229,6 +234,13 @@ public static class ExportRun
 
         Console.WriteLine($"\nwrote {written} documents from {resolved.Count} entities across {scanned} tags");
         Console.WriteLine($"  {withText} entities with a display name, {withIcon} with an icon");
+        Console.WriteLine(
+            $"  {folded.Redirects.Count} abilities a presentation row lists under AdditionalGameplayAbilityAssets " +
+            "folded into the ability the row presents");
+        Console.WriteLine(
+            $"  {marked.Count(record => record.NamedAfter is not null)} unslotted abilities named after the ability " +
+            "a hero's ability set slots under the same name");
+        Console.WriteLine($"  {resolver.Superseded} tag ids superseded by a later id for the same name");
         Console.WriteLine(
             $"  {roles.Parts} effects named as part of one of {roles.Abilities} tagged abilities, " +
             $"{roles.Roles} of them carrying a role, {roles.Withheld} withheld for naming a hero");

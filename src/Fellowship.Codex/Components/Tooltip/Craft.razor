@@ -37,10 +37,11 @@
 
                 @if (Entity is ItemDocument)
                 {
-                    <button type="button" class="cx-craft-copy" @onclick="Copy">Copy link</button>
-
-                    <button type="button" class="cx-craft-import" @onclick="() => pasting = true">Import</button>
-                    <button type="button" class="cx-craft-export" @onclick="Export">Export</button>
+                    <div class="cx-tal-bar">
+                        <button type="button" class="cx-tal-act" @onclick="Copy">Copy link</button>
+                        <button type="button" class="cx-tal-act" @onclick="() => pasting = true">Import</button>
+                        <button type="button" class="cx-tal-act" @onclick="Export">Export</button>
+                    </div>
                 }
 
                 @if (pasting || paste is { Length: > 0 })

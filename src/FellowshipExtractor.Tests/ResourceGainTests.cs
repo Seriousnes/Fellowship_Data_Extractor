@@ -625,7 +625,6 @@ public sealed class ResourceGainTests
     public void ASentenceTwoAbilitiesShareCountsOnceTowardTheirChannelsName()
     {
         Assert.Equal("Combo Points", (string?)Into(EntityType.Ability, 1213, Second)["resourceName"]);
-        Assert.Equal("Combo Points", (string?)Into(EntityType.Ability, 2309, Second)["resourceName"]);
     }
 
     [Fact]

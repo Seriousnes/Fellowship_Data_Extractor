@@ -1,4 +1,5 @@
 using Fellowship.Codex.Models;
+using Fellowship.SDK.Documents;
 
 namespace Fellowship.Codex.Services;
 
@@ -19,7 +20,8 @@ public sealed class MenuService : IMenuService
 
     public IReadOnlyList<MenuLink> Menu { get; }
 
-    public MenuService(IEntityStoreService store, ICodexService codex, IDesignTokenService tokens)
+    public MenuService(
+        IEntityStoreService store, ICodexService codex, IDesignTokenService tokens, ICodexViewService view)
     {
         this.store = store;
         this.codex = codex;
@@ -65,8 +67,17 @@ public sealed class MenuService : IMenuService
             Category(Categories.Dungeons),
 
             Category(Categories.Npcs, new MenuSection("Zone", Zones($"/{Categories.Npcs.Slug}"))),
+
+            new MenuLink(Components.Pages.Heroes.Label, Components.Pages.Heroes.Href, null, [new MenuSection("Hero", Pages(view))]),
         ];
     }
+
+    private IReadOnlyList<MenuLink> Pages(ICodexViewService view) =>
+    [
+        .. store.Entities.OfType<HeroDocument>()
+            .OrderBy(hero => view.Name(hero), StringComparer.OrdinalIgnoreCase)
+            .Select(hero => new MenuLink(view.Name(hero), view.Href(hero), view.LinkColour(hero), [])),
+    ];
 
     private IReadOnlyList<MenuLink> Armour(string where) =>
     [

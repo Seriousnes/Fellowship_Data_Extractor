@@ -111,6 +111,8 @@ public sealed class CodexViewService(
 
     public string? LinkColour(EntityDocument document)
     {
+        if (document is HeroDocument { Name: { } hero }) return HeroColour(hero);
+
         var tier = Tier(document);
 
         if (tier is { } found && RarityColour(found) is { } shade) return shade;
@@ -319,6 +321,10 @@ public sealed class CodexViewService(
         MountDocument => property == nameof(MountDocument.Rarity),
         TraitDocument => property == nameof(TraitDocument.CategoryTag),
         GemDocument => property == nameof(GemDocument.Rarity),
+        HeroDocument => property is nameof(HeroDocument.Title) or nameof(HeroDocument.Color)
+            or nameof(HeroDocument.Biography) or nameof(HeroDocument.Playstyle)
+            or nameof(HeroDocument.SpiritAbility) or nameof(HeroDocument.Portrait)
+            or nameof(HeroDocument.RoleIcon),
         _ => false,
     };
 
@@ -474,7 +480,7 @@ public sealed class CodexViewService(
         {
             var (reading, resolved) = Reads(token);
 
-            read.Add(new TokenReading(read.Count + 1, reading, resolved, Working(token), Tuning(token.Constants)));
+            read.Add(new TokenReading(read.Count + 1, reading, resolved));
         }
 
         return read;
@@ -533,44 +539,6 @@ public sealed class CodexViewService(
     }
 
     private const string Relative = "PrimaryAttribute";
-
-    private string Working(Placeholder token)
-    {
-        var parts = new List<string>(4);
-
-        if (token.Spread is { } spread)
-        {
-            parts.Add(spread == 0
-                ? "rolls exactly, with no band"
-                : $"rolls between {Number(100 - spread * 50)}% and {Number(100 + spread * 50)}% of the mean");
-        }
-
-        if (token.Format is { } format) parts.Add(Printed(format));
-
-        if (token.Multiplies == true) parts.Add(Printed(Excess));
-
-        if (token.Value is null && token.Percent == true) parts.Add("shown as a share");
-
-        if (token.ShowDamageType == true) parts.Add("shows its damage school");
-
-        if (codex.Scaling(token.ScalesOff).ToArray() is { Length: > 0 } scaling)
-        {
-            parts.Add("scales off " + string.Join(", ", scaling));
-        }
-
-        return string.Join(" · ", parts);
-    }
-
-    private static string Printed(string format) => format switch
-    {
-        Plain => "printed as a number",
-        Share => "printed as a share",
-        Excess => "printed as its excess over 1",
-        Removed => "printed as the share its multiplier removes",
-        _ => $"printed as {Models.FellowshipCodex.Spaced(format)}",
-    };
-
-    private const string Plain = "number";
 
     private const string Share = "percent";
 

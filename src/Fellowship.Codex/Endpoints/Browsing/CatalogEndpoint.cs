@@ -14,7 +14,7 @@ public static class CatalogEndpoint
     private static IResult Handle(ICodexService codex, IMenuService menus, IEntityStoreService store)
     {
         var rows = store.Entities
-            .Where(document => PublicTypes.IsListed(EntityTypes.TypeOf(document)))
+            .Where(document => PublicTypes.IsListed(document))
             .ToArray();
 
         return Results.Ok(new CatalogResponse(

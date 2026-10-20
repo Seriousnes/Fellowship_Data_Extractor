@@ -13,11 +13,11 @@ public sealed class ItemSourceTests
             .Where(document => document.Type == EntityType.Item && document.Body["stats"] is JsonArray)
             .ToArray();
 
-        Assert.Equal(2528, carrying.Length);
+        Assert.Equal(2516, carrying.Length);
 
         var unsourced = carrying.Where(document => document.Body["sources"] is not JsonArray).ToArray();
 
-        Assert.Equal(2524, carrying.Length - unsourced.Length);
+        Assert.Equal(2512, carrying.Length - unsourced.Length);
         Assert.Equal(SecondThresholdOnly, unsourced.Length);
     }
 
@@ -30,7 +30,7 @@ public sealed class ItemSourceTests
 
         var unlevelled = carrying.Where(document => document.Body["itemLevel"] is null).ToArray();
 
-        Assert.Equal(2524, carrying.Length - unlevelled.Length);
+        Assert.Equal(2512, carrying.Length - unlevelled.Length);
         Assert.Equal(SecondThresholdOnly, unlevelled.Length);
     }
 }

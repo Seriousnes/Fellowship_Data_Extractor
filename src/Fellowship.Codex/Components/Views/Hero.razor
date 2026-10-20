@@ -1,0 +1,270 @@
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+
+<EntityView Entity="Entity" Extra="Basics">
+    @if (Lore.Count > 0)
+    {
+        <div class="cx-hero-lore">
+            @foreach (var (head, paragraphs) in Lore)
+            {
+                <Panel Head="@head">
+                    @foreach (var paragraph in paragraphs)
+                    {
+                        <Prose>@Ui.Text(paragraph, null, null)</Prose>
+                    }
+                </Panel>
+            }
+        </div>
+    }
+
+    @if (Stats.Count > 0)
+    {
+        <Panel Head="Starting stats">
+            <div class="cx-hero-stats">
+                @for (var half = 0; half < 2; half++)
+                {
+                    var split = (Stats.Count + 1) / 2;
+                    var slice = half == 0 ? Stats.Take(split) : Stats.Skip(split);
+
+                    <Facts>
+                        @foreach (var (label, value) in slice)
+                        {
+                            <Fact Label="@label">@value</Fact>
+                        }
+                    </Facts>
+                }
+            </div>
+        </Panel>
+    }
+
+    @if (Abilities.Count > 0)
+    {
+        <Panel Head="Abilities" Badge="@Abilities.Sum(group => group.Count()).ToString()">
+            @foreach (var group in Abilities)
+            {
+                <Rule />
+                <SubHead>@group.Key</SubHead>
+                <Table Items="group">
+                    <Columns>
+                        <Column Head="" Class="cx-texture">
+                            <Content Context="row"><Texture Entity="row" /></Content>
+                        </Column>
+                        <Column Head="Name">
+                            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+                        </Column>
+                        <Column Head="Cost" Class="cx-numeric">
+                            <Content Context="row">
+                                @if (row.Cost is { } cost)
+                                {
+                                    @FellowshipCodex.Number(cost)
+                                    @if (row.Resource is { } resource)
+                                    {
+                                        <span class="cx-unit">@resource</span>
+                                    }
+                                }
+                            </Content>
+                        </Column>
+                        <Column Head="Cast time" Numeric Unit="s" Value="row => row.CastTime" />
+                        <Column Head="Cooldown" Numeric Unit="s" Value="row => row.Cooldown" />
+                    </Columns>
+                </Table>
+            }
+        </Panel>
+    }
+
+    @if (Talents.Count > 0)
+    {
+        <Panel Head="Talents" Badge="@Talents.Count.ToString()">
+            <Table Items="Talents" Group="node => Tier(node.Slot.Row)">
+                <Columns>
+                    <Column Head="" Class="cx-texture">
+                        <Content Context="node"><Texture Entity="node.Talent" /></Content>
+                    </Column>
+                    <Column Head="Name">
+                        <Content Context="node"><EntityLink Entity="node.Talent" Class="cx-nm" /></Content>
+                    </Column>
+                    <Column Head="Cost" Numeric Value="node => node.Cost" />
+                </Columns>
+            </Table>
+            <Note><a href="@Calculator">Open in the talent calculator</a></Note>
+        </Panel>
+    }
+
+    @if (Legendaries.Count > 0)
+    {
+        <Panel Head="Legendary items" Badge="@Legendaries.Count.ToString()">
+            <Table Items="Legendaries">
+                <Columns>
+                    <Column Head="" Class="cx-texture">
+                        <Content Context="row"><Texture Entity="row" /></Content>
+                    </Column>
+                    <Column Head="Name">
+                        <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+                    </Column>
+                    <Column Head="Slot" Value="row => row.Slot" />
+                </Columns>
+            </Table>
+        </Panel>
+    }
+
+    @if (Effects.Count > 0)
+    {
+        <Panel Head="Effects" Badge="@Effects.Count.ToString()">
+            <Table Items="Effects">
+                <Columns>
+                    <Column Head="" Class="cx-texture">
+                        <Content Context="row"><Texture Entity="row" /></Content>
+                    </Column>
+                    <Column Head="Name">
+                        <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+                    </Column>
+                    <Column Head="Applied by">
+                        <Content Context="row">
+                            <Owner Type="EntityType.Ability" Holder="row.AppliedBy" />
+                        </Content>
+                    </Column>
+                    <Column Head="Type" Class="cx-tags">
+                        <Content Context="row">
+                            @foreach (var school in row.Schools ?? [])
+                            {
+                                <Chip>@school</Chip>
+                            }
+                        </Content>
+                    </Column>
+                </Columns>
+            </Table>
+        </Panel>
+    }
+</EntityView>
+
+@code {
+    [Parameter, EditorRequired] public HeroDocument Entity { get; set; } = default!;
+
+    private const string HeroFacet = "hero";
+
+    private const string Uncategorised = "Other";
+
+    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Basics = [];
+
+    private IReadOnlyList<(string Head, IReadOnlyList<string> Paragraphs)> Lore = [];
+
+    private IReadOnlyList<(string Label, string Value)> Stats = [];
+
+    private IReadOnlyList<IGrouping<string, AbilityDocument>> Abilities = [];
+
+    private IReadOnlyList<TalentNode> Talents = [];
+
+    private IReadOnlyList<ItemDocument> Legendaries = [];
+
+    private IReadOnlyList<EffectDocument> Effects = [];
+
+    private string Calculator => $"/tools/talents?hero={Uri.EscapeDataString(Ui.Name(Entity))}";
+
+    protected override void OnParametersSet()
+    {
+        var name = Ui.Name(Entity);
+
+        Basics = Ui.Store.Hero(name)?.ArmorType is { } armor
+            ? [(FellowshipCodex.Spaced(nameof(HeroEntry.ArmorType)), armor, null, null, null)]
+            : [];
+
+        Lore =
+        [
+            .. new (string Head, string? Text)[]
+                {
+                    ("Biography", Entity.Biography),
+                    ("Playstyle", Entity.Playstyle),
+                    ("Spirit ability", Entity.SpiritAbility),
+                }
+                .Where(entry => entry.Text is { Length: > 0 })
+                .Select(entry => (entry.Head, Paragraphs(entry.Text!))),
+        ];
+
+        Stats = Starting();
+
+        var owned = Owned(name);
+
+        Abilities =
+        [
+            .. owned.OfType<AbilityDocument>()
+                .Where(PublicTypes.IsListed)
+                .Where(ability => ability.Category is not null || PublicTypes.DisplayNameOf(ability) is not null)
+                .OrderBy(ability => (int?)ability.Category ?? int.MaxValue)
+                .ThenBy(ability => Ui.Name(ability), StringComparer.OrdinalIgnoreCase)
+                .GroupBy(ability => ability.Category is { } category
+                    ? FellowshipCodex.Spaced(category.ToString())
+                    : Uncategorised),
+        ];
+
+        Talents = Enum.TryParse<Fellowship.SDK.Hero>(name, out var hero)
+            ? [.. TalentPlan.Tree(Ui.Store, hero).SelectMany(row => row.Nodes)]
+            : [];
+
+        Legendaries =
+        [
+            .. owned.OfType<ItemDocument>()
+                .Where(item => item.Rarity == Rarity.Legendary)
+                .OrderBy(item => item.Slot, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => Ui.Name(item), StringComparer.OrdinalIgnoreCase),
+        ];
+
+        Effects =
+        [
+            .. owned.OfType<EffectDocument>()
+                .Where(effect => PublicTypes.DisplayNameOf(effect) is not null)
+                .OrderBy(effect => Ui.Name(effect), StringComparer.OrdinalIgnoreCase),
+        ];
+    }
+
+    private IReadOnlyList<EntityDocument> Owned(string name)
+    {
+        if (Ui.Codex.Facet(HeroFacet) is not { } facet) return [];
+
+        return
+        [
+            .. Ui.Store.Entities
+                .Where(document => document is AbilityDocument or ItemDocument or EffectDocument)
+                .Where(document => facet.Matches(document, [name]))
+                .DistinctBy(document => (EntityTypes.TypeOf(document), document.Id)),
+        ];
+    }
+
+    private IReadOnlyList<(string, string)> Starting()
+    {
+        if (Entity.BaseAttributes is not { } own) return [];
+
+        var heroes = Ui.Store.Entities.OfType<HeroDocument>().ToArray();
+        var named = Ui.Store.Settings.StatCalculation.Attributes;
+
+        var labelled = own.Keys
+            .Select(key => (Key: key, Label: named.GetValueOrDefault(key)?.DisplayName ?? FellowshipCodex.Spaced(key)))
+            .ToArray();
+
+        var shared = labelled
+            .GroupBy(entry => entry.Label, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .SelectMany(group => group.Select(entry => entry.Key))
+            .ToHashSet(StringComparer.Ordinal);
+
+        return
+        [
+            .. own
+                .Where(attribute => attribute.Value != 0)
+                .Where(attribute => heroes
+                    .Select(other => other.BaseAttributes?.GetValueOrDefault(attribute.Key))
+                    .Distinct()
+                    .Skip(1)
+                    .Any())
+                .Select(attribute => (
+                    shared.Contains(attribute.Key)
+                        ? FellowshipCodex.Spaced(attribute.Key)
+                        : labelled.First(entry => entry.Key == attribute.Key).Label,
+                    FellowshipCodex.Number(attribute.Value))),
+        ];
+    }
+
+    private static IReadOnlyList<string> Paragraphs(string text) =>
+        [.. text.Split('\n').Select(line => line.TrimEnd('\r')).Where(line => line.Length > 0)];
+
+    private static string Tier(int row) => $"Tier {TalentPlan.Numeral(row)}";
+}

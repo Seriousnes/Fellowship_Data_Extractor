@@ -1,0 +1,83 @@
+@page "/hero/{id:int}"
+@page "/hero/{id:int}/{named}"
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+@inject ITextureSource Textures
+@inject NavigationManager Nav
+
+@if (Entity is not null)
+{
+    <PageTitle>@Name - Fellowship Codex</PageTitle>
+    <Crumbs Trail="@(new List<(string, string?)> { (Heroes.Label, Heroes.Href), (Name, null) })" />
+
+    <div class="cx-hero-title">
+        @if (Entity.RoleIcon is { } role)
+        {
+            <img class="cx-hero-role" alt="@Entity.Role" title="@Entity.Role"
+                 src="@Textures.Address(role, TextureSize.Small)" />
+        }
+
+        <h1 class="cx-hero-name" style="color:@Ui.NameColour(Entity)">@Name</h1>
+
+        @if (Entity.Title is { } title)
+        {
+            <p class="cx-hero-epithet">@title</p>
+        }
+    </div>
+
+    <CascadingValue Value="Here">
+        <div class="cx-hero">
+            @if (Entity.Portrait is { } portrait)
+            {
+                <figure class="cx-hero-portrait">
+                    <img alt="" src="@Textures.Address(portrait, TextureSize.Large)" />
+                </figure>
+            }
+
+            <Detail Entity="Entity" />
+        </div>
+    </CascadingValue>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    [Parameter] public string? Named { get; set; }
+
+    private HeroDocument? Entity;
+
+    private Bearings Here = new();
+
+    private string Name => Ui.Name(Entity!);
+
+    protected override void OnParametersSet()
+    {
+        Entity = Store.All(EntityType.Hero, Id).OfType<HeroDocument>().FirstOrDefault();
+
+        if (Entity is null)
+        {
+            Here = new Bearings();
+            Nav.NotFound();
+            return;
+        }
+
+        if (Named != PublicTypes.Segment(Entity))
+        {
+            Nav.NavigateTo(Ui.Path(Entity) + new Uri(Nav.Uri).Query, replace: true);
+            Entity = null;
+            return;
+        }
+
+        Here = new Bearings
+        {
+            Entity = Entity,
+            Readings = [Entity],
+            Tip = Ui.Tip(Entity),
+            Page = Ui.Path(Entity),
+            Under = Heroes.Href,
+            Label = Heroes.Label,
+            Noun = PublicTypes.Noun(EntityType.Hero),
+            Id = Id,
+        };
+    }
+}

@@ -306,6 +306,7 @@ public static class RecordProjection
         SpiritAbility = document.SpiritAbility,
         Portrait = Texture(document.Portrait, view),
         Role = document.Role,
+        RoleIcon = Texture(document.RoleIcon, view),
         OverallDifficulty = document.OverallDifficulty,
         Offense = document.Offense,
         Defense = document.Defense,

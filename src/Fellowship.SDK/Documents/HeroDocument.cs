@@ -18,6 +18,8 @@ public sealed class HeroDocument : EntityDocument
 
     public string? Role { get; init; }
 
+    public string? RoleIcon { get; init; }
+
     public int? OverallDifficulty { get; init; }
 
     public double? Offense { get; init; }

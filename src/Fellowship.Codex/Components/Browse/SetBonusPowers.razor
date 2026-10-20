@@ -11,14 +11,6 @@
         </Column>
         <Column Head="Cooldown" Key="cooldown" Unit="s" Numeric
                 Value="row => row.Cooldown" />
-        <Column Head="Scales off" Class="cx-tags">
-            <Content Context="row">
-                @foreach (var stat in Ui.Codex.Scaling(row.ScalesOff))
-                {
-                    <Chip>@stat</Chip>
-                }
-            </Content>
-        </Column>
     </Columns>
 </Table>
 

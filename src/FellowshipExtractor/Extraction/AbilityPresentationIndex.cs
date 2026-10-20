@@ -14,6 +14,10 @@ public sealed class AbilityPresentationIndex
 {
     public const string RowStructure = "/Script/fellowship.CRAbilityDataRow";
 
+    private const string AbilityAssetField = "GameplayAbilityAsset";
+
+    private const string AdditionalMatch = "AdditionalGameplayAbilityAssets";
+
     private readonly Dictionary<string, AbilityPresentation> _byRowName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AbilityPresentation> _byAbilityAsset = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AbilityPresentation?> _byAdditionalAsset = new(StringComparer.OrdinalIgnoreCase);
@@ -57,7 +61,7 @@ public sealed class AbilityPresentationIndex
                 _byRowName.TryAdd(rowName.Text, presentation);
                 _byRowName.TryAdd(StripClassSuffix(rowName.Text), presentation);
 
-                if (PropertyWalk.GetString(row, "GameplayAbilityAsset") is { } asset)
+                if (PropertyWalk.GetString(row, AbilityAssetField) is { } asset)
                 {
                     _byAbilityAsset.TryAdd(StripClassSuffix(AssetName(asset)), presentation);
                 }
@@ -92,11 +96,17 @@ public sealed class AbilityPresentationIndex
 
         if (_byAdditionalAsset.GetValueOrDefault(StripClassSuffix(abilityName)) is { } viaAdditional)
         {
-            return viaAdditional with { MatchedBy = "AdditionalGameplayAbilityAssets" };
+            return viaAdditional with { MatchedBy = AdditionalMatch };
         }
 
         return null;
     }
+
+    public string? HostOf(string abilityName) =>
+        Find(abilityName) is { MatchedBy: AdditionalMatch } presentation &&
+        PropertyWalk.GetString(presentation.Row, AbilityAssetField) is { } asset
+            ? StripClassSuffix(AssetName(asset))
+            : null;
 
     private static string StripClassSuffix(string name) =>
         name.EndsWith("_C", StringComparison.Ordinal) ? name[..^2] : name;

@@ -137,6 +137,9 @@ public static class PublicTypes
 
     public static bool IsListed(EntityType type) => Find(type).Listed;
 
+    public static bool IsListed(EntityDocument document) =>
+        IsListed(EntityTypes.TypeOf(document)) && document is not AbilityDocument { NamedAfter: not null };
+
     public static string NoSuchType(string? value) =>
         $"'{value}' is not a type. The types are {Accepted}.";
 

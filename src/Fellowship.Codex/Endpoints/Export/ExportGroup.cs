@@ -12,6 +12,7 @@ public static class ExportGroup
 
         group.MapExportManifest();
         group.MapExportFiles();
+        group.MapExportTooltip();
 
         return group;
     }

@@ -12,6 +12,8 @@ public interface IExportHistoryService
     IReadOnlyList<string> Builds { get; }
 
     IReadOnlyList<VersionValue> Of(EntityDocument document);
+
+    EntityDocument? At(string build, EntityDocument document);
 }
 
 public sealed class ExportHistoryService : IExportHistoryService
@@ -54,6 +56,25 @@ public sealed class ExportHistoryService : IExportHistoryService
         }
 
         return readings;
+    }
+
+    public EntityDocument? At(string build, EntityDocument document)
+    {
+        if (build == history.Latest) return document;
+
+        if (!history.Older.TryGetValue(build, out var version)) return null;
+
+        var live = JsonSerializer.SerializeToNode(document, EntityDocuments.Options);
+        var key = new DocumentKey(EntityTypes.Slug(EntityTypes.TypeOf(document)), document.Id);
+
+        try
+        {
+            return Matching(version, key, live)?.Deserialize<EntityDocument>(EntityDocuments.Options);
+        }
+        catch (Exception failure) when (failure is JsonException or NotSupportedException)
+        {
+            return null;
+        }
     }
 
     private static JsonNode? Matching(ExportVersion version, DocumentKey key, JsonNode? live)

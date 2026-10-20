@@ -9,15 +9,22 @@ public static class DocumentProjection
 
     public delegate string? NameLookup(EntityType type, int id);
 
-    public sealed class References(TypeLookup types, NameLookup names)
+    public sealed class References(
+        TypeLookup types, NameLookup names, IReadOnlyDictionary<(EntityType Type, int Id), int>? redirects = null)
     {
         public EntityReference? At(IconSource? source) =>
             source is null || types(source.Table, source.NetId) is not { } type
                 ? null
                 : Of(type, source.NetId);
 
-        public EntityReference? Of(EntityType type, int? id) =>
-            id is { } found ? new EntityReference(type, found, names(type, found)) : null;
+        public EntityReference? Of(EntityType type, int? id)
+        {
+            if (id is not { } found) return null;
+
+            var target = redirects is not null && redirects.TryGetValue((type, found), out var host) ? host : found;
+
+            return new EntityReference(type, target, names(type, target));
+        }
     }
 
 #pragma warning disable CS8524
@@ -29,6 +36,7 @@ public static class DocumentProjection
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
+            NamedAfter = references.At(entity.NamedAfter),
             Description = entity.Description,
             Detail = entity.Detail,
             Icon = entity.Icon,
@@ -227,6 +235,7 @@ public static class DocumentProjection
             SpiritAbility = entity.SpiritAbility,
             Portrait = entity.Icon,
             Role = entity.Role,
+            RoleIcon = entity.RoleIcon,
             OverallDifficulty = entity.OverallDifficulty,
             Offense = entity.Offense,
             Defense = entity.Defense,

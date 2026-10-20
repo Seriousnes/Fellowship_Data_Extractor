@@ -28,6 +28,8 @@ public sealed record HeroProfile(string Codename, string ShippedName)
 
     public string? Role { get; init; }
 
+    public string? RoleIconPath { get; init; }
+
     public int? OverallDifficulty { get; init; }
 
     public double? Offense { get; init; }
@@ -92,6 +94,7 @@ public sealed class HeroNames
                 $"No mappings are loaded, so nothing states which member of {RoleEnum} a hero left at its " +
                 "default holds.");
         var roles = EnumOrdinals.Members(mappings, RoleEnum);
+        var roleIcons = new RoleIcons(provider, mappings);
 
         foreach (var asset in assets)
         {
@@ -120,6 +123,17 @@ public sealed class HeroNames
                     "export unresolved for them.");
             }
 
+            var role = ItemSetBonuses.Titled(
+                EnumOrdinals.Member(mappings, RoleEnum, PropertyWalk.AsString(Declared(metadata, RoleField, provider)))
+                ?? roles[roles.Keys.Min()]);
+
+            if (!roleIcons.ByRole.TryGetValue(role, out var roleIcon))
+            {
+                throw new InvalidOperationException(
+                    $"Hero {codename} has role {role}, and {RoleIcons.Widget}.{RoleIcons.Function} draws no " +
+                    "badge for it.");
+            }
+
             _byCodename[codename] = new HeroProfile(codename, shipped)
             {
                 ArmorType = armor.Label(PropertyWalk.Get(metadata, ArmorTypeField)?.GenericValue),
@@ -131,9 +145,8 @@ public sealed class HeroNames
                 Biography = PropertyWalk.GetText(metadata, BiographyField),
                 Playstyle = PropertyWalk.GetText(metadata, PlaystyleField),
                 SpiritAbility = PropertyWalk.GetText(metadata, SpiritAbilityField),
-                Role = ItemSetBonuses.Titled(
-                    EnumOrdinals.Member(mappings, RoleEnum, PropertyWalk.AsString(Declared(metadata, RoleField, provider)))
-                    ?? roles[roles.Keys.Min()]),
+                Role = role,
+                RoleIconPath = roleIcon,
                 OverallDifficulty = PropertyWalk.AsOrdinal(Declared(metadata, DifficultyField, provider)),
                 Offense = PropertyWalk.AsNumber(Declared(metadata, OffenseField, provider)),
                 Defense = PropertyWalk.AsNumber(Declared(metadata, DefenseField, provider)),

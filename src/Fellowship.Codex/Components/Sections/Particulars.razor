@@ -1,32 +1,21 @@
 @inject ICodexViewService Ui
 
-@if (Facts.Count > 0 || Falloff.Count > 0 || Schools.Count > 0 || Heroes.Count > 0 ||
-     SetBonus.Count > 0 || Scaling.Count > 0 ||
-     AllowedRoles.Count > 0 || AllowedAttributes.Count > 0)
+@if (Rows.Count > 0 || Falloff.Count > 0 || Schools.Count > 0 ||
+     SetBonus.Count > 0 || AllowedRoles.Count > 0 || AllowedAttributes.Count > 0)
 {
     <Panel Head="Details" Class="@(ReferenceEquals(Entity, Here.Entity) ? "cx-entity-details" : null)">
-        @if (Facts.Count > 0)
+        @if (Rows.Count > 0)
         {
             <div class="cx-pairs">
                 @for (var half = 0; half < 2; half++)
                 {
-                    var split = (Facts.Count + 1) / 2;
-                    var slice = half == 0 ? Facts.Take(split) : Facts.Skip(split);
+                    var split = (Rows.Count + 1) / 2;
+                    var slice = half == 0 ? Rows.Take(split) : Rows.Skip(split);
 
                     <Facts>
-                        @foreach (var fact in slice)
+                        @foreach (var row in slice)
                         {
-                            <Fact Label="@fact.Label" Unit="@fact.Unit">
-                                @if (fact.Href is null)
-                                {
-                                    @fact.Value
-                                }
-                                else
-                                {
-                                    <a href="@fact.Href" data-tip="@fact.Tip?.Address"
-                                       data-tip-request="@fact.Tip?.Body">@fact.Value</a>
-                                }
-                            </Fact>
+                            <Fact Label="@row.Label" Unit="@row.Unit">@row.Value</Fact>
                         }
                     </Facts>
                 }
@@ -69,19 +58,6 @@
             </Pills>
         }
 
-        @if (Heroes.Count > 0)
-        {
-            <Rule />
-            <SubHead>Heroes</SubHead>
-            <Pills>
-                @foreach (var hero in Heroes)
-                {
-                    var where = $"/search?hero={Uri.EscapeDataString(hero)}";
-                    <Pill Href="@where" Colour="@Ui.HeroColour(hero)">@hero</Pill>
-                }
-            </Pills>
-        }
-
         @if (SetBonus.Count > 0)
         {
             <Rule />
@@ -90,18 +66,6 @@
                 @foreach (var set in SetBonus)
                 {
                     <Pill><Ref Entity="set" /></Pill>
-                }
-            </Pills>
-        }
-
-        @if (Scaling.Count > 0)
-        {
-            <Rule />
-            <SubHead>Scales off</SubHead>
-            <Pills>
-                @foreach (var stat in Scaling)
-                {
-                    <Pill>@stat</Pill>
                 }
             </Pills>
         }
@@ -135,9 +99,9 @@
 
     [Parameter] public IReadOnlyList<(string Label, string Href)> Schools { get; set; } = [];
 
-    [Parameter] public IReadOnlyList<string> Scaling { get; set; } = [];
+    private sealed record Row(string Label, string? Unit, RenderFragment Value);
 
-    private IReadOnlyList<string> Heroes => [.. Ui.Codex.Facet("hero")?.Values(Entity) ?? []];
+    private IReadOnlyList<Row> Rows = [];
 
     private IReadOnlyList<Fellowship.SDK.Models.TargetCountFalloff> Falloff =>
         DamageFalloff.Source(Entity)?.Entries ?? [];
@@ -151,4 +115,56 @@
         (Entity as Fellowship.SDK.Documents.SetBonusDocument)?.AllowedAttributes is { } attributes
             ? [.. attributes.Select(stat => stat.ToString())]
             : [];
+
+    protected override void OnParametersSet()
+    {
+        var rows = new List<Row>();
+
+        foreach (var fact in Facts)
+        {
+            rows.Add(new Row(fact.Label, fact.Unit, fact.Href is null
+                ? @<text>@fact.Value</text>
+                : @<a href="@fact.Href" data-tip="@fact.Tip?.Address" data-tip-request="@fact.Tip?.Body">@fact.Value</a>));
+        }
+
+        var tokens = CodexView.PlaceholdersOf(Entity);
+        var spreads = tokens.Count(token => token.Spread is not null);
+        var listed = new HashSet<(string, string)>();
+
+        foreach (var token in tokens)
+        {
+            foreach (var tuning in Ui.Tuning(token.Constants))
+            {
+                if (!listed.Add((tuning.Label, tuning.Value))) continue;
+
+                rows.Add(new Row(tuning.Label, null, tuning.Absent
+                    ? @<span class="cx-miss">@tuning.Value</span>
+                    : @<text>@tuning.Value</text>));
+            }
+
+            if (token.Spread is not { } spread) continue;
+
+            var label = spreads > 1 && token.Key is { Length: > 0 } key
+                ? $"{FellowshipCodex.Spaced(key)} Spread"
+                : "Spread";
+            var value = CodexView.Number(spread);
+
+            if (listed.Add((label, value))) rows.Add(new Row(label, null, @<text>@value</text>));
+        }
+
+        var heroes = Ui.Codex.Facet("hero")?.Values(Entity).ToArray() ?? [];
+
+        if (heroes.Length > 0)
+        {
+            rows.Add(new Row(heroes.Length == 1 ? "Hero" : "Heroes", null, @<span class="cx-heroes">
+                @foreach (var hero in heroes)
+                {
+                    var where = $"/search?hero={Uri.EscapeDataString(hero)}";
+                    <a href="@where" style="color:@(Ui.HeroColour(hero) ?? "inherit")">@hero</a>
+                }
+            </span>));
+        }
+
+        Rows = rows;
+    }
 }

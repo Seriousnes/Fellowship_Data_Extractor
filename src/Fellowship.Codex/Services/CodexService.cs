@@ -173,8 +173,6 @@ public sealed class CodexService : ICodexService
             new Flag("grants", "Grants an ability", document => document is ItemDocument { Grants: not null }),
             new Flag("socket", "Rolls with a gem socket", document => document is ItemDocument { GemSlot: true }),
             new Flag("unique", "Unique equipped", document => document is ItemDocument { UniqueEquipped: true }),
-            new Flag("scaling", "Scales off an attribute",
-                document => DocumentFields.Words(document, nameof(AbilityDocument.ScalesOff)).Count > 0),
         ];
 
         Measures =
@@ -298,7 +296,7 @@ public sealed class CodexService : ICodexService
         ];
 
         var counts = store.Entities
-            .Where(document => PublicTypes.IsListed(EntityTypes.TypeOf(document)))
+            .Where(document => PublicTypes.IsListed(document))
             .GroupBy(EntityTypes.TypeOf)
             .ToDictionary(group => group.Key, group => group.Count());
 
@@ -313,7 +311,7 @@ public sealed class CodexService : ICodexService
                 .Where(type => type.Count > 0),
         ];
 
-        var listed = store.Entities.Where(document => PublicTypes.IsListed(EntityTypes.TypeOf(document))).ToArray();
+        var listed = store.Entities.Where(document => PublicTypes.IsListed(document)).ToArray();
 
         offered = Facets.ToDictionary(
             facet => facet.Key,

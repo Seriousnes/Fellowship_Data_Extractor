@@ -51,7 +51,7 @@ public sealed class EntityResolver
 
     private readonly HashSet<string> _unbindableSpreadRows = new(StringComparer.OrdinalIgnoreCase);
 
-    private readonly List<TagRecord> _tags;
+    private readonly IReadOnlyList<TagRecord> _tags;
     private readonly AugmentationIds _augmentationIds;
     private readonly RarityNames _rarities;
     private readonly Dictionary<string, FAssetData> _byPrimaryAssetName = new(StringComparer.Ordinal);
@@ -150,7 +150,9 @@ public sealed class EntityResolver
         _provider = provider;
         _mappings = mappings;
         _assets = [.. AssetRegistry.ReadAssets(provider)];
-        _tags = [.. CsvTables.ReadTags(provider)];
+        var tags = CsvTables.ReadTags(provider).ToArray();
+        _tags = CsvTables.Current(tags);
+        Superseded = tags.Length - _tags.Count;
         _constants = new ConstantsTable(provider);
         _presets = new EffectCalculationPresets(provider, _assets);
         _cooldowns = new CooldownScaling(provider, _assets, _constants);
@@ -272,6 +274,8 @@ public sealed class EntityResolver
     public int ConstantCount => _constants.Count;
 
     public IReadOnlyList<TagRecord> Tags => _tags;
+
+    public int Superseded { get; }
 
     public TagRecord? FindTag(string table, string id)
     {
@@ -851,6 +855,7 @@ public sealed class EntityResolver
             Playstyle = hero.Playstyle,
             SpiritAbility = hero.SpiritAbility,
             Role = hero.Role,
+            RoleIcon = IconName(hero.RoleIconPath, icons),
             OverallDifficulty = hero.OverallDifficulty,
             Offense = hero.Offense,
             Defense = hero.Defense,
@@ -1637,7 +1642,7 @@ public sealed class EntityResolver
         _ => null,
     };
 
-    private static Entity FillFrom(Entity outer, IReadOnlyList<Entity> inner)
+    internal static Entity FillFrom(Entity outer, IReadOnlyList<Entity> inner)
     {
         var filled = outer;
         foreach (var ability in inner) filled = Fill(filled, ability);

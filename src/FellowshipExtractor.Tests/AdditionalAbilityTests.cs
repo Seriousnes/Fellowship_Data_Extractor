@@ -10,25 +10,38 @@ public sealed class AdditionalAbilityTests
         Export.Loaded.Documents.Single(document => document.Type == EntityType.Ability && document.Id == id).Body;
 
     [Theory]
-    [InlineData(2308, 1129, "Backstab", "Mara_backstab")]
-    [InlineData(2309, 1213, "Skittering Blades", "Mara_AOEBuilder")]
-    public void AnAdditionalAbilityHasTheNameIconAndDescriptionOfTheRowListingIt(
-        int additional, int listing, string name, string icon)
-    {
-        var body = Ability(additional);
+    [InlineData(2227)]
+    [InlineData(2308)]
+    [InlineData(2309)]
+    [InlineData(2310)]
+    public void AnAdditionalAbilityHasNoDocumentOfItsOwn(int additional) =>
+        Assert.DoesNotContain(
+            Export.Loaded.Documents,
+            document => document.Type == EntityType.Ability && document.Id == additional);
 
-        Assert.Equal(name, (string?)body["name"]);
-        Assert.Equal(icon, (string?)body["icon"]);
-        Assert.Equal((string?)Ability(listing)["description"], (string?)body["description"]);
+    [Fact]
+    public void TheListingAbilityCarriesTheTargetCountFalloffOfItsAdditionalAbility()
+    {
+        var falloff = Assert.Single((Ability(1018)["targetCountFalloff"] as JsonArray)!);
+
+        Assert.Equal(12, (int?)falloff!["threshold"]);
     }
 
     [Theory]
-    [InlineData(2308, "BackstabDmg")]
-    [InlineData(2309, "SkitterDmg")]
-    public void AnAdditionalAbilityResolvesTheTokenItsDescriptionPrints(int additional, string token)
+    [InlineData(1129, "BackstabDmg")]
+    [InlineData(1213, "SkitterDmg")]
+    public void TheListingAbilityResolvesTheTokenItsDescriptionPrints(int listing, string token)
     {
-        var placeholders = Ability(additional)["placeholders"] as JsonArray;
+        var placeholders = Ability(listing)["placeholders"] as JsonArray;
 
         Assert.Contains(placeholders!.OfType<JsonNode>(), placeholder => (string?)placeholder["key"] == token);
+    }
+
+    [Fact]
+    public void AReferenceToAnAdditionalAbilityNamesTheListingAbility()
+    {
+        var effect = Export.Loaded.Documents.Single(document => document.Type == EntityType.Effect && document.Id == 1380).Body;
+
+        Assert.Equal(1018, (int?)effect["nameBorrowedFrom"]!["id"]);
     }
 }

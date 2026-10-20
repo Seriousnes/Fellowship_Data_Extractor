@@ -451,8 +451,8 @@ public sealed class TruthTests
     [InlineData(2740, 1964, "Heal")]
     [InlineData(2741, 1964, "Cost")]
     [InlineData(2826, 1964, "RemoveStagger")]
-    [InlineData(1641, 1167, "Lockout")]
-    [InlineData(1642, 1167, "Interrupt")]
+    [InlineData(1703, 1200, "Lockout")]
+    [InlineData(1704, 1200, "Interrupt")]
     public void AnEffectNamedAfterAnAbilityCarriesTheAbilityAndTheRoleItPlays(int id, int ability, string role)
     {
         var record = Record(EntityType.Effect, id);

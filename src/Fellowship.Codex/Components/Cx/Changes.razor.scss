@@ -1,27 +1,22 @@
 .cx-changes {
-  font-size: 13px;
+  list-style: none; margin: 0; padding: 0; font-size: 13px;
 
-  .cx-change-build {
-    color: var(--core-secondary-100); font: 12px/1.6 var(--mono); margin: 8px 0 4px;
+  li {
+    display: flex; align-items: baseline; gap: 8px; padding: 6px 0;
+    border-bottom: 1px solid var(--line-soft);
+
+    &:last-child { border-bottom: 0; }
   }
 
-  .cx-change-current {
-    color: var(--muted); font-size: 11px; margin-left: 6px; text-transform: uppercase;
+  .cx-change-tip {
+    display: inline-flex; align-items: baseline; gap: 8px; cursor: help;
+
+    &:hover .cx-change-build,
+    &:focus-visible .cx-change-build { color: var(--gold-bright); }
+    &:focus-visible { outline: 1px solid var(--gold-deep); outline-offset: 2px; }
   }
 
-  .cx-change-note { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+  .cx-change-build { color: var(--core-secondary-100); font: 12px/1.6 var(--mono); }
 
-  .cx-change-leaves { list-style: none; margin: 0 0 8px; padding: 0; }
-
-  .cx-change-leaves li {
-    align-items: baseline; column-gap: 8px; display: flex; flex-wrap: wrap; padding: 2px 0;
-  }
-
-  .cx-change-path { color: var(--muted); font: 12px/1.5 var(--mono); }
-
-  .cx-was { color: var(--semantic-negative); font: 12px/1.5 var(--mono); }
-
-  .cx-change-arrow { color: var(--muted); font-size: 11px; }
-
-  .cx-now { color: var(--semantic-positive); font: 12px/1.5 var(--mono); }
+  .cx-change-note { color: var(--muted); font-size: 11px; text-transform: uppercase; }
 }

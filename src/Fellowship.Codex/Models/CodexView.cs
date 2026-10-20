@@ -84,5 +84,4 @@ public static class CodexView
 
 public sealed record TuningRow(string Label, string Value, bool Absent);
 
-public sealed record TokenReading(
-    int Ordinal, string Reading, bool Resolved, string Working, IReadOnlyList<TuningRow> Tuning);
+public sealed record TokenReading(int Ordinal, string Reading, bool Resolved);

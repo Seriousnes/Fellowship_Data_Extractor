@@ -1,0 +1,49 @@
+@page "/heroes"
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+@inject ITextureSource Textures
+
+<PageTitle>@Label - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@(new List<(string, string?)> { (Label, null) })" />
+
+<h1>@Label</h1>
+
+<ul class="cx-heroes">
+    @foreach (var hero in Roster)
+    {
+        <li>
+            <a class="cx-hero-card" href="@Ui.Href(hero)">
+                <span class="cx-hero-card-portrait">
+                    @if (hero.Portrait is { } portrait)
+                    {
+                        <img alt="" loading="lazy" src="@Textures.Address(portrait, TextureSize.Large)" />
+                    }
+                </span>
+                <span class="cx-hero-card-name" style="color:@Ui.NameColour(hero)">
+                    @if (hero.RoleIcon is { } role)
+                    {
+                        <img class="cx-hero-role" alt="@hero.Role" title="@hero.Role"
+                             src="@Textures.Address(role, TextureSize.Small)" />
+                    }
+                    @Ui.Name(hero)
+                </span>
+            </a>
+        </li>
+    }
+</ul>
+
+@code {
+    public const string Href = "/heroes";
+
+    public static string Label => PublicTypes.Label(EntityType.Hero);
+
+    private IReadOnlyList<HeroDocument> Roster = [];
+
+    protected override void OnParametersSet() =>
+        Roster =
+        [
+            .. Store.Entities.OfType<HeroDocument>()
+                .OrderBy(hero => Ui.Name(hero), StringComparer.OrdinalIgnoreCase),
+        ];
+}

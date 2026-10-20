@@ -6,10 +6,12 @@
 
 .cx-craft-side { min-width: 0; display: grid; gap: 10px; align-items: start; }
 
-.cx-craft-copy,
-.cx-craft-import,
-.cx-craft-export,
+@include tool-bar;
+
+.cx-tal-bar { margin: 0; }
+
 .cx-craft-read {
+  justify-self: start;
   appearance: none; cursor: pointer; border: 1px solid transparent; border-radius: 2px;
   background: var(--raised); color: var(--muted); font: 600 11px/1 var(--sans);
   padding: 6px 9px; letter-spacing: .04em;

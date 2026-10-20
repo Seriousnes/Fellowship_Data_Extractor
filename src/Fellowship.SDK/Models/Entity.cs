@@ -63,6 +63,8 @@ public sealed record Entity
 
     public IconSource? NameInheritedFrom { get; init; }
 
+    public IconSource? NamedAfter { get; init; }
+
     public string? Category { get; init; }
 
     public bool? EnabledInGame { get; init; }
@@ -266,6 +268,8 @@ public sealed record Entity
     public string? SpiritAbility { get; init; }
 
     public string? Role { get; init; }
+
+    public string? RoleIcon { get; init; }
 
     public int? OverallDifficulty { get; init; }
 

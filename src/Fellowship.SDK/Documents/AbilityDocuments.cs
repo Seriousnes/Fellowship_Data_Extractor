@@ -12,6 +12,8 @@ public sealed class AbilityDocument : EntityDocument
 
     public bool? EnabledInGame { get; init; }
 
+    public EntityReference? NamedAfter { get; init; }
+
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }

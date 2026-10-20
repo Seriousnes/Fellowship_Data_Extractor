@@ -9,14 +9,6 @@
         <Column Head="Name" Key="name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column Head="Scales off" Class="cx-tags">
-            <Content Context="row">
-                @foreach (var stat in Ui.Codex.Scaling(row.ScalesOff))
-                {
-                    <Chip>@stat</Chip>
-                }
-            </Content>
-        </Column>
     </Columns>
 </Table>
 

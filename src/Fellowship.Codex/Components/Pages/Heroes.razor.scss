@@ -1,0 +1,34 @@
+@use "../../Styles/shared" as *;
+
+.cx-heroes {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;
+  margin: 0; padding: 0; list-style: none;
+}
+
+.cx-hero-card {
+  display: flex; flex-direction: column; height: 100%;
+  @include plated;
+  padding: 0; overflow: hidden; text-decoration: none;
+  transition: filter .12s ease;
+
+  &:hover { text-decoration: none; filter: brightness(1.12); }
+  &:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 2px; }
+}
+
+.cx-hero-card-portrait {
+  display: block; aspect-ratio: 1; background: var(--sunken);
+
+  img { display: block; width: 100%; height: 100%; object-fit: cover; }
+}
+
+.cx-hero-card-name {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+  font-family: var(--display); font-size: 19px; letter-spacing: .04em;
+}
+
+.cx-hero-role { flex: 0 0 auto; width: 24px; height: 24px; object-fit: contain; }
+
+@media (max-width: 520px) {
+  .cx-heroes { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .cx-hero-card-name { font-size: 16px; padding: 8px 10px; }
+}

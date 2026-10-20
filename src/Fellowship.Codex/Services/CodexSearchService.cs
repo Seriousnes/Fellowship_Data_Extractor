@@ -18,7 +18,7 @@ public sealed class CodexSearchService(
         var found = query.Text is { } text
             ? index.Search(text, int.MaxValue)
                 .Select(hit => hit.Document)
-                .Where(row => PublicTypes.IsListed(EntityTypes.TypeOf(row)))
+                .Where(row => PublicTypes.IsListed(row))
                 .ToArray()
             : Listed();
 
@@ -73,7 +73,7 @@ public sealed class CodexSearchService(
     private EntityDocument[]? listed;
 
     private EntityDocument[] Listed() =>
-        listed ??= [.. store.Entities.Where(row => PublicTypes.IsListed(EntityTypes.TypeOf(row)))];
+        listed ??= [.. store.Entities.Where(row => PublicTypes.IsListed(row))];
 
     private static bool Narrowed(CodexQuery query, string facet) =>
         query.Selections.TryGetValue(facet, out var values) && values.Count > 0;

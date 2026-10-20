@@ -3,20 +3,13 @@
 @inject IExportHistoryService History
 
 <CascadingValue Value="Entity">
-    <Wording />
-    <Particulars Facts="Facts" Schools="Schools" Scaling="Scaling" />
-    <Substitutions Tokens="Tokens" />
+    <Particulars Facts="Facts" Schools="Schools" />
     <Ranks />
     <Overflow />
     <BorrowedName Href="@(NameSource?.Href)" Tip="@(NameSource?.Tip)" Name="@(NameSource?.Name)" />
     <BorrowedTexture Href="@(TextureSource?.Href)" Tip="@(TextureSource?.Tip)" Name="@(TextureSource?.Name)" />
     @ChildContent
-    @if (ByVersion.Count > 0)
-    {
-        <Panel Head="Changes">
-            <Changes ByVersion="ByVersion" />
-        </Panel>
-    }
+    <Changes ByVersion="ByVersion" Entity="Entity" Tip="Here.Tip" />
 </CascadingValue>
 
 @code {
@@ -33,10 +26,6 @@
 
     private IReadOnlyList<(string Label, string Href)> Schools = [];
 
-    private IReadOnlyList<string> Scaling = [];
-
-    private IReadOnlyList<TokenReading> Tokens = [];
-
     private IReadOnlyList<VersionValue> ByVersion = [];
 
     private (string Href, TooltipLink? Tip, string Name)? NameSource;
@@ -48,8 +37,6 @@
     protected override void OnParametersSet()
     {
         Facts = [.. Extra, .. Ui.Facts(Entity)];
-        Scaling = [.. Ui.Codex.Scaling(DocumentFields.Words(Entity, nameof(AbilityDocument.ScalesOff)))];
-        Tokens = Ui.Substitutions(Entity);
         ByVersion = ReferenceEquals(Entity, Here.Entity) ? History.Of(Entity) : [];
 
         IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];

@@ -18,6 +18,8 @@ public sealed record HeroRecord : EntityRecord
 
     public string? Role { get; init; }
 
+    public string? RoleIcon { get; init; }
+
     public int? OverallDifficulty { get; init; }
 
     public double? Offense { get; init; }
