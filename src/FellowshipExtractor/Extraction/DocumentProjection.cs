@@ -278,6 +278,7 @@ public static class DocumentProjection
             Name = Name(entity),
             Description = entity.Description,
             Icon = entity.Icon,
+            Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
         },
 
@@ -333,6 +334,7 @@ public static class DocumentProjection
             Radius = entity.Radius,
             Cost = entity.Cost,
             TargetCountFalloff = Falloff(entity, references),
+            Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
         },
 
@@ -377,6 +379,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
         },
 
@@ -388,6 +391,7 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
         },
 
@@ -408,6 +412,7 @@ public static class DocumentProjection
             CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             Schools = Schools(entity.Tags),
             ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
         },
 
@@ -433,6 +438,7 @@ public static class DocumentProjection
             Schools = Schools(entity.Tags),
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
         },
 
@@ -445,6 +451,7 @@ public static class DocumentProjection
             Cooldown = entity.Cooldown,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
         },
 
@@ -454,6 +461,7 @@ public static class DocumentProjection
             Name = Name(entity),
             Description = entity.Description,
             ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
         },
 
         null => throw new InvalidOperationException($"{entity.Name} has no type and should not have been projected."),

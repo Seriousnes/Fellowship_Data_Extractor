@@ -17,5 +17,7 @@ public sealed class TalentDocument : EntityDocument
 
     public IReadOnlyList<TargetCountFalloff>? TargetCountFalloff { get; init; }
 
+    public IReadOnlyList<EntityReference>? Grants { get; init; }
+
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 }
