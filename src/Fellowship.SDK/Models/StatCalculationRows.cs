@@ -47,4 +47,15 @@ public sealed record ItemSlotDefinition(string SlotType, int MinimumItemLevel)
     public IReadOnlyList<string> GemPowerPool { get; init; } = [];
 
     public IReadOnlyList<string> ItemTraitPool { get; init; } = [];
+
+    public IReadOnlyList<ModifierRecipe> Recipes { get; init; } = [];
+}
+
+public sealed record ModifierRecipe(string Recipe, int SlotIndex)
+{
+    public string? Category { get; init; }
+
+    public int Options { get; init; }
+
+    public bool AllOptions { get; init; }
 }

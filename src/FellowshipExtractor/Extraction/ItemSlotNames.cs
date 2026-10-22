@@ -17,10 +17,7 @@ public sealed class ItemSlotNames
     private const string KeyPrefix = "ItemType_";
     private const string UnknownType = "Unknown";
     private const string OrdinalField = "ItemType";
-    private const string DynamicTagPrefix = "ItemID.HeroItem.Dynamic.";
     private const string EnumScope = "::";
-
-    private static readonly char[] TagSeparators = ['.', '_'];
 
     private static readonly Dictionary<string, string> SlotLabels =
         new(StringComparer.Ordinal) { ["Necklace"] = "Neck" };
@@ -45,18 +42,6 @@ public sealed class ItemSlotNames
     {
         if (_byToken.TryGetValue(token, out var cached)) return cached;
         return _byToken[token] = Match(token);
-    }
-
-    public SlotName? FromTag(string tagName)
-    {
-        if (!tagName.StartsWith(DynamicTagPrefix, StringComparison.OrdinalIgnoreCase)) return null;
-
-        foreach (var token in tagName[DynamicTagPrefix.Length..].Split(TagSeparators))
-        {
-            if (Find(token) is { } slot) return slot;
-        }
-
-        return null;
     }
 
     private SlotName? Match(string token)

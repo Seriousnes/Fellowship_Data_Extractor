@@ -218,6 +218,7 @@ public static class DocumentProjection
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Description = entity.Description,
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
             Icon = entity.Icon,
             Kind = entity.ModifierKind,
             Generates = Generated(entity),

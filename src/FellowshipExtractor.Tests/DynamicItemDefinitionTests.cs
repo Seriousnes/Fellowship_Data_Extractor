@@ -70,4 +70,11 @@ public sealed class DynamicItemDefinitionTests
         Assert.NotEmpty(relics);
         Assert.All(relics, row => Assert.Equal("Relic", row.Body["slot"]?.GetValue<string>()));
     }
+
+    [Fact]
+    public void AnItemTagNoDefinitionOrRowNamesStatesNoSlot() =>
+        Assert.DoesNotContain(
+            Export.Loaded.Documents,
+            row => row.Type == EntityType.Item &&
+                   row.Body.Select(pair => pair.Key).Order(StringComparer.Ordinal).SequenceEqual(["$type", "id", "slot"]));
 }

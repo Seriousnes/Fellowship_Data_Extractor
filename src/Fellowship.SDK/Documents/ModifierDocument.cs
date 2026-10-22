@@ -6,6 +6,8 @@ public sealed class ModifierDocument : EntityDocument
 {
     public string? Description { get; init; }
 
+    public IReadOnlyList<Placeholder>? Placeholders { get; init; }
+
     public string? Icon { get; init; }
 
     public string? Kind { get; init; }

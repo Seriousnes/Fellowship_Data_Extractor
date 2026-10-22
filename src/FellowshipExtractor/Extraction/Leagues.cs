@@ -20,7 +20,7 @@ public sealed class Leagues
     private const string ModeEnum = "ECRGameFinderMode";
     private const string BucketDifficultyField = "Difficulty";
 
-    private static readonly string[] BucketFields = ["EternalBuckets", "PinnacleBuckets"];
+    private static readonly string[] BucketFields = ["RankedBuckets", "EternalBuckets", "PinnacleBuckets"];
 
     private readonly List<LeagueEntry> _entries = [];
     private readonly List<string> _unreached = [];

@@ -74,6 +74,8 @@ public sealed class EntityResolver
     public HeroNames Heroes { get; }
     public ItemSlots Slots { get; }
     public StatCalculation StatCalculation { get; }
+
+    public ModifierRecipes ModifierRecipes { get; }
     public ItemSlotNames SlotNames { get; }
     public SlotIcons SlotGlyphs { get; }
 
@@ -194,7 +196,8 @@ public sealed class EntityResolver
 
         AbilityRanks = new DynamicAbilityRanks(provider, _assets, _tags, _augmentationIds, SlotNames);
 
-        StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor, RuleSets);
+        ModifierRecipes = new ModifierRecipes(provider, _assets);
+        StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor, RuleSets, ModifierRecipes);
 
         Collections = new VisualCollections(provider, _assets);
         HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, Collections, rarities);
@@ -315,9 +318,9 @@ public sealed class EntityResolver
             Table = tag.Table,
             NetId = tag.NetId,
             Name = tag.Name,
-            Slot = (IsDynamicDefinition(asset) && cdo is not null
-                ? SlotNames.ByOrdinal(PropertyWalk.AsOrdinal(PropertyWalk.Get(cdo, SlotOrdinalField)?.GenericValue) ?? 0)
-                : SlotNames.FromTag(tag.Name))?.Shipped,
+            Slot = IsDynamicDefinition(asset) && cdo is not null
+                ? SlotNames.ByOrdinal(PropertyWalk.AsOrdinal(PropertyWalk.Get(cdo, SlotOrdinalField)?.GenericValue) ?? 0)?.Shipped
+                : null,
             GemSlot = RuleSets.HasGemSocket(ruleSet) ? true : null,
             TraitTree = cdo is null ? null : TraitTrees.Named(PropertyWalk.GetString(cdo, ItemTraitTrees.ItemField)),
             RuleSet = ruleSet is null ? null : ShortRuleSet(ruleSet),
@@ -850,14 +853,27 @@ public sealed class EntityResolver
         };
     }
 
-    private static Entity WithModifier(Entity entity, Modifier modifier, IconWriter? icons) => entity with
+    private Entity WithModifier(Entity entity, Modifier modifier, IconWriter? icons) => entity with
     {
         DisplayName = entity.DisplayName ?? modifier.DisplayName,
         Description = entity.Description ?? modifier.Description,
         Icon = entity.Icon ?? IconName(modifier.IconPath, icons),
+        Placeholders = entity.Placeholders ?? ModifierPlaceholders(modifier),
         ModifierKind = modifier.Kind,
         MinimumHeroRank = modifier.MinimumHeroRank,
     };
+
+    private Dictionary<string, Placeholder>? ModifierPlaceholders(Modifier modifier)
+    {
+        if (modifier.Row is null) return null;
+
+        var resolved = DescriptionTokens.Align(
+            DescriptionTokens.Resolve(
+                modifier.Row, _provider, _constants, _presets, null, null, _unbindableSpreadRows, Heroes),
+            modifier.Description);
+
+        return resolved.Count == 0 ? null : resolved;
+    }
 
     private IReadOnlyList<IconSource> Granting(string augmentation) =>
         [.. Owners.GrantedBy(augmentation)

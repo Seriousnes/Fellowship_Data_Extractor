@@ -50,7 +50,8 @@ public sealed class StatCalculation
         IReadOnlyList<FAssetData> assets,
         ItemSlotNames slots,
         ArmorTypes armor,
-        DynamicItemRuleSets ruleSets)
+        DynamicItemRuleSets ruleSets,
+        ModifierRecipes recipes)
     {
         var settings = Settings(provider, assets);
 
@@ -69,7 +70,7 @@ public sealed class StatCalculation
         ArmorWeights = ArmorWeightRows(provider, assets, armor);
         Attributes = AttributeRows(provider, assets);
         RarityAdditions = RarityRows(provider, assets, ruleSets);
-        SlotDefinitions = SlotDefinitionRows(provider, assets, RarityAdditions);
+        SlotDefinitions = SlotDefinitionRows(provider, assets, RarityAdditions, recipes);
 
         if (Weights.Count == 0 || SlotWeights.Count == 0 || ArmorWeights.Count == 0 ||
             Attributes.Count == 0 || RarityAdditions.Count == 0)
@@ -363,7 +364,8 @@ public sealed class StatCalculation
     private static Dictionary<string, ItemSlotDefinition> SlotDefinitionRows(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
-        IReadOnlyDictionary<string, IReadOnlyDictionary<int, RaritySlots>> additions)
+        IReadOnlyDictionary<string, IReadOnlyDictionary<int, RaritySlots>> additions,
+        ModifierRecipes recipes)
     {
         var named = additions.Values
             .SelectMany(byTier => byTier.Values)
@@ -386,6 +388,7 @@ public sealed class StatCalculation
             {
                 GemPowerPool = Names(row, "GemPowerPool"),
                 ItemTraitPool = Names(row, "ItemTraitPool"),
+                Recipes = recipes.For(rowName),
             };
         }
 
@@ -393,6 +396,13 @@ public sealed class StatCalculation
         {
             throw new InvalidOperationException(
                 $"The rarity rows name {string.Join(", ", undefined)}, and no {ItemSlots.RowStructure} row defines it.");
+        }
+
+        if (recipes.Slots.Where(slot => !found.ContainsKey(slot)).ToArray() is { Length: > 0 } unrolled)
+        {
+            throw new InvalidOperationException(
+                $"A {ModifierRecipes.Implementation} recipe rerolls {string.Join(", ", unrolled)}, and no rarity row " +
+                "names that slot.");
         }
 
         return found;
