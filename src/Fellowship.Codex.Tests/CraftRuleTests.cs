@@ -8,69 +8,62 @@ public class CraftRuleTests(Export export)
     private IReadOnlyList<BlessingDocument> Blessings =>
         [.. export.Store.Entities.OfType<BlessingDocument>()];
 
-    private IReadOnlyList<TraitDocument> Traits =>
-        [.. export.Store.Entities.OfType<TraitDocument>()];
+    private string Defined(string slotType) =>
+        Settings.StatCalculation.SlotDefinitions.First(pair => pair.Value.SlotType == slotType).Key;
+
+    private string Glyphs => Defined(CraftSlots.AbilityRank);
+
+    private string Traited => Settings.StatCalculation.SlotDefinitions
+        .Where(pair => pair.Value.SlotType == CraftSlots.ItemTrait)
+        .MaxBy(pair => pair.Value.MinimumItemLevel)
+        .Key;
+
+    private IReadOnlyList<TraitDocument> Pooled =>
+    [
+        .. Settings.StatCalculation.SlotDefinitions[Traited].ItemTraitPool
+            .SelectMany(category => TraitTrees.InCategory(category, export.Store))
+            .Where(trait => trait.MaxRank is > 0),
+    ];
+
+    private TooltipQuery Top => new() { ItemLevel = Settings.Items.MaxItemLevel };
 
     private static CraftSlot Roll(params string[] accepts) => new(CraftSlots.RandomRolls, 0, accepts);
 
-    private static ItemDocument Worn(string slot) =>
-        new() { Id = 1, Slot = slot, RuleSet = "Default_NoGemSlot" };
+    private static ItemDocument Worn(string slot) => new() { Id = 1, Slot = slot };
 
     private string? Forbids(ItemDocument item, TooltipQuery query, CraftSlot slot, CraftCandidate candidate) =>
         ItemCraft.Forbids(item, query, slot, candidate, export.Store);
 
-    [Fact]
-    public void A_stat_rolled_twice_already_is_forbidden_a_third_time()
-    {
-        var stat = Settings.StatCalculation.RandomStatPool[0];
-        var slot = new CraftSlot(CraftSlots.RandomStat, 2, [CraftSlots.RandomStat]);
-        var candidate = new CraftCandidate(CraftSlots.RandomStat, 0, stat, 1);
+    private static CraftCandidate Candidate(string accepts, EntityDocument row, int rank = 1) =>
+        new(accepts, row.Id, row.Name ?? string.Empty, rank);
 
-        Assert.Null(Forbids(
-            Worn("Head"), new TooltipQuery { RandomStats = [stat] }, slot, candidate));
+    [Fact]
+    public void A_modifier_below_the_item_level_its_slot_starts_at_is_forbidden()
+    {
+        var floor = Settings.StatCalculation.SlotDefinitions[Traited].MinimumItemLevel;
+        var trait = Pooled[0];
+
+        Assert.True(floor > 0);
 
         Assert.Equal(
-            CraftReasons.TwoOfAKind,
-            Forbids(Worn("Head"), new TooltipQuery { RandomStats = [stat, stat] }, slot, candidate));
-    }
+            CraftReasons.BelowItemLevel(floor),
+            Forbids(Worn("Head"), Top with { ItemLevel = floor - 1 }, Roll(Traited), Candidate(Traited, trait)));
 
-    [Fact]
-    public void A_stat_the_item_declares_does_not_count_towards_the_two_of_a_kind_cap()
-    {
-        var stat = Settings.StatCalculation.RandomStatPool[0];
-
-        var item = new ItemDocument
-        {
-            Id = 5213,
-            Slot = "Head",
-            RuleSet = "Default_NoGemSlot",
-            Stats = [new StatSlot(stat, 40) { Kind = SlotKinds.Primary }],
-        };
-
-        Assert.Null(Forbids(
-            item,
-            new TooltipQuery { RandomStats = [stat] },
-            new CraftSlot(CraftSlots.RandomStat, 1, [CraftSlots.RandomStat]),
-            new CraftCandidate(CraftSlots.RandomStat, 0, stat, 1)));
+        Assert.Null(Forbids(Worn("Head"), Top with { ItemLevel = floor }, Roll(Traited), Candidate(Traited, trait)));
     }
 
     [Fact]
     public void A_third_instance_of_one_trait_id_is_forbidden()
     {
-        var trait = Traits[0];
+        var trait = Pooled[0];
         var already = new ItemModifier(ModifierKind.Trait, trait.Id, 1);
-        var candidate = new CraftCandidate(CraftSlots.ItemTrait, trait.Id, trait.Name ?? string.Empty, 1);
 
         Assert.Null(Forbids(
-            Worn("Head"), new TooltipQuery { Modifiers = [already] }, Roll(CraftSlots.ItemTrait), candidate));
+            Worn("Head"), Top with { Modifiers = [already] }, Roll(Traited), Candidate(Traited, trait)));
 
         Assert.Equal(
             CraftReasons.TwoOfAKind,
-            Forbids(
-                Worn("Head"),
-                new TooltipQuery { Modifiers = [already, already] },
-                Roll(CraftSlots.ItemTrait),
-                candidate));
+            Forbids(Worn("Head"), Top with { Modifiers = [already, already] }, Roll(Traited), Candidate(Traited, trait)));
     }
 
     [Fact]
@@ -80,8 +73,6 @@ public class CraftRuleTests(Export export)
 
         Assert.Equal(3, offered.Length);
 
-        var worn = offered[2].Slots![0];
-
         var carried = offered
             .Take(2)
             .Select(blessing => new ItemModifier(ModifierKind.Blessing, blessing.Id, 1))
@@ -90,10 +81,10 @@ public class CraftRuleTests(Export export)
         Assert.Equal(
             CraftReasons.TwoBlessings,
             Forbids(
-                Worn(worn),
-                new TooltipQuery { Modifiers = carried },
-                Roll(CraftSlots.AbilityRank),
-                new CraftCandidate(CraftSlots.AbilityRank, offered[2].Id, offered[2].Name ?? string.Empty, 1)));
+                Worn(offered[2].Slots![0]),
+                Top with { Modifiers = carried },
+                Roll(Glyphs),
+                Candidate(Glyphs, offered[2])));
     }
 
     [Fact]
@@ -101,10 +92,8 @@ public class CraftRuleTests(Export export)
     {
         var blessing = Blessings.First(row => row.Slots is { Count: > 0 });
 
-        var candidate = new CraftCandidate(CraftSlots.AbilityRank, blessing.Id, blessing.Name ?? string.Empty, 1);
-
         Assert.All(blessing.Slots!, worn =>
-            Assert.Null(Forbids(Worn(worn), new TooltipQuery(), Roll(CraftSlots.AbilityRank), candidate)));
+            Assert.Null(Forbids(Worn(worn), Top, Roll(Glyphs), Candidate(Glyphs, blessing))));
 
         const string Elsewhere = "Offhand";
 
@@ -112,7 +101,7 @@ public class CraftRuleTests(Export export)
 
         Assert.Equal(
             CraftReasons.NotInPool(Elsewhere),
-            Forbids(Worn(Elsewhere), new TooltipQuery(), Roll(CraftSlots.AbilityRank), candidate));
+            Forbids(Worn(Elsewhere), Top, Roll(Glyphs), Candidate(Glyphs, blessing)));
     }
 
     [Fact]
@@ -121,11 +110,7 @@ public class CraftRuleTests(Export export)
         var blessing = Blessings.First(row => row.Slots is { Count: > 0 } && row.MaxRank is > 0);
         var worn = blessing.Slots![0];
 
-        string? At(int rank) => Forbids(
-            Worn(worn),
-            new TooltipQuery(),
-            Roll(CraftSlots.AbilityRank),
-            new CraftCandidate(CraftSlots.AbilityRank, blessing.Id, blessing.Name ?? string.Empty, rank));
+        string? At(int rank) => Forbids(Worn(worn), Top, Roll(Glyphs), Candidate(Glyphs, blessing, rank));
 
         Assert.Null(At(1));
         Assert.Null(At(blessing.MaxRank!.Value));
@@ -136,53 +121,41 @@ public class CraftRuleTests(Export export)
     [Fact]
     public void A_trait_runs_from_one_to_the_rank_its_document_states()
     {
-        var trait = Traits.First(row => row.MaxRank is > 0);
+        var trait = Pooled[0];
 
-        string? At(int rank) => Forbids(
-            Worn("Head"),
-            new TooltipQuery(),
-            Roll(CraftSlots.ItemTrait),
-            new CraftCandidate(CraftSlots.ItemTrait, trait.Id, trait.Name ?? string.Empty, rank));
+        string? At(int rank) => Forbids(Worn("Head"), Top, Roll(Traited), Candidate(Traited, trait, rank));
 
         Assert.Null(At(trait.MaxRank!.Value));
         Assert.Equal(CraftReasons.PastRank(trait.MaxRank.Value), At(trait.MaxRank.Value + 1));
     }
 
-    [Theory]
-    [InlineData("ItemTraitTrees.EASeason3Weapon", 5)]
-    [InlineData("ItemTraitTrees.EASeason3Necklace", 2)]
-    public void A_trait_tree_imbues_one_trait_per_row_below_its_root(string tree, int capacity) =>
-        Assert.Equal(capacity, TraitTrees.Capacity(tree, Settings));
-
     [Fact]
     public void An_imbued_trait_sits_once_and_only_while_a_slot_is_free()
     {
-        var tree = Settings.TraitTrees[0].Tag;
-        var capacity = TraitTrees.Capacity(tree, Settings)!.Value;
-        var item = new ItemDocument { Id = 1, Slot = "Weapon", RuleSet = "Weapon", TraitTree = tree };
-        var block = new CraftSlot(CraftSlots.TraitTree, 0, [CraftSlots.ItemTrait]) { Capacity = capacity };
+        var tree = Settings.TraitTrees[0];
+        var capacity = TraitTrees.Capacity(tree.Tag, Settings)!.Value;
+        var grown = Defined(CraftSlots.TraitTree);
+        var item = new ItemDocument { Id = 1, Slot = "Weapon", TraitTree = tree.Tag };
+        var block = new CraftSlot(CraftSlots.TraitTree, 0, [grown]) { Capacity = capacity };
 
-        var chosen = Traits.Where(row => row.MaxRank is > 0).Take(capacity + 1).ToArray();
+        var chosen = tree.Nodes
+            .SelectMany(node => TraitTrees.Offered(node, export.Store))
+            .DistinctBy(trait => trait.Id)
+            .Where(trait => trait.MaxRank is > 0)
+            .Take(capacity + 1)
+            .ToArray();
 
-        Assert.True(chosen.Length == capacity + 1);
+        Assert.Equal(capacity + 1, chosen.Length);
 
         var filled = chosen.Take(capacity).Select(row => new ImbuedTrait(row.Id, 1)).ToArray();
 
         Assert.Equal(
             CraftReasons.AlreadyImbued,
-            Forbids(
-                item,
-                new TooltipQuery { ImbuedTraits = [filled[0]] },
-                block,
-                new CraftCandidate(CraftSlots.ItemTrait, chosen[0].Id, chosen[0].Name ?? string.Empty, 1)));
+            Forbids(item, Top with { ImbuedTraits = [filled[0]] }, block, Candidate(grown, chosen[0])));
 
         Assert.Equal(
             CraftReasons.NoRoom,
-            Forbids(
-                item,
-                new TooltipQuery { ImbuedTraits = filled },
-                block,
-                new CraftCandidate(CraftSlots.ItemTrait, chosen[^1].Id, chosen[^1].Name ?? string.Empty, 1)));
+            Forbids(item, Top with { ImbuedTraits = filled }, block, Candidate(grown, chosen[^1])));
     }
 
     [Fact]
@@ -195,9 +168,9 @@ public class CraftRuleTests(Export export)
             .Select(blessing => new ItemModifier(ModifierKind.Blessing, blessing.Id, 1))
             .ToArray();
 
-        var query = new TooltipQuery { Modifiers = carried };
-        var slot = Roll(CraftSlots.AbilityRank);
-        var candidate = new CraftCandidate(CraftSlots.AbilityRank, offered[0].Id, offered[0].Name ?? string.Empty, 1);
+        var query = Top with { Modifiers = carried };
+        var slot = Roll(Glyphs);
+        var candidate = Candidate(Glyphs, offered[0]);
 
         Assert.Equal(CraftReasons.TwoBlessings, Forbids(Worn(worn), query, slot, candidate));
 
@@ -207,124 +180,57 @@ public class CraftRuleTests(Export export)
     [Fact]
     public void A_slot_the_candidate_fills_states_the_query_it_would_become()
     {
-        var stat = Settings.StatCalculation.RandomStatPool[0];
-        var other = Settings.StatCalculation.RandomStatPool[1];
-
-        var slot = new CraftSlot(CraftSlots.RandomStat, 1, [CraftSlots.RandomStat]);
-
-        var filled = ItemCraft.With(
-            new TooltipQuery { RandomStats = [stat, other] },
-            slot,
-            new CraftCandidate(CraftSlots.RandomStat, 0, stat, 1));
-
-        Assert.Equal([stat, stat], filled.RandomStats);
-
-        var trait = Traits[0];
+        var trait = Pooled[0];
 
         var swapped = ItemCraft.With(
             new TooltipQuery { Modifiers = [new ItemModifier(ModifierKind.Blessing, 1, 1)] },
-            Roll(CraftSlots.ItemTrait),
-            new CraftCandidate(CraftSlots.ItemTrait, trait.Id, trait.Name ?? string.Empty, 2));
+            Roll(Traited),
+            Candidate(Traited, trait, 2),
+            Settings);
 
-        Assert.Equal(
-            new ItemModifier(ModifierKind.Trait, trait.Id, 2),
-            Assert.Single(swapped.Modifiers));
+        Assert.Equal(new ItemModifier(ModifierKind.Trait, trait.Id, 2), Assert.Single(swapped.Modifiers));
     }
 
     [Fact]
     public void A_slot_past_what_the_item_carries_fills_one_position_and_not_the_ones_before_it()
     {
-        var stat = Settings.StatCalculation.RandomStatPool[0];
-
-        var filled = ItemCraft.With(
-            new TooltipQuery(),
-            new CraftSlot(CraftSlots.RandomStat, 1, [CraftSlots.RandomStat]),
-            new CraftCandidate(CraftSlots.RandomStat, 0, stat, 1));
-
-        Assert.Equal([stat], filled.RandomStats);
-
-        var trait = Traits[0];
+        var trait = Pooled[0];
 
         var carried = ItemCraft.With(
             new TooltipQuery(),
-            new CraftSlot(CraftSlots.RandomRolls, 2, [CraftSlots.ItemTrait]),
-            new CraftCandidate(CraftSlots.ItemTrait, trait.Id, trait.Name ?? string.Empty, 1));
+            new CraftSlot(CraftSlots.RandomRolls, 2, [Traited]),
+            Candidate(Traited, trait),
+            Settings);
 
-        Assert.Equal(
-            new ItemModifier(ModifierKind.Trait, trait.Id, 1),
-            Assert.Single(carried.Modifiers));
+        Assert.Equal(new ItemModifier(ModifierKind.Trait, trait.Id, 1), Assert.Single(carried.Modifiers));
     }
 
     [Fact]
-    public void A_roll_the_table_lets_land_on_a_stat_writes_that_stat_and_not_a_modifier()
+    public void Each_guaranteed_slot_becomes_the_slot_type_its_definition_names()
     {
-        var derived = Settings.StatCalculation.RarityAdditions
-            .SelectMany(rule => rule.Value.Select(tier => (Rule: rule.Key, Tier: tier.Key)))
-            .Select(row => ItemCraft.Slots(
-                new ItemDocument { Id = 1, RuleSet = row.Rule, Slot = "Head" },
-                Settings,
-                Settings.Rarities.Single(rung => rung.Tier == row.Tier)))
-            .SelectMany(slots => slots)
-            .First(slot =>
-                slot.SlotName == CraftSlots.RandomRolls &&
-                slot.Accepts.Contains(CraftSlots.RandomStat, StringComparer.Ordinal));
-
-        var stat = Settings.StatCalculation.RandomStatPool[0];
-        var candidate = new CraftCandidate(CraftSlots.RandomStat, 0, stat, 1);
-
-        Assert.Equal(CraftSlots.RandomStat, ItemCraft.Writes(derived, candidate));
-
-        var filled = ItemCraft.With(new TooltipQuery(), derived, candidate);
-
-        Assert.Equal([stat], filled.RandomStats);
-        Assert.Empty(filled.Modifiers);
-
-        Assert.Null(Forbids(Worn("Head"), new TooltipQuery(), derived, candidate));
-    }
-
-    [Fact]
-    public void A_socket_slot_stands_only_where_the_rule_set_and_tier_name_one()
-    {
-        var stated = Settings.StatCalculation.RarityAdditions
-            .SelectMany(rule => rule.Value.Select(tier => (Rule: rule.Key, Tier: tier.Key, tier.Value)))
-            .Where(row =>
-                row.Value.GuaranteedSlots.Contains(CraftSlots.GemSocket, StringComparer.OrdinalIgnoreCase) ||
-                row.Value.SpecialSlots.Any(slot =>
-                    slot.SlotName.Equals(CraftSlots.GemSocket, StringComparison.OrdinalIgnoreCase)))
+        var rows = Settings.StatCalculation.RarityAdditions
+            .SelectMany(rule => rule.Value.Select(tier => (Rule: rule.Key, Tier: tier.Key, Added: tier.Value)))
             .ToArray();
 
-        Assert.NotEmpty(stated);
+        Assert.Contains(rows, row => row.Added.GuaranteedSlots.Any(name =>
+            ItemCraft.Definition(name, Settings).SlotType == CraftSlots.TraitTree));
 
-        foreach (var (rule, tier, _) in stated)
+        foreach (var (rule, tier, added) in rows)
         {
             var slots = ItemCraft.Slots(
-                new ItemDocument { Id = 1, RuleSet = rule, Slot = "Head" },
+                new ItemDocument { Id = 1, RuleSet = rule },
                 Settings,
                 Settings.Rarities.Single(rung => rung.Tier == tier));
 
-            Assert.Contains(slots, slot => slot.SlotName == CraftSlots.GemSocket);
-        }
+            var types = added.GuaranteedSlots
+                .Select(name => ItemCraft.Definition(name, Settings).SlotType)
+                .ToArray();
 
-        var socketed = stated[0].Rule;
+            Assert.Equal(types, slots.Take(types.Length).Select(slot => slot.SlotName));
 
-        var below = Settings.StatCalculation.RarityAdditions[socketed]
-            .Where(tier =>
-                !tier.Value.GuaranteedSlots.Contains(CraftSlots.GemSocket, StringComparer.OrdinalIgnoreCase) &&
-                !tier.Value.SpecialSlots.Any(slot =>
-                    slot.SlotName.Equals(CraftSlots.GemSocket, StringComparison.OrdinalIgnoreCase)))
-            .Select(tier => tier.Key)
-            .ToArray();
-
-        Assert.NotEmpty(below);
-
-        foreach (var tier in below)
-        {
-            Assert.DoesNotContain(
-                ItemCraft.Slots(
-                    new ItemDocument { Id = 1, RuleSet = socketed, Slot = "Head" },
-                    Settings,
-                    Settings.Rarities.Single(rung => rung.Tier == tier)),
-                slot => slot.SlotName == CraftSlots.GemSocket);
+            Assert.All(
+                slots.Where(slot => slot.SlotName is CraftSlots.TraitTree or CraftSlots.GemSocket),
+                slot => Assert.Contains(Assert.Single(slot.Accepts), added.GuaranteedSlots));
         }
     }
 }

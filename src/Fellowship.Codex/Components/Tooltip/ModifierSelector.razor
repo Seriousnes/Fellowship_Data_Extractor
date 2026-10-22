@@ -106,35 +106,21 @@
 
     private string Heading => Slot.SlotName switch
     {
-        CraftSlots.RandomStat => "Random stat",
         CraftSlots.GemSocket => "Gem socket",
         CraftSlots.TraitTree => "Imbued trait",
         _ => "Modifier",
     };
 
-    private string Placeholder => Slot.SlotName == CraftSlots.RandomStat
-        ? "Filter by name"
-        : "Filter by name or id";
+    private const string Placeholder = "Filter by name or id";
 
     protected override void OnParametersSet()
     {
         current = ItemCraft.Without(Query, Slot);
 
-        offered = [.. Offers().Select(Group_)];
+        offered = [.. Slot.Accepts.Select(Group_)];
 
         Settle();
     }
-
-    private IEnumerable<string> Offers() => Slot.SlotName switch
-    {
-        CraftSlots.RandomStat => Slot.Accepts.Where(
-            accepts => accepts == CraftSlots.RandomStat),
-
-        CraftSlots.GemSocket => Slot.Accepts.Where(
-            accepts => accepts == CraftSlots.GemSocket),
-
-        _ => Slot.Accepts.Where(accepts => ItemCraft.KindOf(accepts) is not null),
-    };
 
     private void Filter(ChangeEventArgs typed)
     {
@@ -169,37 +155,43 @@
                     .StartsWith(wanted, StringComparison.Ordinal));
     }
 
-    private Group Group_(string accepts) => accepts switch
+    private Group Group_(string accepts)
     {
-        CraftSlots.RandomStat => new Group(
-            "Random stat",
-            [.. Store.Settings.StatCalculation.RandomStatPool.Select(
-                stat => Stat(accepts, stat))]),
+        var definition = ItemCraft.Definition(accepts, Store.Settings);
 
-        CraftSlots.GemSocket => new Group(
-            "Gem",
-            [.. Store.Entities.OfType<GemDocument>().Select(gem => Entity(accepts, gem))]),
+        IEnumerable<EntityDocument> Pooled() => definition.SlotType switch
+        {
+            CraftSlots.GemSocket => Store.Entities.OfType<GemDocument>(),
 
-        _ => new Group(
-            TooltipView.Label(ItemCraft.KindOf(accepts)!.Value),
-            [.. Store.Entities
-                .Where(row => EntityTypes.TypeOf(row) == TooltipView.TypeOf(ItemCraft.KindOf(accepts)!.Value))
-                .Select(row => Entity(accepts, row))]),
-    };
+            CraftSlots.TraitTree => TraitTrees.Find(Item.TraitTree, Store.Settings) is { } tree
+                ? tree.Nodes.SelectMany(node => TraitTrees.Offered(node, Store)).DistinctBy(trait => trait.Id)
+                : [],
 
-    private Choice Stat(string accepts, string stat)
-    {
-        var candidate = new CraftCandidate(accepts, 0, stat, 1);
+            CraftSlots.ItemTrait => definition.ItemTraitPool
+                .SelectMany(category => TraitTrees.InCategory(category, Store)),
 
-        return new Choice(
-            candidate,
-            Document: null,
-            Store.StatName(stat),
-            Printed(candidate),
-            ItemCraft.Forbids(Item, current, Slot, candidate, Store),
-            Tip: null,
-            Tone: null);
+            CraftSlots.GemPower => Store.Entities
+                .OfType<GemTypeDocument>()
+                .Where(gem => definition.GemPowerPool.Any(tag => tag.EndsWith(
+                    $"{TagSeparator}{gem.Type}", StringComparison.OrdinalIgnoreCase))),
+
+            _ => Store.Entities.Where(row =>
+                EntityTypes.TypeOf(row) == TooltipView.TypeOf(ItemCraft.KindOf(accepts, Store.Settings)!.Value)),
+        };
+
+        var label = definition.SlotType switch
+        {
+            CraftSlots.GemSocket => "Gem",
+            CraftSlots.ItemTrait => definition.ItemTraitPool
+                .Select(category => TraitTrees.CategoryName(category, Store))
+                .FirstOrDefault(name => name is not null) ?? accepts,
+            _ => TooltipView.Label(ItemCraft.KindOf(accepts, Store.Settings)!.Value),
+        };
+
+        return new Group(label, [.. Pooled().Select(row => Entity(accepts, row))]);
     }
+
+    private const char TagSeparator = '.';
 
     private Choice Entity(string accepts, EntityDocument document)
     {
@@ -208,24 +200,11 @@
         return new Choice(
             candidate,
             document,
-            Ui.Name(document),
-            Printed(candidate),
+            TooltipView.PrintedFor(document, TooltipView.Wearer(Item, Query)) ?? Ui.Name(document),
+            $"+{candidate.Amount.ToString(CultureInfo.InvariantCulture)}",
             ItemCraft.Forbids(Item, current, Slot, candidate, Store),
             Ui.Tip(document),
             Ui.LinkColour(document) is { } colour ? $"color:{colour}" : null);
-    }
-
-    private string Printed(CraftCandidate choice)
-    {
-        if (choice.Accepts != CraftSlots.RandomStat) return $"+{choice.Amount}";
-
-        var at = ItemCraft.StatAt(Query, Slot);
-
-        var rolled = Cards.Rolls(Item, ItemCraft.With(Query, Slot, choice), Rarity);
-
-        var line = rolled.FirstOrDefault(row => row.Rolls.Contains(at));
-
-        return line is null ? string.Empty : TooltipView.Magnitude(line);
     }
 
     private Task Shut() => OnShut.InvokeAsync();

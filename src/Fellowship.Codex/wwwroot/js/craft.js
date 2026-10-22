@@ -1,10 +1,3 @@
-const ROWS = {
-    RandomStat: (card, at) => card.querySelector(`.stats > li[data-rolls~="${at}"]`),
-    RandomRolls: (card, at) => card.querySelectorAll('.grp.mods > .mod')[at],
-    GemSocket: card => card.querySelector('.sock'),
-    TraitTree: card => card.querySelector('.sec.imbued'),
-};
-
 function card(layer) {
     return layer.matches?.('.cx-craft-tip') ? layer : layer.querySelector('.cx-craft-tip');
 }
@@ -13,8 +6,7 @@ function box(layer, hit) {
     const drawn = card(layer);
     if (!drawn) return null;
 
-    const find = ROWS[hit.dataset.craft];
-    return find ? find(drawn, Number(hit.dataset.at ?? 0)) : null;
+    return drawn.querySelector(`[data-craft-row~="${CSS.escape(hit.dataset.craft)}"]`);
 }
 
 export function anchor(layer) {

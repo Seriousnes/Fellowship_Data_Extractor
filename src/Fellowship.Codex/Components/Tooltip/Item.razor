@@ -116,7 +116,7 @@
             sections.Add(@<TipGranted Entity="Entity" Query="Query" Hero="Hero" Name="@Name" />);
         }
 
-        if (Ui.LegendaryStats(Entity).Count > 0)
+        if (TipLegendaries.Draws(Entity, Ui))
         {
             sections.Add(@<TipLegendaries Entity="Entity" Query="Query" Hero="Hero" />);
         }

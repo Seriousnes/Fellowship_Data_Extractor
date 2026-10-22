@@ -4,13 +4,13 @@
     @for (var at = 0; at < Lines.Count; at++)
     {
         @if (at > 0) { <hr class="rule"> }
-        <div class="mod @TooltipView.Token(Lines[at].Kind)">
-            <img class="mi" alt="" src="@Ui.Chrome.ModifierGlyph(Lines[at].Kind)">
+        <div class="mod @TooltipView.Token(Lines[at].Kind)" data-craft-row="@CraftSlot.KeyOf(CraftSlots.RandomRolls, at)">
+            @if (Ui.Chrome.ModifierGlyph(Lines[at].Slot) is { } glyph) { <img class="mi" alt="" src="@glyph"> }
             @if (Lines[at].Kind is { } kind)
             {
                 <span class="mk">@TooltipView.Label(kind):</span>
                 <span class="mn">@Lines[at].Name</span>
-                <span class="mv">+@Lines[at].Amount</span>
+                @if (Lines[at].Value is { } value) { <span class="mv">@value</span> }
             }
             else
             {

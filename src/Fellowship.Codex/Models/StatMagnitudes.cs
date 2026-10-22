@@ -4,10 +4,6 @@ namespace Fellowship.Codex.Models;
 
 public sealed record StatLine(string? Stat, string DisplayName, decimal Value, string Kind, bool Rolled)
 {
-    private static readonly int[] None = [];
-
-    public IReadOnlyList<int> Rolls { get; init; } = None;
-
     public bool Guaranteed => Kind != SlotKinds.Random;
 
     public bool Unresolved => Stat is null;
@@ -19,24 +15,25 @@ public static class StatMagnitudes
 
     private const string ArmorStat = "Armor";
 
-    private const string RandomStatSlot = "RandomStat";
-
-    private const string RandomStatLabel = "[Random Stat]";
-
     public static IReadOnlyList<StatLine> For(
         ItemDocument item,
         StatCalculationFile calculation,
         IReadOnlySet<string> primaryAttributes,
         RarityEntry? rarity,
         int itemLevel,
-        TooltipQuery query)
+        TooltipQuery query,
+        IReadOnlyList<(string Stat, decimal Value)>? granted = null)
     {
         var armor = (query.Armor ?? Armor(item, calculation, itemLevel)) is { } worn
             ? new StatLine(ArmorStat, Label(calculation, ArmorStat), worn, SlotKinds.Fixed, Rolled: false)
             : null;
 
-        var rolledSlots = RandomSlots(item, calculation, rarity);
-        if (item.Stats is not { Count: > 0 } && rolledSlots == 0 && armor is null) return [];
+        granted ??= [];
+
+        if (item.Stats is not { Count: > 0 } && query.Stats.Count == 0 && granted.Count == 0 && armor is null)
+        {
+            return [];
+        }
 
         var slotWeight = item.Slot is { } slot && calculation.SlotWeights.TryGetValue(slot, out var weights)
             ? (float)weights.StatWeight
@@ -47,11 +44,10 @@ public static class StatMagnitudes
 
         var declaredWeights = StatRows.Weights([.. (item.Stats ?? []).Select(slot => slot.Weight)]);
         var guaranteedBlock = StatRows.Guaranteed(calculation);
-        var rolledBlock = StatRows.Rolled(calculation);
         var tempers = Math.Max(0, query.Upgrades ?? 0);
         var ordinal = 0;
 
-        decimal Row(string stat, bool guaranteed)
+        decimal Row(string stat)
         {
             var onPrimaryPool = OnPrimaryPool(stat, primaryAttributes);
             var stamina = stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase);
@@ -59,10 +55,10 @@ public static class StatMagnitudes
             var magnitude = StatRows.Magnitude(
                 onPrimaryPool ? primaryPool : secondaryPool,
                 slotWeight,
-                StatRows.BlockTerm(guaranteed ? guaranteedBlock : rolledBlock, stamina, onPrimaryPool, itemLevel),
+                StatRows.BlockTerm(guaranteedBlock, stamina, onPrimaryPool, itemLevel),
                 StatRows.Share(declaredWeights, ordinal++),
                 tempers,
-                guaranteed);
+                guaranteed: true);
 
             return StatRows.RoundHalfToEven(magnitude);
         }
@@ -82,55 +78,16 @@ public static class StatMagnitudes
 
             var value = sent is { } amount
                 ? Round(amount, calculation, declared.Stat)
-                : Row(declared.Stat, guaranteed: true);
+                : Row(declared.Stat);
 
             lines.Add(new StatLine(
                 declared.Stat, Label(calculation, declared.Stat), value, declared.Kind, Rolled: false));
         }
 
-        var spare = Spare(item, query, taken);
-        var rolls = Math.Max(rolledSlots, spare.Count + query.RandomStats.Count);
-
-        for (var index = 0; index < rolls; index++)
+        foreach (var (stat, value) in Spare(item, query, taken).Concat(granted))
         {
-            if (index < spare.Count)
-            {
-                var (stat, value) = spare[index];
-                lines.Add(new StatLine(
-                    stat, Label(calculation, stat), Round(value, calculation, stat),
-                    SlotKinds.Random, Rolled: true));
-                ordinal++;
-                continue;
-            }
-
-            var roll = index - spare.Count;
-
-            if (roll < query.RandomStats.Count)
-            {
-                var stat = query.RandomStats[roll];
-                lines.Add(new StatLine(
-                    stat, Label(calculation, stat), Row(stat, guaranteed: false), SlotKinds.Random, Rolled: true)
-                {
-                    Rolls = [roll],
-                });
-                continue;
-            }
-
             lines.Add(new StatLine(
-                null,
-                RandomStatLabel,
-                StatRows.RoundHalfToEven(StatRows.Magnitude(
-                    secondaryPool,
-                    slotWeight,
-                    StatRows.BlockTerm(rolledBlock, stamina: false, onPrimaryPool: false, itemLevel),
-                    StatRows.Share(declaredWeights, ordinal++),
-                    tempers: 0,
-                    guaranteed: false)),
-                SlotKinds.Random,
-                Rolled: true)
-            {
-                Rolls = [roll],
-            });
+                stat, Label(calculation, stat), Round(value, calculation, stat), SlotKinds.Random, Rolled: true));
         }
 
         return Fold(lines);
@@ -168,7 +125,6 @@ public static class StatMagnitudes
                         ? SlotKinds.Primary
                         : running.Kind,
                     Rolled = running.Rolled || line.Rolled,
-                    Rolls = line.Rolls.Count == 0 ? running.Rolls : [.. running.Rolls, .. line.Rolls],
                 };
 
                 continue;
@@ -179,16 +135,6 @@ public static class StatMagnitudes
         }
 
         return folded;
-    }
-
-    private static int RandomSlots(ItemDocument item, StatCalculationFile calculation, RarityEntry? rarity)
-    {
-        if (rarity is null || item.RuleSet is not { } ruleSet) return 0;
-        if (!calculation.RarityAdditions.TryGetValue(ruleSet, out var byTier)) return 0;
-        if (!byTier.TryGetValue(rarity.Tier, out var added)) return 0;
-
-        return added.GuaranteedSlots.Count(slot =>
-            slot.Equals(RandomStatSlot, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool OnPrimaryPool(string stat, IReadOnlySet<string> primaryAttributes) =>

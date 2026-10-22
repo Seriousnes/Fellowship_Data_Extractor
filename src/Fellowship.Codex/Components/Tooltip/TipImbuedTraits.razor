@@ -4,7 +4,11 @@
 @if (Capacity(Entity, Query, Store.Settings) is { } total)
 {
     <div class="grp">
-        <div class="sec imbued"><img class="gi" alt="" src="@Ui.Chrome.TraitGlyph"><span>Imbued Traits</span><span class="n">(<span class="alloc">@Filled(Query)</span>/@total)</span></div>
+        <div class="sec imbued" data-craft-row="@CraftSlot.KeyOf(CraftSlots.TraitTree, 0)"><img class="gi" alt="" src="@Ui.Chrome.TraitGlyph"><span>Imbued Traits</span><span class="n">(<span class="alloc">@Filled(Query)</span>/@total)</span></div>
+        @foreach (var name in Attuned())
+        {
+            <div class="attuned"><img class="xi" alt="" src="@Ui.Chrome.ExpandGlyph"><span>@name</span></div>
+        }
     </div>
 }
 
@@ -24,4 +28,10 @@
 
     public static int Filled(TooltipQuery query) =>
         query.ImbuedTraits.Count > 0 ? query.ImbuedTraits.Count : query.AllocatedTraits ?? 0;
+
+    private IEnumerable<string> Attuned() =>
+        Query.ImbuedTraits
+            .Select(trait => Store.All(TooltipView.TraitType, trait.Id).FirstOrDefault())
+            .OfType<EntityDocument>()
+            .Select(trait => TooltipView.PrintedFor(trait, TooltipView.Wearer(Entity, Query)) ?? PublicTypes.NameOf(trait));
 }

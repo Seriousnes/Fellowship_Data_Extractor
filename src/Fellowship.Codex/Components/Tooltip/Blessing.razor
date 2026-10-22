@@ -7,8 +7,9 @@
             <p class="eyebrow">@Wording.Name</p>
             <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
         </header>
-        <BlessingCrest Entity="Entity" State="@Query.State" />
+        <BlessingCrest Entity="Entity" State="@ChromeAssetService.BlessingState(Query.EquippedTier ?? 0)" />
         <div class="band">
+            <span class="kind">@Wording.Augmentation</span>
             <span class="tier">@Wording.TierLevel <span class="count">@Equipped / @Tiers</span></span>
         </div>
         @if (Entity.Description is { } description)

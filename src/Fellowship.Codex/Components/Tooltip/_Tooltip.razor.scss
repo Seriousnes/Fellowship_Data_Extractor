@@ -9,6 +9,7 @@ $header-decor-height: 14px;
 $modifier-decor-width: 8px;
 $modifier-row-height: 22px;
 $modifier-glyph-size: 16px;
+$attunement-glyph-size: 12px;
 $modifier-row-inset: 6px;
 
 .fx-tip {
@@ -207,6 +208,20 @@ $modifier-row-inset: 6px;
     }
 
     .alloc { color: var(--core-primary-200); }
+  }
+
+  .attuned {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--core-primary-200);
+
+    .xi {
+      flex: 0 0 auto;
+      width: $attunement-glyph-size;
+      height: $attunement-glyph-size;
+      object-fit: contain;
+    }
   }
 
   .sock {

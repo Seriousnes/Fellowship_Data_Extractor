@@ -46,6 +46,7 @@ public sealed class MenuService : IMenuService
                 Tab(EntityType.TraitPower),
                 Tab(EntityType.WeaponPower),
                 Tab(EntityType.RelicPower),
+                Tab(EntityType.RelicPassive),
                 Tab(EntityType.LegendaryPower),
             ])),
 

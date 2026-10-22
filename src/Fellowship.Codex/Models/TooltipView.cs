@@ -1,5 +1,7 @@
 using System.Globalization;
 
+using Fellowship.SDK.Documents;
+
 namespace Fellowship.Codex.Models;
 
 public static class TooltipView
@@ -36,6 +38,28 @@ public static class TooltipView
 
     public static string Token(ModifierKind? kind) => kind?.ToString().ToLowerInvariant() ?? Unresolved;
 
+    public static string? Wearer(ItemDocument item, TooltipQuery query) => query.Hero ?? item.Hero?.ToString();
+
+    public sealed record LegendaryEntry(EntityDocument? Roll, Fellowship.SDK.Models.LegendaryStatText? Untagged);
+
+    public static IReadOnlyList<LegendaryEntry> Legendary(IReadOnlyList<EntityDocument> rolls, EntityDocument entity)
+    {
+        var entries = rolls.Select(roll => new LegendaryEntry(roll, null)).ToList();
+
+        foreach (var untagged in ((entity as ItemDocument)?.UntaggedLegendaryStats ?? []).OrderBy(stat => stat.Position))
+        {
+            entries.Insert(Math.Min(untagged.Position, entries.Count), new LegendaryEntry(null, untagged));
+        }
+
+        return entries;
+    }
+
+    public static string? PrintedFor(EntityDocument document, string? wearer) =>
+        document is TraitDocument { NameByHero: { } names } && wearer is not null &&
+        names.TryGetValue(wearer, out var printed)
+            ? printed
+            : null;
+
     public static string Magnitude(StatLine line) =>
         (line.Value < 0 ? string.Empty : "+") +
         line.Value.Normalize().ToString(CultureInfo.InvariantCulture);
@@ -67,9 +91,13 @@ public static class TooltipView
         public bool Stated => CastAndRange.Count > 0 || CostAndCooldown.Count > 0;
     }
 
-    public sealed record ModifierLine(ModifierKind? Kind, string Name, int Amount)
+    public const string GlyphRowValue = "+1";
+
+    public static string Plus(int value) => "+" + value.ToString(CultureInfo.InvariantCulture);
+
+    public sealed record ModifierLine(ModifierKind? Kind, string? Slot, string Name, string? Value)
     {
-        public static readonly ModifierLine Random = new(null, RandomModifierLabel, 0);
+        public static readonly ModifierLine Random = new(null, null, RandomModifierLabel, null);
 
         public bool Unresolved => Kind is null;
     }
