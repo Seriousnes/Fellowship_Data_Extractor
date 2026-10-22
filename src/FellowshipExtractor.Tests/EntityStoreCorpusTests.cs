@@ -53,6 +53,7 @@ public sealed class EntityStoreCorpusTests
     [Theory]
     [InlineData(EntityType.WeaponPower)]
     [InlineData(EntityType.RelicPower)]
+    [InlineData(EntityType.RelicPassive)]
     public void EveryPowerAnItemCarriesIsReachedByAnItemsGrant(EntityType type) =>
         Assert.Empty(Ungranted(type).Select(document => $"{document.Id} {document.Name}"));
 

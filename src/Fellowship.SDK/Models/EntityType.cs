@@ -26,6 +26,7 @@ public enum EntityType
     Modifier,
     Mount,
     MountPower,
+    RelicPassive,
     RelicPower,
     SetBonus,
     SetBonusPower,

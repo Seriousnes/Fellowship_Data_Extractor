@@ -202,7 +202,7 @@ public static class ExportRun
 
         var granted = resolved.Select(record => record.GrantsId).OfType<int>().ToHashSet();
         var ungranted = resolved
-            .Where(record => record.Type is EntityType.RelicPower or EntityType.WeaponPower &&
+            .Where(record => record.Type is EntityType.RelicPower or EntityType.RelicPassive or EntityType.WeaponPower &&
                              !granted.Contains(record.NetId!.Value))
             .ToArray();
 

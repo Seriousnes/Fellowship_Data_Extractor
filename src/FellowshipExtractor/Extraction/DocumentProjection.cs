@@ -460,6 +460,19 @@ public static class DocumentProjection
             Generates = Generated(entity),
         },
 
+        EntityType.RelicPassive => new RelicPassiveDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Description = entity.Description,
+            Icon = entity.Icon,
+            Cooldown = entity.Cooldown,
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
+            ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
+            Generates = Generated(entity),
+        },
+
         EntityType.LegendaryStat => new LegendaryStatDocument
         {
             Id = entity.NetId!.Value,

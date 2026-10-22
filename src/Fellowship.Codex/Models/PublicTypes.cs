@@ -46,6 +46,7 @@ public static class PublicTypes
         (EntityType.TraitPower, "Trait Powers", "trait power", Categories.Spells),
         (EntityType.WeaponPower, "Weapon Powers", "weapon power", Categories.Spells),
         (EntityType.RelicPower, "Relic Powers", "relic power", Categories.Spells),
+        (EntityType.RelicPassive, "Relic Passives", "relic passive", Categories.Spells),
         (EntityType.LegendaryPower, "Legendary Powers", "legendary power", Categories.Spells),
         (EntityType.TalentSlot, "Talent Slots", "talent slot", Categories.Spells),
         (EntityType.MountPower, "Mount Powers", "mount power", Categories.Spells),
