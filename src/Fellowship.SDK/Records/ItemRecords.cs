@@ -17,7 +17,6 @@ public sealed record ItemRecord : EntityRecord
 
     public IReadOnlyList<string>? Rarities { get; init; }
 
-    public IReadOnlyList<RecordReference>? SetBonus { get; init; }
     public IReadOnlyList<StatSlotRecord>? Stats { get; init; }
 
     public string? RuleSet { get; init; }
@@ -37,6 +36,8 @@ public sealed record ItemRecord : EntityRecord
     public RecordReference? Grants { get; init; }
 
     public IReadOnlyList<LegendaryStatRecord>? LegendaryStats { get; init; }
+
+    public IReadOnlyList<Models.LegendaryStatText>? UntaggedLegendaryStats { get; init; }
 
     public IReadOnlyList<ItemSourceRecord>? Sources { get; init; }
 

@@ -74,17 +74,17 @@ public class ParameterTests(Export export)
     [Fact]
     public void One_modifier_and_several_read_back_as_the_entries_they_name()
     {
-        Assert.True(ItemModifiers.TryParse("trait:412:1", out var alone));
+        Assert.True(ItemModifiers.TryParse("majortrait:412:1", out var alone));
 
-        Assert.Equal([new ItemModifier(ModifierKind.Trait, 412, 1)], alone.Values);
+        Assert.Equal([new ItemModifier(ModifierKind.MajorTrait, 412, 1)], alone.Values);
 
-        Assert.True(ItemModifiers.TryParse("trait:412:1,blessing:7:1,essence:3:100", out var several));
+        Assert.True(ItemModifiers.TryParse("majortrait:412:1,abilityrank:7:1,gempower:3:100", out var several));
 
         Assert.Equal(
             [
-                new ItemModifier(ModifierKind.Trait, 412, 1),
-                new ItemModifier(ModifierKind.Blessing, 7, 1),
-                new ItemModifier(ModifierKind.Essence, 3, 100),
+                new ItemModifier(ModifierKind.MajorTrait, 412, 1),
+                new ItemModifier(ModifierKind.AbilityRank, 7, 1),
+                new ItemModifier(ModifierKind.GemPower, 3, 100),
             ],
             several.Values);
     }
@@ -106,12 +106,12 @@ public class ParameterTests(Export export)
     public void An_entry_the_reader_cannot_make_out_is_refused()
     {
         Assert.False(ItemModifiers.TryParse("nonesuch:1:2", out _));
-        Assert.False(ItemModifiers.TryParse("trait:1", out _));
+        Assert.False(ItemModifiers.TryParse("majortrait:1", out _));
         Assert.False(ItemModifiers.TryParse("trait", out _));
-        Assert.False(ItemModifiers.TryParse("trait:one:2", out _));
-        Assert.False(ItemModifiers.TryParse("trait:1:two", out _));
-        Assert.False(ItemModifiers.TryParse("trait:1:2:3", out _));
-        Assert.False(ItemModifiers.TryParse("trait:412:1,nonesuch:7:1", out _));
+        Assert.False(ItemModifiers.TryParse("majortrait:one:2", out _));
+        Assert.False(ItemModifiers.TryParse("majortrait:1:two", out _));
+        Assert.False(ItemModifiers.TryParse("majortrait:1:2:3", out _));
+        Assert.False(ItemModifiers.TryParse("majortrait:412:1,nonesuch:7:1", out _));
 
         Assert.True(ItemModifiers.TryParse(null, out var none));
         Assert.Empty(none.Values);

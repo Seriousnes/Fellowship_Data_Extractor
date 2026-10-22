@@ -19,6 +19,9 @@ public static class SettingsEnums
             .OrderBy(category => category.Value)
             .Select(category => (category.Name, category.Value))];
 
+    public static IReadOnlyList<(string Name, int Value)> LeagueKinds(SettingsFile settings) =>
+        [.. settings.LeagueKinds.OrderBy(kind => kind.Value).Select(kind => (kind.Name, kind.Value))];
+
     private static IReadOnlyList<string> Sorted(IEnumerable<string> members) =>
         [.. members.Where(member => member.Length > 0).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
 
@@ -34,6 +37,7 @@ public static class SettingsEnums
         foreach (var (name, values) in Members(settings)) Console.WriteLine($"  {name}: {values.Count} members");
         Console.WriteLine($"  Rarity: {Rarities(settings).Count} members");
         Console.WriteLine($"  AbilityCategory: {Categories(settings).Count} members");
+        Console.WriteLine($"  LeagueKind: {LeagueKinds(settings).Count} members");
     }
 
     private static string RepositoryRoot()

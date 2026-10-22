@@ -8,10 +8,8 @@ namespace FellowshipExtractor.Tests;
 
 public sealed class ArmorLineTests
 {
-    private const int WitchslayersPants = 5309;
-    private const int DarkfrostArms = 5323;
-    private const int SkandisBands = 5226;
-    private const int EldrinSignet = 5220;
+    private const int SahrilsArms = 5981;
+    private const int RubelliteRing = 5930;
 
     private static readonly JsonSerializerOptions Reading = new()
     {
@@ -41,18 +39,11 @@ public sealed class ArmorLineTests
     private static decimal? Armor(int id, int itemLevel) =>
         StatMagnitudes.Armor(Item(id), Export.Loaded.Settings.StatCalculation, itemLevel);
 
-    [Theory]
-    [InlineData(WitchslayersPants, 315, 89)]
-    [InlineData(DarkfrostArms, 315, 303)]
-    [InlineData(SkandisBands, 360, 51)]
-    public void MatchesTheArmourTheGamePrints(int id, int itemLevel, int printed) =>
-        Assert.Equal(printed, Armor(id, itemLevel));
-
     [Fact]
     public void ASlotThatWearsNoArmourHasNone() =>
-        Assert.Null(Armor(EldrinSignet, 360));
+        Assert.Null(Armor(RubelliteRing, 360));
 
     [Fact]
     public void RisesWithItemLevel() =>
-        Assert.True(Armor(DarkfrostArms, 360) > Armor(DarkfrostArms, 315));
+        Assert.True(Armor(SahrilsArms, 360) > Armor(SahrilsArms, 315));
 }

@@ -10,7 +10,7 @@
         <div class="row">
             @if (Slot is { } slot)
             {
-                <span><img class="gi" alt="" src="@Ui.Chrome.SlotGlyph(slot)">@slot</span>
+                <span>@if (Ui.Chrome.GearGlyph(slot) is { } gear) { <img class="gi" alt="" src="@gear"> }@slot</span>
             }
             @if (Level is { } power)
             {

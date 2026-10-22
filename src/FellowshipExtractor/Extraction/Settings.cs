@@ -26,8 +26,6 @@ public sealed class Settings
 
     public StatCalculation StatCalculation { get; }
 
-    public IReadOnlyList<string> RandomStatPool { get; }
-
     public IReadOnlyList<string> GemTypes { get; }
 
     public IReadOnlyDictionary<string, string> SlotIcons { get; }
@@ -65,9 +63,19 @@ public sealed class Settings
         ],
     };
 
+    public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; }
+
     public IReadOnlyList<LeagueEntry> Leagues { get; }
 
     public ItemSettingsFile Items { get; }
+
+    public IReadOnlyList<ModifierTypeEntry> ModifierTypes { get; }
+
+    public EmptyModifierSlot EmptyModifierSlot { get; }
+
+    public string TraitTreeHeader { get; }
+
+    public AbilityTooltipText AbilityTooltip { get; }
 
     public Settings(
         AbstractFileProvider provider,
@@ -76,7 +84,6 @@ public sealed class Settings
         RarityNames rarities,
         AbilityCategories categories,
         StatCalculation statCalculation,
-        IReadOnlyList<string> randomStatPool,
         IReadOnlyList<string> gemTypes,
         SlotIcons slotIcons,
         RarityOrnaments ornaments,
@@ -89,9 +96,17 @@ public sealed class Settings
         CreatureStats creatures,
         Leagues leagues,
         ItemSettings items,
-        ItemTraitTrees traitTrees)
+        StatEnchants enchants,
+        ItemTraitTrees traitTrees,
+        ModifierRecipes recipes,
+        TooltipWidgetText widgetText,
+        AbilityTooltipTexts abilityTooltip)
     {
         _traitTrees = traitTrees;
+        ModifierTypes = recipes.Types;
+        EmptyModifierSlot = widgetText.EmptySlot;
+        TraitTreeHeader = widgetText.TraitTreeHeader;
+        AbilityTooltip = abilityTooltip.Text;
         var scoring = new DungeonScoring(provider, [.. creatures.Scaling.Health.Keys]);
 
         DifficultyScaling = creatures.Scaling with
@@ -100,10 +115,10 @@ public sealed class Settings
             ModifierAbilityUnlock = scoring.ModifierAbilityUnlock,
         };
         Leagues = leagues.All;
-        Items = items.Values;
+        LeagueKinds = leagues.Kinds;
+        Items = items.Values with { StatEnchantPower = enchants.Power };
 
         StatCalculation = statCalculation;
-        RandomStatPool = randomStatPool;
         GemTypes = gemTypes;
         SlotIcons = slotIcons.BySlot;
         RarityOrnaments = ornaments.ByRarity;
@@ -143,13 +158,6 @@ public sealed class Settings
         _portraitByHero = heroes.Profiles
             .Where(hero => hero.PortraitPath is not null)
             .ToDictionary(hero => hero.ShippedName, hero => hero.PortraitPath!, StringComparer.OrdinalIgnoreCase);
-
-        if (rarities.MissingRenames.ToArray() is { Length: > 0 } missing)
-        {
-            throw new InvalidOperationException(
-                $"The rarity ladder no longer has a tier named {string.Join(" or ", missing)}, so the rename that " +
-                "turns the filed names into the printed ones no longer applies to it.");
-        }
 
         Rarities = [.. rarities.Tiers.Select(tier => new RarityEntry(
             tier, rarities.Label(tier)!, rarities.Printed(tier), rarities.GemLabel(tier)!))];
@@ -192,10 +200,15 @@ public sealed class Settings
         Blessings = Blessings,
         DifficultyScaling = DifficultyScaling,
         MultiTargetDamageFalloff = MultiTargetDamageFalloff,
+        LeagueKinds = LeagueKinds,
         Leagues = Leagues,
         TraitTrees = _traitTrees.NamedTrees,
         TraitNodeUpgradeCosts = _traitTrees.UpgradeCosts,
         TraitNodeColorRows = TraitNodeColorRows,
+        TraitTreeHeader = TraitTreeHeader,
+        AbilityTooltip = AbilityTooltip,
+        ModifierTypes = ModifierTypes,
+        EmptyModifierSlot = EmptyModifierSlot,
         Items = Items,
         SlotIcons = SlotIcons,
         RarityOrnaments = RarityOrnaments,
@@ -216,13 +229,11 @@ public sealed class Settings
             PrimaryAndStaminaMultiplier = StatCalculation.PrimaryAndStaminaMultiplier,
             StatRarityBase = StatCalculation.StatRarityBase,
             BaseSlot = StatCalculation.BaseSlot,
-            FixedSlot = StatCalculation.FixedSlot,
-            DynamicSlot = StatCalculation.DynamicSlot,
             SlotWeights = StatCalculation.SlotWeights,
             ArmorWeights = StatCalculation.ArmorWeights,
             Attributes = StatCalculation.Attributes,
-            RandomStatPool = RandomStatPool,
             RarityAdditions = StatCalculation.RarityAdditions,
+            SlotDefinitions = StatCalculation.SlotDefinitions,
         },
     };
 

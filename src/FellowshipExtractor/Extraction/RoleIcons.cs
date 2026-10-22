@@ -26,7 +26,7 @@ public sealed class RoleIcons
                     $"{Widget}.{Function} answers {RoleEnum} {ordinal}, and the mappings declare no such member.");
             }
 
-            byRole[ItemSetBonuses.Titled(member)] = path;
+            byRole[Titled(member)] = path;
         }
 
         if (byRole.Count == 0) throw new InvalidOperationException($"{Widget}.{Function} selects nothing. {Absence}");
@@ -35,6 +35,12 @@ public sealed class RoleIcons
     }
 
     public IReadOnlyDictionary<string, string> ByRole { get; }
+
+    public static string Titled(string value)
+    {
+        var leaf = value[(value.LastIndexOf('_') + 1)..];
+        return leaf.Length == 0 ? value : char.ToUpperInvariant(leaf[0]) + leaf[1..].ToLowerInvariant();
+    }
 
     private static string? Texture(KismetExpression term) =>
         term is EX_ObjectConst drawn ? PropertyWalk.AsString(drawn.Value) : null;

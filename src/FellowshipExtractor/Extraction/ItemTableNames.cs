@@ -22,6 +22,7 @@ public sealed class ItemTableNames
     private const string DescriptionField = "Description";
     private const string IconField = "IconTexture";
     private const string RarityField = "Rarity";
+    private const string EnabledField = "EnabledIngame";
 
     private readonly Dictionary<string, NamedRow> _byTag = new(StringComparer.OrdinalIgnoreCase);
 
@@ -36,6 +37,7 @@ public sealed class ItemTableNames
 
             foreach (var (rowName, row) in table.RowMap)
             {
+                if (PropertyWalk.Get(row, EnabledField)?.GenericValue is not true) continue;
                 if (PropertyWalk.GetString(row, DisplayNameField) is not { } name) continue;
 
                 var tier = rarities.Tier(PropertyWalk.Get(row, RarityField)?.GenericValue);

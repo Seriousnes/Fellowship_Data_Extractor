@@ -1,14 +1,23 @@
+using CUE4Parse.UE4.Assets.Exports.Engine;
+using CUE4Parse.UE4.Assets.Objects;
+
 using Fellowship.SDK.Documents;
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 
 public sealed class BlessingSlotTests
 {
+    private const string RankTable =
+        "fellowship/Content/Items/DynamicItemAbilityRanks/DT_Generic_DynamicAbilityRank.DT_Generic_DynamicAbilityRank";
+
     private static IReadOnlyList<BlessingDocument> Blessings =>
         [.. EntityStoreCorpusTests.Store.Entities.OfType<BlessingDocument>()];
 
+    private static UDataTable Ranks() => Export.Provider.LoadPackageObject<UDataTable>(RankTable);
+
     [Fact]
-    public void EveryBlessingStatesARankCeilingItsPoolsAndItsPerHeroIds()
+    public void EveryBlessingStatesARankCeilingItsPoolsAndItsRankId()
     {
         Assert.NotEmpty(Blessings);
 
@@ -16,7 +25,7 @@ public sealed class BlessingSlotTests
         {
             Assert.True(blessing.MaxRank > 0, $"Blessing {blessing.Id} states no MaxRank.");
             Assert.NotEmpty(blessing.Slots!);
-            Assert.NotEmpty(blessing.AbilityRanks!);
+            Assert.True(blessing.AbilityRank > 0, $"Blessing {blessing.Id} states no ability rank id.");
         }
     }
 
@@ -32,27 +41,55 @@ public sealed class BlessingSlotTests
     }
 
     [Fact]
-    public void EveryAbilityRankIsKeyedOnAHeroNameTheSettingsCarry()
+    public void EveryRankRowIsOneBlessingCarryingItsTagIdAndEveryPool()
     {
-        var names = Export.Loaded.Settings.Heroes.Select(hero => hero.Name).ToArray();
+        var rankIds = CsvTables.ReadTags(Export.Provider)
+            .Where(tag => tag.Table == DynamicAbilityRanks.Table)
+            .ToDictionary(tag => tag.Name, tag => tag.NetId);
 
-        foreach (var blessing in Blessings)
+        var rows = Ranks().RowMap.Values.ToArray();
+
+        Assert.NotEmpty(rows);
+        Assert.Equal(rows.Length, Blessings.Count);
+
+        foreach (var row in rows)
         {
-            Assert.All(blessing.AbilityRanks!, pair =>
-            {
-                Assert.Contains(pair.Key, names, StringComparer.OrdinalIgnoreCase);
-                Assert.True(pair.Value > 0);
-            });
+            var tag = PropertyWalk.GetString(row, "ID")!;
+            var pools = Assert.IsType<UScriptArray>(PropertyWalk.Get(row, "PoolIds")?.GenericValue).Properties.Count;
+
+            var blessing = Assert.Single(Blessings, blessing => blessing.AbilityRank == rankIds[tag]);
+
+            Assert.Equal(pools, blessing.Slots!.Count);
+            Assert.Equal(PropertyWalk.AsOrdinal(PropertyWalk.Get(row, "MaxRank")?.GenericValue), blessing.MaxRank);
         }
     }
 
     [Fact]
-    public void OneBlessingCarriesADifferentAbilityRankIdPerHero()
+    public void EveryBlessingCarriesBothRunesAndTheAbilityItGrants()
     {
-        var spread = Blessings.First(blessing => blessing.AbilityRanks!.Count > 1);
+        foreach (var row in Ranks().RowMap.Values)
+        {
+            var augmentation = Export.Provider.LoadPackageObject(PropertyWalk.GetString(row, "GrantedAbilitiesAsset")!);
+            var blessing = Blessings.Single(document => document.Name == PropertyWalk.GetText(augmentation, "DisplayName"));
 
-        Assert.Equal(
-            spread.AbilityRanks!.Count,
-            spread.AbilityRanks!.Values.Distinct().Count());
+            Assert.Equal(AbilityPresentationIndex.AssetName(PropertyWalk.GetString(augmentation, "UIIcon")!), blessing.Icon);
+            Assert.Equal(
+                AbilityPresentationIndex.AssetName(PropertyWalk.GetString(augmentation, "UIIconHovered")!),
+                blessing.IconHovered);
+            Assert.True(File.Exists(Path.Combine(Export.Loaded.Ui, TextureSizes.File(blessing.IconHovered!, TextureSize.Full))));
+            Assert.NotEmpty(blessing.Grants!);
+        }
+    }
+
+    [Theory]
+    [InlineData(700, "DynamicItemAbilityRank.Generic.02")]
+    [InlineData(712, "DynamicItemAbilityRank.Generic.06")]
+    public void ABlessingCarriesTheGenericRankIdOfTheRowGrantingIt(int blessing, string rank)
+    {
+        var expected = CsvTables.ReadTags(Export.Provider)
+            .Single(tag => tag.Table == DynamicAbilityRanks.Table && tag.Name == rank)
+            .NetId;
+
+        Assert.Equal(expected, Blessings.Single(document => document.Id == blessing).AbilityRank);
     }
 }

@@ -99,24 +99,24 @@ public static class FellowshipLogs
 
         foreach (var power in Array(gear, "gemPowers"))
         {
-            Modifier(ModifierKind.Essence, power, GemPowerBase, GemPowerField, EntityType.GemType);
+            Modifier(power, GemPowerBase, GemPowerField, EntityType.GemType);
         }
 
         foreach (var trait in Array(gear, "traits"))
         {
-            Modifier(ModifierKind.Trait, trait, TraitBase, TraitRankField, TooltipView.TraitType);
+            Modifier(trait, TraitBase, TraitRankField, TooltipView.TraitType);
         }
 
         foreach (var blessing in Array(gear, "blessings"))
         {
-            if (Int(blessing, "id") is not { } logged || Blessing(logged, store) is not { } resolved)
+            if (Int(blessing, "id") is not { } logged || Blessing(logged, store) is not { } resolved ||
+                ItemCraft.KindOfSlotType(CraftSlots.AbilityRank, store.Settings) is not { } glyph)
             {
                 missing.Add($"blessing id {Int(blessing, "id")} resolves to no ability rank row.");
                 continue;
             }
 
-            modifiers.Add(new ItemModifier(
-                ModifierKind.Blessing, resolved, Int(blessing, BlessingLevelField) ?? 1));
+            modifiers.Add(new ItemModifier(glyph, resolved, Int(blessing, BlessingLevelField) ?? 1));
         }
 
         foreach (var trait in Tree(gear, owner, Worn(store, itemId)))
@@ -135,19 +135,24 @@ public static class FellowshipLogs
             imbued.Add(new ImbuedTrait(id, points));
         }
 
-        void Modifier(ModifierKind kind, JsonElement entry, int under, string amountField, EntityType type)
+        void Modifier(JsonElement entry, int under, string amountField, EntityType type)
         {
             if (Int(entry, "id") is not { } logged) return;
 
             var id = logged - under;
+            var row = store.All(type, id).FirstOrDefault();
 
-            if (store.All(type, id).Count == 0)
+            var kind = type == EntityType.GemType
+                ? ItemCraft.KindOfSlotType(CraftSlots.GemPower, store.Settings)
+                : ItemCraft.KindOfTrait(row, store.Settings);
+
+            if (row is null || kind is null)
             {
-                missing.Add($"{kind} id {logged} names nothing in the export.");
+                missing.Add($"{type} id {logged} names nothing in the export.");
                 return;
             }
 
-            modifiers.Add(new ItemModifier(kind, id, Int(entry, amountField) ?? 1));
+            modifiers.Add(new ItemModifier(kind.Value, id, Int(entry, amountField) ?? 1));
         }
 
         unresolved = missing;
@@ -177,7 +182,7 @@ public static class FellowshipLogs
 
         foreach (var blessing in store.Entities.OfType<BlessingDocument>())
         {
-            if (blessing.AbilityRanks is { } ranks && ranks.Values.Contains(rank)) return blessing.Id;
+            if (blessing.AbilityRank == rank) return blessing.Id;
         }
 
         return null;
@@ -198,16 +203,6 @@ public static class FellowshipLogs
         };
 
         if (Tier(query.Rarity, store) is { } quality) entry["quality"] = quality;
-
-        if (item.SetBonus is { Count: > 0 } set)
-        {
-            entry["set"] = new JsonObject
-            {
-                ["id"] = set[0].Id,
-                ["ids"] = new JsonArray([.. set.Select(bonus => (JsonNode)bonus.Id)]),
-                ["name"] = set[0].Name,
-            };
-        }
 
         if (query.Gem is { } gem)
         {
@@ -245,12 +240,13 @@ public static class FellowshipLogs
 
         if (attributes.Count > 0) entry["attributes"] = attributes;
 
-        Kind(ModifierKind.Essence, "gemPowers", GemPowerBase, GemPowerField);
-        Kind(ModifierKind.Trait, "traits", TraitBase, TraitRankField);
+        Kind(EntityType.GemType, "gemPowers", GemPowerBase, GemPowerField);
+        Kind(TooltipView.TraitType, "traits", TraitBase, TraitRankField);
 
         var blessings = new JsonArray();
 
-        foreach (var modifier in query.Modifiers.Where(row => row.Kind == ModifierKind.Blessing))
+        foreach (var modifier in query.Modifiers.Where(
+            row => TooltipView.TypeOf(row.Kind, store.Settings) == EntityType.Blessing))
         {
             if (RankOf(modifier.Id, item, store) is not { } logged) continue;
 
@@ -282,17 +278,17 @@ public static class FellowshipLogs
             entry[NeckSlot.Equals(item.Slot, StringComparison.OrdinalIgnoreCase) ? NeckTree : WeaponTree] = tree;
         }
 
-        void Kind(ModifierKind kind, string field, int under, string amountField)
+        void Kind(EntityType type, string field, int under, string amountField)
         {
             var entries = new JsonArray();
 
-            foreach (var modifier in query.Modifiers.Where(row => row.Kind == kind))
+            foreach (var modifier in query.Modifiers.Where(row => TooltipView.TypeOf(row.Kind, store.Settings) == type))
             {
                 entries.Add(new JsonObject
                 {
                     ["id"] = modifier.Id + under,
                     [amountField] = modifier.Amount,
-                    ["name"] = Name(TooltipView.TypeOf(kind), modifier.Id, store),
+                    ["name"] = Name(type, modifier.Id, store),
                 });
             }
 
@@ -339,22 +335,11 @@ public static class FellowshipLogs
         return store.Rarity(rarity, gem: false)?.Tier;
     }
 
-    private static int? RankOf(int blessingId, ItemDocument item, IEntityStoreService store)
-    {
-        if (store.All(EntityType.Blessing, blessingId).OfType<BlessingDocument>().FirstOrDefault()
-            is not { AbilityRanks: { Count: > 0 } ranks })
-        {
-            return null;
-        }
-
-        foreach (var hero in item.Heroes ?? [])
-        {
-            if (ranks.TryGetValue(hero.ToString(), out var mine)) return mine + BlessingBase;
-        }
-
-        throw new InvalidOperationException(
-            $"Blessing {blessingId} states a rank for none of {string.Join(", ", item.Heroes ?? [])}.");
-    }
+    private static int? RankOf(int blessingId, ItemDocument item, IEntityStoreService store) =>
+        store.All(EntityType.Blessing, blessingId).OfType<BlessingDocument>().FirstOrDefault()
+            is { AbilityRank: { } rank }
+            ? rank + BlessingBase
+            : null;
 
     private static string? Name(EntityType type, int id, IEntityStoreService store) =>
         store.All(type, id).FirstOrDefault() is { } document ? PublicTypes.NameOf(document) : null;

@@ -25,7 +25,6 @@ public sealed class ItemSlots
 
     public int Count => _statBySlot.Count;
 
-    public IReadOnlyList<string> RandomStatPool { get; private set; } = [];
 
     public ItemSlots(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
@@ -42,7 +41,6 @@ public sealed class ItemSlots
 
                 var pool = Pool(row);
                 if (type == FixedSlotType && pool.Length == 1) _statBySlot.TryAdd(rowName.Text, pool[0]);
-                if (type == RandomSlotType && pool.Length > 0 && RandomStatPool.Count == 0) RandomStatPool = pool;
             }
         }
     }

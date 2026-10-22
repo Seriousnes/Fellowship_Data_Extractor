@@ -2,7 +2,7 @@
 
 @if (Entity is BlessingDocument blessing)
 {
-    <BlessingCrest Entity="blessing" Width="PlateWidth" />
+    <BlessingCrest Entity="blessing" Width="SlotWidth" />
 }
 else if (Entity is DungeonDocument dungeon)
 {
@@ -16,8 +16,6 @@ else
 
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
-
-    private const int PlateWidth = 26;
 
     private const int SlotWidth = 34;
 }

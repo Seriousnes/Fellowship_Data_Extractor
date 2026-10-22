@@ -19,6 +19,10 @@ public sealed record ItemTrait(string DisplayName)
 
     public int? Augmentation { get; init; }
 
+    public string? AugmentationPath { get; init; }
+
+    public bool NameFromAugmentation { get; init; }
+
     public string? IconPath { get; init; }
 
     public IReadOnlyList<RankRun>? Runs { get; init; }
@@ -37,6 +41,7 @@ public sealed class ItemTraits
     private const string MaxRankField = "MaxTraitRank";
     private const string RandomChanceField = "RandomChance";
     private const string AugmentationField = "Augmentation";
+    private const string NameFromAugmentationField = "UseNameAndDescriptionFromAugmentation";
 
     private readonly Dictionary<string, ItemTrait> _byTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, ItemTrait> _byAugmentation = [];
@@ -92,6 +97,8 @@ public sealed class ItemTraits
                 MaxRank = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, MaxRankField)?.GenericValue),
                 RandomChance = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, RandomChanceField)?.GenericValue),
                 Augmentation = augmentationId,
+                AugmentationPath = augmentation,
+                NameFromAugmentation = PropertyWalk.Get(row, NameFromAugmentationField)?.GenericValue is true,
                 IconPath = PropertyWalk.GetString(row, IconField),
                 Runs = runs,
             };
@@ -116,6 +123,8 @@ public sealed class ItemTraits
     public ItemTrait? ForTag(string tagName) => _byTag.GetValueOrDefault(tagName);
 
     public int MaxRank => _byTag.Values.Max(trait => trait.MaxRank ?? 0);
+
+    public IEnumerable<ItemTrait> All => _byTag.Values;
 
     public ItemTrait? ForAugmentation(int netId) => _byAugmentation.GetValueOrDefault(netId);
 

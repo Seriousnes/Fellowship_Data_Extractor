@@ -17,9 +17,7 @@ public sealed class ItemSlotNames
     private const string KeyPrefix = "ItemType_";
     private const string UnknownType = "Unknown";
     private const string OrdinalField = "ItemType";
-    private const string DynamicTagPrefix = "ItemID.HeroItem.Dynamic.";
-
-    private static readonly char[] TagSeparators = ['.', '_'];
+    private const string EnumScope = "::";
 
     private static readonly Dictionary<string, string> SlotLabels =
         new(StringComparer.Ordinal) { ["Necklace"] = "Neck" };
@@ -44,18 +42,6 @@ public sealed class ItemSlotNames
     {
         if (_byToken.TryGetValue(token, out var cached)) return cached;
         return _byToken[token] = Match(token);
-    }
-
-    public SlotName? FromTag(string tagName)
-    {
-        if (!tagName.StartsWith(DynamicTagPrefix, StringComparison.OrdinalIgnoreCase)) return null;
-
-        foreach (var token in tagName[DynamicTagPrefix.Length..].Split(TagSeparators))
-        {
-            if (Find(token) is { } slot) return slot;
-        }
-
-        return null;
     }
 
     private SlotName? Match(string token)
@@ -134,6 +120,8 @@ public sealed class ItemSlotNames
     private void ReadOrdinals(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
         var labels = new Dictionary<int, string>();
+        var members = new Dictionary<int, string>();
+        string? enumName = null;
 
         foreach (var objectPath in TableFinder.ByRowStructure(assets, SlotWeightRowStructure))
         {
@@ -142,9 +130,14 @@ public sealed class ItemSlotNames
 
             foreach (var (rowName, row) in table.RowMap)
             {
-                if (PropertyWalk.AsOrdinal(PropertyWalk.Get(row, OrdinalField)?.GenericValue) is { } ordinal)
+                var value = PropertyWalk.Get(row, OrdinalField)?.GenericValue;
+
+                if (PropertyWalk.AsOrdinal(value) is { } ordinal) labels.TryAdd(ordinal, rowName.Text);
+
+                if (PropertyWalk.AsString(value) is { } text &&
+                    text.IndexOf(EnumScope, StringComparison.Ordinal) is var scope and > 0)
                 {
-                    labels.TryAdd(ordinal, rowName.Text);
+                    enumName ??= text[..scope];
                 }
             }
         }
@@ -156,17 +149,28 @@ public sealed class ItemSlotNames
                 "and no fixed hero item would export one.");
         }
 
+        if (enumName is not null && provider.MappingsContainer?.MappingsForGame is { } mappings)
+        {
+            foreach (var (ordinal, member) in EnumOrdinals.Members(mappings, enumName))
+            {
+                members[(int)ordinal] = member;
+            }
+        }
+
         var claimed = new HashSet<string>(StringComparer.Ordinal);
         var unlabelled = new List<int>();
 
-        foreach (var (ordinal, label) in labels)
+        foreach (var ordinal in labels.Keys.Union(members.Keys).Order())
         {
-            if (Find(label) is { } slot)
+            var slot = (members.TryGetValue(ordinal, out var member) ? Find(member) : null) ??
+                (labels.TryGetValue(ordinal, out var label) ? Find(label) : null);
+
+            if (slot is not null)
             {
                 _byOrdinal[ordinal] = slot;
                 claimed.Add(slot.Type);
             }
-            else
+            else if (labels.ContainsKey(ordinal))
             {
                 unlabelled.Add(ordinal);
             }
@@ -180,8 +184,10 @@ public sealed class ItemSlotNames
         {
             throw new InvalidOperationException(
                 $"DT_SlotWeights labels {unlabelled.Count} ordinals with something the shipped slot names do not " +
-                $"cover, against {unclaimed.Length} slot names no other ordinal took. The two only identify each " +
-                "other while there is exactly one of each.");
+                $"cover ({string.Join(", ", unlabelled.Select(ordinal => labels[ordinal]))}), against " +
+                $"{unclaimed.Length} slot names no other ordinal took " +
+                $"({string.Join(", ", unclaimed.Select(slot => $"{slot.Type}={slot.Shipped}"))}). The two only " +
+                "identify each other while there is exactly one of each.");
         }
 
         _byOrdinal[unlabelled[0]] = unclaimed[0];

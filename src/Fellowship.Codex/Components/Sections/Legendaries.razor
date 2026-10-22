@@ -1,16 +1,28 @@
 @inject ITooltipViewService Tips
+@inject ICodexViewService Ui
 
-@if (Rolls.Count > 0)
+@if (Entries.Count > 0)
 {
-    var badge = Rolls.Count.ToString();
+    var badge = Entries.Count.ToString();
     <Panel Head="Legendary stats" Badge="@badge">
-        @for (var index = 0; index < Rolls.Count; index++)
+        @for (var index = 0; index < Entries.Count; index++)
         {
-            var roll = Rolls[index];
+            var entry = Entries[index];
 
             <Rule />
-            <SubHead>@PublicTypes.NameOf(roll)</SubHead>
-            <Detail Entity="roll" @key="index" />
+            @if (entry.Roll is { } roll)
+            {
+                <SubHead>@PublicTypes.NameOf(roll)</SubHead>
+                <Detail Entity="roll" @key="index" />
+            }
+            else if (entry.Untagged is { } untagged)
+            {
+                <SubHead>@untagged.Name</SubHead>
+                @if (untagged.Description is { } description)
+                {
+                    <Prose>@Ui.Text(description, null, null)</Prose>
+                }
+            }
         }
     </Panel>
 }
@@ -18,5 +30,7 @@
 @code {
     [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 
-    private IReadOnlyList<EntityDocument> Rolls => Tips.LegendaryStats(Entity);
+    private IReadOnlyList<TooltipView.LegendaryEntry> Entries = [];
+
+    protected override void OnParametersSet() => Entries = TooltipView.Legendary(Tips.LegendaryStats(Entity), Entity);
 }

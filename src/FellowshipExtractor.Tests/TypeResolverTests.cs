@@ -3,42 +3,41 @@ namespace FellowshipExtractor.Tests;
 public sealed class TypeResolverTests
 {
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(25, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(24, Enum.GetValues<EntityType>().Length);
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
     [InlineData(EntityType.Gem, "gem")]
-    [InlineData(EntityType.SetBonusPower, "set-bonus-power")]
+    [InlineData(EntityType.LegendaryPower, "legendary-power")]
     [InlineData(EntityType.TalentSlot, "talent-slot")]
     public void ASlugIsTheTypeNameHyphenated(EntityType type, string slug) =>
         Assert.Equal(slug, EntityTypes.Slug(type));
 
     [Theory]
-    [InlineData(EntityType.Item, 5837)]
-    [InlineData(EntityType.Effect, 3265)]
-    [InlineData(EntityType.Ability, 2307)]
-    [InlineData(EntityType.Creature, 233)]
-    [InlineData(EntityType.Dungeon, 19)]
+    [InlineData(EntityType.Item, 5716)]
+    [InlineData(EntityType.Effect, 3363)]
+    [InlineData(EntityType.Ability, 2380)]
+    [InlineData(EntityType.Creature, 244)]
+    [InlineData(EntityType.Dungeon, 20)]
     [InlineData(EntityType.Talent, 216)]
     [InlineData(EntityType.TalentSlot, 216)]
-    [InlineData(EntityType.Mount, 110)]
-    [InlineData(EntityType.Trait, 62)]
+    [InlineData(EntityType.Mount, 111)]
+    [InlineData(EntityType.Trait, 68)]
     [InlineData(EntityType.GemTrait, 60)]
     [InlineData(EntityType.MountPower, 54)]
-    [InlineData(EntityType.TraitPower, 40)]
+    [InlineData(EntityType.TraitPower, 46)]
     [InlineData(EntityType.LegendaryPower, 36)]
-    [InlineData(EntityType.Currency, 32)]
-    [InlineData(EntityType.Modifier, 25)]
+    [InlineData(EntityType.Currency, 16)]
+    [InlineData(EntityType.Modifier, 26)]
     [InlineData(EntityType.Gem, 24)]
-    [InlineData(EntityType.SetBonus, 23)]
-    [InlineData(EntityType.SetBonusPower, 15)]
-    [InlineData(EntityType.Blessing, 14)]
+    [InlineData(EntityType.Blessing, 8)]
     [InlineData(EntityType.WeaponPower, 12)]
     [InlineData(EntityType.Hero, 12)]
-    [InlineData(EntityType.RelicPower, 11)]
-    [InlineData(EntityType.CompanionPet, 9)]
+    [InlineData(EntityType.RelicPower, 9)]
+    [InlineData(EntityType.RelicPassive, 5)]
+    [InlineData(EntityType.CompanionPet, 14)]
     [InlineData(EntityType.GemType, 6)]
-    [InlineData(EntityType.LegendaryStat, 3)]
+    [InlineData(EntityType.LegendaryStat, 2)]
     public void TheCorpusHoldsTheseCounts(EntityType type, int expected) =>
         Assert.Equal(expected, Export.Loaded.Documents.Count(d => d.Type == type));
 
@@ -81,12 +80,12 @@ public sealed class TypeResolverTests
             .Where(d => d.Type == EntityType.Item && d.Body["legendaryStats"] is not null)
             .ToArray();
 
-        Assert.Equal(37, legendary.Length);
+        Assert.Equal(36, legendary.Length);
         Assert.All(legendary, item => Assert.All(
             item.Body["legendaryStats"]!.AsArray(),
             stat => Assert.Contains(stat!["id"]!.GetValue<int>(), ids)));
 
-        Assert.All(legendary, item => Assert.Equal(3, item.Body["legendaryStats"]!.AsArray().Count));
+        Assert.All(legendary, item => Assert.Equal(2, item.Body["legendaryStats"]!.AsArray().Count));
     }
 
     [Fact]
@@ -97,14 +96,14 @@ public sealed class TypeResolverTests
 
         var legendary = stated.Where(d => d.Body["legendaryStats"] is not null).ToArray();
 
-        Assert.Equal(37, legendary.Length);
+        Assert.Equal(36, legendary.Length);
         Assert.All(legendary, item => Assert.Equal("Legendary", item.Body["rarity"]!.GetValue<string>()));
 
         var rows = stated.Except(legendary).ToArray();
 
-        Assert.Equal(105, rows.Length);
+        Assert.Equal(226, rows.Length);
         Assert.All(rows, item => Assert.Null(item.Body["ruleSet"]));
 
-        Assert.Equal(142, stated.Length);
+        Assert.Equal(262, stated.Length);
     }
 }

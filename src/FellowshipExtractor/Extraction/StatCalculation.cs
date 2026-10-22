@@ -15,6 +15,7 @@ public sealed class StatCalculation
     private const string AttributeRowStructure = "/Script/fellowship.CRArmoryItemAttributeTemplate";
     private const string RarityRowStructure =
         "/Script/DynamicLootSystemRuntime.CRDynamicHeroItemLootRarityRuleSet";
+    private const string RarityTableKey = "DynamicHeroItemLootRarityTableRuleSetsTable";
 
     private const string CalculationBlueprint = "HeroItemStatCalculation";
     private const string PrimaryFunction = "CalcPrimaryStatPoolFromItemLevel";
@@ -25,8 +26,6 @@ public sealed class StatCalculation
     public SecondaryStatPool Secondary { get; }
 
     public SlotStatSettings BaseSlot { get; }
-    public SlotStatSettings FixedSlot { get; }
-    public SlotStatSettings DynamicSlot { get; }
 
     public double PrimaryPowerBase { get; }
     public double PrimaryAndStaminaMultiplier { get; }
@@ -43,11 +42,15 @@ public sealed class StatCalculation
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<int, RaritySlots>> RarityAdditions { get; }
 
+    public IReadOnlyDictionary<string, ItemSlotDefinition> SlotDefinitions { get; }
+
     public StatCalculation(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
         ItemSlotNames slots,
-        ArmorTypes armor)
+        ArmorTypes armor,
+        DynamicItemRuleSets ruleSets,
+        ModifierRecipes recipes)
     {
         var settings = Settings(provider, assets);
 
@@ -56,8 +59,6 @@ public sealed class StatCalculation
         StatRarityBase = Number(settings, "StatRarityBase");
 
         BaseSlot = Block(settings, "BaseItemSlotCalculationSettings");
-        FixedSlot = Block(settings, "FixedSlotCalculationSettings");
-        DynamicSlot = Block(settings, "DynamicSlotCalculationSettings");
 
         (Primary, Secondary) = Pools(provider);
 
@@ -65,7 +66,8 @@ public sealed class StatCalculation
         SlotWeights = SlotWeightRows(provider, assets, slots);
         ArmorWeights = ArmorWeightRows(provider, assets, armor);
         Attributes = AttributeRows(provider, assets);
-        RarityAdditions = RarityRows(provider, assets);
+        RarityAdditions = RarityRows(provider, ruleSets);
+        SlotDefinitions = SlotDefinitionRows(provider, assets, RarityAdditions, recipes);
 
         if (Weights.Count == 0 || SlotWeights.Count == 0 || ArmorWeights.Count == 0 ||
             Attributes.Count == 0 || RarityAdditions.Count == 0)
@@ -306,11 +308,21 @@ public sealed class StatCalculation
     }
 
     private static Dictionary<string, IReadOnlyDictionary<int, RaritySlots>> RarityRows(
-        AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+        AbstractFileProvider provider, DynamicItemRuleSets ruleSets)
     {
         var found = new Dictionary<string, Dictionary<int, RaritySlots>>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var (_, row) in Rows(provider, assets, RarityRowStructure))
+        var path = ConfigIni.Read(provider, RarityDropChances.ConfigPath, RarityDropChances.Section)
+            .Text(RarityTableKey).Trim('"');
+
+        if (!provider.TryLoadPackageObject<UDataTable>(AbilityPresentationIndex.PackagePath(path), out var table))
+        {
+            throw new InvalidOperationException(
+                $"{RarityDropChances.Section}.{RarityTableKey} names {path}, and no {RarityRowStructure} table loads " +
+                "from it, so nothing states what an item rolls at each rarity.");
+        }
+
+        foreach (var (_, row) in table.RowMap)
         {
             if (PropertyWalk.AsOrdinal(PropertyWalk.Get(row, "RarityTier")?.GenericValue) is not { } tier) continue;
 
@@ -326,17 +338,28 @@ public sealed class StatCalculation
 
             foreach (var ruleSet in Names(row, "RuleSets"))
             {
-                var name = ruleSet.StartsWith(RuleSetPrefix, StringComparison.OrdinalIgnoreCase)
-                    ? ruleSet[RuleSetPrefix.Length..]
-                    : ruleSet;
+                if (!ruleSets.Rolls(ruleSet, tier)) continue;
+
+                var name = Short(ruleSet);
 
                 if (!found.TryGetValue(name, out var byTier))
                 {
                     found[name] = byTier = [];
                 }
 
-                byTier.TryAdd(tier, slots);
+                byTier[tier] = slots;
             }
+        }
+
+        var unruled = ruleSets.Rolled
+            .Where(pair => !found.TryGetValue(Short(pair.RuleSet), out var byTier) || !byTier.ContainsKey(pair.Tier))
+            .Select(pair => $"{Short(pair.RuleSet)} at {pair.Tier}")
+            .ToArray();
+
+        if (unruled.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Items roll {string.Join(", ", unruled)}, and no {RarityRowStructure} row covers it.");
         }
 
         return found.ToDictionary(
@@ -344,6 +367,55 @@ public sealed class StatCalculation
             kv => (IReadOnlyDictionary<int, RaritySlots>)kv.Value,
             StringComparer.OrdinalIgnoreCase);
     }
+
+    private static Dictionary<string, ItemSlotDefinition> SlotDefinitionRows(
+        AbstractFileProvider provider,
+        IReadOnlyList<FAssetData> assets,
+        IReadOnlyDictionary<string, IReadOnlyDictionary<int, RaritySlots>> additions,
+        ModifierRecipes recipes)
+    {
+        var named = additions.Values
+            .SelectMany(byTier => byTier.Values)
+            .SelectMany(slots => slots.GuaranteedSlots
+                .Concat(slots.RandomizedSlots)
+                .Concat(slots.SpecialSlots.Select(special => special.SlotName)))
+            .ToHashSet(StringComparer.Ordinal);
+
+        var found = new Dictionary<string, ItemSlotDefinition>(StringComparer.Ordinal);
+
+        foreach (var (rowName, row) in Rows(provider, assets, ItemSlots.RowStructure))
+        {
+            if (!named.Contains(rowName)) continue;
+
+            var type = PropertyWalk.AsString(PropertyWalk.Get(row, "SlotType")?.GenericValue);
+
+            found[rowName] = new ItemSlotDefinition(
+                type?[(type.IndexOf("::", StringComparison.Ordinal) + 2)..] ?? string.Empty,
+                PropertyWalk.AsOrdinal(PropertyWalk.Get(row, "MinimumItemLevel")?.GenericValue) ?? 0)
+            {
+                GemPowerPool = Names(row, "GemPowerPool"),
+                ItemTraitPool = Names(row, "ItemTraitPool"),
+            };
+        }
+
+        if (named.Where(name => !found.ContainsKey(name)).ToArray() is { Length: > 0 } undefined)
+        {
+            throw new InvalidOperationException(
+                $"The rarity rows name {string.Join(", ", undefined)}, and no {ItemSlots.RowStructure} row defines it.");
+        }
+
+        if (recipes.Slots.Where(slot => !found.ContainsKey(slot)).ToArray() is { Length: > 0 } unrolled)
+        {
+            throw new InvalidOperationException(
+                $"A {ModifierRecipes.Implementation} recipe rerolls {string.Join(", ", unrolled)}, and no rarity row " +
+                "names that slot.");
+        }
+
+        return found;
+    }
+
+    private static string Short(string ruleSet) =>
+        ruleSet.StartsWith(RuleSetPrefix, StringComparison.OrdinalIgnoreCase) ? ruleSet[RuleSetPrefix.Length..] : ruleSet;
 
     private static List<SpecialSlot> Special(IPropertyHolder row)
     {

@@ -1,3 +1,5 @@
+using Fellowship.SDK.Models;
+
 namespace Fellowship.SDK;
 
 public sealed record ItemPowerPotential
@@ -48,4 +50,12 @@ public sealed record ItemSettingsFile
         new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
     public ItemPowerPotential PowerPotential { get; init; } = new();
+
+    public Curve? StatEnchantPower { get; init; }
+
+    public double TemperDefaultStaminaMultiplier { get; init; }
+
+    public IReadOnlyList<TemperStaminaStep> TemperStaminaMultiplierAtItemLevel { get; init; } = [];
 }
+
+public sealed record TemperStaminaStep(int ItemLevel, double TemperValue);

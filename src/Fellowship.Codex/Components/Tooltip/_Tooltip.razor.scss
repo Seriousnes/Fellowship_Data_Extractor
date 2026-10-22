@@ -9,6 +9,7 @@ $header-decor-height: 14px;
 $modifier-decor-width: 8px;
 $modifier-row-height: 22px;
 $modifier-glyph-size: 16px;
+$attunement-glyph-size: 12px;
 $modifier-row-inset: 6px;
 
 .fx-tip {
@@ -151,7 +152,8 @@ $modifier-row-inset: 6px;
     color: var(--core-text-primary);
   }
 
-  .mod.unresolved .mn { color: var(--core-text-secondary); }
+  .mod.unresolved .mk,
+  .mod.unresolved .mn { color: var(--game-stat-secondary); }
 
   .mv {
     font-weight: 600;
@@ -209,6 +211,20 @@ $modifier-row-inset: 6px;
     .alloc { color: var(--core-primary-200); }
   }
 
+  .attuned {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--core-primary-200);
+
+    .xi {
+      flex: 0 0 auto;
+      width: $attunement-glyph-size;
+      height: $attunement-glyph-size;
+      object-fit: contain;
+    }
+  }
+
   .sock {
     display: flex;
     align-items: center;
@@ -221,7 +237,6 @@ $modifier-row-inset: 6px;
 
   .legendary { color: var(--fx-legendary); }
 
-  .setbonus { color: var(--fx-setbonus); }
 
   .nm {
     font-weight: 600;

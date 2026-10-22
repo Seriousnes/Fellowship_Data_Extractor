@@ -221,25 +221,28 @@ public sealed class TooltipViewService(
 
         var casting = new List<TooltipView.Reading>(2);
         var spending = new List<TooltipView.Reading>(2);
+        var text = TooltipView.AbilityText(store.Settings);
 
         var (cast, hastened) = Hastened(
             document, DocumentFields.Number(document, nameof(AbilityDocument.CastTime)), query);
 
         casting.Add(cast is { } seconds
-            ? new TooltipView.Reading(
-                Number(seconds), TooltipView.SecondsUnit, TooltipView.CastLabel) { Title = hastened }
-            : new TooltipView.Reading(null, null, TooltipView.InstantCast));
+            ? new TooltipView.Reading(Number(seconds), text.CastUnit, text.Cast) { Title = hastened }
+            : new TooltipView.Reading(null, null, text.Instant));
 
         if (DocumentFields.Number(document, nameof(AbilityDocument.Range)) is { } range)
         {
-            casting.Add(new TooltipView.Reading(
-                Distance.Yards(range).Normalize().ToString(CultureInfo.InvariantCulture),
-                Distance.Unit,
-                TooltipView.RangeLabel)
-            {
-                Title = $"{Number(range)} unreal units, at " +
-                    $"{Distance.CentimetresPerYard.ToString(CultureInfo.InvariantCulture)} to the yard",
-            });
+            var title = $"{Number(range)} unreal units, at " +
+                $"{text.UnitsPerYard.ToString(CultureInfo.InvariantCulture)} to the yard";
+
+            casting.Add(Distance.Self(range)
+                ? new TooltipView.Reading(null, null, text.Self)
+                : Distance.Melee(range, text)
+                    ? new TooltipView.Reading(null, null, text.MeleeRange) { Title = title }
+                    : new TooltipView.Reading(
+                        Distance.Yards(range, text).Normalize().ToString(CultureInfo.InvariantCulture),
+                        text.RangeUnit,
+                        text.Range) { Title = title });
         }
 
         if (DocumentFields.Number(document, nameof(AbilityDocument.Cost)) is { } cost)
@@ -253,8 +256,7 @@ public sealed class TooltipViewService(
 
         if (DocumentFields.Number(document, nameof(AbilityDocument.Cooldown)) is { } cooldown)
         {
-            spending.Add(new TooltipView.Reading(
-                Number(cooldown), TooltipView.SecondsUnit, TooltipView.CooldownLabel));
+            spending.Add(new TooltipView.Reading(Number(cooldown), text.CooldownUnit, text.Cooldown));
         }
 
         return new TooltipView.Overview(casting, spending);
@@ -338,18 +340,37 @@ public sealed class TooltipViewService(
     {
         var lines = new List<TooltipView.ModifierLine>(query.Modifiers.Count);
 
+        var wearer = TooltipView.Wearer(document, query);
+        var level = query.ItemLevel ?? store.DropItemLevel(document);
+
         foreach (var modifier in query.Modifiers)
         {
+            var type = TooltipView.TypeOf(modifier.Kind, store.Settings);
+            var row = store.All(type, modifier.Id).FirstOrDefault();
+
             lines.Add(new TooltipView.ModifierLine(
                 modifier.Kind,
-                store.All(TooltipView.TypeOf(modifier.Kind), modifier.Id).Select(PublicTypes.NameOf).FirstOrDefault()
-                    ?? modifier.Id.ToString(CultureInfo.InvariantCulture),
-                modifier.Amount));
+                ItemCraft.Defining(modifier.Kind, row, store.Settings),
+                TooltipView.Header(modifier.Kind, store.Settings),
+                row is null
+                    ? modifier.Id.ToString(CultureInfo.InvariantCulture)
+                    : TooltipView.PrintedFor(row, wearer) ?? PublicTypes.NameOf(row),
+                type switch
+                {
+                    TooltipView.TraitType => row is not null && Enchants.Is(row)
+                        ? TooltipView.Plus(Enchants.RowValue(store.Settings, level))
+                        : null,
+                    EntityType.Blessing => TooltipView.GlyphRowValue,
+                    _ => TooltipView.Plus(modifier.Amount),
+                })
+            {
+                Tone = row is GemTypeDocument gem ? tokens.Gem(gem.Type.ToString()) : null,
+            });
         }
 
         for (var rolled = lines.Count; rolled < RandomRolls(document, rarity); rolled++)
         {
-            lines.Add(TooltipView.ModifierLine.Random);
+            lines.Add(TooltipView.Empty(store.Settings));
         }
 
         return lines;
@@ -363,14 +384,28 @@ public sealed class TooltipViewService(
         return byTier.TryGetValue(rarity.Tier, out var added) ? added.RandomRolls : 0;
     }
 
-    public IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity) =>
-        StatMagnitudes.For(
+    public IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity)
+    {
+        var level = query.ItemLevel ?? store.DropItemLevel(document);
+
+        return StatMagnitudes.For(
             document,
             store.Settings.StatCalculation,
             store.PrimaryAttributes,
             rarity,
-            query.ItemLevel ?? store.DropItemLevel(document),
-            query);
+            level,
+            query,
+            [.. Enchanted(query).SelectMany(enchant => Enchants.Granted(enchant, store.Settings, level))]);
+    }
+
+    private IEnumerable<TraitDocument> Enchanted(TooltipQuery query) =>
+        query.Modifiers
+            .Where(modifier => TooltipView.TypeOf(modifier.Kind, store.Settings) == TooltipView.TraitType)
+            .Select(modifier => modifier.Id)
+            .Concat(query.ImbuedTraits.Select(attuned => attuned.Id))
+            .Select(id => store.All(TooltipView.TraitType, id).OfType<TraitDocument>().FirstOrDefault())
+            .OfType<TraitDocument>()
+            .Where(Enchants.Is);
 
     public MarkupString Text(
         string source,
@@ -407,8 +442,7 @@ public sealed class TooltipViewService(
             --fx-divider:url({{chrome.GoldDivider}});--fx-rule:url({{chrome.SimpleDivider}});
             --fx-subheader:url({{chrome.Header(null)}});
             --fx-modplate:url({{chrome.ModifierPlate}});--fx-moddecor:url({{chrome.ModifierDecor}});
-            {{Heading("ability", chrome.AbilityBadge)}}{{Heading("legendary", chrome.LegendaryBadge)}}
-            {{Heading("setbonus", chrome.SetBonusBadge)}}}
+            {{Heading("ability", chrome.AbilityBadge)}}{{Heading("legendary", chrome.LegendaryBadge)}}}
 
             """ +
             Read(environment, Sheet, "Styles/tooltip.scss", "Components/Tooltip/_Tooltip.razor.scss") +

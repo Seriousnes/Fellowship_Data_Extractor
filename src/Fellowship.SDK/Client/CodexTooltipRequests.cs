@@ -76,10 +76,6 @@ public sealed record BlessingTooltipRequest
         "and a link to its page.")]
     public bool? Mobile { get; init; }
 
-    /// <summary>The state to draw the row at: allocated or unallocated.</summary>
-    [Description("The state to draw the row at: allocated or unallocated.")]
-    public string? State { get; init; }
-
     /// <summary>Which of a blessing's tiers is equipped.</summary>
     [Description("Which of a blessing's tiers is equipped. None stated reads as none equipped.")]
     public int? EquippedTier { get; init; }
@@ -305,15 +301,6 @@ public sealed record ItemTooltipRequest
     [Description("The armour to print in place of the one the tooltip computes from the item level.")]
     public decimal? Armor { get; init; }
 
-    /// <summary>
-    /// The stats a random slot rolled, named once per roll and without a magnitude. The tooltip computes
-    /// the magnitude. A caller holding the magnitudes states them in <see cref="Stats"/> instead.
-    /// </summary>
-    [Description(
-        "The stats a random slot rolled, named once per roll and without a magnitude. The tooltip computes " +
-        "the magnitude. Rolling a stat the item already declares aggregates into that line.")]
-    public IReadOnlyList<string>? RandomStats { get; init; }
-
     /// <summary>The item's modifiers.</summary>
     [Description(
         "The item's modifiers, each a kind, an id and an amount. The kinds are trait, blessing " +
@@ -340,6 +327,20 @@ public sealed record ItemTooltipRequest
         "Each stat's magnitude, by the name the build gives the stat, to state a magnitude the tooltip " +
         "prints rather than computes.")]
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
+}
+
+public sealed record RelicPassiveTooltipRequest
+{
+    public static EntityType Type => EntityType.RelicPassive;
+
+    [Description(
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
+    [Description(
+        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
+        "and a link to its page.")]
+    public bool? Mobile { get; init; }
 }
 
 /// <summary>Tooltip for a legendary power.</summary>
@@ -409,46 +410,6 @@ public sealed record RelicPowerTooltipRequest
         "Each stat's magnitude, by the name the build gives the stat, to state a magnitude the tooltip " +
         "prints rather than computes.")]
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
-}
-
-/// <summary>Tooltip for a set bonus.</summary>
-public sealed record SetBonusTooltipRequest
-{
-    /// <summary>The entity type whose tooltip this request draws.</summary>
-    public static EntityType Type => EntityType.SetBonus;
-
-    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
-    [Description(
-        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
-    public bool? ShowIcon { get; init; }
-
-    /// <summary>
-    /// Wrap the card in the chrome a phone draws it in: a scrim, a close button and a link to its page.
-    /// </summary>
-    [Description(
-        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
-        "and a link to its page.")]
-    public bool? Mobile { get; init; }
-}
-
-/// <summary>Tooltip for a set bonus power.</summary>
-public sealed record SetBonusPowerTooltipRequest
-{
-    /// <summary>The entity type whose tooltip this request draws.</summary>
-    public static EntityType Type => EntityType.SetBonusPower;
-
-    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
-    [Description(
-        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
-    public bool? ShowIcon { get; init; }
-
-    /// <summary>
-    /// Wrap the card in the chrome a phone draws it in: a scrim, a close button and a link to its page.
-    /// </summary>
-    [Description(
-        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
-        "and a link to its page.")]
-    public bool? Mobile { get; init; }
 }
 
 /// <summary>Tooltip for a talent.</summary>

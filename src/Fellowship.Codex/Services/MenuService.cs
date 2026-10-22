@@ -43,11 +43,10 @@ public sealed class MenuService : IMenuService
                 Tab(EntityType.Talent, new MenuSection("Hero", Heroes(Where(EntityType.Talent)))),
                 Tab(EntityType.Trait),
                 Tab(EntityType.GemTrait),
-                Tab(EntityType.SetBonus),
-                Tab(EntityType.SetBonusPower),
                 Tab(EntityType.TraitPower),
                 Tab(EntityType.WeaponPower),
                 Tab(EntityType.RelicPower),
+                Tab(EntityType.RelicPassive),
                 Tab(EntityType.LegendaryPower),
             ])),
 

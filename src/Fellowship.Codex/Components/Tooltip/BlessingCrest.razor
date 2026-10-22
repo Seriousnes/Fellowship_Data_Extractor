@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-<figure class="fx-blessing-crest" style="--fx-plate:url(@Plate);--fx-plate-width:@WidthPx">
+<figure class="fx-blessing-crest" style="--fx-plate:url(@Plate);--fx-plate-hover:url(@Hovered);--fx-plate-width:@WidthPx">
     @if (Texture is { } texture) { <img alt="" src="@texture"> }
 </figure>
 
@@ -9,11 +9,13 @@
 
     [Parameter] public string? State { get; set; }
 
-    [Parameter] public int Width { get; set; } = 60;
+    [Parameter] public int Width { get; set; } = 64;
 
     private string Plate => Ui.Chrome.BlessingPlate(State);
 
-    private string? Texture => Ui.Chrome.BlessingTexture(Entity.Icon, State) ?? Ui.Icon(Entity.Icon);
+    private string Hovered => Ui.Chrome.BlessingPlate(State, hovered: true);
+
+    private string? Texture => Ui.Chrome.BlessingRune(Entity, State);
 
     private string WidthPx => Width.ToString(CultureInfo.InvariantCulture) + "px";
 }

@@ -2,7 +2,7 @@
 @inject IEntityStoreService Store
 
 <div class="grp">
-    <div class="sock">
+    <div class="sock" data-craft-row="@CraftSlot.KeyOf(CraftSlots.GemSocket, 0)">
         @if (Gem is { } gem)
         {
             <img class="gi" alt="" src="@Ui.Chrome.Texture(gem.Icon)">

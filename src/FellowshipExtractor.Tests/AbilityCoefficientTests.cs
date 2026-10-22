@@ -21,7 +21,7 @@ public sealed class AbilityCoefficientTests
         var only = Assert.IsType<JsonObject>(Assert.Single(stated));
 
         Assert.Equal("Intellect", (string?)only["attribute"]);
-        Assert.Equal(4.84, (double?)only["value"]);
+        Assert.Equal(5.24, (double?)only["value"]);
         Assert.Equal(0.01, (double?)only["spread"]);
     }
 
@@ -51,7 +51,7 @@ public sealed class AbilityCoefficientTests
         var stated = Assert.IsType<JsonArray>(Stated(melee.Body));
         var only = Assert.IsType<JsonObject>(Assert.Single(stated));
 
-        Assert.Equal(2.9, (double?)only["value"]);
+        Assert.Equal(6.15, (double?)only["value"]);
         Assert.Equal("Strength", (string?)only["attribute"]);
 
         var scaling = melee.Body["scalesOff"]!.AsArray().Select(word => (string?)word).ToArray();

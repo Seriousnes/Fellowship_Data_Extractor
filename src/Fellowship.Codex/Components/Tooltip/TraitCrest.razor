@@ -1,10 +1,10 @@
 @inject ICodexViewService Ui
 
-<figure class="fx-trait-crest @(Padlocked ? "locked" : null)" style="--fx-node:url(@Plate);--fx-node-width:@WidthPx">
+<figure class="fx-trait-crest @(Allocated ? null : "unallocated")" style="--fx-node:url(@Plate);--fx-node-width:@WidthPx">
     <div class="well">@if (Texture is { } texture) { <img alt="" src="@texture"> }</div>
     @if (Padlocked)
     {
-        <img class="lock" alt="" src="@Ui.Chrome.LockGlyph">
+        <span class="lock" style="--fx-lock-plate:url(@Ui.Chrome.LockPlate)"><img alt="" src="@Ui.Chrome.LockGlyph"></span>
     }
 </figure>
 
@@ -16,6 +16,8 @@
     [Parameter] public int Width { get; set; } = 72;
 
     private bool Padlocked => ChromeAssetService.Padlocked(State);
+
+    private bool Allocated => ChromeAssetService.Allocated(State);
 
     private string Plate => Ui.Chrome.TraitNode(State);
 

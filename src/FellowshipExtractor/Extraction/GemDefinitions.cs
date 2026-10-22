@@ -3,6 +3,8 @@ using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports.Engine;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.Kismet;
+using CUE4Parse.UE4.Objects.UObject;
 
 namespace FellowshipExtractor.Extraction;
 
@@ -273,45 +275,114 @@ public sealed class RarityNames
 
     public IEnumerable<int> Tiers => _byOrdinal.Keys.Order();
 
-    private static readonly Dictionary<string, string> Renamed =
-        new(StringComparer.OrdinalIgnoreCase) { ["Champion"] = "Heroic", ["Heroic"] = "Regal" };
+    private const string SubheaderWidget = "UW_ItemTooltipSubheader";
+    private const string RarityFunction = "GetRarityName";
+
+    private readonly Dictionary<int, string> _printed;
 
     private static readonly Dictionary<string, string> GemRenamed =
         new(StringComparer.OrdinalIgnoreCase) { ["Champion"] = "Flawless" };
 
     public RarityNames(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
+        var declared = new HashSet<int>();
+        string? enumName = null;
+
         foreach (var objectPath in TableFinder.ByRowStructure(assets, RowStructure))
         {
             if (!provider.TryLoadPackageObject<UDataTable>(
                 AbilityPresentationIndex.PackagePath(objectPath), out var table)) continue;
 
-            foreach (var (rowName, row) in table.RowMap)
+            foreach (var (_, row) in table.RowMap)
             {
-                var ordinal = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, TierField)?.GenericValue) ?? 0;
+                var value = PropertyWalk.Get(row, TierField)?.GenericValue;
 
-                var separator = rowName.Text.IndexOf('_');
-                var name = separator < 0 ? rowName.Text : rowName.Text[..separator];
+                declared.Add(PropertyWalk.AsOrdinal(value) ?? 0);
 
-                if (_byOrdinal.TryGetValue(ordinal, out var existing))
+                if (PropertyWalk.AsString(value) is { } text &&
+                    text.IndexOf(EnumSeparator, StringComparison.Ordinal) is var separator and > 0)
                 {
-                    if (existing.Equals(name, StringComparison.Ordinal)) continue;
-
-                    throw new InvalidOperationException(
-                        $"Loot rule set rows put both {existing} and {name} at rarity {ordinal}, so the row keys no " +
-                        "longer name the ladder and nothing else in the build does.");
+                    enumName ??= text[..separator];
                 }
-
-                _byOrdinal[ordinal] = name;
             }
         }
 
-        if (_byOrdinal.Count == 0)
+        if (declared.Count == 0)
         {
             throw new InvalidOperationException(
                 $"No table declares {RowStructure}, so nothing says what a rarity ordinal is and every gem would " +
                 "export without one.");
         }
+
+        var mappings = provider.MappingsContainer?.MappingsForGame
+            ?? throw new InvalidOperationException(
+                $"No mappings are loaded, so nothing names the {TierField} ordinals.");
+
+        if (enumName is null)
+        {
+            throw new InvalidOperationException(
+                $"No {RowStructure} row writes its {TierField} as an enum member, so nothing names the enum the " +
+                "rarity ladder is read from.");
+        }
+
+        var members = EnumOrdinals.Members(mappings, enumName);
+
+        foreach (var ordinal in declared)
+        {
+            _byOrdinal[ordinal] = members.TryGetValue(ordinal, out var name)
+                ? name
+                : throw new InvalidOperationException(
+                    $"A loot rule set row declares {TierField} {ordinal}, and {enumName} has no member at it.");
+        }
+
+        _printed = PrintedNames(provider, assets);
+    }
+
+    private static Dictionary<int, string> PrintedNames(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+    {
+        var asset = assets.FirstOrDefault(asset => asset.AssetName.Text.Equals(SubheaderWidget, StringComparison.Ordinal))
+            ?? throw new InvalidOperationException($"No cooked asset is named {SubheaderWidget}, so no rarity has a printed name.");
+
+        if (!provider.TryLoadPackage(asset.PackageName.Text, out var package) ||
+            package.GetExports().OfType<UStruct>().FirstOrDefault(function => function.Name == RarityFunction)
+                ?.ScriptBytecode is not { Length: > 0 } bytecode)
+        {
+            throw new InvalidOperationException($"{SubheaderWidget} has no {RarityFunction}, so no rarity has a printed name.");
+        }
+
+        var texts = new Dictionary<string, string>(StringComparer.Ordinal);
+        var printed = new Dictionary<int, string>();
+
+        foreach (var statement in bytecode)
+        {
+            if (statement is not EX_Let { Variable: var variable, Assignment: var assignment }) continue;
+
+            if (assignment is EX_TextConst
+                {
+                    Value: { TableIdString: EX_StringConst { Value: { } table }, KeyString: EX_StringConst { Value: { } key } },
+                } &&
+                DynamicTextFloats.Name(variable) is { } local &&
+                StringTables.Find(table, key) is { Length: > 0 } text)
+            {
+                texts[local] = text;
+            }
+
+            if (assignment is not EX_SwitchValue chosen) continue;
+
+            foreach (var choice in chosen.Cases)
+            {
+                if (choice.CaseIndexValueTerm is EX_ByteConst { Value: var ordinal } &&
+                    DynamicTextFloats.Name(choice.CaseTerm) is { } named &&
+                    texts.TryGetValue(named, out var name))
+                {
+                    printed[ordinal] = name;
+                }
+            }
+        }
+
+        return printed.Count > 0
+            ? printed
+            : throw new InvalidOperationException($"{SubheaderWidget}.{RarityFunction} switches on no rarity ordinal.");
     }
 
     public string? Label(int? ordinal) => ordinal is { } tier ? _byOrdinal.GetValueOrDefault(tier) : null;
@@ -337,17 +408,9 @@ public sealed class RarityNames
     public string? GemLabel(int? ordinal) =>
         Label(ordinal) is { } name ? GemRenamed.GetValueOrDefault(name) ?? name : null;
 
-    public string Printed(int ordinal)
-    {
-        if (Label(ordinal) is not { } name)
-        {
-            throw new InvalidOperationException(
-                $"Rarity tier {ordinal} names nothing. The loot rule set rows no longer cover the whole ladder.");
-        }
-
-        return Renamed.GetValueOrDefault(name) ?? name;
-    }
-
-    public IEnumerable<string> MissingRenames =>
-        Renamed.Keys.Where(name => !_byOrdinal.ContainsValue(name));
+    public string Printed(int ordinal) =>
+        _printed.TryGetValue(ordinal, out var name)
+            ? name
+            : throw new InvalidOperationException(
+                $"{SubheaderWidget}.{RarityFunction} prints no name for rarity tier {ordinal} ({Label(ordinal)}).");
 }

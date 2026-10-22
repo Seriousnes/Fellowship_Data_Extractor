@@ -287,7 +287,7 @@ public sealed class ChromePixelTests
         [
             Read.Chrome.ModifierPlate,
             Read.Chrome.ModifierDecor,
-            .. Enum.GetValues<ModifierKind>().Select(kind => Read.Chrome.ModifierGlyph(kind)),
+            .. ChromeAssetService.ModifierSlots(Read.Store.Settings).Select(slot => Read.Chrome.ModifierGlyph(slot)!),
         ];
 
         Assert.All(named, url =>
@@ -305,7 +305,7 @@ public sealed class ChromePixelTests
 
         Assert.All(blessings, blessing =>
         {
-            var allocated = Read.Chrome.BlessingTexture(blessing.Icon, null);
+            var allocated = Read.Chrome.BlessingRune(blessing, ChromeAssetService.BlessingState(1));
 
             Assert.NotNull(allocated);
             Assert.True(File.Exists(Texture(allocated)), $"{Texture(allocated)} is not there.");

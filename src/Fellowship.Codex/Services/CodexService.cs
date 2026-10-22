@@ -118,10 +118,6 @@ public sealed class CodexService : ICodexService
                 One(document is CreatureDocument { Rank: { } rank } ? rank.ToString() : null)),
 
             new Facet("school", "School", Schools),
-            new Facet("set", "Set", document =>
-                document is ItemDocument { SetBonus: { } sets }
-                    ? sets.Select(set => Owner(store, set)).OfType<string>()
-                    : []),
             new Facet("resource", "Resource", document =>
                 One(document is AbilityDocument { Resource: { } resource } ? resource : null)),
 
@@ -139,12 +135,6 @@ public sealed class CodexService : ICodexService
 
             new Facet("trait", "Trait category", document =>
                 One(document is TraitDocument { Category: { } category } ? category : null)) { Primary = true },
-
-            new Facet("role", "Role", document => document is SetBonusDocument { AllowedRoles: { } roles } ? roles : [])
-            {
-                Colour = (t, value) => t.Role(value),
-                Primary = true,
-            },
 
             new Facet("rarity", "Rarity", document => document switch
             {
@@ -219,9 +209,6 @@ public sealed class CodexService : ICodexService
                 _ => null,
             }),
 
-            new Sorting("set", "Set", document =>
-                document is ItemDocument { SetBonus: [var named, ..] } ? Owner(store, named) : null),
-
             new Sorting("location", "Location", document =>
                 document is CreatureDocument { FoundIn: [var dungeon, ..] } ? Owner(store, dungeon) : null),
 
@@ -275,14 +262,6 @@ public sealed class CodexService : ICodexService
                 TalentSlotDocument slot => (double)slot.Cost,
                 _ => DocumentFields.Number(document, nameof(AbilityDocument.Cost)),
             }),
-
-            new Sorting("pieces", "Required", document => (document as SetBonusDocument)?.Pieces),
-
-            new Sorting("attribute", "Attribute", document =>
-                document is SetBonusDocument { AllowedAttributes: [var attribute, ..] } ? attribute.ToString() : null),
-
-            new Sorting("role", "Role", document =>
-                document is SetBonusDocument { AllowedRoles: [var role, ..] } ? role : null),
 
             new Sorting("rarity", "Rarity", document => document switch
             {

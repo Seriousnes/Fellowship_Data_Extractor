@@ -35,7 +35,7 @@ public sealed class EntityStoreCorpusTests
         Assert.Equal(expected, Store.Entities.Count(document => EntityTypes.TypeOf(document) == type));
 
     [Fact]
-    public void TheStoreHolds12641Entities() => Assert.Equal(12641, Store.Count);
+    public void TheStoreHolds12664Entities() => Assert.Equal(12664, Store.Count);
 
     private static readonly IReadOnlySet<int> Granted = Store.Entities
         .OfType<ItemDocument>()
@@ -53,6 +53,7 @@ public sealed class EntityStoreCorpusTests
     [Theory]
     [InlineData(EntityType.WeaponPower)]
     [InlineData(EntityType.RelicPower)]
+    [InlineData(EntityType.RelicPassive)]
     public void EveryPowerAnItemCarriesIsReachedByAnItemsGrant(EntityType type) =>
         Assert.Empty(Ungranted(type).Select(document => $"{document.Id} {document.Name}"));
 

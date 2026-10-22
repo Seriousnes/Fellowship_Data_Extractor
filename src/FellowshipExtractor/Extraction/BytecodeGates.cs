@@ -38,6 +38,8 @@ public sealed class BytecodeGates
         }
     }
 
+    public IReadOnlySet<int> Reached => Reachable(-1);
+
     public IReadOnlySet<int> Only(int at)
     {
         var reached = Reachable(-1);
@@ -124,9 +126,16 @@ public sealed class BytecodeGates
 
         if (!bytecode.Any(statement => statement is EX_ComputedJump)) return [.. roots.Where(at => at >= 0)];
 
+        UObject[] exports = [.. cdo.Owner?.GetExports() ?? []];
+        var unbound = Unbound(exports);
         var entered = false;
 
-        foreach (var export in cdo.Owner?.GetExports() ?? [])
+        foreach (var resumed in bytecode.SelectMany(statement => Descendants(statement, 0)).OfType<EX_SkipOffsetConst>())
+        {
+            roots.Add(At(bytecode, (int)resumed.Value));
+        }
+
+        foreach (var export in exports)
         {
             if (export is not UStruct { ScriptBytecode: { Length: > 0 } calling }) continue;
 
@@ -135,13 +144,81 @@ public sealed class BytecodeGates
                 foreach (var entry in Entered(statement, body.Name, 0))
                 {
                     entered = true;
-                    roots.Add(At(bytecode, entry));
+                    if (!unbound.Contains(export.Name)) roots.Add(At(bytecode, entry));
                 }
             }
         }
 
         return entered ? [.. roots.Where(at => at >= 0)] : null;
     }
+
+    public static IReadOnlySet<string> Unbound(IEnumerable<UObject> exports)
+    {
+        var handlers = new List<(string Local, string Function)>();
+        var bound = new HashSet<string>(StringComparer.Ordinal);
+        var used = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var export in exports)
+        {
+            if (export is not UStruct { ScriptBytecode: { Length: > 0 } bytecode }) continue;
+
+            foreach (var statement in bytecode)
+            {
+                switch (statement)
+                {
+                    case EX_BindDelegate { Delegate: EX_LocalVariable local } bind when Leaf(local.Variable) is { } name:
+                        handlers.Add((name, bind.FunctionName.Text));
+                        break;
+                    case EX_BindDelegate bind:
+                        bound.Add(bind.FunctionName.Text);
+                        break;
+                    case EX_RemoveMulticastDelegate:
+                        break;
+                    default:
+                        foreach (var reached in Descendants(statement, 0))
+                        {
+                            if (reached is EX_LocalVariable variable && Leaf(variable.Variable) is { } read) used.Add(read);
+                            if (reached is EX_InstanceDelegate instance) bound.Add(instance.FunctionName.Text);
+                        }
+
+                        break;
+                }
+            }
+        }
+
+        return handlers
+            .GroupBy(handler => handler.Function, StringComparer.Ordinal)
+            .Where(group => !bound.Contains(group.Key) && group.All(handler => !used.Contains(handler.Local)))
+            .Select(group => group.Key)
+            .ToHashSet(StringComparer.Ordinal);
+    }
+
+    internal static IEnumerable<KismetExpression> Descendants(KismetExpression expression, int depth)
+    {
+        yield return expression;
+
+        if (depth > MaxDepth) yield break;
+
+        foreach (var read in AppliedEffects.Reaching(expression.GetType()))
+        {
+            switch (read(expression))
+            {
+                case KismetExpression child:
+                    foreach (var below in Descendants(child, depth + 1)) yield return below;
+                    break;
+                case KismetExpression[] children:
+                    foreach (var child in children)
+                    {
+                        foreach (var below in Descendants(child, depth + 1)) yield return below;
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    private static string? Leaf(FKismetPropertyPointer pointer) =>
+        pointer.New?.Path is { Length: > 0 } path ? path[^1].Text : null;
 
     private static int At(KismetExpression[] bytecode, int offset)
     {

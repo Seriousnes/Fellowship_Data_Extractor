@@ -10,8 +10,6 @@ public static class ItemVariants
         Entity item,
         ItemNaming naming,
         HeroNames heroes,
-        ItemSetBonuses setBonuses,
-        string? setBonusMappingKey,
         HeroTextures texture)
     {
         var declared = item.Variants is { Count: > 0 } variants ? variants : null;
@@ -60,7 +58,6 @@ public static class ItemVariants
                     ArmorType = card.ArmorType,
                     PrimaryStat = card.PrimaryStat,
                     Heroes = [card.Hero],
-                    SetBonus = setBonuses.ForHeroes(setBonusMappingKey, [card.Codename]),
                     Stats = card.Stats,
                     Grants = card.Grants,
                     GrantsId = card.GrantsId,

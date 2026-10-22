@@ -1,5 +1,6 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
+using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Engine;
 
 namespace FellowshipExtractor.Extraction;
@@ -9,6 +10,8 @@ public sealed record Modifier(string Tag)
     public string? DisplayName { get; init; }
 
     public string? Description { get; init; }
+
+    public IPropertyHolder? Row { get; init; }
 
     public string? IconPath { get; init; }
 
@@ -27,6 +30,9 @@ public sealed class ModifierInfo
     private const string TagField = "ModifierID";
     private const string DisplayNameField = "DisplayName";
     private const string DescriptionField = "Description";
+    private const string DynamicDisplayNameField = "DynamicDisplayName";
+    private const string DynamicDescriptionField = "DynamicDescription";
+    private const string DynamicTextField = "Text";
     private const string IconField = "UIIcon";
     private const string KindField = "Type";
     private const string MinimumHeroRankField = "MinimumHeroRankRequired";
@@ -59,8 +65,9 @@ public sealed class ModifierInfo
 
                 _byTag[tag] = new Modifier(tag)
                 {
-                    DisplayName = PropertyWalk.GetText(row, DisplayNameField),
-                    Description = PropertyWalk.GetText(row, DescriptionField),
+                    DisplayName = Written(row, DisplayNameField) ?? Dynamic(row, DynamicDisplayNameField),
+                    Description = Written(row, DescriptionField) ?? Dynamic(row, DynamicDescriptionField),
+                    Row = row,
                     IconPath = PropertyWalk.GetString(row, IconField),
                     Kind = EnumOrdinals.Member(mappings, KindEnum, PropertyWalk.GetString(row, KindField)),
                     MinimumHeroRank = PropertyWalk.AsOrdinal(
@@ -78,4 +85,13 @@ public sealed class ModifierInfo
     }
 
     public Modifier? ForTag(string tagName) => _byTag.GetValueOrDefault(tagName);
+
+    private static string? Written(IPropertyHolder row, string field) =>
+        PropertyWalk.GetText(row, field) is { Length: > 0 } text ? text : null;
+
+    private static string? Dynamic(IPropertyHolder row, string field) =>
+        PropertyWalk.GetStruct(row, field) is { } dynamic &&
+        PropertyWalk.GetString(dynamic, DynamicTextField) is { Length: > 0 } text
+            ? text
+            : null;
 }

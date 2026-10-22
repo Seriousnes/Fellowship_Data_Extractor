@@ -7,15 +7,16 @@ namespace FellowshipExtractor.Extraction;
 public sealed class Blessings
 {
     private const string LocresPath = "fellowship/Content/Localization/Game/en/Game.locres";
-    private const string TextNamespace = "ST_Abilities";
-    private const string NameKey = "Abilities_Feature_Finesse_Name";
-    private const string HeroBlessingKey = "Abilities_Tooltip_Finesse_HeroBlessing";
-    private const string TierLevelKey = "Abilities_Tooltip_Finesse_TierLevel";
+
+    public static readonly (string Namespace, string Key) NameKey = ("ST_Items", "Item_Feature_Glyph_Name");
+    public static readonly (string Namespace, string Key) AugmentationKey = ("ST_Items", "Item_Feature_Augmentation_Name");
+    public static readonly (string Namespace, string Key) TierLevelKey = ("ST_Abilities", "Abilities_Tooltip_Finesse_TierLevel");
+    public static readonly (string Namespace, string Key) TierSourcesKey = ("ST_Abilities", "Abilities_Tooltip_Finesse_TierSources");
 
     private const string ConstantsNamespace = "Finesse";
     private const string ConstantsTableName = "FinesseConstants";
 
-    private static readonly string[] Wanted = [NameKey, HeroBlessingKey, TierLevelKey];
+    public static readonly (string Namespace, string Key)[] Wanted = [NameKey, AugmentationKey, TierLevelKey, TierSourcesKey];
 
     public BlessingEntry Wording { get; }
 
@@ -23,19 +24,19 @@ public sealed class Blessings
     {
         var shipped = Strings(provider);
 
-        if (Wanted.Where(key => !shipped.ContainsKey(key)).ToArray() is { Length: > 0 } missing)
+        if (Wanted.Where(entry => !shipped.ContainsKey(entry)).ToArray() is { Length: > 0 } missing)
         {
             throw new InvalidOperationException(
-                $"The {TextNamespace} locres namespace no longer holds {string.Join(" or ", missing)}. A " +
-                "blessing tooltip takes its heading and its tier line from those keys, so the card would print " +
+                $"The locres no longer holds {string.Join(" or ", missing.Select(entry => $"{entry.Namespace}/{entry.Key}"))}. " +
+                "A blessing tooltip takes its heading and its tier line from those keys, so the card would print " +
                 "words this app chose rather than the ones in the build.");
         }
 
         Wording = new BlessingEntry(
-            shipped[NameKey], shipped[HeroBlessingKey], shipped[TierLevelKey], Tiers(constants));
+            shipped[NameKey], shipped[AugmentationKey], shipped[TierLevelKey], shipped[TierSourcesKey], Tiers(constants));
     }
 
-    private static Dictionary<string, string> Strings(AbstractFileProvider provider)
+    private static Dictionary<(string Namespace, string Key), string> Strings(AbstractFileProvider provider)
     {
         if (!provider.Files.TryGetValue(LocresPath, out var file))
         {
@@ -46,15 +47,13 @@ public sealed class Blessings
         using var archive = new FByteArchive(file.Path, file.Read(), provider.Versions);
         var locres = new FTextLocalizationResource(archive);
 
-        var found = new Dictionary<string, string>(StringComparer.Ordinal);
+        var found = new Dictionary<(string Namespace, string Key), string>();
 
         foreach (var (textNamespace, entries) in locres.Entries)
         {
-            if (!textNamespace.Str.Equals(TextNamespace, StringComparison.Ordinal)) continue;
-
             foreach (var (key, entry) in entries)
             {
-                if (Wanted.Contains(key.Str, StringComparer.Ordinal)) found[key.Str] = entry.LocalizedString;
+                if (Wanted.Contains((textNamespace.Str, key.Str))) found[(textNamespace.Str, key.Str)] = entry.LocalizedString;
             }
         }
 

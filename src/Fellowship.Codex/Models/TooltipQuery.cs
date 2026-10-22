@@ -50,22 +50,6 @@ public sealed class ItemModifiers
     }
 }
 
-public sealed class RolledStats
-{
-    public required IReadOnlyList<string> Values { get; init; }
-
-    public static bool TryParse(string? value, out RolledStats result)
-    {
-        result = new RolledStats
-        {
-            Values = [.. (value ?? string.Empty)
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)],
-        };
-
-        return true;
-    }
-}
-
 public sealed record TooltipQuery
 {
     public string? Hero { get; init; }
@@ -101,8 +85,6 @@ public sealed record TooltipQuery
     public int? AllocatedTraits { get; init; }
 
     public bool? HasImbuedTraits { get; init; }
-
-    public IReadOnlyList<string> RandomStats { get; init; } = [];
 
     public IReadOnlyDictionary<string, IReadOnlyList<decimal>> Stats { get; init; } =
         new Dictionary<string, IReadOnlyList<decimal>>(StringComparer.OrdinalIgnoreCase);

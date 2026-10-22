@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Fellowship.Codex.Services;
 
 using Fellowship.SDK.Documents;
@@ -6,10 +8,8 @@ namespace Fellowship.Codex.Models;
 
 public static class CraftSlots
 {
-    public const string RandomStat = "RandomStat";
     public const string GemSocket = "GemSocket";
     public const string TraitTree = "TraitTree";
-    public const string SetBonus = "SetBonus";
     public const string GrantedAbility = "GrantedAbility";
     public const string RandomRolls = "RandomRolls";
 
@@ -24,7 +24,10 @@ public sealed record CraftSlot(string SlotName, int Ordinal, IReadOnlyList<strin
 {
     public int Capacity { get; init; } = 1;
 
-    public string Key => $"{SlotName}:{Ordinal}";
+    public string Key => KeyOf(SlotName, Ordinal);
+
+    public static string KeyOf(string slotName, int ordinal) =>
+        $"{slotName}:{ordinal.ToString(CultureInfo.InvariantCulture)}";
 }
 
 public static class ItemCraft
@@ -48,17 +51,17 @@ public static class ItemCraft
 
         void Add(string name)
         {
-            var ordinal = Next(name);
+            var type = Definition(name, settings).SlotType;
+            var ordinal = Next(type);
 
-            slots.Add(name switch
+            slots.Add(type switch
             {
-                CraftSlots.TraitTree => new CraftSlot(name, ordinal, [CraftSlots.ItemTrait])
+                CraftSlots.TraitTree => new CraftSlot(type, ordinal, [name])
                 {
                     Capacity = TraitTrees.Capacity(item.TraitTree, settings) ?? 0,
                 },
-                CraftSlots.RandomStat => new CraftSlot(name, ordinal, [CraftSlots.RandomStat]),
-                CraftSlots.GemSocket => new CraftSlot(name, ordinal, [CraftSlots.GemSocket]),
-                _ => new CraftSlot(name, ordinal, []),
+                CraftSlots.GemSocket => new CraftSlot(type, ordinal, [name]),
+                _ => new CraftSlot(type, ordinal, []),
             });
         }
 
@@ -76,23 +79,48 @@ public static class ItemCraft
         return slots;
     }
 
-    public static ModifierKind? KindOf(string accepted) => accepted switch
-    {
-        CraftSlots.ItemTrait => ModifierKind.Trait,
-        CraftSlots.AbilityRank => ModifierKind.Blessing,
-        CraftSlots.GemPower => ModifierKind.Essence,
-        _ => null,
-    };
+    public static ItemSlotDefinition Definition(string name, SettingsFile settings) =>
+        settings.StatCalculation.SlotDefinitions.TryGetValue(name, out var definition)
+            ? definition
+            : throw new InvalidOperationException(
+                $"The settings define no item slot {name}, so the editor knows no slot type for it. The slots " +
+                $"defined are {string.Join(", ", settings.StatCalculation.SlotDefinitions.Keys)}.");
+
+    public static string? Defining(ModifierKind kind, EntityDocument? row, SettingsFile settings) =>
+        settings.StatCalculation.SlotDefinitions.TryGetValue(kind.ToString(), out var definition) &&
+        (definition.SlotType != CraftSlots.ItemTrait ||
+         row is TraitDocument { CategoryTag: { } tag } && definition.ItemTraitPool.Contains(tag, StringComparer.Ordinal))
+            ? kind.ToString()
+            : null;
+
+    public static ModifierKind? KindOf(string accepted, SettingsFile settings) =>
+        Enum.TryParse<ModifierKind>(accepted, out var kind) && settings.StatCalculation.SlotDefinitions.ContainsKey(accepted)
+            ? kind
+            : null;
+
+    public static ModifierKind? KindOfSlotType(string slotType, SettingsFile settings) =>
+        settings.StatCalculation.SlotDefinitions
+            .Where(pair => pair.Value.SlotType == slotType)
+            .Select(pair => KindOf(pair.Key, settings))
+            .FirstOrDefault(kind => kind is not null);
+
+    public static ModifierKind? KindOfTrait(EntityDocument? row, SettingsFile settings) =>
+        row is TraitDocument { CategoryTag: { } tag }
+            ? settings.StatCalculation.SlotDefinitions
+                .Where(pair => pair.Value.SlotType == CraftSlots.ItemTrait &&
+                               pair.Value.ItemTraitPool.Contains(tag, StringComparer.Ordinal))
+                .Select(pair => KindOf(pair.Key, settings))
+                .FirstOrDefault(kind => kind is not null)
+            : null;
 
     public const int SameIdentity = 2;
 
-    public const int Blessings = 2;
-
     public static int MaxRank(CraftCandidate candidate, IEntityStoreService store) =>
-        KindOf(candidate.Accepts) switch
+        Definition(candidate.Accepts, store.Settings).SlotType switch
         {
-            ModifierKind.Blessing => Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id)?.MaxRank ?? 1,
-            ModifierKind.Trait => Find<TraitDocument>(store, TooltipView.TraitType, candidate.Id)?.MaxRank ?? 1,
+            CraftSlots.AbilityRank => Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id)?.MaxRank ?? 1,
+            CraftSlots.ItemTrait or CraftSlots.TraitTree =>
+                Find<TraitDocument>(store, TooltipView.TraitType, candidate.Id)?.MaxRank ?? 1,
             _ => int.MaxValue,
         };
 
@@ -103,26 +131,24 @@ public static class ItemCraft
         CraftCandidate candidate,
         IEntityStoreService store)
     {
+        var floor = Definition(candidate.Accepts, store.Settings).MinimumItemLevel;
+
+        if ((query.ItemLevel ?? store.DropItemLevel(item)) < floor) return CraftReasons.BelowItemLevel(floor);
+
         if (slot.SlotName == CraftSlots.TraitTree)
         {
-            if (query.ImbuedTraits.Any(trait => trait.Id == candidate.Id)) return CraftReasons.AlreadyImbued;
-            if (query.ImbuedTraits.Count >= slot.Capacity) return CraftReasons.NoRoom;
+            var tree = TooltipView.TreeName(store.Settings);
+
+            if (query.ImbuedTraits.Any(trait => trait.Id == candidate.Id)) return CraftReasons.AlreadyAttuned(tree);
+            if (query.ImbuedTraits.Count >= slot.Capacity) return CraftReasons.NoRoom(tree);
 
             var ceiling = MaxRank(candidate, store);
             return candidate.Amount < 1 || candidate.Amount > ceiling ? CraftReasons.PastRank(ceiling) : null;
         }
 
-        if (candidate.Accepts == CraftSlots.RandomStat)
-        {
-            return query.RandomStats.Count(
-                stat => stat.Equals(candidate.Name, StringComparison.OrdinalIgnoreCase)) >= SameIdentity
-                ? CraftReasons.TwoOfAKind
-                : null;
-        }
+        if (KindOf(candidate.Accepts, store.Settings) is not { } kind) return null;
 
-        if (KindOf(candidate.Accepts) is not { } kind) return null;
-
-        if (kind == ModifierKind.Blessing)
+        if (TooltipView.TypeOf(kind, store.Settings) == EntityType.Blessing)
         {
             if (Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id) is { } blessing &&
                 item.Slot is { } worn &&
@@ -130,11 +156,14 @@ public static class ItemCraft
             {
                 return CraftReasons.NotInPool(worn);
             }
+        }
 
-            if (query.Modifiers.Count(modifier => modifier.Kind == ModifierKind.Blessing) >= Blessings)
-            {
-                return CraftReasons.TwoBlessings;
-            }
+        var type = TooltipView.Type(kind, store.Settings);
+
+        if (type.MaximumLimit is { } cap && query.Modifiers.Count(modifier => modifier.Kind == kind) >= cap)
+        {
+            return type.MaximumLimitWarning
+                ?? throw new InvalidOperationException($"The {kind} modifier type states a cap and no warning.");
         }
 
         if (query.Modifiers.Count(
@@ -150,13 +179,6 @@ public static class ItemCraft
 
     public static TooltipQuery Without(TooltipQuery query, CraftSlot slot) => slot.SlotName switch
     {
-        CraftSlots.RandomStat => query with
-        {
-            RandomStats = slot.Ordinal < query.RandomStats.Count
-                ? [.. query.RandomStats.Take(slot.Ordinal), .. query.RandomStats.Skip(slot.Ordinal + 1)]
-                : query.RandomStats,
-        },
-
         CraftSlots.GemSocket => query with { Gem = null },
 
         CraftSlots.TraitTree => query,
@@ -169,46 +191,22 @@ public static class ItemCraft
         },
     };
 
-    public static int StatAt(TooltipQuery query, CraftSlot slot) =>
-        slot.SlotName == CraftSlots.RandomStat ? slot.Ordinal : query.RandomStats.Count;
-
-    public static TooltipQuery With(TooltipQuery query, CraftSlot slot, CraftCandidate candidate)
+    public static TooltipQuery With(
+        TooltipQuery query, CraftSlot slot, CraftCandidate candidate, SettingsFile settings) => slot.SlotName switch
     {
-        if (slot.SlotName == CraftSlots.TraitTree)
+        CraftSlots.TraitTree => query with
         {
-            return query with
-            {
-                ImbuedTraits = [.. query.ImbuedTraits, new ImbuedTrait(candidate.Id, candidate.Amount)],
-            };
-        }
+            ImbuedTraits = [.. query.ImbuedTraits, new ImbuedTrait(candidate.Id, candidate.Amount)],
+        },
 
-        if (candidate.Accepts == CraftSlots.GemSocket) return query with { Gem = candidate.Id };
+        CraftSlots.GemSocket => query with { Gem = candidate.Id },
 
-        if (candidate.Accepts == CraftSlots.RandomStat)
-        {
-            return query with
-            {
-                RandomStats = Set([.. query.RandomStats], StatAt(query, slot), candidate.Name),
-            };
-        }
-
-        return query with
+        _ => query with
         {
             Modifiers = Set(
                 [.. query.Modifiers],
                 slot.Ordinal,
-                new ItemModifier(KindOf(candidate.Accepts)!.Value, candidate.Id, candidate.Amount)),
-        };
-    }
-
-    public static string Writes(CraftSlot slot, CraftCandidate candidate) => slot.SlotName switch
-    {
-        CraftSlots.TraitTree => CraftSlots.TraitTree,
-        _ => candidate.Accepts switch
-        {
-            CraftSlots.GemSocket => CraftSlots.GemSocket,
-            CraftSlots.RandomStat => CraftSlots.RandomStat,
-            _ => CraftSlots.RandomRolls,
+                new ItemModifier(KindOf(candidate.Accepts, settings)!.Value, candidate.Id, candidate.Amount)),
         },
     };
 
@@ -230,13 +228,14 @@ public static class CraftReasons
 {
     public const string TwoOfAKind = "Two of one is the most an item rolls.";
 
-    public const string TwoBlessings = "Two blessings is the most an item has.";
+    public static string AlreadyAttuned(string tree) => $"Already in the {tree}.";
 
-    public const string AlreadyImbued = "Already imbued.";
-
-    public const string NoRoom = "Every imbued trait slot is filled.";
+    public static string NoRoom(string tree) => $"Every row of the {tree} is filled.";
 
     public static string NotInPool(string slot) => $"Does not roll on a {slot}.";
+
+    public static string BelowItemLevel(int floor) =>
+        $"Rolls from item level {floor.ToString(CultureInfo.InvariantCulture)}.";
 
     public static string PastRank(int max) => $"Ranks 1 to {max} only.";
 }

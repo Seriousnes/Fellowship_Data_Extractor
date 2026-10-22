@@ -18,10 +18,9 @@ public static class ApiEndpoints
         app.MapGemTrait();
         app.MapItem();
         app.MapLegendaryPower();
+        app.MapRelicPassive();
         app.MapMount();
         app.MapRelicPower();
-        app.MapSetBonus();
-        app.MapSetBonusPower();
         app.MapTalent();
         app.MapTrait();
         app.MapTraitPower();

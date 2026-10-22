@@ -11,8 +11,6 @@ public sealed record StatCalculationFile
     public double StatRarityBase { get; init; }
 
     public SlotStatSettings BaseSlot { get; init; } = new();
-    public SlotStatSettings FixedSlot { get; init; } = new();
-    public SlotStatSettings DynamicSlot { get; init; } = new();
 
     public IReadOnlyDictionary<string, SlotWeight> SlotWeights { get; init; } =
         new Dictionary<string, SlotWeight>(StringComparer.OrdinalIgnoreCase);
@@ -23,10 +21,11 @@ public sealed record StatCalculationFile
     public IReadOnlyDictionary<string, AttributeDisplay> Attributes { get; init; } =
         new Dictionary<string, AttributeDisplay>(StringComparer.OrdinalIgnoreCase);
 
-    public IReadOnlyList<string> RandomStatPool { get; init; } = [];
-
     public IReadOnlyDictionary<string, IReadOnlyDictionary<int, RaritySlots>> RarityAdditions { get; init; } =
         new Dictionary<string, IReadOnlyDictionary<int, RaritySlots>>(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlyDictionary<string, ItemSlotDefinition> SlotDefinitions { get; init; } =
+        new Dictionary<string, ItemSlotDefinition>(StringComparer.Ordinal);
 }
 
 public sealed record SettingsFile
@@ -67,11 +66,13 @@ public sealed record SettingsFile
 
     public IReadOnlyList<DropItemLevel> DropItemLevels { get; init; } = [];
 
-    public BlessingEntry Blessings { get; init; } = new(string.Empty, string.Empty, string.Empty, 0);
+    public BlessingEntry Blessings { get; init; } = new(string.Empty, string.Empty, string.Empty, string.Empty, 0);
 
     public DifficultyScaling DifficultyScaling { get; init; } = new();
 
     public MultiTargetDamageFalloff MultiTargetDamageFalloff { get; init; } = new();
+
+    public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; init; } = [];
 
     public IReadOnlyList<LeagueEntry> Leagues { get; init; } = [];
 
@@ -80,6 +81,14 @@ public sealed record SettingsFile
     public IReadOnlyList<TraitNodeUpgradeCost> TraitNodeUpgradeCosts { get; init; } = [];
 
     public TraitNodeColorRows? TraitNodeColorRows { get; init; }
+
+    public string? TraitTreeHeader { get; init; }
+
+    public AbilityTooltipText? AbilityTooltip { get; init; }
+
+    public IReadOnlyList<ModifierTypeEntry> ModifierTypes { get; init; } = [];
+
+    public EmptyModifierSlot? EmptyModifierSlot { get; init; }
 
     public StatCalculationFile StatCalculation { get; init; } = new();
 

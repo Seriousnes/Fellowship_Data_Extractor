@@ -16,7 +16,6 @@ public sealed record HeroItem
 
     public required IReadOnlyList<StatSlot> Stats { get; init; }
 
-    public string? SetBonus { get; init; }
 
     public required IReadOnlyList<string> Heroes { get; init; }
 
@@ -115,7 +114,6 @@ public sealed class HeroItemTable
             Slot = slot?.Shipped,
             ArmorType = _armor.Label(PropertyWalk.Get(row, "ArmorType")?.GenericValue),
             Stats = [.. primary, .. Template(row, "SecondaryStatsWeightsTemplate", primaryPool: false)],
-            SetBonus = Name(PropertyWalk.GetString(row, "SetBonusA")),
             Heroes = heroes,
             UniqueEquipped = PropertyWalk.Get(row, "IsUniqueEquippable")?.GenericValue is true,
             Rarity = Rarity(row),

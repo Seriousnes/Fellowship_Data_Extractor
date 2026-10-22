@@ -18,11 +18,20 @@ public sealed class DynamicTextRows
     private const string TokenNameField = "TokenName";
     private const string PercentField = "ShowPercent";
     private const string MagnitudeProperty = "Magnitude.ScalableFloatMagnitude";
+    private const string TypeField = "Type";
+    private const string ObjectField = "Object";
+    private const string IdentifierField = "AbilityDynamicTextFloatIdentifier";
+    private const string SourceFunctionField = "CustomSourceFunction";
+    private const string AbilityFloatType = "::AbilityDynamicTextFloat";
+    private const string SourceFunctionType = "::CustomSourceFunction";
+    private const string EffectNameFunction = "GetGameplayEffectName";
 
     private readonly Dictionary<string, SortedDictionary<string, string>> _byRowKey =
         new(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<string, int> _literal = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, UObject?> _loaded = new(StringComparer.OrdinalIgnoreCase);
+    private readonly AbstractFileProvider _provider;
 
     public int RowCount => _byRowKey.Count;
 
@@ -40,6 +49,8 @@ public sealed class DynamicTextRows
         ConstantsTable constants,
         HeroNames heroes)
     {
+        _provider = provider;
+
         foreach (var objectPath in TableFinder.ByRowStructure(assets, RowStructure))
         {
             var assetName = AbilityPresentationIndex.AssetName(objectPath);
@@ -72,7 +83,7 @@ public sealed class DynamicTextRows
                     _byRowKey[key.Text] = byHero = new SortedDictionary<string, string>(StringComparer.Ordinal);
                 }
 
-                byHero[shipped] = Substitute(sentence, Declared(holder), constants);
+                byHero[shipped] = Substitute(sentence, Declared(holder), constants, HeroVariants.HeroTagPrefix + suffix);
             }
         }
 
@@ -83,6 +94,8 @@ public sealed class DynamicTextRows
                 "shared hero token exports that token and nothing a hero can read.");
         }
     }
+
+    public IReadOnlyDictionary<string, string>? ForRow(string rowName) => _byRowKey.GetValueOrDefault(rowName);
 
     public IReadOnlyDictionary<string, string>? ForTag(string tagName)
     {
@@ -134,11 +147,11 @@ public sealed class DynamicTextRows
     }
 
     private string Substitute(
-        string sentence, IReadOnlyDictionary<string, IPropertyHolder> tokens, ConstantsTable constants)
+        string sentence, IReadOnlyDictionary<string, IPropertyHolder> tokens, ConstantsTable constants, string heroTag)
     {
         foreach (var written in DescriptionTokens.Tokens(sentence).Distinct(StringComparer.Ordinal))
         {
-            if (tokens.TryGetValue(written, out var token) && Stated(token, constants) is { } printed)
+            if (tokens.TryGetValue(written, out var token) && Stated(token, constants, heroTag) is { } printed)
             {
                 sentence = sentence.Replace($"{{{written}}}", printed, StringComparison.Ordinal);
                 Substituted++;
@@ -151,16 +164,53 @@ public sealed class DynamicTextRows
         return sentence;
     }
 
-    private static string? Stated(IPropertyHolder token, ConstantsTable constants)
+    private string? Stated(IPropertyHolder token, ConstantsTable constants, string heroTag)
     {
         var magnitude = CurveBindings.Collect(token, constants)
             .FirstOrDefault(binding => binding.Property.Equals(MagnitudeProperty, StringComparison.Ordinal));
 
-        if (magnitude?.Value is not { } value) return null;
+        if ((magnitude?.Value ?? Floated(token, constants, heroTag)) is not { } value) return Named(token);
 
         return PropertyWalk.Get(token, PercentField)?.GenericValue is true
             ? Printed(value * 100) + "%"
             : Printed(value);
+    }
+
+    private double? Floated(IPropertyHolder token, ConstantsTable constants, string heroTag)
+    {
+        if (PropertyWalk.AsString(PropertyWalk.Get(token, TypeField)?.GenericValue) is not { } type ||
+            !type.EndsWith(AbilityFloatType, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (Loaded(PropertyWalk.GetString(token, ObjectField)) is not { } ability) return null;
+
+        var identifier = PropertyWalk.AsOrdinal(PropertyWalk.Get(token, IdentifierField)?.GenericValue) ?? 0;
+
+        return HeroTextFloats.Read(ability, identifier, heroTag, constants);
+    }
+
+    private string? Named(IPropertyHolder token)
+    {
+        if (PropertyWalk.AsString(PropertyWalk.Get(token, TypeField)?.GenericValue) is not { } type ||
+            !type.EndsWith(SourceFunctionType, StringComparison.Ordinal) ||
+            PropertyWalk.GetString(token, SourceFunctionField) != EffectNameFunction)
+        {
+            return null;
+        }
+
+        return Loaded(PropertyWalk.GetString(token, ObjectField)) is { } effect
+            ? Display.From(EffectUiData.Find(effect), effect).Name
+            : null;
+    }
+
+    private UObject? Loaded(string? objectPath)
+    {
+        if (objectPath is null) return null;
+        if (_loaded.TryGetValue(objectPath, out var held)) return held;
+
+        return _loaded[objectPath] = DungeonNames.Load(_provider, objectPath);
     }
 
     private static string Printed(double value) =>

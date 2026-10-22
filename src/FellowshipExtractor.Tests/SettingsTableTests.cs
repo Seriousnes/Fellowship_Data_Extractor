@@ -45,15 +45,14 @@ public sealed class SettingsTableTests
     }
 
     [Fact]
-    public void TheThreeSectionHeadingsNameTheColourRowTheirWidgetDraws()
+    public void TheTwoSectionHeadingsNameTheColourRowTheirWidgetDraws()
     {
         Assert.Equal(
-            [SectionHeadingRows.Ability, SectionHeadingRows.Legendary, SectionHeadingRows.SetBonus],
+            [SectionHeadingRows.Ability, SectionHeadingRows.Legendary],
             HeadingRows.Keys.Order(StringComparer.Ordinal));
 
         Assert.Equal("game.game.hero-sylvie", HeadingRows[SectionHeadingRows.Ability]);
         Assert.Equal("game.rarity-legendary", HeadingRows[SectionHeadingRows.Legendary]);
-        Assert.Equal("game.game.character-friendly", HeadingRows[SectionHeadingRows.SetBonus]);
     }
 
     [Fact]
@@ -61,7 +60,6 @@ public sealed class SettingsTableTests
     {
         Assert.Equal("EA4F84", Hex(HeadingRows[SectionHeadingRows.Ability]));
         Assert.Equal("FF8000", Hex(HeadingRows[SectionHeadingRows.Legendary]));
-        Assert.Equal("00BB1D", Hex(HeadingRows[SectionHeadingRows.SetBonus]));
     }
 
     [Fact]

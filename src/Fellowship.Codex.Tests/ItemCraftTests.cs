@@ -28,7 +28,7 @@ public class ItemCraftTests(Export export)
     }
 
     [Fact]
-    public void A_guaranteed_slot_keeps_the_name_the_table_gives_it_and_its_order()
+    public void A_guaranteed_slot_keeps_the_type_its_definition_gives_it_and_its_order()
     {
         foreach (var (ruleSet, byTier) in Settings.StatCalculation.RarityAdditions)
         {
@@ -37,7 +37,7 @@ public class ItemCraftTests(Export export)
                 var slots = Slots(ruleSet, tier);
 
                 Assert.Equal(
-                    added.GuaranteedSlots,
+                    [.. added.GuaranteedSlots.Select(name => ItemCraft.Definition(name, Settings).SlotType)],
                     [.. slots.Take(added.GuaranteedSlots.Count).Select(slot => slot.SlotName)]);
             }
         }
@@ -85,19 +85,30 @@ public class ItemCraftTests(Export export)
     [Fact]
     public void A_special_slot_the_table_names_becomes_a_slot_of_its_own()
     {
-        var special = Settings.StatCalculation.RarityAdditions
-            .SelectMany(rule => rule.Value.Select(tier => (Rule: rule.Key, tier.Key, tier.Value)))
-            .Where(row => row.Value.SpecialSlots.Count > 0)
-            .ToArray();
+        var rung = Settings.Rarities[^1];
+        var named = Settings.StatCalculation.RarityAdditions.Values
+            .SelectMany(byTier => byTier.Values)
+            .SelectMany(added => added.GuaranteedSlots)
+            .First();
 
-        Assert.NotEmpty(special);
-
-        foreach (var (rule, tier, added) in special)
+        var staged = Settings with
         {
-            var names = Slots(rule, tier).Select(slot => slot.SlotName).ToArray();
+            StatCalculation = Settings.StatCalculation with
+            {
+                RarityAdditions = new Dictionary<string, IReadOnlyDictionary<int, RaritySlots>>
+                {
+                    [nameof(SpecialSlot)] = new Dictionary<int, RaritySlots>
+                    {
+                        [rung.Tier] = new(rung.Tier, [], 0, []) { SpecialSlots = [new SpecialSlot(named, null)] },
+                    },
+                },
+            },
+        };
 
-            Assert.All(added.SpecialSlots, slot => Assert.Contains(slot.SlotName, names, StringComparer.OrdinalIgnoreCase));
-        }
+        var slots = ItemCraft.Slots(
+            new ItemDocument { Id = 1, RuleSet = nameof(SpecialSlot) }, staged, rung);
+
+        Assert.Equal([ItemCraft.Definition(named, Settings).SlotType], slots.Select(slot => slot.SlotName));
     }
 
     [Fact]
@@ -112,13 +123,29 @@ public class ItemCraftTests(Export export)
     }
 
     [Fact]
-    public void The_three_modifier_kinds_map_onto_the_three_modifier_kinds_the_api_documents()
+    public void Each_modifier_slot_definition_is_the_modifier_kind_of_its_own_name()
     {
-        Assert.Equal(ModifierKind.Trait, ItemCraft.KindOf(CraftSlots.ItemTrait));
-        Assert.Equal(ModifierKind.Blessing, ItemCraft.KindOf(CraftSlots.AbilityRank));
-        Assert.Equal(ModifierKind.Essence, ItemCraft.KindOf(CraftSlots.GemPower));
-        Assert.Null(ItemCraft.KindOf(CraftSlots.RandomStat));
+        foreach (var (name, _) in Settings.StatCalculation.SlotDefinitions)
+        {
+            ModifierKind? expected = Settings.ModifierTypes.Any(type => type.Name == name)
+                ? Enum.Parse<ModifierKind>(name)
+                : null;
 
-        Assert.Equal(3, Enum.GetValues<ModifierKind>().Length);
+            Assert.Equal(expected, ItemCraft.KindOf(name, Settings));
+        }
     }
+
+    [Fact]
+    public void An_enchant_prints_the_name_its_wearer_reads()
+    {
+        var enchant = export.Store.Entities.OfType<TraitDocument>().First(trait => trait.NameByHero is { Count: > 0 });
+        var (hero, printed) = enchant.NameByHero!.First();
+
+        Assert.Equal(printed, TooltipView.PrintedFor(enchant, hero));
+        Assert.Null(TooltipView.PrintedFor(enchant, null));
+    }
+
+    [Fact]
+    public void A_slot_name_no_definition_states_is_refused() =>
+        Assert.Throws<InvalidOperationException>(() => ItemCraft.Definition(nameof(Settings), Settings));
 }

@@ -1,5 +1,6 @@
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
+@inject ITooltipViewService Cards
 
 @if (PicksHero || Wearable || IsGem || Rarities.Count > 1 || PicksDifficulty)
 {
@@ -58,13 +59,8 @@
             </Knob>
 
             <Knob Caption="Tempered">
-                <input type="number" min="0" max="20" step="1" placeholder="none" data-knob="upgrades"
+                <input type="number" min="0" max="@TemperCeiling" step="1" placeholder="none" data-knob="upgrades"
                        value="@Value("upgrades")" @onchange="Temper" />
-            </Knob>
-
-            <Knob Caption="Random stats">
-                <input type="text" placeholder="@RollablePlaceholder" data-knob="randomStats"
-                       value="@Value("randomStats")" @onchange="Rolled" />
             </Knob>
         }
     </Panel>
@@ -86,8 +82,6 @@
 
     private Task Temper(ChangeEventArgs temper) => Turn("upgrades", temper.Value?.ToString());
 
-    private Task Rolled(ChangeEventArgs rolled) => Turn("randomStats", rolled.Value?.ToString());
-
     private bool IsGem => Here.Entity is GemDocument;
 
     private bool Wearable => (Here.Entity as ItemDocument)?.Stats is { Count: > 0 };
@@ -101,6 +95,14 @@
 
     private int DropItemLevel => Here.Entity is { } entity ? Store.DropItemLevel(entity) : 0;
 
+    private int? TemperCeiling =>
+        Here.Entity is ItemDocument item
+            ? Tempering.Ceiling(
+                Store.Settings.MaxTempers,
+                Cards.Rarity(item, new TooltipQuery { Rarity = Value("rarity") })?.Name,
+                int.TryParse(Value("itemLevel"), out var level) ? level : DropItemLevel)
+            : null;
+
     private bool PicksHero => Here.Readings.Count > 1 || (Here.Entity as ItemDocument)?.Heroes is { Count: > 1 };
 
     private bool PicksDifficulty => Here.Entity is CreatureDocument || Store.Menacing(Here.Entity) is not null;
@@ -112,7 +114,4 @@
     private bool Chosen(string knob, RarityEntry rarity) =>
         Value(knob) is { } value &&
         (value == rarity.Tier.ToString() || value.Equals(rarity.Name, StringComparison.OrdinalIgnoreCase));
-
-    private string RollablePlaceholder =>
-        string.Join(", ", Store.Settings.StatCalculation.RandomStatPool.Take(2)) + ", one per roll";
 }

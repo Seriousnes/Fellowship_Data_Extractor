@@ -61,6 +61,7 @@ public static class CodexView
         EffectDocument effect => effect.Placeholders ?? [],
         GemTraitDocument trait => trait.Placeholders ?? [],
         LegendaryPowerDocument legendary => legendary.Placeholders ?? [],
+        RelicPassiveDocument passive => passive.Placeholders ?? [],
         TalentDocument talent => talent.Placeholders ?? [],
         TraitPowerDocument power => power.Placeholders ?? [],
         WeaponPowerDocument power => power.Placeholders ?? [],

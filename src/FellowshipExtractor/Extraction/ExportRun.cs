@@ -35,6 +35,8 @@ public static class ExportRun
 
     private static readonly string[] NullMembers = ["Invalid", "None"];
 
+    private const string UngrantedPower = "a power no item grants";
+
     private static bool NullMember(Entity entity) =>
         entity.Name is { } name &&
         Array.Exists(NullMembers, leaf => name.EndsWith($".{leaf}", StringComparison.OrdinalIgnoreCase)) &&
@@ -49,6 +51,8 @@ public static class ExportRun
         if (entity.Name is { } name && branches.Contains(name) && !HasContent(entity)) return "empty branch";
 
         if (entity.Type is EntityType.Creature && !HasContent(entity)) return "a creature carrying nothing";
+
+        if (entity is { Type: EntityType.Item, EnabledInGame: false }) return "an item disabled in game";
 
         return null;
     }
@@ -80,7 +84,12 @@ public static class ExportRun
         Console.WriteLine(
             $"item traits:        {resolver.Traits.Count} rows, {resolver.Traits.BoundRuns} of " +
             $"{resolver.Traits.TotalRuns} rank runs bound to a curve");
-        Console.WriteLine($"set bonuses:        {resolver.SetBonuses.Count} rows");
+        Console.WriteLine(
+            $"stat enchants:      {resolver.Enchants.Count} traits named per hero, power by item level from " +
+            $"{StatEnchants.PowerKey}");
+        Console.WriteLine(
+            $"item rule sets:     {resolver.RuleSets.Disabled} item definitions disabled in game, " +
+            $"{resolver.RarityDrops.Dropping.Count} rarities {resolver.RarityDrops.Table} gives a drop chance");
         Console.WriteLine(
             $"hero dynamic text:  {resolver.DynamicText.SentenceCount} sentences across " +
             $"{resolver.DynamicText.RowCount} row keys, {resolver.DynamicText.Substituted} tokens substituted, " +
@@ -184,6 +193,22 @@ public static class ExportRun
             if (scanned % 500 == 0) Console.WriteLine($"  {scanned} of {resolver.Tags.Count}...");
         }
 
+        var granted = resolved.Select(record => record.GrantsId).OfType<int>().ToHashSet();
+        var ungranted = resolved
+            .Where(record => record.Type is EntityType.RelicPower or EntityType.RelicPassive or EntityType.WeaponPower &&
+                             !granted.Contains(record.NetId!.Value))
+            .ToArray();
+
+        if (ungranted.Length > 0)
+        {
+            resolved.RemoveAll(ungranted.Contains);
+            dropped[UngrantedPower] = ungranted.Length;
+
+            Console.WriteLine(
+                $"  {ungranted.Length} powers no item grants: " +
+                string.Join(", ", ungranted.Select(power => $"{power.NetId} {power.DisplayName ?? power.Name}")));
+        }
+
         var shared = resolver.Gains.Shared(resolved);
 
         var types = shared
@@ -272,10 +297,14 @@ public static class ExportRun
         Console.WriteLine(
             $"  {resolver.CreatureStats.Namespaces} creature tuning namespaces, " +
             $"{resolver.CreatureStats.Healthless} creatures resolving neither health row, " +
-            $"{resolver.CreatureStats.ScaledApart} scaling apart from Default");
+            $"{resolver.CreatureStats.ScaledApart} scaling apart from Default, " +
+            $"{resolver.CreatureStats.Unnamed.Count} scaling namespaces no character names " +
+            $"({string.Join(", ", resolver.CreatureStats.Unnamed)})");
 
         Console.WriteLine(
             $"  {resolver.Leagues.Count} leagues covering difficulty 1 to {resolver.Leagues.Ceiling}, " +
+            $"{resolver.Leagues.Unreached.Count} rows of a kind no game finder mode reaches " +
+            $"({string.Join(", ", resolver.Leagues.Unreached)}), " +
             $"{resolver.StatedCoefficients} coefficients stated outside a description, " +
             $"{resolver.NamespaceFromBindings} namespaces taken from the rows an entity binds");
         Console.WriteLine(
