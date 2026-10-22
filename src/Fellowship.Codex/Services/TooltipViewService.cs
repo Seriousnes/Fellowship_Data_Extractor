@@ -347,6 +347,7 @@ public sealed class TooltipViewService(
 
             lines.Add(new TooltipView.ModifierLine(
                 modifier.Kind,
+                ItemCraft.Defining(modifier.Kind, row, store.Settings),
                 row is null
                     ? modifier.Id.ToString(CultureInfo.InvariantCulture)
                     : TooltipView.PrintedFor(row, wearer) ?? PublicTypes.NameOf(row),

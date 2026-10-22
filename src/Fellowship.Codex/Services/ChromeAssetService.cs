@@ -37,7 +37,7 @@ public interface IChromeAssetService
 
     string ModifierDecor { get; }
 
-    string ModifierGlyph(ModifierKind? kind);
+    string? ModifierGlyph(string? slot);
 
     Badge AbilityBadge { get; }
 
@@ -125,10 +125,11 @@ public sealed class ChromeAssetService(
 
     private const string ModifierPlateTexture = WindowFillTexture;
     private const string ModifierDecorTexture = "T_Backgrounds_TooltipSlot_Gradient_Decor";
-    private const string TraitModifierTexture = "T_Icons_Generic_WeaponSkill";
-    private const string BlessingModifierTexture = "T_Icons_Generic_TooltipSlot";
-    private const string EssenceModifierTexture = "T_Icons_Generic_Gem";
-    private const string RandomModifierTexture = BlessingModifierTexture;
+    private const string SigilTexture = "T_UI_Icon_CardCategory_Placement";
+    private const string AspectTexture = "T_UI_Icon_CardCategory_Set";
+    private const string EnchantTexture = "T_Icons_Gear_WeaponVfx";
+    private const string GlyphTexture = "T_Icons_Generic_Blessings";
+    private const string RadianceTexture = "T_Icons_Generic_Gem";
 
     private const string NodeFamily = "T_Buttons_TraitNode_";
     private const string NodeSuffix = "Default";
@@ -144,34 +145,48 @@ public sealed class ChromeAssetService(
     private const string LegendaryHeading = "Legendary";
     private const string SetBonusHeading = "SetBonus";
 
-    private static readonly IReadOnlyDictionary<ModifierKind, string> ModifierGlyphs = Everywhere(
-        new Dictionary<ModifierKind, string>
+    private static readonly IReadOnlyDictionary<string, string> ModifierGlyphs =
+        new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            [ModifierKind.Trait] = TraitModifierTexture,
-            [ModifierKind.Blessing] = BlessingModifierTexture,
-            [ModifierKind.Essence] = EssenceModifierTexture,
-        });
+            ["HeroicTrait"] = SigilTexture,
+            ["MajorTrait"] = AspectTexture,
+            ["StatEnchant"] = EnchantTexture,
+            ["AbilityRank"] = GlyphTexture,
+            ["GemPower"] = RadianceTexture,
+        };
 
     private static readonly IReadOnlyDictionary<string, string> RowTinted =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            [TraitModifierTexture] = "core.primary-200",
-            [BlessingModifierTexture] = "core.primary-main",
-            [EssenceModifierTexture] = "core.primary-200",
+            [SigilTexture] = "core.primary-200",
+            [AspectTexture] = "core.primary-200",
+            [EnchantTexture] = "core.primary-200",
+            [GlyphTexture] = "core.primary-main",
+            [RadianceTexture] = "core.primary-200",
             [ModifierDecorTexture] = "core.secondary-600",
             [TalentFrameTexture] = "core.primary-200",
         };
 
-    private static IReadOnlyDictionary<ModifierKind, string> Everywhere(
-        IReadOnlyDictionary<ModifierKind, string> glyphs)
+    public static IReadOnlyList<string> ModifierSlots(SettingsFile settings) =>
+    [
+        .. settings.StatCalculation.SlotDefinitions
+            .Where(pair => pair.Value.SlotType is CraftSlots.ItemTrait or CraftSlots.AbilityRank or CraftSlots.GemPower)
+            .Select(pair => pair.Key),
+    ];
+
+    private IReadOnlyDictionary<string, string> Glyphs => glyphs ??= Everywhere(store.Settings);
+
+    private IReadOnlyDictionary<string, string>? glyphs;
+
+    private static IReadOnlyDictionary<string, string> Everywhere(SettingsFile settings)
     {
-        var missing = Enum.GetValues<ModifierKind>().Where(kind => !glyphs.ContainsKey(kind)).ToArray();
+        var missing = ModifierSlots(settings).Where(slot => !ModifierGlyphs.ContainsKey(slot)).ToArray();
 
         return missing.Length == 0
-            ? glyphs
+            ? ModifierGlyphs
             : throw new InvalidOperationException(
                 $"{string.Join(", ", missing)} {(missing.Length == 1 ? "names" : "name")} no modifier " +
-                $"glyph texture in {nameof(ChromeAssetService)}, so a row of that kind draws no glyph.");
+                $"glyph texture in {nameof(ChromeAssetService)}, so a row of that type draws no glyph.");
     }
 
     public static readonly IReadOnlyList<string> NodeStates = ["selected", "available", "unavailable"];
@@ -286,8 +301,8 @@ public sealed class ChromeAssetService(
 
     public string ModifierDecor => Url(Tinted(ModifierDecorTexture));
 
-    public string ModifierGlyph(ModifierKind? kind) =>
-        kind is { } named ? Url(Tinted(ModifierGlyphs[named])) : Url(RandomModifierTexture);
+    public string? ModifierGlyph(string? slot) =>
+        slot is not null && Glyphs.TryGetValue(slot, out var glyph) ? Url(Tinted(glyph)) : null;
 
     private static string Tinted(string texture) =>
         Name(texture, DesignTokenService.Variable(RowTinted[texture]));

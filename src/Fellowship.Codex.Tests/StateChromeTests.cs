@@ -34,6 +34,31 @@ public class StateChromeTests(Export export)
     }
 
     [Fact]
+    public void Every_modifier_slot_definition_draws_a_glyph_and_an_empty_slot_draws_none()
+    {
+        var slots = ChromeAssetService.ModifierSlots(export.Store.Settings);
+
+        Assert.NotEmpty(slots);
+        Assert.All(slots, slot => Assert.NotNull(export.Chrome.ModifierGlyph(slot)));
+        Assert.Null(export.Chrome.ModifierGlyph(null));
+    }
+
+    [Fact]
+    public void A_trait_modifier_draws_the_glyph_of_the_slot_whose_pool_holds_its_category()
+    {
+        var settings = export.Store.Settings;
+
+        foreach (var trait in export.Store.Entities.OfType<TraitDocument>())
+        {
+            var slot = ItemCraft.Defining(ModifierKind.Trait, trait, settings);
+
+            if (slot is null) continue;
+
+            Assert.Contains(trait.CategoryTag!, settings.StatCalculation.SlotDefinitions[slot].ItemTraitPool);
+        }
+    }
+
+    [Fact]
     public void Only_the_unavailable_node_is_padlocked()
     {
         Assert.True(ChromeAssetService.Padlocked("unavailable"));

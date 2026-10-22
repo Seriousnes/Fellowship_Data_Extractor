@@ -81,9 +81,9 @@ public static class TooltipView
 
     public static string Plus(int value) => "+" + value.ToString(CultureInfo.InvariantCulture);
 
-    public sealed record ModifierLine(ModifierKind? Kind, string Name, string? Value)
+    public sealed record ModifierLine(ModifierKind? Kind, string? Slot, string Name, string? Value)
     {
-        public static readonly ModifierLine Random = new(null, RandomModifierLabel, null);
+        public static readonly ModifierLine Random = new(null, null, RandomModifierLabel, null);
 
         public bool Unresolved => Kind is null;
     }

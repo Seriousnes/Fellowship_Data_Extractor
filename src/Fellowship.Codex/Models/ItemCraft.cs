@@ -87,6 +87,19 @@ public static class ItemCraft
                 $"The settings define no item slot {name}, so the editor knows no slot type for it. The slots " +
                 $"defined are {string.Join(", ", settings.StatCalculation.SlotDefinitions.Keys)}.");
 
+    public static string? Defining(ModifierKind kind, EntityDocument? row, SettingsFile settings) =>
+        settings.StatCalculation.SlotDefinitions
+            .FirstOrDefault(pair => kind switch
+            {
+                ModifierKind.Trait => pair.Value.SlotType == CraftSlots.ItemTrait &&
+                    row is TraitDocument { CategoryTag: { } tag } &&
+                    pair.Value.ItemTraitPool.Contains(tag, StringComparer.Ordinal),
+                ModifierKind.Blessing => pair.Value.SlotType == CraftSlots.AbilityRank,
+                ModifierKind.Essence => pair.Value.SlotType == CraftSlots.GemPower,
+                _ => false,
+            })
+            .Key;
+
     public static ModifierKind? KindOf(string accepted, SettingsFile settings) =>
         Definition(accepted, settings).SlotType switch
         {

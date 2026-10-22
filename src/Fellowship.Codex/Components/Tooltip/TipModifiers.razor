@@ -5,7 +5,7 @@
     {
         @if (at > 0) { <hr class="rule"> }
         <div class="mod @TooltipView.Token(Lines[at].Kind)" data-craft-row="@CraftSlot.KeyOf(CraftSlots.RandomRolls, at)">
-            <img class="mi" alt="" src="@Ui.Chrome.ModifierGlyph(Lines[at].Kind)">
+            @if (Ui.Chrome.ModifierGlyph(Lines[at].Slot) is { } glyph) { <img class="mi" alt="" src="@glyph"> }
             @if (Lines[at].Kind is { } kind)
             {
                 <span class="mk">@TooltipView.Label(kind):</span>
