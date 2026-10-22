@@ -99,6 +99,7 @@ public static class DocumentProjection
             Grants = references.At(Augmentation(entity.GrantsId)),
             LegendaryStats = Referenced(
                 entity.LegendaryStatIds?.Select(id => Augmentation(id)).OfType<IconSource>().ToArray(), references),
+            UntaggedLegendaryStats = entity.UntaggedLegendaryStats,
             Sources = Sourced(entity.Sources, references),
             ItemLevel = entity.ItemLevel,
         },

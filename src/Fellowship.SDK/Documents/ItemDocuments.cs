@@ -39,6 +39,8 @@ public sealed class ItemDocument : EntityDocument
 
     public IReadOnlyList<EntityReference>? LegendaryStats { get; init; }
 
+    public IReadOnlyList<LegendaryStatText>? UntaggedLegendaryStats { get; init; }
+
     public IReadOnlyList<ItemSource>? Sources { get; init; }
 
     public int? ItemLevel { get; init; }

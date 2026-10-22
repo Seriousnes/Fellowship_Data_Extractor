@@ -177,6 +177,8 @@ public sealed record Entity
 
     public IReadOnlyList<Entity>? LegendaryStats { get; init; }
 
+    public IReadOnlyList<LegendaryStatText>? UntaggedLegendaryStats { get; init; }
+
     public int? GrantsId { get; init; }
 
     public IReadOnlyList<int>? LegendaryStatIds { get; init; }

@@ -327,6 +327,7 @@ public sealed class EntityResolver
             GrantsId = _augmentationIds.For(grantedPath),
             LegendaryStats = cdo is null ? null : Empty(LegendaryStats(cdo, icons)),
             LegendaryStatIds = cdo is null ? null : Empty(LegendaryStatIds(cdo)),
+            UntaggedLegendaryStats = cdo is null ? null : Empty(UntaggedLegendaryStats(cdo, icons)),
             Variants = Empty(variants),
         };
 
@@ -1819,20 +1820,28 @@ public sealed class EntityResolver
             .OfType<string>()
             .Select(path => ResolveAbility(path, icons))];
 
-    private List<Entity> LegendaryStats(UObject cdo, IconWriter? icons) =>
-        [.. PropertyWalk.Walk(cdo)
+    private static IEnumerable<string> LegendaryStatPaths(UObject cdo) =>
+        PropertyWalk.Walk(cdo)
             .Where(p => p.Path.StartsWith("LegendaryStats[", StringComparison.Ordinal))
             .Select(p => PropertyWalk.AsString(p.Value))
-            .OfType<string>()
-            .Select(path => LoadAugmentation(path, icons))];
+            .OfType<string>();
+
+    private List<Entity> LegendaryStats(UObject cdo, IconWriter? icons) =>
+        [.. LegendaryStatPaths(cdo).Select(path => LoadAugmentation(path, icons))];
 
     private List<int> LegendaryStatIds(UObject cdo) =>
-        [.. PropertyWalk.Walk(cdo)
-            .Where(p => p.Path.StartsWith("LegendaryStats[", StringComparison.Ordinal))
-            .Select(p => PropertyWalk.AsString(p.Value))
-            .OfType<string>()
-            .Select(_augmentationIds.For)
-            .OfType<int>()];
+        [.. LegendaryStatPaths(cdo).Select(_augmentationIds.For).OfType<int>()];
+
+    private List<LegendaryStatText> UntaggedLegendaryStats(UObject cdo, IconWriter? icons) =>
+        [.. LegendaryStatPaths(cdo)
+            .Select((path, position) => (Path: path, Position: position))
+            .Where(stat => _augmentationIds.For(stat.Path) is null)
+            .Select(stat => (stat.Position, Loaded: LoadAugmentation(stat.Path, icons)))
+            .Where(stat => stat.Loaded.DisplayName is not null)
+            .Select(stat => new LegendaryStatText(stat.Position, stat.Loaded.DisplayName!)
+            {
+                Description = stat.Loaded.Description,
+            })];
 
     public Entity LoadAugmentation(string assetPath, IconWriter? icons)
     {
