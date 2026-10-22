@@ -53,16 +53,8 @@ public static class TooltipRequests
         Read(request?.ShowIcon, request?.Mobile, out error);
 
     public static TooltipQuery Read(
-        ItemTooltipRequest? request, IEntityStoreService store, out string? error)
-    {
-        var read = Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error);
-
-        var rolled = error is null
-            ? StatQuery.Rolled(
-                request?.RandomStats, store.Stats, store.Settings.StatCalculation.RandomStatPool, out error)
-            : [];
-
-        return read with
+        ItemTooltipRequest? request, IEntityStoreService store, out string? error) =>
+        Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error) with
         {
             Hero = StatQuery.NullIfEmpty(request?.Hero),
             Rarity = StatQuery.NullIfEmpty(request?.Rarity),
@@ -73,13 +65,11 @@ public static class TooltipRequests
             Gem = request?.Gem,
             PotentialPower = request?.PotentialPower,
             Armor = request?.Armor,
-            RandomStats = rolled,
             Modifiers = request?.Modifiers ?? [],
             ImbuedTraits = request?.ImbuedTraits ?? [],
             AllocatedTraits = request?.AllocatedTraits,
             HasImbuedTraits = request?.HasImbuedTraits,
         };
-    }
 
     public static TooltipQuery Read(LegendaryPowerTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error);

@@ -120,34 +120,6 @@ public static class StatQuery
         return stats;
     }
 
-    public static IReadOnlyList<string> Rolled(
-        IReadOnlyList<string>? names, StatParameters parameters, IReadOnlyList<string> pool, out string? error)
-    {
-        error = null;
-
-        if (names is not { Count: > 0 }) return [];
-
-        var rollable = new HashSet<string>(pool, StringComparer.OrdinalIgnoreCase);
-        var resolved = new List<string>(names.Count);
-
-        foreach (var name in names)
-        {
-            var stat = parameters.Resolve(name) ?? (rollable.Contains(name) ? name : null);
-
-            if (stat is null || !rollable.Contains(stat))
-            {
-                error =
-                    $"'{name}' is not a stat a random slot rolls. " +
-                    $"The pool is {string.Join(", ", pool)}.";
-                return [];
-            }
-
-            resolved.Add(rollable.TryGetValue(stat, out var stored) ? stored : stat);
-        }
-
-        return resolved;
-    }
-
     public static IResult Unreadable(string error, StatParameters parameters) => Results.Problem(
         title: "The request parameters could not be read.",
         detail: $"{error} Stat parameters are {string.Join(", ", parameters.Names)}.",

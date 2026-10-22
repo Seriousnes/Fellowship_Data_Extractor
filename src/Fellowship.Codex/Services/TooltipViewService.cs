@@ -338,11 +338,15 @@ public sealed class TooltipViewService(
     {
         var lines = new List<TooltipView.ModifierLine>(query.Modifiers.Count);
 
+        var wearer = TooltipView.Wearer(document, query);
+
         foreach (var modifier in query.Modifiers)
         {
             lines.Add(new TooltipView.ModifierLine(
                 modifier.Kind,
-                store.All(TooltipView.TypeOf(modifier.Kind), modifier.Id).Select(PublicTypes.NameOf).FirstOrDefault()
+                store.All(TooltipView.TypeOf(modifier.Kind), modifier.Id)
+                    .Select(row => TooltipView.PrintedFor(row, wearer) ?? PublicTypes.NameOf(row))
+                    .FirstOrDefault()
                     ?? modifier.Id.ToString(CultureInfo.InvariantCulture),
                 modifier.Amount));
         }

@@ -28,7 +28,7 @@ public class ItemCraftTests(Export export)
     }
 
     [Fact]
-    public void A_guaranteed_slot_keeps_the_name_the_table_gives_it_and_its_order()
+    public void A_guaranteed_slot_keeps_the_type_its_definition_gives_it_and_its_order()
     {
         foreach (var (ruleSet, byTier) in Settings.StatCalculation.RarityAdditions)
         {
@@ -37,7 +37,7 @@ public class ItemCraftTests(Export export)
                 var slots = Slots(ruleSet, tier);
 
                 Assert.Equal(
-                    added.GuaranteedSlots,
+                    [.. added.GuaranteedSlots.Select(name => ItemCraft.Definition(name, Settings).SlotType)],
                     [.. slots.Take(added.GuaranteedSlots.Count).Select(slot => slot.SlotName)]);
             }
         }
@@ -108,7 +108,7 @@ public class ItemCraftTests(Export export)
         var slots = ItemCraft.Slots(
             new ItemDocument { Id = 1, RuleSet = nameof(SpecialSlot) }, staged, rung);
 
-        Assert.Equal([named], slots.Select(slot => slot.SlotName));
+        Assert.Equal([ItemCraft.Definition(named, Settings).SlotType], slots.Select(slot => slot.SlotName));
     }
 
     [Fact]
@@ -123,13 +123,33 @@ public class ItemCraftTests(Export export)
     }
 
     [Fact]
-    public void The_three_modifier_kinds_map_onto_the_three_modifier_kinds_the_api_documents()
+    public void Each_slot_definition_maps_its_slot_type_onto_a_modifier_kind()
     {
-        Assert.Equal(ModifierKind.Trait, ItemCraft.KindOf(CraftSlots.ItemTrait));
-        Assert.Equal(ModifierKind.Blessing, ItemCraft.KindOf(CraftSlots.AbilityRank));
-        Assert.Equal(ModifierKind.Essence, ItemCraft.KindOf(CraftSlots.GemPower));
-        Assert.Null(ItemCraft.KindOf(CraftSlots.RandomStat));
+        foreach (var (name, definition) in Settings.StatCalculation.SlotDefinitions)
+        {
+            ModifierKind? expected = definition.SlotType switch
+            {
+                CraftSlots.ItemTrait or CraftSlots.TraitTree => ModifierKind.Trait,
+                CraftSlots.AbilityRank => ModifierKind.Blessing,
+                CraftSlots.GemPower => ModifierKind.Essence,
+                _ => null,
+            };
 
-        Assert.Equal(3, Enum.GetValues<ModifierKind>().Length);
+            Assert.Equal(expected, ItemCraft.KindOf(name, Settings));
+        }
     }
+
+    [Fact]
+    public void An_enchant_prints_the_name_its_wearer_reads()
+    {
+        var enchant = export.Store.Entities.OfType<TraitDocument>().First(trait => trait.NameByHero is { Count: > 0 });
+        var (hero, printed) = enchant.NameByHero!.First();
+
+        Assert.Equal(printed, TooltipView.PrintedFor(enchant, hero));
+        Assert.Null(TooltipView.PrintedFor(enchant, null));
+    }
+
+    [Fact]
+    public void A_slot_name_no_definition_states_is_refused() =>
+        Assert.Throws<InvalidOperationException>(() => ItemCraft.Definition(nameof(Settings), Settings));
 }

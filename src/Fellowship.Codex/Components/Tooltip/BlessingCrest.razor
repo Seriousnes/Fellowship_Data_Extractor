@@ -15,7 +15,7 @@
 
     private string Hovered => Ui.Chrome.BlessingPlate(State, hovered: true);
 
-    private string? Texture => Ui.Chrome.BlessingTexture(Entity.Icon, State) ?? Ui.Icon(Entity.Icon);
+    private string? Texture => Ui.Chrome.BlessingRune(Entity, State);
 
     private string WidthPx => Width.ToString(CultureInfo.InvariantCulture) + "px";
 }

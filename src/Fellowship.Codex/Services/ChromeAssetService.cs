@@ -80,7 +80,7 @@ public interface IChromeAssetService
 
     string BlessingPlate(string? state, bool hovered = false);
 
-    string? BlessingTexture(string? icon, string? state);
+    string? BlessingRune(BlessingDocument blessing, string? state);
 
     string SlotGlyph(string? slot);
 
@@ -134,9 +134,6 @@ public sealed class ChromeAssetService(
     private const string NodeSuffix = "Default";
     private const string NodeColorTexture = "T_Buttons_TraitNode_Color";
     private const string BlessingFamily = "T_Buttons_BlessingButton_";
-    private const string BlessingTextureFamily = "T_Icons_BlessingRuneIcon_";
-    private const string Allocated = "Allocated";
-    private const string Unallocated = "Unallocated";
     private const string Unavailable = "Unavailable";
     private const string Hover = "Hover";
     private const string LockTexture = "T_Icons_Locked";
@@ -248,12 +245,10 @@ public sealed class ChromeAssetService(
     public string BlessingPlate(string? state, bool hovered = false) =>
         Url(BlessingFamily + Chosen(BlessingStates, state) + (hovered ? Hover : string.Empty));
 
-    public string? BlessingTexture(string? icon, string? state) =>
-        icon is { } texture &&
-        texture.StartsWith(BlessingTextureFamily + Unallocated, StringComparison.Ordinal) &&
-        string.Equals(Chosen(BlessingStates, state), Allocated, StringComparison.Ordinal)
-            ? Texture(texture.Replace(Unallocated, Allocated, StringComparison.Ordinal))
-            : null;
+    public string? BlessingRune(BlessingDocument blessing, string? state) =>
+        Texture(Chosen(BlessingStates, state) == Chosen(BlessingStates, BlessingState(1))
+            ? blessing.IconHovered
+            : blessing.Icon);
 
     public string LockGlyph => Url(LockTexture);
 

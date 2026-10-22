@@ -55,10 +55,7 @@ $blessing-line-height: 13.3px;
 
   .kind { color: var(--core-text-secondary); }
 
-  .tier {
-    margin-left: auto;
-    color: var(--core-text-info);
-  }
+  .tier { color: var(--core-text-info); }
 
   .count {
     margin-left: $blessing-count-gap;

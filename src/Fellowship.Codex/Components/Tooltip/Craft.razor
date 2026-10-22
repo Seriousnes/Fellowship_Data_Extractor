@@ -152,7 +152,6 @@
 
     private static string Label(CraftSlot slot) => slot.SlotName switch
     {
-        CraftSlots.RandomStat => $"Random stat {slot.Ordinal + 1}",
         CraftSlots.GemSocket => "Gem socket",
         CraftSlots.TraitTree => "Imbued traits",
         _ => $"Modifier {slot.Ordinal + 1}",
@@ -172,12 +171,10 @@
     {
         opened = null;
 
-        var query = ItemCraft.With(Current, slot, candidate);
+        var query = ItemCraft.With(Current, slot, candidate, Store.Settings);
 
-        var (key, value) = ItemCraft.Writes(slot, candidate) switch
+        var (key, value) = slot.SlotName switch
         {
-            CraftSlots.RandomStat => ("randomStats", string.Join(',', query.RandomStats)),
-
             CraftSlots.GemSocket => ("gem", candidate.Id.ToString(CultureInfo.InvariantCulture)),
 
             CraftSlots.TraitTree => ("imbuedTraits", string.Join(
@@ -230,12 +227,6 @@
         var stats = StatQuery.FromQuery(
             new QueryCollection(raw), RequestProperties.OfEveryTooltip, Store.Stats, out _);
 
-        var rolled = StatQuery.Rolled(
-            RolledStats.TryParse(values.GetValueOrDefault("randomStats"), out var names) ? names.Values : null,
-            Store.Stats,
-            Store.Settings.StatCalculation.RandomStatPool,
-            out _);
-
         return StatQuery.Read(stats, Store.Stats, out _) with
         {
             ShowIcon = true,
@@ -247,7 +238,6 @@
             NoSocket = values.ContainsKey("noSocket"),
             Gem = Number(values, "gem"),
             AllocatedTraits = Number(values, "allocatedTraits"),
-            RandomStats = rolled,
             Modifiers = ItemModifiers.TryParse(values.GetValueOrDefault("modifiers"), out var modifiers)
                 ? modifiers.Values
                 : [],
@@ -365,7 +355,6 @@
             ["potentialPower"] = Text(query.PotentialPower),
             ["armor"] = Text(query.Armor),
             ["allocatedTraits"] = Text(query.AllocatedTraits),
-            ["randomStats"] = Empty(string.Join(',', query.RandomStats)),
             ["modifiers"] = Empty(string.Join(
                 ',',
                 query.Modifiers.Select(modifier =>

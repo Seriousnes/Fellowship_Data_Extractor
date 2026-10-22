@@ -19,9 +19,6 @@ public class TooltipQueryTests(Export export)
     private static TooltipQuery Query(BlessingTooltipRequest request, out string? error) =>
         TooltipRequests.Read(request, out error);
 
-    private IReadOnlyList<string> Rolled(ItemTooltipRequest request, out string? error) =>
-        Query(request, out error).RandomStats;
-
     private string Flat => export.Store.Stats.Names
         .First(name => export.Store.Stats.Resolve(name) is { } stat &&
             !StatConversion.Converts(export.Store.Stats.Row(stat)));
@@ -174,40 +171,6 @@ public class TooltipQueryTests(Export export)
         Assert.Null(error);
         Assert.Equal([100m, 250m], stats["Haste"].Rating);
     }
-
-    [Fact]
-    public void An_item_reads_each_random_stat_the_caller_names_once_per_roll()
-    {
-        var rolled = Rolled(
-            new ItemTooltipRequest { RandomStats = ["Stamina", "Expertise", "Expertise"] }, out var error);
-
-        Assert.Null(error);
-        Assert.Equal(["Stamina", "Expertise", "Expertise"], rolled);
-    }
-
-    [Fact]
-    public void An_item_reads_a_random_stat_by_the_name_the_game_prints()
-    {
-        var rolled = Rolled(
-            new ItemTooltipRequest { RandomStats = ["Critical Strike", "CritChance"] }, out var error);
-
-        Assert.Null(error);
-        Assert.Equal(["CritChance", "CritChance"], rolled);
-    }
-
-    [Fact]
-    public void An_item_refuses_a_random_stat_no_slot_rolls()
-    {
-        Rolled(new ItemTooltipRequest { RandomStats = ["Stamina", "Armor"] }, out var error);
-
-        Assert.NotNull(error);
-        Assert.Contains("'Armor' is not a stat a random slot rolls.", error);
-        Assert.Contains("Stamina", error);
-    }
-
-    [Fact]
-    public void An_item_rolls_nothing_when_the_caller_names_nothing() =>
-        Assert.Empty(Rolled(new ItemTooltipRequest(), out _));
 
     [Fact]
     public void A_request_naming_only_the_hero_carries_the_hero_and_nothing_more()

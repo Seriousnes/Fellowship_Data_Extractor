@@ -27,7 +27,6 @@ public static class StatRows
     private const float NativeStaminaAtThreshold = 2f;
 
     private const float NativeBaseSecondaryMultiplier = 0.6f;
-    private const float NativeFixedSecondaryMultiplier = 1.5f;
 
     public static StatBlock Block(SlotStatSettings shipped, float nativeSecondaryMultiplier) => new(
         NativePrimaryWeight,
@@ -41,9 +40,6 @@ public static class StatRows
 
     public static StatBlock Guaranteed(StatCalculationFile calculation) =>
         Block(calculation.BaseSlot, NativeBaseSecondaryMultiplier);
-
-    public static StatBlock Rolled(StatCalculationFile calculation) =>
-        Block(calculation.FixedSlot, NativeFixedSecondaryMultiplier);
 
     public static float PrimaryPool(StatCalculationFile calculation, int itemLevel) =>
         MathF.Pow((float)calculation.PrimaryPowerBase, itemLevel / PrimaryDivisible)

@@ -1,5 +1,7 @@
 using System.Globalization;
 
+using Fellowship.SDK.Documents;
+
 namespace Fellowship.Codex.Models;
 
 public static class TooltipView
@@ -35,6 +37,14 @@ public static class TooltipView
     };
 
     public static string Token(ModifierKind? kind) => kind?.ToString().ToLowerInvariant() ?? Unresolved;
+
+    public static string? Wearer(ItemDocument item, TooltipQuery query) => query.Hero ?? item.Hero?.ToString();
+
+    public static string? PrintedFor(EntityDocument document, string? wearer) =>
+        document is TraitDocument { NameByHero: { } names } && wearer is not null &&
+        names.TryGetValue(wearer, out var printed)
+            ? printed
+            : null;
 
     public static string Magnitude(StatLine line) =>
         (line.Value < 0 ? string.Empty : "+") +

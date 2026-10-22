@@ -61,11 +61,6 @@
                 <input type="number" min="0" max="20" step="1" placeholder="none" data-knob="upgrades"
                        value="@Value("upgrades")" @onchange="Temper" />
             </Knob>
-
-            <Knob Caption="Random stats">
-                <input type="text" placeholder="@RollablePlaceholder" data-knob="randomStats"
-                       value="@Value("randomStats")" @onchange="Rolled" />
-            </Knob>
         }
     </Panel>
 }
@@ -85,8 +80,6 @@
     private Task Level(ChangeEventArgs level) => Turn("itemLevel", level.Value?.ToString());
 
     private Task Temper(ChangeEventArgs temper) => Turn("upgrades", temper.Value?.ToString());
-
-    private Task Rolled(ChangeEventArgs rolled) => Turn("randomStats", rolled.Value?.ToString());
 
     private bool IsGem => Here.Entity is GemDocument;
 
@@ -112,7 +105,4 @@
     private bool Chosen(string knob, RarityEntry rarity) =>
         Value(knob) is { } value &&
         (value == rarity.Tier.ToString() || value.Equals(rarity.Name, StringComparison.OrdinalIgnoreCase));
-
-    private string RollablePlaceholder =>
-        string.Join(", ", Store.Settings.StatCalculation.RandomStatPool.Take(2)) + ", one per roll";
 }

@@ -301,15 +301,6 @@ public sealed record ItemTooltipRequest
     [Description("The armour to print in place of the one the tooltip computes from the item level.")]
     public decimal? Armor { get; init; }
 
-    /// <summary>
-    /// The stats a random slot rolled, named once per roll and without a magnitude. The tooltip computes
-    /// the magnitude. A caller holding the magnitudes states them in <see cref="Stats"/> instead.
-    /// </summary>
-    [Description(
-        "The stats a random slot rolled, named once per roll and without a magnitude. The tooltip computes " +
-        "the magnitude. Rolling a stat the item already declares aggregates into that line.")]
-    public IReadOnlyList<string>? RandomStats { get; init; }
-
     /// <summary>The item's modifiers.</summary>
     [Description(
         "The item's modifiers, each a kind, an id and an amount. The kinds are trait, blessing " +

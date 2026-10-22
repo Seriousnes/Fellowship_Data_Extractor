@@ -12,7 +12,7 @@ public class StateChromeTests(Export export)
     }
 
     [Fact]
-    public void Every_blessing_answers_the_allocated_art_beside_its_unallocated_twin()
+    public void Every_blessing_draws_its_hovered_rune_allocated_and_its_own_rune_unallocated()
     {
         var blessings = export.Store.Entities.OfType<BlessingDocument>().ToArray();
 
@@ -20,13 +20,17 @@ public class StateChromeTests(Export export)
 
         Assert.All(blessings, blessing =>
         {
-            var twin = blessing.Icon!.Replace("Unallocated", "Allocated", StringComparison.Ordinal);
+            Assert.NotNull(blessing.IconHovered);
+            Assert.NotEqual(blessing.Icon, blessing.IconHovered);
 
-            Assert.Equal(export.Chrome.Texture(twin), export.Chrome.BlessingTexture(blessing.Icon, null));
+            Assert.Equal(
+                export.Chrome.Texture(blessing.IconHovered),
+                export.Chrome.BlessingRune(blessing, ChromeAssetService.BlessingState(1)));
+
+            Assert.Equal(
+                export.Chrome.Texture(blessing.Icon),
+                export.Chrome.BlessingRune(blessing, ChromeAssetService.BlessingState(0)));
         });
-
-        Assert.Null(export.Chrome.BlessingTexture("Berserker16", null));
-        Assert.Null(export.Chrome.BlessingTexture(null, null));
     }
 
     [Fact]
