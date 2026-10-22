@@ -232,14 +232,15 @@ public sealed class TooltipViewService(
 
         if (DocumentFields.Number(document, nameof(AbilityDocument.Range)) is { } range)
         {
-            casting.Add(new TooltipView.Reading(
-                Distance.Yards(range).Normalize().ToString(CultureInfo.InvariantCulture),
-                Distance.Unit,
-                TooltipView.RangeLabel)
-            {
-                Title = $"{Number(range)} unreal units, at " +
-                    $"{Distance.CentimetresPerYard.ToString(CultureInfo.InvariantCulture)} to the yard",
-            });
+            var title = $"{Number(range)} unreal units, at " +
+                $"{Distance.UnitsPerYard.ToString(CultureInfo.InvariantCulture)} to the yard";
+
+            casting.Add(Distance.Melee(range)
+                ? new TooltipView.Reading(null, null, TooltipView.MeleeRange) { Title = title }
+                : new TooltipView.Reading(
+                    Distance.Yards(range).Normalize().ToString(CultureInfo.InvariantCulture),
+                    Distance.Unit,
+                    TooltipView.RangeLabel) { Title = title });
         }
 
         if (DocumentFields.Number(document, nameof(AbilityDocument.Cost)) is { } cost)

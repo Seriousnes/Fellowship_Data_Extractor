@@ -86,6 +86,8 @@ public static class TooltipView
 
     public const string RangeLabel = "range";
 
+    public const string MeleeRange = "Melee Range";
+
     public const string CooldownLabel = "cooldown";
 
     public const string SecondsUnit = "s";
