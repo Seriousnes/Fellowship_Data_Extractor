@@ -27,6 +27,9 @@ public sealed record StatCalculationFile
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<int, RaritySlots>> RarityAdditions { get; init; } =
         new Dictionary<string, IReadOnlyDictionary<int, RaritySlots>>(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlyDictionary<string, ItemSlotDefinition> SlotDefinitions { get; init; } =
+        new Dictionary<string, ItemSlotDefinition>(StringComparer.Ordinal);
 }
 
 public sealed record SettingsFile
@@ -67,7 +70,7 @@ public sealed record SettingsFile
 
     public IReadOnlyList<DropItemLevel> DropItemLevels { get; init; } = [];
 
-    public BlessingEntry Blessings { get; init; } = new(string.Empty, string.Empty, 0);
+    public BlessingEntry Blessings { get; init; } = new(string.Empty, string.Empty, string.Empty, string.Empty, 0);
 
     public DifficultyScaling DifficultyScaling { get; init; } = new();
 

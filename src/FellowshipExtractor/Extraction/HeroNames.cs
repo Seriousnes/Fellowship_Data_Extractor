@@ -12,6 +12,8 @@ public sealed record HeroProfile(string Codename, string ShippedName)
     public string? ArmorType { get; init; }
     public required string PrimaryStat { get; init; }
 
+    public int PrimaryAttribute { get; init; }
+
     public string? ColorRow { get; init; }
 
     public string? Mechanics { get; init; }
@@ -48,6 +50,7 @@ public sealed class HeroNames
     private const string RowPrefix = "hero-";
     private const string ArmorTypeField = "ArmorType";
     private const string MainStatField = "MainStat";
+    private const string PrimaryAttributeField = "PrimaryAttribute";
     private const string HeroIdField = "HeroID";
     private const string MechanicsField = "HeroMechanics";
     private const string PortraitField = "PortraitTexture";
@@ -138,6 +141,7 @@ public sealed class HeroNames
             {
                 ArmorType = armor.Label(PropertyWalk.Get(metadata, ArmorTypeField)?.GenericValue),
                 PrimaryStat = stat,
+                PrimaryAttribute = PropertyWalk.AsOrdinal(Declared(metadata, PrimaryAttributeField, provider)) ?? 0,
                 ColorRow = colourRow,
                 Mechanics = PropertyWalk.GetString(metadata, MechanicsField),
                 PortraitPath = PropertyWalk.GetString(metadata, PortraitField),

@@ -18,6 +18,7 @@ public sealed class EntityResolver
     private const string SetBonusKeyField = "SetBonusMappingKey";
     private const string VisualKeyField = "VisualCollectionMappingKey";
     private const string SlotOrdinalField = "HeroItemType";
+    private const string HoveredIconField = "UIIconHovered";
     private const string EffectTable = "GameplayEffect";
     private const string CostEffectClass = "/Script/fellowship.CRCostEffect";
     private const string AbilityTypePrefix = "AbilityType.";
@@ -25,7 +26,7 @@ public sealed class EntityResolver
     private const string TagSuffix = "Tag";
     private const string GrantedTagsField = "GrantedGameplayTags";
     private const string GrantedEffectsField = "GrantedGameplayEffects";
-    private const string DynamicDefinitionClass = "CRDynamicHeroItemDefinition";
+    private const string DynamicDefinitionClass = DynamicItemRuleSets.DefinitionClass;
     private const string SpecificDungeonsField = "DropsInSpecificDungeons";
     private const string CreatureTable = "CRAICharacter";
     private const string ItemTable = "ItemID";
@@ -102,10 +103,12 @@ public sealed class EntityResolver
     public HeroAttributes HeroAttributes { get; }
     public ItemTraitTrees TraitTrees { get; }
     public DynamicItemRuleSets RuleSets { get; }
+    public RarityDropChances RarityDrops { get; }
     public DynamicAbilityRanks AbilityRanks { get; }
     public TalentTrees Talents { get; }
     public GemDefinitions Gems { get; }
     public ItemTraits Traits { get; }
+    public StatEnchants Enchants { get; }
     public DynamicTextRows DynamicText { get; }
     public Settings Settings { get; }
     public AbilityCategories Categories { get; }
@@ -184,7 +187,8 @@ public sealed class EntityResolver
         Customizations = new CustomizationItems(provider, _assets, rarities);
         Localized = new LocalizedText(provider);
         Lore = new MountLore(Localized);
-        RuleSets = new DynamicItemRuleSets(provider, _assets);
+        RarityDrops = new RarityDropChances(provider, rarities);
+        RuleSets = new DynamicItemRuleSets(provider, _assets, rarities, RarityDrops);
         Gems = new GemDefinitions(provider, _assets, _constants, _augmentationIds, rarities);
         Traits = new ItemTraits(
             provider, _assets, _constants, _augmentationIds, new TraitCategoryNames(provider, _assets));
@@ -193,15 +197,16 @@ public sealed class EntityResolver
 
         AbilityRanks = new DynamicAbilityRanks(provider, _assets, _tags, _augmentationIds, SlotNames);
 
-        StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor);
+        StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor, RuleSets);
 
         Collections = new VisualCollections(provider, _assets);
         HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, Collections, rarities);
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
+        Enchants = new StatEnchants(provider, Traits, _constants, Heroes);
         HeroAttributes = new HeroAttributes(provider, Heroes);
         DynamicText = new DynamicTextRows(provider, _assets, _constants, Heroes);
 
-        DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities);
+        DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities, RarityDrops);
 
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
@@ -230,7 +235,7 @@ public sealed class EntityResolver
             SlotGlyphs, new RarityOrnaments(provider, rarities), new TalentTierPlates(provider),
             new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
-            CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), TraitTrees);
+            CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, TraitTrees);
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -239,7 +244,7 @@ public sealed class EntityResolver
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
 
         Types = new TypeResolver(
-            _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations, Heroes,
+            _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations, TableNames, Heroes,
             _mountsByTag.Keys);
 
         Owners = new AbilityOwners(provider, _assets, _tags, Heroes, _constants);
@@ -314,7 +319,9 @@ public sealed class EntityResolver
             Table = tag.Table,
             NetId = tag.NetId,
             Name = tag.Name,
-            Slot = SlotNames.FromTag(tag.Name)?.Shipped,
+            Slot = (IsDynamicDefinition(asset) && cdo is not null
+                ? SlotNames.ByOrdinal(PropertyWalk.AsOrdinal(PropertyWalk.Get(cdo, SlotOrdinalField)?.GenericValue) ?? 0)
+                : SlotNames.FromTag(tag.Name))?.Shipped,
             GemSlot = RuleSets.HasGemSocket(ruleSet) ? true : null,
             TraitTree = cdo is null ? null : TraitTrees.Named(PropertyWalk.GetString(cdo, ItemTraitTrees.ItemField)),
             RuleSet = ruleSet is null ? null : ShortRuleSet(ruleSet),
@@ -328,7 +335,7 @@ public sealed class EntityResolver
         };
 
         entity = WithTableText(entity, tag.Name, icons);
-        entity = WithAbilityRank(entity);
+        entity = WithAbilityRank(entity, cdo, icons);
 
         if (HeroItems.Find(tag.Name) is { } fixedItem) entity = WithFixedItem(entity, fixedItem, icons);
 
@@ -393,7 +400,9 @@ public sealed class EntityResolver
 
         if (Owners.DisabledInSet(tag.Name) ||
             (presentation is not null &&
-             PropertyWalk.Get(presentation.Row, AbilityOwners.EnabledInGameField)?.GenericValue is false))
+             PropertyWalk.Get(presentation.Row, AbilityOwners.EnabledInGameField)?.GenericValue is false) ||
+            (IsDynamicDefinition(asset) && cdo is not null &&
+             PropertyWalk.Get(cdo, AbilityOwners.EnabledInGameField)?.GenericValue is false))
         {
             entity = entity with { EnabledInGame = false };
         }
@@ -475,7 +484,7 @@ public sealed class EntityResolver
         ];
     }
 
-    private Entity WithAbilityRank(Entity entity)
+    private Entity WithAbilityRank(Entity entity, UObject? cdo, IconWriter? icons)
     {
         if (entity.NetId is not { } netId) return entity;
         if (AbilityRanks.For(netId) is not { } row) return entity;
@@ -485,6 +494,7 @@ public sealed class EntityResolver
             AbilityMaxRank = row.MaxRank,
             PoolSlots = row.Slots,
             AbilityRank = row.NetId,
+            IconHovered = cdo is null ? null : IconName(PropertyWalk.GetString(cdo, HoveredIconField), icons),
         };
     }
 
@@ -517,6 +527,8 @@ public sealed class EntityResolver
                 Augmentation = trait.Augmentation,
                 RankRuns = trait.Runs,
                 Icon = entity.Icon ?? IconName(trait.IconPath, icons),
+                NameByHero = trait.Augmentation is { } granted ? Enchants.ForAugmentation(granted)?.NameByHero : null,
+                TraitStats = trait.Augmentation is { } stated ? Enchants.ForAugmentation(stated)?.Stats : null,
             };
         }
 
@@ -885,6 +897,9 @@ public sealed class EntityResolver
         return new IconSource(table, tag.NetId, named);
     }
 
+    private static bool IsDynamicDefinition(FAssetData? asset) =>
+        asset?.AssetClass.Text.Equals(DynamicDefinitionClass, StringComparison.OrdinalIgnoreCase) is true;
+
     private Entity WithProvenance(Entity entity, TagRecord tag, FAssetData? asset, UObject? cdo)
     {
         var carried = Sources.Fixed(tag.Name, out var granted);
@@ -892,10 +907,7 @@ public sealed class EntityResolver
         if (carried.Count > 0) return entity with { Sources = [.. carried], ItemLevel = granted };
 
         if (cdo is null) return entity;
-        if (asset?.AssetClass.Text.Equals(DynamicDefinitionClass, StringComparison.OrdinalIgnoreCase) is not true)
-        {
-            return entity;
-        }
+        if (!IsDynamicDefinition(asset)) return entity;
 
         var tiers = DynamicVisuals.Tiers(cdo);
         var top = _rarities.Tiers.Max();

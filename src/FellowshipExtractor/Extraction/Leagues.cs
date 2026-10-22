@@ -17,10 +17,14 @@ public sealed class Leagues
     private const string MaximumField = "MaximumDifficulty";
     private const string DifficultiesField = "Difficulties";
     private const string EnumScope = "::";
+    private const string ModeEnum = "ECRGameFinderMode";
 
     private readonly List<LeagueEntry> _entries = [];
+    private readonly List<string> _unreached = [];
 
     public IReadOnlyList<LeagueEntry> All => _entries;
+
+    public IReadOnlyList<string> Unreached => _unreached;
 
     public IReadOnlyList<LeagueKindEntry> Kinds { get; }
 
@@ -68,6 +72,7 @@ public sealed class Leagues
         }
 
         var members = EnumOrdinals.Members(mappings, enumName);
+        var modes = new HashSet<string>(EnumOrdinals.Members(mappings, ModeEnum).Values, StringComparer.Ordinal);
 
         Kinds =
         [
@@ -77,6 +82,14 @@ public sealed class Leagues
 
         foreach (var (rowName, row) in rows)
         {
+            if (PropertyWalk.AsOrdinal(PropertyWalk.Get(row, KindField)?.GenericValue) is { } ordinal &&
+                members.TryGetValue(ordinal, out var member) &&
+                !modes.Contains(member))
+            {
+                _unreached.Add(rowName);
+                continue;
+            }
+
             if (Read(rowName, row, members, enumName) is { } league) _entries.Add(league);
         }
 

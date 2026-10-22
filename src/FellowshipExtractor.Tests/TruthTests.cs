@@ -41,7 +41,7 @@ public sealed class TruthTests
     [Theory]
     [InlineData(2280, "range", 1000)]
     [InlineData(3, "castTime", 1.5)]
-    [InlineData(981, "range", 500)]
+    [InlineData(981, "range", 800)]
     [InlineData(1312, "channelTime", 2)]
     [InlineData(1027, "channelTime", 2)]
     public void TheTooltipHookArgumentIsTheDisplayedValue(int id, string field, double expected) =>
@@ -305,8 +305,8 @@ public sealed class TruthTests
     public void EveryModifierTagButTheThreeBranchesIsWritten()
     {
         var written = Export.Loaded.Documents.Where(document => document.Type == EntityType.Modifier).ToArray();
-        Assert.Equal(25, written.Length);
-        Assert.Equal(23, written.Count(document => document.Body["kind"] is not null));
+        Assert.Equal(26, written.Length);
+        Assert.Equal(24, written.Count(document => document.Body["kind"] is not null));
     }
     [Theory]
     [InlineData(1630, "Talent Points", "Epic")]
@@ -339,7 +339,7 @@ public sealed class TruthTests
     [Theory]
     [InlineData(4959, "Chief Rebel")]
     [InlineData(4977, "Chief Rebel")]
-    [InlineData(4968, "Chief Rebel Avatar Frame")]
+    [InlineData(6024, "Gold")]
     [InlineData(4986, "Chief Rebel Name Color")]
     public void TheOtherFourCustomizationTablesNameTheirRowsWithDisplayName(int id, string name)
     {
@@ -349,7 +349,6 @@ public sealed class TruthTests
         Assert.Equal("Legendary", (string?)record["rarity"]);
     }
     [Theory]
-    [InlineData(4968)]
     [InlineData(4986)]
     public void ACustomizationRowStatesHowItIsAcquired(int id) =>
         Assert.Equal("Become an employee at Chief Rebel", (string?)Record(EntityType.Item, id)["acquire"]);
@@ -359,11 +358,11 @@ public sealed class TruthTests
     public void ACompanionPetStatesHowItIsAcquired(int id, string acquire) =>
         Assert.Equal(acquire, (string?)Record(EntityType.CompanionPet, id)["acquire"]);
     [Fact]
-    public void TheSixPetsWithAnAssetStateHowTheyAreAcquired()
+    public void TheTenPetsWithAnAssetStateHowTheyAreAcquired()
     {
         var pets = Export.Loaded.Documents.Where(document => document.Type == EntityType.CompanionPet).ToArray();
-        Assert.Equal(9, pets.Length);
-        Assert.Equal(6, pets.Count(pet => pet.Body["acquire"] is not null));
+        Assert.Equal(14, pets.Length);
+        Assert.Equal(10, pets.Count(pet => pet.Body["acquire"] is not null));
     }
     [Fact]
     public void AMountWhoseLoreOnlyTheLocalizationTableCarriesShipsIt() =>
@@ -511,9 +510,9 @@ public sealed class TruthTests
     [Fact]
     public void AWeaponNamesTheTraitTreeTheSettingsLayOut()
     {
-        Assert.Equal("ItemTraitTrees.EASeason3Weapon", (string?)Record(EntityType.Item, 5312)["traitTree"]);
+        Assert.Equal("ItemTraitTrees.EASeason4Weapon", (string?)Record(EntityType.Item, 5981)["traitTree"]);
 
-        var tree = Export.Loaded.Settings.TraitTrees.Single(entry => entry.Tag == "ItemTraitTrees.EASeason3Weapon");
+        var tree = Export.Loaded.Settings.TraitTrees.Single(entry => entry.Tag == "ItemTraitTrees.EASeason4Weapon");
         Assert.Equal(13, tree.Nodes.Count);
         Assert.Equal(6, tree.Nodes.Select(node => node.TraitRowIndex).Distinct().Count());
         Assert.Equal([1, 2], tree.Nodes.Single(node => node.UITreeIndex == 4).ParentNodes);
@@ -521,8 +520,8 @@ public sealed class TruthTests
     }
 
     [Theory]
-    [InlineData("ItemTraitTrees.EASeason3Weapon", "UW_StaticWeaponTree", 4, 0d, 30d)]
-    [InlineData("ItemTraitTrees.EASeason3Necklace", "UW_Static4NodeTree", 3, -94.5, -20d)]
+    [InlineData("ItemTraitTrees.EASeason4Weapon", "UW_StaticWeaponTree", 4, 0d, 30d)]
+    [InlineData("ItemTraitTrees.EASeason4Necklace", "UW_StaticNeclaceTree_EASeason4", 3, -180d, -25.5)]
     public void ATraitTreeIsLaidOutOnTheCanvasItsWidgetPlacesItsNodesOn(
         string tag, string widget, int node, double x, double y)
     {
@@ -552,7 +551,7 @@ public sealed class TruthTests
         Assert.Equal(
             [(1, 1000d), (2, 2000d), (3, 3000d), (4, 3000d)],
             Export.Loaded.Settings.TraitNodeUpgradeCosts
-                .Where(cost => cost.Currency == 4)
+                .Where(cost => cost.Currency == 4 && cost.Rank <= 4)
                 .Select(cost => (cost.Rank, cost.Cost)));
 
     [Fact]

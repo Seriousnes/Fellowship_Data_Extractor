@@ -349,6 +349,8 @@ public static class DocumentProjection
             MaxRank = entity.AbilityMaxRank,
             Slots = entity.PoolSlots,
             AbilityRank = entity.AbilityRank,
+            IconHovered = entity.IconHovered,
+            Grants = Referenced(entity.Granted, references),
             Constants = entity.ConstantsByRank,
             Generates = Generated(entity),
         },
@@ -366,6 +368,8 @@ public static class DocumentProjection
             Icon = entity.Icon,
             RankRuns = entity.RankRuns,
             Generates = Generated(entity),
+            NameByHero = entity.NameByHero,
+            Stats = entity.TraitStats,
         },
 
         EntityType.TraitPower => new TraitPowerDocument

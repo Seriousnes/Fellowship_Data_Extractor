@@ -91,6 +91,7 @@ public sealed class Settings
         CreatureStats creatures,
         Leagues leagues,
         ItemSettings items,
+        StatEnchants enchants,
         ItemTraitTrees traitTrees)
     {
         _traitTrees = traitTrees;
@@ -103,7 +104,7 @@ public sealed class Settings
         };
         Leagues = leagues.All;
         LeagueKinds = leagues.Kinds;
-        Items = items.Values;
+        Items = items.Values with { StatEnchantPower = enchants.Power };
 
         StatCalculation = statCalculation;
         RandomStatPool = randomStatPool;
@@ -227,6 +228,7 @@ public sealed class Settings
             Attributes = StatCalculation.Attributes,
             RandomStatPool = RandomStatPool,
             RarityAdditions = StatCalculation.RarityAdditions,
+            SlotDefinitions = StatCalculation.SlotDefinitions,
         },
     };
 

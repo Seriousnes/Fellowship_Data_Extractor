@@ -9,12 +9,14 @@ public sealed class Blessings
     private const string LocresPath = "fellowship/Content/Localization/Game/en/Game.locres";
 
     public static readonly (string Namespace, string Key) NameKey = ("ST_Items", "Item_Feature_Glyph_Name");
+    public static readonly (string Namespace, string Key) AugmentationKey = ("ST_Items", "Item_Feature_Augmentation_Name");
     public static readonly (string Namespace, string Key) TierLevelKey = ("ST_Abilities", "Abilities_Tooltip_Finesse_TierLevel");
+    public static readonly (string Namespace, string Key) TierSourcesKey = ("ST_Abilities", "Abilities_Tooltip_Finesse_TierSources");
 
     private const string ConstantsNamespace = "Finesse";
     private const string ConstantsTableName = "FinesseConstants";
 
-    private static readonly (string Namespace, string Key)[] Wanted = [NameKey, TierLevelKey];
+    public static readonly (string Namespace, string Key)[] Wanted = [NameKey, AugmentationKey, TierLevelKey, TierSourcesKey];
 
     public BlessingEntry Wording { get; }
 
@@ -30,7 +32,8 @@ public sealed class Blessings
                 "words this app chose rather than the ones in the build.");
         }
 
-        Wording = new BlessingEntry(shipped[NameKey], shipped[TierLevelKey], Tiers(constants));
+        Wording = new BlessingEntry(
+            shipped[NameKey], shipped[AugmentationKey], shipped[TierLevelKey], shipped[TierSourcesKey], Tiers(constants));
     }
 
     private static Dictionary<(string Namespace, string Key), string> Strings(AbstractFileProvider provider)
