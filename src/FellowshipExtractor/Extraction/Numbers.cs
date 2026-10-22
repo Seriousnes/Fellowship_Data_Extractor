@@ -21,9 +21,9 @@ public static class Numbers
         ["channelingdata.channelingtickinterval"] = "channelTick",
         ["cooldownduration"] = "cooldown",
         ["cooldown"] = "cooldown",
-        ["maxrange"] = "range",
-        ["rangehorizontal"] = "range",
-        ["range"] = "range",
+        ["maxrange"] = Range,
+        ["rangehorizontal"] = Range,
+        ["range"] = Range,
         ["minrange"] = "minRange",
         ["radius"] = "radius",
         ["aoeradius"] = "radius",
@@ -35,6 +35,7 @@ public static class Numbers
     };
 
     public const string Period = "period";
+    public const string Range = "range";
     public const string Duration = "duration";
     public const string ChannelTick = "channelTick";
     public const string Cost = "cost";

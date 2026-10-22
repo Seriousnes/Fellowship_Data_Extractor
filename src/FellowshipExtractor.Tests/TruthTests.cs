@@ -269,7 +269,7 @@ public sealed class TruthTests
         var filled = Export.Loaded.Documents
             .Where(document => document.Body["descriptionsByHero"] is not null)
             .ToArray();
-        Assert.Equal(6, filled.Length);
+        Assert.Equal(7, filled.Length);
         Assert.All(filled, document => Assert.Equal(12, document.Body["descriptionsByHero"]!.AsObject().Count));
     }
     [Theory]

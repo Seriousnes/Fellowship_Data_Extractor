@@ -221,26 +221,28 @@ public sealed class TooltipViewService(
 
         var casting = new List<TooltipView.Reading>(2);
         var spending = new List<TooltipView.Reading>(2);
+        var text = TooltipView.AbilityText(store.Settings);
 
         var (cast, hastened) = Hastened(
             document, DocumentFields.Number(document, nameof(AbilityDocument.CastTime)), query);
 
         casting.Add(cast is { } seconds
-            ? new TooltipView.Reading(
-                Number(seconds), TooltipView.SecondsUnit, TooltipView.CastLabel) { Title = hastened }
-            : new TooltipView.Reading(null, null, TooltipView.InstantCast));
+            ? new TooltipView.Reading(Number(seconds), text.CastUnit, text.Cast) { Title = hastened }
+            : new TooltipView.Reading(null, null, text.Instant));
 
         if (DocumentFields.Number(document, nameof(AbilityDocument.Range)) is { } range)
         {
             var title = $"{Number(range)} unreal units, at " +
-                $"{Distance.UnitsPerYard.ToString(CultureInfo.InvariantCulture)} to the yard";
+                $"{text.UnitsPerYard.ToString(CultureInfo.InvariantCulture)} to the yard";
 
-            casting.Add(Distance.Melee(range)
-                ? new TooltipView.Reading(null, null, TooltipView.MeleeRange) { Title = title }
-                : new TooltipView.Reading(
-                    Distance.Yards(range).Normalize().ToString(CultureInfo.InvariantCulture),
-                    Distance.Unit,
-                    TooltipView.RangeLabel) { Title = title });
+            casting.Add(Distance.Self(range)
+                ? new TooltipView.Reading(null, null, text.Self)
+                : Distance.Melee(range, text)
+                    ? new TooltipView.Reading(null, null, text.MeleeRange) { Title = title }
+                    : new TooltipView.Reading(
+                        Distance.Yards(range, text).Normalize().ToString(CultureInfo.InvariantCulture),
+                        text.RangeUnit,
+                        text.Range) { Title = title });
         }
 
         if (DocumentFields.Number(document, nameof(AbilityDocument.Cost)) is { } cost)
@@ -254,8 +256,7 @@ public sealed class TooltipViewService(
 
         if (DocumentFields.Number(document, nameof(AbilityDocument.Cooldown)) is { } cooldown)
         {
-            spending.Add(new TooltipView.Reading(
-                Number(cooldown), TooltipView.SecondsUnit, TooltipView.CooldownLabel));
+            spending.Add(new TooltipView.Reading(Number(cooldown), text.CooldownUnit, text.Cooldown));
         }
 
         return new TooltipView.Overview(casting, spending);

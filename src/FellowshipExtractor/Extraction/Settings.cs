@@ -75,6 +75,8 @@ public sealed class Settings
 
     public string TraitTreeHeader { get; }
 
+    public AbilityTooltipText AbilityTooltip { get; }
+
     public Settings(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -97,12 +99,14 @@ public sealed class Settings
         StatEnchants enchants,
         ItemTraitTrees traitTrees,
         ModifierRecipes recipes,
-        TooltipWidgetText widgetText)
+        TooltipWidgetText widgetText,
+        AbilityTooltipTexts abilityTooltip)
     {
         _traitTrees = traitTrees;
         ModifierTypes = recipes.Types;
         EmptyModifierSlot = widgetText.EmptySlot;
         TraitTreeHeader = widgetText.TraitTreeHeader;
+        AbilityTooltip = abilityTooltip.Text;
         var scoring = new DungeonScoring(provider, [.. creatures.Scaling.Health.Keys]);
 
         DifficultyScaling = creatures.Scaling with
@@ -155,13 +159,6 @@ public sealed class Settings
             .Where(hero => hero.PortraitPath is not null)
             .ToDictionary(hero => hero.ShippedName, hero => hero.PortraitPath!, StringComparer.OrdinalIgnoreCase);
 
-        if (rarities.MissingRenames.ToArray() is { Length: > 0 } missing)
-        {
-            throw new InvalidOperationException(
-                $"The rarity ladder no longer has a tier named {string.Join(" or ", missing)}, so the rename that " +
-                "turns the filed names into the printed ones no longer applies to it.");
-        }
-
         Rarities = [.. rarities.Tiers.Select(tier => new RarityEntry(
             tier, rarities.Label(tier)!, rarities.Printed(tier), rarities.GemLabel(tier)!))];
 
@@ -209,6 +206,7 @@ public sealed class Settings
         TraitNodeUpgradeCosts = _traitTrees.UpgradeCosts,
         TraitNodeColorRows = TraitNodeColorRows,
         TraitTreeHeader = TraitTreeHeader,
+        AbilityTooltip = AbilityTooltip,
         ModifierTypes = ModifierTypes,
         EmptyModifierSlot = EmptyModifierSlot,
         Items = Items,

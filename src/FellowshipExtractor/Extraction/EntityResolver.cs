@@ -239,7 +239,7 @@ public sealed class EntityResolver
             new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
             CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, TraitTrees,
-            ModifierRecipes, new TooltipWidgetText(provider, _assets));
+            ModifierRecipes, new TooltipWidgetText(provider, _assets), new AbilityTooltipTexts(provider, _assets));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -1099,6 +1099,8 @@ public sealed class EntityResolver
         foreach (var name in placeholders.Keys.ToArray())
         {
             var placeholder = placeholders[name];
+            if (placeholder.FromTable) continue;
+
             var own = placeholder.Constants is not null;
             var source = placeholder.Constants ?? reachable;
 
@@ -1196,6 +1198,9 @@ public sealed class EntityResolver
             Tags = cdo is null ? null : Empty(AbilityTypes(cdo)),
             Category = category,
             Description = described,
+            DescriptionsByHero = tokenHolder is null
+                ? null
+                : DescriptionTokens.TableRows(tokenHolder).Select(DynamicText.ForRow).OfType<IReadOnlyDictionary<string, string>>().FirstOrDefault(),
             Detail = Empty(detail),
             Icon = IconName(display.Icon, icons),
             CastTime = Number(split, "castTime"),

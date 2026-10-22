@@ -1,6 +1,7 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
 using Fellowship.SDK;
@@ -363,9 +364,11 @@ public sealed class TargetCountFalloffs(
 
         var exports = package.GetExports().ToArray();
 
-        if (Subobject(exports, cdo, AcquisitionField) is not { } acquisition) return null;
-        if (Subobject(exports, acquisition, SelectionField) is not { } policy) return null;
-        if (policy.Class?.Name.Text is not { } type || !Capped(type)) return null;
+        var policy = Subobject(exports, cdo, AcquisitionField) is { } acquisition
+            ? Subobject(exports, acquisition, SelectionField)
+            : Held(exports, cdo);
+
+        if (policy?.Class?.Name.Text is not { } type || !Capped(type)) return null;
 
         Caps++;
 
@@ -394,7 +397,16 @@ public sealed class TargetCountFalloffs(
         return Math.Floor(cap + RoundingBias);
     }
 
-    private static UObject? Subobject(IReadOnlyList<UObject> exports, UObject holder, string field)
+    private static UObject? Held(IReadOnlyList<UObject> exports, UObject cdo) =>
+        cdo.Properties
+            .Select(property => property.Tag?.GenericValue)
+            .OfType<FScriptStruct>()
+            .Select(held => held.StructType)
+            .OfType<IPropertyHolder>()
+            .Select(held => Subobject(exports, held, SelectionField))
+            .FirstOrDefault(policy => policy is not null);
+
+    private static UObject? Subobject(IReadOnlyList<UObject> exports, IPropertyHolder holder, string field)
     {
         if (PropertyWalk.GetString(holder, field) is not { Length: > 0 } path) return null;
 

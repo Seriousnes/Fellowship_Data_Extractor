@@ -120,6 +120,7 @@ public sealed class ResourceGains(
 
     private const string Spent = "the magnitude is a spend, not a gain";
     private const string Never = "the roll that gates it can never succeed";
+    private const string Unbound = "only an event no statement binds reaches it";
     private const string Withdrawn = "a row the designers commented retired";
     private const string Nothing = "the number it works out at is nothing";
     private const string Ceilinged = "every row it named is a term of the pool ceiling";
@@ -134,6 +135,7 @@ public sealed class ResourceGains(
     private readonly HashSet<string> _effectNames = Names(tags, EffectTable);
     private readonly HashSet<string> _abilityNames = Names(tags, AbilityTable);
     private readonly HashSet<string> _barren = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IReadOnlySet<int>?> _live = new(StringComparer.Ordinal);
     private readonly SortedSet<string> _frames = new(StringComparer.Ordinal);
     private readonly HashSet<string> _granting = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _adds = Adding(mappings);
@@ -1372,11 +1374,18 @@ public sealed class ResourceGains(
         var activated = collected.Activated;
 
         var reachable = Reaching(body, cdo, parameters, arguments, locals);
+        var live = Live(body, cdo);
 
         var found = new List<Generation>();
 
         foreach (var applied in vehicles)
         {
+            if (live is not null && !live.Contains(applied.Statement))
+            {
+                Drop(Unbound);
+                continue;
+            }
+
             if (applied.Vehicle.Share is { } share)
             {
                 found.Add(new Generation(applied.Vehicle.Channel, null, share, 1, applied.Statement, false)
@@ -1407,6 +1416,7 @@ public sealed class ResourceGains(
 
         foreach (var call in calls)
         {
+            if (live is not null && !live.Contains(call.Statement)) continue;
             if (Function(call.Library, call.Function, cdo) is not { } inner) continue;
             if (inner.Body == body) continue;
 
@@ -1674,6 +1684,15 @@ public sealed class ResourceGains(
         if (Ceiling(Bare(left, locals, 0)) is { } byLeft) return (right, byLeft);
 
         return (null, null);
+    }
+
+    private IReadOnlySet<int>? Live(UStruct body, UObject cdo)
+    {
+        var key = $"{cdo.Owner?.Name}|{body.Name}";
+
+        if (!_live.TryGetValue(key, out var live)) _live[key] = live = BytecodeGates.Of(body, cdo)?.Reached;
+
+        return live;
     }
 
     private IReadOnlySet<int>? Reaching(

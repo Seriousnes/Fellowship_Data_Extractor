@@ -57,7 +57,7 @@ public static class CurveBindings
                 if (!seen.Add($"{reported}|None")) continue;
                 if (!structs.TryGetValue(owner, out var bare)) continue;
                 if (PropertyWalk.AsNumber(PropertyWalk.Get(bare, "Value")?.GenericValue) is not { } literal) continue;
-                if (literal <= 0) continue;
+                if (literal < 0 || literal == 0 && Numbers.Field(reported) != Numbers.Range) continue;
 
                 found.Add(new CurveBinding(reported, "None") { Value = literal });
                 continue;

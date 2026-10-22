@@ -38,6 +38,7 @@ public static class DocumentProjection
             EnabledInGame = entity.EnabledInGame,
             NamedAfter = references.At(entity.NamedAfter),
             Description = entity.Description,
+            DescriptionsByHero = entity.DescriptionsByHero,
             Detail = entity.Detail,
             Icon = entity.Icon,
             Category = entity.Category is { } category ? Enum.Parse<AbilityCategory>(category) : null,

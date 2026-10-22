@@ -4165,6 +4165,22 @@
     }
   },
   "traitTreeHeader": "Attunement Tree:",
+  "abilityTooltip": {
+    "unitsPerYard": 100,
+    "meleeMaximum": 250,
+    "printedAboveYards": 2,
+    "range": "range",
+    "meleeRange": "Melee Range",
+    "self": "Self",
+    "rangeUnit": "yd",
+    "instant": "Instant",
+    "cast": "Cast",
+    "channel": "Channel",
+    "chargeUp": "Charge-Up",
+    "castUnit": "s",
+    "cooldown": "Cooldown",
+    "cooldownUnit": "s"
+  },
   "modifierTypes": [
     {
       "name": "GemPower",

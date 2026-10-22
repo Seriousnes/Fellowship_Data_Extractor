@@ -80,17 +80,9 @@ public static class TooltipView
 
     public sealed record Fact(string Label, string Value, string? Title);
 
-    public const string InstantCast = "Instant";
-
-    public const string CastLabel = "cast";
-
-    public const string RangeLabel = "range";
-
-    public const string MeleeRange = "Melee Range";
-
-    public const string CooldownLabel = "cooldown";
-
-    public const string SecondsUnit = "s";
+    public static AbilityTooltipText AbilityText(SettingsFile settings) =>
+        settings.AbilityTooltip ?? throw new InvalidOperationException(
+            "The settings carry no abilityTooltip, so no ability tooltip reads its cast, range or cooldown words.");
 
     public sealed record Reading(string? Value, string? Unit, string? Label)
     {

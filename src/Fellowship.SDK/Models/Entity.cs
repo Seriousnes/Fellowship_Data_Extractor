@@ -380,6 +380,9 @@ public sealed record Placeholder
 
     [JsonIgnore]
     public int? DynamicTextFloatIdentifier { get; init; }
+
+    [JsonIgnore]
+    public bool FromTable { get; init; }
 }
 
 public sealed record PlaceholderTerm(string Attribute, double Coefficient);

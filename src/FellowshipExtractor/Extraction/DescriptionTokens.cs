@@ -8,6 +8,11 @@ public static class DescriptionTokens
 {
     private const string TokenMagnitude = "Magnitude.ScalableFloatMagnitude";
     private const string Seconds = "seconds";
+    private const string TypeField = "Type";
+    private const string AbilityFloatType = "::AbilityDynamicTextFloat";
+    private const string DataTableType = "::DataTable";
+    private const string TableRowField = "TableRow";
+    private const string RowNameField = "RowName";
 
     public static Dictionary<string, Placeholder> Resolve(
         IPropertyHolder row,
@@ -132,9 +137,15 @@ public static class DescriptionTokens
 
         var bare = declared with { ScalesOff = direct is null ? null : [direct] };
 
+        if (TableRowOf(token) is not null) return bare with { FromTable = true };
+
         if (OwnConstant(token, constants) is { } own)
         {
-            return Made(declared, direct, null, [own], tuning, heroes);
+            var made = Made(declared, direct, null, [own], tuning, heroes);
+
+            return self && ResolvedByAbility(token)
+                ? made with { FromOwnConstants = true, DynamicTextFloatIdentifier = Identifier(token) }
+                : made;
         }
 
         if (objectPath is null) return bare;
@@ -164,6 +175,32 @@ public static class DescriptionTokens
 
         return Made(declared, direct, effect.CapturedAttributes, selected, tuning, heroes);
     }
+
+    public static IEnumerable<string> TableRows(IPropertyHolder row)
+    {
+        if (PropertyWalk.GetStruct(row, "DynamicDescription") is not { } dynamic) yield break;
+        if (PropertyWalk.Get(dynamic, "Tokens")?.GenericValue is not UScriptArray tokens) yield break;
+
+        foreach (var entry in tokens.Properties)
+        {
+            if (entry?.GenericValue is FScriptStruct { StructType: IPropertyHolder token } &&
+                TableRowOf(token) is { } tableRow)
+            {
+                yield return tableRow;
+            }
+        }
+    }
+
+    private static string? TableRowOf(IPropertyHolder token) =>
+        PropertyWalk.AsString(PropertyWalk.Get(token, TypeField)?.GenericValue) is { } type &&
+        type.EndsWith(DataTableType, StringComparison.Ordinal) &&
+        PropertyWalk.GetStruct(token, TableRowField) is { } tableRow
+            ? PropertyWalk.GetString(tableRow, RowNameField)
+            : null;
+
+    private static bool ResolvedByAbility(IPropertyHolder token) =>
+        PropertyWalk.AsString(PropertyWalk.Get(token, TypeField)?.GenericValue) is { } type &&
+        type.Contains(AbilityFloatType, StringComparison.Ordinal);
 
     private static bool Flag(IPropertyHolder token, string name) =>
         PropertyWalk.Get(token, name)?.GenericValue is true;

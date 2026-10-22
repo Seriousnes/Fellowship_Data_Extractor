@@ -5,6 +5,7 @@ namespace Fellowship.SDK.Documents;
 public sealed class AbilityDocument : EntityDocument
 {
     public string? Description { get; init; }
+    public IReadOnlyDictionary<string, string>? DescriptionsByHero { get; init; }
     public IReadOnlyList<string>? Detail { get; init; }
     public string? Icon { get; init; }
 

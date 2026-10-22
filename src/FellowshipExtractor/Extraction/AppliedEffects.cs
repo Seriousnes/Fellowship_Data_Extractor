@@ -303,7 +303,7 @@ public static class AppliedEffects
         }
     }
 
-    private static Func<object, object?>[] Reaching(Type type)
+    internal static Func<object, object?>[] Reaching(Type type)
     {
         lock (Reachable)
         {
