@@ -25,10 +25,6 @@ public sealed record Entity
 
     public IReadOnlyList<string>? Heroes { get; init; }
 
-    public IReadOnlyList<IconSource>? SetBonus { get; init; }
-
-    public int? SetCount { get; init; }
-
     public bool? UniqueEquipped { get; init; }
 
     public IReadOnlyList<string>? Tags { get; init; }
@@ -176,10 +172,6 @@ public sealed record Entity
     public int? RandomChance { get; init; }
 
     public IReadOnlyList<RankRun>? RankRuns { get; init; }
-
-    public IReadOnlyList<string>? AllowedRoles { get; init; }
-
-    public IReadOnlyList<string>? AllowedAttributes { get; init; }
 
     public Entity? Grants { get; init; }
 

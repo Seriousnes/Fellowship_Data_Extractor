@@ -90,7 +90,6 @@ public static class DocumentProjection
 
             RuleSet = entity.RuleSet,
             TraitTree = entity.TraitTree,
-            SetBonus = Referenced(entity.SetBonus, references),
             Stats = entity.Stats,
             Description = entity.Description,
             Acquire = entity.Acquire,
@@ -283,18 +282,6 @@ public static class DocumentProjection
             Generates = Generated(entity),
         },
 
-        EntityType.SetBonus => new SetBonusDocument
-        {
-            Id = entity.NetId!.Value,
-            Name = Name(entity),
-            Pieces = entity.SetCount,
-            Description = entity.Description,
-            Icon = entity.Icon,
-            Power = references.At(Augmentation(entity.Augmentation)),
-            AllowedRoles = entity.AllowedRoles,
-            AllowedAttributes = entity.AllowedAttributes?.Select(Enum.Parse<PrimaryStat>).ToArray(),
-        },
-
         EntityType.GemType => new GemTypeDocument
         {
             Id = entity.NetId!.Value,
@@ -383,18 +370,6 @@ public static class DocumentProjection
             Cooldown = entity.Cooldown,
             Duration = entity.Duration,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            ScalesOff = entity.ScalesOff,
-            Grants = Referenced(entity.Granted, references),
-            Generates = Generated(entity),
-        },
-
-        EntityType.SetBonusPower => new SetBonusPowerDocument
-        {
-            Id = entity.NetId!.Value,
-            Name = Name(entity),
-            Description = entity.Description,
-            Icon = entity.Icon,
-            Cooldown = entity.Cooldown,
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),

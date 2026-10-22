@@ -411,46 +411,6 @@ public sealed record RelicPowerTooltipRequest
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
 }
 
-/// <summary>Tooltip for a set bonus.</summary>
-public sealed record SetBonusTooltipRequest
-{
-    /// <summary>The entity type whose tooltip this request draws.</summary>
-    public static EntityType Type => EntityType.SetBonus;
-
-    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
-    [Description(
-        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
-    public bool? ShowIcon { get; init; }
-
-    /// <summary>
-    /// Wrap the card in the chrome a phone draws it in: a scrim, a close button and a link to its page.
-    /// </summary>
-    [Description(
-        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
-        "and a link to its page.")]
-    public bool? Mobile { get; init; }
-}
-
-/// <summary>Tooltip for a set bonus power.</summary>
-public sealed record SetBonusPowerTooltipRequest
-{
-    /// <summary>The entity type whose tooltip this request draws.</summary>
-    public static EntityType Type => EntityType.SetBonusPower;
-
-    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
-    [Description(
-        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
-    public bool? ShowIcon { get; init; }
-
-    /// <summary>
-    /// Wrap the card in the chrome a phone draws it in: a scrim, a close button and a link to its page.
-    /// </summary>
-    [Description(
-        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
-        "and a link to its page.")]
-    public bool? Mobile { get; init; }
-}
-
 /// <summary>Tooltip for a talent.</summary>
 public sealed record TalentTooltipRequest
 {

@@ -199,16 +199,6 @@ public static class FellowshipLogs
 
         if (Tier(query.Rarity, store) is { } quality) entry["quality"] = quality;
 
-        if (item.SetBonus is { Count: > 0 } set)
-        {
-            entry["set"] = new JsonObject
-            {
-                ["id"] = set[0].Id,
-                ["ids"] = new JsonArray([.. set.Select(bonus => (JsonNode)bonus.Id)]),
-                ["name"] = set[0].Name,
-            };
-        }
-
         if (query.Gem is { } gem)
         {
             var named = store.All(EntityType.Gem, gem).OfType<GemDocument>().FirstOrDefault();

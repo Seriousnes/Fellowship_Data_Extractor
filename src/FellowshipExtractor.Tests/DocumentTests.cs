@@ -58,13 +58,13 @@ public sealed class DocumentTests
         Assert.True(EntityTypes.TryParse("Talent", out var single));
         Assert.Equal(EntityType.Talent, single);
 
-        Assert.True(EntityTypes.TryParse("SET-BONUS-POWER", out var shouted));
-        Assert.Equal(EntityType.SetBonusPower, shouted);
+        Assert.True(EntityTypes.TryParse("LEGENDARY-POWER", out var shouted));
+        Assert.Equal(EntityType.LegendaryPower, shouted);
 
-        Assert.True(EntityTypes.TryParse("set-bonus-power", out var exact));
-        Assert.Equal(EntityType.SetBonusPower, exact);
+        Assert.True(EntityTypes.TryParse("legendary-power", out var exact));
+        Assert.Equal(EntityType.LegendaryPower, exact);
 
-        Assert.False(EntityTypes.TryParse("SetBonusPower", out _));
+        Assert.False(EntityTypes.TryParse("LegendaryPower", out _));
     }
 
     [Fact]

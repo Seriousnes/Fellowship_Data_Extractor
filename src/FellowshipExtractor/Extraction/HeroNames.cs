@@ -126,7 +126,7 @@ public sealed class HeroNames
                     "export unresolved for them.");
             }
 
-            var role = ItemSetBonuses.Titled(
+            var role = RoleIcons.Titled(
                 EnumOrdinals.Member(mappings, RoleEnum, PropertyWalk.AsString(Declared(metadata, RoleField, provider)))
                 ?? roles[roles.Keys.Min()]);
 

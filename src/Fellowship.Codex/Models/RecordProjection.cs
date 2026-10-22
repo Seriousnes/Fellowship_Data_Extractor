@@ -34,9 +34,6 @@ public static class RecordProjection
             [EntityType.RelicPower] = (document, view, origin) => From((RelicPowerDocument)document, view, origin),
             [EntityType.RelicPassive] = (document, view, origin) =>
                 From((RelicPassiveDocument)document, view, origin),
-            [EntityType.SetBonus] = (document, view, origin) => From((SetBonusDocument)document, view, origin),
-            [EntityType.SetBonusPower] = (document, view, origin) =>
-                From((SetBonusPowerDocument)document, view, origin),
             [EntityType.Talent] = (document, view, origin) => From((TalentDocument)document, view, origin),
             [EntityType.TalentSlot] = (document, view, origin) => From((TalentSlotDocument)document, view, origin),
             [EntityType.Trait] = (document, view, origin) => From((TraitDocument)document, view, origin),
@@ -330,7 +327,6 @@ public static class RecordProjection
         UniqueEquipped = document.UniqueEquipped,
         Rarity = view.Rarity(document),
         Rarities = RarityNames(document.Rarities, view),
-        SetBonus = References(document.SetBonus, view, origin),
         Stats = Slots(document, view),
         RuleSet = document.RuleSet,
         TraitTree = Tree(document.TraitTree, view, origin),
@@ -450,32 +446,6 @@ public static class RecordProjection
             ScalesOff = Scaling(document.ScalesOff, view),
         };
     }
-
-    public static SetBonusRecord From(SetBonusDocument document, ICodexViewService view, string origin) => new()
-    {
-        Type = EntityType.SetBonus,
-        Id = document.Id,
-        Name = PublicTypes.NameOf(document),
-        Pieces = document.Pieces,
-        Description = view.PlainText(document.Description, [], []),
-        Icon = Texture(document.Icon, view),
-        Power = Reference(document.Power, view, origin),
-        AllowedRoles = Some(document.AllowedRoles),
-        AllowedAttributes = Some(document.AllowedAttributes),
-    };
-
-    public static SetBonusPowerRecord From(SetBonusPowerDocument document, ICodexViewService view, string origin) =>
-        new()
-        {
-            Type = EntityType.SetBonusPower,
-            Id = document.Id,
-            Generates = Generated(document.Generates),
-            Name = PublicTypes.NameOf(document),
-            Description = view.PlainText(document.Description, [], []),
-            Icon = Texture(document.Icon, view),
-            Cooldown = document.Cooldown,
-            ScalesOff = Scaling(document.ScalesOff, view),
-        };
 
     public static TalentRecord From(TalentDocument document, ICodexViewService view, string origin)
     {

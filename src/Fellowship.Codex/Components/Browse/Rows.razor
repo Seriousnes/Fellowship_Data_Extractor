@@ -20,7 +20,6 @@
         EntityType.Blessing => typeof(Blessings),
         EntityType.GemTrait => typeof(GemTraits),
         EntityType.Trait => typeof(Traits),
-        EntityType.SetBonus => typeof(SetBonuses),
         EntityType.Gem => typeof(Gems),
         EntityType.Creature => typeof(Creatures),
         EntityType.Dungeon => typeof(Dungeons),
@@ -31,7 +30,6 @@
         EntityType.WeaponPower => typeof(WeaponPowers),
         EntityType.RelicPower => typeof(RelicPowers),
         EntityType.TraitPower => typeof(TraitPowers),
-        EntityType.SetBonusPower => typeof(SetBonusPowers),
         _ => throw new InvalidOperationException(
             $"{PublicTypes.Label(type.Value)} is not a type the codex lists, so no browse component draws it."),
     };

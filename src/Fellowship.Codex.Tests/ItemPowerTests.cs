@@ -8,7 +8,7 @@ public sealed class ItemPowerTests(Export export)
     private static ItemPowerInputs Bare(string slot) =>
         new(slot, Level: 0, MaxUpgrades: 0, RerollableSlots: 0,
             Legendary: false, HasGemSocket: false, HasGrantedAbility: false,
-            HasTraitTree: false, HasSetBonus: false);
+            HasTraitTree: false);
 
     private float Of(ItemPowerInputs given) => ItemPower.Potential(given, Settings);
 
@@ -124,26 +124,6 @@ public sealed class ItemPowerTests(Export export)
     [Fact]
     public void WitchslayersLegsReadTheSixHundredAndSeventeenTheGamePrints() =>
         Assert.Equal("617", Printed(5309, "Regal", upgrades: 8));
-
-    [Fact]
-    public void ASetPieceScoresTheSetBonusOnTopOfTheTwoRollsItsRungAdds()
-    {
-        var legs = (ItemDocument)export.Store.All(EntityType.Item, 5309)[0];
-        var rung = Settings.Rarities.Single(rarity => rarity.Name == "Heroic");
-
-        var given = ItemPower.Inputs(legs, Settings, rung, new TooltipQuery(), 315);
-
-        Assert.NotNull(given);
-        Assert.True(given.HasSetBonus);
-        Assert.Equal(2, given.RerollableSlots);
-        Assert.Equal(8, given.MaxUpgrades);
-
-        Assert.Equal(
-            (float)Settings.Items.PowerPotential.SetBonusScoreFactor,
-            ItemPower.Potential(given, Settings)
-            - ItemPower.Potential(given with { HasSetBonus = false }, Settings),
-            3);
-    }
 
     [Fact]
     public void GrimoireOfResurrectionReadsTheFourHundredAndEightyFiveTheGamePrints() =>

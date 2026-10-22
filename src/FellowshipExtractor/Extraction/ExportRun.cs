@@ -54,12 +54,6 @@ public static class ExportRun
 
         if (entity is { Type: EntityType.Item, EnabledInGame: false }) return "an item disabled in game";
 
-        if (entity.Type is EntityType.Item &&
-            Array.TrueForAll(Content, p => p.Name == nameof(Entity.Slot) || p.GetValue(entity) is null))
-        {
-            return "an item tag no definition or row names";
-        }
-
         return null;
     }
 
@@ -90,7 +84,6 @@ public static class ExportRun
         Console.WriteLine(
             $"item traits:        {resolver.Traits.Count} rows, {resolver.Traits.BoundRuns} of " +
             $"{resolver.Traits.TotalRuns} rank runs bound to a curve");
-        Console.WriteLine($"set bonuses:        {resolver.SetBonuses.Count} rows");
         Console.WriteLine(
             $"stat enchants:      {resolver.Enchants.Count} traits named per hero, power by item level from " +
             $"{StatEnchants.PowerKey}");

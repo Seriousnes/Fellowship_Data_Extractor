@@ -41,8 +41,6 @@ public static class PublicTypes
         (EntityType.Talent, "Talents", "talent", Categories.Spells),
         (EntityType.Trait, "Traits", "trait", Categories.Spells),
         (EntityType.GemTrait, "Gem Traits", "gem trait", Categories.Spells),
-        (EntityType.SetBonus, "Set Bonuses", "set bonus", Categories.Spells),
-        (EntityType.SetBonusPower, "Set Bonus Powers", "set bonus power", Categories.Spells),
         (EntityType.TraitPower, "Trait Powers", "trait power", Categories.Spells),
         (EntityType.WeaponPower, "Weapon Powers", "weapon power", Categories.Spells),
         (EntityType.RelicPower, "Relic Powers", "relic power", Categories.Spells),

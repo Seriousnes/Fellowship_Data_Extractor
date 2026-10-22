@@ -1,7 +1,6 @@
 @inject ICodexViewService Ui
 
-@if (Rows.Count > 0 || Falloff.Count > 0 || Schools.Count > 0 ||
-     SetBonus.Count > 0 || AllowedRoles.Count > 0 || AllowedAttributes.Count > 0)
+@if (Rows.Count > 0 || Falloff.Count > 0 || Schools.Count > 0)
 {
     <Panel Head="Details" Class="@(ReferenceEquals(Entity, Here.Entity) ? "cx-entity-details" : null)">
         @if (Rows.Count > 0)
@@ -57,35 +56,6 @@
                 }
             </Pills>
         }
-
-        @if (SetBonus.Count > 0)
-        {
-            <Rule />
-            <SubHead>Set</SubHead>
-            <Pills>
-                @foreach (var set in SetBonus)
-                {
-                    <Pill><Ref Entity="set" /></Pill>
-                }
-            </Pills>
-        }
-
-        @if (AllowedRoles.Count > 0)
-        {
-            <Rule />
-            <SubHead>Offered to</SubHead>
-            <Pills>
-                @foreach (var role in AllowedRoles)
-                {
-                    var tone = Ui.Tokens.Role(role) ?? "inherit";
-                    <Pill Colour="@tone">@role</Pill>
-                }
-                @foreach (var stat in AllowedAttributes)
-                {
-                    <Pill>@stat</Pill>
-                }
-            </Pills>
-        }
     </Panel>
 }
 
@@ -105,16 +75,6 @@
 
     private IReadOnlyList<Fellowship.SDK.Models.TargetCountFalloff> Falloff =>
         DamageFalloff.Source(Entity)?.Entries ?? [];
-
-    private IReadOnlyList<Fellowship.SDK.Models.EntityReference> SetBonus =>
-        (Entity as ItemDocument)?.SetBonus ?? [];
-
-    private IReadOnlyList<string> AllowedRoles => (Entity as Fellowship.SDK.Documents.SetBonusDocument)?.AllowedRoles ?? [];
-
-    private IReadOnlyList<string> AllowedAttributes =>
-        (Entity as Fellowship.SDK.Documents.SetBonusDocument)?.AllowedAttributes is { } attributes
-            ? [.. attributes.Select(stat => stat.ToString())]
-            : [];
 
     protected override void OnParametersSet()
     {

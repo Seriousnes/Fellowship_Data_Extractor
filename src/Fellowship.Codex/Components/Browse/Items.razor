@@ -41,14 +41,6 @@
                 }
             </Content>
         </Column>
-        <Column Head="Set" Key="set" Class="cx-tags">
-            <Content Context="row">
-                @foreach (var set in row.SetBonus ?? [])
-                {
-                    <Chip><Ref Entity="set" /></Chip>
-                }
-            </Content>
-        </Column>
     </Columns>
 </Table>
 

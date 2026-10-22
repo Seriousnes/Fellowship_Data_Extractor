@@ -14,11 +14,4 @@ public sealed class TemperStaminaTests
             items.TemperDefaultStaminaMultiplier);
         Assert.Equal([new TemperStaminaStep(315, 2)], items.TemperStaminaMultiplierAtItemLevel);
     }
-
-    [Fact]
-    public void NoItemDocumentCarriesOnlyTheSlotItsTagSpells() =>
-        Assert.DoesNotContain(
-            Export.Loaded.Documents,
-            row => row.Type == EntityType.Item &&
-                   row.Body.Select(pair => pair.Key).Order().SequenceEqual(["$type", "id", "slot"]));
 }

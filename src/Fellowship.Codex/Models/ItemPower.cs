@@ -10,8 +10,7 @@ public sealed record ItemPowerInputs(
     bool Legendary,
     bool HasGemSocket,
     bool HasGrantedAbility,
-    bool HasTraitTree,
-    bool HasSetBonus);
+    bool HasTraitTree);
 
 public sealed record ItemPowerTerm(string Label, int? Count, double Factor, double? Weight, float Amount);
 
@@ -57,8 +56,7 @@ public static class ItemPower
             Legendary: rarity is not null && item.Rarity is Rarity.Legendary,
             HasGemSocket: !query.NoSocket && Carries(CraftSlots.GemSocket),
             HasGrantedAbility: Carries(CraftSlots.GrantedAbility),
-            HasTraitTree: Carries(CraftSlots.TraitTree),
-            HasSetBonus: Carries(CraftSlots.SetBonus));
+            HasTraitTree: Carries(CraftSlots.TraitTree));
     }
 
     public static IReadOnlyList<ItemPowerTerm> Terms(ItemPowerInputs inputs, SettingsFile settings)
@@ -99,8 +97,6 @@ public static class ItemPower
         [
             new("Gem socket", null, factors.GemSocketScoreFactor,
                 inputs => inputs.HasGemSocket),
-            new("Set bonus", null, factors.SetBonusScoreFactor,
-                inputs => inputs.HasSetBonus),
             new(Slot(WeaponType), "ability", factors.WeaponAbilityScoreFactor,
                 inputs => inputs.HasGrantedAbility && Wearing(inputs, WeaponType)),
             new(Slot(TrinketType), "ability", factors.RelicAbilityScoreFactor,

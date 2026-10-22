@@ -28,8 +28,6 @@ public enum EntityType
     MountPower,
     RelicPassive,
     RelicPower,
-    SetBonus,
-    SetBonusPower,
     Talent,
     TalentSlot,
     Trait,

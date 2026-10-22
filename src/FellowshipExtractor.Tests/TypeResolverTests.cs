@@ -3,12 +3,12 @@ namespace FellowshipExtractor.Tests;
 public sealed class TypeResolverTests
 {
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(25, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(24, Enum.GetValues<EntityType>().Length);
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
     [InlineData(EntityType.Gem, "gem")]
-    [InlineData(EntityType.SetBonusPower, "set-bonus-power")]
+    [InlineData(EntityType.LegendaryPower, "legendary-power")]
     [InlineData(EntityType.TalentSlot, "talent-slot")]
     public void ASlugIsTheTypeNameHyphenated(EntityType type, string slug) =>
         Assert.Equal(slug, EntityTypes.Slug(type));
@@ -30,8 +30,6 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.Currency, 16)]
     [InlineData(EntityType.Modifier, 26)]
     [InlineData(EntityType.Gem, 24)]
-    [InlineData(EntityType.SetBonus, 23)]
-    [InlineData(EntityType.SetBonusPower, 15)]
     [InlineData(EntityType.Blessing, 8)]
     [InlineData(EntityType.WeaponPower, 12)]
     [InlineData(EntityType.Hero, 12)]
