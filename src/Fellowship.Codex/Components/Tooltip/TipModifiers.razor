@@ -1,3 +1,4 @@
+@inject IEntityStoreService Store
 @inject ITooltipViewService Ui
 
 <div class="grp mods">
@@ -8,7 +9,7 @@
             @if (Ui.Chrome.ModifierGlyph(Lines[at].Slot) is { } glyph) { <img class="mi" alt="" src="@glyph"> }
             @if (Lines[at].Kind is { } kind)
             {
-                <span class="mk">@TooltipView.Label(kind):</span>
+                <span class="mk">@TooltipView.Label(kind, Store.Settings):</span>
                 <span class="mn">@Lines[at].Name</span>
                 @if (Lines[at].Value is { } value) { <span class="mv">@value</span> }
             }

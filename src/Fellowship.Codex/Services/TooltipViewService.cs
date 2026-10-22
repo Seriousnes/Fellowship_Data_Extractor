@@ -343,7 +343,8 @@ public sealed class TooltipViewService(
 
         foreach (var modifier in query.Modifiers)
         {
-            var row = store.All(TooltipView.TypeOf(modifier.Kind), modifier.Id).FirstOrDefault();
+            var type = TooltipView.TypeOf(modifier.Kind, store.Settings);
+            var row = store.All(type, modifier.Id).FirstOrDefault();
 
             lines.Add(new TooltipView.ModifierLine(
                 modifier.Kind,
@@ -351,12 +352,12 @@ public sealed class TooltipViewService(
                 row is null
                     ? modifier.Id.ToString(CultureInfo.InvariantCulture)
                     : TooltipView.PrintedFor(row, wearer) ?? PublicTypes.NameOf(row),
-                modifier.Kind switch
+                type switch
                 {
-                    ModifierKind.Trait => row is not null && Enchants.Is(row)
+                    TooltipView.TraitType => row is not null && Enchants.Is(row)
                         ? TooltipView.Plus(Enchants.RowValue(store.Settings, level))
                         : null,
-                    ModifierKind.Blessing => TooltipView.GlyphRowValue,
+                    EntityType.Blessing => TooltipView.GlyphRowValue,
                     _ => TooltipView.Plus(modifier.Amount),
                 }));
         }
@@ -393,7 +394,7 @@ public sealed class TooltipViewService(
 
     private IEnumerable<TraitDocument> Enchanted(TooltipQuery query) =>
         query.Modifiers
-            .Where(modifier => modifier.Kind == ModifierKind.Trait)
+            .Where(modifier => TooltipView.TypeOf(modifier.Kind, store.Settings) == TooltipView.TraitType)
             .Select(modifier => modifier.Id)
             .Concat(query.ImbuedTraits.Select(attuned => attuned.Id))
             .Select(id => store.All(TooltipView.TraitType, id).OfType<TraitDocument>().FirstOrDefault())

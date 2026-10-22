@@ -26,9 +26,7 @@ public sealed class ModifierRecipeTests
 
         Assert.Equal("MajorTrait", PropertyWalk.GetString(data, "ModifierType"));
 
-        var aspect = Assert.Single(
-            Export.Loaded.Settings.StatCalculation.SlotDefinitions["MajorTrait"].Recipes,
-            recipe => recipe.Recipe == AspectRecipe);
+        var aspect = Assert.Single(Type("MajorTrait").Recipes, recipe => recipe.Recipe == AspectRecipe);
 
         Assert.Equal(0, aspect.SlotIndex);
         Assert.Equal("Aspects", aspect.Category);
@@ -37,26 +35,54 @@ public sealed class ModifierRecipeTests
     }
 
     [Fact]
-    public void AModifierSlotsLimitIsTheNumberItsWarningPrints()
+    public void AModifierTypesLimitIsTheNumberItsWarningPrints()
     {
-        var aspect = Export.Loaded.Settings.StatCalculation.SlotDefinitions["MajorTrait"];
+        var aspect = Type("MajorTrait");
 
         Assert.Equal("An item can have up to 2 Aspects active at a time.", aspect.MaximumLimitWarning);
         Assert.Equal(2, aspect.MaximumLimit);
 
-        Assert.All(
-            Export.Loaded.Settings.StatCalculation.SlotDefinitions.Values.Where(slot => slot.Recipes.Count > 0),
-            slot => Assert.Equal(2, slot.MaximumLimit));
+        Assert.All(Export.Loaded.Settings.ModifierTypes, type => Assert.Equal(2, type.MaximumLimit));
     }
 
     [Fact]
-    public void EveryModifierSlotARecipeRerollsListsNineRecipes()
+    public void EveryModifierTypeIsASlotARecipeRerollsWithNineRecipes()
     {
-        var rerolled = Export.Loaded.Settings.StatCalculation.SlotDefinitions
-            .Where(slot => slot.Value.Recipes.Count > 0)
-            .ToDictionary(slot => slot.Key, slot => slot.Value.Recipes.Count);
+        var types = Export.Loaded.Settings.ModifierTypes;
 
-        Assert.Equal(["AbilityRank", "GemPower", "HeroicTrait", "MajorTrait", "StatEnchant"], rerolled.Keys.Order(StringComparer.Ordinal));
-        Assert.All(rerolled.Values, count => Assert.Equal(9, count));
+        Assert.Equal(
+            ["AbilityRank", "GemPower", "HeroicTrait", "MajorTrait", "StatEnchant"],
+            types.Select(type => type.Name).Order(StringComparer.Ordinal));
+        Assert.All(types, type => Assert.Equal(9, type.Recipes.Count));
+        Assert.All(types, type => Assert.Contains(type.Name, Export.Loaded.Settings.StatCalculation.SlotDefinitions.Keys));
+        Assert.Equal(
+            types.Select(type => type.Name).Order(StringComparer.Ordinal),
+            Enum.GetNames<ModifierKind>().Order(StringComparer.Ordinal));
     }
+
+    [Theory]
+    [InlineData("HeroicTrait", "Sigil", "Sigils", "Sigil: ")]
+    [InlineData("MajorTrait", "Aspect", "Aspects", "Aspect: ")]
+    [InlineData("StatEnchant", "Enchant", "Enchants", "Enchant: ")]
+    [InlineData("AbilityRank", "Glyph", "Glyphs", "Glyph:")]
+    [InlineData("GemPower", "Radiance", null, "Radiance")]
+    public void AModifierTypePrintsTheWordingItsCraftingCategoryNames(
+        string name, string printed, string? plural, string header)
+    {
+        var type = Type(name);
+
+        Assert.Equal(printed, type.Printed);
+        Assert.Equal(plural, type.Plural);
+        Assert.Equal(header, type.Header);
+    }
+
+    [Fact]
+    public void AnEmptyModifierSlotAndTheTraitTreeReadTheirWidgetText()
+    {
+        Assert.Equal(new EmptyModifierSlot("?", "Empty Modifier"), Export.Loaded.Settings.EmptyModifierSlot);
+        Assert.Equal("Attunement Tree:", Export.Loaded.Settings.TraitTreeHeader);
+    }
+
+    private static ModifierTypeEntry Type(string name) =>
+        Export.Loaded.Settings.ModifierTypes.Single(type => type.Name == name);
 }

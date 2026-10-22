@@ -86,6 +86,12 @@ public sealed record SettingsFile
 
     public TraitNodeColorRows? TraitNodeColorRows { get; init; }
 
+    public string? TraitTreeHeader { get; init; }
+
+    public IReadOnlyList<ModifierTypeEntry> ModifierTypes { get; init; } = [];
+
+    public EmptyModifierSlot? EmptyModifierSlot { get; init; }
+
     public StatCalculationFile StatCalculation { get; init; } = new();
 
     public ItemSettingsFile Items { get; init; } = new();

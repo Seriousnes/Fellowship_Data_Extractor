@@ -71,6 +71,12 @@ public sealed class Settings
 
     public ItemSettingsFile Items { get; }
 
+    public IReadOnlyList<ModifierTypeEntry> ModifierTypes { get; }
+
+    public EmptyModifierSlot EmptyModifierSlot { get; }
+
+    public string TraitTreeHeader { get; }
+
     public Settings(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -92,9 +98,14 @@ public sealed class Settings
         Leagues leagues,
         ItemSettings items,
         StatEnchants enchants,
-        ItemTraitTrees traitTrees)
+        ItemTraitTrees traitTrees,
+        ModifierRecipes recipes,
+        TooltipWidgetText widgetText)
     {
         _traitTrees = traitTrees;
+        ModifierTypes = recipes.Types;
+        EmptyModifierSlot = widgetText.EmptySlot;
+        TraitTreeHeader = widgetText.TraitTreeHeader;
         var scoring = new DungeonScoring(provider, [.. creatures.Scaling.Health.Keys]);
 
         DifficultyScaling = creatures.Scaling with
@@ -201,6 +212,9 @@ public sealed class Settings
         TraitTrees = _traitTrees.NamedTrees,
         TraitNodeUpgradeCosts = _traitTrees.UpgradeCosts,
         TraitNodeColorRows = TraitNodeColorRows,
+        TraitTreeHeader = TraitTreeHeader,
+        ModifierTypes = ModifierTypes,
+        EmptyModifierSlot = EmptyModifierSlot,
         Items = Items,
         SlotIcons = SlotIcons,
         RarityOrnaments = RarityOrnaments,

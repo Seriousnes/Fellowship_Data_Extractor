@@ -123,17 +123,13 @@ public class ItemCraftTests(Export export)
     }
 
     [Fact]
-    public void Each_slot_definition_maps_its_slot_type_onto_a_modifier_kind()
+    public void Each_modifier_slot_definition_is_the_modifier_kind_of_its_own_name()
     {
-        foreach (var (name, definition) in Settings.StatCalculation.SlotDefinitions)
+        foreach (var (name, _) in Settings.StatCalculation.SlotDefinitions)
         {
-            ModifierKind? expected = definition.SlotType switch
-            {
-                CraftSlots.ItemTrait or CraftSlots.TraitTree => ModifierKind.Trait,
-                CraftSlots.AbilityRank => ModifierKind.Blessing,
-                CraftSlots.GemPower => ModifierKind.Essence,
-                _ => null,
-            };
+            ModifierKind? expected = Settings.ModifierTypes.Any(type => type.Name == name)
+                ? Enum.Parse<ModifierKind>(name)
+                : null;
 
             Assert.Equal(expected, ItemCraft.KindOf(name, Settings));
         }

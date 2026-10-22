@@ -99,24 +99,24 @@ public static class FellowshipLogs
 
         foreach (var power in Array(gear, "gemPowers"))
         {
-            Modifier(ModifierKind.Essence, power, GemPowerBase, GemPowerField, EntityType.GemType);
+            Modifier(power, GemPowerBase, GemPowerField, EntityType.GemType);
         }
 
         foreach (var trait in Array(gear, "traits"))
         {
-            Modifier(ModifierKind.Trait, trait, TraitBase, TraitRankField, TooltipView.TraitType);
+            Modifier(trait, TraitBase, TraitRankField, TooltipView.TraitType);
         }
 
         foreach (var blessing in Array(gear, "blessings"))
         {
-            if (Int(blessing, "id") is not { } logged || Blessing(logged, store) is not { } resolved)
+            if (Int(blessing, "id") is not { } logged || Blessing(logged, store) is not { } resolved ||
+                ItemCraft.KindOfSlotType(CraftSlots.AbilityRank, store.Settings) is not { } glyph)
             {
                 missing.Add($"blessing id {Int(blessing, "id")} resolves to no ability rank row.");
                 continue;
             }
 
-            modifiers.Add(new ItemModifier(
-                ModifierKind.Blessing, resolved, Int(blessing, BlessingLevelField) ?? 1));
+            modifiers.Add(new ItemModifier(glyph, resolved, Int(blessing, BlessingLevelField) ?? 1));
         }
 
         foreach (var trait in Tree(gear, owner, Worn(store, itemId)))
@@ -135,19 +135,24 @@ public static class FellowshipLogs
             imbued.Add(new ImbuedTrait(id, points));
         }
 
-        void Modifier(ModifierKind kind, JsonElement entry, int under, string amountField, EntityType type)
+        void Modifier(JsonElement entry, int under, string amountField, EntityType type)
         {
             if (Int(entry, "id") is not { } logged) return;
 
             var id = logged - under;
+            var row = store.All(type, id).FirstOrDefault();
 
-            if (store.All(type, id).Count == 0)
+            var kind = type == EntityType.GemType
+                ? ItemCraft.KindOfSlotType(CraftSlots.GemPower, store.Settings)
+                : ItemCraft.KindOfTrait(row, store.Settings);
+
+            if (row is null || kind is null)
             {
-                missing.Add($"{kind} id {logged} names nothing in the export.");
+                missing.Add($"{type} id {logged} names nothing in the export.");
                 return;
             }
 
-            modifiers.Add(new ItemModifier(kind, id, Int(entry, amountField) ?? 1));
+            modifiers.Add(new ItemModifier(kind.Value, id, Int(entry, amountField) ?? 1));
         }
 
         unresolved = missing;
@@ -235,12 +240,13 @@ public static class FellowshipLogs
 
         if (attributes.Count > 0) entry["attributes"] = attributes;
 
-        Kind(ModifierKind.Essence, "gemPowers", GemPowerBase, GemPowerField);
-        Kind(ModifierKind.Trait, "traits", TraitBase, TraitRankField);
+        Kind(EntityType.GemType, "gemPowers", GemPowerBase, GemPowerField);
+        Kind(TooltipView.TraitType, "traits", TraitBase, TraitRankField);
 
         var blessings = new JsonArray();
 
-        foreach (var modifier in query.Modifiers.Where(row => row.Kind == ModifierKind.Blessing))
+        foreach (var modifier in query.Modifiers.Where(
+            row => TooltipView.TypeOf(row.Kind, store.Settings) == EntityType.Blessing))
         {
             if (RankOf(modifier.Id, item, store) is not { } logged) continue;
 
@@ -272,17 +278,17 @@ public static class FellowshipLogs
             entry[NeckSlot.Equals(item.Slot, StringComparison.OrdinalIgnoreCase) ? NeckTree : WeaponTree] = tree;
         }
 
-        void Kind(ModifierKind kind, string field, int under, string amountField)
+        void Kind(EntityType type, string field, int under, string amountField)
         {
             var entries = new JsonArray();
 
-            foreach (var modifier in query.Modifiers.Where(row => row.Kind == kind))
+            foreach (var modifier in query.Modifiers.Where(row => TooltipView.TypeOf(row.Kind, store.Settings) == type))
             {
                 entries.Add(new JsonObject
                 {
                     ["id"] = modifier.Id + under,
                     [amountField] = modifier.Amount,
-                    ["name"] = Name(TooltipView.TypeOf(kind), modifier.Id, store),
+                    ["name"] = Name(type, modifier.Id, store),
                 });
             }
 

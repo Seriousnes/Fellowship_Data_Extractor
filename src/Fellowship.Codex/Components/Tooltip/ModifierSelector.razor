@@ -176,16 +176,17 @@
                     $"{TagSeparator}{gem.Type}", StringComparison.OrdinalIgnoreCase))),
 
             _ => Store.Entities.Where(row =>
-                EntityTypes.TypeOf(row) == TooltipView.TypeOf(ItemCraft.KindOf(accepts, Store.Settings)!.Value)),
+                EntityTypes.TypeOf(row) == TooltipView.TypeOf(ItemCraft.KindOf(accepts, Store.Settings)!.Value, Store.Settings)),
         };
 
         var label = definition.SlotType switch
         {
             CraftSlots.GemSocket => "Gem",
+            CraftSlots.TraitTree => TooltipView.TraitType.ToString(),
             CraftSlots.ItemTrait => definition.ItemTraitPool
                 .Select(category => TraitTrees.CategoryName(category, Store))
                 .FirstOrDefault(name => name is not null) ?? accepts,
-            _ => TooltipView.Label(ItemCraft.KindOf(accepts, Store.Settings)!.Value),
+            _ => TooltipView.Label(ItemCraft.KindOf(accepts, Store.Settings)!.Value, Store.Settings),
         };
 
         return new Group(label, [.. Pooled().Select(row => Entity(accepts, row))]);

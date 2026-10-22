@@ -52,7 +52,7 @@ public sealed class EnchantTests(Export export)
             .First(row => row.Stats is { Count: > 0 } && row.Hero is not null);
 
         var plain = new TooltipQuery { ItemLevel = 300 };
-        var enchanted = plain with { Modifiers = [new ItemModifier(ModifierKind.Trait, enchant.Id, 1)] };
+        var enchanted = plain with { Modifiers = [new ItemModifier(ItemCraft.KindOfTrait(enchant, Settings)!.Value, enchant.Id, 1)] };
 
         var before = export.Tooltip.Rolls(item, plain, null);
         var after = export.Tooltip.Rolls(item, enchanted, null);
@@ -74,7 +74,7 @@ public sealed class EnchantTests(Export export)
         var item = export.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 });
 
         var rolled = export.Tooltip.Rolls(
-            item, new TooltipQuery { ItemLevel = 300, Modifiers = [new ItemModifier(ModifierKind.Trait, enchant.Id, 1)] }, null);
+            item, new TooltipQuery { ItemLevel = 300, Modifiers = [new ItemModifier(ItemCraft.KindOfTrait(enchant, Settings)!.Value, enchant.Id, 1)] }, null);
         var attuned = export.Tooltip.Rolls(
             item, new TooltipQuery { ItemLevel = 300, ImbuedTraits = [new ImbuedTrait(enchant.Id, 1)] }, null);
 
@@ -86,7 +86,7 @@ public sealed class EnchantTests(Export export)
     {
         var item = export.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 });
         var sigil = export.Store.Entities.OfType<TraitDocument>()
-            .First(trait => !Enchants.Is(trait) && trait.CategoryTag is not null);
+            .First(trait => !Enchants.Is(trait) && ItemCraft.KindOfTrait(trait, Settings) is not null);
         var glyph = export.Store.Entities.OfType<BlessingDocument>().First();
         var gem = export.Store.Entities.OfType<GemTypeDocument>().First();
 
@@ -95,10 +95,10 @@ public sealed class EnchantTests(Export export)
             ItemLevel = 300,
             Modifiers =
             [
-                new ItemModifier(ModifierKind.Trait, Enchanted[0].Id, 1),
-                new ItemModifier(ModifierKind.Trait, sigil.Id, 3),
-                new ItemModifier(ModifierKind.Blessing, glyph.Id, 3),
-                new ItemModifier(ModifierKind.Essence, gem.Id, 40),
+                new ItemModifier(ItemCraft.KindOfTrait(Enchanted[0], Settings)!.Value, Enchanted[0].Id, 1),
+                new ItemModifier(ItemCraft.KindOfTrait(sigil, Settings)!.Value, sigil.Id, 3),
+                new ItemModifier(ItemCraft.KindOfSlotType(CraftSlots.AbilityRank, Settings)!.Value, glyph.Id, 3),
+                new ItemModifier(ItemCraft.KindOfSlotType(CraftSlots.GemPower, Settings)!.Value, gem.Id, 40),
             ],
         };
 

@@ -52,9 +52,9 @@ public class TooltipQueryTests(Export export)
     {
         ItemModifier[] modifiers =
         [
-            new(ModifierKind.Trait, 412, 1),
-            new(ModifierKind.Blessing, 7, 1),
-            new(ModifierKind.Essence, 3, 100),
+            new(ModifierKind.MajorTrait, 412, 1),
+            new(ModifierKind.AbilityRank, 7, 1),
+            new(ModifierKind.GemPower, 3, 100),
         ];
 
         Assert.Equal(modifiers, Query(new ItemTooltipRequest { Modifiers = modifiers }, out _).Modifiers);

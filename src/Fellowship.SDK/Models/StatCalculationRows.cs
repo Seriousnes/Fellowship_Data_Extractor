@@ -47,13 +47,24 @@ public sealed record ItemSlotDefinition(string SlotType, int MinimumItemLevel)
     public IReadOnlyList<string> GemPowerPool { get; init; } = [];
 
     public IReadOnlyList<string> ItemTraitPool { get; init; } = [];
+}
 
-    public IReadOnlyList<ModifierRecipe> Recipes { get; init; } = [];
+public sealed record ModifierTypeEntry(string Name)
+{
+    public string? Printed { get; init; }
+
+    public string? Plural { get; init; }
+
+    public string? Header { get; init; }
 
     public int? MaximumLimit { get; init; }
 
     public string? MaximumLimitWarning { get; init; }
+
+    public IReadOnlyList<ModifierRecipe> Recipes { get; init; } = [];
 }
+
+public sealed record EmptyModifierSlot(string Sign, string Text);
 
 public sealed record ModifierRecipe(string Recipe, int SlotIndex)
 {

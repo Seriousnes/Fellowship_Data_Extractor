@@ -87,36 +87,42 @@ public static class ItemCraft
                 $"defined are {string.Join(", ", settings.StatCalculation.SlotDefinitions.Keys)}.");
 
     public static string? Defining(ModifierKind kind, EntityDocument? row, SettingsFile settings) =>
-        settings.StatCalculation.SlotDefinitions
-            .FirstOrDefault(pair => kind switch
-            {
-                ModifierKind.Trait => pair.Value.SlotType == CraftSlots.ItemTrait &&
-                    row is TraitDocument { CategoryTag: { } tag } &&
-                    pair.Value.ItemTraitPool.Contains(tag, StringComparer.Ordinal),
-                ModifierKind.Blessing => pair.Value.SlotType == CraftSlots.AbilityRank,
-                ModifierKind.Essence => pair.Value.SlotType == CraftSlots.GemPower,
-                _ => false,
-            })
-            .Key;
+        settings.StatCalculation.SlotDefinitions.TryGetValue(kind.ToString(), out var definition) &&
+        (definition.SlotType != CraftSlots.ItemTrait ||
+         row is TraitDocument { CategoryTag: { } tag } && definition.ItemTraitPool.Contains(tag, StringComparer.Ordinal))
+            ? kind.ToString()
+            : null;
 
     public static ModifierKind? KindOf(string accepted, SettingsFile settings) =>
-        Definition(accepted, settings).SlotType switch
-        {
-            CraftSlots.ItemTrait or CraftSlots.TraitTree => ModifierKind.Trait,
-            CraftSlots.AbilityRank => ModifierKind.Blessing,
-            CraftSlots.GemPower => ModifierKind.Essence,
-            _ => null,
-        };
+        Enum.TryParse<ModifierKind>(accepted, out var kind) && settings.StatCalculation.SlotDefinitions.ContainsKey(accepted)
+            ? kind
+            : null;
+
+    public static ModifierKind? KindOfSlotType(string slotType, SettingsFile settings) =>
+        settings.StatCalculation.SlotDefinitions
+            .Where(pair => pair.Value.SlotType == slotType)
+            .Select(pair => KindOf(pair.Key, settings))
+            .FirstOrDefault(kind => kind is not null);
+
+    public static ModifierKind? KindOfTrait(EntityDocument? row, SettingsFile settings) =>
+        row is TraitDocument { CategoryTag: { } tag }
+            ? settings.StatCalculation.SlotDefinitions
+                .Where(pair => pair.Value.SlotType == CraftSlots.ItemTrait &&
+                               pair.Value.ItemTraitPool.Contains(tag, StringComparer.Ordinal))
+                .Select(pair => KindOf(pair.Key, settings))
+                .FirstOrDefault(kind => kind is not null)
+            : null;
 
     public const int SameIdentity = 2;
 
     public const int Blessings = 2;
 
     public static int MaxRank(CraftCandidate candidate, IEntityStoreService store) =>
-        KindOf(candidate.Accepts, store.Settings) switch
+        Definition(candidate.Accepts, store.Settings).SlotType switch
         {
-            ModifierKind.Blessing => Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id)?.MaxRank ?? 1,
-            ModifierKind.Trait => Find<TraitDocument>(store, TooltipView.TraitType, candidate.Id)?.MaxRank ?? 1,
+            CraftSlots.AbilityRank => Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id)?.MaxRank ?? 1,
+            CraftSlots.ItemTrait or CraftSlots.TraitTree =>
+                Find<TraitDocument>(store, TooltipView.TraitType, candidate.Id)?.MaxRank ?? 1,
             _ => int.MaxValue,
         };
 
@@ -142,7 +148,7 @@ public static class ItemCraft
 
         if (KindOf(candidate.Accepts, store.Settings) is not { } kind) return null;
 
-        if (kind == ModifierKind.Blessing)
+        if (TooltipView.TypeOf(kind, store.Settings) == EntityType.Blessing)
         {
             if (Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id) is { } blessing &&
                 item.Slot is { } worn &&
@@ -151,7 +157,7 @@ public static class ItemCraft
                 return CraftReasons.NotInPool(worn);
             }
 
-            if (query.Modifiers.Count(modifier => modifier.Kind == ModifierKind.Blessing) >= Blessings)
+            if (query.Modifiers.Count(modifier => modifier.Kind == kind) >= Blessings)
             {
                 return CraftReasons.TwoBlessings;
             }

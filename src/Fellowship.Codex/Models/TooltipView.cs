@@ -20,21 +20,18 @@ public static class TooltipView
 
     public const string GemSocketLabel = "Gem Socket";
 
-    public static EntityType TypeOf(ModifierKind kind) => kind switch
-    {
-        ModifierKind.Trait => TraitType,
-        ModifierKind.Blessing => EntityType.Blessing,
-        ModifierKind.Essence => EntityType.GemType,
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, $"{kind} names no entity type."),
-    };
+    public static EntityType TypeOf(ModifierKind kind, SettingsFile settings) =>
+        ItemCraft.Definition(kind.ToString(), settings).SlotType switch
+        {
+            CraftSlots.ItemTrait => TraitType,
+            CraftSlots.AbilityRank => EntityType.Blessing,
+            CraftSlots.GemPower => EntityType.GemType,
+            var slotType => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, $"{kind} is a {slotType} slot, which names no entity type."),
+        };
 
-    public static string Label(ModifierKind kind) => kind switch
-    {
-        ModifierKind.Trait => "Trait",
-        ModifierKind.Blessing => "Blessing",
-        ModifierKind.Essence => "Imbued Essence",
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, $"{kind} names no label."),
-    };
+    public static string Label(ModifierKind kind, SettingsFile settings) =>
+        settings.ModifierTypes.FirstOrDefault(type => type.Name == kind.ToString())?.Printed ?? kind.ToString();
 
     public static string Token(ModifierKind? kind) => kind?.ToString().ToLowerInvariant() ?? Unresolved;
 

@@ -29,6 +29,9 @@ public sealed partial class ModifierRecipes
     private const string OptionsField = "NumberOfOutputOptions";
     private const string AllOptionsField = "GenerateAllPossibleOutputOptions";
     private const string WarningSuffix = "_MaximumLimitWarning";
+    private const string PluralSuffix = "_NamePlural";
+    private const string NameSuffix = "_Name";
+    private const string HeaderSuffix = "_TooltipHeader";
 
     private readonly Dictionary<string, List<ModifierRecipe>> _bySlot = new(StringComparer.Ordinal);
     private readonly Dictionary<string, List<(string Table, string Key)>> _names = new(StringComparer.Ordinal);
@@ -97,13 +100,67 @@ public sealed partial class ModifierRecipes
         {
             if (Limit(slot, names) is { } limit) _limits[slot] = limit;
         }
+
+        Types = [.. _bySlot.Select(pair => TypeOf(pair.Key, pair.Value))];
     }
 
     public IReadOnlyCollection<string> Slots => _bySlot.Keys;
 
-    public IReadOnlyList<ModifierRecipe> For(string slot) => _bySlot.TryGetValue(slot, out var recipes) ? recipes : [];
+    public IReadOnlyList<ModifierTypeEntry> Types { get; }
 
-    public ModifierLimit? LimitOf(string slot) => _limits.GetValueOrDefault(slot);
+    private ModifierTypeEntry TypeOf(string slot, IReadOnlyList<ModifierRecipe> recipes)
+    {
+        var categories = recipes
+            .Where(recipe => !recipe.AllOptions)
+            .Select(recipe => recipe.Category)
+            .OfType<string>()
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (categories is not [var category])
+        {
+            throw new InvalidOperationException(
+                $"The recipes rerolling {slot} one or three options at a time name {categories.Length} crafting " +
+                $"categories ({string.Join(", ", categories)}), so nothing names the modifier type.");
+        }
+
+        var plurals = StringTables.All
+            .Where(entry => entry.Key.EndsWith(PluralSuffix, StringComparison.Ordinal) && entry.Text == category)
+            .ToArray();
+
+        if (plurals.Length > 1)
+        {
+            throw new InvalidOperationException(
+                $"The crafting category \"{category}\" of {slot} is the text of {plurals.Length} {PluralSuffix} " +
+                $"strings: {string.Join(", ", plurals.Select(plural => $"{plural.Table} {plural.Key}"))}.");
+        }
+
+        var limit = _limits.GetValueOrDefault(slot);
+
+        if (plurals is not [var named])
+        {
+            return new ModifierTypeEntry(slot)
+            {
+                Printed = category,
+                Header = category,
+                MaximumLimit = limit?.Maximum,
+                MaximumLimitWarning = limit?.Warning,
+                Recipes = recipes,
+            };
+        }
+
+        var stem = named.Key[..^PluralSuffix.Length];
+
+        return new ModifierTypeEntry(slot)
+        {
+            Printed = StringTables.Find(named.Table, stem + NameSuffix),
+            Plural = named.Text,
+            Header = StringTables.Find(named.Table, stem + HeaderSuffix),
+            MaximumLimit = limit?.Maximum,
+            MaximumLimitWarning = limit?.Warning,
+            Recipes = recipes,
+        };
+    }
 
     private static ModifierLimit? Limit(string slot, IReadOnlyList<(string Table, string Key)> names)
     {

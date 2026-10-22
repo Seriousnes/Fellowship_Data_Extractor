@@ -114,6 +114,7 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
             ("Rarity", Numbered(Items(Member(root, "rarities")), "tier", context)),
             ("AbilityCategory", Numbered(Items(Member(root, "abilityCategories")), "value", context)),
             ("LeagueKind", Numbered(Items(Member(root, "leagueKinds")), "value", context)),
+            ("ModifierKind", Bare(Items(Member(root, "modifierTypes")).Select(type => Text(Member(type, "name"))))),
         ];
     }
 

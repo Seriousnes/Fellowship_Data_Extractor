@@ -15,6 +15,7 @@ public sealed class StatCalculation
     private const string AttributeRowStructure = "/Script/fellowship.CRArmoryItemAttributeTemplate";
     private const string RarityRowStructure =
         "/Script/DynamicLootSystemRuntime.CRDynamicHeroItemLootRarityRuleSet";
+    private const string RarityTableKey = "DynamicHeroItemLootRarityTableRuleSetsTable";
 
     private const string CalculationBlueprint = "HeroItemStatCalculation";
     private const string PrimaryFunction = "CalcPrimaryStatPoolFromItemLevel";
@@ -69,7 +70,7 @@ public sealed class StatCalculation
         SlotWeights = SlotWeightRows(provider, assets, slots);
         ArmorWeights = ArmorWeightRows(provider, assets, armor);
         Attributes = AttributeRows(provider, assets);
-        RarityAdditions = RarityRows(provider, assets, ruleSets);
+        RarityAdditions = RarityRows(provider, ruleSets);
         SlotDefinitions = SlotDefinitionRows(provider, assets, RarityAdditions, recipes);
 
         if (Weights.Count == 0 || SlotWeights.Count == 0 || ArmorWeights.Count == 0 ||
@@ -311,11 +312,21 @@ public sealed class StatCalculation
     }
 
     private static Dictionary<string, IReadOnlyDictionary<int, RaritySlots>> RarityRows(
-        AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, DynamicItemRuleSets ruleSets)
+        AbstractFileProvider provider, DynamicItemRuleSets ruleSets)
     {
         var found = new Dictionary<string, Dictionary<int, RaritySlots>>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var (_, row) in Rows(provider, assets, RarityRowStructure))
+        var path = ConfigIni.Read(provider, RarityDropChances.ConfigPath, RarityDropChances.Section)
+            .Text(RarityTableKey).Trim('"');
+
+        if (!provider.TryLoadPackageObject<UDataTable>(AbilityPresentationIndex.PackagePath(path), out var table))
+        {
+            throw new InvalidOperationException(
+                $"{RarityDropChances.Section}.{RarityTableKey} names {path}, and no {RarityRowStructure} table loads " +
+                "from it, so nothing states what an item rolls at each rarity.");
+        }
+
+        foreach (var (_, row) in table.RowMap)
         {
             if (PropertyWalk.AsOrdinal(PropertyWalk.Get(row, "RarityTier")?.GenericValue) is not { } tier) continue;
 
@@ -340,7 +351,7 @@ public sealed class StatCalculation
                     found[name] = byTier = [];
                 }
 
-                byTier.TryAdd(tier, slots);
+                byTier[tier] = slots;
             }
         }
 
@@ -388,9 +399,6 @@ public sealed class StatCalculation
             {
                 GemPowerPool = Names(row, "GemPowerPool"),
                 ItemTraitPool = Names(row, "ItemTraitPool"),
-                Recipes = recipes.For(rowName),
-                MaximumLimit = recipes.LimitOf(rowName)?.Maximum,
-                MaximumLimitWarning = recipes.LimitOf(rowName)?.Warning,
             };
         }
 

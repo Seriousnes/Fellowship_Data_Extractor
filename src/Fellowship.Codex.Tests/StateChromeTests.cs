@@ -50,7 +50,7 @@ public class StateChromeTests(Export export)
 
         foreach (var trait in export.Store.Entities.OfType<TraitDocument>())
         {
-            var slot = ItemCraft.Defining(ModifierKind.Trait, trait, settings);
+            var slot = ItemCraft.KindOfTrait(trait, settings) is { } kind ? ItemCraft.Defining(kind, trait, settings) : null;
 
             if (slot is null) continue;
 

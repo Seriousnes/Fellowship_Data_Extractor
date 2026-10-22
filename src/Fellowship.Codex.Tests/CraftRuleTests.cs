@@ -56,7 +56,7 @@ public class CraftRuleTests(Export export)
     public void A_third_instance_of_one_trait_id_is_forbidden()
     {
         var trait = Pooled[0];
-        var already = new ItemModifier(ModifierKind.Trait, trait.Id, 1);
+        var already = new ItemModifier(ItemCraft.KindOf(Traited, Settings)!.Value, trait.Id, 1);
 
         Assert.Null(Forbids(
             Worn("Head"), Top with { Modifiers = [already] }, Roll(Traited), Candidate(Traited, trait)));
@@ -75,7 +75,7 @@ public class CraftRuleTests(Export export)
 
         var carried = offered
             .Take(2)
-            .Select(blessing => new ItemModifier(ModifierKind.Blessing, blessing.Id, 1))
+            .Select(blessing => new ItemModifier(ItemCraft.KindOf(Glyphs, Settings)!.Value, blessing.Id, 1))
             .ToArray();
 
         Assert.Equal(
@@ -165,7 +165,7 @@ public class CraftRuleTests(Export export)
         var worn = offered[0].Slots![0];
 
         var carried = offered
-            .Select(blessing => new ItemModifier(ModifierKind.Blessing, blessing.Id, 1))
+            .Select(blessing => new ItemModifier(ItemCraft.KindOf(Glyphs, Settings)!.Value, blessing.Id, 1))
             .ToArray();
 
         var query = Top with { Modifiers = carried };
@@ -183,12 +183,12 @@ public class CraftRuleTests(Export export)
         var trait = Pooled[0];
 
         var swapped = ItemCraft.With(
-            new TooltipQuery { Modifiers = [new ItemModifier(ModifierKind.Blessing, 1, 1)] },
+            new TooltipQuery { Modifiers = [new ItemModifier(ItemCraft.KindOf(Glyphs, Settings)!.Value, 1, 1)] },
             Roll(Traited),
             Candidate(Traited, trait, 2),
             Settings);
 
-        Assert.Equal(new ItemModifier(ModifierKind.Trait, trait.Id, 2), Assert.Single(swapped.Modifiers));
+        Assert.Equal(new ItemModifier(ItemCraft.KindOf(Traited, Settings)!.Value, trait.Id, 2), Assert.Single(swapped.Modifiers));
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public class CraftRuleTests(Export export)
             Candidate(Traited, trait),
             Settings);
 
-        Assert.Equal(new ItemModifier(ModifierKind.Trait, trait.Id, 1), Assert.Single(carried.Modifiers));
+        Assert.Equal(new ItemModifier(ItemCraft.KindOf(Traited, Settings)!.Value, trait.Id, 1), Assert.Single(carried.Modifiers));
     }
 
     [Fact]

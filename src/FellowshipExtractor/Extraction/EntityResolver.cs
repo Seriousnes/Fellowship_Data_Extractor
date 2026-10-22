@@ -235,7 +235,8 @@ public sealed class EntityResolver
             SlotGlyphs, new RarityOrnaments(provider, rarities), new TalentTierPlates(provider),
             new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
-            CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, TraitTrees);
+            CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, TraitTrees,
+            ModifierRecipes, new TooltipWidgetText(provider, _assets));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));

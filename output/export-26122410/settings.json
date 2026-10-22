@@ -4422,6 +4422,377 @@
       "ItemTrait.TraitCategory.Major": "game.rarity-epic"
     }
   },
+  "traitTreeHeader": "Attunement Tree:",
+  "modifierTypes": [
+    {
+      "name": "GemPower",
+      "printed": "Radiance",
+      "header": "Radiance",
+      "maximumLimit": 2,
+      "maximumLimitWarning": "An item can have up to 2 Radiances active at a time.",
+      "recipes": [
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1OneOption",
+          "slotIndex": 0,
+          "category": "Radiance",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2OneOption",
+          "slotIndex": 1,
+          "category": "Radiance",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3OneOption",
+          "slotIndex": 2,
+          "category": "Radiance",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1ThreeOptions",
+          "slotIndex": 0,
+          "category": "Radiance",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2ThreeOptions",
+          "slotIndex": 1,
+          "category": "Radiance",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3ThreeOptions",
+          "slotIndex": 2,
+          "category": "Radiance",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1AllOptions",
+          "slotIndex": 0,
+          "category": "Radiance Mastery",
+          "options": 1,
+          "allOptions": true
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2AllOptions",
+          "slotIndex": 1,
+          "category": "Radiance Mastery",
+          "options": 1,
+          "allOptions": true
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3AllOptions",
+          "slotIndex": 2,
+          "category": "Radiance Mastery",
+          "options": 1,
+          "allOptions": true
+        }
+      ]
+    },
+    {
+      "name": "HeroicTrait",
+      "printed": "Sigil",
+      "plural": "Sigils",
+      "header": "Sigil: ",
+      "maximumLimit": 2,
+      "maximumLimitWarning": "An item can have up to 2 Sigils active at a time.",
+      "recipes": [
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot1OneOption",
+          "slotIndex": 0,
+          "category": "Sigils",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot2OneOption",
+          "slotIndex": 1,
+          "category": "Sigils",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot3OneOption",
+          "slotIndex": 2,
+          "category": "Sigils",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot1ThreeOptions",
+          "slotIndex": 0,
+          "category": "Sigils",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot2ThreeOptions",
+          "slotIndex": 1,
+          "category": "Sigils",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot3ThreeOptions",
+          "slotIndex": 2,
+          "category": "Sigils",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot1AllOptions",
+          "slotIndex": 0,
+          "category": "Sigil Mastery",
+          "options": 1,
+          "allOptions": true
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot2AllOptions",
+          "slotIndex": 1,
+          "category": "Sigil Mastery",
+          "options": 1,
+          "allOptions": true
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot3AllOptions",
+          "slotIndex": 2,
+          "category": "Sigil Mastery",
+          "options": 1,
+          "allOptions": true
+        }
+      ]
+    },
+    {
+      "name": "MajorTrait",
+      "printed": "Aspect",
+      "plural": "Aspects",
+      "header": "Aspect: ",
+      "maximumLimit": 2,
+      "maximumLimitWarning": "An item can have up to 2 Aspects active at a time.",
+      "recipes": [
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot1OneOption",
+          "slotIndex": 0,
+          "category": "Aspects",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot2OneOption",
+          "slotIndex": 1,
+          "category": "Aspects",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot3OneOption",
+          "slotIndex": 2,
+          "category": "Aspects",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot1ThreeOptions",
+          "slotIndex": 0,
+          "category": "Aspects",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot2ThreeOptions",
+          "slotIndex": 1,
+          "category": "Aspects",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot3ThreeOptions",
+          "slotIndex": 2,
+          "category": "Aspects",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot1AllOptions",
+          "slotIndex": 0,
+          "category": "Aspect Mastery",
+          "options": 1,
+          "allOptions": true
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot2AllOptions",
+          "slotIndex": 1,
+          "category": "Aspect Mastery",
+          "options": 1,
+          "allOptions": true
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot3AllOptions",
+          "slotIndex": 2,
+          "category": "Aspect Mastery",
+          "options": 1,
+          "allOptions": true
+        }
+      ]
+    },
+    {
+      "name": "StatEnchant",
+      "printed": "Enchant",
+      "plural": "Enchants",
+      "header": "Enchant: ",
+      "maximumLimit": 2,
+      "maximumLimitWarning": "An item can have up to 2 Enchants active at a time.",
+      "recipes": [
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot1OneOption",
+          "slotIndex": 0,
+          "category": "Enchants",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot2OneOption",
+          "slotIndex": 1,
+          "category": "Enchants",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3OneOption",
+          "slotIndex": 1,
+          "category": "Enchants",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot1ThreeOptions",
+          "slotIndex": 0,
+          "category": "Enchants",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot2ThreeOptions",
+          "slotIndex": 1,
+          "category": "Enchants",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3ThreeOptions",
+          "slotIndex": 1,
+          "category": "Enchants",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot1AllOptions",
+          "slotIndex": 0,
+          "category": "Enchant Mastery",
+          "options": 3,
+          "allOptions": true
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot2AllOptions",
+          "slotIndex": 1,
+          "category": "Enchant Mastery",
+          "options": 3,
+          "allOptions": true
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3AllOptions",
+          "slotIndex": 2,
+          "category": "Enchant Mastery",
+          "options": 3,
+          "allOptions": true
+        }
+      ]
+    },
+    {
+      "name": "AbilityRank",
+      "printed": "Glyph",
+      "plural": "Glyphs",
+      "header": "Glyph:",
+      "maximumLimit": 2,
+      "maximumLimitWarning": "An item can have up to 2 Glyphs active at a time.",
+      "recipes": [
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot1OneOption",
+          "slotIndex": 0,
+          "category": "Glyphs",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot2OneOption",
+          "slotIndex": 1,
+          "category": "Glyphs",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3OneOption",
+          "slotIndex": 2,
+          "category": "Glyphs",
+          "options": 1,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot1ThreeOptions",
+          "slotIndex": 0,
+          "category": "Glyphs",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot2ThreeOptions",
+          "slotIndex": 1,
+          "category": "Glyphs",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3ThreeOptions",
+          "slotIndex": 1,
+          "category": "Glyphs",
+          "options": 3,
+          "allOptions": false
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot1AllOptions",
+          "slotIndex": 0,
+          "category": "Glyph Mastery",
+          "options": 3,
+          "allOptions": true
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot2AllOptions",
+          "slotIndex": 1,
+          "category": "Glyph Mastery",
+          "options": 3,
+          "allOptions": true
+        },
+        {
+          "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3AllOptions",
+          "slotIndex": 1,
+          "category": "Glyph Mastery",
+          "options": 3,
+          "allOptions": true
+        }
+      ]
+    }
+  ],
+  "emptyModifierSlot": {
+    "sign": "?",
+    "text": "Empty Modifier"
+  },
   "statCalculation": {
     "primaryPool": {
       "minimumItemLevel": 15,
@@ -4887,9 +5258,7 @@
       "Default_GemSlot": {
         "1": {
           "tier": 1,
-          "guaranteedSlots": [
-            "GemSocket"
-          ],
+          "guaranteedSlots": [],
           "randomRolls": 0,
           "randomizedSlots": [],
           "specialSlots": []
@@ -4994,7 +5363,8 @@
         "1": {
           "tier": 1,
           "guaranteedSlots": [
-            "RelicPower"
+            "WeaponPower",
+            "WeaponTraitTree"
           ],
           "randomRolls": 0,
           "randomizedSlots": [],
@@ -5119,8 +5489,7 @@
         "slotType": "GemSocket",
         "minimumItemLevel": 45,
         "gemPowerPool": [],
-        "itemTraitPool": [],
-        "recipes": []
+        "itemTraitPool": []
       },
       "GemPower": {
         "slotType": "GemPower",
@@ -5133,182 +5502,43 @@
           "ItemID.GemType.Sapphire",
           "ItemID.GemType.Topaz"
         ],
-        "itemTraitPool": [],
-        "recipes": [
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1OneOption",
-            "slotIndex": 0,
-            "category": "Radiance",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2OneOption",
-            "slotIndex": 1,
-            "category": "Radiance",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3OneOption",
-            "slotIndex": 2,
-            "category": "Radiance",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1ThreeOptions",
-            "slotIndex": 0,
-            "category": "Radiance",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2ThreeOptions",
-            "slotIndex": 1,
-            "category": "Radiance",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3ThreeOptions",
-            "slotIndex": 2,
-            "category": "Radiance",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1AllOptions",
-            "slotIndex": 0,
-            "category": "Radiance Mastery",
-            "options": 1,
-            "allOptions": true
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2AllOptions",
-            "slotIndex": 1,
-            "category": "Radiance Mastery",
-            "options": 1,
-            "allOptions": true
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3AllOptions",
-            "slotIndex": 2,
-            "category": "Radiance Mastery",
-            "options": 1,
-            "allOptions": true
-          }
-        ],
-        "maximumLimit": 2,
-        "maximumLimitWarning": "An item can have up to 2 Radiances active at a time."
+        "itemTraitPool": []
       },
       "AbilityRank": {
         "slotType": "AbilityRank",
         "minimumItemLevel": 120,
         "gemPowerPool": [],
-        "itemTraitPool": [],
-        "recipes": [
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot1OneOption",
-            "slotIndex": 0,
-            "category": "Glyphs",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot2OneOption",
-            "slotIndex": 1,
-            "category": "Glyphs",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3OneOption",
-            "slotIndex": 2,
-            "category": "Glyphs",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot1ThreeOptions",
-            "slotIndex": 0,
-            "category": "Glyphs",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot2ThreeOptions",
-            "slotIndex": 1,
-            "category": "Glyphs",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3ThreeOptions",
-            "slotIndex": 1,
-            "category": "Glyphs",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot1AllOptions",
-            "slotIndex": 0,
-            "category": "Glyph Mastery",
-            "options": 3,
-            "allOptions": true
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot2AllOptions",
-            "slotIndex": 1,
-            "category": "Glyph Mastery",
-            "options": 3,
-            "allOptions": true
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3AllOptions",
-            "slotIndex": 1,
-            "category": "Glyph Mastery",
-            "options": 3,
-            "allOptions": true
-          }
-        ],
-        "maximumLimit": 2,
-        "maximumLimitWarning": "An item can have up to 2 Glyphs active at a time."
+        "itemTraitPool": []
       },
       "GrantedAbility": {
         "slotType": "GrantedAbility",
         "minimumItemLevel": 0,
         "gemPowerPool": [],
-        "itemTraitPool": [],
-        "recipes": []
+        "itemTraitPool": []
       },
       "RelicPower": {
         "slotType": "GrantedAbility",
         "minimumItemLevel": 105,
         "gemPowerPool": [],
-        "itemTraitPool": [],
-        "recipes": []
+        "itemTraitPool": []
       },
       "WeaponPower": {
         "slotType": "GrantedAbility",
         "minimumItemLevel": 150,
         "gemPowerPool": [],
-        "itemTraitPool": [],
-        "recipes": []
+        "itemTraitPool": []
       },
       "NecklaceTraitTree": {
         "slotType": "TraitTree",
         "minimumItemLevel": 210,
         "gemPowerPool": [],
-        "itemTraitPool": [],
-        "recipes": []
+        "itemTraitPool": []
       },
       "WeaponTraitTree": {
         "slotType": "TraitTree",
         "minimumItemLevel": 285,
         "gemPowerPool": [],
-        "itemTraitPool": [],
-        "recipes": []
+        "itemTraitPool": []
       },
       "HeroicTrait": {
         "slotType": "ItemTrait",
@@ -5316,74 +5546,7 @@
         "gemPowerPool": [],
         "itemTraitPool": [
           "ItemTrait.TraitCategory.Heroic"
-        ],
-        "recipes": [
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot1OneOption",
-            "slotIndex": 0,
-            "category": "Sigils",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot2OneOption",
-            "slotIndex": 1,
-            "category": "Sigils",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot3OneOption",
-            "slotIndex": 2,
-            "category": "Sigils",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot1ThreeOptions",
-            "slotIndex": 0,
-            "category": "Sigils",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot2ThreeOptions",
-            "slotIndex": 1,
-            "category": "Sigils",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot3ThreeOptions",
-            "slotIndex": 2,
-            "category": "Sigils",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot1AllOptions",
-            "slotIndex": 0,
-            "category": "Sigil Mastery",
-            "options": 1,
-            "allOptions": true
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot2AllOptions",
-            "slotIndex": 1,
-            "category": "Sigil Mastery",
-            "options": 1,
-            "allOptions": true
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot3AllOptions",
-            "slotIndex": 2,
-            "category": "Sigil Mastery",
-            "options": 1,
-            "allOptions": true
-          }
-        ],
-        "maximumLimit": 2,
-        "maximumLimitWarning": "An item can have up to 2 Sigils active at a time."
+        ]
       },
       "MajorTrait": {
         "slotType": "ItemTrait",
@@ -5391,74 +5554,7 @@
         "gemPowerPool": [],
         "itemTraitPool": [
           "ItemTrait.TraitCategory.Major"
-        ],
-        "recipes": [
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot1OneOption",
-            "slotIndex": 0,
-            "category": "Aspects",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot2OneOption",
-            "slotIndex": 1,
-            "category": "Aspects",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot3OneOption",
-            "slotIndex": 2,
-            "category": "Aspects",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot1ThreeOptions",
-            "slotIndex": 0,
-            "category": "Aspects",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot2ThreeOptions",
-            "slotIndex": 1,
-            "category": "Aspects",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot3ThreeOptions",
-            "slotIndex": 2,
-            "category": "Aspects",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot1AllOptions",
-            "slotIndex": 0,
-            "category": "Aspect Mastery",
-            "options": 1,
-            "allOptions": true
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot2AllOptions",
-            "slotIndex": 1,
-            "category": "Aspect Mastery",
-            "options": 1,
-            "allOptions": true
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot3AllOptions",
-            "slotIndex": 2,
-            "category": "Aspect Mastery",
-            "options": 1,
-            "allOptions": true
-          }
-        ],
-        "maximumLimit": 2,
-        "maximumLimitWarning": "An item can have up to 2 Aspects active at a time."
+        ]
       },
       "StatEnchant": {
         "slotType": "ItemTrait",
@@ -5466,74 +5562,7 @@
         "gemPowerPool": [],
         "itemTraitPool": [
           "ItemTrait.TraitCategory.StatEnchant"
-        ],
-        "recipes": [
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot1OneOption",
-            "slotIndex": 0,
-            "category": "Enchants",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot2OneOption",
-            "slotIndex": 1,
-            "category": "Enchants",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3OneOption",
-            "slotIndex": 1,
-            "category": "Enchants",
-            "options": 1,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot1ThreeOptions",
-            "slotIndex": 0,
-            "category": "Enchants",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot2ThreeOptions",
-            "slotIndex": 1,
-            "category": "Enchants",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3ThreeOptions",
-            "slotIndex": 1,
-            "category": "Enchants",
-            "options": 3,
-            "allOptions": false
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot1AllOptions",
-            "slotIndex": 0,
-            "category": "Enchant Mastery",
-            "options": 3,
-            "allOptions": true
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot2AllOptions",
-            "slotIndex": 1,
-            "category": "Enchant Mastery",
-            "options": 3,
-            "allOptions": true
-          },
-          {
-            "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3AllOptions",
-            "slotIndex": 2,
-            "category": "Enchant Mastery",
-            "options": 3,
-            "allOptions": true
-          }
-        ],
-        "maximumLimit": 2,
-        "maximumLimitWarning": "An item can have up to 2 Enchants active at a time."
+        ]
       }
     }
   },

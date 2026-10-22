@@ -2,13 +2,6 @@ using System.Globalization;
 
 namespace Fellowship.SDK;
 
-public enum ModifierKind
-{
-    Trait,
-    Blessing,
-    Essence,
-}
-
 /// <summary>An item's modifier, written as <c>kind:id:amount</c>.</summary>
 public readonly record struct ItemModifier(ModifierKind Kind, int Id, int Amount)
 {
