@@ -3,9 +3,11 @@ namespace Fellowship.Codex.Tests;
 [Collection(Corpus.Name)]
 public class TraitTreePlanTests(Export export)
 {
-    private const string Weapon = "ItemTraitTrees.EASeason3Weapon";
+    private string Printed(string type) => ItemPower.Printed(export.Store.Settings.Items, type)!;
 
-    private TraitTreeEntry Tree => TraitTrees.Find(Weapon, export.Store.Settings)!;
+    private TraitTreeEntry Tree => TraitTrees.BySlot(export.Store)
+        .Single(entry => entry.Slot == Printed(ItemPower.WeaponType))
+        .Tree;
 
     private TraitDocument In(int node, int skip = 0) =>
         TraitTrees.Offered(Tree.Nodes.Single(each => each.UITreeIndex == node), export.Store)[skip];
@@ -53,10 +55,16 @@ public class TraitTreePlanTests(Export export)
     }
 
     [Fact]
-    public void Each_slot_with_a_trait_tree_names_one_tree() =>
+    public void Each_slot_with_a_trait_tree_names_one_tree()
+    {
+        var bySlot = TraitTrees.BySlot(export.Store);
+
         Assert.Equal(
-            [("Neck", "ItemTraitTrees.EASeason3Necklace"), ("Weapon", Weapon)],
-            TraitTrees.BySlot(export.Store).Select(entry => (entry.Slot, entry.Tree.Tag)));
+            [Printed(ItemPower.NecklaceType), Printed(ItemPower.WeaponType)],
+            bySlot.Select(entry => entry.Slot));
+
+        Assert.All(bySlot, entry => Assert.Same(entry.Tree, TraitTrees.Find(entry.Tree.Tag, export.Store.Settings)));
+    }
 
     [Fact]
     public void Every_trait_tree_item_names_a_tree_with_a_layout() =>

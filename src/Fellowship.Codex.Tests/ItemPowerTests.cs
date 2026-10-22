@@ -1,7 +1,7 @@
 namespace Fellowship.Codex.Tests;
 
-[Collection(Corpus.Name)]
-public sealed class ItemPowerTests(Export export)
+[Collection(Readings25647984.Name)]
+public sealed class ItemPowerTests(Export25647984 export)
 {
     private SettingsFile Settings => export.Store.Settings;
 

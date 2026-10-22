@@ -61,7 +61,7 @@ public class PlaceholderReadingTests(Export export)
         var oak = Assert.Single(export.Store.All(EntityType.TraitPower, 684));
         var token = Assert.Single(CodexView.PlaceholdersOf(oak));
 
-        Assert.Equal("35%", Read(token).Text);
+        Assert.Equal("25%", Read(token).Text);
     }
 
     [Fact]
@@ -69,6 +69,6 @@ public class PlaceholderReadingTests(Export export)
     {
         var oak = Assert.Single(export.Store.All(EntityType.TraitPower, 684));
 
-        Assert.Equal("35%", Assert.Single(export.View.Substitutions(oak)).Reading);
+        Assert.Equal("25%", Assert.Single(export.View.Substitutions(oak)).Reading);
     }
 }

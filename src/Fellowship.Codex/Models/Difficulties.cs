@@ -29,7 +29,7 @@ public static class Difficulties
             return new DifficultyStep(difficulty, string.Empty, difficulty, difficulty.ToString());
         }
 
-        var step = difficulty - league.MinimumDifficulty;
+        var step = difficulty - league.MinimumDifficulty + 1;
 
         return new DifficultyStep(difficulty, league.Name, step, $"{league.Name} +{step}");
     }
@@ -40,7 +40,7 @@ public static class Difficulties
 
         foreach (var league in settings.Leagues)
         {
-            if (league.Kind == LeagueKind.Pinnacle) continue;
+            if (league.Kind is LeagueKind.Pinnacle or LeagueKind.Casual) continue;
             if (league.MinimumDifficulty > difficulty) continue;
             if (found is not null && found.MinimumDifficulty >= league.MinimumDifficulty) continue;
 

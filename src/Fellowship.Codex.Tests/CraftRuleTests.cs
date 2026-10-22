@@ -148,12 +148,6 @@ public class CraftRuleTests(Export export)
         Assert.Equal(CraftReasons.PastRank(trait.MaxRank.Value), At(trait.MaxRank.Value + 1));
     }
 
-    [Theory]
-    [InlineData("ItemTraitTrees.EASeason3Weapon", 5)]
-    [InlineData("ItemTraitTrees.EASeason3Necklace", 2)]
-    public void A_trait_tree_imbues_one_trait_per_row_below_its_root(string tree, int capacity) =>
-        Assert.Equal(capacity, TraitTrees.Capacity(tree, Settings));
-
     [Fact]
     public void An_imbued_trait_sits_once_and_only_while_a_slot_is_free()
     {

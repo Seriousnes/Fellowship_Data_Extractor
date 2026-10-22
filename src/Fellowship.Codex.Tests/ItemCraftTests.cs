@@ -85,19 +85,30 @@ public class ItemCraftTests(Export export)
     [Fact]
     public void A_special_slot_the_table_names_becomes_a_slot_of_its_own()
     {
-        var special = Settings.StatCalculation.RarityAdditions
-            .SelectMany(rule => rule.Value.Select(tier => (Rule: rule.Key, tier.Key, tier.Value)))
-            .Where(row => row.Value.SpecialSlots.Count > 0)
-            .ToArray();
+        var rung = Settings.Rarities[^1];
+        var named = Settings.StatCalculation.RarityAdditions.Values
+            .SelectMany(byTier => byTier.Values)
+            .SelectMany(added => added.GuaranteedSlots)
+            .First();
 
-        Assert.NotEmpty(special);
-
-        foreach (var (rule, tier, added) in special)
+        var staged = Settings with
         {
-            var names = Slots(rule, tier).Select(slot => slot.SlotName).ToArray();
+            StatCalculation = Settings.StatCalculation with
+            {
+                RarityAdditions = new Dictionary<string, IReadOnlyDictionary<int, RaritySlots>>
+                {
+                    [nameof(SpecialSlot)] = new Dictionary<int, RaritySlots>
+                    {
+                        [rung.Tier] = new(rung.Tier, [], 0, []) { SpecialSlots = [new SpecialSlot(named, null)] },
+                    },
+                },
+            },
+        };
 
-            Assert.All(added.SpecialSlots, slot => Assert.Contains(slot.SlotName, names, StringComparer.OrdinalIgnoreCase));
-        }
+        var slots = ItemCraft.Slots(
+            new ItemDocument { Id = 1, RuleSet = nameof(SpecialSlot) }, staged, rung);
+
+        Assert.Equal([named], slots.Select(slot => slot.SlotName));
     }
 
     [Fact]

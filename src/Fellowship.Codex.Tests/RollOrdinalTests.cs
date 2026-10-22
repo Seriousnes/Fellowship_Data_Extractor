@@ -9,11 +9,16 @@ public class RollOrdinalTests(Export export)
     {
         Id = 1,
         Slot = "Head",
-        RuleSet = "Default_NoGemSlot",
+        RuleSet = Rolled,
         Stats = [new StatSlot(stat, 40) { Kind = SlotKinds.Primary }],
     };
 
     private RarityEntry Regal => export.Store.Settings.Rarities.Single(rung => rung.Tier == 5);
+
+    private string Rolled => export.Store.Settings.StatCalculation.RarityAdditions
+        .First(rule => rule.Value.TryGetValue(Regal.Tier, out var added) &&
+            added.GuaranteedSlots.Contains(CraftSlots.RandomStat, StringComparer.OrdinalIgnoreCase))
+        .Key;
 
     private IReadOnlyList<StatLine> Lines(ItemDocument item, params string[] rolled) =>
         export.Tooltip.Rolls(item, new TooltipQuery { ItemLevel = 360, RandomStats = rolled }, Regal);
