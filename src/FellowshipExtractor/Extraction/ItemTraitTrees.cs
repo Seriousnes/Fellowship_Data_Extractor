@@ -15,6 +15,7 @@ public sealed class ItemTraitTrees
 
     private const string TagField = "TreeConfigID";
     private const string TopologyField = "TraitTreeTopology";
+    private const string WidgetField = "TreeWidget";
 
     private const string GraphClass = "CRTraitTreeGraph";
     private const string NodeClass = "CRTraitTreeGraphNode";
@@ -40,6 +41,7 @@ public sealed class ItemTraitTrees
     private const string InterpolationField = "InterpMode";
 
     private readonly Dictionary<string, TraitTreeEntry> _byTag = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _widgetByTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly SortedSet<string> _named = new(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyList<TraitNodeUpgradeCost> UpgradeCosts { get; }
@@ -72,6 +74,11 @@ public sealed class ItemTraitTrees
                 }
 
                 _byTag[tag] = Read(tag, [.. package.GetExports()]);
+
+                if (PropertyWalk.GetString(row, WidgetField) is { Length: > 0 } widget)
+                {
+                    _widgetByTag[tag] = Path.GetFileNameWithoutExtension(AbilityPresentationIndex.PackagePath(widget));
+                }
             }
         }
 
@@ -82,7 +89,7 @@ public sealed class ItemTraitTrees
         }
 
         UpgradeCosts = Costs(provider, tags, maxTraitRank);
-        Layouts = new TraitTreeLayouts(provider);
+        Layouts = new TraitTreeLayouts(provider, _widgetByTag.Values);
     }
 
     public string? Named(string? tag)
@@ -101,7 +108,13 @@ public sealed class ItemTraitTrees
     }
 
     public IReadOnlyList<TraitTreeEntry> NamedTrees =>
-        [.. _named.Select(tag => _byTag[tag]).Select(tree => tree with { Layout = Layouts.For(tree) })];
+        [.. _named.Select(tag => _byTag[tag]).Select(tree => tree with { Layout = Layouts.For(tree, Widget(tree)) })];
+
+    private string Widget(TraitTreeEntry tree) =>
+        _widgetByTag.TryGetValue(tree.Tag, out var widget)
+            ? widget
+            : throw new InvalidOperationException(
+                $"An item names {tree.Tag}, and its {RowStructure} row names no {WidgetField} to draw it with.");
 
     private static TraitTreeEntry Read(string tag, IReadOnlyList<UObject> exports)
     {

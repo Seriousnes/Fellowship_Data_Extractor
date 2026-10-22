@@ -24,7 +24,6 @@ public static class ChromeTextures
         "T_Backgrounds_TooltipHeader_Rarity",
         "T_Backgrounds_TooltipHeader_Rarity_Alt",
         "T_Backgrounds_TooltipHeader_Subheader",
-        "T_Borders_TooltipHeader_Sub",
 
         "T_SimpleDivider",
         "T_Borders_Divider_Simple",

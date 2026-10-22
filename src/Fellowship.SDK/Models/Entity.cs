@@ -165,7 +165,7 @@ public sealed record Entity
 
     public IReadOnlyList<string>? PoolSlots { get; init; }
 
-    public IReadOnlyDictionary<string, int>? AbilityRanks { get; init; }
+    public int? AbilityRank { get; init; }
 
     public int? RandomChance { get; init; }
 

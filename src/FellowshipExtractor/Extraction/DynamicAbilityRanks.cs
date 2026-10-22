@@ -6,10 +6,7 @@ using CUE4Parse.UE4.Assets.Objects;
 
 namespace FellowshipExtractor.Extraction;
 
-public sealed record AbilityRankRow(
-    int MaxRank,
-    IReadOnlyList<string> Slots,
-    IReadOnlyDictionary<string, int> NetIdByHero);
+public sealed record AbilityRankRow(int NetId, int MaxRank, IReadOnlyList<string> Slots);
 
 public sealed class DynamicAbilityRanks
 {
@@ -17,11 +14,9 @@ public sealed class DynamicAbilityRanks
     public const string Table = "DynamicItemAbilityRank";
 
     private const string IdField = "ID";
-    private const string HeroField = "HeroID";
     private const string MaxRankField = "MaxRank";
     private const string PoolsField = "PoolIds";
     private const string GrantsField = "GrantedAbilitiesAsset";
-    private const string HeroTagPrefix = "CharacterID.Hero.";
     private const string PoolTagPrefix = "DynamicItemAbilityPool.";
 
     private readonly Dictionary<int, AbilityRankRow> _byBlessing = [];
@@ -42,69 +37,71 @@ public sealed class DynamicAbilityRanks
             if (tag.Table.Equals(Table, StringComparison.OrdinalIgnoreCase)) netIdByTag.TryAdd(tag.Name, tag.NetId);
         }
 
-        var ranks = new Dictionary<int, int>();
-        var slots = new Dictionary<int, SortedSet<string>>();
-        var heroes = new Dictionary<int, Dictionary<string, int>>();
+        var rows = 0;
 
         foreach (var objectPath in TableFinder.ByRowStructure(assets, RowStructure))
         {
             if (!provider.TryLoadPackageObject<UDataTable>(
                 AbilityPresentationIndex.PackagePath(objectPath), out var table)) continue;
 
-            foreach (var (_, row) in table.RowMap)
+            foreach (var (rowName, row) in table.RowMap)
             {
-                if (Tag(row, IdField) is not { } rowTag) continue;
-                if (!netIdByTag.TryGetValue(rowTag, out var rankNetId)) continue;
-                if (augmentations.For(PropertyWalk.GetString(row, GrantsField)) is not { } blessing) continue;
-                if (Tag(row, HeroField) is not { } heroTag) continue;
-                if (!heroTag.StartsWith(HeroTagPrefix, StringComparison.OrdinalIgnoreCase)) continue;
+                rows++;
 
-                var codename = heroTag[HeroTagPrefix.Length..];
+                var rowTag = PropertyWalk.GetString(row, IdField)
+                    ?? throw new InvalidOperationException($"{rowName.Text} in {objectPath} states no {IdField}.");
 
-                if (PropertyWalk.AsOrdinal(PropertyWalk.Get(row, MaxRankField)?.GenericValue) is { } max)
+                if (!netIdByTag.TryGetValue(rowTag, out var rankNetId))
                 {
-                    ranks[blessing] = Math.Max(ranks.GetValueOrDefault(blessing), max);
+                    throw new InvalidOperationException(
+                        $"{rowName.Text} in {objectPath} is {rowTag}, and the {Table} tag table has no id for it.");
                 }
 
-                if (!slots.TryGetValue(blessing, out var worn))
+                var granted = PropertyWalk.GetString(row, GrantsField);
+
+                if (augmentations.For(granted) is not { } blessing)
                 {
-                    slots[blessing] = worn = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+                    throw new InvalidOperationException(
+                        $"{rowTag} grants {granted ?? "nothing"}, which no augmentation tag names.");
                 }
+
+                var maxRank = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, MaxRankField)?.GenericValue)
+                    ?? throw new InvalidOperationException($"{rowTag} states no {MaxRankField}.");
+
+                var slots = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var pool in Tags(row, PoolsField))
                 {
-                    if (!pool.StartsWith(PoolTagPrefix, StringComparison.OrdinalIgnoreCase)) continue;
-                    if (slotNames.Find(pool[PoolTagPrefix.Length..]) is { } named) worn.Add(named.Shipped);
+                    var named = pool.StartsWith(PoolTagPrefix, StringComparison.OrdinalIgnoreCase)
+                        ? slotNames.Find(pool[PoolTagPrefix.Length..])
+                        : null;
+
+                    if (named is null)
+                    {
+                        throw new InvalidOperationException(
+                            $"{rowTag} rolls on {pool}, and no item slot name covers it.");
+                    }
+
+                    slots.Add(named.Shipped);
                 }
 
-                if (!heroes.TryGetValue(blessing, out var byHero))
+                if (!_byBlessing.TryAdd(blessing, new AbilityRankRow(rankNetId, maxRank, [.. slots])))
                 {
-                    heroes[blessing] = byHero = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    throw new InvalidOperationException(
+                        $"{rowTag} and {_byBlessing[blessing].NetId} both grant augmentation {blessing}.");
                 }
-
-                byHero[codename] = rankNetId;
             }
-        }
-
-        foreach (var (blessing, byHero) in heroes)
-        {
-            _byBlessing[blessing] = new AbilityRankRow(
-                ranks.GetValueOrDefault(blessing),
-                [.. slots.GetValueOrDefault(blessing) ?? []],
-                byHero);
         }
 
         if (_byBlessing.Count == 0)
         {
             throw new InvalidOperationException(
-                $"No table declares {RowStructure}, so no blessing states the ranks it runs to, the slots it " +
-                "rolls on, or the per hero id FellowshipLogs records it under.");
+                $"{rows} rows of {RowStructure} name a blessing, so no blessing states the ranks it runs to, the " +
+                "slots it rolls on, or the id FellowshipLogs records it under.");
         }
     }
 
     public AbilityRankRow? For(int blessingNetId) => _byBlessing.GetValueOrDefault(blessingNetId);
-
-    private static string? Tag(IPropertyHolder row, string field) => PropertyWalk.GetString(row, field);
 
     private static IEnumerable<string> Tags(IPropertyHolder row, string field)
     {

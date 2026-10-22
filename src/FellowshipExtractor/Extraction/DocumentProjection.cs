@@ -348,7 +348,7 @@ public static class DocumentProjection
             ScalesOff = entity.ScalesOff,
             MaxRank = entity.AbilityMaxRank,
             Slots = entity.PoolSlots,
-            AbilityRanks = entity.AbilityRanks,
+            AbilityRank = entity.AbilityRank,
             Constants = entity.ConstantsByRank,
             Generates = Generated(entity),
         },

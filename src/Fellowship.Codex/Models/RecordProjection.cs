@@ -126,7 +126,7 @@ public static class RecordProjection
             ScalesOff = Scaling(document.ScalesOff, view),
             MaxRank = document.MaxRank,
             Slots = Some(document.Slots),
-            AbilityRanks = document.AbilityRanks,
+            AbilityRank = document.AbilityRank,
             Constants = document.Constants,
         };
     }

@@ -113,6 +113,7 @@ public sealed class SettingsEnumGenerator : IIncrementalGenerator
             ("GemType", Bare(Items(Member(root, "gemTypes")).Select(gemType => Text(gemType)))),
             ("Rarity", Numbered(Items(Member(root, "rarities")), "tier", context)),
             ("AbilityCategory", Numbered(Items(Member(root, "abilityCategories")), "value", context)),
+            ("LeagueKind", Numbered(Items(Member(root, "leagueKinds")), "value", context)),
         ];
     }
 

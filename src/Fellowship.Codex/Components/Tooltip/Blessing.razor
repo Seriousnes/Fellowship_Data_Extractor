@@ -9,7 +9,6 @@
         </header>
         <BlessingCrest Entity="Entity" State="@Query.State" />
         <div class="band">
-            <span class="kind">@Wording.HeroBlessing</span>
             <span class="tier">@Wording.TierLevel <span class="count">@Equipped / @Tiers</span></span>
         </div>
         @if (Entity.Description is { } description)

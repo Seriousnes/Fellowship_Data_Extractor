@@ -9,14 +9,10 @@ namespace FellowshipExtractor.Extraction;
 
 public sealed class TraitTreeLayouts
 {
-    public const string Chooser = "UW_WeaponInscribe";
-    public const string ChooserFunction = "OnSlottedItemChanged";
     public const string NodeWidget = "UW_WeaponTrait";
     public const string ColorFunction = "UpdateTraitCategoryColor";
     public const string NodesFunction = "Set Nodes VM";
 
-    private const string MatchesTagFunction = "MatchesTag";
-    private const string CreateFunction = "Create";
     private const string HasTraitTagFunction = "HasTraitTag";
     private const string SetColorFunction = "SetNamedColorOverride";
 
@@ -26,17 +22,13 @@ public sealed class TraitTreeLayouts
     private const string ImageClass = "CRImage";
     private const string SizeBoxClass = "CRSizeBox";
 
-    private readonly Dictionary<string, string> _widgetByTag = new(StringComparer.OrdinalIgnoreCase);
-    private readonly string _otherwise;
     private readonly Dictionary<string, TraitTreeLayout> _byWidget = new(StringComparer.OrdinalIgnoreCase);
 
-    public TraitTreeLayouts(AbstractFileProvider provider)
+    public TraitTreeLayouts(AbstractFileProvider provider, IEnumerable<string> widgets)
     {
-        _otherwise = Chosen(provider);
-
         var (width, height) = NodeSize(provider);
 
-        foreach (var widget in _widgetByTag.Values.Append(_otherwise).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var widget in widgets.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             _byWidget[widget] = Read(provider, widget) with { NodeWidth = width, NodeHeight = height };
         }
@@ -49,14 +41,8 @@ public sealed class TraitTreeLayouts
     public IEnumerable<string> Textures =>
         _byWidget.Values.SelectMany(layout => layout.RootLayers).Select(layer => layer.Texture).OfType<string>();
 
-    public TraitTreeLayout For(TraitTreeEntry tree)
+    public TraitTreeLayout For(TraitTreeEntry tree, string widget)
     {
-        var widget = _widgetByTag
-            .Where(pair => tree.Tag.Equals(pair.Key, StringComparison.OrdinalIgnoreCase) ||
-                           tree.Tag.StartsWith(pair.Key + ".", StringComparison.OrdinalIgnoreCase))
-            .Select(pair => pair.Value)
-            .FirstOrDefault() ?? _otherwise;
-
         var layout = _byWidget[widget];
 
         var unplaced = tree.Nodes
@@ -67,56 +53,13 @@ public sealed class TraitTreeLayouts
         if (unplaced.Length > 0 || tree.Nodes.Count(node => node.ParentNodes.Count > 0) != layout.Nodes.Count)
         {
             throw new InvalidOperationException(
-                $"{Chooser}.{ChooserFunction} draws {tree.Tag} with {widget}, which places {layout.Nodes.Count} " +
+                $"{ItemTraitTrees.RowStructure} draws {tree.Tag} with {widget}, which places {layout.Nodes.Count} " +
                 $"nodes, and the tree has {tree.Nodes.Count - 1} beside its root" +
                 (unplaced.Length > 0 ? $", {string.Join(", ", unplaced)} of them unplaced" : string.Empty) + ".");
         }
 
         return layout;
     }
-
-    private string Chosen(AbstractFileProvider provider)
-    {
-        string? pending = null;
-        var otherwise = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var statement in Bytecode(provider, Chooser, ChooserFunction))
-        {
-            foreach (var expression in Flattened(statement, 0))
-            {
-                switch (Called(expression))
-                {
-                    case (MatchesTagFunction, var arguments):
-                        pending = arguments.SelectMany(argument => Flattened(argument, 0))
-                            .OfType<EX_NameConst>()
-                            .Select(name => name.Value.Text)
-                            .FirstOrDefault() ?? pending;
-                        break;
-
-                    case (CreateFunction, var arguments):
-                        if (arguments.OfType<EX_ObjectConst>().Select(made => Widget(made)).FirstOrDefault()
-                            is not { } widget) break;
-
-                        if (pending is null) otherwise.Add(widget);
-                        else _widgetByTag.TryAdd(pending, widget);
-
-                        pending = null;
-                        break;
-                }
-            }
-        }
-
-        return otherwise.Count == 1
-            ? otherwise.Single()
-            : throw new InvalidOperationException(
-                $"{Chooser}.{ChooserFunction} creates {otherwise.Count} tree widgets for an item matching none of " +
-                $"{string.Join(", ", _widgetByTag.Keys)}, so the layout of every other tree is unnamed.");
-    }
-
-    private static string? Widget(EX_ObjectConst made) =>
-        PropertyWalk.AsString(made.Value) is { } path && path.EndsWith("_C", StringComparison.Ordinal)
-            ? Path.GetFileNameWithoutExtension(AbilityPresentationIndex.PackagePath(path))
-            : null;
 
     private static TraitTreeLayout Read(AbstractFileProvider provider, string widget)
     {

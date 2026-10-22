@@ -67,11 +67,13 @@ public sealed record SettingsFile
 
     public IReadOnlyList<DropItemLevel> DropItemLevels { get; init; } = [];
 
-    public BlessingEntry Blessings { get; init; } = new(string.Empty, string.Empty, string.Empty, 0);
+    public BlessingEntry Blessings { get; init; } = new(string.Empty, string.Empty, 0);
 
     public DifficultyScaling DifficultyScaling { get; init; } = new();
 
     public MultiTargetDamageFalloff MultiTargetDamageFalloff { get; init; } = new();
+
+    public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; init; } = [];
 
     public IReadOnlyList<LeagueEntry> Leagues { get; init; } = [];
 

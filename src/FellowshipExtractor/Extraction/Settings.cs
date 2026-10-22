@@ -65,6 +65,8 @@ public sealed class Settings
         ],
     };
 
+    public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; }
+
     public IReadOnlyList<LeagueEntry> Leagues { get; }
 
     public ItemSettingsFile Items { get; }
@@ -100,6 +102,7 @@ public sealed class Settings
             ModifierAbilityUnlock = scoring.ModifierAbilityUnlock,
         };
         Leagues = leagues.All;
+        LeagueKinds = leagues.Kinds;
         Items = items.Values;
 
         StatCalculation = statCalculation;
@@ -192,6 +195,7 @@ public sealed class Settings
         Blessings = Blessings,
         DifficultyScaling = DifficultyScaling,
         MultiTargetDamageFalloff = MultiTargetDamageFalloff,
+        LeagueKinds = LeagueKinds,
         Leagues = Leagues,
         TraitTrees = _traitTrees.NamedTrees,
         TraitNodeUpgradeCosts = _traitTrees.UpgradeCosts,

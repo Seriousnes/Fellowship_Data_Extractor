@@ -177,7 +177,7 @@ public static class FellowshipLogs
 
         foreach (var blessing in store.Entities.OfType<BlessingDocument>())
         {
-            if (blessing.AbilityRanks is { } ranks && ranks.Values.Contains(rank)) return blessing.Id;
+            if (blessing.AbilityRank == rank) return blessing.Id;
         }
 
         return null;
@@ -339,22 +339,11 @@ public static class FellowshipLogs
         return store.Rarity(rarity, gem: false)?.Tier;
     }
 
-    private static int? RankOf(int blessingId, ItemDocument item, IEntityStoreService store)
-    {
-        if (store.All(EntityType.Blessing, blessingId).OfType<BlessingDocument>().FirstOrDefault()
-            is not { AbilityRanks: { Count: > 0 } ranks })
-        {
-            return null;
-        }
-
-        foreach (var hero in item.Heroes ?? [])
-        {
-            if (ranks.TryGetValue(hero.ToString(), out var mine)) return mine + BlessingBase;
-        }
-
-        throw new InvalidOperationException(
-            $"Blessing {blessingId} states a rank for none of {string.Join(", ", item.Heroes ?? [])}.");
-    }
+    private static int? RankOf(int blessingId, ItemDocument item, IEntityStoreService store) =>
+        store.All(EntityType.Blessing, blessingId).OfType<BlessingDocument>().FirstOrDefault()
+            is { AbilityRank: { } rank }
+            ? rank + BlessingBase
+            : null;
 
     private static string? Name(EntityType type, int id, IEntityStoreService store) =>
         store.All(type, id).FirstOrDefault() is { } document ? PublicTypes.NameOf(document) : null;

@@ -484,10 +484,7 @@ public sealed class EntityResolver
         {
             AbilityMaxRank = row.MaxRank,
             PoolSlots = row.Slots,
-            AbilityRanks = row.NetIdByHero.ToDictionary(
-                pair => Heroes.Shipped(pair.Key) ?? pair.Key,
-                pair => pair.Value,
-                StringComparer.OrdinalIgnoreCase),
+            AbilityRank = row.NetId,
         };
     }
 
