@@ -394,7 +394,9 @@ public sealed class TooltipViewService(
     private IEnumerable<TraitDocument> Enchanted(TooltipQuery query) =>
         query.Modifiers
             .Where(modifier => modifier.Kind == ModifierKind.Trait)
-            .Select(modifier => store.All(TooltipView.TraitType, modifier.Id).OfType<TraitDocument>().FirstOrDefault())
+            .Select(modifier => modifier.Id)
+            .Concat(query.ImbuedTraits.Select(attuned => attuned.Id))
+            .Select(id => store.All(TooltipView.TraitType, id).OfType<TraitDocument>().FirstOrDefault())
             .OfType<TraitDocument>()
             .Where(Enchants.Is);
 

@@ -68,6 +68,20 @@ public sealed class EnchantTests(Export export)
     }
 
     [Fact]
+    public void An_enchant_attuned_in_the_tree_adds_the_same_stats_as_one_rolled()
+    {
+        var enchant = Enchanted[0];
+        var item = export.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 });
+
+        var rolled = export.Tooltip.Rolls(
+            item, new TooltipQuery { ItemLevel = 300, Modifiers = [new ItemModifier(ModifierKind.Trait, enchant.Id, 1)] }, null);
+        var attuned = export.Tooltip.Rolls(
+            item, new TooltipQuery { ItemLevel = 300, ImbuedTraits = [new ImbuedTrait(enchant.Id, 1)] }, null);
+
+        Assert.Equal(rolled.Select(line => (line.Stat, line.Value)), attuned.Select(line => (line.Stat, line.Value)));
+    }
+
+    [Fact]
     public void Each_modifier_row_prints_the_value_its_widget_prints()
     {
         var item = export.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 });

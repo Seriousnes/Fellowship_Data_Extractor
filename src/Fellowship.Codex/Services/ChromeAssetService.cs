@@ -164,6 +164,7 @@ public sealed class ChromeAssetService(
             [RadianceTexture] = "core.primary-200",
             [ModifierDecorTexture] = "core.secondary-600",
             [TalentFrameTexture] = "core.primary-200",
+            [ExpandTexture] = "core.primary-200",
         };
 
     public static IReadOnlyList<string> ModifierSlots(SettingsFile settings) =>
@@ -299,7 +300,7 @@ public sealed class ChromeAssetService(
 
     public string TraitGlyph => Url(TraitTexture);
 
-    public string ExpandGlyph => Url(ExpandTexture);
+    public string ExpandGlyph => Url(Tinted(ExpandTexture));
 
     public string ModifierPlate => Url(ModifierPlateTexture);
 
