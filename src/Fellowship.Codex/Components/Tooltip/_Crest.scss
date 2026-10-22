@@ -69,9 +69,12 @@ $node-brush-width: 208;
 $node-brush-height: 240;
 $node-well-width: 154;
 $node-well-height: 180;
-$node-lock-size: 16px;
+$node-box-width: 71;
+$node-lock-plate-width: 36.9;
+$node-lock-plate-height: 34;
+$node-lock-size: 18;
 $node-lock-rise: 4px;
-$node-locked-desaturation: 1;
+$node-unallocated-desaturation: 1;
 
 $node-well-left: math.percentage(math.div($node-brush-width - $node-well-width, 2 * $node-brush-width));
 $node-well-right: 100% - $node-well-left;
@@ -137,15 +140,23 @@ $node-texture-share: math.percentage(math.div($node-well-height, $node-brush-wid
       object-fit: contain;
     }
 
-    &.locked .well img { filter: grayscale($node-locked-desaturation); }
+    &.unallocated .well img { filter: grayscale($node-unallocated-desaturation); }
 
     .lock {
       position: absolute;
       top: -$node-lock-rise;
       left: 50%;
       transform: translateX(-50%);
-      width: $node-lock-size;
-      height: $node-lock-size;
+      display: grid;
+      place-items: center;
+      width: math.percentage(math.div($node-lock-plate-width, $node-box-width));
+      aspect-ratio: math.div($node-lock-plate-width, $node-lock-plate-height);
+      background: var(--fx-lock-plate) 0 0/100% 100% no-repeat;
+
+      img {
+        width: math.percentage(math.div($node-lock-size, $node-lock-plate-width));
+        aspect-ratio: 1;
+      }
     }
   }
 }

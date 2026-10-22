@@ -11,6 +11,8 @@ public interface IChromeAssetService
 {
     string LockGlyph { get; }
 
+    string LockPlate { get; }
+
     string GoldDivider { get; }
 
     string SimpleDivider { get; }
@@ -135,6 +137,7 @@ public sealed class ChromeAssetService(
     private const string Unavailable = "Unavailable";
     private const string Hover = "Hover";
     private const string LockTexture = "T_Icons_Locked";
+    private const string LockPlateTexture = "T_Backgrounds_WeaponTreeNodeBackground_LockIconBG";
     private const string DividerTexture = "T_GoldDivider";
     private const string SimpleDividerTexture = "T_SimpleDivider";
 
@@ -253,6 +256,9 @@ public sealed class ChromeAssetService(
     public static bool Padlocked(string? state) =>
         string.Equals(Chosen(NodeStates, state), Unavailable, StringComparison.Ordinal);
 
+    public static bool Allocated(string? state) =>
+        string.Equals(Chosen(NodeStates, state), Chosen(NodeStates, NodeStates[0]), StringComparison.Ordinal);
+
     public string BlessingPlate(string? state, bool hovered = false) =>
         Url(BlessingFamily + Chosen(BlessingStates, state) + (hovered ? Hover : string.Empty));
 
@@ -262,6 +268,8 @@ public sealed class ChromeAssetService(
             : blessing.Icon);
 
     public string LockGlyph => Url(LockTexture);
+
+    public string LockPlate => Url(LockPlateTexture);
 
     public string GoldDivider => Url(DividerTexture);
 

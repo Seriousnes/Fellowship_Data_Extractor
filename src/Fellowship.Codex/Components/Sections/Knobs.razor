@@ -1,5 +1,6 @@
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
+@inject ITooltipViewService Cards
 
 @if (PicksHero || Wearable || IsGem || Rarities.Count > 1 || PicksDifficulty)
 {
@@ -58,7 +59,7 @@
             </Knob>
 
             <Knob Caption="Tempered">
-                <input type="number" min="0" max="20" step="1" placeholder="none" data-knob="upgrades"
+                <input type="number" min="0" max="@TemperCeiling" step="1" placeholder="none" data-knob="upgrades"
                        value="@Value("upgrades")" @onchange="Temper" />
             </Knob>
         }
@@ -93,6 +94,14 @@
                 : [];
 
     private int DropItemLevel => Here.Entity is { } entity ? Store.DropItemLevel(entity) : 0;
+
+    private int? TemperCeiling =>
+        Here.Entity is ItemDocument item
+            ? Tempering.Ceiling(
+                Store.Settings.MaxTempers,
+                Cards.Rarity(item, new TooltipQuery { Rarity = Value("rarity") })?.Name,
+                int.TryParse(Value("itemLevel"), out var level) ? level : DropItemLevel)
+            : null;
 
     private bool PicksHero => Here.Readings.Count > 1 || (Here.Entity as ItemDocument)?.Heroes is { Count: > 1 };
 

@@ -59,6 +59,15 @@ public class StateChromeTests(Export export)
     }
 
     [Fact]
+    public void Only_the_selected_node_draws_its_icon_in_colour()
+    {
+        Assert.True(ChromeAssetService.Allocated("selected"));
+        Assert.True(ChromeAssetService.Allocated(null));
+        Assert.False(ChromeAssetService.Allocated("available"));
+        Assert.False(ChromeAssetService.Allocated("unavailable"));
+    }
+
+    [Fact]
     public void Only_the_unavailable_node_is_padlocked()
     {
         Assert.True(ChromeAssetService.Padlocked("unavailable"));
