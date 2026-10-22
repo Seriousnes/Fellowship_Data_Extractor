@@ -281,36 +281,54 @@ public sealed class RarityNames
 
     public RarityNames(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
+        var declared = new HashSet<int>();
+        string? enumName = null;
+
         foreach (var objectPath in TableFinder.ByRowStructure(assets, RowStructure))
         {
             if (!provider.TryLoadPackageObject<UDataTable>(
                 AbilityPresentationIndex.PackagePath(objectPath), out var table)) continue;
 
-            foreach (var (rowName, row) in table.RowMap)
+            foreach (var (_, row) in table.RowMap)
             {
-                var ordinal = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, TierField)?.GenericValue) ?? 0;
+                var value = PropertyWalk.Get(row, TierField)?.GenericValue;
 
-                var separator = rowName.Text.IndexOf('_');
-                var name = separator < 0 ? rowName.Text : rowName.Text[..separator];
+                declared.Add(PropertyWalk.AsOrdinal(value) ?? 0);
 
-                if (_byOrdinal.TryGetValue(ordinal, out var existing))
+                if (PropertyWalk.AsString(value) is { } text &&
+                    text.IndexOf(EnumSeparator, StringComparison.Ordinal) is var separator and > 0)
                 {
-                    if (existing.Equals(name, StringComparison.Ordinal)) continue;
-
-                    throw new InvalidOperationException(
-                        $"Loot rule set rows put both {existing} and {name} at rarity {ordinal}, so the row keys no " +
-                        "longer name the ladder and nothing else in the build does.");
+                    enumName ??= text[..separator];
                 }
-
-                _byOrdinal[ordinal] = name;
             }
         }
 
-        if (_byOrdinal.Count == 0)
+        if (declared.Count == 0)
         {
             throw new InvalidOperationException(
                 $"No table declares {RowStructure}, so nothing says what a rarity ordinal is and every gem would " +
                 "export without one.");
+        }
+
+        var mappings = provider.MappingsContainer?.MappingsForGame
+            ?? throw new InvalidOperationException(
+                $"No mappings are loaded, so nothing names the {TierField} ordinals.");
+
+        if (enumName is null)
+        {
+            throw new InvalidOperationException(
+                $"No {RowStructure} row writes its {TierField} as an enum member, so nothing names the enum the " +
+                "rarity ladder is read from.");
+        }
+
+        var members = EnumOrdinals.Members(mappings, enumName);
+
+        foreach (var ordinal in declared)
+        {
+            _byOrdinal[ordinal] = members.TryGetValue(ordinal, out var name)
+                ? name
+                : throw new InvalidOperationException(
+                    $"A loot rule set row declares {TierField} {ordinal}, and {enumName} has no member at it.");
         }
     }
 
