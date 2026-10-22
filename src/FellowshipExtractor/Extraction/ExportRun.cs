@@ -35,6 +35,8 @@ public static class ExportRun
 
     private static readonly string[] NullMembers = ["Invalid", "None"];
 
+    private const string UngrantedPower = "a power no item grants";
+
     private static bool NullMember(Entity entity) =>
         entity.Name is { } name &&
         Array.Exists(NullMembers, leaf => name.EndsWith($".{leaf}", StringComparison.OrdinalIgnoreCase)) &&
@@ -51,6 +53,12 @@ public static class ExportRun
         if (entity.Type is EntityType.Creature && !HasContent(entity)) return "a creature carrying nothing";
 
         if (entity is { Type: EntityType.Item, EnabledInGame: false }) return "an item disabled in game";
+
+        if (entity.Type is EntityType.Item &&
+            Array.TrueForAll(Content, p => p.Name == nameof(Entity.Slot) || p.GetValue(entity) is null))
+        {
+            return "an item tag no definition or row names";
+        }
 
         return null;
     }
@@ -190,6 +198,22 @@ public static class ExportRun
 
             scanned++;
             if (scanned % 500 == 0) Console.WriteLine($"  {scanned} of {resolver.Tags.Count}...");
+        }
+
+        var granted = resolved.Select(record => record.GrantsId).OfType<int>().ToHashSet();
+        var ungranted = resolved
+            .Where(record => record.Type is EntityType.RelicPower or EntityType.WeaponPower &&
+                             !granted.Contains(record.NetId!.Value))
+            .ToArray();
+
+        if (ungranted.Length > 0)
+        {
+            resolved.RemoveAll(ungranted.Contains);
+            dropped[UngrantedPower] = ungranted.Length;
+
+            Console.WriteLine(
+                $"  {ungranted.Length} powers no item grants: " +
+                string.Join(", ", ungranted.Select(power => $"{power.NetId} {power.DisplayName ?? power.Name}")));
         }
 
         var shared = resolver.Gains.Shared(resolved);

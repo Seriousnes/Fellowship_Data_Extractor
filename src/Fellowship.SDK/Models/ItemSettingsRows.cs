@@ -52,4 +52,10 @@ public sealed record ItemSettingsFile
     public ItemPowerPotential PowerPotential { get; init; } = new();
 
     public Curve? StatEnchantPower { get; init; }
+
+    public double TemperDefaultStaminaMultiplier { get; init; }
+
+    public IReadOnlyList<TemperStaminaStep> TemperStaminaMultiplierAtItemLevel { get; init; } = [];
 }
+
+public sealed record TemperStaminaStep(int ItemLevel, double TemperValue);

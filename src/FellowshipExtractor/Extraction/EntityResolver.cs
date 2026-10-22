@@ -215,8 +215,8 @@ public sealed class EntityResolver
         Vendors = new VendorInventories(provider, _assets);
         Sources = new ItemSources(provider, _assets, Dungeons, Vendors, HeroItems, Drops, Heroes);
 
-        CreatureStats = new CreatureStats(provider, Heroes);
         Leagues = new Leagues(provider, _assets);
+        CreatureStats = new CreatureStats(provider, Heroes, Leagues.Listed);
 
         string[] creatures =
         [
@@ -226,7 +226,7 @@ public sealed class EntityResolver
 
         Locations = new CreatureLocations(provider, Dungeons, creatures);
         Layouts = new DungeonLayouts(provider, Dungeons, creatures);
-        DungeonDifficulties = new DungeonDifficulties(provider, _assets);
+        DungeonDifficulties = new DungeonDifficulties(provider, _assets, Leagues.Matched);
 
         Categories = new AbilityCategories(provider);
 
@@ -830,6 +830,7 @@ public sealed class EntityResolver
             MinimumHeroRank = dungeon.MinimumHeroRank,
             LevelType = dungeon.LevelType,
             SeasonalPinnacle = dungeon.SeasonalPinnacle,
+            AvailableForCasual = dungeon.AvailableForCasual,
             MinimumDifficulty = dungeon.MinimumDifficulty,
             Difficulties = DungeonDifficulties.For(dungeon.Tag),
             Floors = layout is null

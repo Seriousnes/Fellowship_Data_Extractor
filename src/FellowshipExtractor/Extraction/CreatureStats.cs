@@ -63,7 +63,7 @@ public sealed class CreatureStats
 
     private readonly HeroNames _heroes;
 
-    public CreatureStats(AbstractFileProvider provider, HeroNames heroes)
+    public CreatureStats(AbstractFileProvider provider, HeroNames heroes, IReadOnlySet<int> difficulties)
     {
         _heroes = heroes;
 
@@ -114,21 +114,21 @@ public sealed class CreatureStats
         {
             apart[heroes.Renamed(scope)] = new DifficultyScaling
             {
-                Health = ByDifficulty(scaling, scope, HealthScale, required: false),
-                Damage = ByDifficulty(scaling, scope, DamageScale, required: false),
+                Health = ByDifficulty(scaling, scope, HealthScale, required: false, difficulties),
+                Damage = ByDifficulty(scaling, scope, DamageScale, required: false, difficulties),
             };
         }
 
         Scaling = new DifficultyScaling
         {
-            Health = ByDifficulty(scaling, DefaultNamespace, HealthScale, required: true),
-            Damage = ByDifficulty(scaling, DefaultNamespace, DamageScale, required: true),
+            Health = ByDifficulty(scaling, DefaultNamespace, HealthScale, required: true, difficulties),
+            Damage = ByDifficulty(scaling, DefaultNamespace, DamageScale, required: true, difficulties),
             Namespaces = apart,
         };
     }
 
     private static IReadOnlyDictionary<int, double> ByDifficulty(
-        UCurveTable table, string scope, string attribute, bool required)
+        UCurveTable table, string scope, string attribute, bool required, IReadOnlySet<int> difficulties)
     {
         var wanted = $"{scope}.{attribute}";
 
@@ -153,7 +153,7 @@ public sealed class CreatureStats
         }
 
         var byDifficulty = new Dictionary<int, double>(steps.Count);
-        foreach (var step in steps) byDifficulty[(int)step.Time] = step.Value;
+        foreach (var difficulty in difficulties) byDifficulty[difficulty] = CurveRows.Evaluate(steps, difficulty);
 
         return byDifficulty;
     }

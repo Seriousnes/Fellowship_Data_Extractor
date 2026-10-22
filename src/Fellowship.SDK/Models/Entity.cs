@@ -251,6 +251,8 @@ public sealed record Entity
 
     public bool? SeasonalPinnacle { get; init; }
 
+    public bool? AvailableForCasual { get; init; }
+
     public int? MinimumDifficulty { get; init; }
 
     public IReadOnlyList<int>? Difficulties { get; init; }

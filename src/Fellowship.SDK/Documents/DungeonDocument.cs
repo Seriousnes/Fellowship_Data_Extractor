@@ -13,6 +13,7 @@ public sealed class DungeonDocument : EntityDocument
     public int? MinimumHeroRank { get; init; }
     public string? LevelType { get; init; }
     public bool? SeasonalPinnacle { get; init; }
+    public bool? AvailableForCasual { get; init; }
     public int? MinimumDifficulty { get; init; }
     public IReadOnlyList<int>? Difficulties { get; init; }
     public IReadOnlyList<DungeonFloor>? Floors { get; init; }

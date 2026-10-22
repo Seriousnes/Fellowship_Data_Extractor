@@ -193,6 +193,7 @@ public static class DocumentProjection
             MinimumHeroRank = entity.MinimumHeroRank,
             LevelType = entity.LevelType,
             SeasonalPinnacle = entity.SeasonalPinnacle,
+            AvailableForCasual = entity.AvailableForCasual,
             MinimumDifficulty = entity.MinimumDifficulty,
             Difficulties = entity.Difficulties,
             Floors = entity.Floors,
