@@ -454,6 +454,14 @@ public sealed record TraitTooltipRequest
     /// <summary>The state to draw the node at: selected, available or unavailable.</summary>
     [Description("The state to draw the node at: selected, available or unavailable.")]
     public string? State { get; init; }
+
+    [Description("The hero whose primary stat chooses an enchant's printed name.")]
+    public string? Hero { get; init; }
+
+    [Description(
+        "The enchant's rank summed over the equipped items carrying it. None stated reads as one item at the " +
+        "highest item level.")]
+    public int? EquippedRank { get; init; }
 }
 
 /// <summary>Tooltip for a trait power.</summary>

@@ -91,6 +91,8 @@ public static class TooltipRequests
         Read(request?.ShowIcon, request?.Mobile, out error) with
         {
             State = StatQuery.NullIfEmpty(request?.State),
+            Hero = StatQuery.NullIfEmpty(request?.Hero),
+            EquippedTier = request?.EquippedRank,
         };
 
     public static TooltipQuery Read(TraitPowerTooltipRequest? request, out string? error) =>
