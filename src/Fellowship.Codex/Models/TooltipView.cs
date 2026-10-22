@@ -77,6 +77,7 @@ public static class TooltipView
     {
         TraitDocument trait => trait.NameByHero,
         TraitPowerDocument power => power.NameByHero,
+        EffectDocument effect => effect.NameByHero,
         _ => null,
     };
 

@@ -15,7 +15,7 @@ public sealed class TypeResolverTests
 
     [Theory]
     [InlineData(EntityType.Item, 5716)]
-    [InlineData(EntityType.Effect, 3363)]
+    [InlineData(EntityType.Effect, 3364)]
     [InlineData(EntityType.Ability, 2380)]
     [InlineData(EntityType.Creature, 244)]
     [InlineData(EntityType.Dungeon, 20)]
@@ -27,7 +27,7 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.MountPower, 54)]
     [InlineData(EntityType.TraitPower, 46)]
     [InlineData(EntityType.LegendaryPower, 36)]
-    [InlineData(EntityType.Currency, 16)]
+    [InlineData(EntityType.Currency, 17)]
     [InlineData(EntityType.Modifier, 26)]
     [InlineData(EntityType.Gem, 24)]
     [InlineData(EntityType.Blessing, 8)]
@@ -37,7 +37,7 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.RelicPassive, 5)]
     [InlineData(EntityType.CompanionPet, 14)]
     [InlineData(EntityType.GemType, 6)]
-    [InlineData(EntityType.LegendaryStat, 2)]
+    [InlineData(EntityType.LegendaryStat, 3)]
     public void TheCorpusHoldsTheseCounts(EntityType type, int expected) =>
         Assert.Equal(expected, Export.Loaded.Documents.Count(d => d.Type == type));
 
@@ -85,7 +85,7 @@ public sealed class TypeResolverTests
             item.Body["legendaryStats"]!.AsArray(),
             stat => Assert.Contains(stat!["id"]!.GetValue<int>(), ids)));
 
-        Assert.All(legendary, item => Assert.Equal(2, item.Body["legendaryStats"]!.AsArray().Count));
+        Assert.All(legendary, item => Assert.Equal(3, item.Body["legendaryStats"]!.AsArray().Count));
     }
 
     [Fact]

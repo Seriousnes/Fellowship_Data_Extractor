@@ -445,7 +445,14 @@ public sealed class EntityResolver
         {
             if (EffectNames.For(tag.Name) is { } named)
             {
-                entity = entity with { DisplayName = named.DisplayName, NameInheritedFrom = named.Origin };
+                entity = entity with
+                {
+                    DisplayName = named.DisplayName,
+                    NameInheritedFrom = named.Origin,
+                    NameByHero = named.Origin.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase)
+                        ? Enchants.ForAugmentation(named.Origin.NetId)?.NameByHero
+                        : null,
+                };
                 NamesInherited++;
             }
             else if (EffectNames.Disagrees(tag.Name))

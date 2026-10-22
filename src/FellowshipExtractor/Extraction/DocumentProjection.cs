@@ -134,6 +134,7 @@ public static class DocumentProjection
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Description = entity.Description,
+            NameByHero = entity.NameByHero,
             EffectTags = entity.EffectTags,
             Icon = entity.Icon,
             Duration = entity.Duration,

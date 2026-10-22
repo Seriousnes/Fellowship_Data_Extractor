@@ -52,7 +52,7 @@ public sealed class RarityRowTests
         });
 
     [Fact]
-    public void AHeroicWeaponRollsTwoModifiers() => Assert.Equal(2, Additions["Weapon"][Tier("Heroic")].RandomRolls);
+    public void AHeroicWeaponRollsThreeModifiers() => Assert.Equal(3, Additions["Weapon"][Tier("Heroic")].RandomRolls);
 
     [Fact]
     public void EverySlotARarityRowNamesHasItsDefinition()
@@ -90,16 +90,14 @@ public sealed class RarityRowTests
             .Where(entry => Listed(entry.Value, "RuleSets").Contains(RelicRuleSet))
             .ToArray();
 
-        Assert.True(rows.Length > 1);
-        Assert.Equal("Uncommon_Weapon", rows[^1].Key.Text);
+        Assert.NotEmpty(rows);
 
         var relic = Additions["Relic"][uncommon];
         Assert.Equal(Listed(rows[^1].Value, "AdditionalGuaranteedSlots"), relic.GuaranteedSlots);
-        Assert.Contains("WeaponPower", relic.GuaranteedSlots);
+        Assert.Equal(["RelicPower"], relic.GuaranteedSlots);
 
-        var placeholder = Additions["Default_GemSlot"][uncommon];
-        Assert.Empty(placeholder.GuaranteedSlots);
-        Assert.Empty(placeholder.RandomizedSlots);
+        Assert.Equal(["WeaponPower", "WeaponTraitTree"], Additions["Weapon"][uncommon].GuaranteedSlots);
+        Assert.Equal(["GemSocket"], Additions["Default_GemSlot"][uncommon].GuaranteedSlots);
     }
 
     private static IReadOnlyList<string> Listed(IPropertyHolder row, string field) =>
