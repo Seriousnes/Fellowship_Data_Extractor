@@ -1,26 +1,22 @@
-@inject IEntityStoreService Store
 @inject ITooltipViewService Ui
 
 <div class="grp mods">
     @for (var at = 0; at < Lines.Count; at++)
     {
+        var line = Lines[at];
+
         @if (at > 0) { <hr class="rule"> }
-        <div class="mod @TooltipView.Token(Lines[at].Kind)" data-craft-row="@CraftSlot.KeyOf(CraftSlots.RandomRolls, at)">
-            @if (Ui.Chrome.ModifierGlyph(Lines[at].Slot) is { } glyph) { <img class="mi" alt="" src="@glyph"> }
-            @if (Lines[at].Kind is { } kind)
-            {
-                <span class="mk">@TooltipView.Label(kind, Store.Settings):</span>
-                <span class="mn">@Lines[at].Name</span>
-                @if (Lines[at].Value is { } value) { <span class="mv">@value</span> }
-            }
-            else
-            {
-                <span class="mn">@Lines[at].Name</span>
-            }
+        <div class="mod @TooltipView.Token(line.Kind)" data-craft-row="@CraftSlot.KeyOf(CraftSlots.RandomRolls, at)">
+            @if (Ui.Chrome.ModifierGlyph(line.Slot) is { } glyph) { <img class="mi" alt="" src="@glyph"> }
+            <span class="mk">@line.Header</span>
+            <span class="mn" style="@Tone(line)">@line.Name</span>
+            @if (line.Value is { } value) { <span class="mv" style="@Tone(line)">@value</span> }
         </div>
     }
 </div>
 
 @code {
     [Parameter] public IReadOnlyList<TooltipView.ModifierLine> Lines { get; set; } = [];
+
+    private static string? Tone(TooltipView.ModifierLine line) => line.Tone is { } tone ? $"color:{tone}" : null;
 }

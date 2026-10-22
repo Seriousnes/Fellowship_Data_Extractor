@@ -16,8 +16,6 @@ public static class TooltipView
 
     public const string Unresolved = "unresolved";
 
-    public const string RandomModifierLabel = "[Random Modifier]";
-
     public const string GemSocketLabel = "Gem Socket";
 
     public static EntityType TypeOf(ModifierKind kind, SettingsFile settings) =>
@@ -30,8 +28,27 @@ public static class TooltipView
                 nameof(kind), kind, $"{kind} is a {slotType} slot, which names no entity type."),
         };
 
-    public static string Label(ModifierKind kind, SettingsFile settings) =>
-        settings.ModifierTypes.FirstOrDefault(type => type.Name == kind.ToString())?.Printed ?? kind.ToString();
+    public static ModifierTypeEntry Type(ModifierKind kind, SettingsFile settings) =>
+        settings.ModifierTypes.FirstOrDefault(type => type.Name == kind.ToString())
+        ?? throw new InvalidOperationException(
+            $"The settings state no modifier type {kind}, so its row has no header and its slot no cap.");
+
+    public static string Header(ModifierKind kind, SettingsFile settings) =>
+        Type(kind, settings).Header ?? Type(kind, settings).Printed ?? kind.ToString();
+
+    public static string Plural(ModifierKind kind, SettingsFile settings) =>
+        Type(kind, settings).Plural is { Length: > 0 } plural ? plural : Type(kind, settings).Printed ?? kind.ToString();
+
+    public static string TreeHeader(SettingsFile settings) =>
+        settings.TraitTreeHeader
+        ?? throw new InvalidOperationException("The settings state no trait tree tooltip header.");
+
+    public static string TreeName(SettingsFile settings) => TreeHeader(settings).TrimEnd(':', ' ');
+
+    public static ModifierLine Empty(SettingsFile settings) =>
+        settings.EmptyModifierSlot is { } empty
+            ? new ModifierLine(null, null, empty.Sign, empty.Text, null)
+            : throw new InvalidOperationException("The settings state no empty modifier slot text.");
 
     public static string Token(ModifierKind? kind) => kind?.ToString().ToLowerInvariant() ?? Unresolved;
 
@@ -69,6 +86,8 @@ public static class TooltipView
 
     public const string RangeLabel = "range";
 
+    public const string MeleeRange = "Melee Range";
+
     public const string CooldownLabel = "cooldown";
 
     public const string SecondsUnit = "s";
@@ -92,9 +111,9 @@ public static class TooltipView
 
     public static string Plus(int value) => "+" + value.ToString(CultureInfo.InvariantCulture);
 
-    public sealed record ModifierLine(ModifierKind? Kind, string? Slot, string Name, string? Value)
+    public sealed record ModifierLine(ModifierKind? Kind, string? Slot, string Header, string Name, string? Value)
     {
-        public static readonly ModifierLine Random = new(null, null, RandomModifierLabel, null);
+        public string? Tone { get; init; }
 
         public bool Unresolved => Kind is null;
     }

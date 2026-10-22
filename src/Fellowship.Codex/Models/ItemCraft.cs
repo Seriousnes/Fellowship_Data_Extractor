@@ -115,8 +115,6 @@ public static class ItemCraft
 
     public const int SameIdentity = 2;
 
-    public const int Blessings = 2;
-
     public static int MaxRank(CraftCandidate candidate, IEntityStoreService store) =>
         Definition(candidate.Accepts, store.Settings).SlotType switch
         {
@@ -139,8 +137,10 @@ public static class ItemCraft
 
         if (slot.SlotName == CraftSlots.TraitTree)
         {
-            if (query.ImbuedTraits.Any(trait => trait.Id == candidate.Id)) return CraftReasons.AlreadyImbued;
-            if (query.ImbuedTraits.Count >= slot.Capacity) return CraftReasons.NoRoom;
+            var tree = TooltipView.TreeName(store.Settings);
+
+            if (query.ImbuedTraits.Any(trait => trait.Id == candidate.Id)) return CraftReasons.AlreadyAttuned(tree);
+            if (query.ImbuedTraits.Count >= slot.Capacity) return CraftReasons.NoRoom(tree);
 
             var ceiling = MaxRank(candidate, store);
             return candidate.Amount < 1 || candidate.Amount > ceiling ? CraftReasons.PastRank(ceiling) : null;
@@ -156,11 +156,14 @@ public static class ItemCraft
             {
                 return CraftReasons.NotInPool(worn);
             }
+        }
 
-            if (query.Modifiers.Count(modifier => modifier.Kind == kind) >= Blessings)
-            {
-                return CraftReasons.TwoBlessings;
-            }
+        var type = TooltipView.Type(kind, store.Settings);
+
+        if (type.MaximumLimit is { } cap && query.Modifiers.Count(modifier => modifier.Kind == kind) >= cap)
+        {
+            return type.MaximumLimitWarning
+                ?? throw new InvalidOperationException($"The {kind} modifier type states a cap and no warning.");
         }
 
         if (query.Modifiers.Count(
@@ -225,11 +228,9 @@ public static class CraftReasons
 {
     public const string TwoOfAKind = "Two of one is the most an item rolls.";
 
-    public const string TwoBlessings = "Two blessings is the most an item has.";
+    public static string AlreadyAttuned(string tree) => $"Already in the {tree}.";
 
-    public const string AlreadyImbued = "Already imbued.";
-
-    public const string NoRoom = "Every imbued trait slot is filled.";
+    public static string NoRoom(string tree) => $"Every row of the {tree} is filled.";
 
     public static string NotInPool(string slot) => $"Does not roll on a {slot}.";
 
