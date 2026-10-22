@@ -29,6 +29,7 @@
         EntityType.LegendaryPower => typeof(LegendaryPowers),
         EntityType.WeaponPower => typeof(WeaponPowers),
         EntityType.RelicPower => typeof(RelicPowers),
+        EntityType.RelicPassive => typeof(RelicPassives),
         EntityType.TraitPower => typeof(TraitPowers),
         _ => throw new InvalidOperationException(
             $"{PublicTypes.Label(type.Value)} is not a type the codex lists, so no browse component draws it."),

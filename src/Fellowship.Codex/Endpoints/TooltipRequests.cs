@@ -71,6 +71,9 @@ public static class TooltipRequests
             HasImbuedTraits = request?.HasImbuedTraits,
         };
 
+    public static TooltipQuery Read(RelicPassiveTooltipRequest? request, out string? error) =>
+        Read(request?.ShowIcon, request?.Mobile, out error);
+
     public static TooltipQuery Read(LegendaryPowerTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error);
 

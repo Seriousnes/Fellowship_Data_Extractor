@@ -337,6 +337,7 @@ public static class RecordProjection
         IconByRarity = IconsByRarity(document, view),
         Grants = Reference(document.Grants, view, origin),
         LegendaryStats = Rolls(document.LegendaryStats, view),
+        UntaggedLegendaryStats = Some(document.UntaggedLegendaryStats),
         Sources = Sourced(document.Sources, view, origin),
         ItemLevel = document.ItemLevel,
     };

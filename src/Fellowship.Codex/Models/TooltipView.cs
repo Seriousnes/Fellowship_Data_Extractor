@@ -40,6 +40,20 @@ public static class TooltipView
 
     public static string? Wearer(ItemDocument item, TooltipQuery query) => query.Hero ?? item.Hero?.ToString();
 
+    public sealed record LegendaryEntry(EntityDocument? Roll, Fellowship.SDK.Models.LegendaryStatText? Untagged);
+
+    public static IReadOnlyList<LegendaryEntry> Legendary(IReadOnlyList<EntityDocument> rolls, EntityDocument entity)
+    {
+        var entries = rolls.Select(roll => new LegendaryEntry(roll, null)).ToList();
+
+        foreach (var untagged in ((entity as ItemDocument)?.UntaggedLegendaryStats ?? []).OrderBy(stat => stat.Position))
+        {
+            entries.Insert(Math.Min(untagged.Position, entries.Count), new LegendaryEntry(null, untagged));
+        }
+
+        return entries;
+    }
+
     public static string? PrintedFor(EntityDocument document, string? wearer) =>
         document is TraitDocument { NameByHero: { } names } && wearer is not null &&
         names.TryGetValue(wearer, out var printed)

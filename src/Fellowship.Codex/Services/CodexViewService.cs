@@ -203,6 +203,7 @@ public sealed class CodexViewService(
             EntityType.GemTrait => Body(new GemTraitTooltipRequest { ShowIcon = icon }),
             EntityType.Item => Body(new ItemTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.LegendaryPower => Body(new LegendaryPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.RelicPassive => Body(new RelicPassiveTooltipRequest { ShowIcon = icon }),
             EntityType.Mount => Body(new MountTooltipRequest { ShowIcon = icon }),
             EntityType.RelicPower => Body(new RelicPowerTooltipRequest { ShowIcon = icon }),
             EntityType.Talent => Body(new TalentTooltipRequest { ShowIcon = icon }),

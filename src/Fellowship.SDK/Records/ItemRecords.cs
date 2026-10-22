@@ -37,6 +37,8 @@ public sealed record ItemRecord : EntityRecord
 
     public IReadOnlyList<LegendaryStatRecord>? LegendaryStats { get; init; }
 
+    public IReadOnlyList<Models.LegendaryStatText>? UntaggedLegendaryStats { get; init; }
+
     public IReadOnlyList<ItemSourceRecord>? Sources { get; init; }
 
     public int? ItemLevel { get; init; }

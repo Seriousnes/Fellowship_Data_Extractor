@@ -1,18 +1,18 @@
 @inject ITooltipViewService Ui
 
-@if (Ui.LegendaryStats(Entity) is { Count: > 0 } rolls)
+@if (Lines() is { Count: > 0 } lines)
 {
     <div class="grp">
-        <div class="sec legendary"><img class="gi" alt="" src="@Ui.Chrome.LegendaryBadge.Url"><span>Legendary Stats</span><span class="n">(@rolls.Count)</span></div>
-        @foreach (var roll in rolls)
+        <div class="sec legendary"><img class="gi" alt="" src="@Ui.Chrome.LegendaryBadge.Url"><span>Legendary Stats</span><span class="n">(@lines.Count)</span></div>
+        @foreach (var (name, text) in lines)
         {
-            @if (PublicTypes.DisplayNameOf(roll) is { } name)
+            @if (name is not null)
             {
                 <p class="nm">@name</p>
             }
-            @if (DocumentFields.Text(roll, nameof(LegendaryStatDocument.Description)) is { } text)
+            @if (text is { } description)
             {
-                <p class="desc">@Ui.Text(text, CodexView.PlaceholdersOf(roll), Query, Hero, [])</p>
+                <p class="desc">@description</p>
             }
         }
     </div>
@@ -24,4 +24,18 @@
     [Parameter] public TooltipQuery Query { get; set; } = new();
 
     [Parameter] public HeroEntry? Hero { get; set; }
+
+    public static bool Draws(EntityDocument entity, ITooltipViewService ui) =>
+        ui.LegendaryStats(entity).Count > 0 || entity is ItemDocument { UntaggedLegendaryStats.Count: > 0 };
+
+    private List<(string? Name, MarkupString? Text)> Lines() =>
+    [
+        .. TooltipView.Legendary(Ui.LegendaryStats(Entity), Entity).Select(entry => entry.Roll is { } roll
+            ? (PublicTypes.DisplayNameOf(roll),
+                DocumentFields.Text(roll, nameof(LegendaryStatDocument.Description)) is { } text
+                    ? Ui.Text(text, CodexView.PlaceholdersOf(roll), Query, Hero, [])
+                    : (MarkupString?)null)
+            : (entry.Untagged!.Name,
+                entry.Untagged.Description is { } line ? Ui.Text(line, null, Query, Hero, []) : (MarkupString?)null)),
+    ];
 }
