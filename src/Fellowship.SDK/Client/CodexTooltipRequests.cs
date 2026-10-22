@@ -76,10 +76,6 @@ public sealed record BlessingTooltipRequest
         "and a link to its page.")]
     public bool? Mobile { get; init; }
 
-    /// <summary>The state to draw the row at: allocated or unallocated.</summary>
-    [Description("The state to draw the row at: allocated or unallocated.")]
-    public string? State { get; init; }
-
     /// <summary>Which of a blessing's tiers is equipped.</summary>
     [Description("Which of a blessing's tiers is equipped. None stated reads as none equipped.")]
     public int? EquippedTier { get; init; }

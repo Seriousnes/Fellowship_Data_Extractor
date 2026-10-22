@@ -18,7 +18,6 @@ public static class TooltipRequests
     public static TooltipQuery Read(BlessingTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error) with
         {
-            State = StatQuery.NullIfEmpty(request?.State),
             EquippedTier = request?.EquippedTier,
         };
 

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Fellowship.Codex.Services;
 
 using Fellowship.SDK.Documents;
@@ -24,7 +26,10 @@ public sealed record CraftSlot(string SlotName, int Ordinal, IReadOnlyList<strin
 {
     public int Capacity { get; init; } = 1;
 
-    public string Key => $"{SlotName}:{Ordinal}";
+    public string Key => KeyOf(SlotName, Ordinal);
+
+    public static string KeyOf(string slotName, int ordinal) =>
+        $"{slotName}:{ordinal.ToString(CultureInfo.InvariantCulture)}";
 }
 
 public static class ItemCraft

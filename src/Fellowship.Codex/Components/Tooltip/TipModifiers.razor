@@ -4,7 +4,7 @@
     @for (var at = 0; at < Lines.Count; at++)
     {
         @if (at > 0) { <hr class="rule"> }
-        <div class="mod @TooltipView.Token(Lines[at].Kind)">
+        <div class="mod @TooltipView.Token(Lines[at].Kind)" data-craft-row="@CraftSlot.KeyOf(CraftSlots.RandomRolls, at)">
             <img class="mi" alt="" src="@Ui.Chrome.ModifierGlyph(Lines[at].Kind)">
             @if (Lines[at].Kind is { } kind)
             {

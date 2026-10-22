@@ -61,9 +61,9 @@ $plain-slot-well-chamfer: 16;
   }
 }
 
-$plate-brush-width: 148;
-$plate-brush-height: 188;
-$plate-texture-share: 45%;
+$stone-box-size: 64;
+$stone-rune-size: 32;
+$stone-rune-share: math.percentage(math.div($stone-rune-size, $stone-box-size));
 
 $node-brush-width: 208;
 $node-brush-height: 240;
@@ -88,15 +88,17 @@ $node-texture-share: math.percentage(math.div($node-well-height, $node-brush-wid
     display: block;
     margin: 0;
     width: var(--fx-plate-width);
-    aspect-ratio: math.div($plate-brush-width, $plate-brush-height);
+    aspect-ratio: 1;
     background: var(--fx-plate) 0 0/100% 100% no-repeat;
+
+    &:hover { background-image: var(--fx-plate-hover); }
 
     img {
       position: absolute;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: $plate-texture-share;
+      width: $stone-rune-share;
       aspect-ratio: 1;
       object-fit: contain;
     }

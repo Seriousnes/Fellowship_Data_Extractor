@@ -78,11 +78,13 @@ public interface IChromeAssetService
 
     string TalentFrame { get; }
 
-    string BlessingPlate(string? state);
+    string BlessingPlate(string? state, bool hovered = false);
 
     string? BlessingTexture(string? icon, string? state);
 
     string SlotGlyph(string? slot);
+
+    string? GearGlyph(string slot);
 }
 public sealed class ChromeAssetService(
     ITextureSource texture,
@@ -136,6 +138,7 @@ public sealed class ChromeAssetService(
     private const string Allocated = "Allocated";
     private const string Unallocated = "Unallocated";
     private const string Unavailable = "Unavailable";
+    private const string Hover = "Hover";
     private const string LockTexture = "T_Icons_Locked";
     private const string DividerTexture = "T_GoldDivider";
     private const string SimpleDividerTexture = "T_SimpleDivider";
@@ -177,6 +180,9 @@ public sealed class ChromeAssetService(
     public static readonly IReadOnlyList<string> NodeStates = ["selected", "available", "unavailable"];
 
     public static readonly IReadOnlyList<string> BlessingStates = ["allocated", "unallocated"];
+
+    public static string BlessingState(int equippedTier) =>
+        equippedTier > 0 ? BlessingStates[0] : BlessingStates[1];
 
     public static readonly IReadOnlyList<string> TalentStates = ["disabled", "selected", "default", "hover"];
 
@@ -239,8 +245,8 @@ public sealed class ChromeAssetService(
     public static bool Padlocked(string? state) =>
         string.Equals(Chosen(NodeStates, state), Unavailable, StringComparison.Ordinal);
 
-    public string BlessingPlate(string? state) =>
-        Url(BlessingFamily + Chosen(BlessingStates, state));
+    public string BlessingPlate(string? state, bool hovered = false) =>
+        Url(BlessingFamily + Chosen(BlessingStates, state) + (hovered ? Hover : string.Empty));
 
     public string? BlessingTexture(string? icon, string? state) =>
         icon is { } texture &&
@@ -269,6 +275,9 @@ public sealed class ChromeAssetService(
         Url(slot is not null && store.Settings.SlotIcons.TryGetValue(slot, out var gear)
             ? gear
             : SlotTexture);
+
+    public string? GearGlyph(string slot) =>
+        store.Settings.SlotIcons.TryGetValue(slot, out var gear) ? Url(gear) : null;
 
     public string ItemPowerGlyph => Url(ItemPowerTexture);
 

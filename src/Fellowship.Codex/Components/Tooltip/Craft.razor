@@ -24,7 +24,7 @@
                         var mine = slot;
 
                         <button type="button" class="cx-craft-hit" @key="mine.Key"
-                                data-craft="@mine.SlotName" data-at="@mine.Ordinal"
+                                data-craft="@mine.Key"
                                 aria-haspopup="dialog" aria-label="@Label(mine)"
                                 @ref="hits[mine.Key]"
                                 @onclick="() => Open(mine)"></button>

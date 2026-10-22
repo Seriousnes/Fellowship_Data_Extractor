@@ -225,13 +225,15 @@ public class TooltipQueryTests(Export export)
         Assert.Null(StatQuery.NullIfEmpty(new ItemTooltipRequest { Hero = string.Empty }.Hero));
 
     [Fact]
-    public void The_state_and_the_equipped_tier_a_blessing_is_drawn_at_reach_the_query()
-    {
-        var query = Query(new BlessingTooltipRequest { State = "allocated", EquippedTier = 2 }, out _);
+    public void The_equipped_tier_a_blessing_is_drawn_at_reaches_the_query() =>
+        Assert.Equal(2, Query(new BlessingTooltipRequest { EquippedTier = 2 }, out _).EquippedTier);
 
-        Assert.Equal("allocated", query.State);
-        Assert.Equal(2, query.EquippedTier);
-    }
+    [Theory]
+    [InlineData(0, "unallocated")]
+    [InlineData(1, "allocated")]
+    [InlineData(4, "allocated")]
+    public void A_blessing_stone_is_allocated_from_the_first_equipped_tier(int tier, string state) =>
+        Assert.Equal(state, ChromeAssetService.BlessingState(tier));
 
     [Fact]
     public void A_request_naming_only_a_stat_carries_the_stat_and_nothing_else()
