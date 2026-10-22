@@ -5198,7 +5198,9 @@
             "options": 1,
             "allOptions": true
           }
-        ]
+        ],
+        "maximumLimit": 2,
+        "maximumLimitWarning": "An item can have up to 2 Radiances active at a time."
       },
       "AbilityRank": {
         "slotType": "AbilityRank",
@@ -5269,7 +5271,9 @@
             "options": 3,
             "allOptions": true
           }
-        ]
+        ],
+        "maximumLimit": 2,
+        "maximumLimitWarning": "An item can have up to 2 Glyphs active at a time."
       },
       "GrantedAbility": {
         "slotType": "GrantedAbility",
@@ -5377,7 +5381,9 @@
             "options": 1,
             "allOptions": true
           }
-        ]
+        ],
+        "maximumLimit": 2,
+        "maximumLimitWarning": "An item can have up to 2 Sigils active at a time."
       },
       "MajorTrait": {
         "slotType": "ItemTrait",
@@ -5450,7 +5456,9 @@
             "options": 1,
             "allOptions": true
           }
-        ]
+        ],
+        "maximumLimit": 2,
+        "maximumLimitWarning": "An item can have up to 2 Aspects active at a time."
       },
       "StatEnchant": {
         "slotType": "ItemTrait",
@@ -5523,7 +5531,9 @@
             "options": 3,
             "allOptions": true
           }
-        ]
+        ],
+        "maximumLimit": 2,
+        "maximumLimitWarning": "An item can have up to 2 Enchants active at a time."
       }
     }
   },

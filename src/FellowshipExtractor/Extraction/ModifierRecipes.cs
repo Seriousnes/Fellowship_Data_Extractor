@@ -1,19 +1,25 @@
+using System.Text.RegularExpressions;
+
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Engine;
 using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.Objects.Core.i18N;
 
 using Fellowship.SDK.Models;
 
 namespace FellowshipExtractor.Extraction;
 
-public sealed class ModifierRecipes
+public sealed record ModifierLimit(int Maximum, string Warning);
+
+public sealed partial class ModifierRecipes
 {
     public const string Implementation =
         "/Script/DynamicLootSystemRuntime.CRRecipe_TargetSpecificSlotWithSpecificModifier";
 
     private const string RecipeIdField = "RecipeID";
+    private const string RecipeNameField = "RecipeName";
     private const string ImplementationField = "RecipeImplementation";
     private const string DataField = "RecipeSpecificData";
     private const string EnabledField = "EnabledInGame";
@@ -22,8 +28,11 @@ public sealed class ModifierRecipes
     private const string ModifierTypeField = "ModifierType";
     private const string OptionsField = "NumberOfOutputOptions";
     private const string AllOptionsField = "GenerateAllPossibleOutputOptions";
+    private const string WarningSuffix = "_MaximumLimitWarning";
 
     private readonly Dictionary<string, List<ModifierRecipe>> _bySlot = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<(string Table, string Key)>> _names = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ModifierLimit> _limits = new(StringComparer.Ordinal);
 
     public int Count => _bySlot.Values.Sum(recipes => recipes.Count);
 
@@ -65,6 +74,15 @@ public sealed class ModifierRecipes
 
                 if (!_bySlot.TryGetValue(slot, out var recipes)) _bySlot[slot] = recipes = [];
                 recipes.Add(recipe);
+
+                if (PropertyWalk.Get(row, RecipeNameField)?.GenericValue is FText
+                    {
+                        TextHistory: FTextHistory.StringTableEntry entry,
+                    })
+                {
+                    if (!_names.TryGetValue(slot, out var names)) _names[slot] = names = [];
+                    names.Add((entry.TableId.Text, entry.Key));
+                }
             }
         }
 
@@ -74,9 +92,51 @@ public sealed class ModifierRecipes
                 $"No enabled {TraitCategoryNames.RowStructure} row is a {Implementation}, so no modifier slot " +
                 "states the recipes that reroll it.");
         }
+
+        foreach (var (slot, names) in _names)
+        {
+            if (Limit(slot, names) is { } limit) _limits[slot] = limit;
+        }
     }
 
     public IReadOnlyCollection<string> Slots => _bySlot.Keys;
 
     public IReadOnlyList<ModifierRecipe> For(string slot) => _bySlot.TryGetValue(slot, out var recipes) ? recipes : [];
+
+    public ModifierLimit? LimitOf(string slot) => _limits.GetValueOrDefault(slot);
+
+    private static ModifierLimit? Limit(string slot, IReadOnlyList<(string Table, string Key)> names)
+    {
+        var warnings = names
+            .Select(name => name.Table)
+            .Distinct(StringComparer.Ordinal)
+            .SelectMany(table => StringTables.In(table))
+            .Where(entry => entry.Key.EndsWith(WarningSuffix, StringComparison.Ordinal))
+            .Where(entry => names.All(name =>
+                name.Key.StartsWith(entry.Key[..^WarningSuffix.Length] + "_", StringComparison.Ordinal)))
+            .ToArray();
+
+        if (warnings.Length == 0) return null;
+
+        if (warnings.Length > 1)
+        {
+            throw new InvalidOperationException(
+                $"The recipes rerolling {slot} share the stem of {warnings.Length} {WarningSuffix} strings: " +
+                $"{string.Join(", ", warnings.Select(warning => warning.Key))}.");
+        }
+
+        var (key, text) = warnings[0];
+        var numbers = Number().Matches(text);
+
+        if (numbers.Count != 1)
+        {
+            throw new InvalidOperationException(
+                $"{key} reads \"{text}\", and the limit is read as its one number.");
+        }
+
+        return new ModifierLimit(int.Parse(numbers[0].Value, System.Globalization.CultureInfo.InvariantCulture), text);
+    }
+
+    [GeneratedRegex(@"\d+")]
+    private static partial Regex Number();
 }

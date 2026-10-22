@@ -37,6 +37,19 @@ public sealed class ModifierRecipeTests
     }
 
     [Fact]
+    public void AModifierSlotsLimitIsTheNumberItsWarningPrints()
+    {
+        var aspect = Export.Loaded.Settings.StatCalculation.SlotDefinitions["MajorTrait"];
+
+        Assert.Equal("An item can have up to 2 Aspects active at a time.", aspect.MaximumLimitWarning);
+        Assert.Equal(2, aspect.MaximumLimit);
+
+        Assert.All(
+            Export.Loaded.Settings.StatCalculation.SlotDefinitions.Values.Where(slot => slot.Recipes.Count > 0),
+            slot => Assert.Equal(2, slot.MaximumLimit));
+    }
+
+    [Fact]
     public void EveryModifierSlotARecipeRerollsListsNineRecipes()
     {
         var rerolled = Export.Loaded.Settings.StatCalculation.SlotDefinitions

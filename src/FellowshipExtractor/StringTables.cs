@@ -27,6 +27,9 @@ public static class StringTables
     public static string? Find(string table, string key) =>
         _byEntry.TryGetValue((table, key), out var text) ? text : null;
 
+    public static IEnumerable<(string Key, string Text)> In(string table) =>
+        _byEntry.Where(entry => entry.Key.Table == table).Select(entry => (entry.Key.Key, entry.Value));
+
     public static string? Resolve(FText text) =>
         text.TextHistory is FTextHistory.StringTableEntry entry
             ? Find(entry.TableId.Text, entry.Key)

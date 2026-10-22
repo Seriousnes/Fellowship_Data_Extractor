@@ -389,6 +389,8 @@ public sealed class StatCalculation
                 GemPowerPool = Names(row, "GemPowerPool"),
                 ItemTraitPool = Names(row, "ItemTraitPool"),
                 Recipes = recipes.For(rowName),
+                MaximumLimit = recipes.LimitOf(rowName)?.Maximum,
+                MaximumLimitWarning = recipes.LimitOf(rowName)?.Warning,
             };
         }
 

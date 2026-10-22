@@ -49,6 +49,10 @@ public sealed record ItemSlotDefinition(string SlotType, int MinimumItemLevel)
     public IReadOnlyList<string> ItemTraitPool { get; init; } = [];
 
     public IReadOnlyList<ModifierRecipe> Recipes { get; init; } = [];
+
+    public int? MaximumLimit { get; init; }
+
+    public string? MaximumLimitWarning { get; init; }
 }
 
 public sealed record ModifierRecipe(string Recipe, int SlotIndex)
