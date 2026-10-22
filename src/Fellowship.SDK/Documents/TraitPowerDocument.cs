@@ -6,6 +6,7 @@ public sealed class TraitPowerDocument : EntityDocument
 {
     public string? Description { get; init; }
     public IReadOnlyDictionary<string, string>? DescriptionsByHero { get; init; }
+    public IReadOnlyDictionary<string, string>? NameByHero { get; init; }
     public string? Icon { get; init; }
     public double? Cooldown { get; init; }
     public double? Duration { get; init; }

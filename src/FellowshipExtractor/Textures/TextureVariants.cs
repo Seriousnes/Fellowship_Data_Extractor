@@ -27,6 +27,7 @@ public static class TextureVariants
     private static readonly string Recipe = string.Join(
         ";",
         [
+            typeof(WebpEncoder).Assembly.GetName().Version!.ToString(),
             $"{Encoder.FileFormat}/{Encoder.TransparentColorMode}/{Encoder.Method}/{Encoder.SkipMetadata}",
             "Crop/Top/Lanczos3",
             .. TextureSizes.All.Select(size => $"{size}={TextureSizes.Pixels(size)}"),

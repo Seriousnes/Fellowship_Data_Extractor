@@ -4993,7 +4993,9 @@
       "Default_GemSlot": {
         "1": {
           "tier": 1,
-          "guaranteedSlots": [],
+          "guaranteedSlots": [
+            "GemSocket"
+          ],
           "randomRolls": 0,
           "randomizedSlots": [],
           "specialSlots": []
@@ -5098,8 +5100,7 @@
         "1": {
           "tier": 1,
           "guaranteedSlots": [
-            "WeaponPower",
-            "WeaponTraitTree"
+            "RelicPower"
           ],
           "randomRolls": 0,
           "randomizedSlots": [],
@@ -5149,7 +5150,10 @@
       "Weapon": {
         "1": {
           "tier": 1,
-          "guaranteedSlots": [],
+          "guaranteedSlots": [
+            "WeaponPower",
+            "WeaponTraitTree"
+          ],
           "randomRolls": 0,
           "randomizedSlots": [],
           "specialSlots": []
@@ -5188,7 +5192,7 @@
             "WeaponPower",
             "WeaponTraitTree"
           ],
-          "randomRolls": 2,
+          "randomRolls": 3,
           "randomizedSlots": [
             "StatEnchant",
             "StatEnchant",
@@ -5265,19 +5269,19 @@
       },
       "NecklaceTraitTree": {
         "slotType": "TraitTree",
-        "minimumItemLevel": 210,
+        "minimumItemLevel": 180,
         "gemPowerPool": [],
         "itemTraitPool": []
       },
       "WeaponTraitTree": {
         "slotType": "TraitTree",
-        "minimumItemLevel": 285,
+        "minimumItemLevel": 270,
         "gemPowerPool": [],
         "itemTraitPool": []
       },
       "HeroicTrait": {
         "slotType": "ItemTrait",
-        "minimumItemLevel": 240,
+        "minimumItemLevel": 210,
         "gemPowerPool": [],
         "itemTraitPool": [
           "ItemTrait.TraitCategory.Heroic"
@@ -5285,7 +5289,7 @@
       },
       "MajorTrait": {
         "slotType": "ItemTrait",
-        "minimumItemLevel": 270,
+        "minimumItemLevel": 240,
         "gemPowerPool": [],
         "itemTraitPool": [
           "ItemTrait.TraitCategory.Major"
@@ -5364,15 +5368,15 @@
       "points": [
         {
           "time": 1,
-          "value": 1
+          "value": 4
         },
         {
           "time": 150,
-          "value": 2
+          "value": 5
         },
         {
           "time": 300,
-          "value": 3
+          "value": 6
         }
       ]
     },

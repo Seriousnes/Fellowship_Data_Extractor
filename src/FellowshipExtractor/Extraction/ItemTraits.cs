@@ -212,8 +212,21 @@ public sealed class TraitCategoryNames
 
     public int Count => _byCategory.Count;
 
-    public TraitCategoryNames(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+    public TraitCategoryNames(
+        AbstractFileProvider provider,
+        IReadOnlyList<FAssetData> assets,
+        IReadOnlyDictionary<string, ItemSlotDefinition> slots,
+        IReadOnlyList<ModifierTypeEntry> modifiers)
     {
+        foreach (var modifier in modifiers)
+        {
+            if (modifier.Printed is not { } printed) continue;
+            if (slots.GetValueOrDefault(modifier.Name)?.ItemTraitPool is not [var pooled]) continue;
+            if (!pooled.StartsWith(CategoryPrefix, StringComparison.OrdinalIgnoreCase)) continue;
+
+            _byCategory[pooled[CategoryPrefix.Length..]] = printed;
+        }
+
         foreach (var objectPath in TableFinder.ByRowStructure(assets, RowStructure))
         {
             if (!provider.TryLoadPackageObject<UDataTable>(

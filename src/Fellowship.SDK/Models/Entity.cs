@@ -344,6 +344,8 @@ public sealed record Placeholder
 
     public double? Value { get; init; }
 
+    public bool? PerRank { get; init; }
+
     public string? Text { get; init; }
 
     public bool? Percent { get; init; }

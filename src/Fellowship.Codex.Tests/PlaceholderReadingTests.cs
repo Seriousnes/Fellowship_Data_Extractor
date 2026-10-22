@@ -33,6 +33,15 @@ public class PlaceholderReadingTests(Export export)
     }
 
     [Fact]
+    public void A_per_rank_value_reads_at_the_equipped_rank_or_one_item_at_the_queried_level()
+    {
+        var perRank = new Placeholder { Value = 1, PerRank = true };
+
+        Assert.Equal("10", Readings.Reading(perRank, new TooltipQuery { EquippedTier = 10 }, null).Text);
+        Assert.Equal("5", Readings.Reading(perRank, new TooltipQuery { ItemLevel = 200 }, null).Text);
+    }
+
+    [Fact]
     public void A_delta_constant_below_1_reads_as_the_reduction_it_carries()
     {
         Assert.Equal("-8%", Read(new Placeholder { Value = 0.92, Format = "delta" }).Text);

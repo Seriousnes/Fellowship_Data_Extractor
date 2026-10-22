@@ -78,6 +78,15 @@ public sealed class PlaceholderService(IEntityStoreService store, IRichTextServi
                 : Unscaled(placeholder, coefficient, attribute);
         }
 
+        if (placeholder is { PerRank: true, Value: { } perRank })
+        {
+            var rank = Enchants.Rank(store.Settings, query);
+
+            return new Substitution(
+                Round((decimal)perRank * rank),
+                $"{Round((decimal)perRank)} per rank at equipped rank {rank}");
+        }
+
         if (placeholder.Value is { } number) return Number(placeholder, number, haste);
 
         return Unresolved(placeholder);

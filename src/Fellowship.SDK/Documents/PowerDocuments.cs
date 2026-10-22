@@ -14,6 +14,7 @@ public sealed class TraitDocument : EntityDocument
 
     public EntityReference? Power { get; init; }
     public string? Description { get; init; }
+    public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public string? Icon { get; init; }
     public IReadOnlyList<RankRun>? RankRuns { get; init; }
 

@@ -8,7 +8,12 @@ using Fellowship.SDK.Models;
 
 namespace FellowshipExtractor.Extraction;
 
-public sealed record StatEnchant(IReadOnlyDictionary<string, string> NameByHero, IReadOnlyList<TraitStat> Stats);
+public sealed record StatEnchant(
+    string Name,
+    IReadOnlyDictionary<string, string> NameByHero,
+    IReadOnlyList<TraitStat> Stats,
+    string? Description,
+    IReadOnlyDictionary<string, Placeholder> Placeholders);
 
 public sealed class StatEnchants
 {
@@ -16,8 +21,12 @@ public sealed class StatEnchants
     public const string PowerKey = "StatEnchantItemLevelToTraitPower";
 
     private const string NameField = "DynamicName";
+    private const string DescriptionField = "DynamicDescription";
+    private const string TextField = "Text";
     private const string TokensField = "Tokens";
+    private const string TokenNameField = "TokenName";
     private const string TokenTypeField = "Type";
+    private const string AttributeCalculationType = "AttributeCalculation";
     private const string ObjectField = "Object";
     private const string FunctionField = "CustomSourceFunction";
     private const string CustomFunctionType = "CustomSourceFunction";
@@ -74,8 +83,49 @@ public sealed class StatEnchants
 
             if (stats.Count == 0) throw new InvalidOperationException($"{path} grants no modifier an enchant reads.");
 
-            _byAugmentation[netId] = new StatEnchant(Names(provider, augmentation, heroes, path), stats);
+            var (name, names) = Names(provider, augmentation, heroes, path);
+            var description = PropertyWalk.GetStruct(augmentation, DescriptionField) is { } dynamic
+                ? PropertyWalk.GetText(dynamic, TextField)
+                : null;
+
+            _byAugmentation[netId] = new StatEnchant(
+                name, names, stats, description, PerRank(augmentation, stats, path));
         }
+    }
+
+    private static Dictionary<string, Placeholder> PerRank(
+        IPropertyHolder augmentation, IReadOnlyList<TraitStat> stats, string path)
+    {
+        var placeholders = new Dictionary<string, Placeholder>(StringComparer.Ordinal);
+
+        foreach (var token in Structs(PropertyWalk.GetStruct(augmentation, DescriptionField), TokensField))
+        {
+            if (PropertyWalk.GetString(token, TokenTypeField)?
+                    .EndsWith(AttributeCalculationType, StringComparison.Ordinal) is not true) continue;
+
+            var key = PropertyWalk.GetString(token, TokenNameField);
+            var attribute = PropertyWalk.GetStruct(token, AttributeField) is { } held
+                ? PropertyWalk.GetString(held, AttributeNameField)
+                : null;
+
+            if (key is null || stats.SingleOrDefault(stat => stat.Attribute == attribute) is not { } stat)
+            {
+                throw new InvalidOperationException(
+                    $"{path}'s description token {key} reads {attribute}, and the enchant's effect modifies no " +
+                    "such attribute.");
+            }
+
+            placeholders[key] = new Placeholder
+            {
+                Key = key,
+                Attribute = attribute,
+                Value = stat.Coefficient,
+                PerRank = true,
+                ScalesOff = [attribute!],
+            };
+        }
+
+        return placeholders;
     }
 
     public StatEnchant? ForAugmentation(int netId) => _byAugmentation.GetValueOrDefault(netId);
@@ -118,7 +168,7 @@ public sealed class StatEnchants
 
     private static string? Named(string? value) => value is null or NoName ? null : value;
 
-    private static IReadOnlyDictionary<string, string> Names(
+    private static (string Name, IReadOnlyDictionary<string, string> NameByHero) Names(
         AbstractFileProvider provider, UObject augmentation, HeroNames heroes, string path)
     {
         var token = Structs(PropertyWalk.GetStruct(augmentation, NameField), TokensField)
@@ -191,7 +241,7 @@ public sealed class StatEnchants
             names[hero.ShippedName] = printed;
         }
 
-        return names;
+        return (string.Join(" / ", byAttribute.OrderBy(entry => entry.Key).Select(entry => entry.Value).Distinct()), names);
     }
 
     private static string? Text(FScriptText text) =>

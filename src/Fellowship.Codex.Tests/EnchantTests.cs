@@ -37,9 +37,9 @@ public sealed class EnchantTests(Export export)
             Enchants.Granted(enchant, Settings, Settings.Items.MaxItemLevel).Count()));
 
     [Theory]
-    [InlineData(1, 0)]
-    [InlineData(150, 1)]
-    [InlineData(300, 2)]
+    [InlineData(1, 3)]
+    [InlineData(150, 4)]
+    [InlineData(300, 5)]
     public void An_enchant_row_reads_one_below_the_power_its_item_level_gives(int itemLevel, int printed) =>
         Assert.Equal(printed, Enchants.RowValue(Settings, itemLevel));
 
@@ -103,7 +103,7 @@ public sealed class EnchantTests(Export export)
         };
 
         Assert.Equal(
-            ["+2", null, TooltipView.GlyphRowValue, "+40"],
+            ["+5", null, TooltipView.GlyphRowValue, "+40"],
             export.Tooltip.Modifiers(item, query, null).Select(line => line.Value));
     }
 

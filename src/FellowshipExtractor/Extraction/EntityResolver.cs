@@ -190,15 +190,16 @@ public sealed class EntityResolver
         RarityDrops = new RarityDropChances(provider, rarities);
         RuleSets = new DynamicItemRuleSets(provider, _assets, rarities, RarityDrops);
         Gems = new GemDefinitions(provider, _assets, _constants, _augmentationIds, rarities);
+        ModifierRecipes = new ModifierRecipes(provider, _assets);
+        StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor, RuleSets, ModifierRecipes);
+
         Traits = new ItemTraits(
-            provider, _assets, _constants, _augmentationIds, new TraitCategoryNames(provider, _assets));
+            provider, _assets, _constants, _augmentationIds,
+            new TraitCategoryNames(provider, _assets, StatCalculation.SlotDefinitions, ModifierRecipes.Types));
 
         TraitTrees = new ItemTraitTrees(provider, _assets, _tags, Traits.MaxRank);
 
         AbilityRanks = new DynamicAbilityRanks(provider, _assets, _tags, _augmentationIds, SlotNames);
-
-        ModifierRecipes = new ModifierRecipes(provider, _assets);
-        StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor, RuleSets, ModifierRecipes);
 
         Collections = new VisualCollections(provider, _assets);
         HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, Collections, rarities);
@@ -268,6 +269,7 @@ public sealed class EntityResolver
         {
             if (Talents.ForAugmentation(tag.Name)?.DisplayName is { } talent) return talent;
             if (Gems.ForAugmentation(tag.Name)?.DisplayName is { } node) return node;
+            if (Enchants.ForAugmentation(tag.NetId)?.Name is { } enchant) return enchant;
             if (Traits.ForAugmentation(tag.NetId)?.DisplayName is { } trait) return trait;
         }
 
@@ -366,6 +368,16 @@ public sealed class EntityResolver
 
             if (Talents.ForAugmentation(tag.Name) is { } talent) entity = WithTalent(entity, talent, icons);
             if (Gems.ForAugmentation(tag.Name) is { } node) entity = WithGemNode(entity, node, icons);
+            if (Enchants.ForAugmentation(tag.NetId) is { } enchant)
+            {
+                entity = entity with
+                {
+                    DisplayName = entity.DisplayName ?? enchant.Name,
+                    NameByHero = enchant.NameByHero,
+                    Placeholders = Overlaid(entity.Placeholders, enchant.Placeholders),
+                };
+            }
+
             if (Traits.ForAugmentation(tag.NetId) is { } grantingTrait)
             {
                 entity = WithGrantorText(entity, grantingTrait.DisplayName, grantingTrait.Description, grantingTrait.IconPath, icons);
@@ -498,10 +510,13 @@ public sealed class EntityResolver
     {
         if (Traits.ForTag(tagName) is { } trait)
         {
+            var enchant = trait.Augmentation is { } granting ? Enchants.ForAugmentation(granting) : null;
+
             return entity with
             {
-                DisplayName = entity.DisplayName ?? trait.DisplayName,
-                Description = entity.Description ?? trait.Description,
+                DisplayName = entity.DisplayName ?? enchant?.Name ?? trait.DisplayName,
+                Description = entity.Description ?? enchant?.Description ?? trait.Description,
+                Placeholders = entity.Placeholders ?? enchant?.Placeholders,
                 TraitCategoryTag = trait.CategoryTag,
                 TraitCategory = trait.Category,
                 MaxRank = trait.MaxRank,
@@ -509,8 +524,8 @@ public sealed class EntityResolver
                 Augmentation = trait.Augmentation,
                 RankRuns = trait.Runs,
                 Icon = entity.Icon ?? IconName(trait.IconPath, icons),
-                NameByHero = trait.Augmentation is { } granted ? Enchants.ForAugmentation(granted)?.NameByHero : null,
-                TraitStats = trait.Augmentation is { } stated ? Enchants.ForAugmentation(stated)?.Stats : null,
+                NameByHero = enchant?.NameByHero,
+                TraitStats = enchant?.Stats,
             };
         }
 
@@ -959,6 +974,17 @@ public sealed class EntityResolver
         TalentColumn = talent.Column,
         TalentCost = talent.Cost,
     };
+
+    private static IReadOnlyDictionary<string, Placeholder> Overlaid(
+        IReadOnlyDictionary<string, Placeholder>? declared, IReadOnlyDictionary<string, Placeholder> bound)
+    {
+        var placeholders = new Dictionary<string, Placeholder>(StringComparer.Ordinal);
+
+        foreach (var (key, placeholder) in declared ?? bound) placeholders[key] = placeholder;
+        foreach (var (key, placeholder) in bound) placeholders[key] = placeholder;
+
+        return placeholders;
+    }
 
     private Entity WithGrantorText(
         Entity entity, string name, string? description, string? iconPath, IconWriter? icons) => entity with

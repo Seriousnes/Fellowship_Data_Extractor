@@ -20,7 +20,8 @@ public sealed class StatEnchantTests
         foreach (var enchant in Enchants)
         {
             Assert.Equal(heroes, enchant.NameByHero!.Keys.Order());
-            Assert.Equal(2, enchant.Stats!.Count(stat => stat.Coefficient > 0 && stat.Lookup is not null));
+            Assert.Equal(2, enchant.Stats!.Count);
+            Assert.All(enchant.Stats, stat => Assert.Null(stat.Lookup));
         }
     }
 
@@ -36,21 +37,40 @@ public sealed class StatEnchantTests
     }
 
     [Fact]
-    public void TheTwoSecondaryStatsReadFourAtPowerOneAndSixAtPowerThree()
-    {
-        var crit = Enchants.Single(trait => trait.Id == 65).Stats!.Single(stat => stat.Attribute == "CritRating");
-
-        Assert.Equal(1, crit.Coefficient);
-        Assert.Equal("RCIM_Linear", crit.Lookup!.Interpolation);
-        Assert.Equal([new(1, 4), new(3, 6)], crit.Lookup.Points);
-    }
+    public void EachSecondaryStatGrantsOnePerRank() =>
+        Assert.All(Enchants.SelectMany(enchant => enchant.Stats!), stat => Assert.Equal(1, stat.Coefficient));
 
     [Fact]
-    public void ItemLevelStepsThePowerAtOneFiftyAndThreeHundred()
+    public void ItemLevelStepsTheRankAtOneFiftyAndThreeHundred()
     {
         var power = Export.Loaded.Settings.Items.StatEnchantPower!;
 
         Assert.Equal("RCIM_Constant", power.Interpolation);
-        Assert.Equal([new(1, 1), new(150, 2), new(300, 3)], power.Points);
+        Assert.Equal([new(1, 4), new(150, 5), new(300, 6)], power.Points);
+    }
+
+    [Fact]
+    public void AnEnchantIsNamedByTheNamesItsFunctionPrintsNotItsTableRow()
+    {
+        var sphinx = Enchants.Single(trait => trait.Id == 69);
+
+        Assert.Equal("Sphinx's Cunning", sphinx.NameByHero!["Aeona"]);
+        Assert.Equal("Ogre's Might / Vampire's Guile / Sphinx's Cunning", sphinx.Name);
+        Assert.Equal(sphinx.Name, sphinx.Power!.Name);
+    }
+
+    [Fact]
+    public void EachStatTokenOfAnEnchantDescriptionPrintsItsCoefficientPerRank()
+    {
+        foreach (var enchant in Enchants)
+        {
+            Assert.NotNull(enchant.Description);
+
+            var tokens = enchant.Placeholders!.Where(placeholder => placeholder.PerRank == true).ToArray();
+
+            Assert.Equal(
+                enchant.Stats!.Select(stat => (stat.Attribute, stat.Coefficient)).Order(),
+                tokens.Select(token => (token.Attribute!, token.Value!.Value)).Order());
+        }
     }
 }

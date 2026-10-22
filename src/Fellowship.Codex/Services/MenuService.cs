@@ -41,7 +41,7 @@ public sealed class MenuService : IMenuService
                 Tab(EntityType.Ability),
                 Tab(EntityType.Effect),
                 Tab(EntityType.Talent, new MenuSection("Hero", Heroes(Where(EntityType.Talent)))),
-                Tab(EntityType.Trait),
+                Tab(EntityType.Trait, new MenuSection("Category", TraitCategories(Where(EntityType.Trait)))),
                 Tab(EntityType.GemTrait),
                 Tab(EntityType.TraitPower),
                 Tab(EntityType.WeaponPower),
@@ -112,6 +112,9 @@ public sealed class MenuService : IMenuService
         .. Enum.GetValues<GemType>()
             .Select(cut => Narrow(where, "gem", cut.ToString(), Colour(tokens.Gem(cut.ToString())))),
     ];
+
+    private IReadOnlyList<MenuLink> TraitCategories(string where) =>
+        [.. Named("trait", EntityType.Trait).Select(category => Narrow(where, "trait", category, null))];
 
     private IReadOnlyList<MenuLink> Zones(string where) =>
         [.. Named("source", EntityType.Creature).Select(zone => Narrow(where, "source", zone, null))];

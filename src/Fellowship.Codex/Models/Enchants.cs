@@ -12,6 +12,9 @@ public static class Enchants
             : throw new InvalidOperationException(
                 "The settings state no enchant power curve, so an enchant has no magnitude at any item level.");
 
+    public static int Rank(SettingsFile settings, TooltipQuery query) =>
+        query.EquippedTier ?? Power(settings, query.ItemLevel ?? settings.Items.MaxItemLevel);
+
     public static int RowValue(SettingsFile settings, int itemLevel) => Power(settings, itemLevel) - 1;
 
     public static IEnumerable<(string Stat, decimal Value)> Granted(

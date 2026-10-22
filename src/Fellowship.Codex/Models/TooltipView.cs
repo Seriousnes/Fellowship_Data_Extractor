@@ -69,10 +69,16 @@ public static class TooltipView
     }
 
     public static string? PrintedFor(EntityDocument document, string? wearer) =>
-        document is TraitDocument { NameByHero: { } names } && wearer is not null &&
-        names.TryGetValue(wearer, out var printed)
+        NameByHero(document) is { } names && wearer is not null && names.TryGetValue(wearer, out var printed)
             ? printed
             : null;
+
+    public static IReadOnlyDictionary<string, string>? NameByHero(EntityDocument document) => document switch
+    {
+        TraitDocument trait => trait.NameByHero,
+        TraitPowerDocument power => power.NameByHero,
+        _ => null,
+    };
 
     public static string Magnitude(StatLine line) =>
         (line.Value < 0 ? string.Empty : "+") +
