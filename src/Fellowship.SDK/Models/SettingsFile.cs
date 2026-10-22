@@ -11,8 +11,6 @@ public sealed record StatCalculationFile
     public double StatRarityBase { get; init; }
 
     public SlotStatSettings BaseSlot { get; init; } = new();
-    public SlotStatSettings FixedSlot { get; init; } = new();
-    public SlotStatSettings DynamicSlot { get; init; } = new();
 
     public IReadOnlyDictionary<string, SlotWeight> SlotWeights { get; init; } =
         new Dictionary<string, SlotWeight>(StringComparer.OrdinalIgnoreCase);
@@ -22,8 +20,6 @@ public sealed record StatCalculationFile
 
     public IReadOnlyDictionary<string, AttributeDisplay> Attributes { get; init; } =
         new Dictionary<string, AttributeDisplay>(StringComparer.OrdinalIgnoreCase);
-
-    public IReadOnlyList<string> RandomStatPool { get; init; } = [];
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<int, RaritySlots>> RarityAdditions { get; init; } =
         new Dictionary<string, IReadOnlyDictionary<int, RaritySlots>>(StringComparer.OrdinalIgnoreCase);

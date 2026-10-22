@@ -26,8 +26,6 @@ public sealed class Settings
 
     public StatCalculation StatCalculation { get; }
 
-    public IReadOnlyList<string> RandomStatPool { get; }
-
     public IReadOnlyList<string> GemTypes { get; }
 
     public IReadOnlyDictionary<string, string> SlotIcons { get; }
@@ -84,7 +82,6 @@ public sealed class Settings
         RarityNames rarities,
         AbilityCategories categories,
         StatCalculation statCalculation,
-        IReadOnlyList<string> randomStatPool,
         IReadOnlyList<string> gemTypes,
         SlotIcons slotIcons,
         RarityOrnaments ornaments,
@@ -118,7 +115,6 @@ public sealed class Settings
         Items = items.Values with { StatEnchantPower = enchants.Power };
 
         StatCalculation = statCalculation;
-        RandomStatPool = randomStatPool;
         GemTypes = gemTypes;
         SlotIcons = slotIcons.BySlot;
         RarityOrnaments = ornaments.ByRarity;
@@ -235,12 +231,9 @@ public sealed class Settings
             PrimaryAndStaminaMultiplier = StatCalculation.PrimaryAndStaminaMultiplier,
             StatRarityBase = StatCalculation.StatRarityBase,
             BaseSlot = StatCalculation.BaseSlot,
-            FixedSlot = StatCalculation.FixedSlot,
-            DynamicSlot = StatCalculation.DynamicSlot,
             SlotWeights = StatCalculation.SlotWeights,
             ArmorWeights = StatCalculation.ArmorWeights,
             Attributes = StatCalculation.Attributes,
-            RandomStatPool = RandomStatPool,
             RarityAdditions = StatCalculation.RarityAdditions,
             SlotDefinitions = StatCalculation.SlotDefinitions,
         },

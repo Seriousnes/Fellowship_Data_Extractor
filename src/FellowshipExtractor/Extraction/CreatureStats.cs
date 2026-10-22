@@ -63,7 +63,10 @@ public sealed class CreatureStats
 
     private readonly HeroNames _heroes;
 
-    public CreatureStats(AbstractFileProvider provider, HeroNames heroes, IReadOnlySet<int> difficulties)
+    public IReadOnlyList<string> Unnamed { get; }
+
+    public CreatureStats(
+        AbstractFileProvider provider, HeroNames heroes, IReadOnlySet<int> difficulties, IReadOnlySet<string> characters)
     {
         _heroes = heroes;
 
@@ -105,6 +108,9 @@ public sealed class CreatureStats
         }
 
         scaled.Remove(DefaultNamespace);
+
+        Unnamed = [.. scaled.Where(scope => !characters.Contains(scope)).Order(StringComparer.Ordinal)];
+        scaled.ExceptWith(Unnamed);
 
         _scaled = scaled;
 

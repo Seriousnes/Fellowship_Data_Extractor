@@ -26,8 +26,6 @@ public sealed class StatCalculation
     public SecondaryStatPool Secondary { get; }
 
     public SlotStatSettings BaseSlot { get; }
-    public SlotStatSettings FixedSlot { get; }
-    public SlotStatSettings DynamicSlot { get; }
 
     public double PrimaryPowerBase { get; }
     public double PrimaryAndStaminaMultiplier { get; }
@@ -61,8 +59,6 @@ public sealed class StatCalculation
         StatRarityBase = Number(settings, "StatRarityBase");
 
         BaseSlot = Block(settings, "BaseItemSlotCalculationSettings");
-        FixedSlot = Block(settings, "FixedSlotCalculationSettings");
-        DynamicSlot = Block(settings, "DynamicSlotCalculationSettings");
 
         (Primary, Secondary) = Pools(provider);
 

@@ -85,6 +85,8 @@ public sealed class EntityResolver
     public ModifierInfo Modifiers { get; }
     public VendorInventories Vendors { get; }
     public ItemSources Sources { get; }
+
+    public ChallengeRewards Challenges { get; }
     public AbilityOwners Owners { get; }
     public ResourcePools Pools { get; }
     public ResourceNames ResourceNames { get; }
@@ -183,7 +185,6 @@ public sealed class EntityResolver
         Armor = new ArmorTypes(provider, _assets);
         TableNames = new ItemTableNames(provider, _assets, rarities);
         Progression = new ProgressionItems(provider, _assets, rarities);
-        Customizations = new CustomizationItems(provider, _assets, rarities);
         Localized = new LocalizedText(provider);
         Lore = new MountLore(Localized);
         RarityDrops = new RarityDropChances(provider, rarities);
@@ -211,12 +212,14 @@ public sealed class EntityResolver
         Talents = new TalentTrees(provider, _assets, _tags, Heroes);
 
         Dungeons = new DungeonNames(provider, _assets);
+        Customizations = new CustomizationItems(provider, _assets, rarities, Heroes, Dungeons);
         Modifiers = new ModifierInfo(provider, _assets);
         Vendors = new VendorInventories(provider, _assets);
-        Sources = new ItemSources(provider, _assets, Dungeons, Vendors, HeroItems, Drops, Heroes);
+        Challenges = new ChallengeRewards(provider, _assets);
+        Sources = new ItemSources(provider, _assets, Dungeons, Vendors, Challenges, HeroItems, Drops, Heroes);
 
         Leagues = new Leagues(provider, _assets);
-        CreatureStats = new CreatureStats(provider, Heroes, Leagues.Listed);
+        CreatureStats = new CreatureStats(provider, Heroes, Leagues.Listed, Characters());
 
         string[] creatures =
         [
@@ -231,7 +234,7 @@ public sealed class EntityResolver
         Categories = new AbilityCategories(provider);
 
         Settings = new Settings(
-            provider, _assets, Heroes, rarities, Categories, StatCalculation, Slots.RandomStatPool, Gems.Types,
+            provider, _assets, Heroes, rarities, Categories, StatCalculation, Gems.Types,
             SlotGlyphs, new RarityOrnaments(provider, rarities), new TalentTierPlates(provider),
             new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
@@ -905,12 +908,22 @@ public sealed class EntityResolver
         var tiers = DynamicVisuals.Tiers(cdo);
         var top = _rarities.Tiers.Max();
 
+        var listed = DropsIn(cdo);
+        var rotating = listed.Where(InRotation).ToArray();
+
+        IReadOnlyList<ItemSource> dropped = listed.Count > 0 && rotating.Length == 0
+            ? []
+            : Sources.Dropped(rotating, level => FindTag(TypeResolver.LevelTable, level)?.NetId);
+
         return entity with
         {
-            Sources = Empty(Sources.Dropped(DropsIn(cdo), level => FindTag(TypeResolver.LevelTable, level)?.NetId)),
+            Sources = Empty([.. dropped, .. Challenges.ForItem(tag.Name)]),
             ItemLevel = Sources.DropLevel(tiers.Count > 0 && tiers.All(tier => tier == top)),
         };
     }
+
+    private bool InRotation(string levelTag) =>
+        Dungeons.Find(levelTag)?.AvailableForCasual is true || DungeonDifficulties.For(levelTag) is { Count: > 0 };
 
     private static IReadOnlyList<string> DropsIn(UObject definition) =>
         PropertyWalk.Get(definition, SpecificDungeonsField)?.GenericValue is UScriptArray listed
@@ -1892,6 +1905,30 @@ public sealed class EntityResolver
         var exports = loaded.GetExports().ToArray();
         return exports.FirstOrDefault(e => e.Name.StartsWith("Default__", StringComparison.Ordinal))
             ?? exports.FirstOrDefault();
+    }
+
+    private HashSet<string> Characters()
+    {
+        var named = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var tag in _tags)
+        {
+            if (tag.Table.Equals(HeroNames.Table, StringComparison.OrdinalIgnoreCase) &&
+                tag.Name.StartsWith(HeroVariants.HeroTagPrefix, StringComparison.OrdinalIgnoreCase) &&
+                tag.Name[HeroVariants.HeroTagPrefix.Length..] is var codename && !codename.Contains('.'))
+            {
+                named.Add(codename);
+            }
+
+            if (tag.Table.Equals(CreatureTable, StringComparison.OrdinalIgnoreCase) &&
+                LoadDefaultObject(FindAsset(tag.Name)) is { } creature &&
+                PropertyWalk.GetString(creature, CharacterIdField) is { } characterId)
+            {
+                named.Add(characterId);
+            }
+        }
+
+        return named;
     }
 
     private FAssetData? FindAsset(string name)

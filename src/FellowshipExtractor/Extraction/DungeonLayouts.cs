@@ -78,12 +78,13 @@ public sealed class DungeonLayouts
             if (persistent is null || !provider.TryLoadPackage(persistent, out var level)) continue;
 
             var exports = level.GetExports().ToArray();
-            var floors = FloorsOf(exports);
+            IPackage[] loadedLevels = [level, .. AlwaysLoaded(provider, exports)];
+            var floors = FloorsOf(loadedLevels.SelectMany(loaded => loaded.GetExports()));
 
             var placements = new List<CreaturePlacement>();
             var patrols = new List<IReadOnlyList<WorldPoint>>();
 
-            foreach (var loaded in (IPackage[])[level, .. AlwaysLoaded(provider, exports)])
+            foreach (var loaded in loadedLevels)
             {
                 if (!Holds(loaded, wanted)) continue;
 

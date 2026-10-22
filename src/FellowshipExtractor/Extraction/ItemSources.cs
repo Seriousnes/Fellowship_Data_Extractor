@@ -7,7 +7,7 @@ using Fellowship.SDK.Models;
 
 namespace FellowshipExtractor.Extraction;
 
-public sealed record DroptableGrant(string Droptable, SourceKind Kind, string Name, int ItemLevel)
+public sealed record DroptableGrant(string Droptable, IReadOnlyList<ItemSource> Sources, int ItemLevel)
 {
     public required IReadOnlyList<string> Tags { get; init; }
 }
@@ -18,7 +18,6 @@ public sealed class ItemSources
     private const string GroupMarker = "Group";
     private const string ItemLevelField = "ItemLevel";
     private const string ContainsTagsField = "ContainsTags";
-    private const string DisplayNameField = "DisplayName";
     private const string LegendaryRow = "Legendary";
     private const string AnyDungeon = "Any dungeon";
     private const string StartingGear = "Starting gear";
@@ -42,6 +41,7 @@ public sealed class ItemSources
         IReadOnlyList<FAssetData> assets,
         DungeonNames dungeons,
         VendorInventories vendors,
+        ChallengeRewards challenges,
         HeroItemTable heroItems,
         DropItemLevels drops,
         HeroNames heroes)
@@ -60,15 +60,11 @@ public sealed class ItemSources
             var exports = package.GetExports().ToArray();
             var named = asset.AssetName.Text;
 
-            var root = exports.FirstOrDefault(export => export.Name.Equals(named, StringComparison.Ordinal));
+            IReadOnlyList<ItemSource> granting = vendors.VendorOf(named) is { } vendor
+                ? [new ItemSource(SourceKind.Vendor, vendor)]
+                : challenges.ForDroptable(named);
 
-            var vendor = vendors.VendorOf(named);
-            var printed = root is null ? null : PropertyWalk.GetText(root, DisplayNameField);
-
-            var kind = vendor is not null ? SourceKind.Vendor : SourceKind.Starmap;
-            var title = vendor ?? printed;
-
-            if (title is not { Length: > 0 }) continue;
+            if (granting.Count == 0) continue;
 
             foreach (var export in exports)
             {
@@ -76,7 +72,7 @@ public sealed class ItemSources
                 if (PropertyWalk.AsOrdinal(PropertyWalk.Get(export, ItemLevelField)?.GenericValue)
                     is not { } level) continue;
 
-                _grants.Add(new DroptableGrant(named, kind, title, level) { Tags = Tags(export) });
+                _grants.Add(new DroptableGrant(named, granting, level) { Tags = Tags(export) });
             }
         }
 
@@ -120,9 +116,9 @@ public sealed class ItemSources
 
             itemLevel ??= grant.ItemLevel;
 
-            if (!sources.Any(source => source.Kind == grant.Kind && source.Name == grant.Name))
+            foreach (var source in grant.Sources)
             {
-                sources.Add(new ItemSource(grant.Kind, grant.Name));
+                if (!sources.Contains(source)) sources.Add(source);
             }
         }
 
