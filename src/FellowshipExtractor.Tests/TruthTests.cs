@@ -568,8 +568,8 @@ public sealed class TruthTests
     {
         var scores = Export.Loaded.Settings.DifficultyScaling.MaxDungeonScore!;
         Assert.Equal(140, scores[1]);
-        Assert.Equal(350, scores[14]);
-        Assert.Equal(440, scores[20]);
+        Assert.Equal(455, scores[21]);
+        Assert.Equal(920, scores[52]);
         Assert.Equal(19, Export.Loaded.Settings.DifficultyScaling.ModifierAbilityUnlock);
     }
 }

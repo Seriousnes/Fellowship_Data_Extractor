@@ -167,7 +167,6 @@
         string? First(string key) => Catalog.Facet(key)?.Values(Entity).FirstOrDefault();
 
         Add("slot", First("slot"));
-        Add("set", First("set"));
         Add("gem", First("gem"));
         Add("trait", First("trait"));
 

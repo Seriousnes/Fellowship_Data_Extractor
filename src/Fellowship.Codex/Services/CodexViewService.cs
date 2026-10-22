@@ -205,8 +205,6 @@ public sealed class CodexViewService(
             EntityType.LegendaryPower => Body(new LegendaryPowerTooltipRequest { ShowIcon = icon }),
             EntityType.Mount => Body(new MountTooltipRequest { ShowIcon = icon }),
             EntityType.RelicPower => Body(new RelicPowerTooltipRequest { ShowIcon = icon }),
-            EntityType.SetBonus => Body(new SetBonusTooltipRequest { ShowIcon = icon }),
-            EntityType.SetBonusPower => Body(new SetBonusPowerTooltipRequest { ShowIcon = icon }),
             EntityType.Talent => Body(new TalentTooltipRequest { ShowIcon = icon }),
             EntityType.Trait => Body(new TraitTooltipRequest { ShowIcon = icon }),
             EntityType.TraitPower => Body(new TraitPowerTooltipRequest { ShowIcon = icon }),

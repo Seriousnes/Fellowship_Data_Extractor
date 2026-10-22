@@ -3,12 +3,12 @@ namespace FellowshipExtractor.Tests;
 public sealed class TypeResolverTests
 {
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(25, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(24, Enum.GetValues<EntityType>().Length);
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
     [InlineData(EntityType.Gem, "gem")]
-    [InlineData(EntityType.SetBonusPower, "set-bonus-power")]
+    [InlineData(EntityType.LegendaryPower, "legendary-power")]
     [InlineData(EntityType.TalentSlot, "talent-slot")]
     public void ASlugIsTheTypeNameHyphenated(EntityType type, string slug) =>
         Assert.Equal(slug, EntityTypes.Slug(type));
@@ -26,16 +26,15 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.GemTrait, 60)]
     [InlineData(EntityType.MountPower, 54)]
     [InlineData(EntityType.TraitPower, 46)]
-    [InlineData(EntityType.LegendaryPower, 44)]
+    [InlineData(EntityType.LegendaryPower, 36)]
     [InlineData(EntityType.Currency, 16)]
     [InlineData(EntityType.Modifier, 26)]
     [InlineData(EntityType.Gem, 24)]
-    [InlineData(EntityType.SetBonus, 23)]
-    [InlineData(EntityType.SetBonusPower, 15)]
     [InlineData(EntityType.Blessing, 8)]
     [InlineData(EntityType.WeaponPower, 12)]
     [InlineData(EntityType.Hero, 12)]
-    [InlineData(EntityType.RelicPower, 11)]
+    [InlineData(EntityType.RelicPower, 9)]
+    [InlineData(EntityType.RelicPassive, 5)]
     [InlineData(EntityType.CompanionPet, 14)]
     [InlineData(EntityType.GemType, 6)]
     [InlineData(EntityType.LegendaryStat, 2)]

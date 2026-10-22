@@ -6,7 +6,6 @@ public sealed class SectionHeadingRows
 {
     public const string Ability = "Ability";
     public const string Legendary = "Legendary";
-    public const string SetBonus = "SetBonus";
 
     private const string ColorField = "NamedOverrideColor";
     private const string RowField = "RowName";
@@ -15,7 +14,6 @@ public sealed class SectionHeadingRows
     [
         (Ability, "UW_ItemEffectsBlock", "TextBLock"),
         (Legendary, "UW_LegendaryEffectBlock", "Text_ItemEffectName"),
-        (SetBonus, "UW_SetBonusEntry", "UsageTxt"),
     ];
 
     public SectionHeadingRows(AbstractFileProvider provider)

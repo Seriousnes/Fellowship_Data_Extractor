@@ -17,7 +17,6 @@ public sealed record ItemRecord : EntityRecord
 
     public IReadOnlyList<string>? Rarities { get; init; }
 
-    public IReadOnlyList<RecordReference>? SetBonus { get; init; }
     public IReadOnlyList<StatSlotRecord>? Stats { get; init; }
 
     public string? RuleSet { get; init; }

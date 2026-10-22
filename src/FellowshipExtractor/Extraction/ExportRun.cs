@@ -35,6 +35,8 @@ public static class ExportRun
 
     private static readonly string[] NullMembers = ["Invalid", "None"];
 
+    private const string UngrantedPower = "a power no item grants";
+
     private static bool NullMember(Entity entity) =>
         entity.Name is { } name &&
         Array.Exists(NullMembers, leaf => name.EndsWith($".{leaf}", StringComparison.OrdinalIgnoreCase)) &&
@@ -82,7 +84,6 @@ public static class ExportRun
         Console.WriteLine(
             $"item traits:        {resolver.Traits.Count} rows, {resolver.Traits.BoundRuns} of " +
             $"{resolver.Traits.TotalRuns} rank runs bound to a curve");
-        Console.WriteLine($"set bonuses:        {resolver.SetBonuses.Count} rows");
         Console.WriteLine(
             $"stat enchants:      {resolver.Enchants.Count} traits named per hero, power by item level from " +
             $"{StatEnchants.PowerKey}");
@@ -190,6 +191,22 @@ public static class ExportRun
 
             scanned++;
             if (scanned % 500 == 0) Console.WriteLine($"  {scanned} of {resolver.Tags.Count}...");
+        }
+
+        var granted = resolved.Select(record => record.GrantsId).OfType<int>().ToHashSet();
+        var ungranted = resolved
+            .Where(record => record.Type is EntityType.RelicPower or EntityType.RelicPassive or EntityType.WeaponPower &&
+                             !granted.Contains(record.NetId!.Value))
+            .ToArray();
+
+        if (ungranted.Length > 0)
+        {
+            resolved.RemoveAll(ungranted.Contains);
+            dropped[UngrantedPower] = ungranted.Length;
+
+            Console.WriteLine(
+                $"  {ungranted.Length} powers no item grants: " +
+                string.Join(", ", ungranted.Select(power => $"{power.NetId} {power.DisplayName ?? power.Name}")));
         }
 
         var shared = resolver.Gains.Shared(resolved);

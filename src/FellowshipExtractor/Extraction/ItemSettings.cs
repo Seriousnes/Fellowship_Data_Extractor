@@ -16,6 +16,10 @@ public sealed class ItemSettings
     private const string GemPowersKey = "ItemGemPowers";
     private const string MaxItemLevelKey = "MaxItemLevel";
     private const string LevelsPerUpgradeKey = "ItemLevelsPerUpgrade";
+    private const string DefaultStaminaKey = "TemperDefaultStaminaMultiplier";
+    private const string StaminaStepsKey = "TemperStaminaMultiplierAtItemLevel";
+    private const string ItemLevelField = "ItemLevel";
+    private const string TemperValueField = "TemperValue";
 
     private const string GemTierEnum = "ECRGemTier";
     private const string SocketTierEnum = "ECRGemSocketTier";
@@ -79,8 +83,25 @@ public sealed class ItemSettings
                 config, mappings, config.RequiredList(SocketMultipliersKey), SocketTierEnum, Number),
             ItemGemPowers = Slots(config, mappings, config.RequiredList(GemPowersKey), slots),
             PowerPotential = potentialSettings,
+            TemperDefaultStaminaMultiplier = Number(
+                config.Text(DefaultStaminaKey), DefaultStaminaKey, config.Path),
+            TemperStaminaMultiplierAtItemLevel =
+            [
+                .. config.Each(StaminaStepsKey).Select(step => step as ConfigList
+                    ?? throw new InvalidOperationException(
+                        $"[{SettingsSection}] in {config.Path} writes a {StaminaStepsKey} entry as a scalar."))
+                    .Select(step => new TemperStaminaStep(
+                        (int)Number(StepField(config, step, ItemLevelField), $"{StaminaStepsKey}.{ItemLevelField}", config.Path),
+                        Number(StepField(config, step, TemperValueField), $"{StaminaStepsKey}.{TemperValueField}", config.Path)))
+                    .OrderBy(step => step.ItemLevel),
+            ],
         };
     }
+
+    private static string StepField(ConfigIni config, ConfigList step, string field) =>
+        step.Field(field)?.Text
+        ?? throw new InvalidOperationException(
+            $"[{SettingsSection}] in {config.Path} writes a {StaminaStepsKey} entry without a {field}.");
 
     private static ConfigValue Field(ConfigIni config, ConfigList block, string field) =>
         block.Field(field)

@@ -110,6 +110,11 @@ public sealed class ConfigIni
 
     public ConfigValue Required(string key) => Parse(Text(key));
 
+    public IReadOnlyList<ConfigValue> Each(string key) =>
+        _bySection.TryGetValue(key, out var values) && values.Count > 0
+            ? [.. values.Select(Parse)]
+            : throw new InvalidOperationException($"[{Section}] in {Path} does not set {key}.");
+
     public ConfigList RequiredList(string key) =>
         Required(key) as ConfigList
         ?? throw new InvalidOperationException(

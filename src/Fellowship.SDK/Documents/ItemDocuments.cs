@@ -19,7 +19,6 @@ public sealed class ItemDocument : EntityDocument
 
     public IReadOnlyList<Rarity>? Rarities { get; init; }
 
-    public IReadOnlyList<EntityReference>? SetBonus { get; init; }
     public IReadOnlyList<StatSlot>? Stats { get; init; }
 
     public string? RuleSet { get; init; }
@@ -39,6 +38,8 @@ public sealed class ItemDocument : EntityDocument
     public EntityReference? Grants { get; init; }
 
     public IReadOnlyList<EntityReference>? LegendaryStats { get; init; }
+
+    public IReadOnlyList<LegendaryStatText>? UntaggedLegendaryStats { get; init; }
 
     public IReadOnlyList<ItemSource>? Sources { get; init; }
 

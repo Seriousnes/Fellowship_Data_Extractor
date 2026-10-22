@@ -27,7 +27,7 @@ public sealed class ApiWebRoot : IWebHostEnvironment
     public IFileProvider ContentRootFileProvider { get; set; }
 }
 
-public class Export
+public sealed class Export
 {
     public ICodexViewService View { get; }
 
@@ -38,12 +38,9 @@ public class Export
     public IChromeAssetService Chrome { get; }
 
     public Export()
-        : this(Environment.GetEnvironmentVariable(FolderExportSource.Variable) ?? Found())
     {
-    }
+        var folder = Environment.GetEnvironmentVariable(FolderExportSource.Variable) ?? Found();
 
-    protected Export(string folder)
-    {
         var history = new FolderExportSource(folder)
             .LoadAsync(CancellationToken.None)
             .GetAwaiter()
@@ -65,17 +62,10 @@ public class Export
         Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, new ApiWebRoot());
     }
 
-    protected static string Found() =>
+    private static string Found() =>
         FolderExportSource.Above(AppContext.BaseDirectory)
         ?? throw new InvalidOperationException(
             $"No output/{ExportFolders.Pattern} carrying both data files above the test binary, and " +
             $"{FolderExportSource.Variable} is not set. It names the folder the extractor wrote, which " +
             "is the same layout the container holds.");
-
-    protected static string Sibling(string name) =>
-        FolderExportSource.Carried(
-            Path.Combine(Directory.GetParent(Found())!.FullName, name),
-            "The readings of that build are against");
 }
-
-public sealed class Export25647984() : Export(Sibling("export-25647984"));

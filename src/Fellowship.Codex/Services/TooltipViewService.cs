@@ -433,8 +433,7 @@ public sealed class TooltipViewService(
             --fx-divider:url({{chrome.GoldDivider}});--fx-rule:url({{chrome.SimpleDivider}});
             --fx-subheader:url({{chrome.Header(null)}});
             --fx-modplate:url({{chrome.ModifierPlate}});--fx-moddecor:url({{chrome.ModifierDecor}});
-            {{Heading("ability", chrome.AbilityBadge)}}{{Heading("legendary", chrome.LegendaryBadge)}}
-            {{Heading("setbonus", chrome.SetBonusBadge)}}}
+            {{Heading("ability", chrome.AbilityBadge)}}{{Heading("legendary", chrome.LegendaryBadge)}}}
 
             """ +
             Read(environment, Sheet, "Styles/tooltip.scss", "Components/Tooltip/_Tooltip.razor.scss") +

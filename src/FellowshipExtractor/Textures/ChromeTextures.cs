@@ -113,6 +113,7 @@ public static class ChromeTextures
         {
             ["T_Icons_Generic_WeaponSkill"] = "core.primary-200",
             ["T_Icons_Generic_TooltipSlot"] = "core.primary-main",
+            ["T_Icons_Generic_TooltipExpand"] = "core.primary-200",
             ["T_Icons_Generic_Gem"] = "core.primary-200",
             ["T_Backgrounds_TooltipSlot_Gradient_Decor"] = "core.secondary-600",
             ["T_Borders_Frame_Pattern"] = "core.primary-200",

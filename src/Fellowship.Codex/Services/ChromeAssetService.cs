@@ -43,8 +43,6 @@ public interface IChromeAssetService
 
     Badge LegendaryBadge { get; }
 
-    Badge SetBonusBadge { get; }
-
     string? Frame(string? rarity);
 
     string Header(string? rarity);
@@ -108,7 +106,6 @@ public sealed class ChromeAssetService(
     private const string RuleTexture = "T_Borders_Divider_Simple";
     private const string AbilityTexture = "T_Icons_StatTooltip_AbilitySlot_Pink";
     private const string LegendaryTexture = "T_Icons_StatTooltip_Legendary";
-    private const string SetBonusTexture = "T_Icons_StatTooltip_Set_Bonus";
     private const string SlotBackingTexture = "T_Borders_EmptyWithoutFrame";
     private const string SlotBevelTexture = "T_Borders_GlassFrame";
     private const string SlotPlateTexture = "T_Borders_EmptySlot";
@@ -143,7 +140,6 @@ public sealed class ChromeAssetService(
 
     private const string AbilityHeading = "Ability";
     private const string LegendaryHeading = "Legendary";
-    private const string SetBonusHeading = "SetBonus";
 
     private static readonly IReadOnlyDictionary<string, string> ModifierGlyphs =
         new Dictionary<string, string>(StringComparer.Ordinal)
@@ -310,8 +306,6 @@ public sealed class ChromeAssetService(
     public Badge AbilityBadge => Section(AbilityTexture, AbilityHeading);
 
     public Badge LegendaryBadge => Section(LegendaryTexture, LegendaryHeading);
-
-    public Badge SetBonusBadge => Section(SetBonusTexture, SetBonusHeading);
 
     private Badge Section(string texture, string heading) => new(Url(texture), Colour(heading));
 

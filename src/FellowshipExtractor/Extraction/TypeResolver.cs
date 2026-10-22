@@ -5,7 +5,6 @@ public sealed class TypeResolver(
     TalentTrees talents,
     GemDefinitions gems,
     ItemTraits traits,
-    ItemSetBonuses setBonuses,
     GrantedAbilityMappings mappings,
     DungeonNames dungeons,
     ProgressionItems progression,
@@ -28,6 +27,7 @@ public sealed class TypeResolver(
         ("/Game/Items/MountAugmentations/", EntityType.MountPower),
         ("/Game/Items/RelicAugmentations/", EntityType.RelicPower),
         ("/Game/Abilities/RelicPowers/", EntityType.RelicPower),
+        ("/Game/Items/RelicPassives/", EntityType.RelicPassive),
         ("/Game/Abilities/Weapons/", EntityType.WeaponPower),
         ("/Game/Abilities/Finesses/", EntityType.Blessing),
         ("/Game/Abilities/LegendaryStats/", EntityType.LegendaryStat),
@@ -38,7 +38,6 @@ public sealed class TypeResolver(
         ["HeroItem"] = EntityType.Item,
         ["Mount"] = EntityType.Mount,
         ["Currency"] = EntityType.Currency,
-        ["SetBonus"] = EntityType.SetBonus,
         ["CompanionPet"] = EntityType.CompanionPet,
     };
 
@@ -83,7 +82,6 @@ public sealed class TypeResolver(
         if (talents.ForAugmentation(tag.Name) is not null) return EntityType.Talent;
         if (entity.GemNode is not null || gems.ForAugmentation(tag.Name) is not null) return EntityType.GemTrait;
         if (traits.PointsAt(tag.NetId)) return EntityType.TraitPower;
-        if (setBonuses.PointsAt(tag.NetId)) return EntityType.SetBonusPower;
 
         foreach (var (folder, type) in Folders)
         {

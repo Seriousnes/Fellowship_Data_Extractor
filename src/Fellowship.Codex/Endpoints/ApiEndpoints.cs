@@ -20,8 +20,6 @@ public static class ApiEndpoints
         app.MapLegendaryPower();
         app.MapMount();
         app.MapRelicPower();
-        app.MapSetBonus();
-        app.MapSetBonusPower();
         app.MapTalent();
         app.MapTrait();
         app.MapTraitPower();

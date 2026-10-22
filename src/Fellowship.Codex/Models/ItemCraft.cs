@@ -10,7 +10,6 @@ public static class CraftSlots
 {
     public const string GemSocket = "GemSocket";
     public const string TraitTree = "TraitTree";
-    public const string SetBonus = "SetBonus";
     public const string GrantedAbility = "GrantedAbility";
     public const string RandomRolls = "RandomRolls";
 

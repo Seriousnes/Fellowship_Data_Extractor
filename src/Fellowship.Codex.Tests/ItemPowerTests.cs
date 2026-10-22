@@ -8,7 +8,7 @@ public sealed class ItemPowerTests(Export export)
     private static ItemPowerInputs Bare(string slot) =>
         new(slot, Level: 0, MaxUpgrades: 0, RerollableSlots: 0,
             Legendary: false, HasGemSocket: false, HasGrantedAbility: false,
-            HasTraitTree: false, HasSetBonus: false);
+            HasTraitTree: false);
 
     private float Of(ItemPowerInputs given) => ItemPower.Potential(given, Settings);
 

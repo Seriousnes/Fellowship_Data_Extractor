@@ -15,7 +15,6 @@ public sealed class EntityResolver
     private const string MappingKeyField = "GrantedAbilityMappingKey";
     private const string RuleSetField = "RuleSet";
     private const string RuleSetPrefix = "DynamicHeroItemRuleSet.";
-    private const string SetBonusKeyField = "SetBonusMappingKey";
     private const string VisualKeyField = "VisualCollectionMappingKey";
     private const string SlotOrdinalField = "HeroItemType";
     private const string HoveredIconField = "UIIconHovered";
@@ -94,7 +93,6 @@ public sealed class EntityResolver
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
     public DynamicItemVisuals DynamicVisuals { get; }
-    public ItemSetBonuses SetBonuses { get; }
     public ItemTableNames TableNames { get; }
     public ProgressionItems Progression { get; }
     public CustomizationItems Customizations { get; }
@@ -181,7 +179,6 @@ public sealed class EntityResolver
         Tempers = new TemperCeilings(provider, rarities);
         Drops = new DropItemLevels(provider, _assets);
         Armor = new ArmorTypes(provider, _assets);
-        SetBonuses = new ItemSetBonuses(provider, _assets, _augmentationIds, _tags);
         TableNames = new ItemTableNames(provider, _assets, rarities);
         Progression = new ProgressionItems(provider, _assets, rarities);
         Customizations = new CustomizationItems(provider, _assets, rarities);
@@ -215,8 +212,8 @@ public sealed class EntityResolver
         Vendors = new VendorInventories(provider, _assets);
         Sources = new ItemSources(provider, _assets, Dungeons, Vendors, HeroItems, Drops, Heroes);
 
-        CreatureStats = new CreatureStats(provider, Heroes);
         Leagues = new Leagues(provider, _assets);
+        CreatureStats = new CreatureStats(provider, Heroes, Leagues.Listed);
 
         string[] creatures =
         [
@@ -226,7 +223,7 @@ public sealed class EntityResolver
 
         Locations = new CreatureLocations(provider, Dungeons, creatures);
         Layouts = new DungeonLayouts(provider, Dungeons, creatures);
-        DungeonDifficulties = new DungeonDifficulties(provider, _assets);
+        DungeonDifficulties = new DungeonDifficulties(provider, _assets, Leagues.Matched);
 
         Categories = new AbilityCategories(provider);
 
@@ -244,7 +241,7 @@ public sealed class EntityResolver
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
 
         Types = new TypeResolver(
-            _tags, Talents, Gems, Traits, SetBonuses, Mappings, Dungeons, Progression, Customizations, TableNames, Heroes,
+            _tags, Talents, Gems, Traits, Mappings, Dungeons, Progression, Customizations, TableNames, Heroes,
             _mountsByTag.Keys);
 
         Owners = new AbilityOwners(provider, _assets, _tags, Heroes, _constants);
@@ -265,7 +262,6 @@ public sealed class EntityResolver
             if (Talents.ForAugmentation(tag.Name)?.DisplayName is { } talent) return talent;
             if (Gems.ForAugmentation(tag.Name)?.DisplayName is { } node) return node;
             if (Traits.ForAugmentation(tag.NetId)?.DisplayName is { } trait) return trait;
-            if (SetBonuses.ForAugmentation(tag.NetId)?.DisplayName is { } bonus) return bonus;
         }
 
         return Display.From(Presentation.Find(tag.Name)?.Row, cdo).Name;
@@ -331,6 +327,7 @@ public sealed class EntityResolver
             GrantsId = _augmentationIds.For(grantedPath),
             LegendaryStats = cdo is null ? null : Empty(LegendaryStats(cdo, icons)),
             LegendaryStatIds = cdo is null ? null : Empty(LegendaryStatIds(cdo)),
+            UntaggedLegendaryStats = cdo is null ? null : Empty(UntaggedLegendaryStats(cdo, icons)),
             Variants = Empty(variants),
         };
 
@@ -365,11 +362,6 @@ public sealed class EntityResolver
             if (Traits.ForAugmentation(tag.NetId) is { } grantingTrait)
             {
                 entity = WithGrantorText(entity, grantingTrait.DisplayName, grantingTrait.Description, grantingTrait.IconPath, icons);
-            }
-
-            if (SetBonuses.ForAugmentation(tag.NetId) is { } grantingBonus)
-            {
-                entity = WithGrantorText(entity, grantingBonus.DisplayName, grantingBonus.Description, grantingBonus.IconPath, icons);
             }
         }
 
@@ -463,10 +455,7 @@ public sealed class EntityResolver
         }
 
         return cdo is not null && ItemNames.Read(cdo) is { } naming
-            ? ItemVariants.Expand(
-                entity, naming, Heroes, SetBonuses,
-                PropertyWalk.GetString(cdo, SetBonusKeyField),
-                DynamicTextures(cdo, icons))
+            ? ItemVariants.Expand(entity, naming, Heroes, DynamicTextures(cdo, icons))
             : [entity];
     }
 
@@ -500,20 +489,6 @@ public sealed class EntityResolver
 
     private Entity WithTableText(Entity entity, string tagName, IconWriter? icons)
     {
-        if (SetBonuses.ForTag(tagName) is { } bonus)
-        {
-            return entity with
-            {
-                DisplayName = entity.DisplayName ?? bonus.DisplayName,
-                Description = entity.Description ?? bonus.Description,
-                SetCount = bonus.SetCount,
-                AllowedRoles = bonus.AllowedRoles,
-                AllowedAttributes = bonus.AllowedAttributes,
-                Augmentation = bonus.Augmentation,
-                Icon = entity.Icon ?? IconName(bonus.IconPath, icons),
-            };
-        }
-
         if (Traits.ForTag(tagName) is { } trait)
         {
             return entity with
@@ -830,6 +805,7 @@ public sealed class EntityResolver
             MinimumHeroRank = dungeon.MinimumHeroRank,
             LevelType = dungeon.LevelType,
             SeasonalPinnacle = dungeon.SeasonalPinnacle,
+            AvailableForCasual = dungeon.AvailableForCasual,
             MinimumDifficulty = dungeon.MinimumDifficulty,
             Difficulties = DungeonDifficulties.For(dungeon.Tag),
             Floors = layout is null
@@ -934,7 +910,6 @@ public sealed class EntityResolver
             Slot = item.Slot ?? entity.Slot,
             ArmorType = item.ArmorType,
             Stats = entity.Stats ?? Empty(item.Stats),
-            SetBonus = SetBonuses.ForRow(item.SetBonus),
             UniqueEquipped = item.UniqueEquipped ? true : null,
             Rarities = entity.Rarities ?? (item.Rarity is { } rarity ? [rarity] : null),
             Heroes = Empty([.. item.Heroes.Select(hero => Heroes.Shipped(hero) ?? hero)]),
@@ -1845,20 +1820,28 @@ public sealed class EntityResolver
             .OfType<string>()
             .Select(path => ResolveAbility(path, icons))];
 
-    private List<Entity> LegendaryStats(UObject cdo, IconWriter? icons) =>
-        [.. PropertyWalk.Walk(cdo)
+    private static IEnumerable<string> LegendaryStatPaths(UObject cdo) =>
+        PropertyWalk.Walk(cdo)
             .Where(p => p.Path.StartsWith("LegendaryStats[", StringComparison.Ordinal))
             .Select(p => PropertyWalk.AsString(p.Value))
-            .OfType<string>()
-            .Select(path => LoadAugmentation(path, icons))];
+            .OfType<string>();
+
+    private List<Entity> LegendaryStats(UObject cdo, IconWriter? icons) =>
+        [.. LegendaryStatPaths(cdo).Select(path => LoadAugmentation(path, icons))];
 
     private List<int> LegendaryStatIds(UObject cdo) =>
-        [.. PropertyWalk.Walk(cdo)
-            .Where(p => p.Path.StartsWith("LegendaryStats[", StringComparison.Ordinal))
-            .Select(p => PropertyWalk.AsString(p.Value))
-            .OfType<string>()
-            .Select(_augmentationIds.For)
-            .OfType<int>()];
+        [.. LegendaryStatPaths(cdo).Select(_augmentationIds.For).OfType<int>()];
+
+    private List<LegendaryStatText> UntaggedLegendaryStats(UObject cdo, IconWriter? icons) =>
+        [.. LegendaryStatPaths(cdo)
+            .Select((path, position) => (Path: path, Position: position))
+            .Where(stat => _augmentationIds.For(stat.Path) is null)
+            .Select(stat => (stat.Position, Loaded: LoadAugmentation(stat.Path, icons)))
+            .Where(stat => stat.Loaded.DisplayName is not null)
+            .Select(stat => new LegendaryStatText(stat.Position, stat.Loaded.DisplayName!)
+            {
+                Description = stat.Loaded.Description,
+            })];
 
     public Entity LoadAugmentation(string assetPath, IconWriter? icons)
     {

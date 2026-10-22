@@ -81,12 +81,6 @@ public static class TooltipRequests
         RelicPowerTooltipRequest? request, IEntityStoreService store, out string? error) =>
         Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error);
 
-    public static TooltipQuery Read(SetBonusTooltipRequest? request, out string? error) =>
-        Read(request?.ShowIcon, request?.Mobile, out error);
-
-    public static TooltipQuery Read(SetBonusPowerTooltipRequest? request, out string? error) =>
-        Read(request?.ShowIcon, request?.Mobile, out error);
-
     public static TooltipQuery Read(TalentTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error);
 

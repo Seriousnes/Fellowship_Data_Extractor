@@ -90,7 +90,6 @@ public static class DocumentProjection
 
             RuleSet = entity.RuleSet,
             TraitTree = entity.TraitTree,
-            SetBonus = Referenced(entity.SetBonus, references),
             Stats = entity.Stats,
             Description = entity.Description,
             Acquire = entity.Acquire,
@@ -100,6 +99,7 @@ public static class DocumentProjection
             Grants = references.At(Augmentation(entity.GrantsId)),
             LegendaryStats = Referenced(
                 entity.LegendaryStatIds?.Select(id => Augmentation(id)).OfType<IconSource>().ToArray(), references),
+            UntaggedLegendaryStats = entity.UntaggedLegendaryStats,
             Sources = Sourced(entity.Sources, references),
             ItemLevel = entity.ItemLevel,
         },
@@ -193,6 +193,7 @@ public static class DocumentProjection
             MinimumHeroRank = entity.MinimumHeroRank,
             LevelType = entity.LevelType,
             SeasonalPinnacle = entity.SeasonalPinnacle,
+            AvailableForCasual = entity.AvailableForCasual,
             MinimumDifficulty = entity.MinimumDifficulty,
             Difficulties = entity.Difficulties,
             Floors = entity.Floors,
@@ -280,18 +281,6 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
-        },
-
-        EntityType.SetBonus => new SetBonusDocument
-        {
-            Id = entity.NetId!.Value,
-            Name = Name(entity),
-            Pieces = entity.SetCount,
-            Description = entity.Description,
-            Icon = entity.Icon,
-            Power = references.At(Augmentation(entity.Augmentation)),
-            AllowedRoles = entity.AllowedRoles,
-            AllowedAttributes = entity.AllowedAttributes?.Select(Enum.Parse<PrimaryStat>).ToArray(),
         },
 
         EntityType.GemType => new GemTypeDocument
@@ -387,18 +376,6 @@ public static class DocumentProjection
             Generates = Generated(entity),
         },
 
-        EntityType.SetBonusPower => new SetBonusPowerDocument
-        {
-            Id = entity.NetId!.Value,
-            Name = Name(entity),
-            Description = entity.Description,
-            Icon = entity.Icon,
-            Cooldown = entity.Cooldown,
-            ScalesOff = entity.ScalesOff,
-            Grants = Referenced(entity.Granted, references),
-            Generates = Generated(entity),
-        },
-
         EntityType.RelicPower => new RelicPowerDocument
         {
             Id = entity.NetId!.Value,
@@ -447,6 +424,19 @@ public static class DocumentProjection
         },
 
         EntityType.LegendaryPower => new LegendaryPowerDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Description = entity.Description,
+            Icon = entity.Icon,
+            Cooldown = entity.Cooldown,
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
+            ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
+            Generates = Generated(entity),
+        },
+
+        EntityType.RelicPassive => new RelicPassiveDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),

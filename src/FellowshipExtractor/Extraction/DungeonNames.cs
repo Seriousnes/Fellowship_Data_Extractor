@@ -27,6 +27,8 @@ public sealed record Dungeon(string Tag, string DisplayName)
 
     public bool? SeasonalPinnacle { get; init; }
 
+    public bool? AvailableForCasual { get; init; }
+
     public int? MinimumDifficulty { get; init; }
 }
 
@@ -48,6 +50,7 @@ public sealed class DungeonNames
     private const string MinimumHeroRankField = "MinimumHeroRankRequired";
     private const string LevelTypeField = "LevelType";
     private const string PinnacleField = "IsSeasonalPinnacleDungeon";
+    private const string CasualField = "AvailableForCasual";
     private const string MinimumDifficultyField = "MinimumDifficulty";
 
     private readonly Dictionary<string, Dungeon> _byTag = new(StringComparer.OrdinalIgnoreCase);
@@ -103,6 +106,7 @@ public sealed class DungeonNames
             MinimumHeroRank = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, MinimumHeroRankField)?.GenericValue),
             LevelType = Member(PropertyWalk.GetString(row, LevelTypeField)),
             SeasonalPinnacle = PropertyWalk.Get(row, PinnacleField)?.GenericValue is true ? true : null,
+            AvailableForCasual = PropertyWalk.Get(row, CasualField)?.GenericValue is true ? true : null,
             MinimumDifficulty = PropertyWalk.AsOrdinal(PropertyWalk.Get(row, MinimumDifficultyField)?.GenericValue),
         };
     }

@@ -25,10 +25,6 @@ public sealed record Entity
 
     public IReadOnlyList<string>? Heroes { get; init; }
 
-    public IReadOnlyList<IconSource>? SetBonus { get; init; }
-
-    public int? SetCount { get; init; }
-
     public bool? UniqueEquipped { get; init; }
 
     public IReadOnlyList<string>? Tags { get; init; }
@@ -177,13 +173,11 @@ public sealed record Entity
 
     public IReadOnlyList<RankRun>? RankRuns { get; init; }
 
-    public IReadOnlyList<string>? AllowedRoles { get; init; }
-
-    public IReadOnlyList<string>? AllowedAttributes { get; init; }
-
     public Entity? Grants { get; init; }
 
     public IReadOnlyList<Entity>? LegendaryStats { get; init; }
+
+    public IReadOnlyList<LegendaryStatText>? UntaggedLegendaryStats { get; init; }
 
     public int? GrantsId { get; init; }
 
@@ -250,6 +244,8 @@ public sealed record Entity
     public string? LevelType { get; init; }
 
     public bool? SeasonalPinnacle { get; init; }
+
+    public bool? AvailableForCasual { get; init; }
 
     public int? MinimumDifficulty { get; init; }
 

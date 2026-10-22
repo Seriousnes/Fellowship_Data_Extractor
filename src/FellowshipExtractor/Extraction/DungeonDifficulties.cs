@@ -14,7 +14,7 @@ public sealed class DungeonDifficulties
 
     public int Count => _byLevel.Count;
 
-    public DungeonDifficulties(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+    public DungeonDifficulties(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, IReadOnlySet<int> matched)
     {
         foreach (var objectPath in TableFinder.ByRowStructure(assets, RowStructure))
         {
@@ -23,7 +23,7 @@ public sealed class DungeonDifficulties
 
             foreach (var (rowName, row) in table.RowMap)
             {
-                if (!int.TryParse(rowName.Text, out var difficulty) || difficulty < 1) continue;
+                if (!int.TryParse(rowName.Text, out var difficulty) || !matched.Contains(difficulty)) continue;
 
                 foreach (var column in row.Properties)
                 {
