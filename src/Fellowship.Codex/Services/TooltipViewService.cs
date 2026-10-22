@@ -339,16 +339,20 @@ public sealed class TooltipViewService(
         var lines = new List<TooltipView.ModifierLine>(query.Modifiers.Count);
 
         var wearer = TooltipView.Wearer(document, query);
+        var level = query.ItemLevel ?? store.DropItemLevel(document);
 
         foreach (var modifier in query.Modifiers)
         {
+            var row = store.All(TooltipView.TypeOf(modifier.Kind), modifier.Id).FirstOrDefault();
+
             lines.Add(new TooltipView.ModifierLine(
                 modifier.Kind,
-                store.All(TooltipView.TypeOf(modifier.Kind), modifier.Id)
-                    .Select(row => TooltipView.PrintedFor(row, wearer) ?? PublicTypes.NameOf(row))
-                    .FirstOrDefault()
-                    ?? modifier.Id.ToString(CultureInfo.InvariantCulture),
-                modifier.Amount));
+                row is null
+                    ? modifier.Id.ToString(CultureInfo.InvariantCulture)
+                    : TooltipView.PrintedFor(row, wearer) ?? PublicTypes.NameOf(row),
+                row is not null && Enchants.Is(row)
+                    ? Enchants.RowValue(store.Settings, level)
+                    : modifier.Amount));
         }
 
         for (var rolled = lines.Count; rolled < RandomRolls(document, rarity); rolled++)
@@ -367,14 +371,26 @@ public sealed class TooltipViewService(
         return byTier.TryGetValue(rarity.Tier, out var added) ? added.RandomRolls : 0;
     }
 
-    public IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity) =>
-        StatMagnitudes.For(
+    public IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity)
+    {
+        var level = query.ItemLevel ?? store.DropItemLevel(document);
+
+        return StatMagnitudes.For(
             document,
             store.Settings.StatCalculation,
             store.PrimaryAttributes,
             rarity,
-            query.ItemLevel ?? store.DropItemLevel(document),
-            query);
+            level,
+            query,
+            [.. Enchanted(query).SelectMany(enchant => Enchants.Granted(enchant, store.Settings, level))]);
+    }
+
+    private IEnumerable<TraitDocument> Enchanted(TooltipQuery query) =>
+        query.Modifiers
+            .Where(modifier => modifier.Kind == ModifierKind.Trait)
+            .Select(modifier => store.All(TooltipView.TraitType, modifier.Id).OfType<TraitDocument>().FirstOrDefault())
+            .OfType<TraitDocument>()
+            .Where(Enchants.Is);
 
     public MarkupString Text(
         string source,

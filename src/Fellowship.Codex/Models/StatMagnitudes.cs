@@ -21,13 +21,19 @@ public static class StatMagnitudes
         IReadOnlySet<string> primaryAttributes,
         RarityEntry? rarity,
         int itemLevel,
-        TooltipQuery query)
+        TooltipQuery query,
+        IReadOnlyList<(string Stat, decimal Value)>? granted = null)
     {
         var armor = (query.Armor ?? Armor(item, calculation, itemLevel)) is { } worn
             ? new StatLine(ArmorStat, Label(calculation, ArmorStat), worn, SlotKinds.Fixed, Rolled: false)
             : null;
 
-        if (item.Stats is not { Count: > 0 } && query.Stats.Count == 0 && armor is null) return [];
+        granted ??= [];
+
+        if (item.Stats is not { Count: > 0 } && query.Stats.Count == 0 && granted.Count == 0 && armor is null)
+        {
+            return [];
+        }
 
         var slotWeight = item.Slot is { } slot && calculation.SlotWeights.TryGetValue(slot, out var weights)
             ? (float)weights.StatWeight
@@ -78,7 +84,7 @@ public static class StatMagnitudes
                 declared.Stat, Label(calculation, declared.Stat), value, declared.Kind, Rolled: false));
         }
 
-        foreach (var (stat, value) in Spare(item, query, taken))
+        foreach (var (stat, value) in Spare(item, query, taken).Concat(granted))
         {
             lines.Add(new StatLine(
                 stat, Label(calculation, stat), Round(value, calculation, stat), SlotKinds.Random, Rolled: true));
