@@ -150,10 +150,10 @@
             : [];
     }
 
-    private static string Label(CraftSlot slot) => slot.SlotName switch
+    private string Label(CraftSlot slot) => slot.SlotName switch
     {
-        CraftSlots.GemSocket => "Gem socket",
-        CraftSlots.TraitTree => "Imbued traits",
+        CraftSlots.GemSocket => TooltipView.GemSocketLabel,
+        CraftSlots.TraitTree => TooltipView.TreeName(Store.Settings),
         _ => $"Modifier {slot.Ordinal + 1}",
     };
 

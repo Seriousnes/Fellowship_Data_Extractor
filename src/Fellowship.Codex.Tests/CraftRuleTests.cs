@@ -37,6 +37,40 @@ public class CraftRuleTests(Export export)
     private static CraftCandidate Candidate(string accepts, EntityDocument row, int rank = 1) =>
         new(accepts, row.Id, row.Name ?? string.Empty, rank);
 
+    private string Warning(string slot) => Settings.ModifierTypes.Single(type => type.Name == slot).MaximumLimitWarning!;
+
+    [Fact]
+    public void A_modifier_past_its_type_cap_is_forbidden_with_the_type_warning()
+    {
+        foreach (var type in Settings.ModifierTypes)
+        {
+            Assert.NotNull(type.MaximumLimit);
+            Assert.NotNull(type.MaximumLimitWarning);
+
+            var kind = ItemCraft.KindOf(type.Name, Settings)!.Value;
+            var row = TooltipView.TypeOf(kind, Settings) switch
+            {
+                EntityType.Trait => (EntityDocument)Settings.StatCalculation.SlotDefinitions[type.Name].ItemTraitPool
+                    .SelectMany(category => TraitTrees.InCategory(category, export.Store))
+                    .First(trait => trait.MaxRank is > 0),
+                EntityType.Blessing => Blessings.First(blessing => blessing.Slots is { Count: > 0 }),
+                var entity => export.Store.Entities.First(document => EntityTypes.TypeOf(document) == entity),
+            };
+
+            var full = Enumerable.Range(0, type.MaximumLimit!.Value)
+                .Select(at => new ItemModifier(kind, -1 - at, 1))
+                .ToArray();
+
+            var worn = row is BlessingDocument { Slots: [var slot, ..] } ? slot : "Head";
+
+            Assert.Equal(
+                type.MaximumLimitWarning,
+                Forbids(Worn(worn), Top with { Modifiers = full }, Roll(type.Name), Candidate(type.Name, row)));
+
+            Assert.Null(Forbids(Worn(worn), Top with { Modifiers = full[1..] }, Roll(type.Name), Candidate(type.Name, row)));
+        }
+    }
+
     [Fact]
     public void A_modifier_below_the_item_level_its_slot_starts_at_is_forbidden()
     {
@@ -62,7 +96,7 @@ public class CraftRuleTests(Export export)
             Worn("Head"), Top with { Modifiers = [already] }, Roll(Traited), Candidate(Traited, trait)));
 
         Assert.Equal(
-            CraftReasons.TwoOfAKind,
+            Warning(Traited),
             Forbids(Worn("Head"), Top with { Modifiers = [already, already] }, Roll(Traited), Candidate(Traited, trait)));
     }
 
@@ -79,7 +113,7 @@ public class CraftRuleTests(Export export)
             .ToArray();
 
         Assert.Equal(
-            CraftReasons.TwoBlessings,
+            Warning(Glyphs),
             Forbids(
                 Worn(offered[2].Slots![0]),
                 Top with { Modifiers = carried },
@@ -149,12 +183,14 @@ public class CraftRuleTests(Export export)
 
         var filled = chosen.Take(capacity).Select(row => new ImbuedTrait(row.Id, 1)).ToArray();
 
+        var named = TooltipView.TreeName(Settings);
+
         Assert.Equal(
-            CraftReasons.AlreadyImbued,
+            CraftReasons.AlreadyAttuned(named),
             Forbids(item, Top with { ImbuedTraits = [filled[0]] }, block, Candidate(grown, chosen[0])));
 
         Assert.Equal(
-            CraftReasons.NoRoom,
+            CraftReasons.NoRoom(named),
             Forbids(item, Top with { ImbuedTraits = filled }, block, Candidate(grown, chosen[^1])));
     }
 
@@ -172,7 +208,7 @@ public class CraftRuleTests(Export export)
         var slot = Roll(Glyphs);
         var candidate = Candidate(Glyphs, offered[0]);
 
-        Assert.Equal(CraftReasons.TwoBlessings, Forbids(Worn(worn), query, slot, candidate));
+        Assert.Equal(Warning(Glyphs), Forbids(Worn(worn), query, slot, candidate));
 
         Assert.Null(Forbids(Worn(worn), ItemCraft.Without(query, slot), slot, candidate));
     }

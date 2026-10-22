@@ -4,7 +4,7 @@
 @if (Capacity(Entity, Query, Store.Settings) is { } total)
 {
     <div class="grp">
-        <div class="sec imbued" data-craft-row="@CraftSlot.KeyOf(CraftSlots.TraitTree, 0)"><img class="gi" alt="" src="@Ui.Chrome.TraitGlyph"><span>Imbued Traits</span><span class="n">(<span class="alloc">@Filled(Query)</span>/@total)</span></div>
+        <div class="sec imbued" data-craft-row="@CraftSlot.KeyOf(CraftSlots.TraitTree, 0)"><img class="gi" alt="" src="@Ui.Chrome.TraitGlyph"><span>@TooltipView.TreeHeader(Store.Settings)</span><span class="n">(<span class="alloc">@Filled(Query)</span>/@total)</span></div>
         @foreach (var name in Attuned())
         {
             <div class="attuned"><img class="xi" alt="" src="@Ui.Chrome.ExpandGlyph"><span>@name</span></div>

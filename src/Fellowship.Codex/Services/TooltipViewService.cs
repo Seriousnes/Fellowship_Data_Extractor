@@ -349,6 +349,7 @@ public sealed class TooltipViewService(
             lines.Add(new TooltipView.ModifierLine(
                 modifier.Kind,
                 ItemCraft.Defining(modifier.Kind, row, store.Settings),
+                TooltipView.Header(modifier.Kind, store.Settings),
                 row is null
                     ? modifier.Id.ToString(CultureInfo.InvariantCulture)
                     : TooltipView.PrintedFor(row, wearer) ?? PublicTypes.NameOf(row),
@@ -359,12 +360,15 @@ public sealed class TooltipViewService(
                         : null,
                     EntityType.Blessing => TooltipView.GlyphRowValue,
                     _ => TooltipView.Plus(modifier.Amount),
-                }));
+                })
+            {
+                Tone = row is GemTypeDocument gem ? tokens.Gem(gem.Type.ToString()) : null,
+            });
         }
 
         for (var rolled = lines.Count; rolled < RandomRolls(document, rarity); rolled++)
         {
-            lines.Add(TooltipView.ModifierLine.Random);
+            lines.Add(TooltipView.Empty(store.Settings));
         }
 
         return lines;
