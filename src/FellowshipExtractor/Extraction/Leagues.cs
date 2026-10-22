@@ -20,7 +20,7 @@ public sealed class Leagues
     private const string ModeEnum = "ECRGameFinderMode";
     private const string BucketDifficultyField = "Difficulty";
 
-    private static readonly string[] BucketFields = ["RankedBuckets", "EternalBuckets", "PinnacleBuckets"];
+    private static readonly string[] BucketFields = ["EternalBuckets", "PinnacleBuckets"];
 
     private readonly List<LeagueEntry> _entries = [];
     private readonly List<string> _unreached = [];
@@ -103,7 +103,7 @@ public sealed class Leagues
 
             _entries.Add(league);
             _listed.UnionWith(league.Difficulties);
-            _matched.UnionWith(Buckets(row));
+            _matched.UnionWith(Buckets(row, league));
         }
 
         _entries.Sort((left, right) => left.MinimumDifficulty.CompareTo(right.MinimumDifficulty));
@@ -132,7 +132,7 @@ public sealed class Leagues
         };
     }
 
-    private static IEnumerable<int> Buckets(IPropertyHolder row)
+    private static IEnumerable<int> Buckets(IPropertyHolder row, LeagueEntry league)
     {
         foreach (var field in BucketFields)
         {
@@ -142,12 +142,16 @@ public sealed class Leagues
             {
                 if (bucket?.GenericValue is not FScriptStruct { StructType: IPropertyHolder held }) continue;
 
-                if (PropertyWalk.AsOrdinal(PropertyWalk.Get(held, BucketDifficultyField)?.GenericValue) is { } one)
+                var step = PropertyWalk.AsOrdinal(PropertyWalk.Get(held, BucketDifficultyField)?.GenericValue) ?? 0;
+
+                if (step < 0 || step >= league.Difficulties.Count)
                 {
-                    yield return one;
+                    throw new InvalidOperationException(
+                        $"{RowStructure} row {league.Row} has a {field} entry at step {step}, and the league lists " +
+                        $"{league.Difficulties.Count} difficulties.");
                 }
 
-                foreach (var many in Steps(held)) yield return many;
+                yield return league.Difficulties[step];
             }
         }
     }
