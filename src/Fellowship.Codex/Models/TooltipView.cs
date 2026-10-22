@@ -77,9 +77,13 @@ public static class TooltipView
         public bool Stated => CastAndRange.Count > 0 || CostAndCooldown.Count > 0;
     }
 
-    public sealed record ModifierLine(ModifierKind? Kind, string Name, int Amount)
+    public const string GlyphRowValue = "+1";
+
+    public static string Plus(int value) => "+" + value.ToString(CultureInfo.InvariantCulture);
+
+    public sealed record ModifierLine(ModifierKind? Kind, string Name, string? Value)
     {
-        public static readonly ModifierLine Random = new(null, RandomModifierLabel, 0);
+        public static readonly ModifierLine Random = new(null, RandomModifierLabel, null);
 
         public bool Unresolved => Kind is null;
     }

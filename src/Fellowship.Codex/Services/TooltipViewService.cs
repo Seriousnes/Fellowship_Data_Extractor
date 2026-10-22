@@ -350,9 +350,14 @@ public sealed class TooltipViewService(
                 row is null
                     ? modifier.Id.ToString(CultureInfo.InvariantCulture)
                     : TooltipView.PrintedFor(row, wearer) ?? PublicTypes.NameOf(row),
-                row is not null && Enchants.Is(row)
-                    ? Enchants.RowValue(store.Settings, level)
-                    : modifier.Amount));
+                modifier.Kind switch
+                {
+                    ModifierKind.Trait => row is not null && Enchants.Is(row)
+                        ? TooltipView.Plus(Enchants.RowValue(store.Settings, level))
+                        : null,
+                    ModifierKind.Blessing => TooltipView.GlyphRowValue,
+                    _ => TooltipView.Plus(modifier.Amount),
+                }));
         }
 
         for (var rolled = lines.Count; rolled < RandomRolls(document, rarity); rolled++)

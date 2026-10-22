@@ -68,6 +68,32 @@ public sealed class EnchantTests(Export export)
     }
 
     [Fact]
+    public void Each_modifier_row_prints_the_value_its_widget_prints()
+    {
+        var item = export.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 });
+        var sigil = export.Store.Entities.OfType<TraitDocument>()
+            .First(trait => !Enchants.Is(trait) && trait.CategoryTag is not null);
+        var glyph = export.Store.Entities.OfType<BlessingDocument>().First();
+        var gem = export.Store.Entities.OfType<GemTypeDocument>().First();
+
+        var query = new TooltipQuery
+        {
+            ItemLevel = 300,
+            Modifiers =
+            [
+                new ItemModifier(ModifierKind.Trait, Enchanted[0].Id, 1),
+                new ItemModifier(ModifierKind.Trait, sigil.Id, 3),
+                new ItemModifier(ModifierKind.Blessing, glyph.Id, 3),
+                new ItemModifier(ModifierKind.Essence, gem.Id, 40),
+            ],
+        };
+
+        Assert.Equal(
+            ["+2", null, TooltipView.GlyphRowValue, "+40"],
+            export.Tooltip.Modifiers(item, query, null).Select(line => line.Value));
+    }
+
+    [Fact]
     public void A_constant_curve_holds_each_key_until_the_next_and_a_linear_curve_runs_between_keys()
     {
         CurvePoint[] keys = [new(1, 4), new(3, 6)];

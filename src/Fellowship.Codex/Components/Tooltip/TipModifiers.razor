@@ -10,7 +10,7 @@
             {
                 <span class="mk">@TooltipView.Label(kind):</span>
                 <span class="mn">@Lines[at].Name</span>
-                <span class="mv">+@Lines[at].Amount</span>
+                @if (Lines[at].Value is { } value) { <span class="mv">@value</span> }
             }
             else
             {
