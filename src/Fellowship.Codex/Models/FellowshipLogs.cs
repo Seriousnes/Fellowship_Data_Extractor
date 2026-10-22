@@ -242,7 +242,7 @@ public static class FellowshipLogs
 
         foreach (var modifier in query.Modifiers.Where(row => row.Kind == ModifierKind.Blessing))
         {
-            if (RankOf(modifier.Id, store) is not { } logged) continue;
+            if (RankOf(modifier.Id, item, store) is not { } logged) continue;
 
             blessings.Add(new JsonObject
             {
@@ -329,7 +329,7 @@ public static class FellowshipLogs
         return store.Rarity(rarity, gem: false)?.Tier;
     }
 
-    private static int? RankOf(int blessingId, IEntityStoreService store) =>
+    private static int? RankOf(int blessingId, ItemDocument item, IEntityStoreService store) =>
         store.All(EntityType.Blessing, blessingId).OfType<BlessingDocument>().FirstOrDefault()
             is { AbilityRank: { } rank }
             ? rank + BlessingBase
