@@ -50,6 +50,8 @@ public static class ExportRun
 
         if (entity.Type is EntityType.Creature && !HasContent(entity)) return "a creature carrying nothing";
 
+        if (entity is { Type: EntityType.Item, EnabledInGame: false }) return "an item disabled in game";
+
         return null;
     }
 
@@ -81,6 +83,12 @@ public static class ExportRun
             $"item traits:        {resolver.Traits.Count} rows, {resolver.Traits.BoundRuns} of " +
             $"{resolver.Traits.TotalRuns} rank runs bound to a curve");
         Console.WriteLine($"set bonuses:        {resolver.SetBonuses.Count} rows");
+        Console.WriteLine(
+            $"stat enchants:      {resolver.Enchants.Count} traits named per hero, power by item level from " +
+            $"{StatEnchants.PowerKey}");
+        Console.WriteLine(
+            $"item rule sets:     {resolver.RuleSets.Disabled} item definitions disabled in game, " +
+            $"{resolver.RarityDrops.Dropping.Count} rarities {resolver.RarityDrops.Table} gives a drop chance");
         Console.WriteLine(
             $"hero dynamic text:  {resolver.DynamicText.SentenceCount} sentences across " +
             $"{resolver.DynamicText.RowCount} row keys, {resolver.DynamicText.Substituted} tokens substituted, " +
@@ -276,6 +284,8 @@ public static class ExportRun
 
         Console.WriteLine(
             $"  {resolver.Leagues.Count} leagues covering difficulty 1 to {resolver.Leagues.Ceiling}, " +
+            $"{resolver.Leagues.Unreached.Count} rows of a kind no game finder mode reaches " +
+            $"({string.Join(", ", resolver.Leagues.Unreached)}), " +
             $"{resolver.StatedCoefficients} coefficients stated outside a description, " +
             $"{resolver.NamespaceFromBindings} namespaces taken from the rows an entity binds");
         Console.WriteLine(

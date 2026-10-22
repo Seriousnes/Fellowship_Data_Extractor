@@ -32,8 +32,7 @@ public sealed class BlessingWordingTests
     {
         var entries = TooltipEntries();
 
-        Assert.Contains(Blessings.NameKey, entries);
-        Assert.Contains(Blessings.TierLevelKey, entries);
+        Assert.All(Blessings.Wanted, key => Assert.Contains(key, entries));
     }
 
     [Fact]
@@ -43,8 +42,11 @@ public sealed class BlessingWordingTests
         var wording = Export.Loaded.Settings.Blessings;
 
         Assert.Equal(StringTables.Find(Blessings.NameKey.Namespace, Blessings.NameKey.Key), wording.Name);
+        Assert.Equal(StringTables.Find(Blessings.AugmentationKey.Namespace, Blessings.AugmentationKey.Key), wording.Augmentation);
         Assert.Equal(StringTables.Find(Blessings.TierLevelKey.Namespace, Blessings.TierLevelKey.Key), wording.TierLevel);
+        Assert.Equal(StringTables.Find(Blessings.TierSourcesKey.Namespace, Blessings.TierSourcesKey.Key), wording.TierSources);
         Assert.Equal("Glyph", wording.Name);
+        Assert.Equal("Augmentation", wording.Augmentation);
         Assert.Equal(4, wording.Tiers);
     }
 }

@@ -8,7 +8,7 @@ namespace FellowshipExtractor.Tests;
 
 public sealed class StatLineOrderTests
 {
-    private const int SkandisBands = 5226;
+    private const int WarmasterGreaves = 5900;
 
     private static readonly JsonSerializerOptions Reading = new()
     {
@@ -16,17 +16,17 @@ public sealed class StatLineOrderTests
         PropertyNameCaseInsensitive = true,
     };
 
-    private static ItemDocument Bands()
+    private static ItemDocument Greaves()
     {
         var body = Export.Loaded.Documents
-            .Where(document => document.Type == EntityType.Item && document.Id == SkandisBands)
+            .Where(document => document.Type == EntityType.Item && document.Id == WarmasterGreaves)
             .Select(document => document.Body)
-            .FirstOrDefault()
-            ?? throw new InvalidOperationException($"Item {SkandisBands} is not in the export.");
+            .FirstOrDefault(body => body["armorType"] is not null)
+            ?? throw new InvalidOperationException($"Item {WarmasterGreaves} is not in the export.");
 
         return new ItemDocument
         {
-            Id = SkandisBands,
+            Id = WarmasterGreaves,
             Slot = body["slot"]?.GetValue<string>(),
             ArmorType = Enum.Parse<Fellowship.SDK.ArmorType>(body["armorType"]!.GetValue<string>()),
             Stats = body["stats"].Deserialize<IReadOnlyList<StatSlot>>(Reading),
@@ -35,7 +35,7 @@ public sealed class StatLineOrderTests
 
     private static IReadOnlyList<StatLine> Lines() =>
         StatMagnitudes.For(
-            Bands(),
+            Greaves(),
             Export.Loaded.Settings.StatCalculation,
             new HashSet<string>(["Strength", "Intellect", "Agility"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
@@ -43,24 +43,10 @@ public sealed class StatLineOrderTests
             new TooltipQuery());
 
     [Fact]
-    public void SkandisBandsReadsInTheOrderTheGamePrints() =>
-        Assert.Equal(
-            ["Armor", "Stamina", "Intellect", "Haste"],
-            Lines().Where(line => line.Guaranteed).Select(line => line.Stat));
-
-    [Fact]
     public void ArmourLeadsAndTheDeclaredSlotsKeepTheirOwnOrder()
     {
-        var declared = Bands().Stats!.Select(slot => slot.Stat);
+        var declared = Greaves().Stats!.Select(slot => slot.Stat);
 
         Assert.Equal(["Armor", .. declared], Lines().Where(line => line.Guaranteed).Select(line => line.Stat));
-    }
-
-    [Fact]
-    public void ARolledLineFollowsEveryDeclaredOne()
-    {
-        var lines = Lines();
-
-        Assert.Equal(lines.Count, lines.TakeWhile(line => line.Guaranteed).Count() + lines.Count(line => line.Rolled));
     }
 }

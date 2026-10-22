@@ -15,7 +15,7 @@ public sealed record TemperCeiling(int ItemLevel, int MaxTempers);
 
 public sealed record DropItemLevel(string Row, int Difficulty, int ItemLevel);
 
-public sealed record BlessingEntry(string Name, string TierLevel, int Tiers);
+public sealed record BlessingEntry(string Name, string Augmentation, string TierLevel, string TierSources, int Tiers);
 
 public sealed record TraitTreeEntry(string Tag)
 {

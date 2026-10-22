@@ -23,6 +23,7 @@ public sealed class DynamicItemVisuals
     private readonly Dictionary<string, string> _collections = new(StringComparer.OrdinalIgnoreCase);
     private readonly VisualCollections _visuals;
     private readonly RarityNames _rarities;
+    private readonly RarityDropChances _drops;
 
     public int Count => _collections.Count;
 
@@ -30,10 +31,12 @@ public sealed class DynamicItemVisuals
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
         VisualCollections visuals,
-        RarityNames rarities)
+        RarityNames rarities,
+        RarityDropChances drops)
     {
         _visuals = visuals;
         _rarities = rarities;
+        _drops = drops;
 
         foreach (var objectPath in TableFinder.ByRowStructure(assets, RowStructure))
         {
@@ -76,20 +79,22 @@ public sealed class DynamicItemVisuals
     public IReadOnlyList<string> Rarities(IPropertyHolder definition) =>
         [.. Tiers(definition).Select(tier => _rarities.Label(tier)).OfType<string>()];
 
-    public IReadOnlyList<int> Tiers(IPropertyHolder definition)
+    public IReadOnlyList<int> Tiers(IPropertyHolder definition) => Tiers(definition, _rarities, _drops);
+
+    public static IReadOnlyList<int> Tiers(IPropertyHolder definition, RarityNames rarities, RarityDropChances drops)
     {
-        if (PropertyWalk.Get(definition, AllRaritiesField)?.GenericValue is true) return [.. _rarities.Tiers];
+        if (PropertyWalk.Get(definition, AllRaritiesField)?.GenericValue is true) return drops.Rolled([.. rarities.Tiers]);
 
         if (PropertyWalk.Get(definition, SpecificRaritiesField)?.GenericValue is not UScriptArray listed) return [];
 
-        return
+        return drops.Rolled(
         [
             .. listed.Properties
-                .Select(entry => _rarities.Tier(entry?.GenericValue))
+                .Select(entry => rarities.Tier(entry?.GenericValue))
                 .OfType<int>()
                 .Distinct()
                 .Order(),
-        ];
+        ]);
     }
 
     private static int? Skin(int tier, int skins) =>

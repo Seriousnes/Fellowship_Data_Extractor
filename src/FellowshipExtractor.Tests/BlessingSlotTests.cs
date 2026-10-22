@@ -64,6 +64,23 @@ public sealed class BlessingSlotTests
         }
     }
 
+    [Fact]
+    public void EveryBlessingCarriesBothRunesAndTheAbilityItGrants()
+    {
+        foreach (var row in Ranks().RowMap.Values)
+        {
+            var augmentation = Export.Provider.LoadPackageObject(PropertyWalk.GetString(row, "GrantedAbilitiesAsset")!);
+            var blessing = Blessings.Single(document => document.Name == PropertyWalk.GetText(augmentation, "DisplayName"));
+
+            Assert.Equal(AbilityPresentationIndex.AssetName(PropertyWalk.GetString(augmentation, "UIIcon")!), blessing.Icon);
+            Assert.Equal(
+                AbilityPresentationIndex.AssetName(PropertyWalk.GetString(augmentation, "UIIconHovered")!),
+                blessing.IconHovered);
+            Assert.True(File.Exists(Path.Combine(Export.Loaded.Ui, TextureSizes.File(blessing.IconHovered!, TextureSize.Full))));
+            Assert.NotEmpty(blessing.Grants!);
+        }
+    }
+
     [Theory]
     [InlineData(700, "DynamicItemAbilityRank.Generic.02")]
     [InlineData(712, "DynamicItemAbilityRank.Generic.06")]

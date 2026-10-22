@@ -708,7 +708,9 @@
   ],
   "blessings": {
     "name": "Glyph",
+    "augmentation": "Augmentation",
     "tierLevel": "Equipped Tier",
+    "tierSources": "Tier Sources",
     "tiers": 4
   },
   "difficultyScaling": {
@@ -1482,62 +1484,6 @@
       "maximumDifficulty": 1,
       "difficulties": [
         1
-      ]
-    },
-    {
-      "row": "League1",
-      "name": "Contender",
-      "tag": "League.ID.League1",
-      "kind": "Ranked",
-      "minimumDifficulty": 1,
-      "maximumDifficulty": 4,
-      "difficulties": [
-        1,
-        2,
-        3,
-        4
-      ]
-    },
-    {
-      "row": "League2",
-      "name": "Adept",
-      "tag": "League.ID.League2",
-      "kind": "Ranked",
-      "minimumDifficulty": 6,
-      "maximumDifficulty": 9,
-      "difficulties": [
-        6,
-        7,
-        8,
-        9
-      ]
-    },
-    {
-      "row": "League3",
-      "name": "Champion",
-      "tag": "League.ID.League3",
-      "kind": "Ranked",
-      "minimumDifficulty": 11,
-      "maximumDifficulty": 14,
-      "difficulties": [
-        11,
-        12,
-        13,
-        14
-      ]
-    },
-    {
-      "row": "League4",
-      "name": "Paragon",
-      "tag": "League.ID.League4",
-      "kind": "Ranked",
-      "minimumDifficulty": 16,
-      "maximumDifficulty": 19,
-      "difficulties": [
-        16,
-        17,
-        18,
-        19
       ]
     },
     {
@@ -4005,93 +3951,7 @@
       "CritChance"
     ],
     "rarityAdditions": {
-      "Default_GemSlot": {
-        "0": {
-          "tier": 0,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "1": {
-          "tier": 1,
-          "guaranteedSlots": [
-            "GemSocket"
-          ],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "2": {
-          "tier": 2,
-          "guaranteedSlots": [
-            "GemSocket"
-          ],
-          "randomRolls": 1,
-          "randomizedSlots": [
-            "StatEnchant",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "3": {
-          "tier": 3,
-          "guaranteedSlots": [
-            "GemSocket"
-          ],
-          "randomRolls": 2,
-          "randomizedSlots": [
-            "StatEnchant",
-            "StatEnchant",
-            "GemPower",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [
-            "GemSocket"
-          ],
-          "randomRolls": 2,
-          "randomizedSlots": [
-            "StatEnchant",
-            "StatEnchant",
-            "GemPower",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "5": {
-          "tier": 5,
-          "guaranteedSlots": [
-            "GemSocket"
-          ],
-          "randomRolls": 3,
-          "randomizedSlots": [
-            "StatEnchant",
-            "StatEnchant",
-            "GemPower",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "6": {
-          "tier": 6,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        }
-      },
       "Default_NoGemSlot": {
-        "0": {
-          "tier": 0,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
         "1": {
           "tier": 1,
           "guaranteedSlots": [],
@@ -4130,24 +3990,6 @@
           ],
           "specialSlots": []
         },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [],
-          "randomRolls": 2,
-          "randomizedSlots": [
-            "StatEnchant",
-            "StatEnchant",
-            "GemPower",
-            "GemPower",
-            "AbilityRank",
-            "AbilityRank",
-            "HeroicTrait",
-            "HeroicTrait",
-            "MajorTrait",
-            "MajorTrait"
-          ],
-          "specialSlots": []
-        },
         "5": {
           "tier": 5,
           "guaranteedSlots": [],
@@ -4165,27 +4007,13 @@
             "MajorTrait"
           ],
           "specialSlots": []
-        },
-        "6": {
-          "tier": 6,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
         }
       },
-      "Relic": {
-        "0": {
-          "tier": 0,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
+      "Default_GemSlot": {
         "1": {
           "tier": 1,
           "guaranteedSlots": [
-            "RelicPower"
+            "GemSocket"
           ],
           "randomRolls": 0,
           "randomizedSlots": [],
@@ -4194,276 +4022,11 @@
         "2": {
           "tier": 2,
           "guaranteedSlots": [
-            "RelicPower"
-          ],
-          "randomRolls": 1,
-          "randomizedSlots": [
-            "StatEnchant",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "3": {
-          "tier": 3,
-          "guaranteedSlots": [
-            "RelicPower"
-          ],
-          "randomRolls": 2,
-          "randomizedSlots": [
-            "StatEnchant",
-            "StatEnchant",
-            "GemPower",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [
-            "RelicPower"
-          ],
-          "randomRolls": 2,
-          "randomizedSlots": [
-            "StatEnchant",
-            "StatEnchant",
-            "GemPower",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "5": {
-          "tier": 5,
-          "guaranteedSlots": [
-            "RelicPower"
-          ],
-          "randomRolls": 3,
-          "randomizedSlots": [
-            "StatEnchant",
-            "StatEnchant",
-            "GemPower",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "6": {
-          "tier": 6,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        }
-      },
-      "SetBonus_GemSlot": {
-        "0": {
-          "tier": 0,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "1": {
-          "tier": 1,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "6": {
-          "tier": 6,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "2": {
-          "tier": 2,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus"
-          ],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "3": {
-          "tier": 3,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus",
             "GemSocket"
           ],
           "randomRolls": 1,
           "randomizedSlots": [
             "StatEnchant",
-            "GemPower",
-            "AbilityRank",
-            "AbilityRank",
-            "HeroicTrait",
-            "MajorTrait",
-            "RandomStat",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus",
-            "GemSocket",
-            "RandomStat"
-          ],
-          "randomRolls": 1,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "HeroicTrait",
-            "AbilityRank",
-            "GemPower",
-            "MajorTrait",
-            "AbilityRank",
-            "RandomStat"
-          ],
-          "specialSlots": []
-        },
-        "5": {
-          "tier": 5,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus",
-            "GemSocket",
-            "RandomStat"
-          ],
-          "randomRolls": 2,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "HeroicTrait",
-            "AbilityRank",
-            "GemPower",
-            "MajorTrait",
-            "AbilityRank",
-            "RandomStat"
-          ],
-          "specialSlots": []
-        }
-      },
-      "SetBonus_NoGemSlot": {
-        "0": {
-          "tier": 0,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "1": {
-          "tier": 1,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "6": {
-          "tier": 6,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "2": {
-          "tier": 2,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus"
-          ],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "3": {
-          "tier": 3,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus"
-          ],
-          "randomRolls": 1,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "AbilityRank",
-            "AbilityRank",
-            "GemPower",
-            "HeroicTrait",
-            "MajorTrait",
-            "RandomStat"
-          ],
-          "specialSlots": []
-        },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus",
-            "RandomStat"
-          ],
-          "randomRolls": 1,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "HeroicTrait",
-            "AbilityRank",
-            "GemPower",
-            "MajorTrait",
-            "AbilityRank",
-            "RandomStat"
-          ],
-          "specialSlots": []
-        },
-        "5": {
-          "tier": 5,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus",
-            "RandomStat"
-          ],
-          "randomRolls": 2,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "HeroicTrait",
-            "AbilityRank",
-            "GemPower",
-            "MajorTrait",
-            "AbilityRank",
-            "RandomStat"
-          ],
-          "specialSlots": []
-        }
-      },
-      "Weapon": {
-        "0": {
-          "tier": 0,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "1": {
-          "tier": 1,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "2": {
-          "tier": 2,
-          "guaranteedSlots": [
-            "WeaponPower",
-            "WeaponTraitTree"
-          ],
-          "randomRolls": 1,
-          "randomizedSlots": [
-            "StatEnchant",
             "GemPower"
           ],
           "specialSlots": []
@@ -4471,23 +4034,7 @@
         "3": {
           "tier": 3,
           "guaranteedSlots": [
-            "WeaponPower",
-            "WeaponTraitTree"
-          ],
-          "randomRolls": 2,
-          "randomizedSlots": [
-            "StatEnchant",
-            "StatEnchant",
-            "GemPower",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [
-            "WeaponPower",
-            "WeaponTraitTree"
+            "GemSocket"
           ],
           "randomRolls": 2,
           "randomizedSlots": [
@@ -4501,225 +4048,19 @@
         "5": {
           "tier": 5,
           "guaranteedSlots": [
-            "WeaponPower",
-            "WeaponTraitTree"
+            "GemSocket"
           ],
-          "randomRolls": 2,
+          "randomRolls": 3,
           "randomizedSlots": [
             "StatEnchant",
             "StatEnchant",
             "GemPower",
             "GemPower"
-          ],
-          "specialSlots": []
-        },
-        "6": {
-          "tier": 6,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        }
-      },
-      "Default_NoGemSlot_Necklace": {
-        "0": {
-          "tier": 0,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "1": {
-          "tier": 1,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "6": {
-          "tier": 6,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "2": {
-          "tier": 2,
-          "guaranteedSlots": [
-            "RandomStat"
-          ],
-          "randomRolls": 1,
-          "randomizedSlots": [
-            "StatEnchant",
-            "GemPower",
-            "HeroicTrait",
-            "AbilityRank"
-          ],
-          "specialSlots": []
-        },
-        "3": {
-          "tier": 3,
-          "guaranteedSlots": [
-            "RandomStat",
-            "NecklaceTraitTree"
-          ],
-          "randomRolls": 1,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "HeroicTrait",
-            "AbilityRank",
-            "GemPower",
-            "MajorTrait",
-            "AbilityRank",
-            "RandomStat"
-          ],
-          "specialSlots": []
-        },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [
-            "RandomStat",
-            "NecklaceTraitTree",
-            "RandomStat"
-          ],
-          "randomRolls": 1,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "HeroicTrait",
-            "AbilityRank",
-            "GemPower",
-            "MajorTrait",
-            "AbilityRank",
-            "RandomStat"
-          ],
-          "specialSlots": []
-        },
-        "5": {
-          "tier": 5,
-          "guaranteedSlots": [
-            "RandomStat",
-            "NecklaceTraitTree",
-            "RandomStat"
-          ],
-          "randomRolls": 2,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "HeroicTrait",
-            "AbilityRank",
-            "GemPower",
-            "MajorTrait",
-            "AbilityRank",
-            "RandomStat"
-          ],
-          "specialSlots": []
-        }
-      },
-      "SetBonus_NoGemSlot_Necklace": {
-        "0": {
-          "tier": 0,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "1": {
-          "tier": 1,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "6": {
-          "tier": 6,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "2": {
-          "tier": 2,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus"
-          ],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "3": {
-          "tier": 3,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus",
-            "NecklaceTraitTree"
-          ],
-          "randomRolls": 0,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "AbilityRank",
-            "AbilityRank",
-            "GemPower",
-            "HeroicTrait",
-            "MajorTrait",
-            "RandomStat"
-          ],
-          "specialSlots": []
-        },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus",
-            "NecklaceTraitTree",
-            "RandomStat"
-          ],
-          "randomRolls": 0,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "HeroicTrait",
-            "AbilityRank",
-            "GemPower",
-            "MajorTrait",
-            "AbilityRank",
-            "RandomStat"
-          ],
-          "specialSlots": []
-        },
-        "5": {
-          "tier": 5,
-          "guaranteedSlots": [
-            "RandomStat",
-            "SetBonus",
-            "NecklaceTraitTree",
-            "RandomStat"
-          ],
-          "randomRolls": 1,
-          "randomizedSlots": [
-            "RandomStat",
-            "GemPower",
-            "HeroicTrait",
-            "AbilityRank",
-            "GemPower",
-            "MajorTrait",
-            "AbilityRank",
-            "RandomStat"
           ],
           "specialSlots": []
         }
       },
       "Necklace": {
-        "0": {
-          "tier": 0,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
         "1": {
           "tier": 1,
           "guaranteedSlots": [
@@ -4758,21 +4099,6 @@
           ],
           "specialSlots": []
         },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [
-            "GemSocket",
-            "NecklaceTraitTree"
-          ],
-          "randomRolls": 2,
-          "randomizedSlots": [
-            "StatEnchant",
-            "StatEnchant",
-            "GemPower",
-            "GemPower"
-          ],
-          "specialSlots": []
-        },
         "5": {
           "tier": 5,
           "guaranteedSlots": [
@@ -4787,23 +4113,60 @@
             "GemPower"
           ],
           "specialSlots": []
-        },
-        "6": {
-          "tier": 6,
-          "guaranteedSlots": [],
+        }
+      },
+      "Relic": {
+        "1": {
+          "tier": 1,
+          "guaranteedSlots": [
+            "RelicPower"
+          ],
           "randomRolls": 0,
           "randomizedSlots": [],
+          "specialSlots": []
+        },
+        "2": {
+          "tier": 2,
+          "guaranteedSlots": [
+            "RelicPower"
+          ],
+          "randomRolls": 1,
+          "randomizedSlots": [
+            "StatEnchant",
+            "GemPower"
+          ],
+          "specialSlots": []
+        },
+        "3": {
+          "tier": 3,
+          "guaranteedSlots": [
+            "RelicPower"
+          ],
+          "randomRolls": 2,
+          "randomizedSlots": [
+            "StatEnchant",
+            "StatEnchant",
+            "GemPower",
+            "GemPower"
+          ],
+          "specialSlots": []
+        },
+        "5": {
+          "tier": 5,
+          "guaranteedSlots": [
+            "RelicPower"
+          ],
+          "randomRolls": 3,
+          "randomizedSlots": [
+            "StatEnchant",
+            "StatEnchant",
+            "GemPower",
+            "GemPower"
+          ],
           "specialSlots": []
         }
       },
-      "Legendary": {
-        "0": {
-          "tier": 0,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
+      "Weapon": {
         "1": {
           "tier": 1,
           "guaranteedSlots": [],
@@ -4813,39 +4176,45 @@
         },
         "2": {
           "tier": 2,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
+          "guaranteedSlots": [
+            "WeaponPower",
+            "WeaponTraitTree"
+          ],
+          "randomRolls": 1,
+          "randomizedSlots": [
+            "StatEnchant",
+            "GemPower"
+          ],
           "specialSlots": []
         },
         "3": {
           "tier": 3,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
+          "guaranteedSlots": [
+            "WeaponPower",
+            "WeaponTraitTree"
+          ],
+          "randomRolls": 2,
+          "randomizedSlots": [
+            "StatEnchant",
+            "StatEnchant",
+            "GemPower",
+            "GemPower"
+          ],
           "specialSlots": []
         },
         "5": {
           "tier": 5,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "6": {
-          "tier": 6,
           "guaranteedSlots": [
-            "GrantedAbility"
+            "WeaponPower",
+            "WeaponTraitTree"
           ],
-          "randomRolls": 0,
-          "randomizedSlots": [],
+          "randomRolls": 2,
+          "randomizedSlots": [
+            "StatEnchant",
+            "StatEnchant",
+            "GemPower",
+            "GemPower"
+          ],
           "specialSlots": []
         }
       },
@@ -4856,49 +4225,99 @@
           "randomRolls": 0,
           "randomizedSlots": [],
           "specialSlots": []
-        },
-        "1": {
-          "tier": 1,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "2": {
-          "tier": 2,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "3": {
-          "tier": 3,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "4": {
-          "tier": 4,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
-        "5": {
-          "tier": 5,
-          "guaranteedSlots": [],
-          "randomRolls": 0,
-          "randomizedSlots": [],
-          "specialSlots": []
-        },
+        }
+      },
+      "Legendary": {
         "6": {
           "tier": 6,
-          "guaranteedSlots": [],
+          "guaranteedSlots": [
+            "GrantedAbility"
+          ],
           "randomRolls": 0,
           "randomizedSlots": [],
           "specialSlots": []
         }
+      }
+    },
+    "slotDefinitions": {
+      "GemSocket": {
+        "slotType": "GemSocket",
+        "minimumItemLevel": 45,
+        "gemPowerPool": [],
+        "itemTraitPool": []
+      },
+      "GemPower": {
+        "slotType": "GemPower",
+        "minimumItemLevel": 75,
+        "gemPowerPool": [
+          "ItemID.GemType.Amethyst",
+          "ItemID.GemType.Diamond",
+          "ItemID.GemType.Emerald",
+          "ItemID.GemType.Ruby",
+          "ItemID.GemType.Sapphire",
+          "ItemID.GemType.Topaz"
+        ],
+        "itemTraitPool": []
+      },
+      "AbilityRank": {
+        "slotType": "AbilityRank",
+        "minimumItemLevel": 120,
+        "gemPowerPool": [],
+        "itemTraitPool": []
+      },
+      "GrantedAbility": {
+        "slotType": "GrantedAbility",
+        "minimumItemLevel": 0,
+        "gemPowerPool": [],
+        "itemTraitPool": []
+      },
+      "RelicPower": {
+        "slotType": "GrantedAbility",
+        "minimumItemLevel": 105,
+        "gemPowerPool": [],
+        "itemTraitPool": []
+      },
+      "WeaponPower": {
+        "slotType": "GrantedAbility",
+        "minimumItemLevel": 150,
+        "gemPowerPool": [],
+        "itemTraitPool": []
+      },
+      "NecklaceTraitTree": {
+        "slotType": "TraitTree",
+        "minimumItemLevel": 210,
+        "gemPowerPool": [],
+        "itemTraitPool": []
+      },
+      "WeaponTraitTree": {
+        "slotType": "TraitTree",
+        "minimumItemLevel": 285,
+        "gemPowerPool": [],
+        "itemTraitPool": []
+      },
+      "HeroicTrait": {
+        "slotType": "ItemTrait",
+        "minimumItemLevel": 240,
+        "gemPowerPool": [],
+        "itemTraitPool": [
+          "ItemTrait.TraitCategory.Heroic"
+        ]
+      },
+      "MajorTrait": {
+        "slotType": "ItemTrait",
+        "minimumItemLevel": 270,
+        "gemPowerPool": [],
+        "itemTraitPool": [
+          "ItemTrait.TraitCategory.Major"
+        ]
+      },
+      "StatEnchant": {
+        "slotType": "ItemTrait",
+        "minimumItemLevel": 0,
+        "gemPowerPool": [],
+        "itemTraitPool": [
+          "ItemTrait.TraitCategory.StatEnchant"
+        ]
       }
     }
   },
@@ -4959,6 +4378,23 @@
       },
       "scorePerAllocatedWeaponTrait": 40,
       "scorePerAllocatedNecklaceTrait": 60
+    },
+    "statEnchantPower": {
+      "interpolation": "RCIM_Constant",
+      "points": [
+        {
+          "time": 1,
+          "value": 1
+        },
+        {
+          "time": 150,
+          "value": 2
+        },
+        {
+          "time": 300,
+          "value": 3
+        }
+      ]
     }
   }
 }

@@ -41,3 +41,10 @@ public sealed record RaritySlots(
 }
 
 public sealed record SpecialSlot(string SlotName, string? Condition);
+
+public sealed record ItemSlotDefinition(string SlotType, int MinimumItemLevel)
+{
+    public IReadOnlyList<string> GemPowerPool { get; init; } = [];
+
+    public IReadOnlyList<string> ItemTraitPool { get; init; } = [];
+}

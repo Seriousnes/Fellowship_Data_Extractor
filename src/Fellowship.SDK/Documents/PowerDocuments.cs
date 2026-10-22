@@ -18,4 +18,8 @@ public sealed class TraitDocument : EntityDocument
     public IReadOnlyList<RankRun>? RankRuns { get; init; }
 
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
+
+    public IReadOnlyDictionary<string, string>? NameByHero { get; init; }
+
+    public IReadOnlyList<TraitStat>? Stats { get; init; }
 }

@@ -167,6 +167,12 @@ public sealed record Entity
 
     public int? AbilityRank { get; init; }
 
+    public string? IconHovered { get; init; }
+
+    public IReadOnlyDictionary<string, string>? NameByHero { get; init; }
+
+    public IReadOnlyList<TraitStat>? TraitStats { get; init; }
+
     public int? RandomChance { get; init; }
 
     public IReadOnlyList<RankRun>? RankRuns { get; init; }

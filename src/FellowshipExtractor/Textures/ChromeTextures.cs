@@ -77,6 +77,12 @@ public static class ChromeTextures
         "T_Buttons_BlessingButton_UnallocatedHover",
 
         "T_Borders_Modifier_Frame_Hexagon",
+        "T_Icons_Generic_Blessings",
+        "T_UI_Icon_CardCategory_Placement",
+        "T_UI_Icon_CardCategory_Set",
+        "T_Icons_Gear_WeaponVfx",
+        "T_Icons_Generic_LockOpen",
+        "T_Backgrounds_WeaponTreeNodeBackground_LockIconBG",
         "T_Icons_Locked",
 
         "T_Backgrounds_TalentTreeTierBackground_Locked",
@@ -110,6 +116,12 @@ public static class ChromeTextures
             ["T_Icons_Generic_Gem"] = "core.primary-200",
             ["T_Backgrounds_TooltipSlot_Gradient_Decor"] = "core.secondary-600",
             ["T_Borders_Frame_Pattern"] = "core.primary-200",
+            ["T_Icons_Generic_Blessings"] = "core.primary-main",
+            ["T_UI_Icon_CardCategory_Placement"] = "core.primary-200",
+            ["T_UI_Icon_CardCategory_Set"] = "core.primary-200",
+            ["T_Icons_Gear_WeaponVfx"] = "core.primary-200",
+            ["T_Icons_Generic_LockOpen"] = "core.text-primary",
+            ["T_Backgrounds_TooltipSlot_Gradient_Fade"] = "core.secondary-600",
         };
 
     public static async Task<int> WriteAsync(

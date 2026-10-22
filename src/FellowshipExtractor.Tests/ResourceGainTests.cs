@@ -162,16 +162,22 @@ public sealed class ResourceGainTests
         Assert.Equal(0.15, (double?)into["chance"]);
     }
 
-    [Fact]
-    public void EveryHeroThatStartsWithSpiritPointsStatesTheAmountItsOwnRowSpells()
+    [Theory]
+    [InlineData(677)]
+    [InlineData(99)]
+    [InlineData(81)]
+    public void NoTalentStartsADungeonWithSpiritPoints(int id)
     {
-        Assert.Equal(50, (double?)Into(EntityType.Talent, 677, Spirit)["amount"]);
-        Assert.Equal(50, (double?)Into(EntityType.Talent, 99, Spirit)["amount"]);
-        Assert.Equal(50, (double?)Into(EntityType.Talent, 81, Spirit)["amount"]);
+        var gains = Export.Loaded.Documents
+            .First(document => document.Type == EntityType.Talent && document.Id == id)
+            .Body[Field] as JsonArray ?? [];
 
-        Assert.Equal("Ink.Talent.ExtraResourcesAtStart.AdditionalSpirit",
-            (string?)Into(EntityType.Talent, 81, Spirit)["source"]);
+        Assert.DoesNotContain(gains.OfType<JsonNode>(), gain => (string?)gain["resource"] == Spirit);
     }
+
+    [Fact]
+    public void BurningInitiativeStillStartsADungeonWithCinders() =>
+        Assert.Equal(200, (double?)Into(EntityType.Talent, 677, Primary)["amount"]);
 
     private static JsonNode Scaled(int id) =>
         Generated(EntityType.Ability, id)
@@ -322,14 +328,6 @@ public sealed class ResourceGainTests
             "Mosse.CastedSingleTargetProjectile.Talent.DamageToMana.ManaGainOfMaxMana",
             (string?)into["source"]);
         Assert.Equal(ResourceGains.PoolFraction, (string?)into["sourceKind"]);
-    }
-
-    [Fact]
-    public void TheCelestialStatesTheSpiritPointTheAbilityItGrantsGenerates()
-    {
-        var into = Into(EntityType.Blessing, 702, Spirit);
-
-        Assert.Equal(1, (double?)into["amount"]);
     }
 
     [Fact]

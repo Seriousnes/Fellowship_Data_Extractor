@@ -10,6 +10,7 @@ public sealed class TypeResolver(
     DungeonNames dungeons,
     ProgressionItems progression,
     CustomizationItems customizations,
+    ItemTableNames currencies,
     HeroNames heroes,
     IEnumerable<string> mounts)
 {
@@ -113,6 +114,8 @@ public sealed class TypeResolver(
         }
 
         if (!ItemSegments.TryGetValue(segments[1], out var type)) return null;
+
+        if (type is EntityType.Currency) return currencies.Find(tag.Name) is not null ? type : null;
 
         return type is EntityType.Mount && !_mounts.Contains(tag.Name) && !PairsWithAugmentation(segments)
             ? null

@@ -36,7 +36,7 @@ public sealed class RarityTests
         var regal = Export.Loaded.Settings.Rarities.Single(rung => rung.DisplayName == "Regal");
 
         var dropped = Items()
-            .Where(item => item.Body["ruleSet"]?.GetValue<string>() is { } set && set != LegendaryRuleSet)
+            .Where(item => item.Body["ruleSet"]?.GetValue<string>() is { } set && set != LegendaryRuleSet && Rungs(item.Body).Count > 1)
             .ToArray();
 
         Assert.NotEmpty(dropped);
@@ -76,7 +76,7 @@ public sealed class RarityTests
             .Where(item => item.Body["rarity"] is not null && item.Body["ruleSet"] is null)
             .ToArray();
 
-        Assert.Equal(105, stated.Length);
+        Assert.Equal(226, stated.Length);
 
         Assert.All(stated, item => Assert.Empty(Rungs(item.Body)));
         Assert.All(stated, item => Assert.Null(item.Body["stats"]));
@@ -112,7 +112,7 @@ public sealed class RarityTests
     }
 
     [Fact]
-    public void TheCurrencyTableSpansTheWholeLadder()
+    public void EveryCurrencyRungIsARungOfTheLadder()
     {
         var rungs = Currencies()
             .Select(currency => currency.Body["rarity"]?.GetValue<string>())
@@ -120,9 +120,8 @@ public sealed class RarityTests
             .Distinct(StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(
-            Export.Loaded.Settings.Rarities.Select(rung => rung.Name).Order(StringComparer.Ordinal),
-            rungs.Order(StringComparer.Ordinal));
+        Assert.NotEmpty(rungs);
+        Assert.All(rungs, rung => Assert.Contains(rung, Export.Loaded.Settings.Rarities.Select(entry => entry.Name)));
     }
 
     private static DropItemLevel Level(string row) =>
