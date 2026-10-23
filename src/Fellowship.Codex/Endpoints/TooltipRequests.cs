@@ -59,6 +59,7 @@ public static class TooltipRequests
         Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.EquippedRank, request?.RankSources, out error) with
         {
             Hero = StatQuery.NullIfEmpty(request?.Hero),
+            ItemLevel = request?.ItemLevel,
         };
 
     public static TooltipQuery Read(

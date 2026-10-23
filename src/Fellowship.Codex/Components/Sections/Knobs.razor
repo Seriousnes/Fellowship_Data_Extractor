@@ -2,7 +2,7 @@
 @inject IEntityStoreService Store
 @inject ITooltipViewService Cards
 
-@if (PicksHero || Wearable || IsGem || Rarities.Count > 1 || PicksDifficulty || IsAugmentation)
+@if (PicksHero || Wearable || IsGem || Rarities.Count > 1 || PicksDifficulty)
 {
     <Panel>
         @if (PicksDifficulty)
@@ -15,8 +15,8 @@
         @if (PicksHero)
         {
             <Knob Caption="Hero">
-                <select data-knob="hero" value="@(Wearing ?? string.Empty)" @onchange="Wearer">
-                    @if (Here.Readings.Count == 1 && PerHero is null)
+                <select data-knob="hero" value="@(Here.Reading ?? string.Empty)" @onchange="Wearer">
+                    @if (Here.Readings.Count == 1)
                     {
                         <option value="">Any</option>
                     }
@@ -24,7 +24,7 @@
                         .Where(who => Here.Readings.Any(reading => EntityStore.Reads(reading, who)))
                         .OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase))
                     {
-                        <option value="@who.Name" selected="@(who.Name == Wearing)">
+                        <option value="@who.Name" selected="@(who.Name == Here.Reading)">
                             @who.Name
                         </option>
                     }
@@ -45,30 +45,6 @@
                                 style="@(colour is null ? null : $"color:{colour}")"
                                 @onclick="() => Rarity(rarity)">
                             @(IsGem ? rarity.GemDisplayName : rarity.DisplayName)
-                        </button>
-                    }
-                </div>
-            </Knob>
-        }
-
-        @if (Here.Entity is AugmentationDocument augmentation)
-        {
-            <Knob Caption="@AugmentationRanks.Text(Store.Settings).EquippedRank">
-                <input type="number" min="1" max="@augmentation.MaxRank" step="1" data-knob="equippedRank"
-                       placeholder="@AugmentationRanks.Summed(Store, Sourced, augmentation)"
-                       value="@Value("equippedRank")" @onchange="Equipped" />
-            </Knob>
-
-            <Knob Caption="@AugmentationRanks.Text(Store.Settings).RankSources" As="div">
-                <div class="cx-rarities">
-                    @foreach (var type in AugmentationRanks.Carriers(Store, augmentation))
-                    {
-                        var mine = type;
-                        var chosen = Sources.Contains(mine.Type);
-                        <button type="button" data-knob="rankSources" data-choice="@mine.Type"
-                                aria-pressed="@(chosen ? "true" : "false")"
-                                @onclick="() => Source(mine.Type)">
-                            @mine.Printed
                         </button>
                     }
                 </div>
@@ -108,21 +84,6 @@
 
     private bool IsGem => Here.Entity is GemDocument;
 
-    private bool IsAugmentation => Here.Entity is AugmentationDocument;
-
-    private Task Equipped(ChangeEventArgs rank) => Turn("equippedRank", rank.Value?.ToString());
-
-    private TooltipQuery Sourced => new() { RankSources = RankSources.Parse(Value("rankSources")) };
-
-    private IReadOnlyList<string> Sources =>
-        Here.Entity is AugmentationDocument augmentation
-            ? [.. AugmentationRanks.Sources(Store, Sourced, augmentation).Select(source => source.Type)]
-            : [];
-
-    private Task Source(string type) =>
-        Turn(
-            "rankSources",
-            RankSources.Write(Sources.Contains(type) ? Sources.Where(source => source != type) : [.. Sources, type]));
 
     private bool Wearable => (Here.Entity as ItemDocument)?.Stats is { Count: > 0 };
 
@@ -144,16 +105,8 @@
             : null;
 
     private bool PicksHero =>
-        PerHero is not null ||
-        (Here.Entity is not AugmentationDocument &&
-         (Here.Readings.Count > 1 || (Here.Entity as ItemDocument)?.Heroes is { Count: > 1 }));
-
-    private string? PerHero =>
-        Here.Entity is AugmentationDocument augmentation
-            ? AugmentationRanks.HeroRead(Store.Settings, augmentation, Here.Reading)
-            : null;
-
-    private string? Wearing => Here.Reading ?? PerHero;
+        Here.Entity is not AugmentationDocument &&
+        (Here.Readings.Count > 1 || (Here.Entity as ItemDocument)?.Heroes is { Count: > 1 });
 
     private bool PicksDifficulty => Here.Entity is CreatureDocument || Store.Menacing(Here.Entity) is not null;
 

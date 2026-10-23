@@ -145,6 +145,24 @@ public sealed class EnchantTests(Export export)
     }
 
     [Fact]
+    public void Two_items_between_item_level_150_and_299_reach_equipped_rank_10()
+    {
+        var query = new TooltipQuery { RankSources = ["Head", "Necklace"], ItemLevel = 200 };
+
+        Assert.Equal(10, AugmentationRanks.Rank(export.Store, query, Enchanted[0]));
+        Assert.Equal([(1, 149, 4), (150, 299, 5), (300, (int?)null, 6)], AugmentationRanks.RanksByItemLevel(Settings));
+    }
+
+    [Fact]
+    public void A_single_source_augmentation_of_one_rank_states_no_rank()
+    {
+        var protective = export.Store.Entities.OfType<ProtectiveEnchantDocument>().First();
+
+        Assert.False(AugmentationRanks.Ranked(export.Store, protective));
+        Assert.True(AugmentationRanks.Ranked(export.Store, Enchanted[0]));
+    }
+
+    [Fact]
     public void A_stated_equipped_rank_outranks_the_sources_and_stops_at_the_max_rank()
     {
         var sigil = export.Store.Entities.OfType<SigilDocument>().First();

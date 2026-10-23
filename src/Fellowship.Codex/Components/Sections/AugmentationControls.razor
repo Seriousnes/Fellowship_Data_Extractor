@@ -1,0 +1,88 @@
+@inject IEntityStoreService Store
+
+@if (Here.Entity is AugmentationDocument augmentation && (PerHero is not null || AugmentationRanks.Ranked(Store, augmentation)))
+{
+    <div class="cx-augmentation-controls">
+        @if (PerHero is not null)
+        {
+            <Knob Caption="Hero">
+                <select data-knob="hero" value="@Wearing" @onchange="Wearer">
+                    @foreach (var who in Store.Settings.Heroes
+                        .Where(who => augmentation.DescriptionsByHero!.ContainsKey(who.Name))
+                        .OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        <option value="@who.Name" selected="@(who.Name == Wearing)">@who.Name</option>
+                    }
+                </select>
+            </Knob>
+        }
+
+        @if (AugmentationRanks.Ranked(Store, augmentation))
+        {
+            @if (augmentation is EnchantDocument)
+            {
+                <Slider Caption="Item level" Key="itemLevel" Min="1" Max="Store.Settings.Items.MaxItemLevel"
+                        Value="AugmentationRanks.Level(Store.Settings, Query)"
+                        OnChange="@(value => OnTurn.InvokeAsync(new KnobTurn("itemLevel", value, "equippedRank")))" />
+            }
+
+            <Slider Caption="@Text.EquippedRank" Key="equippedRank" Min="1"
+                    Max="Math.Max(AugmentationRanks.Ceiling(Store, augmentation), AugmentationRanks.Rank(Store, Query, augmentation))"
+                    Value="AugmentationRanks.Rank(Store, Query, augmentation)" OnChange="@(value => Turn("equippedRank", value))" />
+
+            <Knob Caption="@Text.RankSources" As="div">
+                <div class="cx-rarities">
+                    @foreach (var type in AugmentationRanks.Carriers(Store, augmentation))
+                    {
+                        var mine = type;
+                        var chosen = Sources(augmentation).Contains(mine.Type);
+                        <button type="button" data-knob="rankSources" data-choice="@mine.Type"
+                                aria-pressed="@(chosen ? "true" : "false")"
+                                @onclick="() => Source(augmentation, mine.Type)">
+                            @mine.Printed
+                        </button>
+                    }
+                </div>
+            </Knob>
+        }
+    </div>
+}
+
+@code {
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+
+    [Parameter] public EventCallback<KnobTurn> OnTurn { get; set; }
+
+    private Task Turn(string key, string? value) => OnTurn.InvokeAsync(new KnobTurn(key, value));
+
+    private Task Wearer(ChangeEventArgs who) => Turn("hero", who.Value?.ToString());
+
+    private AugmentationTooltipText Text => AugmentationRanks.Text(Store.Settings);
+
+    private TooltipQuery Query => new()
+    {
+        RankSources = RankSources.Parse(Value("rankSources")),
+        ItemLevel = int.TryParse(Value("itemLevel"), out var level) ? level : null,
+        EquippedTier = int.TryParse(Value("equippedRank"), out var rank) ? rank : null,
+    };
+
+    private IReadOnlyList<string> Sources(AugmentationDocument augmentation) =>
+        [.. AugmentationRanks.Sources(Store, Query with { EquippedTier = null }, augmentation).Select(source => source.Type)];
+
+    private Task Source(AugmentationDocument augmentation, string type)
+    {
+        var sources = Sources(augmentation);
+        var written = RankSources.Write(sources.Contains(type) ? sources.Where(source => source != type) : [.. sources, type]);
+
+        return OnTurn.InvokeAsync(new KnobTurn("rankSources", written, "equippedRank"));
+    }
+
+    private string? PerHero =>
+        Here.Entity is AugmentationDocument augmentation
+            ? AugmentationRanks.HeroRead(Store.Settings, augmentation, Here.Reading)
+            : null;
+
+    private string? Wearing => Here.Reading ?? PerHero;
+
+    private string? Value(string knob) => Here.Values.GetValueOrDefault(knob);
+}

@@ -14,13 +14,16 @@
         }
         <div class="band">
             <span class="kind">@Wording.Band</span>
-            <span class="tier">@Text.EquippedRank <span class="count">@Number(Ranked)</span></span>
+            @if (Shown)
+            {
+                <span class="tier">@Text.EquippedRank <span class="count">@Number(Ranked)</span></span>
+            }
         </div>
         @if (AugmentationRanks.Description(Entity, Ranked, AugmentationRanks.HeroRead(Store.Settings, Entity, Hero?.Name ?? Query.Hero)) is { } description)
         {
             <p class="prose">@Ui.Text(description, CodexView.PlaceholdersOf(Entity), Query with { EquippedTier = Ranked }, Hero, FellowshipCodex.Schools(Entity))</p>
         }
-        @if (Sources.Count > 0)
+        @if (Shown && Sources.Count > 0)
         {
             <div class="sources">
                 <p class="heading">@Text.RankSources</p>
@@ -48,7 +51,9 @@
 
     private IReadOnlyList<ItemTypeText> Sources => AugmentationRanks.Sources(Store, Query, Entity);
 
-    private int PerSource => AugmentationRanks.PerSource(Store.Settings, Entity);
+    private int PerSource => AugmentationRanks.PerSource(Store.Settings, Query, Entity);
+
+    private bool Shown => AugmentationRanks.Ranked(Store, Entity);
 
     private int Ranked => AugmentationRanks.Rank(Store, Query, Entity);
 

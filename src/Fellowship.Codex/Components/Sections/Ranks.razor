@@ -1,43 +1,60 @@
 @inject ICodexViewService Ui
+@inject IEntityStoreService Store
 
 @if ((Entity as AugmentationDocument)?.RankRuns is { Count: > 0 } runs)
 {
-    var badge = runs.Count.ToString();
-    <Panel Head="Rank progression" Badge="@badge">
-        <Note>
-            The slash-separated numbers the description prints, one entry per run of them, matched to
-            the curve behind it. The printed row is what the game shows; the values are what it
-            computes with.
-        </Note>
-        @foreach (var run in runs)
-        {
-            <Rule />
-            <KeyValues>
-                <KeyValue Key="Printed" Class="cx-prose">
-                    @for (var rank = 0; rank < run.Printed.Count; rank++)
+    var ranks = runs.Max(run => run.Printed.Count);
+
+    <Rule />
+    <SubHead>Per rank</SubHead>
+    <div class="cx-ranks-scroll">
+        <table class="cx-ranks">
+            <thead>
+                <tr>
+                    @for (var rank = 1; rank <= ranks; rank++)
                     {
-                        @if (rank > 0)
-                        {
-                            <span> / </span>
-                        }
-                        @Ui.Text(run.Printed[rank], null, FellowshipCodex.Schools(Entity))
+                        <th class="cx-ranks-n">Rank @rank</th>
                     }
-                </KeyValue>
-                @if (run.Values is { Count: > 0 })
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var run in runs)
                 {
-                    <KeyValue Key="Shipped values">@string.Join(" / ", run.Values.Select(v => v is null ? "-" : FellowshipCodex.Number(v.Value)))</KeyValue>
+                    <tr>
+                        @for (var rank = 0; rank < ranks; rank++)
+                        {
+                            <td class="cx-ranks-n">
+                                @if (rank < run.Printed.Count)
+                                {
+                                    @Ui.Text(run.Printed[rank], null, FellowshipCodex.Schools(Entity))
+                                }
+                            </td>
+                        }
+                    </tr>
                 }
-                @if (run.Transform is not null)
-                {
-                    <KeyValue Key="Arithmetic">@run.Transform@(run.Ticks is { } ticks ? $" over {ticks} ticks" : "")</KeyValue>
-                }
-                @if (run.Disagrees == true)
-                {
-                    <KeyValue Key="Note" Missing="true">printed and computed values disagree</KeyValue>
-                }
-            </KeyValues>
-        }
-    </Panel>
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (Entity is EnchantDocument && AugmentationRanks.RanksByItemLevel(Store.Settings) is { Count: > 0 } levels)
+{
+    <Rule />
+    <SubHead>Ranks per item</SubHead>
+    <table class="cx-ranks">
+        <thead>
+            <tr><th>Item level</th><th class="cx-ranks-n">Ranks</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var (from, to, ranks) in levels)
+            {
+                <tr>
+                    <td>@(to is { } last ? $"{from}–{last}" : $"{from}+")</td>
+                    <td class="cx-ranks-n">@ranks</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }
 
 @code {

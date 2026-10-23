@@ -268,9 +268,15 @@ public sealed record EnchantTooltipRequest
     [Description("The enchant's equipped rank. None stated reads as the sum of its rank sources.")]
     public int? EquippedRank { get; init; }
 
+    [Range(1, 10_000)]
+    [Description(
+        "The item level of each item carrying the enchant. It sets the ranks each rank source adds. None stated " +
+        "reads as the highest item level.")]
+    public int? ItemLevel { get; init; }
+
     [Description(
         "The gear slots of the equipped items carrying the enchant, comma separated, each an item type such as " +
-        "Head or Necklace. Each adds the ranks one item at the highest item level adds. None stated reads as one " +
+        "Head or Necklace. Each adds the ranks one item at the item level adds. None stated reads as one " +
         "item in the first gear slot that can carry it.")]
     public string? RankSources { get; init; }
 }
@@ -487,7 +493,7 @@ public sealed record SigilTooltipRequest
 
     [Description(
         "The gear slots of the equipped items carrying the sigil, comma separated, each an item type such as " +
-        "Head or Necklace. Each adds the ranks one item at the highest item level adds. None stated reads as one " +
+        "Head or Necklace. Each adds one rank. None stated reads as one " +
         "item in the first gear slot that can carry it.")]
     public string? RankSources { get; init; }
 }
@@ -514,7 +520,7 @@ public sealed record AspectTooltipRequest
 
     [Description(
         "The gear slots of the equipped items carrying the aspect, comma separated, each an item type such as " +
-        "Head or Necklace. Each adds the ranks one item at the highest item level adds. None stated reads as one " +
+        "Head or Necklace. Each adds one rank. None stated reads as one " +
         "item in the first gear slot that can carry it.")]
     public string? RankSources { get; init; }
 }
@@ -541,7 +547,7 @@ public sealed record ProtectiveEnchantTooltipRequest
 
     [Description(
         "The gear slots of the equipped items carrying the protective enchant, comma separated, each an item type such as " +
-        "Head or Necklace. Each adds the ranks one item at the highest item level adds. None stated reads as one " +
+        "Head or Necklace. Each adds one rank. None stated reads as one " +
         "item in the first gear slot that can carry it.")]
     public string? RankSources { get; init; }
 }

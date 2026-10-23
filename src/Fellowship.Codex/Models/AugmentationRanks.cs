@@ -20,8 +20,32 @@ public static class AugmentationRanks
         settings.AugmentationTooltip
         ?? throw new InvalidOperationException("The settings state no augmentation tooltip text, so an augmentation card has no labels.");
 
-    public static int PerSource(SettingsFile settings, AugmentationDocument augmentation) =>
-        augmentation is EnchantDocument ? Power(settings, settings.Items.MaxItemLevel) : 1;
+    public static int Level(SettingsFile settings, TooltipQuery query) =>
+        Math.Clamp(query.ItemLevel ?? settings.Items.MaxItemLevel, 1, settings.Items.MaxItemLevel);
+
+    public static int PerSource(SettingsFile settings, TooltipQuery query, AugmentationDocument augmentation) =>
+        augmentation is EnchantDocument ? Power(settings, Level(settings, query)) : 1;
+
+    public static bool Ranked(IEntityStoreService store, AugmentationDocument augmentation) =>
+        Carriers(store, augmentation).Count > 1 || augmentation.MaxRank is > 1;
+
+    public static int Ceiling(IEntityStoreService store, AugmentationDocument augmentation) =>
+        Math.Min(
+            augmentation.MaxRank ?? int.MaxValue,
+            Carriers(store, augmentation).Count * PerSource(store.Settings, new TooltipQuery(), augmentation));
+
+    public static IReadOnlyList<(int From, int? To, int Ranks)> RanksByItemLevel(SettingsFile settings)
+    {
+        var points = settings.Items.StatEnchantPower?.Points ?? [];
+
+        return
+        [
+            .. points.Select((point, at) => (
+                (int)point.Time,
+                at + 1 < points.Count ? (int)points[at + 1].Time - 1 : (int?)null,
+                (int)point.Value)),
+        ];
+    }
 
     public static IReadOnlyList<ItemTypeText> Carriers(IEntityStoreService store, AugmentationDocument augmentation) =>
         augmentation.CategoryTag is { } category
@@ -43,7 +67,7 @@ public static class AugmentationRanks
     }
 
     public static int Summed(IEntityStoreService store, TooltipQuery query, AugmentationDocument augmentation) =>
-        Sources(store, query, augmentation).Count * PerSource(store.Settings, augmentation);
+        Sources(store, query, augmentation).Count * PerSource(store.Settings, query, augmentation);
 
     public static int Rank(IEntityStoreService store, TooltipQuery query, AugmentationDocument augmentation) =>
         Math.Min(query.EquippedTier ?? Summed(store, query, augmentation), augmentation.MaxRank ?? int.MaxValue);
