@@ -15,7 +15,7 @@
         <meta property="og:type" content="website" />
         <meta property="og:title" content="@Name" />
         <meta property="og:url" content="@Nav.ToAbsoluteUri(Ui.Href(Entity))" />
-        @if (Card is not null && CardService.Summary(Card) is { } summary)
+        @if (Card?.Summary() is { } summary)
         {
             <meta property="og:description" content="@summary" />
         }
@@ -95,7 +95,7 @@
 
     private TooltipLink Tip => Ui.Tip(Entity);
 
-    private EntityCard? Card;
+    private Fellowship.Codex.Embeds.CardModel? Card;
 
     private bool PicksHero => Readings.Count > 1 || (Entity as ItemDocument)?.Heroes is { Count: > 1 };
 

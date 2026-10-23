@@ -48,7 +48,7 @@ else
 
 builder.Services.AddCodexServices();
 builder.Services.AddTooltipServices();
-builder.Services.AddSingleton<ICardService, CardService>();
+builder.Services.AddCardServices();
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);

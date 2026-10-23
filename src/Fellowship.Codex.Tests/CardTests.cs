@@ -1,9 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Primitives;
 
 using SkiaSharp;
 
+using Fellowship.Codex.Embeds;
 using Fellowship.Codex.Endpoints;
 
 namespace Fellowship.Codex.Tests;
@@ -11,20 +13,30 @@ namespace Fellowship.Codex.Tests;
 [Collection(Corpus.Name)]
 public class CardTests(Export export)
 {
-    private readonly CardService cards = new(
-        export.View,
-        export.Tooltip,
-        new FragmentService(Services(export), NullLoggerFactory.Instance),
-        new FolderTextureReader(Path.Combine(Project.Repository, "output")));
+    private readonly ServiceProvider services = Services(export);
 
-    private static IServiceScopeFactory Services(Export export) =>
+    private ICardService cards => services.GetRequiredService<ICardService>();
+
+    private static ServiceProvider Services(Export export) =>
         new ServiceCollection()
+            .AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance)
             .AddSingleton(export.View)
+            .AddSingleton(export.View.Tokens)
             .AddSingleton(export.Tooltip)
             .AddSingleton(export.Store)
             .AddSingleton(export.Chrome)
-            .BuildServiceProvider()
-            .GetRequiredService<IServiceScopeFactory>();
+            .AddSingleton<IFragmentService, FragmentService>()
+            .AddSingleton<ITextureReader>(new FolderTextureReader(Path.Combine(Project.Repository, "output")))
+            .AddCardServices()
+            .BuildServiceProvider();
+
+    [Fact]
+    public void Every_listed_type_has_one_card_class()
+    {
+        var filled = services.GetServices<IEntityCard>().GroupBy(card => card.Type).ToDictionary(group => group.Key, group => group.Count());
+
+        Assert.All(PublicTypes.Listed, type => Assert.Equal(1, filled.GetValueOrDefault(type.Type)));
+    }
 
     private TooltipQuery Query(EntityDocument document, params (string Key, string Value)[] pairs) =>
         PageQuery.Read(
@@ -51,8 +63,13 @@ public class CardTests(Export export)
     [Fact]
     public async Task A_card_draws_the_entity_icon()
     {
-        var card = new EntityCard("Card", "#FFFFFF", "Item", [],
-            [new CardLayer("/" + TextureSizes.Key(Rolled.Icon!, TextureSize.Full), 1, false)]);
+        var card = new CardModel
+        {
+            Name = "Card",
+            Colour = "#FFFFFF",
+            Kind = ["Item"],
+            Icon = [new CardLayer("/" + TextureSizes.Key(Rolled.Icon!, TextureSize.Full), 1, false)],
+        };
 
         using var drawn = SKBitmap.Decode(await cards.Render(card, TestContext.Current.CancellationToken));
         using var bare = SKBitmap.Decode(await cards.Render(card with { Icon = [] }, TestContext.Current.CancellationToken));
@@ -100,7 +117,7 @@ public class CardTests(Export export)
 
         var card = await cards.Card(creature, Query(creature));
 
-        Assert.Contains(creature.KillScore!.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), card.Kind);
+        Assert.Contains(creature.KillScore!.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), card.KindLine);
         var shown = card.Lines[0].Text.Split(", ");
 
         foreach (var found in creature.FoundIn!.Where(found => found.Type == EntityType.Dungeon))
@@ -119,7 +136,7 @@ public class CardTests(Export export)
         var card = await cards.Card(Rolled, Query(Rolled, ("rarity", rarity.Name)));
 
         Assert.Equal(CodexView.Readable(export.View.Tokens.Rarity(rarity.Name)), card.Colour);
-        Assert.StartsWith(rarity.DisplayName, card.Kind);
+        Assert.StartsWith(rarity.DisplayName, card.KindLine);
     }
 
     [Fact]
