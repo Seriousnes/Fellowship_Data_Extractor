@@ -1,5 +1,3 @@
-using Fellowship.Codex.Services;
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -15,11 +13,14 @@ public static class Entry
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
 
-        builder.AddCodexMcp(ExportFolder.Locate(args)).WithStdioServerTransport();
+        var export = ExportFolder.Locate(args);
+
+        builder.AddCodexMcp(export).WithStdioServerTransport();
 
         var host = builder.Build();
 
-        await host.Services.LoadExportAsync(
+        await host.Services.GetRequiredService<LiveExport>().LoadAsync(
+            export.Folder,
             host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
 
         await host.RunAsync();
