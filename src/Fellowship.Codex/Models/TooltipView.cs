@@ -12,8 +12,6 @@ public static class TooltipView
 
     public const string AbilityCard = "tip-ability";
 
-    public const EntityType TraitType = EntityType.Trait;
-
     public const int SlotWidth = 48;
 
     public const string Unresolved = "unresolved";
@@ -21,14 +19,14 @@ public static class TooltipView
     public const string GemSocketLabel = "Gem Socket";
 
     public static EntityType TypeOf(ModifierKind kind, SettingsFile settings) =>
-        ItemCraft.Definition(kind.ToString(), settings).SlotType switch
+        ItemCraft.Definition(kind.ToString(), settings) switch
         {
-            CraftSlots.ItemTrait when kind is ModifierKind.StatEnchant => EntityType.Enchant,
-            CraftSlots.ItemTrait => TraitType,
-            CraftSlots.AbilityRank => EntityType.Blessing,
-            CraftSlots.GemPower => EntityType.GemType,
-            var slotType => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, $"{kind} is a {slotType} slot, which names no entity type."),
+            { SlotType: CraftSlots.ItemTrait, ItemTraitPool: [var category] }
+                when ItemTraitTypes.ByCategory.TryGetValue(category, out var type) => type,
+            { SlotType: CraftSlots.AbilityRank } => EntityType.Glyph,
+            { SlotType: CraftSlots.GemPower } => EntityType.Radiance,
+            var definition => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, $"{kind} is a {definition.SlotType} slot, which names no entity type."),
         };
 
     public static ModifierTypeEntry Type(ModifierKind kind, SettingsFile settings) =>
@@ -75,7 +73,7 @@ public static class TooltipView
     {
         ItemTraitDocument[] readings =
         [
-            .. store.All(EntityType.Trait, id).Concat(store.All(EntityType.Enchant, id)).OfType<ItemTraitDocument>(),
+            .. ItemTraitTypes.All.SelectMany(type => store.All(type, id)).OfType<ItemTraitDocument>(),
         ];
 
         var hero = wearer is null ? null : store.Hero(wearer);

@@ -88,7 +88,7 @@
         return sections;
     }
 
-    private bool Kind => Entity is GemDocument or GemTraitDocument or GemTypeDocument;
+    private bool Kind => Entity is GemDocument or GemTraitDocument or RadianceDocument;
 
     private bool Prose =>
         DocumentFields.Text(Entity, nameof(AbilityDocument.Description)) is not null ||

@@ -297,7 +297,7 @@ public static class DocumentProjection
             Generates = Generated(entity),
         },
 
-        EntityType.GemType => new GemTypeDocument
+        EntityType.Radiance => new RadianceDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
@@ -341,7 +341,7 @@ public static class DocumentProjection
             Generates = Generated(entity),
         },
 
-        EntityType.Blessing => new BlessingDocument
+        EntityType.Glyph => new GlyphDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
@@ -358,7 +358,37 @@ public static class DocumentProjection
             Generates = Generated(entity),
         },
 
-        EntityType.Trait => new TraitDocument
+        EntityType.Sigil => new SigilDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Category = entity.TraitCategory,
+            CategoryTag = entity.TraitCategoryTag,
+            MaxRank = entity.MaxRank,
+            RandomChance = entity.RandomChance,
+            Power = references.At(Augmentation(entity.Augmentation)),
+            Description = entity.Description,
+            Icon = entity.Icon,
+            RankRuns = entity.RankRuns,
+            Generates = Generated(entity),
+        },
+
+        EntityType.Aspect => new AspectDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Category = entity.TraitCategory,
+            CategoryTag = entity.TraitCategoryTag,
+            MaxRank = entity.MaxRank,
+            RandomChance = entity.RandomChance,
+            Power = references.At(Augmentation(entity.Augmentation)),
+            Description = entity.Description,
+            Icon = entity.Icon,
+            RankRuns = entity.RankRuns,
+            Generates = Generated(entity),
+        },
+
+        EntityType.ProtectiveEnchant => new ProtectiveEnchantDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),

@@ -99,12 +99,12 @@ public static class FellowshipLogs
 
         foreach (var power in Array(gear, "gemPowers"))
         {
-            Modifier(power, GemPowerBase, GemPowerField, EntityType.GemType);
+            Modifier(power, GemPowerBase, GemPowerField, EntityType.Radiance);
         }
 
         foreach (var trait in Array(gear, "traits"))
         {
-            Modifier(trait, TraitBase, TraitRankField, TooltipView.TraitType);
+            Modifier(trait, TraitBase, TraitRankField, null);
         }
 
         foreach (var blessing in Array(gear, "blessings"))
@@ -135,20 +135,20 @@ public static class FellowshipLogs
             imbued.Add(new ImbuedTrait(id, points));
         }
 
-        void Modifier(JsonElement entry, int under, string amountField, EntityType type)
+        void Modifier(JsonElement entry, int under, string amountField, EntityType? type)
         {
             if (Int(entry, "id") is not { } logged) return;
 
             var id = logged - under;
-            var row = store.All(type, id).FirstOrDefault();
+            EntityDocument? row = type is { } named ? store.All(named, id).FirstOrDefault() : TooltipView.ItemTrait(store, id, null);
 
-            var kind = type == EntityType.GemType
+            var kind = type == EntityType.Radiance
                 ? ItemCraft.KindOfSlotType(CraftSlots.GemPower, store.Settings)
                 : ItemCraft.KindOfTrait(row, store.Settings);
 
             if (row is null || kind is null)
             {
-                missing.Add($"{type} id {logged} names nothing in the export.");
+                missing.Add($"{type?.ToString() ?? "item trait"} id {logged} names nothing in the export.");
                 return;
             }
 
@@ -180,7 +180,7 @@ public static class FellowshipLogs
     {
         var rank = loggedId - BlessingBase;
 
-        foreach (var blessing in store.Entities.OfType<BlessingDocument>())
+        foreach (var blessing in store.Entities.OfType<GlyphDocument>())
         {
             if (blessing.AbilityRank == rank) return blessing.Id;
         }
@@ -240,13 +240,13 @@ public static class FellowshipLogs
 
         if (attributes.Count > 0) entry["attributes"] = attributes;
 
-        Kind(EntityType.GemType, "gemPowers", GemPowerBase, GemPowerField);
-        Kind(TooltipView.TraitType, "traits", TraitBase, TraitRankField);
+        Kind([EntityType.Radiance], "gemPowers", GemPowerBase, GemPowerField);
+        Kind(ItemTraitTypes.All, "traits", TraitBase, TraitRankField);
 
         var blessings = new JsonArray();
 
         foreach (var modifier in query.Modifiers.Where(
-            row => TooltipView.TypeOf(row.Kind, store.Settings) == EntityType.Blessing))
+            row => TooltipView.TypeOf(row.Kind, store.Settings) == EntityType.Glyph))
         {
             if (RankOf(modifier.Id, item, store) is not { } logged) continue;
 
@@ -254,7 +254,7 @@ public static class FellowshipLogs
             {
                 ["id"] = logged,
                 [BlessingLevelField] = modifier.Amount,
-                ["name"] = Name(EntityType.Blessing, modifier.Id, store),
+                ["name"] = Name(EntityType.Glyph, modifier.Id, store),
             });
         }
 
@@ -271,24 +271,24 @@ public static class FellowshipLogs
                     ["id"] = trait.Id + TraitBase,
                     [BlessingLevelField] = 1,
                     [ImbuedPointsField] = trait.Rank,
-                    ["name"] = Name(TooltipView.TraitType, trait.Id, store),
+                    ["name"] = TooltipView.ItemTrait(store, trait.Id, null) is { } named ? PublicTypes.NameOf(named) : null,
                 });
             }
 
             entry[NeckSlot.Equals(item.Slot, StringComparison.OrdinalIgnoreCase) ? NeckTree : WeaponTree] = tree;
         }
 
-        void Kind(EntityType type, string field, int under, string amountField)
+        void Kind(IReadOnlyList<EntityType> types, string field, int under, string amountField)
         {
             var entries = new JsonArray();
 
-            foreach (var modifier in query.Modifiers.Where(row => TooltipView.TypeOf(row.Kind, store.Settings) == type))
+            foreach (var modifier in query.Modifiers.Where(row => types.Contains(TooltipView.TypeOf(row.Kind, store.Settings))))
             {
                 entries.Add(new JsonObject
                 {
                     ["id"] = modifier.Id + under,
                     [amountField] = modifier.Amount,
-                    ["name"] = Name(type, modifier.Id, store),
+                    ["name"] = Name(TooltipView.TypeOf(modifier.Kind, store.Settings), modifier.Id, store),
                 });
             }
 
@@ -336,7 +336,7 @@ public static class FellowshipLogs
     }
 
     private static int? RankOf(int blessingId, ItemDocument item, IEntityStoreService store) =>
-        store.All(EntityType.Blessing, blessingId).OfType<BlessingDocument>().FirstOrDefault()
+        store.All(EntityType.Glyph, blessingId).OfType<GlyphDocument>().FirstOrDefault()
             is { AbilityRank: { } rank }
             ? rank + BlessingBase
             : null;

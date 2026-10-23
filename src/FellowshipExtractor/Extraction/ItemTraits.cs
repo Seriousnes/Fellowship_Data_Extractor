@@ -45,7 +45,6 @@ public sealed class ItemTraits
 
     private readonly Dictionary<string, ItemTrait> _byTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, ItemTrait> _byAugmentation = [];
-    private readonly HashSet<int> _augmentations = [];
 
     public int Count => _byTag.Count;
 
@@ -108,7 +107,6 @@ public sealed class ItemTraits
         {
             if (trait.Augmentation is not { } pointed) continue;
 
-            _augmentations.Add(pointed);
             _byAugmentation.TryAdd(pointed, trait);
         }
 
@@ -127,8 +125,6 @@ public sealed class ItemTraits
     public IEnumerable<ItemTrait> All => _byTag.Values;
 
     public ItemTrait? ForAugmentation(int netId) => _byAugmentation.GetValueOrDefault(netId);
-
-    public bool PointsAt(int netId) => _augmentations.Contains(netId);
 
     private static Dictionary<string, IReadOnlyList<ConstantRecord>> Scopes(
         IReadOnlyList<(string Tag, FStructFallback Row, string? Augmentation)> rows, ConstantsTable constants)

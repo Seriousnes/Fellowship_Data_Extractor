@@ -11,8 +11,8 @@ public sealed class BlessingSlotTests
     private const string RankTable =
         "fellowship/Content/Items/DynamicItemAbilityRanks/DT_Generic_DynamicAbilityRank.DT_Generic_DynamicAbilityRank";
 
-    private static IReadOnlyList<BlessingDocument> Blessings =>
-        [.. EntityStoreCorpusTests.Store.Entities.OfType<BlessingDocument>()];
+    private static IReadOnlyList<GlyphDocument> Blessings =>
+        [.. EntityStoreCorpusTests.Store.Entities.OfType<GlyphDocument>()];
 
     private static UDataTable Ranks() => Export.Provider.LoadPackageObject<UDataTable>(RankTable);
 

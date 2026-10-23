@@ -5,8 +5,8 @@ public class CraftRuleTests(Export export)
 {
     private SettingsFile Settings => export.Store.Settings;
 
-    private IReadOnlyList<BlessingDocument> Blessings =>
-        [.. export.Store.Entities.OfType<BlessingDocument>()];
+    private IReadOnlyList<GlyphDocument> Blessings =>
+        [.. export.Store.Entities.OfType<GlyphDocument>()];
 
     private string Defined(string slotType) =>
         Settings.StatCalculation.SlotDefinitions.First(pair => pair.Value.SlotType == slotType).Key;
@@ -50,10 +50,10 @@ public class CraftRuleTests(Export export)
             var kind = ItemCraft.KindOf(type.Name, Settings)!.Value;
             var row = TooltipView.TypeOf(kind, Settings) switch
             {
-                EntityType.Trait => (EntityDocument)Settings.StatCalculation.SlotDefinitions[type.Name].ItemTraitPool
+                var traited when ItemTraitTypes.Is(traited) => (EntityDocument)Settings.StatCalculation.SlotDefinitions[type.Name].ItemTraitPool
                     .SelectMany(category => TraitTrees.InCategory(category, export.Store))
                     .First(trait => trait.MaxRank is > 0),
-                EntityType.Blessing => Blessings.First(blessing => blessing.Slots is { Count: > 0 }),
+                EntityType.Glyph => Blessings.First(blessing => blessing.Slots is { Count: > 0 }),
                 var entity => export.Store.Entities.First(document => EntityTypes.TypeOf(document) == entity),
             };
 
@@ -61,7 +61,7 @@ public class CraftRuleTests(Export export)
                 .Select(at => new ItemModifier(kind, -1 - at, 1))
                 .ToArray();
 
-            var worn = row is BlessingDocument { Slots: [var slot, ..] } ? slot : "Head";
+            var worn = row is GlyphDocument { Slots: [var slot, ..] } ? slot : "Head";
 
             Assert.Equal(
                 type.MaximumLimitWarning,

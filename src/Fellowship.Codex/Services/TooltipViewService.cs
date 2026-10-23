@@ -346,7 +346,7 @@ public sealed class TooltipViewService(
         foreach (var modifier in query.Modifiers)
         {
             var type = TooltipView.TypeOf(modifier.Kind, store.Settings);
-            var row = type is TooltipView.TraitType or EntityType.Enchant
+            var row = ItemTraitTypes.Is(type)
                 ? TooltipView.ItemTrait(store, modifier.Id, wearer)
                 : store.All(type, modifier.Id).FirstOrDefault();
 
@@ -357,13 +357,13 @@ public sealed class TooltipViewService(
                 row is null ? modifier.Id.ToString(CultureInfo.InvariantCulture) : PublicTypes.NameOf(row),
                 type switch
                 {
-                    EntityType.Enchant => TooltipView.Plus(EnchantRanks.RowValue(store.Settings, level)),
-                    TooltipView.TraitType => null,
-                    EntityType.Blessing => TooltipView.GlyphRowValue,
+                    EntityType.Enchant => TooltipView.Plus(TraitRanks.RowValue(store.Settings, level)),
+                    EntityType.Sigil or EntityType.Aspect or EntityType.ProtectiveEnchant => null,
+                    EntityType.Glyph => TooltipView.GlyphRowValue,
                     _ => TooltipView.Plus(modifier.Amount),
                 })
             {
-                Tone = row is GemTypeDocument gem ? tokens.Gem(gem.Type.ToString()) : null,
+                Tone = row is RadianceDocument gem ? tokens.Gem(gem.Type.ToString()) : null,
             });
         }
 
@@ -394,7 +394,7 @@ public sealed class TooltipViewService(
             rarity,
             level,
             query,
-            [.. Enchanted(query).SelectMany(enchant => EnchantRanks.Granted(enchant, store.Settings, level))]);
+            [.. Enchanted(query).SelectMany(enchant => TraitRanks.Granted(enchant, store.Settings, level))]);
     }
 
     private IEnumerable<EnchantDocument> Enchanted(TooltipQuery query) =>
@@ -466,7 +466,7 @@ public sealed class TooltipViewService(
     private static string Heading(string section, Badge badge) =>
         badge.Colour is { } hex ? $"--fx-{section}:{hex};" : string.Empty;
 
-    public bool DrawsState(EntityDocument document) => document is BlessingDocument or ItemTraitDocument;
+    public bool DrawsState(EntityDocument document) => document is GlyphDocument or ItemTraitDocument;
 
     public EntityDocument? Granted(EntityDocument document) =>
         document is ItemDocument { Grants: { } power } && store.All(power.Type, power.Id) is { Count: > 0 } readings

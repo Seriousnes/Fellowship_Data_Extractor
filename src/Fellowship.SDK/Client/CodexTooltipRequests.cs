@@ -58,10 +58,10 @@ public sealed record AbilityTooltipRequest
 }
 
 /// <summary>Tooltip for a blessing.</summary>
-public sealed record BlessingTooltipRequest
+public sealed record GlyphTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
-    public static EntityType Type => EntityType.Blessing;
+    public static EntityType Type => EntityType.Glyph;
 
     /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
@@ -260,6 +260,9 @@ public sealed record EnchantTooltipRequest
 
     [Description("Hero to resolve the id against. One id resolves to a different entity per hero.")]
     public string? Hero { get; init; }
+
+    [Description("The state to draw the node at: selected, available or unavailable.")]
+    public string? State { get; init; }
 
     [Range(0, 10_000)]
     [Description(
@@ -463,28 +466,88 @@ public sealed record TalentTooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>Tooltip for a trait.</summary>
-public sealed record TraitTooltipRequest
+public sealed record SigilTooltipRequest
 {
-    /// <summary>The entity type whose tooltip this request draws.</summary>
-    public static EntityType Type => EntityType.Trait;
+    public static EntityType Type => EntityType.Sigil;
 
-    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
         "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
-    /// <summary>
-    /// Wrap the card in the chrome a phone draws it in: a scrim, a close button and a link to its page.
-    /// </summary>
     [Description(
         "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
         "and a link to its page.")]
     public bool? Mobile { get; init; }
 
-    /// <summary>The state to draw the node at: selected, available or unavailable.</summary>
     [Description("The state to draw the node at: selected, available or unavailable.")]
     public string? State { get; init; }
+
+    [Range(0, 10_000)]
+    [Description(
+        "The item level of each item carrying the sigil, 0 to 10,000. None stated reads as the highest item level.")]
+    public int? ItemLevel { get; init; }
+
+    [Description(
+        "The gear slots of the equipped items carrying the sigil, comma separated, each an item type such as " +
+        "Head or Necklace. Each adds one item's rank at the item level. None stated reads as one item in the " +
+        "first gear slot.")]
+    public string? RankSources { get; init; }
+}
+
+public sealed record AspectTooltipRequest
+{
+    public static EntityType Type => EntityType.Aspect;
+
+    [Description(
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
+    [Description(
+        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
+        "and a link to its page.")]
+    public bool? Mobile { get; init; }
+
+    [Description("The state to draw the node at: selected, available or unavailable.")]
+    public string? State { get; init; }
+
+    [Range(0, 10_000)]
+    [Description(
+        "The item level of each item carrying the aspect, 0 to 10,000. None stated reads as the highest item level.")]
+    public int? ItemLevel { get; init; }
+
+    [Description(
+        "The gear slots of the equipped items carrying the aspect, comma separated, each an item type such as " +
+        "Head or Necklace. Each adds one item's rank at the item level. None stated reads as one item in the " +
+        "first gear slot.")]
+    public string? RankSources { get; init; }
+}
+
+public sealed record ProtectiveEnchantTooltipRequest
+{
+    public static EntityType Type => EntityType.ProtectiveEnchant;
+
+    [Description(
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
+    [Description(
+        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
+        "and a link to its page.")]
+    public bool? Mobile { get; init; }
+
+    [Description("The state to draw the node at: selected, available or unavailable.")]
+    public string? State { get; init; }
+
+    [Range(0, 10_000)]
+    [Description(
+        "The item level of each item carrying the protective enchant, 0 to 10,000. None stated reads as the highest item level.")]
+    public int? ItemLevel { get; init; }
+
+    [Description(
+        "The gear slots of the equipped items carrying the protective enchant, comma separated, each an item type such as " +
+        "Head or Necklace. Each adds one item's rank at the item level. None stated reads as one item in the " +
+        "first gear slot.")]
+    public string? RankSources { get; init; }
 }
 
 /// <summary>Tooltip for a trait power.</summary>

@@ -80,7 +80,7 @@ public interface IChromeAssetService
 
     string BlessingPlate(string? state, bool hovered = false);
 
-    string? BlessingRune(BlessingDocument blessing, string? state);
+    string? BlessingRune(GlyphDocument blessing, string? state);
 
     string SlotGlyph(string? slot);
 
@@ -263,7 +263,7 @@ public sealed class ChromeAssetService(
     public string BlessingPlate(string? state, bool hovered = false) =>
         Url(BlessingFamily + Chosen(BlessingStates, state) + (hovered ? Hover : string.Empty));
 
-    public string? BlessingRune(BlessingDocument blessing, string? state) =>
+    public string? BlessingRune(GlyphDocument blessing, string? state) =>
         Texture(Chosen(BlessingStates, state) == Chosen(BlessingStates, BlessingState(1))
             ? blessing.IconHovered
             : blessing.Icon);

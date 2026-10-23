@@ -15,7 +15,7 @@ public static class TooltipRequests
             Difficulty = request?.Difficulty,
         };
 
-    public static TooltipQuery Read(BlessingTooltipRequest? request, out string? error) =>
+    public static TooltipQuery Read(GlyphTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error) with
         {
             EquippedTier = request?.EquippedTier,
@@ -56,11 +56,9 @@ public static class TooltipRequests
         Read(request?.ShowIcon, request?.Mobile, out error);
 
     public static TooltipQuery Read(EnchantTooltipRequest? request, out string? error) =>
-        Read(request?.ShowIcon, request?.Mobile, out error) with
+        Traited(request?.ShowIcon, request?.Mobile, request?.State, request?.ItemLevel, request?.RankSources, out error) with
         {
             Hero = StatQuery.NullIfEmpty(request?.Hero),
-            ItemLevel = request?.ItemLevel,
-            RankSources = RankSources.Parse(request?.RankSources),
         };
 
     public static TooltipQuery Read(
@@ -98,10 +96,22 @@ public static class TooltipRequests
     public static TooltipQuery Read(TalentTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error);
 
-    public static TooltipQuery Read(TraitTooltipRequest? request, out string? error) =>
-        Read(request?.ShowIcon, request?.Mobile, out error) with
+    public static TooltipQuery Read(SigilTooltipRequest? request, out string? error) =>
+        Traited(request?.ShowIcon, request?.Mobile, request?.State, request?.ItemLevel, request?.RankSources, out error);
+
+    public static TooltipQuery Read(AspectTooltipRequest? request, out string? error) =>
+        Traited(request?.ShowIcon, request?.Mobile, request?.State, request?.ItemLevel, request?.RankSources, out error);
+
+    public static TooltipQuery Read(ProtectiveEnchantTooltipRequest? request, out string? error) =>
+        Traited(request?.ShowIcon, request?.Mobile, request?.State, request?.ItemLevel, request?.RankSources, out error);
+
+    private static TooltipQuery Traited(
+        bool? showIcon, bool? mobile, string? state, int? itemLevel, string? rankSources, out string? error) =>
+        Read(showIcon, mobile, out error) with
         {
-            State = StatQuery.NullIfEmpty(request?.State),
+            State = StatQuery.NullIfEmpty(state),
+            ItemLevel = itemLevel,
+            RankSources = RankSources.Parse(rankSources),
         };
 
     public static TooltipQuery Read(TraitPowerTooltipRequest? request, out string? error) =>

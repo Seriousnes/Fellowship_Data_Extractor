@@ -13,10 +13,10 @@ public sealed partial class BlessingConstantsTests
     private const string HasteThreshold = MonarchRows + "HasteThreshold";
     private const string BonusIncreasePerHaste = MonarchRows + "BonusIncreasePerHasteInPercentage";
 
-    private static IReadOnlyList<BlessingDocument> Blessings =>
-        [.. EntityStoreCorpusTests.Store.Entities.OfType<BlessingDocument>()];
+    private static IReadOnlyList<GlyphDocument> Blessings =>
+        [.. EntityStoreCorpusTests.Store.Entities.OfType<GlyphDocument>()];
 
-    private static BlessingDocument Monarch => Blessings.Single(blessing => blessing.Id == TheMonarch);
+    private static GlyphDocument Monarch => Blessings.Single(blessing => blessing.Id == TheMonarch);
 
     [GeneratedRegex(@"(\d+(?:\.\d+)?)% / (\d+(?:\.\d+)?)% / (\d+(?:\.\d+)?)% / (\d+(?:\.\d+)?)% Cooldown Acceleration")]
     private static partial Regex PrintedAcceleration { get; }

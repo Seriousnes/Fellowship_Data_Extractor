@@ -118,7 +118,7 @@ public static class ItemCraft
     public static int MaxRank(CraftCandidate candidate, IEntityStoreService store) =>
         Definition(candidate.Accepts, store.Settings).SlotType switch
         {
-            CraftSlots.AbilityRank => Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id)?.MaxRank ?? 1,
+            CraftSlots.AbilityRank => Find<GlyphDocument>(store, EntityType.Glyph, candidate.Id)?.MaxRank ?? 1,
             CraftSlots.ItemTrait or CraftSlots.TraitTree =>
                 TooltipView.ItemTrait(store, candidate.Id, null)?.MaxRank ?? 1,
             _ => int.MaxValue,
@@ -148,9 +148,9 @@ public static class ItemCraft
 
         if (KindOf(candidate.Accepts, store.Settings) is not { } kind) return null;
 
-        if (TooltipView.TypeOf(kind, store.Settings) == EntityType.Blessing)
+        if (TooltipView.TypeOf(kind, store.Settings) == EntityType.Glyph)
         {
-            if (Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id) is { } blessing &&
+            if (Find<GlyphDocument>(store, EntityType.Glyph, candidate.Id) is { } blessing &&
                 item.Slot is { } worn &&
                 !(blessing.Slots ?? []).Contains(worn, StringComparer.OrdinalIgnoreCase))
             {

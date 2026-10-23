@@ -15,14 +15,16 @@ public abstract class ItemTraitDocument : EntityDocument
     public EntityReference? Power { get; init; }
     public string? Description { get; init; }
     public string? Icon { get; init; }
-}
-
-public sealed class TraitDocument : ItemTraitDocument
-{
     public IReadOnlyList<RankRun>? RankRuns { get; init; }
 
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 }
+
+public sealed class SigilDocument : ItemTraitDocument;
+
+public sealed class AspectDocument : ItemTraitDocument;
+
+public sealed class ProtectiveEnchantDocument : ItemTraitDocument;
 
 public sealed class EnchantDocument : ItemTraitDocument
 {

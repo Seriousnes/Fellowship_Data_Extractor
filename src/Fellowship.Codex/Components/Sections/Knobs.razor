@@ -2,7 +2,7 @@
 @inject IEntityStoreService Store
 @inject ITooltipViewService Cards
 
-@if (PicksHero || Wearable || IsGem || Rarities.Count > 1 || PicksDifficulty || IsEnchant)
+@if (PicksHero || Wearable || IsGem || Rarities.Count > 1 || PicksDifficulty || IsItemTrait)
 {
     <Panel>
         @if (PicksDifficulty)
@@ -57,10 +57,13 @@
                 <input type="number" min="1" max="1000" step="1" data-knob="itemLevel"
                        value="@(Value("itemLevel") ?? Store.Settings.Items.MaxItemLevel.ToString())" @onchange="Level" />
             </Knob>
+        }
 
-            <Knob Caption="@EnchantRanks.Text(Store.Settings).RankSources" As="div">
+        @if (IsItemTrait)
+        {
+            <Knob Caption="@TraitRanks.Text(Store.Settings).RankSources" As="div">
                 <div class="cx-rarities">
-                    @foreach (var type in EnchantRanks.Text(Store.Settings).ItemTypes)
+                    @foreach (var type in TraitRanks.Text(Store.Settings).ItemTypes)
                     {
                         var mine = type;
                         var chosen = Sources.Contains(mine.Type);
@@ -109,9 +112,11 @@
 
     private bool IsEnchant => Here.Entity is EnchantDocument;
 
+    private bool IsItemTrait => Here.Entity is ItemTraitDocument;
+
     private IReadOnlyList<string> Sources =>
     [
-        .. EnchantRanks.Sources(
+        .. TraitRanks.Sources(
                 Store.Settings, new TooltipQuery { RankSources = RankSources.Parse(Value("rankSources")) })
             .Select(source => source.Type),
     ];

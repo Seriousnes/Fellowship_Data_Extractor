@@ -1203,7 +1203,7 @@ public sealed class ResourceGains(
         var granting = Talented(entity);
         var declares = entity.Declares ?? [];
 
-        var borrowed = entity is { Type: EntityType.Trait, Augmentation: { } power } &&
+        var borrowed = entity is { Type: EntityType.Sigil or EntityType.Aspect or EntityType.ProtectiveEnchant or EntityType.Enchant, Augmentation: { } power } &&
                        augmentations.TryGetValue(power, out var granted)
             ? granted ?? []
             : [];

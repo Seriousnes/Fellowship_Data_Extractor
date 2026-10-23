@@ -57,7 +57,7 @@ public static class CodexView
     public static IReadOnlyList<Placeholder> PlaceholdersOf(EntityDocument document) => document switch
     {
         AbilityDocument ability => ability.Placeholders ?? [],
-        BlessingDocument blessing => blessing.Placeholders ?? [],
+        GlyphDocument blessing => blessing.Placeholders ?? [],
         EffectDocument effect => effect.Placeholders ?? [],
         GemTraitDocument trait => trait.Placeholders ?? [],
         LegendaryPowerDocument legendary => legendary.Placeholders ?? [],

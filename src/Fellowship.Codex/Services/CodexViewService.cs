@@ -35,7 +35,7 @@ public interface ICodexViewService
 
     string? RarityName(Rarity? rarity);
 
-    GemTypeDocument? Stone(EntityDocument document);
+    RadianceDocument? Stone(EntityDocument document);
 
     string? LinkColour(EntityDocument document);
 
@@ -122,18 +122,18 @@ public sealed class CodexViewService(
 
     private static GemType? Cut(EntityDocument document) => document switch
     {
-        GemTypeDocument type => type.Type,
+        RadianceDocument type => type.Type,
         GemDocument gem => gem.Type,
         GemTraitDocument trait => trait.Gem,
         _ => null,
     };
 
-    private readonly ConcurrentDictionary<GemType, GemTypeDocument?> stones = new();
+    private readonly ConcurrentDictionary<GemType, RadianceDocument?> stones = new();
 
-    public GemTypeDocument? Stone(EntityDocument document) =>
+    public RadianceDocument? Stone(EntityDocument document) =>
         Cut(document) is { } cut
             ? stones.GetOrAdd(cut, wanted =>
-                store.Entities.OfType<GemTypeDocument>().FirstOrDefault(type => type.Type == wanted))
+                store.Entities.OfType<RadianceDocument>().FirstOrDefault(type => type.Type == wanted))
             : null;
 
     private string? RarityColour(Rarity rarity) =>
@@ -193,7 +193,7 @@ public sealed class CodexViewService(
         return new TooltipLink(address, type switch
         {
             EntityType.Ability => Body(new AbilityTooltipRequest { ShowIcon = icon, Hero = hero }),
-            EntityType.Blessing => Body(new BlessingTooltipRequest { ShowIcon = icon }),
+            EntityType.Glyph => Body(new GlyphTooltipRequest { ShowIcon = icon }),
             EntityType.CompanionPet => Body(new CompanionPetTooltipRequest { ShowIcon = icon }),
             EntityType.Creature => Body(new CreatureTooltipRequest { ShowIcon = icon }),
             EntityType.Currency => Body(new CurrencyTooltipRequest { ShowIcon = icon }),
@@ -208,7 +208,9 @@ public sealed class CodexViewService(
             EntityType.RelicPower => Body(new RelicPowerTooltipRequest { ShowIcon = icon }),
             EntityType.Talent => Body(new TalentTooltipRequest { ShowIcon = icon }),
             EntityType.Enchant => Body(new EnchantTooltipRequest { ShowIcon = icon, Hero = hero }),
-            EntityType.Trait => Body(new TraitTooltipRequest { ShowIcon = icon }),
+            EntityType.Sigil => Body(new SigilTooltipRequest { ShowIcon = icon }),
+            EntityType.Aspect => Body(new AspectTooltipRequest { ShowIcon = icon }),
+            EntityType.ProtectiveEnchant => Body(new ProtectiveEnchantTooltipRequest { ShowIcon = icon }),
             EntityType.TraitPower => Body(new TraitPowerTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.WeaponPower => Body(new WeaponPowerTooltipRequest { ShowIcon = icon, Hero = hero }),
             _ => null,
@@ -304,7 +306,7 @@ public sealed class CodexViewService(
     private static readonly HashSet<string> Excluded = new(StringComparer.Ordinal)
     {
         nameof(EntityDocument.Id), nameof(EntityDocument.Name),
-        nameof(AbilityDocument.Description), nameof(ItemDocument.Icon), nameof(GemTypeDocument.OverflowDescription),
+        nameof(AbilityDocument.Description), nameof(ItemDocument.Icon), nameof(RadianceDocument.OverflowDescription),
         nameof(DungeonDocument.Background),
     };
 
@@ -314,7 +316,7 @@ public sealed class CodexViewService(
             or nameof(CreatureDocument.Armor) or nameof(CreatureDocument.Resist)
             or nameof(CreatureDocument.Intellect) or nameof(CreatureDocument.Strength)
             or nameof(CreatureDocument.Agility),
-        GemTypeDocument => property == nameof(GemTypeDocument.Attribute),
+        RadianceDocument => property == nameof(RadianceDocument.Attribute),
         ItemDocument => property is nameof(ItemDocument.Rarity) or nameof(ItemDocument.Rarities)
             or nameof(ItemDocument.RuleSet) or nameof(ItemDocument.TraitTree),
         CurrencyDocument => property == nameof(CurrencyDocument.Rarity),

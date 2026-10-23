@@ -1,4 +1,3 @@
 @use "../Components/Tooltip/Tooltip.razor" as *;
-@use "../Components/Tooltip/Blessing.razor" as blessing;
-@use "../Components/Tooltip/Trait.razor" as trait;
-@use "../Components/Tooltip/Enchant.razor" as enchant;
+@use "../Components/Tooltip/Glyph.razor" as glyph;
+@use "../Components/Tooltip/ItemTrait.razor" as trait;

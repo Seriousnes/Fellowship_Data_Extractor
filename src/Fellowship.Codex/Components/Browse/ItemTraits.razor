@@ -1,7 +1,7 @@
 @inject ICodexViewService Ui
 
 <Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
-       Group="Grouped.By<TraitDocument>(View, Ui.Codex)">
+       Group="Grouped.By<ItemTraitDocument>(View, Ui.Codex)">
     <Columns>
         <Column Head="" Class="cx-texture">
             <Content Context="row"><Texture Entity="row" /></Content>
@@ -20,7 +20,7 @@
 
     [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
 
-    private IReadOnlyList<TraitDocument> Documents = [];
+    private IReadOnlyList<ItemTraitDocument> Documents = [];
 
-    protected override void OnParametersSet() => Documents = [.. Rows.OfType<TraitDocument>()];
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<ItemTraitDocument>()];
 }

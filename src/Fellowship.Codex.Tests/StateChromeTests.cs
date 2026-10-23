@@ -14,7 +14,7 @@ public class StateChromeTests(Export export)
     [Fact]
     public void Every_blessing_draws_its_hovered_rune_allocated_and_its_own_rune_unallocated()
     {
-        var blessings = export.Store.Entities.OfType<BlessingDocument>().ToArray();
+        var blessings = export.Store.Entities.OfType<GlyphDocument>().ToArray();
 
         Assert.NotEmpty(blessings);
 
@@ -48,7 +48,7 @@ public class StateChromeTests(Export export)
     {
         var settings = export.Store.Settings;
 
-        foreach (var trait in export.Store.Entities.OfType<TraitDocument>())
+        foreach (var trait in export.Store.Entities.OfType<ItemTraitDocument>())
         {
             var slot = ItemCraft.KindOfTrait(trait, settings) is { } kind ? ItemCraft.Defining(kind, trait, settings) : null;
 

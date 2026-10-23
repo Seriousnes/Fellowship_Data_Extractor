@@ -16,7 +16,7 @@ public sealed record EnchantRecord : EntityRecord
 
 public sealed record EnchantStatRecord(string Attribute, double PerRank);
 
-public sealed record TraitRecord : EntityRecord
+public abstract record ItemTraitRecord : EntityRecord
 {
     public IReadOnlyList<ResourceGainRecord>? Generates { get; init; }
 
@@ -31,3 +31,9 @@ public sealed record TraitRecord : EntityRecord
     public string? Icon { get; init; }
     public IReadOnlyList<RankRunRecord>? RankRuns { get; init; }
 }
+
+public sealed record SigilRecord : ItemTraitRecord;
+
+public sealed record AspectRecord : ItemTraitRecord;
+
+public sealed record ProtectiveEnchantRecord : ItemTraitRecord;

@@ -57,6 +57,7 @@ public sealed class TooltipWidgetText
             Text(source, SourceWidget, RanksCloseBlock))
         {
             ItemTypes = slots.Printed,
+            Categories = TraitCategoryTexts.Read(trait, TraitWidget),
         };
     }
 

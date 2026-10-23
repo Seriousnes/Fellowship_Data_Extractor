@@ -299,7 +299,7 @@ public sealed class ChromePixelTests
     [Fact]
     public void EveryBlessingsAllocatedArtIsInTheFolderTheChromeReads()
     {
-        var blessings = Read.Store.Entities.OfType<BlessingDocument>().ToArray();
+        var blessings = Read.Store.Entities.OfType<GlyphDocument>().ToArray();
 
         Assert.NotEmpty(blessings);
 

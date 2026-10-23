@@ -16,7 +16,7 @@ public class TooltipQueryTests(Export export)
     private TooltipQuery Query(ItemTooltipRequest request, out string? error) =>
         TooltipRequests.Read(request, export.Store, out error);
 
-    private static TooltipQuery Query(BlessingTooltipRequest request, out string? error) =>
+    private static TooltipQuery Query(GlyphTooltipRequest request, out string? error) =>
         TooltipRequests.Read(request, out error);
 
     private string Flat => export.Store.Stats.Names
@@ -189,7 +189,7 @@ public class TooltipQueryTests(Export export)
 
     [Fact]
     public void The_equipped_tier_a_blessing_is_drawn_at_reaches_the_query() =>
-        Assert.Equal(2, Query(new BlessingTooltipRequest { EquippedTier = 2 }, out _).EquippedTier);
+        Assert.Equal(2, Query(new GlyphTooltipRequest { EquippedTier = 2 }, out _).EquippedTier);
 
     [Theory]
     [InlineData(0, "unallocated")]

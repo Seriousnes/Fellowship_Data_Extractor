@@ -12,7 +12,7 @@
         EntityType.Item => typeof(Views.Item),
         EntityType.Creature => typeof(Views.Creature),
         EntityType.Dungeon => typeof(Views.Dungeon),
-        EntityType.Trait => typeof(Views.Trait),
+        EntityType.Sigil or EntityType.Aspect or EntityType.ProtectiveEnchant or EntityType.Enchant => typeof(Views.ItemTrait),
         EntityType.TalentSlot => typeof(Views.TalentSlot),
         EntityType.GemTrait => typeof(Views.GemTrait),
         EntityType.Hero => typeof(Views.Hero),

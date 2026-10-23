@@ -1,6 +1,6 @@
 namespace Fellowship.SDK.Records;
 
-public sealed record GemTypeRecord : EntityRecord
+public sealed record RadianceRecord : EntityRecord
 {
     public required GemType GemType { get; init; }
 

@@ -171,7 +171,7 @@
                 .SelectMany(category => TraitTrees.InCategory(category, Store, TooltipView.Wearer(Item, Query))),
 
             CraftSlots.GemPower => Store.Entities
-                .OfType<GemTypeDocument>()
+                .OfType<RadianceDocument>()
                 .Where(gem => definition.GemPowerPool.Any(tag => tag.EndsWith(
                     $"{TagSeparator}{gem.Type}", StringComparison.OrdinalIgnoreCase))),
 

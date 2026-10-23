@@ -1,6 +1,6 @@
 namespace Fellowship.SDK.Records;
 
-public sealed record BlessingRecord : EntityRecord
+public sealed record GlyphRecord : EntityRecord
 {
     public IReadOnlyList<ResourceGainRecord>? Generates { get; init; }
 

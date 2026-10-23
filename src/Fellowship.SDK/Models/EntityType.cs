@@ -10,7 +10,7 @@ namespace Fellowship.SDK;
 public enum EntityType
 {
     Ability,
-    Blessing,
+    Glyph,
     CompanionPet,
     Creature,
     Currency,
@@ -19,7 +19,7 @@ public enum EntityType
     Enchant,
     Gem,
     GemTrait,
-    GemType,
+    Radiance,
     Hero,
     Item,
     LegendaryPower,
@@ -31,9 +31,27 @@ public enum EntityType
     RelicPower,
     Talent,
     TalentSlot,
-    Trait,
+    Sigil,
+    Aspect,
+    ProtectiveEnchant,
     TraitPower,
     WeaponPower,
+}
+
+public static class ItemTraitTypes
+{
+    public static IReadOnlyDictionary<string, EntityType> ByCategory { get; } =
+        new Dictionary<string, EntityType>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ItemTrait.TraitCategory.Heroic"] = EntityType.Sigil,
+            ["ItemTrait.TraitCategory.Major"] = EntityType.Aspect,
+            ["ItemTrait.TraitCategory.Necklace"] = EntityType.ProtectiveEnchant,
+            ["ItemTrait.TraitCategory.StatEnchant"] = EntityType.Enchant,
+        };
+
+    public static IReadOnlyList<EntityType> All { get; } = [.. ByCategory.Values];
+
+    public static bool Is(EntityType type) => All.Contains(type);
 }
 
 public static class EntityTypes

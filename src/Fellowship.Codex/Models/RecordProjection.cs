@@ -13,7 +13,7 @@ public static class RecordProjection
         Table = Verified(new Dictionary<EntityType, Func<EntityDocument, ICodexViewService, string, EntityRecord>>
         {
             [EntityType.Ability] = (document, view, origin) => From((AbilityDocument)document, view, origin),
-            [EntityType.Blessing] = (document, view, origin) => From((BlessingDocument)document, view, origin),
+            [EntityType.Glyph] = (document, view, origin) => From((GlyphDocument)document, view, origin),
             [EntityType.CompanionPet] = (document, view, origin) => From((CompanionPetDocument)document, view, origin),
             [EntityType.Creature] = (document, view, origin) => From((CreatureDocument)document, view, origin),
             [EntityType.Currency] = (document, view, origin) => From((CurrencyDocument)document, view, origin),
@@ -21,7 +21,7 @@ public static class RecordProjection
             [EntityType.Effect] = (document, view, origin) => From((EffectDocument)document, view, origin),
             [EntityType.Gem] = (document, view, origin) => From((GemDocument)document, view, origin),
             [EntityType.GemTrait] = (document, view, origin) => From((GemTraitDocument)document, view, origin),
-            [EntityType.GemType] = (document, view, origin) => From((GemTypeDocument)document, view, origin),
+            [EntityType.Radiance] = (document, view, origin) => From((RadianceDocument)document, view, origin),
             [EntityType.Hero] = (document, view, origin) => From((HeroDocument)document, view, origin),
             [EntityType.Item] = (document, view, origin) => From((ItemDocument)document, view, origin),
             [EntityType.LegendaryPower] = (document, view, origin) =>
@@ -37,7 +37,9 @@ public static class RecordProjection
             [EntityType.Talent] = (document, view, origin) => From((TalentDocument)document, view, origin),
             [EntityType.TalentSlot] = (document, view, origin) => From((TalentSlotDocument)document, view, origin),
             [EntityType.Enchant] = (document, view, origin) => From((EnchantDocument)document, view, origin),
-            [EntityType.Trait] = (document, view, origin) => From((TraitDocument)document, view, origin),
+            [EntityType.Sigil] = (document, view, origin) => From((SigilDocument)document, view, origin),
+            [EntityType.Aspect] = (document, view, origin) => From((AspectDocument)document, view, origin),
+            [EntityType.ProtectiveEnchant] = (document, view, origin) => From((ProtectiveEnchantDocument)document, view, origin),
             [EntityType.TraitPower] = (document, view, origin) => From((TraitPowerDocument)document, view, origin),
             [EntityType.WeaponPower] = (document, view, origin) => From((WeaponPowerDocument)document, view, origin),
         });
@@ -110,13 +112,13 @@ public static class RecordProjection
         };
     }
 
-    public static BlessingRecord From(BlessingDocument document, ICodexViewService view, string origin)
+    public static GlyphRecord From(GlyphDocument document, ICodexViewService view, string origin)
     {
         var tokens = document.Placeholders ?? [];
 
-        return new BlessingRecord
+        return new GlyphRecord
         {
-            Type = EntityType.Blessing,
+            Type = EntityType.Glyph,
             Id = document.Id,
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
@@ -276,13 +278,13 @@ public static class RecordProjection
         };
     }
 
-    public static GemTypeRecord From(GemTypeDocument document, ICodexViewService view, string origin)
+    public static RadianceRecord From(RadianceDocument document, ICodexViewService view, string origin)
     {
         var tokens = document.OverflowPlaceholders ?? [];
 
-        return new GemTypeRecord
+        return new RadianceRecord
         {
-            Type = EntityType.GemType,
+            Type = EntityType.Radiance,
             Id = document.Id,
             Name = PublicTypes.NameOf(document),
             GemType = document.Type,
@@ -498,12 +500,10 @@ public static class RecordProjection
         Stats = [.. (document.Stats ?? []).Select(stat => new EnchantStatRecord(stat.Attribute, stat.Coefficient))],
     };
 
-    public static TraitRecord From(TraitDocument document, ICodexViewService view, string origin) => new()
+    private static ItemTraitRecord ItemTrait(
+        ItemTraitRecord seed, ItemTraitDocument document, ICodexViewService view, string origin) => seed with
     {
-        Type = EntityType.Trait,
-        Id = document.Id,
         Generates = Generated(document.Generates),
-        Name = PublicTypes.NameOf(document),
         Category = document.Category,
         MaxRank = document.MaxRank,
         RandomChance = document.RandomChance,
@@ -512,6 +512,25 @@ public static class RecordProjection
         Icon = Texture(document.Icon, view),
         RankRuns = Runs(document.RankRuns),
     };
+
+    public static SigilRecord From(SigilDocument document, ICodexViewService view, string origin) =>
+        (SigilRecord)ItemTrait(
+            new SigilRecord { Type = EntityType.Sigil, Id = document.Id, Name = PublicTypes.NameOf(document) },
+            document, view, origin);
+
+    public static AspectRecord From(AspectDocument document, ICodexViewService view, string origin) =>
+        (AspectRecord)ItemTrait(
+            new AspectRecord { Type = EntityType.Aspect, Id = document.Id, Name = PublicTypes.NameOf(document) },
+            document, view, origin);
+
+    public static ProtectiveEnchantRecord From(
+        ProtectiveEnchantDocument document, ICodexViewService view, string origin) =>
+        (ProtectiveEnchantRecord)ItemTrait(
+            new ProtectiveEnchantRecord
+            {
+                Type = EntityType.ProtectiveEnchant, Id = document.Id, Name = PublicTypes.NameOf(document),
+            },
+            document, view, origin);
 
     public static TraitPowerRecord From(TraitPowerDocument document, ICodexViewService view, string origin)
     {

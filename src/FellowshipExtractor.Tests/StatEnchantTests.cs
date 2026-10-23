@@ -17,7 +17,7 @@ public sealed class StatEnchantTests
 
         Assert.Equal(6, Enchants.Select(enchant => enchant.Id).Distinct().Count());
         Assert.DoesNotContain(
-            EntityStoreCorpusTests.Store.Entities.OfType<TraitDocument>(), trait => trait.CategoryTag == Category);
+            EntityStoreCorpusTests.Store.Entities.OfType<ItemTraitDocument>().Where(trait => trait is not EnchantDocument), trait => trait.CategoryTag == Category);
 
         foreach (var versions in Enchants.GroupBy(enchant => enchant.Id))
         {

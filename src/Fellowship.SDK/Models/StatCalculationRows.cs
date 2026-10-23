@@ -74,7 +74,11 @@ public sealed record TraitTooltipText(
     string RanksClose)
 {
     public IReadOnlyList<ItemTypeText> ItemTypes { get; init; } = [];
+
+    public IReadOnlyList<TraitCategoryText> Categories { get; init; } = [];
 }
+
+public sealed record TraitCategoryText(string? CategoryTag, string Heading, string Band);
 
 public sealed record ItemTypeText(string Type, string Printed);
 

@@ -2,9 +2,9 @@ using Fellowship.SDK.Documents;
 
 namespace Fellowship.Codex.Models;
 
-public static class EnchantRanks
+public static class TraitRanks
 {
-    public static bool Is(EntityDocument document) => document is EnchantDocument;
+    public static bool IsEnchant(EntityDocument document) => document is EnchantDocument;
 
     public static int Power(SettingsFile settings, int itemLevel) =>
         settings.Items.StatEnchantPower is { } curve
@@ -42,6 +42,31 @@ public static class EnchantRanks
 
     public static int Rank(SettingsFile settings, TooltipQuery query) =>
         query.EquippedTier ?? Sources(settings, query).Count * Power(settings, Level(settings, query));
+
+    public static int Rank(SettingsFile settings, TooltipQuery query, ItemTraitDocument trait) =>
+        trait is EnchantDocument ? Rank(settings, query) : query.EquippedTier ?? Sources(settings, query).Count;
+
+    public static TraitCategoryText Category(SettingsFile settings, ItemTraitDocument trait) =>
+        Text(settings).Categories.FirstOrDefault(category =>
+            string.Equals(category.CategoryTag, trait.CategoryTag, StringComparison.OrdinalIgnoreCase))
+        ?? Text(settings).Categories.FirstOrDefault(category => category.CategoryTag is null)
+        ?? throw new InvalidOperationException(
+            "The settings state no trait card text for the category " + trait.CategoryTag + " and no default.");
+
+    public static string? Description(ItemTraitDocument trait, int rank)
+    {
+        if (trait.Description is not { } description) return null;
+
+        foreach (var run in trait.RankRuns ?? [])
+        {
+            if (run.Printed.Count == 0) continue;
+
+            description = description.Replace(
+                run.Literal, run.Printed[Math.Clamp(rank, 1, run.Printed.Count) - 1], StringComparison.Ordinal);
+        }
+
+        return description;
+    }
 
     public static IEnumerable<(string Stat, decimal Value)> Granted(
         EnchantDocument enchant, SettingsFile settings, int itemLevel)

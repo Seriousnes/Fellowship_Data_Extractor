@@ -39,7 +39,6 @@ public static class PublicTypes
         (EntityType.Ability, "Abilities", "ability", Categories.Spells),
         (EntityType.Effect, "Effects", "effect", Categories.Spells),
         (EntityType.Talent, "Talents", "talent", Categories.Spells),
-        (EntityType.Trait, "Traits", "trait", Categories.Spells),
         (EntityType.GemTrait, "Gem Traits", "gem trait", Categories.Spells),
         (EntityType.TraitPower, "Trait Powers", "trait power", Categories.Spells),
         (EntityType.WeaponPower, "Weapon Powers", "weapon power", Categories.Spells),
@@ -51,14 +50,17 @@ public static class PublicTypes
         (EntityType.Hero, "Heroes", "hero", Categories.Spells),
 
         (EntityType.Item, "Items", "item", Categories.Items),
-        (EntityType.Blessing, "Blessings", "blessing", Categories.Items),
+        (EntityType.Glyph, "Glyphs", "glyph", Categories.Items),
         (EntityType.Gem, "Gems", "gem", Categories.Items),
         (EntityType.Enchant, "Enchants", "enchant", Categories.Items),
+        (EntityType.Sigil, "Sigils", "sigil", Categories.Items),
+        (EntityType.Aspect, "Aspects", "aspect", Categories.Items),
+        (EntityType.ProtectiveEnchant, "Protective Enchants", "protective enchant", Categories.Items),
         (EntityType.Currency, "Currencies", "currency", Categories.Items),
         (EntityType.Mount, "Mounts", "mount", Categories.Items),
         (EntityType.CompanionPet, "Companion Pets", "companion pet", Categories.Items),
         (EntityType.LegendaryStat, "Legendary Stats", "legendary stat", Categories.Items),
-        (EntityType.GemType, "Gem Types", "gem type", Categories.Items),
+        (EntityType.Radiance, "Radiance", "radiance", Categories.Items),
 
         (EntityType.Dungeon, "Dungeons", "dungeon", Categories.Dungeons),
         (EntityType.Modifier, "Modifiers", "modifier", Categories.Dungeons),
@@ -72,7 +74,7 @@ public static class PublicTypes
         EntityType.MountPower,
         EntityType.Hero,
         EntityType.LegendaryStat,
-        EntityType.GemType,
+        EntityType.Radiance,
         EntityType.Modifier,
     ];
 

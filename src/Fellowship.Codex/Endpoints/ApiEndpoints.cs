@@ -8,7 +8,7 @@ public static class ApiEndpoints
         app.MapExport();
 
         app.MapAbility();
-        app.MapBlessing();
+        app.MapGlyph();
         app.MapCompanionPet();
         app.MapCreature();
         app.MapCurrency();
@@ -23,7 +23,9 @@ public static class ApiEndpoints
         app.MapMount();
         app.MapRelicPower();
         app.MapTalent();
-        app.MapTrait();
+        app.MapSigil();
+        app.MapAspect();
+        app.MapProtectiveEnchant();
         app.MapTraitPower();
         app.MapWeaponPower();
     }

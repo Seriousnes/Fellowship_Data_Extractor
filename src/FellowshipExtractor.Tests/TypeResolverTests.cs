@@ -3,7 +3,7 @@ namespace FellowshipExtractor.Tests;
 public sealed class TypeResolverTests
 {
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(25, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(27, Enum.GetValues<EntityType>().Length);
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
@@ -22,22 +22,24 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.Talent, 216)]
     [InlineData(EntityType.TalentSlot, 216)]
     [InlineData(EntityType.Mount, 111)]
-    [InlineData(EntityType.Trait, 62)]
+    [InlineData(EntityType.Sigil, 8)]
+    [InlineData(EntityType.Aspect, 8)]
+    [InlineData(EntityType.ProtectiveEnchant, 11)]
     [InlineData(EntityType.Enchant, 18)]
     [InlineData(EntityType.GemTrait, 60)]
     [InlineData(EntityType.MountPower, 54)]
-    [InlineData(EntityType.TraitPower, 58)]
+    [InlineData(EntityType.TraitPower, 45)]
     [InlineData(EntityType.LegendaryPower, 36)]
     [InlineData(EntityType.Currency, 17)]
     [InlineData(EntityType.Modifier, 26)]
     [InlineData(EntityType.Gem, 24)]
-    [InlineData(EntityType.Blessing, 8)]
+    [InlineData(EntityType.Glyph, 8)]
     [InlineData(EntityType.WeaponPower, 12)]
     [InlineData(EntityType.Hero, 12)]
     [InlineData(EntityType.RelicPower, 9)]
     [InlineData(EntityType.RelicPassive, 5)]
     [InlineData(EntityType.CompanionPet, 14)]
-    [InlineData(EntityType.GemType, 6)]
+    [InlineData(EntityType.Radiance, 6)]
     [InlineData(EntityType.LegendaryStat, 3)]
     public void TheCorpusHoldsTheseCounts(EntityType type, int expected) =>
         Assert.Equal(expected, Export.Loaded.Documents.Count(d => d.Type == type));

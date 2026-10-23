@@ -1,6 +1,6 @@
 namespace Fellowship.SDK.Documents;
 
-public sealed class GemTypeDocument : EntityDocument
+public sealed class RadianceDocument : EntityDocument
 {
     public required GemType Type { get; init; }
 

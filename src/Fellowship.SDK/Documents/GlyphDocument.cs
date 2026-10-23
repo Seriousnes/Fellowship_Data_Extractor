@@ -2,7 +2,7 @@ using Fellowship.SDK.Models;
 
 namespace Fellowship.SDK.Documents;
 
-public sealed class BlessingDocument : EntityDocument
+public sealed class GlyphDocument : EntityDocument
 {
     public string? Description { get; init; }
     public string? Icon { get; init; }

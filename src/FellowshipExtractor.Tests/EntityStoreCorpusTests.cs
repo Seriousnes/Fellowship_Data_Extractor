@@ -35,7 +35,7 @@ public sealed class EntityStoreCorpusTests
         Assert.Equal(expected, Store.Entities.Count(document => EntityTypes.TypeOf(document) == type));
 
     [Fact]
-    public void TheStoreHolds12701Entities() => Assert.Equal(12701, Store.Count);
+    public void TheStoreHolds12653Entities() => Assert.Equal(12653, Store.Count);
 
     private static readonly IReadOnlySet<int> Granted = Store.Entities
         .OfType<ItemDocument>()

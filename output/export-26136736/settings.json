@@ -4238,6 +4238,32 @@
         "type": "Charm",
         "printed": "Charm"
       }
+    ],
+    "categories": [
+      {
+        "categoryTag": "ItemTrait.TraitCategory.StatEnchant",
+        "heading": "Enchant",
+        "band": "Enchant"
+      },
+      {
+        "categoryTag": "ItemTrait.TraitCategory.Necklace",
+        "heading": "Protective Enchant",
+        "band": "Enchant"
+      },
+      {
+        "categoryTag": "ItemTrait.TraitCategory.Heroic",
+        "heading": "Sigil",
+        "band": "Augmentation"
+      },
+      {
+        "categoryTag": "ItemTrait.TraitCategory.Major",
+        "heading": "Aspect",
+        "band": "Augmentation"
+      },
+      {
+        "heading": "Augmentation",
+        "band": "Augmentation"
+      }
     ]
   },
   "abilityTooltip": {
