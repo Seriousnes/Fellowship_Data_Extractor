@@ -3,6 +3,9 @@
 Fellowship Data Extractor exports the game data of Fellowship, a game by Chief Rebel AB. It serves
 the export as a website, an HTTP API, an MCP server and a NuGet package.
 
+This is an unofficial fan project. Chief Rebel AB does not make or endorse it. See
+[Licence](#licence).
+
 ## Projects
 
 - **`src/FellowshipExtractor`**: the console app. It reads the game install and writes the export.
@@ -48,7 +51,7 @@ dotnet run --project src/FellowshipExtractor.AppHost
 
 ## Download the export
 
-The codex serves the export of the build it reads. A machine without a clone of this private
+The codex serves the export of the build it reads. A machine without a clone of this
 repository can download the export from the codex.
 
 `GET https://codex.fellowshipanalyzer.com/api/export` returns the Steam build id and the path of
@@ -69,3 +72,9 @@ To download each file, run `curl -O`:
 curl -O https://codex.fellowshipanalyzer.com/api/export/entities.jsonl
 curl -O https://codex.fellowshipanalyzer.com/api/export/settings.json
 ```
+
+## Licence
+
+The source code is under the [MIT licence](LICENSE). Fellowship game content belongs to Chief Rebel
+AB and is not covered by that licence. This includes names, artwork, textures, text and game data,
+and the extracted files in `output/` and `mappings/`. For details, see [NOTICE.md](NOTICE.md).
