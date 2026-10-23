@@ -12,20 +12,21 @@ using ModelContextProtocol.Server;
 namespace Fellowship.Codex.Mcp;
 
 [McpServerToolType]
-public sealed class CodexTools(
-    IEntityStoreService store,
-    ICodexService codex,
-    ISuggestionService suggestions,
-    ICodexViewService view)
+public sealed class CodexTools(LiveExport export)
 {
     [McpServerTool(Name = "list_types", ReadOnly = true), Description(
         "Lists every entity type in the build, with the hero and rarity names other tools accept.")]
-    public TypesResult ListTypes() => new(
-        codex.Count,
-        [.. codex.Types.Select(type => new TypeSummary(type.Slug, type.Label, type.Category.Slug, type.Count))],
-        [.. store.Settings.Heroes.Select(hero => hero.Name)],
-        [.. store.Settings.Rarities.Select(rarity =>
-            new RaritySummary(rarity.Tier, rarity.DisplayName, rarity.GemDisplayName))]);
+    public TypesResult ListTypes()
+    {
+        var (_, store, codex, _, _) = export.Current;
+
+        return new TypesResult(
+            codex.Count,
+            [.. codex.Types.Select(type => new TypeSummary(type.Slug, type.Label, type.Category.Slug, type.Count))],
+            [.. store.Settings.Heroes.Select(hero => hero.Name)],
+            [.. store.Settings.Rarities.Select(rarity =>
+                new RaritySummary(rarity.Tier, rarity.DisplayName, rarity.GemDisplayName))]);
+    }
 
     [McpServerTool(Name = "find_entity", ReadOnly = true), Description(
         "Finds entities by name and returns the type and id that get_entity takes. Matches name " +
@@ -37,7 +38,7 @@ public sealed class CodexTools(
         [Description("Narrow to one type slug from list_types.")] string? type = null,
         [Description("How many results to return, 1 to 100.")] int limit = 10)
     {
-        var response = suggestions.For(q, type, Math.Clamp(limit, 1, SuggestionService.MaximumLimit));
+        var response = export.Current.Suggestions.For(q, type, Math.Clamp(limit, 1, SuggestionService.MaximumLimit));
 
         return new FoundResult(
             response.Total,
@@ -58,6 +59,8 @@ public sealed class CodexTools(
         {
             return Error(PublicTypes.NoSuchType(slug));
         }
+
+        var (_, store, _, _, view) = export.Current;
 
         var request = StatQuery.NullIfEmpty(hero);
 

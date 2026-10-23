@@ -2,8 +2,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
-using Fellowship.Codex.Services;
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -32,11 +30,11 @@ public static class CodexMcp
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public static IMcpServerBuilder AddCodexMcp(this IHostApplicationBuilder builder, string export)
+    public static IMcpServerBuilder AddCodexMcp(this IHostApplicationBuilder builder, ExportLocation export)
     {
-        builder.Services.AddSingleton<IExportSource>(new FolderExportSource(export));
-        builder.Services.AddSingleton<ITextureSource, NamedTextureSource>();
-        builder.Services.AddCodexServices();
+        builder.Services.AddSingleton(export);
+        builder.Services.AddSingleton<LiveExport>();
+        builder.Services.AddHostedService<ExportWatcher>();
 
         return builder.Services
             .AddMcpServer(options =>

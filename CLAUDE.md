@@ -38,7 +38,19 @@ appmanifest naming the build. The first run against a clean `bin/` downloads Ood
 install. `FELLOWSHIP_BUILD` overrides it for a copy Steam did not install. Everything reading an
 export out of `output/` globs `output/export-*` and takes the highest build with both
 `entities.jsonl` and `settings.json`. Several builds are present at once and the highest is read.
-`FELLOWSHIP_EXPORT`, and `--export` on the MCP server, name one folder outright.
+`FELLOWSHIP_EXPORT`, and `--export` on the MCP server, name one export folder outright, or an
+`output/` folder whose highest build is read.
+
+## The user-scope MCP server reads the main checkout
+
+The user-scope `fellowship-codex` server runs `G:/mcp/Fellowship/Fellowship.Codex.Mcp.exe --export
+G:/source/Fellowship_Data_Extractor/output`. It reads the highest build in the main checkout's
+`output/`, and every 15 seconds checks that folder again. A new highest build, or a rewritten
+`entities.jsonl` or `settings.json`, loads once two checks in a row agree, and a load that fails
+leaves the previous export in place. An `--export` or `FELLOWSHIP_EXPORT` that names one export
+folder outright is never swapped. `deploy/mcp/publish.ps1` republishes the binary to `G:/mcp/Fellowship`, and
+renames each file a running server holds open to `*.replaced`, so a publish succeeds while sessions
+run. The next publish deletes the `*.replaced` files no server still holds.
 
 Textures are at `ui/<texture>_<size>.webp`, one set for every build. A size is `small`, `medium`,
 `large` or `full`. `full` is the native resolution and exists for every texture. Each square size

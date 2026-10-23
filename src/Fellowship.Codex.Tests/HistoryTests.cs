@@ -99,6 +99,25 @@ public class HistoryTests
     }
 
     [Fact]
+    public void An_output_folder_resolves_to_its_newest_complete_build()
+    {
+        var output = Directory.CreateTempSubdirectory("fellowship-history").FullName;
+
+        try
+        {
+            Version(output, "1000", Older);
+            var newest = Version(output, "1001", Newer);
+            Directory.CreateDirectory(Path.Combine(output, ExportFolders.Name("1002")));
+
+            Assert.Equal(newest, FolderExportSource.Carried(output, "The test names"));
+        }
+        finally
+        {
+            Directory.Delete(output, recursive: true);
+        }
+    }
+
+    [Fact]
     public void A_line_carrying_no_type_or_id_joins_no_key()
     {
         var grouped = ExportReader.Group([Older, "{}", "not json at all", string.Empty, Newer]);

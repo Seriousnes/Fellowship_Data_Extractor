@@ -19,10 +19,12 @@ public sealed class FolderExportSource(string folder) : IExportSource
     {
         var full = Path.GetFullPath(folder);
 
-        return Carries(full)
-            ? full
-            : throw new InvalidOperationException(
-                $"{source} {full}. That folder carries no {ExportReader.EntitiesName}.");
+        if (Carries(full)) return full;
+
+        return (Directory.Exists(full) ? Newest(new DirectoryInfo(full)) : null)
+            ?? throw new InvalidOperationException(
+                $"{source} {full}. That folder carries no {ExportReader.EntitiesName} and no " +
+                $"{ExportFolders.Pattern} carrying both {ExportReader.EntitiesName} and {ExportReader.SettingsName}.");
     }
 
     public static InvalidOperationException Unlocated(string? option = null) =>

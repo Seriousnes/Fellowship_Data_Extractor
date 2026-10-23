@@ -29,4 +29,14 @@
     <PackageReference Include="ModelContextProtocol" Version="2.1.0" />
   </ItemGroup>
 
+  <Target Name="PublishCodexLibraryOnly" AfterTargets="ComputeResolvedFilesToPublishList">
+    <PropertyGroup>
+      <CodexProjectFolder>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../Fellowship.Codex/'))</CodexProjectFolder>
+    </PropertyGroup>
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(CodexProjectFolder)')) and '%(Extension)' != '.dll' and '%(Extension)' != '.pdb'" />
+    </ItemGroup>
+  </Target>
+
 </Project>

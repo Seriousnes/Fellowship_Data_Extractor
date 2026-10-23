@@ -38,6 +38,22 @@ public static class CodexServices
         return services;
     }
 
+    public static IServiceCollection AddCardServices(this IServiceCollection services)
+    {
+        services.AddSingleton<Embeds.TooltipProse>();
+        services.AddSingleton<Embeds.CardRenderer>();
+
+        foreach (var card in typeof(Embeds.IEntityCard).Assembly.GetTypes()
+            .Where(type => type is { IsClass: true, IsAbstract: false } && type.IsAssignableTo(typeof(Embeds.IEntityCard))))
+        {
+            services.AddSingleton(typeof(Embeds.IEntityCard), card);
+        }
+
+        services.AddSingleton<ICardService, CardService>();
+
+        return services;
+    }
+
     public static async Task LoadExportAsync(this IServiceProvider services, CancellationToken cancellationToken)
     {
         services.GetRequiredService<ExportHistoryHolder>().History =
