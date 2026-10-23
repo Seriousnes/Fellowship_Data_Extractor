@@ -80,7 +80,7 @@ public sealed class PlaceholderService(IEntityStoreService store, IRichTextServi
 
         if (placeholder is { PerRank: true, Value: { } perRank })
         {
-            var rank = Enchants.Rank(store.Settings, query);
+            var rank = EnchantRanks.Rank(store.Settings, query);
 
             return new Substitution(
                 Round((decimal)perRank * rank),

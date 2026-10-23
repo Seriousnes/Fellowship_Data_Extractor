@@ -136,13 +136,14 @@ public class ItemCraftTests(Export export)
     }
 
     [Fact]
-    public void An_enchant_prints_the_name_its_wearer_reads()
+    public void An_enchant_resolves_to_the_version_its_wearer_reads()
     {
-        var enchant = export.Store.Entities.OfType<TraitDocument>().First(trait => trait.NameByHero is { Count: > 0 });
-        var (hero, printed) = enchant.NameByHero!.First();
+        foreach (var hero in Settings.Heroes)
+        {
+            var enchant = Assert.IsType<EnchantDocument>(TooltipView.ItemTrait(export.Store, 69, hero.Name));
 
-        Assert.Equal(printed, TooltipView.PrintedFor(enchant, hero));
-        Assert.Null(TooltipView.PrintedFor(enchant, null));
+            Assert.Equal(hero.PrimaryStat, enchant.PrimaryStat.ToString());
+        }
     }
 
     [Fact]

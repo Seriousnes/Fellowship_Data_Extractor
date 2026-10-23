@@ -15,6 +15,7 @@ public static class ApiEndpoints
         app.MapDungeon();
         app.MapEffect();
         app.MapGem();
+        app.MapEnchant();
         app.MapGemTrait();
         app.MapItem();
         app.MapLegendaryPower();

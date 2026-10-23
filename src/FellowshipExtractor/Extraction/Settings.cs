@@ -75,6 +75,8 @@ public sealed class Settings
 
     public string TraitTreeHeader { get; }
 
+    public TraitTooltipText TraitTooltip { get; }
+
     public AbilityTooltipText AbilityTooltip { get; }
 
     public Settings(
@@ -106,6 +108,7 @@ public sealed class Settings
         ModifierTypes = recipes.Types;
         EmptyModifierSlot = widgetText.EmptySlot;
         TraitTreeHeader = widgetText.TraitTreeHeader;
+        TraitTooltip = widgetText.TraitTooltip;
         AbilityTooltip = abilityTooltip.Text;
         var scoring = new DungeonScoring(provider, [.. creatures.Scaling.Health.Keys]);
 
@@ -166,7 +169,7 @@ public sealed class Settings
 
         PrintFormats = Rows(provider, assets, FormatRowStructure, TextField);
         Colors = colours;
-        TextStyles = new RichTextStyles(provider, assets).Styles;
+        TextStyles = new RichTextStyles(provider, assets, widgetText.DescriptionStyleSet).Styles;
 
         if (Heroes.Count == 0 || Rarities.Count == 0 || PrintFormats.Count == 0 ||
             Colors.Count == 0 || TextStyles.Count == 0)
@@ -206,6 +209,7 @@ public sealed class Settings
         TraitNodeUpgradeCosts = _traitTrees.UpgradeCosts,
         TraitNodeColorRows = TraitNodeColorRows,
         TraitTreeHeader = TraitTreeHeader,
+        TraitTooltip = TraitTooltip,
         AbilityTooltip = AbilityTooltip,
         ModifierTypes = ModifierTypes,
         EmptyModifierSlot = EmptyModifierSlot,

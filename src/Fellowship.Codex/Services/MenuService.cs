@@ -58,6 +58,7 @@ public sealed class MenuService : IMenuService
                     new MenuSection("Weapons", Weapons(Where(EntityType.Item)))),
                 Tab(EntityType.Blessing),
                 Tab(EntityType.Gem, new MenuSection("Types", Stones(Where(EntityType.Gem)))),
+                Tab(EntityType.Enchant),
                 Tab(EntityType.Currency),
                 Tab(EntityType.Mount),
                 Tab(EntityType.CompanionPet),

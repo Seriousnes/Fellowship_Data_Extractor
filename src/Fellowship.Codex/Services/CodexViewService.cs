@@ -198,7 +198,7 @@ public sealed class CodexViewService(
             EntityType.Creature => Body(new CreatureTooltipRequest { ShowIcon = icon }),
             EntityType.Currency => Body(new CurrencyTooltipRequest { ShowIcon = icon }),
             EntityType.Dungeon => Body(new DungeonTooltipRequest { ShowIcon = icon }),
-            EntityType.Effect => Body(new EffectTooltipRequest { ShowIcon = icon }),
+            EntityType.Effect => Body(new EffectTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.Gem => Body(new GemTooltipRequest { ShowIcon = icon }),
             EntityType.GemTrait => Body(new GemTraitTooltipRequest { ShowIcon = icon }),
             EntityType.Item => Body(new ItemTooltipRequest { ShowIcon = icon, Hero = hero }),
@@ -207,8 +207,9 @@ public sealed class CodexViewService(
             EntityType.Mount => Body(new MountTooltipRequest { ShowIcon = icon }),
             EntityType.RelicPower => Body(new RelicPowerTooltipRequest { ShowIcon = icon }),
             EntityType.Talent => Body(new TalentTooltipRequest { ShowIcon = icon }),
+            EntityType.Enchant => Body(new EnchantTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.Trait => Body(new TraitTooltipRequest { ShowIcon = icon }),
-            EntityType.TraitPower => Body(new TraitPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.TraitPower => Body(new TraitPowerTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.WeaponPower => Body(new WeaponPowerTooltipRequest { ShowIcon = icon, Hero = hero }),
             _ => null,
         });
@@ -318,7 +319,7 @@ public sealed class CodexViewService(
             or nameof(ItemDocument.RuleSet) or nameof(ItemDocument.TraitTree),
         CurrencyDocument => property == nameof(CurrencyDocument.Rarity),
         MountDocument => property == nameof(MountDocument.Rarity),
-        TraitDocument => property == nameof(TraitDocument.CategoryTag),
+        ItemTraitDocument => property == nameof(ItemTraitDocument.CategoryTag),
         GemDocument => property == nameof(GemDocument.Rarity),
         HeroDocument => property is nameof(HeroDocument.Title) or nameof(HeroDocument.Color)
             or nameof(HeroDocument.Biography) or nameof(HeroDocument.Playstyle)

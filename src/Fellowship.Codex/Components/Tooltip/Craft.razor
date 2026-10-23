@@ -245,6 +245,7 @@
                 ? imbued.Values
                 : [],
             State = StatQuery.NullIfEmpty(values.GetValueOrDefault("state")),
+            RankSources = RankSources.Parse(values.GetValueOrDefault("rankSources")),
             Difficulty = Number(values, "difficulty"),
         };
     }

@@ -16,6 +16,7 @@ public enum EntityType
     Currency,
     Dungeon,
     Effect,
+    Enchant,
     Gem,
     GemTrait,
     GemType,

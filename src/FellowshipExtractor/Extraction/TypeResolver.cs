@@ -74,7 +74,9 @@ public sealed class TypeResolver(
             return heroes.ForTag(tag.Name) is not null ? EntityType.Hero : null;
         }
 
-        return Tables.TryGetValue(tag.Table, out var table) ? table : null;
+        if (!Tables.TryGetValue(tag.Table, out var table)) return null;
+
+        return table is EntityType.Trait && entity.TraitStats is not null ? EntityType.Enchant : table;
     }
 
     private EntityType? Augmentation(TagRecord tag, Entity entity, string? packageName)

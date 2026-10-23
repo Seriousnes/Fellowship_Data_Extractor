@@ -31,7 +31,7 @@
 
     private IEnumerable<string> Attuned() =>
         Query.ImbuedTraits
-            .Select(trait => Store.All(TooltipView.TraitType, trait.Id).FirstOrDefault())
+            .Select(trait => TooltipView.ItemTrait(Store, trait.Id, TooltipView.Wearer(Entity, Query)))
             .OfType<EntityDocument>()
-            .Select(trait => TooltipView.PrintedFor(trait, TooltipView.Wearer(Entity, Query)) ?? PublicTypes.NameOf(trait));
+            .Select(trait => PublicTypes.NameOf(trait));
 }

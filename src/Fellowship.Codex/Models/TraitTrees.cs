@@ -16,16 +16,23 @@ public static class TraitTrees
             ? null
             : settings.TraitTrees.FirstOrDefault(tree => tree.Tag.Equals(tag, StringComparison.OrdinalIgnoreCase));
 
-    public static IReadOnlyList<TraitDocument> InCategory(string categoryTag, IEntityStoreService store) =>
+    public static IReadOnlyList<ItemTraitDocument> InCategory(
+        string categoryTag, IEntityStoreService store, string? wearer = null) =>
     [
         .. store.Entities
-            .OfType<TraitDocument>()
+            .OfType<ItemTraitDocument>()
             .Where(trait => categoryTag.Equals(trait.CategoryTag, StringComparison.OrdinalIgnoreCase))
+            .Select(trait => trait.Id)
+            .Distinct()
+            .Select(id => TooltipView.ItemTrait(store, id, wearer)!)
             .OrderBy(trait => PublicTypes.NameOf(trait), StringComparer.Ordinal),
     ];
 
-    public static IReadOnlyList<TraitDocument> Offered(TraitTreeNode node, IEntityStoreService store) =>
-        [.. node.TraitCategories.SelectMany(category => InCategory(category, store)).DistinctBy(trait => trait.Id)];
+    public static IReadOnlyList<ItemTraitDocument> Offered(
+        TraitTreeNode node, IEntityStoreService store, string? wearer = null) =>
+    [
+        .. node.TraitCategories.SelectMany(category => InCategory(category, store, wearer)).DistinctBy(trait => trait.Id),
+    ];
 
     public static string? CategoryName(string categoryTag, IEntityStoreService store) =>
         InCategory(categoryTag, store).Select(trait => trait.Category).FirstOrDefault(name => name is not null);
@@ -71,10 +78,10 @@ public static class TraitTrees
             .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase),
     ];
 
-    public static IReadOnlyDictionary<int, TraitDocument> Read(
-        string? picks, TraitTreeEntry tree, IEntityStoreService store)
+    public static IReadOnlyDictionary<int, ItemTraitDocument> Read(
+        string? picks, TraitTreeEntry tree, IEntityStoreService store, string? wearer = null)
     {
-        var asked = new Dictionary<int, TraitDocument>();
+        var asked = new Dictionary<int, ItemTraitDocument>();
 
         foreach (var pair in (picks ?? string.Empty).Split(
                      PairSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -82,7 +89,7 @@ public static class TraitTrees
             if (pair.Split(NodeSeparator) is not [var nodeText, var traitText] ||
                 !int.TryParse(nodeText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var node) ||
                 !int.TryParse(traitText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id) ||
-                store.All(EntityType.Trait, id).OfType<TraitDocument>().FirstOrDefault() is not { } trait)
+                TooltipView.ItemTrait(store, id, wearer) is not { } trait)
             {
                 continue;
             }
@@ -93,10 +100,10 @@ public static class TraitTrees
         return Allocated(tree, asked);
     }
 
-    public static IReadOnlyDictionary<int, TraitDocument> Allocated(
-        TraitTreeEntry tree, IReadOnlyDictionary<int, TraitDocument> asked)
+    public static IReadOnlyDictionary<int, ItemTraitDocument> Allocated(
+        TraitTreeEntry tree, IReadOnlyDictionary<int, ItemTraitDocument> asked)
     {
-        var kept = new Dictionary<int, TraitDocument>();
+        var kept = new Dictionary<int, ItemTraitDocument>();
 
         foreach (var row in Rows(tree))
         {
@@ -115,16 +122,16 @@ public static class TraitTrees
     }
 
     public static bool Allocatable(
-        TraitTreeEntry tree, IReadOnlyDictionary<int, TraitDocument> allocated, TraitTreeNode node) =>
+        TraitTreeEntry tree, IReadOnlyDictionary<int, ItemTraitDocument> allocated, TraitTreeNode node) =>
         !Root(node) &&
         !tree.Nodes.Any(other => other.TraitRowIndex == node.TraitRowIndex && allocated.ContainsKey(other.UITreeIndex)) &&
         node.ParentNodes.Any(parent => tree.Nodes.FirstOrDefault(other => other.UITreeIndex == parent) is { } linked &&
                                        (Root(linked) || allocated.ContainsKey(parent)));
 
-    public static bool Lit(TraitTreeNode node, IReadOnlyDictionary<int, TraitDocument> allocated) =>
+    public static bool Lit(TraitTreeNode node, IReadOnlyDictionary<int, ItemTraitDocument> allocated) =>
         Root(node) || allocated.ContainsKey(node.UITreeIndex);
 
-    public static string Write(IReadOnlyDictionary<int, TraitDocument> allocated) =>
+    public static string Write(IReadOnlyDictionary<int, ItemTraitDocument> allocated) =>
         string.Join(
             PairSeparator,
             allocated.OrderBy(pick => pick.Key).Select(pick => string.Create(

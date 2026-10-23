@@ -10,7 +10,7 @@ namespace FellowshipExtractor.Extraction;
 
 public sealed record StatEnchant(
     string Name,
-    IReadOnlyDictionary<string, string> NameByHero,
+    IReadOnlyDictionary<string, string> NameByPrimaryStat,
     IReadOnlyList<TraitStat> Stats,
     string? Description,
     IReadOnlyDictionary<string, Placeholder> Placeholders);
@@ -168,7 +168,7 @@ public sealed class StatEnchants
 
     private static string? Named(string? value) => value is null or NoName ? null : value;
 
-    private static (string Name, IReadOnlyDictionary<string, string> NameByHero) Names(
+    private static (string Name, IReadOnlyDictionary<string, string> NameByPrimaryStat) Names(
         AbstractFileProvider provider, UObject augmentation, HeroNames heroes, string path)
     {
         var token = Structs(PropertyWalk.GetStruct(augmentation, NameField), TokensField)
@@ -228,9 +228,9 @@ public sealed class StatEnchants
             byAttribute[ordinal] = printed;
         }
 
-        var names = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        var byStat = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        foreach (var hero in heroes.Profiles)
+        foreach (var hero in heroes.Profiles.OrderBy(hero => hero.PrimaryAttribute))
         {
             if (!byAttribute.TryGetValue(hero.PrimaryAttribute, out var printed))
             {
@@ -238,10 +238,16 @@ public sealed class StatEnchants
                     $"{owner}.{function} names nothing for {hero.ShippedName}'s {SwitchedField} {hero.PrimaryAttribute}.");
             }
 
-            names[hero.ShippedName] = printed;
+            if (byStat.TryGetValue(hero.PrimaryStat, out var named) && named != printed)
+            {
+                throw new InvalidOperationException(
+                    $"{owner}.{function} names two enchants for the primary stat {hero.PrimaryStat}: {named} and {printed}.");
+            }
+
+            byStat[hero.PrimaryStat] = printed;
         }
 
-        return (string.Join(" / ", byAttribute.OrderBy(entry => entry.Key).Select(entry => entry.Value).Distinct()), names);
+        return (string.Join(" / ", byStat.Values), byStat);
     }
 
     private static string? Text(FScriptText text) =>

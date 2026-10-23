@@ -1,0 +1,34 @@
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+
+<Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
+       Group="Grouped.By<EnchantDocument>(View, Ui.Codex)">
+    <Columns>
+        <Column Head="" Class="cx-texture">
+            <Content Context="row"><Texture Entity="row" /></Content>
+        </Column>
+        <Column Head="Name" Key="name">
+            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+        </Column>
+        <Column Head="Primary Stat" Key="stat" Value="row => row.PrimaryStat?.ToString()" />
+        <Column Head="Stats" Class="cx-tags">
+            <Content Context="row">
+                @foreach (var (stat, _) in EnchantRanks.Granted(row, Store.Settings, 1))
+                {
+                    <Chip>@stat</Chip>
+                }
+            </Content>
+        </Column>
+        <Column Head="Max Rank" Key="rank" Numeric Value="row => row.MaxRank" />
+    </Columns>
+</Table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<EntityDocument> Rows { get; set; } = [];
+
+    [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
+
+    private IReadOnlyList<EnchantDocument> Documents = [];
+
+    protected override void OnParametersSet() => Documents = [.. Rows.OfType<EnchantDocument>()];
+}

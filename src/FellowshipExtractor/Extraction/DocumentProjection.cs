@@ -10,8 +10,14 @@ public static class DocumentProjection
     public delegate string? NameLookup(EntityType type, int id);
 
     public sealed class References(
-        TypeLookup types, NameLookup names, IReadOnlyDictionary<(EntityType Type, int Id), int>? redirects = null)
+        TypeLookup types,
+        NameLookup names,
+        IReadOnlyDictionary<(EntityType Type, int Id), int>? redirects = null,
+        IReadOnlyDictionary<(EntityType Type, int Id, string Stat), string>? namesByStat = null,
+        string? stat = null)
     {
+        public References For(string? primaryStat) => new(types, names, redirects, namesByStat, primaryStat);
+
         public EntityReference? At(IconSource? source) =>
             source is null || types(source.Table, source.NetId) is not { } type
                 ? null
@@ -23,7 +29,12 @@ public static class DocumentProjection
 
             var target = redirects is not null && redirects.TryGetValue((type, found), out var host) ? host : found;
 
-            return new EntityReference(type, target, names(type, target));
+            return new EntityReference(
+                type,
+                target,
+                stat is not null && namesByStat is not null && namesByStat.TryGetValue((type, target, stat), out var named)
+                    ? named
+                    : names(type, target));
         }
     }
 
@@ -134,7 +145,7 @@ public static class DocumentProjection
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Description = entity.Description,
-            NameByHero = entity.NameByHero,
+            PrimaryStat = Stat(entity),
             EffectTags = entity.EffectTags,
             Icon = entity.Icon,
             Duration = entity.Duration,
@@ -357,11 +368,24 @@ public static class DocumentProjection
             RandomChance = entity.RandomChance,
             Power = references.At(Augmentation(entity.Augmentation)),
             Description = entity.Description,
-            Placeholders = Spent(Spends(entity), entity.Placeholders),
             Icon = entity.Icon,
             RankRuns = entity.RankRuns,
             Generates = Generated(entity),
-            NameByHero = entity.NameByHero,
+        },
+
+        EntityType.Enchant => new EnchantDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            PrimaryStat = Stat(entity),
+            Category = entity.TraitCategory,
+            CategoryTag = entity.TraitCategoryTag,
+            MaxRank = entity.MaxRank,
+            RandomChance = entity.RandomChance,
+            Power = references.At(Augmentation(entity.Augmentation)),
+            Description = entity.Description,
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Icon = entity.Icon,
             Stats = entity.TraitStats,
         },
 
@@ -371,7 +395,7 @@ public static class DocumentProjection
             Name = Name(entity),
             Description = entity.Description,
             DescriptionsByHero = entity.DescriptionsByHero,
-            NameByHero = entity.NameByHero,
+            PrimaryStat = Stat(entity),
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             Duration = entity.Duration,
@@ -480,6 +504,9 @@ public static class DocumentProjection
 
     public static string? Name(Entity entity) =>
         entity.DisplayName is { } name && ReadsAsWords(name) ? name : null;
+
+    private static PrimaryStat? Stat(Entity entity) =>
+        entity.PrimaryStat is { } stat ? Enum.Parse<PrimaryStat>(stat) : null;
 
     private static IconSource? Augmentation(int? netId) =>
         netId is { } id ? new IconSource(TalentTrees.AugmentationTable, id, string.Empty) : null;

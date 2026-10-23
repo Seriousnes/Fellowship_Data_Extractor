@@ -22,8 +22,14 @@ public static class EntityStore
                 : (item.ArmorType is null || item.ArmorType == ParseEnumOrNull<ArmorType>(hero.ArmorType)) &&
                   (item.PrimaryStat is null || item.PrimaryStat == ParseEnum<PrimaryStat>(hero.PrimaryStat)),
             TalentSlotDocument slot => slot.Hero == ParseEnum<Hero>(hero.Name),
+            EnchantDocument enchant => ReadsStat(enchant.PrimaryStat, hero),
+            TraitPowerDocument power => ReadsStat(power.PrimaryStat, hero),
+            EffectDocument effect => ReadsStat(effect.PrimaryStat, hero),
             _ => true,
         };
+
+    private static bool ReadsStat(PrimaryStat? stat, HeroEntry hero) =>
+        stat is null || stat == ParseEnum<PrimaryStat>(hero.PrimaryStat);
 
     private static T ParseEnum<T>(string name) where T : struct, Enum =>
         Enum.TryParse<T>(name, out var value) ? value : throw new FormatException($"'{name}' names no {typeof(T).Name}.");

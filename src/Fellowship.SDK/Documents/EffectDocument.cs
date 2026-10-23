@@ -5,7 +5,7 @@ namespace Fellowship.SDK.Documents;
 public sealed class EffectDocument : EntityDocument
 {
     public string? Description { get; init; }
-    public IReadOnlyDictionary<string, string>? NameByHero { get; init; }
+    public PrimaryStat? PrimaryStat { get; init; }
     public string? Icon { get; init; }
 
     public IReadOnlyList<string>? EffectTags { get; init; }

@@ -12,6 +12,7 @@ public sealed class RichTextStyles
     private const string RowStructure = "/Script/UMG.RichTextStyleRow";
 
     private const string TagPrefix = "rt.";
+    private const string DefaultRow = "Default";
 
     private const string StyleField = "TextStyle";
     private const string ColorField = "ColorAndOpacity";
@@ -24,7 +25,7 @@ public sealed class RichTextStyles
 
     public int Count => Styles.Count;
 
-    public RichTextStyles(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+    public RichTextStyles(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, string descriptionStyleSet)
     {
         var found = new Dictionary<string, TextStyleEntry>(StringComparer.OrdinalIgnoreCase);
 
@@ -40,6 +41,20 @@ public sealed class RichTextStyles
 
                 if (Read(row) is { } style) found.TryAdd(name, style);
             }
+        }
+
+        if (!provider.TryLoadPackageObject<UDataTable>(
+                AbilityPresentationIndex.PackagePath(descriptionStyleSet), out var described))
+        {
+            throw new InvalidOperationException(
+                $"{descriptionStyleSet} does not load, so the tags a trait description names have no style.");
+        }
+
+        foreach (var (rowName, row) in described.RowMap)
+        {
+            if (rowName.Text.Equals(DefaultRow, StringComparison.OrdinalIgnoreCase)) continue;
+
+            if (Read(row) is { } style) found.TryAdd(rowName.Text, style);
         }
 
         Styles = found;

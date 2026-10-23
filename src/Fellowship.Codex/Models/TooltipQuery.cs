@@ -82,6 +82,8 @@ public sealed record TooltipQuery
 
     public IReadOnlyList<ImbuedTrait> ImbuedTraits { get; init; } = [];
 
+    public IReadOnlyList<string> RankSources { get; init; } = [];
+
     public int? AllocatedTraits { get; init; }
 
     public bool? HasImbuedTraits { get; init; }

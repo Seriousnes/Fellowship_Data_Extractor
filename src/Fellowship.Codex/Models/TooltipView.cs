@@ -2,6 +2,8 @@ using System.Globalization;
 
 using Fellowship.SDK.Documents;
 
+using Fellowship.Codex.Services;
+
 namespace Fellowship.Codex.Models;
 
 public static class TooltipView
@@ -21,6 +23,7 @@ public static class TooltipView
     public static EntityType TypeOf(ModifierKind kind, SettingsFile settings) =>
         ItemCraft.Definition(kind.ToString(), settings).SlotType switch
         {
+            CraftSlots.ItemTrait when kind is ModifierKind.StatEnchant => EntityType.Enchant,
             CraftSlots.ItemTrait => TraitType,
             CraftSlots.AbilityRank => EntityType.Blessing,
             CraftSlots.GemPower => EntityType.GemType,
@@ -68,18 +71,18 @@ public static class TooltipView
         return entries;
     }
 
-    public static string? PrintedFor(EntityDocument document, string? wearer) =>
-        NameByHero(document) is { } names && wearer is not null && names.TryGetValue(wearer, out var printed)
-            ? printed
-            : null;
-
-    public static IReadOnlyDictionary<string, string>? NameByHero(EntityDocument document) => document switch
+    public static ItemTraitDocument? ItemTrait(IEntityStoreService store, int id, string? wearer)
     {
-        TraitDocument trait => trait.NameByHero,
-        TraitPowerDocument power => power.NameByHero,
-        EffectDocument effect => effect.NameByHero,
-        _ => null,
-    };
+        ItemTraitDocument[] readings =
+        [
+            .. store.All(EntityType.Trait, id).Concat(store.All(EntityType.Enchant, id)).OfType<ItemTraitDocument>(),
+        ];
+
+        var hero = wearer is null ? null : store.Hero(wearer);
+
+        return (hero is null ? null : readings.FirstOrDefault(reading => EntityStore.Reads(reading, hero)))
+            ?? readings.FirstOrDefault();
+    }
 
     public static string Magnitude(StatLine line) =>
         (line.Value < 0 ? string.Empty : "+") +

@@ -180,11 +180,11 @@ else
 
     private TraitTreeEntry? Tree;
 
-    private IReadOnlyDictionary<int, TraitDocument> Picks = new Dictionary<int, TraitDocument>();
+    private IReadOnlyDictionary<int, ItemTraitDocument> Picks = new Dictionary<int, ItemTraitDocument>();
 
     private TraitTreeNode? Choosing;
 
-    private IReadOnlyList<TraitDocument> Offered = [];
+    private IReadOnlyList<ItemTraitDocument> Offered = [];
 
     private string Roster => $"{Slots.Count} trees";
 
@@ -198,7 +198,7 @@ else
 
         Chosen = chosen.Slot;
         Tree = chosen.Tree;
-        Picks = Tree is null ? new Dictionary<int, TraitDocument>() : TraitTrees.Read(Picked, Tree, Store);
+        Picks = Tree is null ? new Dictionary<int, ItemTraitDocument>() : TraitTrees.Read(Picked, Tree, Store);
 
         Choosing = Tree?.Nodes.FirstOrDefault(node =>
             node.UITreeIndex == At && (Picks.ContainsKey(node.UITreeIndex) || TraitTrees.Allocatable(Tree, Picks, node)));
@@ -206,7 +206,7 @@ else
         Offered = Choosing is null ? [] : TraitTrees.Offered(Choosing, Store);
     }
 
-    private RenderFragment Face(TraitTreeNode node, TraitDocument? trait, string state) =>
+    private RenderFragment Face(TraitTreeNode node, ItemTraitDocument? trait, string state) =>
         @<span class="cx-tree-face">
             <img class="cx-tree-frame" alt="" src="@Ui.Chrome.TraitNode(state)" />
             @if (trait is not null && Ui.Icon(trait.Icon) is { } icon)
@@ -217,7 +217,7 @@ else
                  src="@Ui.Chrome.TraitNodeColor(state == Unavailable ? [] : node.TraitCategories)" />
         </span>;
 
-    private RenderFragment Choice(TraitTreeNode node, TraitDocument trait) =>
+    private RenderFragment Choice(TraitTreeNode node, ItemTraitDocument trait) =>
         @<span class="cx-tree-option">
             <span class="cx-tree-face">
                 <img class="cx-tree-frame" alt="" src="@Ui.Chrome.TraitNode(Selected)" />
@@ -286,22 +286,22 @@ else
     private static double Widest(TraitTreeLayout layout) =>
         layout.RootLayers.Count == 0 ? layout.Width : layout.RootLayers.Max(layer => layer.Width);
 
-    private IReadOnlyDictionary<int, TraitDocument> With(TraitTreeEntry tree, int node, TraitDocument trait)
+    private IReadOnlyDictionary<int, ItemTraitDocument> With(TraitTreeEntry tree, int node, ItemTraitDocument trait)
     {
-        var asked = new Dictionary<int, TraitDocument>(Picks) { [node] = trait };
+        var asked = new Dictionary<int, ItemTraitDocument>(Picks) { [node] = trait };
 
         return TraitTrees.Allocated(tree, asked);
     }
 
-    private IReadOnlyDictionary<int, TraitDocument> Without(TraitTreeEntry tree, int node)
+    private IReadOnlyDictionary<int, ItemTraitDocument> Without(TraitTreeEntry tree, int node)
     {
-        var asked = new Dictionary<int, TraitDocument>(Picks);
+        var asked = new Dictionary<int, ItemTraitDocument>(Picks);
         asked.Remove(node);
 
         return TraitTrees.Allocated(tree, asked);
     }
 
-    private string Address(string slot, IReadOnlyDictionary<int, TraitDocument>? picks = null, int? at = null)
+    private string Address(string slot, IReadOnlyDictionary<int, ItemTraitDocument>? picks = null, int? at = null)
     {
         var values = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
         {

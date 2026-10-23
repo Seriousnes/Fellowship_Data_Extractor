@@ -66,6 +66,18 @@ public sealed record ModifierTypeEntry(string Name)
 
 public sealed record EmptyModifierSlot(string Sign, string Text);
 
+public sealed record TraitTooltipText(
+    string EquippedRank,
+    string RankSources,
+    string GearSlot,
+    string RanksOpen,
+    string RanksClose)
+{
+    public IReadOnlyList<ItemTypeText> ItemTypes { get; init; } = [];
+}
+
+public sealed record ItemTypeText(string Type, string Printed);
+
 public sealed record ModifierRecipe(string Recipe, int SlotIndex)
 {
     public string? Category { get; init; }

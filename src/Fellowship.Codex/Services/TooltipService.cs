@@ -61,7 +61,7 @@ public sealed class TooltipService(
 
         foreach (var imbued in query.ImbuedTraits)
         {
-            if (store.All(TooltipView.TraitType, imbued.Id).Count > 0) continue;
+            if (TooltipView.ItemTrait(store, imbued.Id, null) is not null) continue;
 
             return Results.Problem(
                 title: "No such item trait.",

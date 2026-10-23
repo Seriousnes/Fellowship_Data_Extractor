@@ -41,7 +41,10 @@ public static class TooltipRequests
 
     public static TooltipQuery Read(
         EffectTooltipRequest? request, IEntityStoreService store, out string? error) =>
-        Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error);
+        Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error) with
+        {
+            Hero = StatQuery.NullIfEmpty(request?.Hero),
+        };
 
     public static TooltipQuery Read(GemTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error) with
@@ -51,6 +54,14 @@ public static class TooltipRequests
 
     public static TooltipQuery Read(GemTraitTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error);
+
+    public static TooltipQuery Read(EnchantTooltipRequest? request, out string? error) =>
+        Read(request?.ShowIcon, request?.Mobile, out error) with
+        {
+            Hero = StatQuery.NullIfEmpty(request?.Hero),
+            ItemLevel = request?.ItemLevel,
+            RankSources = RankSources.Parse(request?.RankSources),
+        };
 
     public static TooltipQuery Read(
         ItemTooltipRequest? request, IEntityStoreService store, out string? error) =>
@@ -91,12 +102,13 @@ public static class TooltipRequests
         Read(request?.ShowIcon, request?.Mobile, out error) with
         {
             State = StatQuery.NullIfEmpty(request?.State),
-            Hero = StatQuery.NullIfEmpty(request?.Hero),
-            EquippedTier = request?.EquippedRank,
         };
 
     public static TooltipQuery Read(TraitPowerTooltipRequest? request, out string? error) =>
-        Read(request?.ShowIcon, request?.Mobile, out error);
+        Read(request?.ShowIcon, request?.Mobile, out error) with
+        {
+            Hero = StatQuery.NullIfEmpty(request?.Hero),
+        };
 
     public static TooltipQuery Read(
         WeaponPowerTooltipRequest? request, IEntityStoreService store, out string? error) =>

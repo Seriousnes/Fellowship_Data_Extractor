@@ -18,7 +18,7 @@ public class CraftRuleTests(Export export)
         .MaxBy(pair => pair.Value.MinimumItemLevel)
         .Key;
 
-    private IReadOnlyList<TraitDocument> Pooled =>
+    private IReadOnlyList<ItemTraitDocument> Pooled =>
     [
         .. Settings.StatCalculation.SlotDefinitions[Traited].ItemTraitPool
             .SelectMany(category => TraitTrees.InCategory(category, export.Store))

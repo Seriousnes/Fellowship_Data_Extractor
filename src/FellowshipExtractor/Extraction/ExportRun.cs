@@ -216,6 +216,7 @@ public static class ExportRun
             .ToDictionary(group => group.Key, group => group.First().Type);
 
         var names = new Dictionary<(EntityType Type, int Id), string>();
+        var namesByStat = new Dictionary<(EntityType Type, int Id, string Stat), string>();
 
         foreach (var record in shared)
         {
@@ -223,6 +224,8 @@ public static class ExportRun
             if (DocumentProjection.Name(record) is not { } named) continue;
 
             names.TryAdd((type, record.NetId!.Value), named);
+
+            if (record.PrimaryStat is { } stat) namesByStat.TryAdd((type, record.NetId!.Value, stat), named);
 
             if (DocumentProjection.Implied(record) is { } implied && implied.Name is { } borne)
             {
@@ -235,7 +238,8 @@ public static class ExportRun
         var references = new DocumentProjection.References(
             (table, netId) => types.GetValueOrDefault((table, netId)),
             (type, id) => names.GetValueOrDefault((type, id)),
-            folded.Redirects);
+            folded.Redirects,
+            namesByStat);
 
         var roles = new EffectRoles(shared, resolver.Heroes.Codenames);
 
@@ -243,7 +247,7 @@ public static class ExportRun
 
         foreach (var record in marked)
         {
-            await target.WriteDocumentAsync(DocumentProjection.From(record, references, roles), default);
+            await target.WriteDocumentAsync(DocumentProjection.From(record, references.For(record.PrimaryStat), roles), default);
             written++;
 
             if (DocumentProjection.Implied(record) is { } implied)

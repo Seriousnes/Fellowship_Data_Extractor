@@ -36,6 +36,7 @@ public static class RecordProjection
                 From((RelicPassiveDocument)document, view, origin),
             [EntityType.Talent] = (document, view, origin) => From((TalentDocument)document, view, origin),
             [EntityType.TalentSlot] = (document, view, origin) => From((TalentSlotDocument)document, view, origin),
+            [EntityType.Enchant] = (document, view, origin) => From((EnchantDocument)document, view, origin),
             [EntityType.Trait] = (document, view, origin) => From((TraitDocument)document, view, origin),
             [EntityType.TraitPower] = (document, view, origin) => From((TraitPowerDocument)document, view, origin),
             [EntityType.WeaponPower] = (document, view, origin) => From((WeaponPowerDocument)document, view, origin),
@@ -483,6 +484,20 @@ public static class RecordProjection
         Talent = Referenced(document.Talent.Type, document.Talent.Id, view, origin),
     };
 
+    public static EnchantRecord From(EnchantDocument document, ICodexViewService view, string origin) => new()
+    {
+        Type = EntityType.Enchant,
+        Id = document.Id,
+        Name = PublicTypes.NameOf(document),
+        PrimaryStat = document.PrimaryStat?.ToString(),
+        Category = document.Category,
+        MaxRank = document.MaxRank,
+        Power = Reference(document.Power, view, origin),
+        Description = view.PlainText(document.Description, document.Placeholders ?? [], []),
+        Icon = Texture(document.Icon, view),
+        Stats = [.. (document.Stats ?? []).Select(stat => new EnchantStatRecord(stat.Attribute, stat.Coefficient))],
+    };
+
     public static TraitRecord From(TraitDocument document, ICodexViewService view, string origin) => new()
     {
         Type = EntityType.Trait,
@@ -596,7 +611,7 @@ public static class RecordProjection
                             Traits =
                             [
                                 .. TraitTrees.InCategory(category, view.Store)
-                                    .Select(trait => Referenced(TooltipView.TraitType, trait.Id, view, origin)),
+                                    .Select(trait => Referenced(EntityTypes.TypeOf(trait), trait.Id, view, origin)),
                             ],
                         }),
                     ],

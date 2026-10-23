@@ -2,7 +2,7 @@
 @inject IEntityStoreService Store
 @inject ITooltipViewService Cards
 
-@if (PicksHero || Wearable || IsGem || Rarities.Count > 1 || PicksDifficulty)
+@if (PicksHero || Wearable || IsGem || Rarities.Count > 1 || PicksDifficulty || IsEnchant)
 {
     <Panel>
         @if (PicksDifficulty)
@@ -51,6 +51,29 @@
             </Knob>
         }
 
+        @if (IsEnchant)
+        {
+            <Knob Caption="Item level">
+                <input type="number" min="1" max="1000" step="1" data-knob="itemLevel"
+                       value="@(Value("itemLevel") ?? Store.Settings.Items.MaxItemLevel.ToString())" @onchange="Level" />
+            </Knob>
+
+            <Knob Caption="@EnchantRanks.Text(Store.Settings).RankSources" As="div">
+                <div class="cx-rarities">
+                    @foreach (var type in EnchantRanks.Text(Store.Settings).ItemTypes)
+                    {
+                        var mine = type;
+                        var chosen = Sources.Contains(mine.Type);
+                        <button type="button" data-knob="rankSources" data-choice="@mine.Type"
+                                aria-pressed="@(chosen ? "true" : "false")"
+                                @onclick="() => Source(mine.Type)">
+                            @mine.Printed
+                        </button>
+                    }
+                </div>
+            </Knob>
+        }
+
         @if (Wearable)
         {
             <Knob Caption="Item level">
@@ -83,6 +106,20 @@
     private Task Temper(ChangeEventArgs temper) => Turn("upgrades", temper.Value?.ToString());
 
     private bool IsGem => Here.Entity is GemDocument;
+
+    private bool IsEnchant => Here.Entity is EnchantDocument;
+
+    private IReadOnlyList<string> Sources =>
+    [
+        .. EnchantRanks.Sources(
+                Store.Settings, new TooltipQuery { RankSources = RankSources.Parse(Value("rankSources")) })
+            .Select(source => source.Type),
+    ];
+
+    private Task Source(string type) =>
+        Turn(
+            "rankSources",
+            RankSources.Write(Sources.Contains(type) ? Sources.Where(source => source != type) : [.. Sources, type]));
 
     private bool Wearable => (Here.Entity as ItemDocument)?.Stats is { Count: > 0 };
 

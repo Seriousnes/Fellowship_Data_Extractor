@@ -196,6 +196,9 @@ public sealed record EffectTooltipRequest
         "Each stat's magnitude, by the name the build gives the stat, to state a magnitude the tooltip " +
         "prints rather than computes.")]
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
+
+    [Description("Hero to resolve the id against. One id resolves to a different entity per hero.")]
+    public string? Hero { get; init; }
 }
 
 /// <summary>Tooltip for a gem.</summary>
@@ -240,6 +243,34 @@ public sealed record GemTraitTooltipRequest
         "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
         "and a link to its page.")]
     public bool? Mobile { get; init; }
+}
+
+public sealed record EnchantTooltipRequest
+{
+    public static EntityType Type => EntityType.Enchant;
+
+    [Description(
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
+    [Description(
+        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
+        "and a link to its page.")]
+    public bool? Mobile { get; init; }
+
+    [Description("Hero to resolve the id against. One id resolves to a different entity per hero.")]
+    public string? Hero { get; init; }
+
+    [Range(0, 10_000)]
+    [Description(
+        "The item level of each item carrying the enchant, 0 to 10,000. None stated reads as the highest item level.")]
+    public int? ItemLevel { get; init; }
+
+    [Description(
+        "The gear slots of the equipped items carrying the enchant, comma separated, each an item type such as " +
+        "Head or Necklace. Each adds one item's rank at the item level. None stated reads as one item in the " +
+        "first gear slot.")]
+    public string? RankSources { get; init; }
 }
 
 /// <summary>Tooltip for an item.</summary>
@@ -454,14 +485,6 @@ public sealed record TraitTooltipRequest
     /// <summary>The state to draw the node at: selected, available or unavailable.</summary>
     [Description("The state to draw the node at: selected, available or unavailable.")]
     public string? State { get; init; }
-
-    [Description("The hero whose primary stat chooses an enchant's printed name.")]
-    public string? Hero { get; init; }
-
-    [Description(
-        "The enchant's rank summed over the equipped items carrying it. None stated reads as one item at the " +
-        "highest item level.")]
-    public int? EquippedRank { get; init; }
 }
 
 /// <summary>Tooltip for a trait power.</summary>
@@ -482,6 +505,9 @@ public sealed record TraitPowerTooltipRequest
         "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
         "and a link to its page.")]
     public bool? Mobile { get; init; }
+
+    [Description("Hero to resolve the id against. One id resolves to a different entity per hero.")]
+    public string? Hero { get; init; }
 }
 
 /// <summary>Tooltip for a weapon power.</summary>

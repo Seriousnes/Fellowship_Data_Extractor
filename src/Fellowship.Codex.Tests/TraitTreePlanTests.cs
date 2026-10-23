@@ -9,10 +9,10 @@ public class TraitTreePlanTests(Export export)
         .Single(entry => entry.Slot == Printed(ItemPower.WeaponType))
         .Tree;
 
-    private TraitDocument In(int node, int skip = 0) =>
+    private ItemTraitDocument In(int node, int skip = 0) =>
         TraitTrees.Offered(Tree.Nodes.Single(each => each.UITreeIndex == node), export.Store)[skip];
 
-    private string Picks(params (int Node, TraitDocument Trait)[] picks) =>
+    private string Picks(params (int Node, ItemTraitDocument Trait)[] picks) =>
         string.Join(',', picks.Select(pick => $"{pick.Node}.{pick.Trait.Id}"));
 
     [Fact]
@@ -48,7 +48,7 @@ public class TraitTreePlanTests(Export export)
         var read = TraitTrees.Read(Picks((1, In(1)), (3, In(3)), (6, In(6, 1))), Tree, export.Store);
         Assert.Equal(3, read.Count);
 
-        var asked = new Dictionary<int, TraitDocument>(read);
+        var asked = new Dictionary<int, ItemTraitDocument>(read);
         asked.Remove(1);
 
         Assert.Empty(TraitTrees.Allocated(Tree, asked));

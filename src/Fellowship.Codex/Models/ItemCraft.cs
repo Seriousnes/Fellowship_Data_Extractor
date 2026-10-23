@@ -89,7 +89,7 @@ public static class ItemCraft
     public static string? Defining(ModifierKind kind, EntityDocument? row, SettingsFile settings) =>
         settings.StatCalculation.SlotDefinitions.TryGetValue(kind.ToString(), out var definition) &&
         (definition.SlotType != CraftSlots.ItemTrait ||
-         row is TraitDocument { CategoryTag: { } tag } && definition.ItemTraitPool.Contains(tag, StringComparer.Ordinal))
+         row is ItemTraitDocument { CategoryTag: { } tag } && definition.ItemTraitPool.Contains(tag, StringComparer.Ordinal))
             ? kind.ToString()
             : null;
 
@@ -105,7 +105,7 @@ public static class ItemCraft
             .FirstOrDefault(kind => kind is not null);
 
     public static ModifierKind? KindOfTrait(EntityDocument? row, SettingsFile settings) =>
-        row is TraitDocument { CategoryTag: { } tag }
+        row is ItemTraitDocument { CategoryTag: { } tag }
             ? settings.StatCalculation.SlotDefinitions
                 .Where(pair => pair.Value.SlotType == CraftSlots.ItemTrait &&
                                pair.Value.ItemTraitPool.Contains(tag, StringComparer.Ordinal))
@@ -120,7 +120,7 @@ public static class ItemCraft
         {
             CraftSlots.AbilityRank => Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id)?.MaxRank ?? 1,
             CraftSlots.ItemTrait or CraftSlots.TraitTree =>
-                Find<TraitDocument>(store, TooltipView.TraitType, candidate.Id)?.MaxRank ?? 1,
+                TooltipView.ItemTrait(store, candidate.Id, null)?.MaxRank ?? 1,
             _ => int.MaxValue,
         };
 

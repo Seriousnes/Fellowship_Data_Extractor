@@ -15,7 +15,7 @@ public sealed class DocumentTests
     {
         var documents = typeof(EntityDocument).Assembly
             .GetTypes()
-            .Where(type => type.IsSubclassOf(typeof(EntityDocument)))
+            .Where(type => type.IsSubclassOf(typeof(EntityDocument)) && !type.IsAbstract)
             .ToArray();
 
         Assert.Equal(Enum.GetValues<EntityType>().Length, documents.Length);

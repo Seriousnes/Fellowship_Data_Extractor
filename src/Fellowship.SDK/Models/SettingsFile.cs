@@ -84,6 +84,8 @@ public sealed record SettingsFile
 
     public string? TraitTreeHeader { get; init; }
 
+    public TraitTooltipText? TraitTooltip { get; init; }
+
     public AbilityTooltipText? AbilityTooltip { get; init; }
 
     public IReadOnlyList<ModifierTypeEntry> ModifierTypes { get; init; } = [];

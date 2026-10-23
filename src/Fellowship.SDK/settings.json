@@ -473,6 +473,20 @@
       "size": 12,
       "italic": false,
       "cssWeight": "400"
+    },
+    "Bold": {
+      "color": "EAE3DB",
+      "weight": "600",
+      "size": 9,
+      "italic": false,
+      "cssWeight": "600"
+    },
+    "Gold": {
+      "color": "B08E58",
+      "weight": "600",
+      "size": 9,
+      "italic": false,
+      "cssWeight": "600"
     }
   },
   "gemTypes": [
@@ -4165,6 +4179,67 @@
     }
   },
   "traitTreeHeader": "Attunement Tree:",
+  "traitTooltip": {
+    "equippedRank": "Equipped Rank",
+    "rankSources": "Rank Sources",
+    "gearSlot": "- Gear slot: ",
+    "ranksOpen": "(\u002B",
+    "ranksClose": " Ranks)",
+    "itemTypes": [
+      {
+        "type": "Head",
+        "printed": "Head"
+      },
+      {
+        "type": "Necklace",
+        "printed": "Necklace"
+      },
+      {
+        "type": "Shoulders",
+        "printed": "Shoulders"
+      },
+      {
+        "type": "Back",
+        "printed": "Back"
+      },
+      {
+        "type": "Chest",
+        "printed": "Chest"
+      },
+      {
+        "type": "Wrists",
+        "printed": "Wrists"
+      },
+      {
+        "type": "Hands",
+        "printed": "Hands"
+      },
+      {
+        "type": "Waist",
+        "printed": "Legs"
+      },
+      {
+        "type": "Feet",
+        "printed": "Feet"
+      },
+      {
+        "type": "Ring",
+        "printed": "Ring"
+      },
+      {
+        "type": "Trinket",
+        "printed": "Relic"
+      },
+      {
+        "type": "Weapon",
+        "printed": "Weapon"
+      },
+      {
+        "type": "Charm",
+        "printed": "Charm"
+      }
+    ]
+  },
   "abilityTooltip": {
     "unitsPerYard": 100,
     "meleeMaximum": 250,

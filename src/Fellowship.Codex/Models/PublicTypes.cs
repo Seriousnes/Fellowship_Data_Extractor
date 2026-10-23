@@ -53,6 +53,7 @@ public static class PublicTypes
         (EntityType.Item, "Items", "item", Categories.Items),
         (EntityType.Blessing, "Blessings", "blessing", Categories.Items),
         (EntityType.Gem, "Gems", "gem", Categories.Items),
+        (EntityType.Enchant, "Enchants", "enchant", Categories.Items),
         (EntityType.Currency, "Currencies", "currency", Categories.Items),
         (EntityType.Mount, "Mounts", "mount", Categories.Items),
         (EntityType.CompanionPet, "Companion Pets", "companion pet", Categories.Items),

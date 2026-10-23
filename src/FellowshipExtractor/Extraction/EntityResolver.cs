@@ -240,7 +240,7 @@ public sealed class EntityResolver
             new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
             CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, TraitTrees,
-            ModifierRecipes, new TooltipWidgetText(provider, _assets), new AbilityTooltipTexts(provider, _assets));
+            ModifierRecipes, new TooltipWidgetText(provider, _assets, SlotNames), new AbilityTooltipTexts(provider, _assets));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -373,7 +373,7 @@ public sealed class EntityResolver
                 entity = entity with
                 {
                     DisplayName = entity.DisplayName ?? enchant.Name,
-                    NameByHero = enchant.NameByHero,
+                    NameByPrimaryStat = enchant.NameByPrimaryStat,
                     Placeholders = Overlaid(entity.Placeholders, enchant.Placeholders),
                 };
             }
@@ -449,8 +449,8 @@ public sealed class EntityResolver
                 {
                     DisplayName = named.DisplayName,
                     NameInheritedFrom = named.Origin,
-                    NameByHero = named.Origin.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase)
-                        ? Enchants.ForAugmentation(named.Origin.NetId)?.NameByHero
+                    NameByPrimaryStat = named.Origin.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase)
+                        ? Enchants.ForAugmentation(named.Origin.NetId)?.NameByPrimaryStat
                         : null,
                 };
                 NamesInherited++;
@@ -472,6 +472,19 @@ public sealed class EntityResolver
             {
                 IconsContested++;
             }
+        }
+
+        if (entity.NameByPrimaryStat is { } byStat)
+        {
+            return
+            [
+                .. byStat.Select(named => entity with
+                {
+                    DisplayName = named.Value,
+                    PrimaryStat = named.Key,
+                    NameByPrimaryStat = null,
+                }),
+            ];
         }
 
         if (tag.Table.Equals(TalentTrees.SlotTable, StringComparison.OrdinalIgnoreCase) &&
@@ -531,7 +544,7 @@ public sealed class EntityResolver
                 Augmentation = trait.Augmentation,
                 RankRuns = trait.Runs,
                 Icon = entity.Icon ?? IconName(trait.IconPath, icons),
-                NameByHero = enchant?.NameByHero,
+                NameByPrimaryStat = enchant?.NameByPrimaryStat,
                 TraitStats = enchant?.Stats,
             };
         }

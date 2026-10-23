@@ -7,8 +7,8 @@ public sealed class EnchantTests(Export export)
 {
     private SettingsFile Settings => export.Store.Settings;
 
-    private IReadOnlyList<TraitDocument> Enchanted =>
-        [.. export.Store.Entities.OfType<TraitDocument>().Where(Enchants.Is)];
+    private IReadOnlyList<EnchantDocument> Enchanted =>
+        [.. export.Store.Entities.OfType<EnchantDocument>()];
 
     [Theory]
     [InlineData(1, 4)]
@@ -23,7 +23,7 @@ public sealed class EnchantTests(Export export)
 
         Assert.All(Enchanted, enchant =>
         {
-            var granted = Enchants.Granted(enchant, Settings, itemLevel).ToArray();
+            var granted = EnchantRanks.Granted(enchant, Settings, itemLevel).ToArray();
 
             Assert.Equal(2, granted.Length);
             Assert.All(granted, stat => Assert.Equal(magnitude, stat.Value));
@@ -34,14 +34,14 @@ public sealed class EnchantTests(Export export)
     public void A_stat_an_enchant_grants_at_no_coefficient_draws_no_line() =>
         Assert.All(Enchanted, enchant => Assert.Equal(
             enchant.Stats!.Count(stat => stat.Coefficient != 0),
-            Enchants.Granted(enchant, Settings, Settings.Items.MaxItemLevel).Count()));
+            EnchantRanks.Granted(enchant, Settings, Settings.Items.MaxItemLevel).Count()));
 
     [Theory]
     [InlineData(1, 3)]
     [InlineData(150, 4)]
     [InlineData(300, 5)]
     public void An_enchant_row_reads_one_below_the_power_its_item_level_gives(int itemLevel, int printed) =>
-        Assert.Equal(printed, Enchants.RowValue(Settings, itemLevel));
+        Assert.Equal(printed, EnchantRanks.RowValue(Settings, itemLevel));
 
     [Fact]
     public void An_enchant_on_the_item_adds_its_stats_to_the_stat_block()
@@ -57,7 +57,7 @@ public sealed class EnchantTests(Export export)
         var before = export.Tooltip.Rolls(item, plain, null);
         var after = export.Tooltip.Rolls(item, enchanted, null);
 
-        foreach (var (stat, value) in Enchants.Granted(enchant, Settings, 300))
+        foreach (var (stat, value) in EnchantRanks.Granted(enchant, Settings, 300))
         {
             var was = before.SingleOrDefault(line => line.Stat == stat)?.Value ?? 0m;
             var line = after.Single(row => row.Stat == stat);
@@ -86,7 +86,7 @@ public sealed class EnchantTests(Export export)
     {
         var item = export.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 });
         var sigil = export.Store.Entities.OfType<TraitDocument>()
-            .First(trait => !Enchants.Is(trait) && ItemCraft.KindOfTrait(trait, Settings) is not null);
+            .First(trait => !EnchantRanks.Is(trait) && ItemCraft.KindOfTrait(trait, Settings) is not null);
         var glyph = export.Store.Entities.OfType<BlessingDocument>().First();
         var gem = export.Store.Entities.OfType<GemTypeDocument>().First();
 
@@ -116,5 +116,13 @@ public sealed class EnchantTests(Export export)
         Assert.Equal(5, CurveReading.At(new Curve(CurveReading.Linear, keys), 2));
         Assert.Equal(4, CurveReading.At(new Curve(CurveReading.Linear, keys), 0));
         Assert.Equal(6, CurveReading.At(new Curve(CurveReading.Linear, keys), 9));
+    }
+
+    [Fact]
+    public void The_equipped_rank_sums_one_items_rank_per_source_at_the_item_level()
+    {
+        Assert.Equal(10, EnchantRanks.Rank(Settings, new TooltipQuery { RankSources = ["Head", "Necklace"], ItemLevel = 200 }));
+        Assert.Equal(6, EnchantRanks.Rank(Settings, new TooltipQuery()));
+        Assert.Equal(["Head"], EnchantRanks.Sources(Settings, new TooltipQuery()).Select(source => source.Type));
     }
 }

@@ -165,7 +165,7 @@ public sealed record Entity
 
     public string? IconHovered { get; init; }
 
-    public IReadOnlyDictionary<string, string>? NameByHero { get; init; }
+    public IReadOnlyDictionary<string, string>? NameByPrimaryStat { get; init; }
 
     public IReadOnlyList<TraitStat>? TraitStats { get; init; }
 

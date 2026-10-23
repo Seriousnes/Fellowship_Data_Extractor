@@ -1,0 +1,51 @@
+@inject ITooltipViewService Ui
+@inject IEntityStoreService Store
+
+<div class="@TooltipView.Root plain fx-enchant" style="@Ui.Variables(null)">
+    <style>@Sheet</style>
+    <div class="card">
+        <header class="head">
+            <p class="eyebrow">@Entity.Category</p>
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+        </header>
+        @if (Entity.Icon is not null)
+        {
+            <TraitCrest Entity="Entity" State="@Query.State" />
+        }
+        <div class="band">
+            <span class="kind">@Entity.Category</span>
+            <span class="tier">@Wording.EquippedRank <span class="count">@Rank</span></span>
+        </div>
+        @if (Entity.Description is { } description)
+        {
+            <p class="prose">@Ui.Text(description, Entity.Placeholders, Query, Hero, FellowshipCodex.Schools(Entity))</p>
+        }
+        <div class="sources">
+            <p class="heading">@Wording.RankSources</p>
+            @foreach (var source in Sources)
+            {
+                <p class="source">@Wording.GearSlot<span class="slot">@source.Printed</span></p>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public EntityDocument Document { get; set; } = default!;
+
+    private EnchantDocument Entity => (EnchantDocument)Document;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    private MarkupString Sheet;
+
+    private TraitTooltipText Wording => EnchantRanks.Text(Store.Settings);
+
+    private IReadOnlyList<ItemTypeText> Sources => EnchantRanks.Sources(Store.Settings, Query);
+
+    private string Rank => EnchantRanks.Rank(Store.Settings, Query).ToString(CultureInfo.InvariantCulture);
+
+    protected override void OnParametersSet() => Sheet = new MarkupString(Ui.Style());
+}

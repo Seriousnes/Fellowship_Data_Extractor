@@ -1,21 +1,14 @@
 @inject ITooltipViewService Ui
-@inject IEntityStoreService Store
 
 <div class="@TooltipView.Root plain fx-trait" style="@Ui.Variables(null)">
     <style>@Sheet</style>
     <div class="card">
         <header class="head">
-            <h3 class="title">@(TooltipView.PrintedFor(Entity, Hero?.Name) ?? PublicTypes.NameOf(Entity))</h3>
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
         </header>
         @if (Entity.Icon is not null)
         {
             <TraitCrest Entity="Entity" State="@Query.State" />
-        }
-        @if (Enchants.Is(Entity))
-        {
-            <div class="lines">
-                <TipFacts Items="Ranked" />
-            </div>
         }
         @if (Entity.Description is not null)
         {
@@ -36,11 +29,6 @@
     [Parameter] public HeroEntry? Hero { get; set; }
 
     private MarkupString Sheet;
-
-    private IReadOnlyList<TooltipView.Fact> Ranked =>
-    [
-        new(Entity.Category ?? string.Empty, $"Equipped Rank {Enchants.Rank(Store.Settings, Query)}", null),
-    ];
 
     protected override void OnParametersSet() => Sheet = new MarkupString(Ui.Style());
 }

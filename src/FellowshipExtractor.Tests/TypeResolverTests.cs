@@ -3,7 +3,7 @@ namespace FellowshipExtractor.Tests;
 public sealed class TypeResolverTests
 {
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(24, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(25, Enum.GetValues<EntityType>().Length);
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
@@ -15,17 +15,18 @@ public sealed class TypeResolverTests
 
     [Theory]
     [InlineData(EntityType.Item, 5716)]
-    [InlineData(EntityType.Effect, 3364)]
+    [InlineData(EntityType.Effect, 3374)]
     [InlineData(EntityType.Ability, 2380)]
     [InlineData(EntityType.Creature, 244)]
     [InlineData(EntityType.Dungeon, 20)]
     [InlineData(EntityType.Talent, 216)]
     [InlineData(EntityType.TalentSlot, 216)]
     [InlineData(EntityType.Mount, 111)]
-    [InlineData(EntityType.Trait, 68)]
+    [InlineData(EntityType.Trait, 62)]
+    [InlineData(EntityType.Enchant, 18)]
     [InlineData(EntityType.GemTrait, 60)]
     [InlineData(EntityType.MountPower, 54)]
-    [InlineData(EntityType.TraitPower, 46)]
+    [InlineData(EntityType.TraitPower, 58)]
     [InlineData(EntityType.LegendaryPower, 36)]
     [InlineData(EntityType.Currency, 17)]
     [InlineData(EntityType.Modifier, 26)]

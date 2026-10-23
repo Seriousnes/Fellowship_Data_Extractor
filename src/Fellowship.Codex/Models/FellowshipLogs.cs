@@ -126,7 +126,7 @@ public static class FellowshipLogs
 
             var id = logged - TraitBase;
 
-            if (store.All(TooltipView.TraitType, id).Count == 0)
+            if (TooltipView.ItemTrait(store, id, null) is null)
             {
                 missing.Add($"imbued trait id {logged} names no trait.");
                 continue;
