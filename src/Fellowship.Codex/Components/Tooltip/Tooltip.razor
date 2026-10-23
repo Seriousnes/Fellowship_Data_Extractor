@@ -41,7 +41,10 @@ else
     private static Type GetTooltipComponent(EntityDocument document) => document switch
     {
         GlyphDocument => typeof(Glyph),
-        ItemTraitDocument => typeof(ItemTrait),
+        SigilDocument => typeof(Sigil),
+        AspectDocument => typeof(Aspect),
+        EnchantDocument => typeof(Enchant),
+        ProtectiveEnchantDocument => typeof(ProtectiveEnchant),
         ItemDocument => typeof(Item),
         AbilityDocument or EffectDocument => typeof(Ability),
         _ => typeof(Generic),

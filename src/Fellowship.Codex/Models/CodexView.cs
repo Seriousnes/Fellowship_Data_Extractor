@@ -57,14 +57,13 @@ public static class CodexView
     public static IReadOnlyList<Placeholder> PlaceholdersOf(EntityDocument document) => document switch
     {
         AbilityDocument ability => ability.Placeholders ?? [],
-        GlyphDocument blessing => blessing.Placeholders ?? [],
+        GlyphDocument glyph => glyph.Placeholders ?? [],
         EffectDocument effect => effect.Placeholders ?? [],
-        GemTraitDocument trait => trait.Placeholders ?? [],
+        GemAbilityDocument gem => gem.Placeholders ?? [],
         LegendaryPowerDocument legendary => legendary.Placeholders ?? [],
         RelicPassiveDocument passive => passive.Placeholders ?? [],
         TalentDocument talent => talent.Placeholders ?? [],
-        EnchantDocument enchant => enchant.Placeholders ?? [],
-        TraitPowerDocument power => power.Placeholders ?? [],
+        AugmentationDocument augmentation => augmentation.Placeholders ?? [],
         WeaponPowerDocument power => power.Placeholders ?? [],
         _ => [],
     };

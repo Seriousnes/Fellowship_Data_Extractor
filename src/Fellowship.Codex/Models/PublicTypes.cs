@@ -19,11 +19,13 @@ public static class Categories
 
     public static Category Items { get; } = new("items", "Items");
 
+    public static Category Augmentations { get; } = new("augmentations", "Augmentations");
+
     public static Category Dungeons { get; } = new("dungeons", "Dungeons");
 
     public static Category Npcs { get; } = new("npcs", "NPCs");
 
-    public static IReadOnlyList<Category> All { get; } = [Spells, Items, Dungeons, Npcs];
+    public static IReadOnlyList<Category> All { get; } = [Spells, Items, Augmentations, Dungeons, Npcs];
 
     public static Category? Find(string? slug) =>
         All.FirstOrDefault(category => string.Equals(category.Slug, slug, StringComparison.OrdinalIgnoreCase));
@@ -39,8 +41,7 @@ public static class PublicTypes
         (EntityType.Ability, "Abilities", "ability", Categories.Spells),
         (EntityType.Effect, "Effects", "effect", Categories.Spells),
         (EntityType.Talent, "Talents", "talent", Categories.Spells),
-        (EntityType.GemTrait, "Gem Traits", "gem trait", Categories.Spells),
-        (EntityType.TraitPower, "Trait Powers", "trait power", Categories.Spells),
+        (EntityType.GemAbility, "Gem Abilities", "gem ability", Categories.Spells),
         (EntityType.WeaponPower, "Weapon Powers", "weapon power", Categories.Spells),
         (EntityType.RelicPower, "Relic Powers", "relic power", Categories.Spells),
         (EntityType.RelicPassive, "Relic Passives", "relic passive", Categories.Spells),
@@ -52,15 +53,16 @@ public static class PublicTypes
         (EntityType.Item, "Items", "item", Categories.Items),
         (EntityType.Glyph, "Glyphs", "glyph", Categories.Items),
         (EntityType.Gem, "Gems", "gem", Categories.Items),
-        (EntityType.Enchant, "Enchants", "enchant", Categories.Items),
-        (EntityType.Sigil, "Sigils", "sigil", Categories.Items),
-        (EntityType.Aspect, "Aspects", "aspect", Categories.Items),
-        (EntityType.ProtectiveEnchant, "Protective Enchants", "protective enchant", Categories.Items),
         (EntityType.Currency, "Currencies", "currency", Categories.Items),
         (EntityType.Mount, "Mounts", "mount", Categories.Items),
         (EntityType.CompanionPet, "Companion Pets", "companion pet", Categories.Items),
         (EntityType.LegendaryStat, "Legendary Stats", "legendary stat", Categories.Items),
         (EntityType.Radiance, "Radiance", "radiance", Categories.Items),
+
+        (EntityType.Sigil, "Sigils", "sigil", Categories.Augmentations),
+        (EntityType.Aspect, "Aspects", "aspect", Categories.Augmentations),
+        (EntityType.Enchant, "Enchants", "enchant", Categories.Augmentations),
+        (EntityType.ProtectiveEnchant, "Protective Enchants", "protective enchant", Categories.Augmentations),
 
         (EntityType.Dungeon, "Dungeons", "dungeon", Categories.Dungeons),
         (EntityType.Modifier, "Modifiers", "modifier", Categories.Dungeons),

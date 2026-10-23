@@ -153,7 +153,7 @@
     private string Label(CraftSlot slot) => slot.SlotName switch
     {
         CraftSlots.GemSocket => TooltipView.GemSocketLabel,
-        CraftSlots.TraitTree => TooltipView.TreeName(Store.Settings),
+        CraftSlots.AttunementTree => TooltipView.TreeName(Store.Settings),
         _ => $"Modifier {slot.Ordinal + 1}",
     };
 
@@ -177,8 +177,8 @@
         {
             CraftSlots.GemSocket => ("gem", candidate.Id.ToString(CultureInfo.InvariantCulture)),
 
-            CraftSlots.TraitTree => ("imbuedTraits", string.Join(
-                ',', query.ImbuedTraits.Select(trait => $"{trait.Id}:{trait.Rank}"))),
+            CraftSlots.AttunementTree => ("attunements", string.Join(
+                ',', query.Attunements.Select(attuned => $"{attuned.Id}:{attuned.Rank}"))),
 
             _ => ("modifiers", string.Join(
                 ',',
@@ -237,15 +237,16 @@
             MaxUpgrades = Number(values, "maxUpgrades"),
             NoSocket = values.ContainsKey("noSocket"),
             Gem = Number(values, "gem"),
-            AllocatedTraits = Number(values, "allocatedTraits"),
+            AllocatedAttunements = Number(values, "allocatedAttunements"),
             Modifiers = ItemModifiers.TryParse(values.GetValueOrDefault("modifiers"), out var modifiers)
                 ? modifiers.Values
                 : [],
-            ImbuedTraits = ImbuedTraits.TryParse(values.GetValueOrDefault("imbuedTraits"), out var imbued)
-                ? imbued.Values
+            Attunements = Attunements.TryParse(values.GetValueOrDefault("attunements"), out var attuned)
+                ? attuned.Values
                 : [],
             State = StatQuery.NullIfEmpty(values.GetValueOrDefault("state")),
             RankSources = RankSources.Parse(values.GetValueOrDefault("rankSources")),
+            EquippedTier = Number(values, "equippedRank"),
             Difficulty = Number(values, "difficulty"),
         };
     }
@@ -355,13 +356,13 @@
             ["gem"] = Text(query.Gem),
             ["potentialPower"] = Text(query.PotentialPower),
             ["armor"] = Text(query.Armor),
-            ["allocatedTraits"] = Text(query.AllocatedTraits),
+            ["allocatedAttunements"] = Text(query.AllocatedAttunements),
             ["modifiers"] = Empty(string.Join(
                 ',',
                 query.Modifiers.Select(modifier =>
                     $"{modifier.Kind.ToString().ToLowerInvariant()}:{modifier.Id}:{modifier.Amount}"))),
-            ["imbuedTraits"] = Empty(string.Join(
-                ',', query.ImbuedTraits.Select(trait => $"{trait.Id}:{trait.Rank}"))),
+            ["attunements"] = Empty(string.Join(
+                ',', query.Attunements.Select(attuned => $"{attuned.Id}:{attuned.Rank}"))),
         };
 
         foreach (var (stat, magnitudes) in query.Stats)

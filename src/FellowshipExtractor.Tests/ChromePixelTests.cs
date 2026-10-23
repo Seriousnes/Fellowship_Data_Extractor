@@ -149,7 +149,7 @@ public sealed class ChromePixelTests
     public void TheWellTheStylesheetCutsTheArtToIsTheHoleInEveryPlate()
     {
         var wells = ChromeAssetService.NodeStates
-            .Select(state => Well(Texture(Read.Chrome.TraitNode(state))))
+            .Select(state => Well(Texture(Read.Chrome.AttunementNode(state))))
             .ToArray();
 
         Assert.All(wells, well =>
@@ -167,11 +167,11 @@ public sealed class ChromePixelTests
     {
         Assert.All(
             ChromeAssetService.NodeStates,
-            state => Assert.Equal((208, 240), Shape(Texture(Read.Chrome.TraitNode(state)))));
+            state => Assert.Equal((208, 240), Shape(Texture(Read.Chrome.AttunementNode(state)))));
 
         Assert.All(
-            ChromeAssetService.BlessingStates,
-            state => Assert.Equal((148, 188), Shape(Texture(Read.Chrome.BlessingPlate(state)))));
+            ChromeAssetService.GlyphStates,
+            state => Assert.Equal((148, 188), Shape(Texture(Read.Chrome.GlyphPlate(state)))));
     }
 
     [Fact]
@@ -297,15 +297,15 @@ public sealed class ChromePixelTests
     }
 
     [Fact]
-    public void EveryBlessingsAllocatedArtIsInTheFolderTheChromeReads()
+    public void EveryGlyphsAllocatedArtIsInTheFolderTheChromeReads()
     {
-        var blessings = Read.Store.Entities.OfType<GlyphDocument>().ToArray();
+        var glyphs = Read.Store.Entities.OfType<GlyphDocument>().ToArray();
 
-        Assert.NotEmpty(blessings);
+        Assert.NotEmpty(glyphs);
 
-        Assert.All(blessings, blessing =>
+        Assert.All(glyphs, glyph =>
         {
-            var allocated = Read.Chrome.BlessingRune(blessing, ChromeAssetService.BlessingState(1));
+            var allocated = Read.Chrome.GlyphRune(glyph, ChromeAssetService.GlyphState(1));
 
             Assert.NotNull(allocated);
             Assert.True(File.Exists(Texture(allocated)), $"{Texture(allocated)} is not there.");

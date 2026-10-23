@@ -394,7 +394,7 @@ public sealed class StatCalculation
                 PropertyWalk.AsOrdinal(PropertyWalk.Get(row, "MinimumItemLevel")?.GenericValue) ?? 0)
             {
                 GemPowerPool = Names(row, "GemPowerPool"),
-                ItemTraitPool = Names(row, "ItemTraitPool"),
+                AugmentationPool = Names(row, "ItemTraitPool"),
             };
         }
 

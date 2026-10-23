@@ -65,9 +65,9 @@ public sealed class RarityRowTests
             slot => Assert.Contains(slot, definitions.Keys));
 
         Assert.Equal("ItemTrait", definitions["StatEnchant"].SlotType);
-        Assert.Equal(["ItemTrait.TraitCategory.StatEnchant"], definitions["StatEnchant"].ItemTraitPool);
-        Assert.Equal(["ItemTrait.TraitCategory.Heroic"], definitions["HeroicTrait"].ItemTraitPool);
-        Assert.Equal(["ItemTrait.TraitCategory.Major"], definitions["MajorTrait"].ItemTraitPool);
+        Assert.Equal(["ItemTrait.TraitCategory.StatEnchant"], definitions["StatEnchant"].AugmentationPool);
+        Assert.Equal(["ItemTrait.TraitCategory.Heroic"], definitions["HeroicTrait"].AugmentationPool);
+        Assert.Equal(["ItemTrait.TraitCategory.Major"], definitions["MajorTrait"].AugmentationPool);
         Assert.Equal(120, definitions["AbilityRank"].MinimumItemLevel);
         Assert.Equal(6, definitions["GemPower"].GemPowerPool.Count);
     }

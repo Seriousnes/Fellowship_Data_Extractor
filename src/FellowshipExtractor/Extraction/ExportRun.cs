@@ -82,10 +82,10 @@ public static class ExportRun
             $"gems:               {resolver.Gems.TypeCount} types, {resolver.Gems.SizeCount} sizes, " +
             $"{resolver.Gems.NodeCount} gem nodes, {resolver.Gems.ReplacementCount} superseded");
         Console.WriteLine(
-            $"item traits:        {resolver.Traits.Count} rows, {resolver.Traits.BoundRuns} of " +
-            $"{resolver.Traits.TotalRuns} rank runs bound to a curve");
+            $"item augmentations:        {resolver.AugmentationRows.Count} rows, {resolver.AugmentationRows.BoundRuns} of " +
+            $"{resolver.AugmentationRows.TotalRuns} rank runs bound to a curve");
         Console.WriteLine(
-            $"stat enchants:      {resolver.Enchants.Count} traits named per hero, power by item level from " +
+            $"stat enchants:      {resolver.Enchants.Count} augmentations named per hero, power by item level from " +
             $"{StatEnchants.PowerKey}");
         Console.WriteLine(
             $"item rule sets:     {resolver.RuleSets.Disabled} item definitions disabled in game, " +
@@ -234,16 +234,17 @@ public static class ExportRun
         }
 
         var folded = AdditionalAbilities.Fold(shared, resolver.Presentation);
+        var powered = AugmentationPowers.Fold(folded.Entities);
 
         var references = new DocumentProjection.References(
             (table, netId) => types.GetValueOrDefault((table, netId)),
             (type, id) => names.GetValueOrDefault((type, id)),
-            folded.Redirects,
+            folded.Redirects.Concat(powered.Redirects).ToDictionary(),
             namesByStat);
 
         var roles = new EffectRoles(shared, resolver.Heroes.Codenames);
 
-        var marked = SlottedNames.Mark(folded.Entities, resolver.Owners.Slotted);
+        var marked = SlottedNames.Mark(powered.Entities, resolver.Owners.Slotted);
 
         foreach (var record in marked)
         {
@@ -266,6 +267,7 @@ public static class ExportRun
         Console.WriteLine(
             $"  {folded.Redirects.Count} abilities a presentation row lists under AdditionalGameplayAbilityAssets " +
             "folded into the ability the row presents");
+        Console.WriteLine($"  {powered.Redirects.Count} augmentation powers folded into the augmentation granting them");
         Console.WriteLine(
             $"  {marked.Count(record => record.NamedAfter is not null)} unslotted abilities named after the ability " +
             "a hero's ability set slots under the same name");

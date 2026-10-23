@@ -1,0 +1,12 @@
+<EntityView Entity="Entity">
+    @if (Entity.Replaces is { } superseded)
+    {
+        <Panel Head="Replaces">
+            <Ref Entity="superseded" />
+        </Panel>
+    }
+</EntityView>
+
+@code {
+    [Parameter, EditorRequired] public GemAbilityDocument Entity { get; set; } = default!;
+}

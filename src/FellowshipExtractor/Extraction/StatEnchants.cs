@@ -11,7 +11,7 @@ namespace FellowshipExtractor.Extraction;
 public sealed record StatEnchant(
     string Name,
     IReadOnlyDictionary<string, string> NameByPrimaryStat,
-    IReadOnlyList<TraitStat> Stats,
+    IReadOnlyList<EnchantStat> Stats,
     string? Description,
     IReadOnlyDictionary<string, Placeholder> Placeholders);
 
@@ -52,23 +52,23 @@ public sealed class StatEnchants
 
     public int Count => _byAugmentation.Count;
 
-    public StatEnchants(AbstractFileProvider provider, ItemTraits traits, ConstantsTable constants, HeroNames heroes)
+    public StatEnchants(AbstractFileProvider provider, AugmentationRows augmentations, ConstantsTable constants, HeroNames heroes)
     {
         var powerTable = ConfigIni.Read(provider, ItemSettings.ConfigPath, SettingsSection).Text(PowerKey).Trim('"');
         Power = CurveReader.Read(provider, powerTable, CurveRowName);
 
-        foreach (var trait in traits.All)
+        foreach (var row in augmentations.All)
         {
-            if (!trait.NameFromAugmentation) continue;
+            if (!row.NameFromAugmentation) continue;
 
-            if (trait is not { AugmentationPath: { } path, Augmentation: { } netId } ||
+            if (row is not { AugmentationPath: { } path, Augmentation: { } netId } ||
                 !provider.TryLoadPackageObject<UObject>(AbilityPresentationIndex.PackagePath(path), out var augmentation))
             {
                 throw new InvalidOperationException(
-                    $"Trait {trait.DisplayName} takes its name from its augmentation, and names none that loads.");
+                    $"Augmentation {row.DisplayName} takes its name from its augmentation, and names none that loads.");
             }
 
-            var stats = new List<TraitStat>();
+            var stats = new List<EnchantStat>();
 
             foreach (var effect in Strings(augmentation, EffectsField))
             {
@@ -94,7 +94,7 @@ public sealed class StatEnchants
     }
 
     private static Dictionary<string, Placeholder> PerRank(
-        IPropertyHolder augmentation, IReadOnlyList<TraitStat> stats, string path)
+        IPropertyHolder augmentation, IReadOnlyList<EnchantStat> stats, string path)
     {
         var placeholders = new Dictionary<string, Placeholder>(StringComparer.Ordinal);
 
@@ -130,7 +130,7 @@ public sealed class StatEnchants
 
     public StatEnchant? ForAugmentation(int netId) => _byAugmentation.GetValueOrDefault(netId);
 
-    private static TraitStat Stat(
+    private static EnchantStat Stat(
         AbstractFileProvider provider, IPropertyHolder modifier, ConstantsTable constants, string effect)
     {
         var attribute = PropertyWalk.GetStruct(modifier, AttributeField) is { } held
@@ -160,7 +160,7 @@ public sealed class StatEnchants
         var table = lookup is null ? null : Named(PropertyWalk.GetString(lookup, CurveTableField));
         var row = lookup is null ? null : Named(PropertyWalk.GetString(lookup, RowNameField));
 
-        return new TraitStat(attribute, scaled)
+        return new EnchantStat(attribute, scaled)
         {
             Lookup = table is not null && row is not null ? CurveReader.Read(provider, table, row) : null,
         };

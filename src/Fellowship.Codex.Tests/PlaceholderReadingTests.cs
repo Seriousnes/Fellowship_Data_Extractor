@@ -48,26 +48,26 @@ public class PlaceholderReadingTests(Export export)
     }
 
     [Fact]
-    public void Gem_trait_332_reads_the_crit_chance_it_grants_rather_than_its_multiplier()
+    public void Gem_augmentation_332_reads_the_crit_chance_it_grants_rather_than_its_multiplier()
     {
-        var instinct = Assert.Single(export.Store.All(EntityType.GemTrait, 332));
+        var instinct = Assert.Single(export.Store.All(EntityType.GemAbility, 332));
         var token = Assert.Single(CodexView.PlaceholdersOf(instinct));
 
         Assert.Equal("+2%", Read(token).Text);
     }
 
     [Fact]
-    public void The_substitutions_panel_reads_the_same_grant_gem_trait_332_speaks()
+    public void The_substitutions_panel_reads_the_same_grant_gem_augmentation_332_speaks()
     {
-        var instinct = Assert.Single(export.Store.All(EntityType.GemTrait, 332));
+        var instinct = Assert.Single(export.Store.All(EntityType.GemAbility, 332));
 
         Assert.Equal("+2%", Assert.Single(export.View.Substitutions(instinct)).Reading);
     }
 
     [Fact]
-    public void Trait_power_684_reads_the_armor_it_adds_rather_than_the_armor_it_leaves()
+    public void Augmentation_power_684_reads_the_armor_it_adds_rather_than_the_armor_it_leaves()
     {
-        var oak = Assert.Single(export.Store.All(EntityType.TraitPower, 684));
+        var oak = Assert.Single(export.Store.All(EntityType.ProtectiveEnchant, 62));
         var token = Assert.Single(CodexView.PlaceholdersOf(oak));
 
         Assert.Equal("25%", Read(token).Text);
@@ -76,7 +76,7 @@ public class PlaceholderReadingTests(Export export)
     [Fact]
     public void The_substitutions_panel_reads_the_same_increase_the_sentence_does()
     {
-        var oak = Assert.Single(export.Store.All(EntityType.TraitPower, 684));
+        var oak = Assert.Single(export.Store.All(EntityType.ProtectiveEnchant, 62));
 
         Assert.Equal("25%", Assert.Single(export.View.Substitutions(oak)).Reading);
     }

@@ -18,8 +18,8 @@
         EntityType.Effect => typeof(Effects),
         EntityType.Talent => typeof(Talents),
         EntityType.Glyph => typeof(Glyphs),
-        EntityType.GemTrait => typeof(GemTraits),
-        EntityType.Sigil or EntityType.Aspect or EntityType.ProtectiveEnchant => typeof(ItemTraits),
+        EntityType.GemAbility => typeof(GemAbilities),
+        EntityType.Sigil or EntityType.Aspect or EntityType.ProtectiveEnchant => typeof(Augmentations),
         EntityType.Enchant => typeof(Enchants),
         EntityType.Gem => typeof(Gems),
         EntityType.Creature => typeof(Creatures),
@@ -31,7 +31,6 @@
         EntityType.WeaponPower => typeof(WeaponPowers),
         EntityType.RelicPower => typeof(RelicPowers),
         EntityType.RelicPassive => typeof(RelicPassives),
-        EntityType.TraitPower => typeof(TraitPowers),
         _ => throw new InvalidOperationException(
             $"{PublicTypes.Label(type.Value)} is not a type the codex lists, so no browse component draws it."),
     };

@@ -34,14 +34,14 @@ public class ColourTests(Export export)
     }
 
     [Fact]
-    public void A_gem_type_and_its_traits_are_drawn_in_the_stones_colour()
+    public void A_gem_type_and_its_augmentations_are_drawn_in_the_stones_colour()
     {
         var type = export.Store.Entities.OfType<RadianceDocument>().First();
-        var trait = export.Store.Entities.OfType<GemTraitDocument>().First(t => t.Gem == type.Type);
+        var augmentation = export.Store.Entities.OfType<GemAbilityDocument>().First(t => t.Gem == type.Type);
         var stone = CodexView.Readable(export.View.Tokens.Gem(type.Type.ToString()));
 
         Assert.Equal(stone, export.View.NameColour(type));
-        Assert.Equal(stone, export.View.NameColour(trait));
+        Assert.Equal(stone, export.View.NameColour(augmentation));
     }
 
     [Fact]

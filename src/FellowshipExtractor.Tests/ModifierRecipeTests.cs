@@ -77,10 +77,10 @@ public sealed class ModifierRecipeTests
     }
 
     [Fact]
-    public void AnEmptyModifierSlotAndTheTraitTreeReadTheirWidgetText()
+    public void AnEmptyModifierSlotAndTheAttunementTreeReadTheirWidgetText()
     {
         Assert.Equal(new EmptyModifierSlot("?", "Empty Modifier"), Export.Loaded.Settings.EmptyModifierSlot);
-        Assert.Equal("Attunement Tree:", Export.Loaded.Settings.TraitTreeHeader);
+        Assert.Equal("Attunement Tree:", Export.Loaded.Settings.AttunementTreeHeader);
     }
 
     private static ModifierTypeEntry Type(string name) =>

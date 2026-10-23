@@ -1,0 +1,52 @@
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Objects.Core.i18N;
+
+using FellowshipExtractor.Extraction;
+
+namespace FellowshipExtractor.Tests;
+
+public sealed class GlyphWordingTests
+{
+    private const string TooltipWidget = "fellowship/Content/ui/Hero/UW_BlessingTooltip.uasset";
+    private const string TextField = "Text";
+
+    private static IReadOnlySet<(string Namespace, string Key)> TooltipEntries()
+    {
+        var entries = new HashSet<(string Namespace, string Key)>();
+
+        foreach (var export in Export.Provider.LoadPackage(TooltipWidget).GetExports())
+        {
+            if (PropertyWalk.Get(export, TextField)?.GenericValue is not FText { TextHistory: FTextHistory.StringTableEntry entry })
+            {
+                continue;
+            }
+
+            entries.Add((entry.TableId.Text, entry.Key));
+        }
+
+        return entries;
+    }
+
+    [Fact]
+    public void TheTooltipWidgetDrawsTheKeysTheReaderTakes()
+    {
+        var entries = TooltipEntries();
+
+        Assert.All(GlyphWording.Wanted, key => Assert.Contains(key, entries));
+    }
+
+    [Fact]
+    public void TheSettingsCarryTheWordsTheStringTablesHold()
+    {
+        _ = Export.Provider;
+        var wording = Export.Loaded.Settings.Glyphs;
+
+        Assert.Equal(StringTables.Find(GlyphWording.NameKey.Namespace, GlyphWording.NameKey.Key), wording.Name);
+        Assert.Equal(StringTables.Find(GlyphWording.AugmentationKey.Namespace, GlyphWording.AugmentationKey.Key), wording.Augmentation);
+        Assert.Equal(StringTables.Find(GlyphWording.TierLevelKey.Namespace, GlyphWording.TierLevelKey.Key), wording.TierLevel);
+        Assert.Equal(StringTables.Find(GlyphWording.TierSourcesKey.Namespace, GlyphWording.TierSourcesKey.Key), wording.TierSources);
+        Assert.Equal("Glyph", wording.Name);
+        Assert.Equal("Augmentation", wording.Augmentation);
+        Assert.Equal(4, wording.Tiers);
+    }
+}

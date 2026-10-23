@@ -1,30 +1,30 @@
 @use "Card" as *;
 @use "Crest" as *;
 
-$blessing-head-top: 14px;
-$blessing-rule-gap: 2px;
-$blessing-crest-top: 8px;
-$blessing-crest-bottom: 7px;
-$blessing-band-height: 26px;
-$blessing-band-inset: 14px;
-$blessing-count-gap: 4px;
-$blessing-prose-inset: 23px;
-$blessing-prose-top: 8px;
-$blessing-prose-bottom: 12px;
-$blessing-heading-size: 11.5px;
-$blessing-text-size: 10.5px;
-$blessing-line-height: 13.3px;
+$glyph-head-top: 14px;
+$glyph-rule-gap: 2px;
+$glyph-crest-top: 8px;
+$glyph-crest-bottom: 7px;
+$glyph-band-height: 26px;
+$glyph-band-inset: 14px;
+$glyph-count-gap: 4px;
+$glyph-prose-inset: 23px;
+$glyph-prose-top: 8px;
+$glyph-prose-bottom: 12px;
+$glyph-heading-size: 11.5px;
+$glyph-text-size: 10.5px;
+$glyph-line-height: 13.3px;
 
-.fx-tip.fx-blessing {
-  @include blessing-crest;
+.fx-tip.fx-glyph {
+  @include glyph-crest;
 
   .head {
-    padding: $blessing-head-top 0 $blessing-rule-gap;
+    padding: $glyph-head-top 0 $glyph-rule-gap;
   }
 
   .eyebrow {
     font-family: $display;
-    font-size: $blessing-heading-size;
+    font-size: $glyph-heading-size;
     font-weight: 600;
     line-height: 1.15;
     letter-spacing: .13em;
@@ -37,8 +37,8 @@ $blessing-line-height: 13.3px;
     color: var(--core-primary-main);
   }
 
-  .fx-blessing-crest {
-    margin: $blessing-crest-top auto $blessing-crest-bottom;
+  .fx-glyph-crest {
+    margin: $glyph-crest-top auto $glyph-crest-bottom;
   }
 
   .band {
@@ -46,11 +46,11 @@ $blessing-line-height: 13.3px;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    min-height: $blessing-band-height;
-    padding: 0 $blessing-band-inset;
+    min-height: $glyph-band-height;
+    padding: 0 $glyph-band-inset;
     background: var(--fx-subheader) 0 0/100% 100% no-repeat;
-    font-size: $blessing-text-size;
-    line-height: $blessing-line-height;
+    font-size: $glyph-text-size;
+    line-height: $glyph-line-height;
   }
 
   .kind { color: var(--core-text-secondary); }
@@ -58,15 +58,15 @@ $blessing-line-height: 13.3px;
   .tier { color: var(--core-text-info); }
 
   .count {
-    margin-left: $blessing-count-gap;
+    margin-left: $glyph-count-gap;
     color: var(--core-text-disabled);
   }
 
   .prose {
-    padding: $blessing-prose-top $blessing-prose-inset $blessing-prose-bottom;
+    padding: $glyph-prose-top $glyph-prose-inset $glyph-prose-bottom;
     text-align: center;
-    font-size: $blessing-text-size;
-    line-height: $blessing-line-height;
+    font-size: $glyph-text-size;
+    line-height: $glyph-line-height;
     color: var(--core-text-secondary);
     white-space: pre-line;
   }

@@ -3,7 +3,7 @@ namespace FellowshipExtractor.Tests;
 public sealed class TypeResolverTests
 {
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(27, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(26, Enum.GetValues<EntityType>().Length);
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
@@ -26,9 +26,8 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.Aspect, 8)]
     [InlineData(EntityType.ProtectiveEnchant, 11)]
     [InlineData(EntityType.Enchant, 18)]
-    [InlineData(EntityType.GemTrait, 60)]
+    [InlineData(EntityType.GemAbility, 60)]
     [InlineData(EntityType.MountPower, 54)]
-    [InlineData(EntityType.TraitPower, 45)]
     [InlineData(EntityType.LegendaryPower, 36)]
     [InlineData(EntityType.Currency, 17)]
     [InlineData(EntityType.Modifier, 26)]
@@ -57,12 +56,12 @@ public sealed class TypeResolverTests
     }
 
     [Fact]
-    public void SixtyGemTraitsTenPerType()
+    public void SixtyGemAbilitiesTenPerType()
     {
-        var traits = Export.Loaded.Documents.Where(d => d.Type == EntityType.GemTrait).ToArray();
+        var augmentations = Export.Loaded.Documents.Where(d => d.Type == EntityType.GemAbility).ToArray();
 
-        Assert.Equal(60, traits.Length);
-        Assert.All(traits.GroupBy(t => t.Body["gem"]!.GetValue<string>()), type => Assert.Equal(10, type.Count()));
+        Assert.Equal(60, augmentations.Length);
+        Assert.All(augmentations.GroupBy(t => t.Body["gem"]!.GetValue<string>()), type => Assert.Equal(10, type.Count()));
     }
 
     [Fact]

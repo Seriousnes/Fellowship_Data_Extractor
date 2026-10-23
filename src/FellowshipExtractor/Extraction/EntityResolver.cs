@@ -103,13 +103,13 @@ public sealed class EntityResolver
     public LocalizedText Localized { get; }
     public MountLore Lore { get; }
     public HeroAttributes HeroAttributes { get; }
-    public ItemTraitTrees TraitTrees { get; }
+    public AttunementTrees AttunementTrees { get; }
     public DynamicItemRuleSets RuleSets { get; }
     public RarityDropChances RarityDrops { get; }
     public DynamicAbilityRanks AbilityRanks { get; }
     public TalentTrees Talents { get; }
     public GemDefinitions Gems { get; }
-    public ItemTraits Traits { get; }
+    public AugmentationRows AugmentationRows { get; }
     public StatEnchants Enchants { get; }
     public DynamicTextRows DynamicText { get; }
     public Settings Settings { get; }
@@ -193,18 +193,18 @@ public sealed class EntityResolver
         ModifierRecipes = new ModifierRecipes(provider, _assets);
         StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor, RuleSets, ModifierRecipes);
 
-        Traits = new ItemTraits(
+        AugmentationRows = new AugmentationRows(
             provider, _assets, _constants, _augmentationIds,
-            new TraitCategoryNames(provider, _assets, StatCalculation.SlotDefinitions, ModifierRecipes.Types));
+            new AugmentationCategoryNames(provider, _assets, StatCalculation.SlotDefinitions, ModifierRecipes.Types));
 
-        TraitTrees = new ItemTraitTrees(provider, _assets, _tags, Traits.MaxRank);
+        AttunementTrees = new AttunementTrees(provider, _assets, _tags, AugmentationRows.MaxRank);
 
         AbilityRanks = new DynamicAbilityRanks(provider, _assets, _tags, _augmentationIds, SlotNames);
 
         Collections = new VisualCollections(provider, _assets);
         HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, Collections, rarities);
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
-        Enchants = new StatEnchants(provider, Traits, _constants, Heroes);
+        Enchants = new StatEnchants(provider, AugmentationRows, _constants, Heroes);
         HeroAttributes = new HeroAttributes(provider, Heroes);
         DynamicText = new DynamicTextRows(provider, _assets, _constants, Heroes);
 
@@ -238,8 +238,8 @@ public sealed class EntityResolver
             provider, _assets, Heroes, rarities, Categories, StatCalculation, Gems.Types,
             SlotGlyphs, new RarityOrnaments(provider, rarities), new TalentTierPlates(provider),
             new RarityColorRows(provider, rarities),
-            new SectionHeadingRows(provider), Tempers, Drops, new Blessings(provider, _constants),
-            CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, TraitTrees,
+            new SectionHeadingRows(provider), Tempers, Drops, new GlyphWording(provider, _constants),
+            CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, AttunementTrees,
             ModifierRecipes, new TooltipWidgetText(provider, _assets, SlotNames), new AbilityTooltipTexts(provider, _assets));
 
         EffectIcons = new EffectIconSources(
@@ -249,7 +249,7 @@ public sealed class EntityResolver
             _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
 
         Types = new TypeResolver(
-            _tags, Talents, Gems, Traits, Mappings, Dungeons, Progression, Customizations, TableNames, Heroes,
+            _tags, Talents, Gems, AugmentationRows, Mappings, Dungeons, Progression, Customizations, TableNames, Heroes,
             _mountsByTag.Keys);
 
         Owners = new AbilityOwners(provider, _assets, _tags, Heroes, _constants);
@@ -270,7 +270,7 @@ public sealed class EntityResolver
             if (Talents.ForAugmentation(tag.Name)?.DisplayName is { } talent) return talent;
             if (Gems.ForAugmentation(tag.Name)?.DisplayName is { } node) return node;
             if (Enchants.ForAugmentation(tag.NetId)?.Name is { } enchant) return enchant;
-            if (Traits.ForAugmentation(tag.NetId)?.DisplayName is { } trait) return trait;
+            if (AugmentationRows.ForAugmentation(tag.NetId)?.DisplayName is { } augmentation) return augmentation;
         }
 
         return Display.From(Presentation.Find(tag.Name)?.Row, cdo).Name;
@@ -328,7 +328,7 @@ public sealed class EntityResolver
                 ? SlotNames.ByOrdinal(PropertyWalk.AsOrdinal(PropertyWalk.Get(cdo, SlotOrdinalField)?.GenericValue) ?? 0)?.Shipped
                 : null,
             GemSlot = RuleSets.HasGemSocket(ruleSet) ? true : null,
-            TraitTree = cdo is null ? null : TraitTrees.Named(PropertyWalk.GetString(cdo, ItemTraitTrees.ItemField)),
+            AttunementTree = cdo is null ? null : AttunementTrees.Named(PropertyWalk.GetString(cdo, AttunementTrees.ItemField)),
             RuleSet = ruleSet is null ? null : ShortRuleSet(ruleSet),
             Rarities = cdo is null ? null : Empty(DynamicVisuals.Rarities(cdo)),
             Stats = cdo is null ? null : Empty(Slots.For(cdo, StatCalculation)),
@@ -378,9 +378,9 @@ public sealed class EntityResolver
                 };
             }
 
-            if (Traits.ForAugmentation(tag.NetId) is { } grantingTrait)
+            if (AugmentationRows.ForAugmentation(tag.NetId) is { } grantingAugmentation)
             {
-                entity = WithGrantorText(entity, grantingTrait.DisplayName, grantingTrait.Description, grantingTrait.IconPath, icons);
+                entity = WithGrantorText(entity, grantingAugmentation.DisplayName, grantingAugmentation.Description, grantingAugmentation.IconPath, icons);
             }
         }
 
@@ -528,24 +528,24 @@ public sealed class EntityResolver
 
     private Entity WithTableText(Entity entity, string tagName, IconWriter? icons)
     {
-        if (Traits.ForTag(tagName) is { } trait)
+        if (AugmentationRows.ForTag(tagName) is { } augmentation)
         {
-            var enchant = trait.Augmentation is { } granting ? Enchants.ForAugmentation(granting) : null;
+            var enchant = augmentation.Augmentation is { } granting ? Enchants.ForAugmentation(granting) : null;
 
             return entity with
             {
-                DisplayName = entity.DisplayName ?? enchant?.Name ?? trait.DisplayName,
-                Description = entity.Description ?? enchant?.Description ?? trait.Description,
+                DisplayName = entity.DisplayName ?? enchant?.Name ?? augmentation.DisplayName,
+                Description = entity.Description ?? enchant?.Description ?? augmentation.Description,
                 Placeholders = entity.Placeholders ?? enchant?.Placeholders,
-                TraitCategoryTag = trait.CategoryTag,
-                TraitCategory = trait.Category,
-                MaxRank = trait.MaxRank,
-                RandomChance = trait.RandomChance,
-                Augmentation = trait.Augmentation,
-                RankRuns = trait.Runs,
-                Icon = entity.Icon ?? IconName(trait.IconPath, icons),
+                AugmentationCategoryTag = augmentation.CategoryTag,
+                AugmentationCategory = augmentation.Category,
+                MaxRank = augmentation.MaxRank,
+                RandomChance = augmentation.RandomChance,
+                Augmentation = augmentation.Augmentation,
+                RankRuns = augmentation.Runs,
+                Icon = entity.Icon ?? IconName(augmentation.IconPath, icons),
                 NameByPrimaryStat = enchant?.NameByPrimaryStat,
-                TraitStats = enchant?.Stats,
+                EnchantStats = enchant?.Stats,
             };
         }
 

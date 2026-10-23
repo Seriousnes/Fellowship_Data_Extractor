@@ -23,7 +23,6 @@ public static class EntityStore
                   (item.PrimaryStat is null || item.PrimaryStat == ParseEnum<PrimaryStat>(hero.PrimaryStat)),
             TalentSlotDocument slot => slot.Hero == ParseEnum<Hero>(hero.Name),
             EnchantDocument enchant => ReadsStat(enchant.PrimaryStat, hero),
-            TraitPowerDocument power => ReadsStat(power.PrimaryStat, hero),
             EffectDocument effect => ReadsStat(effect.PrimaryStat, hero),
             _ => true,
         };

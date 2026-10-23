@@ -1,0 +1,11 @@
+<AugmentationCard Entity="Entity" Query="Query" Hero="Hero" />
+
+@code {
+    [CascadingParameter] public EntityDocument Document { get; set; } = default!;
+
+    private AspectDocument Entity => (AspectDocument)Document;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+}

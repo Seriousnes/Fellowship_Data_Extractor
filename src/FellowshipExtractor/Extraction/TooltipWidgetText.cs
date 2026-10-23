@@ -13,7 +13,7 @@ public sealed class TooltipWidgetText
     private const string EmptyTextBlock = "Text_StatName";
     private const string TreeWidget = "UW_TraitTreeTooltipBlock";
     private const string TreeHeaderBlock = "TextHeader";
-    private const string TraitWidget = "UW_TraitTooltip_NonTreeVersion";
+    private const string AugmentationWidget = "UW_TraitTooltip_NonTreeVersion";
     private const string EquippedRankBlock = "CRTextBlock_249";
     private const string RankSourcesBlock = "TitleTextBlock";
     private const string DescriptionBlock = "RichText_Description";
@@ -26,9 +26,9 @@ public sealed class TooltipWidgetText
 
     public EmptyModifierSlot EmptySlot { get; }
 
-    public string TraitTreeHeader { get; }
+    public string AttunementTreeHeader { get; }
 
-    public TraitTooltipText TraitTooltip { get; }
+    public AugmentationTooltipText AugmentationTooltip { get; }
 
     public string DescriptionStyleSet { get; }
 
@@ -38,26 +38,26 @@ public sealed class TooltipWidgetText
         EmptySlot = new EmptyModifierSlot(
             Text(empty, EmptySlotWidget, SignBlock), Text(empty, EmptySlotWidget, EmptyTextBlock));
 
-        TraitTreeHeader = Text(Exports(provider, assets, TreeWidget), TreeWidget, TreeHeaderBlock);
+        AttunementTreeHeader = Text(Exports(provider, assets, TreeWidget), TreeWidget, TreeHeaderBlock);
 
-        var trait = Exports(provider, assets, TraitWidget);
+        var augmentation = Exports(provider, assets, AugmentationWidget);
         var source = Exports(provider, assets, SourceWidget);
 
         DescriptionStyleSet =
-            trait.FirstOrDefault(export => export.Name == DescriptionBlock) is { } description &&
+            augmentation.FirstOrDefault(export => export.Name == DescriptionBlock) is { } description &&
             PropertyWalk.GetString(description, StyleSetField) is { } styleSet
                 ? styleSet
-                : throw new InvalidOperationException($"{TraitWidget} has no {DescriptionBlock} naming a {StyleSetField}.");
+                : throw new InvalidOperationException($"{AugmentationWidget} has no {DescriptionBlock} naming a {StyleSetField}.");
 
-        TraitTooltip = new TraitTooltipText(
-            Text(trait, TraitWidget, EquippedRankBlock),
-            Text(trait, TraitWidget, RankSourcesBlock),
+        AugmentationTooltip = new AugmentationTooltipText(
+            Text(augmentation, AugmentationWidget, EquippedRankBlock),
+            Text(augmentation, AugmentationWidget, RankSourcesBlock),
             Text(source, SourceWidget, GearSlotBlock),
             Text(source, SourceWidget, RanksOpenBlock),
             Text(source, SourceWidget, RanksCloseBlock))
         {
             ItemTypes = slots.Printed,
-            Categories = TraitCategoryTexts.Read(trait, TraitWidget),
+            Categories = AugmentationCategoryTexts.Read(augmentation, AugmentationWidget),
         };
     }
 

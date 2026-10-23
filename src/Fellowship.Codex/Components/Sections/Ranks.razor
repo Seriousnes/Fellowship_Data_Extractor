@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-@if ((Entity as ItemTraitDocument)?.RankRuns is { Count: > 0 } runs)
+@if ((Entity as AugmentationDocument)?.RankRuns is { Count: > 0 } runs)
 {
     var badge = runs.Count.ToString();
     <Panel Head="Rank progression" Badge="@badge">

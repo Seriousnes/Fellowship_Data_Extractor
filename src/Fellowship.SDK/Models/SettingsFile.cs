@@ -66,7 +66,7 @@ public sealed record SettingsFile
 
     public IReadOnlyList<DropItemLevel> DropItemLevels { get; init; } = [];
 
-    public BlessingEntry Blessings { get; init; } = new(string.Empty, string.Empty, string.Empty, string.Empty, 0);
+    public GlyphEntry Glyphs { get; init; } = new(string.Empty, string.Empty, string.Empty, string.Empty, 0);
 
     public DifficultyScaling DifficultyScaling { get; init; } = new();
 
@@ -76,15 +76,15 @@ public sealed record SettingsFile
 
     public IReadOnlyList<LeagueEntry> Leagues { get; init; } = [];
 
-    public IReadOnlyList<TraitTreeEntry> TraitTrees { get; init; } = [];
+    public IReadOnlyList<AttunementTreeEntry> AttunementTrees { get; init; } = [];
 
-    public IReadOnlyList<TraitNodeUpgradeCost> TraitNodeUpgradeCosts { get; init; } = [];
+    public IReadOnlyList<AttunementNodeUpgradeCost> AttunementNodeUpgradeCosts { get; init; } = [];
 
-    public TraitNodeColorRows? TraitNodeColorRows { get; init; }
+    public AttunementNodeColorRows? AttunementNodeColorRows { get; init; }
 
-    public string? TraitTreeHeader { get; init; }
+    public string? AttunementTreeHeader { get; init; }
 
-    public TraitTooltipText? TraitTooltip { get; init; }
+    public AugmentationTooltipText? AugmentationTooltip { get; init; }
 
     public AbilityTooltipText? AbilityTooltip { get; init; }
 

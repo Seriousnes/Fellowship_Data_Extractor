@@ -4,7 +4,7 @@ public sealed class TypeResolver(
     IReadOnlyList<TagRecord> tags,
     TalentTrees talents,
     GemDefinitions gems,
-    ItemTraits traits,
+    AugmentationRows augmentations,
     GrantedAbilityMappings mappings,
     DungeonNames dungeons,
     ProgressionItems progression,
@@ -73,9 +73,9 @@ public sealed class TypeResolver(
             return heroes.ForTag(tag.Name) is not null ? EntityType.Hero : null;
         }
 
-        if (tag.Table.Equals(ItemTraits.Table, StringComparison.OrdinalIgnoreCase))
+        if (tag.Table.Equals(AugmentationRows.Table, StringComparison.OrdinalIgnoreCase))
         {
-            return entity.TraitCategoryTag is { } category && ItemTraitTypes.ByCategory.TryGetValue(category, out var type)
+            return entity.AugmentationCategoryTag is { } category && AugmentationTypes.ByCategory.TryGetValue(category, out var type)
                 ? type
                 : null;
         }
@@ -86,10 +86,10 @@ public sealed class TypeResolver(
     private EntityType? Augmentation(TagRecord tag, Entity entity, string? packageName)
     {
         if (talents.ForAugmentation(tag.Name) is not null) return EntityType.Talent;
-        if (entity.GemNode is not null || gems.ForAugmentation(tag.Name) is not null) return EntityType.GemTrait;
-        if (traits.ForAugmentation(tag.NetId) is { CategoryTag: { } category })
+        if (entity.GemNode is not null || gems.ForAugmentation(tag.Name) is not null) return EntityType.GemAbility;
+        if (augmentations.ForAugmentation(tag.NetId) is { CategoryTag: { } category })
         {
-            return ItemTraitTypes.ByCategory.ContainsKey(category) ? EntityType.TraitPower : null;
+            return AugmentationTypes.ByCategory.TryGetValue(category, out var granting) ? granting : null;
         }
 
         foreach (var (folder, type) in Folders)

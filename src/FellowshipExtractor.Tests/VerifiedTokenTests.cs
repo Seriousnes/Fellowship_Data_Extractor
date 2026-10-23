@@ -13,7 +13,7 @@ public sealed class VerifiedTokenTests
     private const int UndulatingSpiritAbility = 2226;
     private const int UndulatingSpiritPower = 398;
     private const int DragonsEmbrace = 2074;
-    private const int TheDragon = 686;
+    private const int TheDragon = 61;
 
     private const string UndulatingPackage =
         "fellowship/Content/Abilities/Heroes/Rime/Talents/DamageAsAoeHealingBuff_GuaranteedSpiritProcBuff/GA_Rime_Passive_Talent_DamageAsAoeHealingBuff_GuaranteedSpiritProcBuff";
@@ -54,7 +54,7 @@ public sealed class VerifiedTokenTests
     [Fact]
     public void AHeroSentenceReadsItsAbsorbThroughTheHeroToDataMap()
     {
-        foreach (var body in new[] { Document(EntityType.TraitPower, TheDragon), Document(EntityType.Ability, DragonsEmbrace) })
+        foreach (var body in new[] { Document(EntityType.ProtectiveEnchant, TheDragon), Document(EntityType.Ability, DragonsEmbrace) })
         {
             var sentences = body["descriptionsByHero"]!.AsObject();
 

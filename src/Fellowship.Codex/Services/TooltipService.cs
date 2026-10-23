@@ -59,13 +59,13 @@ public sealed class TooltipService(
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
-        foreach (var imbued in query.ImbuedTraits)
+        foreach (var attuned in query.Attunements)
         {
-            if (TooltipView.ItemTrait(store, imbued.Id, null) is not null) continue;
+            if (TooltipView.Augmentation(store, attuned.Id, null) is not null) continue;
 
             return Results.Problem(
-                title: "No such item trait.",
-                detail: $"The build has no item trait {imbued.Id}.",
+                title: "No such item augmentation.",
+                detail: $"The build has no item augmentation {attuned.Id}.",
                 statusCode: StatusCodes.Status400BadRequest);
         }
 

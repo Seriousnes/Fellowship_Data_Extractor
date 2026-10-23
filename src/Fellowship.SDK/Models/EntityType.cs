@@ -18,7 +18,7 @@ public enum EntityType
     Effect,
     Enchant,
     Gem,
-    GemTrait,
+    GemAbility,
     Radiance,
     Hero,
     Item,
@@ -34,11 +34,10 @@ public enum EntityType
     Sigil,
     Aspect,
     ProtectiveEnchant,
-    TraitPower,
     WeaponPower,
 }
 
-public static class ItemTraitTypes
+public static class AugmentationTypes
 {
     public static IReadOnlyDictionary<string, EntityType> ByCategory { get; } =
         new Dictionary<string, EntityType>(StringComparer.OrdinalIgnoreCase)

@@ -1,14 +1,18 @@
 @inject ICodexViewService Ui
+@inject IEntityStoreService Store
 
 @if (Named.Count > 0)
 {
     var badge = $"{Named.Count} {(Named.Count == 1 ? "version" : "versions")}";
-    <Panel Head="@($"Who can use this {Here.Noun}")" Badge="@badge">
-        <Note>
-            One id, several @(Here.Noun)s. The name follows the armour type, the primary stat slot
-            holds whatever the wearer's own stat is, and the texture is their armour set, so each hero
-            below is handed the version named over them.
-        </Note>
+    <Panel Head="@Head" Badge="@badge">
+        @if (Here.Entity is not AugmentationDocument)
+        {
+            <Note>
+                One id, several @(Here.Noun)s. The name follows the armour type, the primary stat slot
+                holds whatever the wearer's own stat is, and the texture is their armour set, so each hero
+                below is handed the version named over them.
+            </Note>
+        }
         @foreach (var version in Named)
         {
             <Rule />
@@ -53,16 +57,23 @@
                 .GroupBy(reading => (
                     Name: Ui.Name(reading),
                     ArmorType: (reading as ItemDocument)?.ArmorType,
-                    PrimaryStat: (reading as ItemDocument)?.PrimaryStat))
+                    PrimaryStat: (reading as ItemDocument)?.PrimaryStat ?? (reading as EnchantDocument)?.PrimaryStat))
                 .Select(version => new Version(
                     version.First(),
                     version.Key.Name,
                     Discriminator(version.Key.ArmorType, version.Key.PrimaryStat),
                     [.. version
-                        .SelectMany(reading => Ui.Codex.Facet("hero")?.Values(reading) ?? [])
+                        .SelectMany(Wearers)
                         .Distinct(StringComparer.Ordinal)
                         .OrderBy(hero => hero, StringComparer.OrdinalIgnoreCase)],
                     version.Any(reading => reading == Here.Entity)))];
+
+    private string Head => Here.Entity is AugmentationDocument ? "Versions" : $"Who can use this {Here.Noun}";
+
+    private IEnumerable<string> Wearers(EntityDocument reading) =>
+        reading is AugmentationDocument
+            ? Store.Settings.Heroes.Where(hero => EntityStore.Reads(reading, hero)).Select(hero => hero.Name)
+            : Ui.Codex.Facet("hero")?.Values(reading) ?? [];
 
     private static string? Discriminator(ArmorType? armour, PrimaryStat? stat)
     {

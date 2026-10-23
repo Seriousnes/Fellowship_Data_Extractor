@@ -107,7 +107,7 @@
     private string Heading => Slot.SlotName switch
     {
         CraftSlots.GemSocket => TooltipView.GemSocketLabel,
-        CraftSlots.TraitTree => TooltipView.TreeName(Store.Settings),
+        CraftSlots.AttunementTree => TooltipView.TreeName(Store.Settings),
         _ => $"Modifier {(Slot.Ordinal + 1).ToString(CultureInfo.InvariantCulture)}",
     };
 
@@ -163,12 +163,12 @@
         {
             CraftSlots.GemSocket => Store.Entities.OfType<GemDocument>(),
 
-            CraftSlots.TraitTree => TraitTrees.Find(Item.TraitTree, Store.Settings) is { } tree
-                ? tree.Nodes.SelectMany(node => TraitTrees.Offered(node, Store, TooltipView.Wearer(Item, Query))).DistinctBy(trait => trait.Id)
+            CraftSlots.AttunementTree => AttunementTrees.Find(Item.AttunementTree, Store.Settings) is { } tree
+                ? tree.Nodes.SelectMany(node => AttunementTrees.Offered(node, Store, TooltipView.Wearer(Item, Query))).DistinctBy(augmentation => augmentation.Id)
                 : [],
 
-            CraftSlots.ItemTrait => definition.ItemTraitPool
-                .SelectMany(category => TraitTrees.InCategory(category, Store, TooltipView.Wearer(Item, Query))),
+            CraftSlots.Augmentation => definition.AugmentationPool
+                .SelectMany(category => AttunementTrees.InCategory(category, Store, TooltipView.Wearer(Item, Query))),
 
             CraftSlots.GemPower => Store.Entities
                 .OfType<RadianceDocument>()
@@ -182,7 +182,7 @@
         var label = definition.SlotType switch
         {
             CraftSlots.GemSocket => PublicTypes.Label(EntityType.Gem),
-            CraftSlots.TraitTree => TooltipView.TreeName(Store.Settings),
+            CraftSlots.AttunementTree => TooltipView.TreeName(Store.Settings),
             _ => TooltipView.Plural(ItemCraft.KindOf(accepts, Store.Settings)!.Value, Store.Settings),
         };
 

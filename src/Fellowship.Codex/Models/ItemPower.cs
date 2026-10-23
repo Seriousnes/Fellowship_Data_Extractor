@@ -10,7 +10,7 @@ public sealed record ItemPowerInputs(
     bool Legendary,
     bool HasGemSocket,
     bool HasGrantedAbility,
-    bool HasTraitTree);
+    bool HasAttunementTree);
 
 public sealed record ItemPowerTerm(string Label, int? Count, double Factor, double? Weight, float Amount);
 
@@ -56,7 +56,7 @@ public static class ItemPower
             Legendary: rarity is not null && item.Rarity is Rarity.Legendary,
             HasGemSocket: !query.NoSocket && Carries(CraftSlots.GemSocket),
             HasGrantedAbility: Carries(CraftSlots.GrantedAbility),
-            HasTraitTree: Carries(CraftSlots.TraitTree));
+            HasAttunementTree: Carries(CraftSlots.AttunementTree));
     }
 
     public static IReadOnlyList<ItemPowerTerm> Terms(ItemPowerInputs inputs, SettingsFile settings)
@@ -101,10 +101,10 @@ public static class ItemPower
                 inputs => inputs.HasGrantedAbility && Wearing(inputs, WeaponType)),
             new(Slot(TrinketType), "ability", factors.RelicAbilityScoreFactor,
                 inputs => inputs.HasGrantedAbility && Wearing(inputs, TrinketType)),
-            new(Slot(WeaponType), "trait tree", factors.WeaponTraitTreeScoreFactor,
-                inputs => inputs.HasTraitTree && Wearing(inputs, WeaponType)),
-            new(Slot(NecklaceType), "trait tree", factors.NecklaceTraitTreeScoreFactor,
-                inputs => inputs.HasTraitTree && Wearing(inputs, NecklaceType)),
+            new(Slot(WeaponType), "attunement tree", factors.WeaponAttunementTreeScoreFactor,
+                inputs => inputs.HasAttunementTree && Wearing(inputs, WeaponType)),
+            new(Slot(NecklaceType), "attunement tree", factors.NecklaceAttunementTreeScoreFactor,
+                inputs => inputs.HasAttunementTree && Wearing(inputs, NecklaceType)),
             new("Legendary", "rung", factors.LegendaryScoreFactor,
                 inputs => inputs.Legendary),
         ];

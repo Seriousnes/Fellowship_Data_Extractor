@@ -99,9 +99,9 @@
             sections.Add(@<TipSocket Entity="Entity" Query="Query" />);
         }
 
-        if (TipImbuedTraits.Capacity(Entity, Query, Store.Settings) is not null)
+        if (TipAttunements.Capacity(Entity, Query, Store.Settings) is not null)
         {
-            sections.Add(@<TipImbuedTraits Entity="Entity" Query="Query" />);
+            sections.Add(@<TipAttunements Entity="Entity" Query="Query" />);
         }
 
         if (modifiers.Count > 0) sections.Add(@<TipModifiers Lines="modifiers" />);

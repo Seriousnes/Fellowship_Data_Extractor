@@ -32,10 +32,10 @@ public readonly record struct ItemModifier(ModifierKind Kind, int Id, int Amount
         Amount.ToString(CultureInfo.InvariantCulture);
 }
 
-/// <summary>A trait imbued into an item, written as <c>id:rank</c>.</summary>
-public readonly record struct ImbuedTrait(int Id, int Rank)
+/// <summary>A augmentation attuned into an item, written as <c>id:rank</c>.</summary>
+public readonly record struct Attunement(int Id, int Rank)
 {
-    public static bool TryParse(string? value, IFormatProvider? provider, out ImbuedTrait result)
+    public static bool TryParse(string? value, IFormatProvider? provider, out Attunement result)
     {
         result = default;
 
@@ -44,7 +44,7 @@ public readonly record struct ImbuedTrait(int Id, int Rank)
 
         var netId = separator < 0 ? value : value[..separator];
 
-        if (!int.TryParse(netId, NumberStyles.Integer, provider, out var trait)) return false;
+        if (!int.TryParse(netId, NumberStyles.Integer, provider, out var augmentation)) return false;
 
         var rank = 1;
         if (separator >= 0 &&
@@ -53,7 +53,7 @@ public readonly record struct ImbuedTrait(int Id, int Rank)
             return false;
         }
 
-        result = new ImbuedTrait(trait, rank);
+        result = new Attunement(augmentation, rank);
         return true;
     }
 

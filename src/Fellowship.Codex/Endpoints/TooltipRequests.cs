@@ -52,11 +52,11 @@ public static class TooltipRequests
             Rarity = StatQuery.NullIfEmpty(request?.Rarity),
         };
 
-    public static TooltipQuery Read(GemTraitTooltipRequest? request, out string? error) =>
+    public static TooltipQuery Read(GemAbilityTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error);
 
     public static TooltipQuery Read(EnchantTooltipRequest? request, out string? error) =>
-        Traited(request?.ShowIcon, request?.Mobile, request?.State, request?.ItemLevel, request?.RankSources, out error) with
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.EquippedRank, request?.RankSources, out error) with
         {
             Hero = StatQuery.NullIfEmpty(request?.Hero),
         };
@@ -75,9 +75,9 @@ public static class TooltipRequests
             PotentialPower = request?.PotentialPower,
             Armor = request?.Armor,
             Modifiers = request?.Modifiers ?? [],
-            ImbuedTraits = request?.ImbuedTraits ?? [],
-            AllocatedTraits = request?.AllocatedTraits,
-            HasImbuedTraits = request?.HasImbuedTraits,
+            Attunements = request?.Attunements ?? [],
+            AllocatedAttunements = request?.AllocatedAttunements,
+            HasAttunements = request?.HasAttunements,
         };
 
     public static TooltipQuery Read(RelicPassiveTooltipRequest? request, out string? error) =>
@@ -97,27 +97,21 @@ public static class TooltipRequests
         Read(request?.ShowIcon, request?.Mobile, out error);
 
     public static TooltipQuery Read(SigilTooltipRequest? request, out string? error) =>
-        Traited(request?.ShowIcon, request?.Mobile, request?.State, request?.ItemLevel, request?.RankSources, out error);
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.EquippedRank, request?.RankSources, out error);
 
     public static TooltipQuery Read(AspectTooltipRequest? request, out string? error) =>
-        Traited(request?.ShowIcon, request?.Mobile, request?.State, request?.ItemLevel, request?.RankSources, out error);
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.EquippedRank, request?.RankSources, out error);
 
     public static TooltipQuery Read(ProtectiveEnchantTooltipRequest? request, out string? error) =>
-        Traited(request?.ShowIcon, request?.Mobile, request?.State, request?.ItemLevel, request?.RankSources, out error);
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.EquippedRank, request?.RankSources, out error);
 
-    private static TooltipQuery Traited(
-        bool? showIcon, bool? mobile, string? state, int? itemLevel, string? rankSources, out string? error) =>
+    private static TooltipQuery Augmented(
+        bool? showIcon, bool? mobile, string? state, int? equippedRank, string? rankSources, out string? error) =>
         Read(showIcon, mobile, out error) with
         {
             State = StatQuery.NullIfEmpty(state),
-            ItemLevel = itemLevel,
+            EquippedTier = equippedRank,
             RankSources = RankSources.Parse(rankSources),
-        };
-
-    public static TooltipQuery Read(TraitPowerTooltipRequest? request, out string? error) =>
-        Read(request?.ShowIcon, request?.Mobile, out error) with
-        {
-            Hero = StatQuery.NullIfEmpty(request?.Hero),
         };
 
     public static TooltipQuery Read(

@@ -140,7 +140,7 @@ public class ItemCraftTests(Export export)
     {
         foreach (var hero in Settings.Heroes)
         {
-            var enchant = Assert.IsType<EnchantDocument>(TooltipView.ItemTrait(export.Store, 69, hero.Name));
+            var enchant = Assert.IsType<EnchantDocument>(TooltipView.Augmentation(export.Store, 69, hero.Name));
 
             Assert.Equal(hero.PrimaryStat, enchant.PrimaryStat.ToString());
         }

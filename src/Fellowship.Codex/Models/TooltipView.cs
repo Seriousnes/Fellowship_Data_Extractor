@@ -21,8 +21,8 @@ public static class TooltipView
     public static EntityType TypeOf(ModifierKind kind, SettingsFile settings) =>
         ItemCraft.Definition(kind.ToString(), settings) switch
         {
-            { SlotType: CraftSlots.ItemTrait, ItemTraitPool: [var category] }
-                when ItemTraitTypes.ByCategory.TryGetValue(category, out var type) => type,
+            { SlotType: CraftSlots.Augmentation, AugmentationPool: [var category] }
+                when AugmentationTypes.ByCategory.TryGetValue(category, out var type) => type,
             { SlotType: CraftSlots.AbilityRank } => EntityType.Glyph,
             { SlotType: CraftSlots.GemPower } => EntityType.Radiance,
             var definition => throw new ArgumentOutOfRangeException(
@@ -41,8 +41,8 @@ public static class TooltipView
         Type(kind, settings).Plural is { Length: > 0 } plural ? plural : Type(kind, settings).Printed ?? kind.ToString();
 
     public static string TreeHeader(SettingsFile settings) =>
-        settings.TraitTreeHeader
-        ?? throw new InvalidOperationException("The settings state no trait tree tooltip header.");
+        settings.AttunementTreeHeader
+        ?? throw new InvalidOperationException("The settings state no attunement tree tooltip header.");
 
     public static string TreeName(SettingsFile settings) => TreeHeader(settings).TrimEnd(':', ' ');
 
@@ -69,11 +69,11 @@ public static class TooltipView
         return entries;
     }
 
-    public static ItemTraitDocument? ItemTrait(IEntityStoreService store, int id, string? wearer)
+    public static AugmentationDocument? Augmentation(IEntityStoreService store, int id, string? wearer)
     {
-        ItemTraitDocument[] readings =
+        AugmentationDocument[] readings =
         [
-            .. ItemTraitTypes.All.SelectMany(type => store.All(type, id)).OfType<ItemTraitDocument>(),
+            .. AugmentationTypes.All.SelectMany(type => store.All(type, id)).OfType<AugmentationDocument>(),
         ];
 
         var hero = wearer is null ? null : store.Hero(wearer);

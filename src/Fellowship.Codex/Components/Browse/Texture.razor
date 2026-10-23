@@ -1,8 +1,8 @@
 @inject ICodexViewService Ui
 
-@if (Entity is GlyphDocument blessing)
+@if (Entity is GlyphDocument glyph)
 {
-    <GlyphCrest Entity="blessing" Width="SlotWidth" />
+    <GlyphCrest Entity="glyph" Width="SlotWidth" />
 }
 else if (Entity is DungeonDocument dungeon)
 {

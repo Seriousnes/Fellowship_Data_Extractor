@@ -290,12 +290,6 @@ public sealed class ResourceGainTests
     }
 
     [Fact]
-    public void VisionsOfGrandeurStatesOnTheTraitWhatItsPowerStates() =>
-        Assert.Equal(
-            (string?)Into(EntityType.TraitPower, 363, Spirit)["source"],
-            (string?)Into(EntityType.Aspect, 47, Spirit)["source"]);
-
-    [Fact]
     public void RunicProliferationStatesTheGenerationItsOwnModifierDeclares()
     {
         var into = Into(EntityType.Effect, 1335, Primary);
@@ -343,7 +337,7 @@ public sealed class ResourceGainTests
     [Fact]
     public void VisionsOfGrandeurStatesTheSpiritPointsItsOwnRowsFeed()
     {
-        var into = Into(EntityType.TraitPower, 363, Spirit);
+        var into = Into(EntityType.Aspect, 47, Spirit);
 
         Assert.Contains("Trait.WeaponAndSpiritPoints.SpiritPointsGain", (string?)into["source"]);
     }

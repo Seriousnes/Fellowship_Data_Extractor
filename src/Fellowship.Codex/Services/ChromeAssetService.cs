@@ -31,7 +31,7 @@ public interface IChromeAssetService
 
     string Rule { get; }
 
-    string TraitGlyph { get; }
+    string AttunementGlyph { get; }
 
     string ExpandGlyph { get; }
 
@@ -64,9 +64,9 @@ public interface IChromeAssetService
     [return: NotNullIfNotNull(nameof(icon))]
     string? Texture(string? icon);
 
-    string TraitNode(string? state);
+    string AttunementNode(string? state);
 
-    string TraitNodeColor(IReadOnlyList<string> categories);
+    string AttunementNodeColor(IReadOnlyList<string> categories);
 
     string TalentBand { get; }
 
@@ -78,9 +78,9 @@ public interface IChromeAssetService
 
     string TalentFrame { get; }
 
-    string BlessingPlate(string? state, bool hovered = false);
+    string GlyphPlate(string? state, bool hovered = false);
 
-    string? BlessingRune(GlyphDocument blessing, string? state);
+    string? GlyphRune(GlyphDocument glyph, string? state);
 
     string SlotGlyph(string? slot);
 
@@ -119,7 +119,7 @@ public sealed class ChromeAssetService(
     private const string TalentButtonFamily = "T_Buttons_TalentTreeButton_";
     private const string TalentFrameTexture = "T_Borders_Frame_Pattern";
 
-    private const string TraitTexture = "T_Icons_StatTooltip_TraitSlot";
+    private const string AttunementTexture = "T_Icons_StatTooltip_TraitSlot";
     private const string ExpandTexture = "T_Icons_Generic_TooltipExpand";
 
     private const string ModifierPlateTexture = WindowFillTexture;
@@ -133,7 +133,7 @@ public sealed class ChromeAssetService(
     private const string NodeFamily = "T_Buttons_TraitNode_";
     private const string NodeSuffix = "Default";
     private const string NodeColorTexture = "T_Buttons_TraitNode_Color";
-    private const string BlessingFamily = "T_Buttons_BlessingButton_";
+    private const string GlyphFamily = "T_Buttons_BlessingButton_";
     private const string Unavailable = "Unavailable";
     private const string Hover = "Hover";
     private const string LockTexture = "T_Icons_Locked";
@@ -170,7 +170,7 @@ public sealed class ChromeAssetService(
     public static IReadOnlyList<string> ModifierSlots(SettingsFile settings) =>
     [
         .. settings.StatCalculation.SlotDefinitions
-            .Where(pair => pair.Value.SlotType is CraftSlots.ItemTrait or CraftSlots.AbilityRank or CraftSlots.GemPower)
+            .Where(pair => pair.Value.SlotType is CraftSlots.Augmentation or CraftSlots.AbilityRank or CraftSlots.GemPower)
             .Select(pair => pair.Key),
     ];
 
@@ -191,10 +191,10 @@ public sealed class ChromeAssetService(
 
     public static readonly IReadOnlyList<string> NodeStates = ["selected", "available", "unavailable"];
 
-    public static readonly IReadOnlyList<string> BlessingStates = ["allocated", "unallocated"];
+    public static readonly IReadOnlyList<string> GlyphStates = ["allocated", "unallocated"];
 
-    public static string BlessingState(int equippedTier) =>
-        equippedTier > 0 ? BlessingStates[0] : BlessingStates[1];
+    public static string GlyphState(int equippedTier) =>
+        equippedTier > 0 ? GlyphStates[0] : GlyphStates[1];
 
     public static readonly IReadOnlyList<string> TalentStates = ["disabled", "selected", "default", "hover"];
 
@@ -221,14 +221,14 @@ public sealed class ChromeAssetService(
     [return: NotNullIfNotNull(nameof(icon))]
     public string? Texture(string? icon) => icon is null ? null : Url(icon);
 
-    public string TraitNode(string? state) =>
+    public string AttunementNode(string? state) =>
         Url(NodeFamily + Chosen(NodeStates, state) + NodeSuffix);
 
-    public string TraitNodeColor(IReadOnlyList<string> categories)
+    public string AttunementNodeColor(IReadOnlyList<string> categories)
     {
-        var rows = store.Settings.TraitNodeColorRows
+        var rows = store.Settings.AttunementNodeColorRows
             ?? throw new InvalidOperationException(
-                "The settings name no trait node colour rows, so a trait tree node has no category colour.");
+                "The settings name no augmentation node colour rows, so a attunement tree node has no category colour.");
 
         var row = categories
             .Select(category => rows.ByCategory.GetValueOrDefault(category))
@@ -260,13 +260,13 @@ public sealed class ChromeAssetService(
     public static bool Allocated(string? state) =>
         string.Equals(Chosen(NodeStates, state), Chosen(NodeStates, NodeStates[0]), StringComparison.Ordinal);
 
-    public string BlessingPlate(string? state, bool hovered = false) =>
-        Url(BlessingFamily + Chosen(BlessingStates, state) + (hovered ? Hover : string.Empty));
+    public string GlyphPlate(string? state, bool hovered = false) =>
+        Url(GlyphFamily + Chosen(GlyphStates, state) + (hovered ? Hover : string.Empty));
 
-    public string? BlessingRune(GlyphDocument blessing, string? state) =>
-        Texture(Chosen(BlessingStates, state) == Chosen(BlessingStates, BlessingState(1))
-            ? blessing.IconHovered
-            : blessing.Icon);
+    public string? GlyphRune(GlyphDocument glyph, string? state) =>
+        Texture(Chosen(GlyphStates, state) == Chosen(GlyphStates, GlyphState(1))
+            ? glyph.IconHovered
+            : glyph.Icon);
 
     public string LockGlyph => Url(LockTexture);
 
@@ -298,7 +298,7 @@ public sealed class ChromeAssetService(
 
     public string Rule => Url(RuleTexture);
 
-    public string TraitGlyph => Url(TraitTexture);
+    public string AttunementGlyph => Url(AttunementTexture);
 
     public string ExpandGlyph => Url(Tinted(ExpandTexture));
 

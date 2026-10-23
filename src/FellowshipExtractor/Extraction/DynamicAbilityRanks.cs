@@ -19,9 +19,9 @@ public sealed class DynamicAbilityRanks
     private const string GrantsField = "GrantedAbilitiesAsset";
     private const string PoolTagPrefix = "DynamicItemAbilityPool.";
 
-    private readonly Dictionary<int, AbilityRankRow> _byBlessing = [];
+    private readonly Dictionary<int, AbilityRankRow> _byGlyph = [];
 
-    public int Count => _byBlessing.Count;
+    public int Count => _byGlyph.Count;
 
     public DynamicAbilityRanks(
         AbstractFileProvider provider,
@@ -59,7 +59,7 @@ public sealed class DynamicAbilityRanks
 
                 var granted = PropertyWalk.GetString(row, GrantsField);
 
-                if (augmentations.For(granted) is not { } blessing)
+                if (augmentations.For(granted) is not { } glyph)
                 {
                     throw new InvalidOperationException(
                         $"{rowTag} grants {granted ?? "nothing"}, which no augmentation tag names.");
@@ -85,23 +85,23 @@ public sealed class DynamicAbilityRanks
                     slots.Add(named.Shipped);
                 }
 
-                if (!_byBlessing.TryAdd(blessing, new AbilityRankRow(rankNetId, maxRank, [.. slots])))
+                if (!_byGlyph.TryAdd(glyph, new AbilityRankRow(rankNetId, maxRank, [.. slots])))
                 {
                     throw new InvalidOperationException(
-                        $"{rowTag} and {_byBlessing[blessing].NetId} both grant augmentation {blessing}.");
+                        $"{rowTag} and {_byGlyph[glyph].NetId} both grant augmentation {glyph}.");
                 }
             }
         }
 
-        if (_byBlessing.Count == 0)
+        if (_byGlyph.Count == 0)
         {
             throw new InvalidOperationException(
-                $"{rows} rows of {RowStructure} name a blessing, so no blessing states the ranks it runs to, the " +
+                $"{rows} rows of {RowStructure} name a glyph, so no glyph states the ranks it runs to, the " +
                 "slots it rolls on, or the id FellowshipLogs records it under.");
         }
     }
 
-    public AbilityRankRow? For(int blessingNetId) => _byBlessing.GetValueOrDefault(blessingNetId);
+    public AbilityRankRow? For(int glyphNetId) => _byGlyph.GetValueOrDefault(glyphNetId);
 
     private static IEnumerable<string> Tags(IPropertyHolder row, string field)
     {

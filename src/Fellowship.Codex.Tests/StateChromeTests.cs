@@ -6,30 +6,30 @@ public class StateChromeTests(Export export)
     [Fact]
     public void A_node_nothing_asks_for_is_the_one_the_reader_is_looking_at()
     {
-        Assert.Equal(export.Chrome.TraitNode("selected"), export.Chrome.TraitNode(null));
-        Assert.Equal(export.Chrome.TraitNode("selected"), export.Chrome.TraitNode("no such state"));
-        Assert.Equal(export.Chrome.TraitNode("selected"), export.Chrome.TraitNode("SELECTED"));
+        Assert.Equal(export.Chrome.AttunementNode("selected"), export.Chrome.AttunementNode(null));
+        Assert.Equal(export.Chrome.AttunementNode("selected"), export.Chrome.AttunementNode("no such state"));
+        Assert.Equal(export.Chrome.AttunementNode("selected"), export.Chrome.AttunementNode("SELECTED"));
     }
 
     [Fact]
-    public void Every_blessing_draws_its_hovered_rune_allocated_and_its_own_rune_unallocated()
+    public void Every_glyph_draws_its_hovered_rune_allocated_and_its_own_rune_unallocated()
     {
-        var blessings = export.Store.Entities.OfType<GlyphDocument>().ToArray();
+        var glyphs = export.Store.Entities.OfType<GlyphDocument>().ToArray();
 
-        Assert.NotEmpty(blessings);
+        Assert.NotEmpty(glyphs);
 
-        Assert.All(blessings, blessing =>
+        Assert.All(glyphs, glyph =>
         {
-            Assert.NotNull(blessing.IconHovered);
-            Assert.NotEqual(blessing.Icon, blessing.IconHovered);
+            Assert.NotNull(glyph.IconHovered);
+            Assert.NotEqual(glyph.Icon, glyph.IconHovered);
 
             Assert.Equal(
-                export.Chrome.Texture(blessing.IconHovered),
-                export.Chrome.BlessingRune(blessing, ChromeAssetService.BlessingState(1)));
+                export.Chrome.Texture(glyph.IconHovered),
+                export.Chrome.GlyphRune(glyph, ChromeAssetService.GlyphState(1)));
 
             Assert.Equal(
-                export.Chrome.Texture(blessing.Icon),
-                export.Chrome.BlessingRune(blessing, ChromeAssetService.BlessingState(0)));
+                export.Chrome.Texture(glyph.Icon),
+                export.Chrome.GlyphRune(glyph, ChromeAssetService.GlyphState(0)));
         });
     }
 
@@ -44,17 +44,17 @@ public class StateChromeTests(Export export)
     }
 
     [Fact]
-    public void A_trait_modifier_draws_the_glyph_of_the_slot_whose_pool_holds_its_category()
+    public void A_augmentation_modifier_draws_the_glyph_of_the_slot_whose_pool_holds_its_category()
     {
         var settings = export.Store.Settings;
 
-        foreach (var trait in export.Store.Entities.OfType<ItemTraitDocument>())
+        foreach (var augmentation in export.Store.Entities.OfType<AugmentationDocument>())
         {
-            var slot = ItemCraft.KindOfTrait(trait, settings) is { } kind ? ItemCraft.Defining(kind, trait, settings) : null;
+            var slot = ItemCraft.KindOfAugmentation(augmentation, settings) is { } kind ? ItemCraft.Defining(kind, augmentation, settings) : null;
 
             if (slot is null) continue;
 
-            Assert.Contains(trait.CategoryTag!, settings.StatCalculation.SlotDefinitions[slot].ItemTraitPool);
+            Assert.Contains(augmentation.CategoryTag!, settings.StatCalculation.SlotDefinitions[slot].AugmentationPool);
         }
     }
 

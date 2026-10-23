@@ -80,7 +80,7 @@ public sealed class PlaceholderService(IEntityStoreService store, IRichTextServi
 
         if (placeholder is { PerRank: true, Value: { } perRank })
         {
-            var rank = TraitRanks.Rank(store.Settings, query);
+            var rank = query.EquippedTier ?? AugmentationRanks.Power(store.Settings, query.ItemLevel ?? store.Settings.Items.MaxItemLevel);
 
             return new Substitution(
                 Round((decimal)perRank * rank),

@@ -124,7 +124,7 @@ public sealed class CodexViewService(
     {
         RadianceDocument type => type.Type,
         GemDocument gem => gem.Type,
-        GemTraitDocument trait => trait.Gem,
+        GemAbilityDocument augmentation => augmentation.Gem,
         _ => null,
     };
 
@@ -200,7 +200,7 @@ public sealed class CodexViewService(
             EntityType.Dungeon => Body(new DungeonTooltipRequest { ShowIcon = icon }),
             EntityType.Effect => Body(new EffectTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.Gem => Body(new GemTooltipRequest { ShowIcon = icon }),
-            EntityType.GemTrait => Body(new GemTraitTooltipRequest { ShowIcon = icon }),
+            EntityType.GemAbility => Body(new GemAbilityTooltipRequest { ShowIcon = icon }),
             EntityType.Item => Body(new ItemTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.LegendaryPower => Body(new LegendaryPowerTooltipRequest { ShowIcon = icon }),
             EntityType.RelicPassive => Body(new RelicPassiveTooltipRequest { ShowIcon = icon }),
@@ -211,7 +211,6 @@ public sealed class CodexViewService(
             EntityType.Sigil => Body(new SigilTooltipRequest { ShowIcon = icon }),
             EntityType.Aspect => Body(new AspectTooltipRequest { ShowIcon = icon }),
             EntityType.ProtectiveEnchant => Body(new ProtectiveEnchantTooltipRequest { ShowIcon = icon }),
-            EntityType.TraitPower => Body(new TraitPowerTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.WeaponPower => Body(new WeaponPowerTooltipRequest { ShowIcon = icon, Hero = hero }),
             _ => null,
         });
@@ -318,10 +317,10 @@ public sealed class CodexViewService(
             or nameof(CreatureDocument.Agility),
         RadianceDocument => property == nameof(RadianceDocument.Attribute),
         ItemDocument => property is nameof(ItemDocument.Rarity) or nameof(ItemDocument.Rarities)
-            or nameof(ItemDocument.RuleSet) or nameof(ItemDocument.TraitTree),
+            or nameof(ItemDocument.RuleSet) or nameof(ItemDocument.AttunementTree),
         CurrencyDocument => property == nameof(CurrencyDocument.Rarity),
         MountDocument => property == nameof(MountDocument.Rarity),
-        ItemTraitDocument => property == nameof(ItemTraitDocument.CategoryTag),
+        AugmentationDocument => property == nameof(AugmentationDocument.CategoryTag),
         GemDocument => property == nameof(GemDocument.Rarity),
         HeroDocument => property is nameof(HeroDocument.Title) or nameof(HeroDocument.Color)
             or nameof(HeroDocument.Biography) or nameof(HeroDocument.Playstyle)

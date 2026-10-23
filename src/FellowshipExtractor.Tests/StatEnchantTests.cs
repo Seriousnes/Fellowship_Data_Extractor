@@ -17,7 +17,7 @@ public sealed class StatEnchantTests
 
         Assert.Equal(6, Enchants.Select(enchant => enchant.Id).Distinct().Count());
         Assert.DoesNotContain(
-            EntityStoreCorpusTests.Store.Entities.OfType<ItemTraitDocument>().Where(trait => trait is not EnchantDocument), trait => trait.CategoryTag == Category);
+            EntityStoreCorpusTests.Store.Entities.OfType<AugmentationDocument>().Where(augmentation => augmentation is not EnchantDocument), augmentation => augmentation.CategoryTag == Category);
 
         foreach (var versions in Enchants.GroupBy(enchant => enchant.Id))
         {
@@ -59,14 +59,13 @@ public sealed class StatEnchantTests
     }
 
     [Fact]
-    public void AnEnchantIsNamedByTheNameItsFunctionPrintsAndItsPowerByTheSameStat()
+    public void AnEnchantIsNamedByTheNameItsFunctionPrints()
     {
         var sphinx = Enchants.Single(enchant => enchant.Id == 69 && enchant.PrimaryStat == PrimaryStat.Intellect);
 
         Assert.Equal("Sphinx's Cunning", sphinx.Name);
-        Assert.Equal(sphinx.Name, sphinx.Power!.Name);
         Assert.DoesNotContain(EntityStoreCorpusTests.Store.Entities, document => document.Name?.Contains(" / ") is true &&
-            document is EnchantDocument or TraitPowerDocument { PrimaryStat: not null } or EffectDocument { PrimaryStat: not null });
+            document is EnchantDocument or EffectDocument { PrimaryStat: not null });
     }
 
     [Fact]
@@ -85,9 +84,9 @@ public sealed class StatEnchantTests
     }
 
     [Fact]
-    public void TheEnchantCardTextIsTheTraitTooltipWidgetsOwn()
+    public void TheEnchantCardTextIsTheAugmentationTooltipWidgetsOwn()
     {
-        var text = Export.Loaded.Settings.TraitTooltip!;
+        var text = Export.Loaded.Settings.AugmentationTooltip!;
 
         Assert.Equal("Equipped Rank", text.EquippedRank);
         Assert.Equal("Rank Sources", text.RankSources);

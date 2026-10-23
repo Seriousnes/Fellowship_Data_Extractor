@@ -33,7 +33,7 @@ public sealed class ItemSlotNames
     private readonly Dictionary<string, string> _printed = new(StringComparer.Ordinal);
 
     public IReadOnlyList<ItemTypeText> Printed =>
-        [.. _byOrdinal.OrderBy(entry => entry.Key).Select(entry => new ItemTypeText(entry.Value.Type, _printed[entry.Value.Type]))];
+        [.. _byOrdinal.OrderBy(entry => entry.Key).Select(entry => new ItemTypeText(entry.Value.Type, _printed[entry.Value.Type], entry.Value.Shipped))];
 
     public ItemSlotNames(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {

@@ -35,7 +35,7 @@ public sealed record Entity
 
     public string? RuleSet { get; init; }
 
-    public string? TraitTree { get; init; }
+    public string? AttunementTree { get; init; }
 
     public IReadOnlyList<string>? Rarities { get; init; }
 
@@ -151,9 +151,9 @@ public sealed record Entity
 
     public int? Replaces { get; init; }
 
-    public string? TraitCategoryTag { get; init; }
+    public string? AugmentationCategoryTag { get; init; }
 
-    public string? TraitCategory { get; init; }
+    public string? AugmentationCategory { get; init; }
 
     public int? MaxRank { get; init; }
 
@@ -167,7 +167,7 @@ public sealed record Entity
 
     public IReadOnlyDictionary<string, string>? NameByPrimaryStat { get; init; }
 
-    public IReadOnlyList<TraitStat>? TraitStats { get; init; }
+    public IReadOnlyList<EnchantStat>? EnchantStats { get; init; }
 
     public int? RandomChance { get; init; }
 

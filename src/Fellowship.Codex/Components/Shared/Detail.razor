@@ -12,9 +12,9 @@
         EntityType.Item => typeof(Views.Item),
         EntityType.Creature => typeof(Views.Creature),
         EntityType.Dungeon => typeof(Views.Dungeon),
-        EntityType.Sigil or EntityType.Aspect or EntityType.ProtectiveEnchant or EntityType.Enchant => typeof(Views.ItemTrait),
+        EntityType.Sigil or EntityType.Aspect or EntityType.ProtectiveEnchant or EntityType.Enchant => typeof(Views.Augmentation),
         EntityType.TalentSlot => typeof(Views.TalentSlot),
-        EntityType.GemTrait => typeof(Views.GemTrait),
+        EntityType.GemAbility => typeof(Views.GemAbility),
         EntityType.Hero => typeof(Views.Hero),
         _ => typeof(EntityView),
     };

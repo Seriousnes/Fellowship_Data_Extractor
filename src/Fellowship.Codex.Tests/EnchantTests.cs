@@ -23,7 +23,7 @@ public sealed class EnchantTests(Export export)
 
         Assert.All(Enchanted, enchant =>
         {
-            var granted = TraitRanks.Granted(enchant, Settings, itemLevel).ToArray();
+            var granted = AugmentationRanks.Granted(enchant, Settings, itemLevel).ToArray();
 
             Assert.Equal(2, granted.Length);
             Assert.All(granted, stat => Assert.Equal(magnitude, stat.Value));
@@ -34,14 +34,14 @@ public sealed class EnchantTests(Export export)
     public void A_stat_an_enchant_grants_at_no_coefficient_draws_no_line() =>
         Assert.All(Enchanted, enchant => Assert.Equal(
             enchant.Stats!.Count(stat => stat.Coefficient != 0),
-            TraitRanks.Granted(enchant, Settings, Settings.Items.MaxItemLevel).Count()));
+            AugmentationRanks.Granted(enchant, Settings, Settings.Items.MaxItemLevel).Count()));
 
     [Theory]
     [InlineData(1, 3)]
     [InlineData(150, 4)]
     [InlineData(300, 5)]
     public void An_enchant_row_reads_one_below_the_power_its_item_level_gives(int itemLevel, int printed) =>
-        Assert.Equal(printed, TraitRanks.RowValue(Settings, itemLevel));
+        Assert.Equal(printed, AugmentationRanks.RowValue(Settings, itemLevel));
 
     [Fact]
     public void An_enchant_on_the_item_adds_its_stats_to_the_stat_block()
@@ -52,12 +52,12 @@ public sealed class EnchantTests(Export export)
             .First(row => row.Stats is { Count: > 0 } && row.Hero is not null);
 
         var plain = new TooltipQuery { ItemLevel = 300 };
-        var enchanted = plain with { Modifiers = [new ItemModifier(ItemCraft.KindOfTrait(enchant, Settings)!.Value, enchant.Id, 1)] };
+        var enchanted = plain with { Modifiers = [new ItemModifier(ItemCraft.KindOfAugmentation(enchant, Settings)!.Value, enchant.Id, 1)] };
 
         var before = export.Tooltip.Rolls(item, plain, null);
         var after = export.Tooltip.Rolls(item, enchanted, null);
 
-        foreach (var (stat, value) in TraitRanks.Granted(enchant, Settings, 300))
+        foreach (var (stat, value) in AugmentationRanks.Granted(enchant, Settings, 300))
         {
             var was = before.SingleOrDefault(line => line.Stat == stat)?.Value ?? 0m;
             var line = after.Single(row => row.Stat == stat);
@@ -74,9 +74,9 @@ public sealed class EnchantTests(Export export)
         var item = export.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 });
 
         var rolled = export.Tooltip.Rolls(
-            item, new TooltipQuery { ItemLevel = 300, Modifiers = [new ItemModifier(ItemCraft.KindOfTrait(enchant, Settings)!.Value, enchant.Id, 1)] }, null);
+            item, new TooltipQuery { ItemLevel = 300, Modifiers = [new ItemModifier(ItemCraft.KindOfAugmentation(enchant, Settings)!.Value, enchant.Id, 1)] }, null);
         var attuned = export.Tooltip.Rolls(
-            item, new TooltipQuery { ItemLevel = 300, ImbuedTraits = [new ImbuedTrait(enchant.Id, 1)] }, null);
+            item, new TooltipQuery { ItemLevel = 300, Attunements = [new Attunement(enchant.Id, 1)] }, null);
 
         Assert.Equal(rolled.Select(line => (line.Stat, line.Value)), attuned.Select(line => (line.Stat, line.Value)));
     }
@@ -86,7 +86,7 @@ public sealed class EnchantTests(Export export)
     {
         var item = export.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 });
         var sigil = export.Store.Entities.OfType<SigilDocument>()
-            .First(trait => !TraitRanks.IsEnchant(trait) && ItemCraft.KindOfTrait(trait, Settings) is not null);
+            .First(augmentation => !AugmentationRanks.IsEnchant(augmentation) && ItemCraft.KindOfAugmentation(augmentation, Settings) is not null);
         var glyph = export.Store.Entities.OfType<GlyphDocument>().First();
         var gem = export.Store.Entities.OfType<RadianceDocument>().First();
 
@@ -95,8 +95,8 @@ public sealed class EnchantTests(Export export)
             ItemLevel = 300,
             Modifiers =
             [
-                new ItemModifier(ItemCraft.KindOfTrait(Enchanted[0], Settings)!.Value, Enchanted[0].Id, 1),
-                new ItemModifier(ItemCraft.KindOfTrait(sigil, Settings)!.Value, sigil.Id, 3),
+                new ItemModifier(ItemCraft.KindOfAugmentation(Enchanted[0], Settings)!.Value, Enchanted[0].Id, 1),
+                new ItemModifier(ItemCraft.KindOfAugmentation(sigil, Settings)!.Value, sigil.Id, 3),
                 new ItemModifier(ItemCraft.KindOfSlotType(CraftSlots.AbilityRank, Settings)!.Value, glyph.Id, 3),
                 new ItemModifier(ItemCraft.KindOfSlotType(CraftSlots.GemPower, Settings)!.Value, gem.Id, 40),
             ],
@@ -121,23 +121,48 @@ public sealed class EnchantTests(Export export)
     [Fact]
     public void A_sigil_card_reads_its_category_text_and_its_description_at_the_equipped_rank()
     {
-        var sigil = export.Store.Entities.OfType<SigilDocument>().First(trait => trait.RankRuns is { Count: > 0 });
+        var sigil = export.Store.Entities.OfType<SigilDocument>().First(augmentation => augmentation.RankRuns is { Count: > 0 });
         var run = sigil.RankRuns![0];
-        var query = new TooltipQuery { RankSources = ["Head", "Necklace"] };
+        var query = new TooltipQuery { RankSources = ["Head", "Weapon"] };
 
-        Assert.Equal(("Sigil", "Augmentation"), (TraitRanks.Category(Settings, sigil).Heading, TraitRanks.Category(Settings, sigil).Band));
-        Assert.Equal(2, TraitRanks.Rank(Settings, query, sigil));
+        Assert.Equal(("Sigil", "Augmentation"), (AugmentationRanks.Category(Settings, sigil).Heading, AugmentationRanks.Category(Settings, sigil).Band));
+        Assert.Equal(2, AugmentationRanks.Rank(export.Store, query, sigil));
 
-        var described = TraitRanks.Description(sigil, 2)!;
+        var described = AugmentationRanks.Description(sigil, 2)!;
         Assert.Contains(run.Printed[1], described, StringComparison.Ordinal);
         Assert.DoesNotContain(run.Literal, described, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void The_equipped_rank_sums_one_items_rank_per_source_at_the_item_level()
+    public void Each_rank_source_adds_one_items_rank_at_the_highest_item_level()
     {
-        Assert.Equal(10, TraitRanks.Rank(Settings, new TooltipQuery { RankSources = ["Head", "Necklace"], ItemLevel = 200 }));
-        Assert.Equal(6, TraitRanks.Rank(Settings, new TooltipQuery()));
-        Assert.Equal(["Head"], TraitRanks.Sources(Settings, new TooltipQuery()).Select(source => source.Type));
+        var enchant = Enchanted[0];
+        var perItem = AugmentationRanks.Power(Settings, Settings.Items.MaxItemLevel);
+
+        Assert.Equal(2 * perItem, AugmentationRanks.Rank(export.Store, new TooltipQuery { RankSources = ["Head", "Necklace"] }, enchant));
+        Assert.Equal(perItem, AugmentationRanks.Rank(export.Store, new TooltipQuery(), enchant));
+        Assert.Equal(["Head"], AugmentationRanks.Sources(export.Store, new TooltipQuery(), enchant).Select(source => source.Type));
+    }
+
+    [Fact]
+    public void A_stated_equipped_rank_outranks_the_sources_and_stops_at_the_max_rank()
+    {
+        var sigil = export.Store.Entities.OfType<SigilDocument>().First();
+
+        Assert.Equal(3, AugmentationRanks.Rank(export.Store, new TooltipQuery { EquippedTier = 3 }, sigil));
+        Assert.Equal(sigil.MaxRank, AugmentationRanks.Rank(export.Store, new TooltipQuery { EquippedTier = 99 }, sigil));
+    }
+
+    [Fact]
+    public void Only_a_gear_slot_whose_items_can_carry_the_augmentation_is_a_rank_source()
+    {
+        string[] Carriers<T>() where T : AugmentationDocument =>
+            [.. AugmentationRanks.Carriers(export.Store, export.Store.Entities.OfType<T>().First()).Select(type => type.Type)];
+
+        Assert.DoesNotContain("Charm", Carriers<EnchantDocument>());
+        Assert.Contains("Weapon", Carriers<EnchantDocument>());
+        Assert.Equal(["Necklace"], Carriers<ProtectiveEnchantDocument>());
+        Assert.Contains("Weapon", Carriers<SigilDocument>());
+        Assert.DoesNotContain("Necklace", Carriers<SigilDocument>());
     }
 }

@@ -43,7 +43,7 @@ body {
 
 @scope (body) to (.fx-tip) {
 
-  @include crest.blessing-crest;
+  @include crest.glyph-crest;
   @include crest.slot-chrome;
 
   *, *::before, *::after { box-sizing: border-box; }

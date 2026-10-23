@@ -16,7 +16,7 @@ public static class ApiEndpoints
         app.MapEffect();
         app.MapGem();
         app.MapEnchant();
-        app.MapGemTrait();
+        app.MapGemAbility();
         app.MapItem();
         app.MapLegendaryPower();
         app.MapRelicPassive();
@@ -26,7 +26,6 @@ public static class ApiEndpoints
         app.MapSigil();
         app.MapAspect();
         app.MapProtectiveEnchant();
-        app.MapTraitPower();
         app.MapWeaponPower();
     }
 }

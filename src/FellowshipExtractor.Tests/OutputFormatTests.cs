@@ -75,7 +75,7 @@ public sealed class OutputFormatTests
                 {
                     Id = 7788,
                     Name = "Searing Blaze",
-                    NameBorrowedFrom = new EntityReference(EntityType.GemTrait, 4321, null),
+                    NameBorrowedFrom = new EntityReference(EntityType.GemAbility, 4321, null),
                 },
                 default);
         }
@@ -88,7 +88,7 @@ public sealed class OutputFormatTests
 
         var reference = document.RootElement.GetProperty("nameBorrowedFrom");
 
-        Assert.Equal("gem-trait", reference.GetProperty("type").GetString());
+        Assert.Equal("gem-ability", reference.GetProperty("type").GetString());
         Assert.Equal(4321, reference.GetProperty("id").GetInt32());
     }
 

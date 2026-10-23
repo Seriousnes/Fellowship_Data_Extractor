@@ -38,17 +38,17 @@
                             <a href="@Falloff">Multi-Target Damage Falloff</a>
                         </li>
                         <li class="cx-menu-row">
-                            <a href="@TraitTreePage">Trait Trees</a>
+                            <a href="@AttunementTreePage">Attunement Trees</a>
                             <details class="cx-menu-fly" name="cx-fly-tools">
-                                <summary class="cx-menu-more" aria-label="Trait Trees by slot"></summary>
+                                <summary class="cx-menu-more" aria-label="Attunement Trees by slot"></summary>
                                 <div class="cx-menu-fly-panel">
                                     <div class="cx-menu-sec">
                                         <p class="cx-menu-sec-head">Slot</p>
                                         <ul>
-                                            @foreach (var (slot, _) in TraitTrees.BySlot(Ui.Store))
+                                            @foreach (var (slot, _) in AttunementTrees.BySlot(Ui.Store))
                                             {
                                                 <li>
-                                                    <a href="@TraitTreePage?slot=@Uri.EscapeDataString(slot)">@slot</a>
+                                                    <a href="@AttunementTreePage?slot=@Uri.EscapeDataString(slot)">@slot</a>
                                                 </li>
                                             }
                                         </ul>
@@ -90,7 +90,7 @@
 
     private const string Falloff = "/tools/multi-target-falloff";
 
-    private const string TraitTreePage = "/tools/trait-trees";
+    private const string AttunementTreePage = "/tools/attunement-trees";
 
     private RenderFragment? Flyout(MenuLink link, string group) =>
         link.Sections.Count == 0

@@ -38,15 +38,15 @@ public sealed class Settings
 
     public IReadOnlyDictionary<string, string> SectionHeadingRows { get; }
 
-    public TraitNodeColorRows TraitNodeColorRows { get; }
+    public AttunementNodeColorRows AttunementNodeColorRows { get; }
 
-    public IEnumerable<string> TraitTreeTextures => _traitTrees.Layouts.Textures;
+    public IEnumerable<string> AttunementTreeTextures => _attunementTrees.Layouts.Textures;
 
     public IReadOnlyDictionary<string, IReadOnlyList<TemperCeiling>> MaxTempers { get; }
 
     public IReadOnlyList<DropItemLevel> DropItemLevels { get; }
 
-    public BlessingEntry Blessings { get; }
+    public GlyphEntry Glyphs { get; }
 
     public DifficultyScaling DifficultyScaling { get; }
 
@@ -73,9 +73,9 @@ public sealed class Settings
 
     public EmptyModifierSlot EmptyModifierSlot { get; }
 
-    public string TraitTreeHeader { get; }
+    public string AttunementTreeHeader { get; }
 
-    public TraitTooltipText TraitTooltip { get; }
+    public AugmentationTooltipText AugmentationTooltip { get; }
 
     public AbilityTooltipText AbilityTooltip { get; }
 
@@ -94,21 +94,21 @@ public sealed class Settings
         SectionHeadingRows headings,
         TemperCeilings tempers,
         DropItemLevels drops,
-        Blessings blessings,
+        GlyphWording glyphs,
         CreatureStats creatures,
         Leagues leagues,
         ItemSettings items,
         StatEnchants enchants,
-        ItemTraitTrees traitTrees,
+        AttunementTrees attunementTrees,
         ModifierRecipes recipes,
         TooltipWidgetText widgetText,
         AbilityTooltipTexts abilityTooltip)
     {
-        _traitTrees = traitTrees;
+        _attunementTrees = attunementTrees;
         ModifierTypes = recipes.Types;
         EmptyModifierSlot = widgetText.EmptySlot;
-        TraitTreeHeader = widgetText.TraitTreeHeader;
-        TraitTooltip = widgetText.TraitTooltip;
+        AttunementTreeHeader = widgetText.AttunementTreeHeader;
+        AugmentationTooltip = widgetText.AugmentationTooltip;
         AbilityTooltip = abilityTooltip.Text;
         var scoring = new DungeonScoring(provider, [.. creatures.Scaling.Health.Keys]);
 
@@ -128,7 +128,7 @@ public sealed class Settings
         TalentTierPlates = tierPlates.ByRow;
         MaxTempers = tempers.ByRarity;
         DropItemLevels = drops.Levels;
-        Blessings = blessings.Wording;
+        Glyphs = glyphs.Wording;
 
         var colours = Colours(provider, assets);
         var moved = HeroRows(colours, heroes);
@@ -139,11 +139,11 @@ public sealed class Settings
         Resolvable(RarityColorRows, colours, colorRows.Source);
         Resolvable(SectionHeadingRows, colours, headings.Source);
 
-        TraitNodeColorRows = traitTrees.Layouts.Colors;
+        AttunementNodeColorRows = attunementTrees.Layouts.Colors;
         Resolvable(
-            new Dictionary<string, string>(TraitNodeColorRows.ByCategory) { [string.Empty] = TraitNodeColorRows.Otherwise },
+            new Dictionary<string, string>(AttunementNodeColorRows.ByCategory) { [string.Empty] = AttunementNodeColorRows.Otherwise },
             colours,
-            $"{TraitTreeLayouts.NodeWidget}.{TraitTreeLayouts.ColorFunction}");
+            $"{AttunementTreeLayouts.NodeWidget}.{AttunementTreeLayouts.ColorFunction}");
 
         Heroes =
         [
@@ -183,7 +183,7 @@ public sealed class Settings
 
     private readonly Dictionary<string, HeroEntry> _heroByName;
 
-    private readonly ItemTraitTrees _traitTrees;
+    private readonly AttunementTrees _attunementTrees;
 
     private readonly Dictionary<string, string> _portraitByHero;
 
@@ -200,16 +200,16 @@ public sealed class Settings
         GemTypes = GemTypes,
         MaxTempers = MaxTempers,
         DropItemLevels = DropItemLevels,
-        Blessings = Blessings,
+        Glyphs = Glyphs,
         DifficultyScaling = DifficultyScaling,
         MultiTargetDamageFalloff = MultiTargetDamageFalloff,
         LeagueKinds = LeagueKinds,
         Leagues = Leagues,
-        TraitTrees = _traitTrees.NamedTrees,
-        TraitNodeUpgradeCosts = _traitTrees.UpgradeCosts,
-        TraitNodeColorRows = TraitNodeColorRows,
-        TraitTreeHeader = TraitTreeHeader,
-        TraitTooltip = TraitTooltip,
+        AttunementTrees = _attunementTrees.NamedTrees,
+        AttunementNodeUpgradeCosts = _attunementTrees.UpgradeCosts,
+        AttunementNodeColorRows = AttunementNodeColorRows,
+        AttunementTreeHeader = AttunementTreeHeader,
+        AugmentationTooltip = AugmentationTooltip,
         AbilityTooltip = AbilityTooltip,
         ModifierTypes = ModifierTypes,
         EmptyModifierSlot = EmptyModifierSlot,

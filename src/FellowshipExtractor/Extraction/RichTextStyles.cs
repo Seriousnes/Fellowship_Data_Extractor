@@ -47,7 +47,7 @@ public sealed class RichTextStyles
                 AbilityPresentationIndex.PackagePath(descriptionStyleSet), out var described))
         {
             throw new InvalidOperationException(
-                $"{descriptionStyleSet} does not load, so the tags a trait description names have no style.");
+                $"{descriptionStyleSet} does not load, so the tags a augmentation description names have no style.");
         }
 
         foreach (var (rowName, row) in described.RowMap)

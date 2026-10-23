@@ -23,7 +23,7 @@ public sealed class ItemDocument : EntityDocument
 
     public string? RuleSet { get; init; }
 
-    public string? TraitTree { get; init; }
+    public string? AttunementTree { get; init; }
 
     public string? Description { get; init; }
 
