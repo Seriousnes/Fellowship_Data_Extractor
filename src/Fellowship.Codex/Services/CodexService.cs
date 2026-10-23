@@ -75,7 +75,7 @@ public sealed class CodexService : ICodexService
             new Facet("slot", "Slot", document => document switch
             {
                 ItemDocument item => One(item.Slot),
-                BlessingDocument { Slots: { } slots } => slots,
+                GlyphDocument { Slots: { } slots } => slots,
                 _ => [],
             })
             {
@@ -123,18 +123,15 @@ public sealed class CodexService : ICodexService
 
             new Facet("gem", "Gem type", document => One(document switch
             {
-                GemTypeDocument gem => gem.Type.ToString(),
+                RadianceDocument gem => gem.Type.ToString(),
                 GemDocument gem => gem.Type.ToString(),
-                GemTraitDocument trait => trait.Gem.ToString(),
+                GemAbilityDocument gem => gem.Gem.ToString(),
                 _ => null,
             }))
             {
                 Colour = (t, value) => t.Gem(value),
                 Primary = true,
             },
-
-            new Facet("trait", "Trait category", document =>
-                One(document is TraitDocument { Category: { } category } ? category : null)) { Primary = true },
 
             new Facet("rarity", "Rarity", document => document switch
             {
@@ -187,7 +184,7 @@ public sealed class CodexService : ICodexService
             },
             new Measure("cost", "Cost", document => DocumentFields.Number(document, nameof(AbilityDocument.Cost))),
             new Measure("charges", "Charges", document => DocumentFields.Number(document, nameof(AbilityDocument.Charges))),
-            new Measure("rank", "Max rank", document => DocumentFields.Number(document, nameof(TraitDocument.MaxRank))),
+            new Measure("rank", "Max rank", document => DocumentFields.Number(document, nameof(AugmentationDocument.MaxRank))),
 
             new Measure("id", "ID", document => (double?)document.Id),
         ];
@@ -215,7 +212,7 @@ public sealed class CodexService : ICodexService
             new Sorting("rank", "Rank", document => document switch
             {
                 CreatureDocument { Rank: { } rank } => (int)rank,
-                _ => DocumentFields.Number(document, nameof(TraitDocument.MaxRank)),
+                _ => DocumentFields.Number(document, nameof(AugmentationDocument.MaxRank)),
             }),
 
             new Sorting("health", "Health", document => (document as CreatureDocument)?.Health),
@@ -241,13 +238,13 @@ public sealed class CodexService : ICodexService
 
             new Sorting("gem", "Gem type", document => document switch
             {
-                GemTypeDocument gem => gem.Type.ToString(),
+                RadianceDocument gem => gem.Type.ToString(),
                 GemDocument gem => gem.Type.ToString(),
-                GemTraitDocument trait => trait.Gem.ToString(),
+                GemAbilityDocument gem => gem.Gem.ToString(),
                 _ => null,
             }),
 
-            new Sorting("power", "Power required", document => (document as GemTraitDocument)?.RequiredPower),
+            new Sorting("power", "Power required", document => (document as GemAbilityDocument)?.RequiredPower),
 
             new Sorting("tier", "Tier", document => document switch
             {
@@ -271,7 +268,7 @@ public sealed class CodexService : ICodexService
                 _ => null,
             }),
 
-            new Sorting("category", "Category", document => (document as TraitDocument)?.Category),
+            new Sorting("category", "Category", document => (document as AugmentationDocument)?.Category),
         ];
 
         var counts = store.Entities

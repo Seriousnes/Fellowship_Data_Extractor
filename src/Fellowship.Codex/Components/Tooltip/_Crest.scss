@@ -85,8 +85,8 @@ $node-well-upper: $node-well-top + $node-well-shoulder;
 $node-well-lower: $node-well-bottom - $node-well-shoulder;
 $node-texture-share: math.percentage(math.div($node-well-height, $node-brush-width));
 
-@mixin blessing-crest {
-  .fx-blessing-crest {
+@mixin glyph-crest {
+  .fx-glyph-crest {
     position: relative;
     display: block;
     margin: 0;
@@ -108,8 +108,8 @@ $node-texture-share: math.percentage(math.div($node-well-height, $node-brush-wid
   }
 }
 
-@mixin trait-crest {
-  .fx-trait-crest {
+@mixin augmentation-crest {
+  .fx-augmentation-crest {
     position: relative;
     display: block;
     margin: 0;

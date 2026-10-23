@@ -20,19 +20,19 @@ public sealed class LegendaryStatTests
     }
 
     [Fact]
-    public void BloodOfTheUndyingHasNoNetIdAndGoesOnTheItemByName()
+    public void BloodOfTheUndyingIsALegendaryStatEveryLegendaryItemNames()
     {
+        var blood = EntityStoreCorpusTests.Store.Entities.OfType<LegendaryStatDocument>()
+            .Where(stat => stat.Name == "Blood of the Undying")
+            .Select(stat => stat.Id)
+            .ToHashSet();
+
+        Assert.NotEmpty(blood);
+
         Assert.All(Legendaries, item =>
         {
-            var untagged = Assert.Single(item.UntaggedLegendaryStats!);
-
-            Assert.Equal("Blood of the Undying", untagged.Name);
-            Assert.Equal("+10% Maximum Health", untagged.Description);
-            Assert.InRange(untagged.Position, 0, 2);
+            Assert.Null(item.UntaggedLegendaryStats);
+            Assert.Contains(item.LegendaryStats!, stat => blood.Contains(stat.Id));
         });
-
-        Assert.DoesNotContain(
-            EntityStoreCorpusTests.Store.Entities.OfType<LegendaryStatDocument>(),
-            stat => stat.Name == "Blood of the Undying");
     }
 }

@@ -46,7 +46,7 @@ public sealed record ItemSlotDefinition(string SlotType, int MinimumItemLevel)
 {
     public IReadOnlyList<string> GemPowerPool { get; init; } = [];
 
-    public IReadOnlyList<string> ItemTraitPool { get; init; } = [];
+    public IReadOnlyList<string> AugmentationPool { get; init; } = [];
 }
 
 public sealed record ModifierTypeEntry(string Name)
@@ -65,6 +65,22 @@ public sealed record ModifierTypeEntry(string Name)
 }
 
 public sealed record EmptyModifierSlot(string Sign, string Text);
+
+public sealed record AugmentationTooltipText(
+    string EquippedRank,
+    string RankSources,
+    string GearSlot,
+    string RanksOpen,
+    string RanksClose)
+{
+    public IReadOnlyList<ItemTypeText> ItemTypes { get; init; } = [];
+
+    public IReadOnlyList<AugmentationCategoryText> Categories { get; init; } = [];
+}
+
+public sealed record AugmentationCategoryText(string? CategoryTag, string Heading, string Band);
+
+public sealed record ItemTypeText(string Type, string Printed, string Slot);
 
 public sealed record ModifierRecipe(string Recipe, int SlotIndex)
 {

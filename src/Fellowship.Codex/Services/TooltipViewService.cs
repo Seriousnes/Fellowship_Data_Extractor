@@ -13,7 +13,7 @@ public interface ITooltipViewService
 {
     IChromeAssetService Chrome { get; }
 
-    BlessingEntry Blessings { get; }
+    GlyphEntry Glyphs { get; }
 
     RarityEntry? Rarity(EntityDocument document, TooltipQuery query);
 
@@ -79,7 +79,7 @@ public sealed class TooltipViewService(
 
     public IChromeAssetService Chrome => chrome;
 
-    public BlessingEntry Blessings => store.Settings.Blessings;
+    public GlyphEntry Glyphs => store.Settings.Glyphs;
 
     public RarityEntry? Rarity(EntityDocument document, TooltipQuery query)
     {
@@ -346,25 +346,24 @@ public sealed class TooltipViewService(
         foreach (var modifier in query.Modifiers)
         {
             var type = TooltipView.TypeOf(modifier.Kind, store.Settings);
-            var row = store.All(type, modifier.Id).FirstOrDefault();
+            var row = AugmentationTypes.Is(type)
+                ? TooltipView.Augmentation(store, modifier.Id, wearer)
+                : store.All(type, modifier.Id).FirstOrDefault();
 
             lines.Add(new TooltipView.ModifierLine(
                 modifier.Kind,
                 ItemCraft.Defining(modifier.Kind, row, store.Settings),
                 TooltipView.Header(modifier.Kind, store.Settings),
-                row is null
-                    ? modifier.Id.ToString(CultureInfo.InvariantCulture)
-                    : TooltipView.PrintedFor(row, wearer) ?? PublicTypes.NameOf(row),
+                row is null ? modifier.Id.ToString(CultureInfo.InvariantCulture) : PublicTypes.NameOf(row),
                 type switch
                 {
-                    TooltipView.TraitType => row is not null && Enchants.Is(row)
-                        ? TooltipView.Plus(Enchants.RowValue(store.Settings, level))
-                        : null,
-                    EntityType.Blessing => TooltipView.GlyphRowValue,
+                    EntityType.Enchant => TooltipView.Plus(AugmentationRanks.RowValue(store.Settings, level)),
+                    EntityType.Sigil or EntityType.Aspect or EntityType.ProtectiveEnchant => null,
+                    EntityType.Glyph => TooltipView.GlyphRowValue,
                     _ => TooltipView.Plus(modifier.Amount),
                 })
             {
-                Tone = row is GemTypeDocument gem ? tokens.Gem(gem.Type.ToString()) : null,
+                Tone = row is RadianceDocument gem ? tokens.Gem(gem.Type.ToString()) : null,
             });
         }
 
@@ -395,17 +394,16 @@ public sealed class TooltipViewService(
             rarity,
             level,
             query,
-            [.. Enchanted(query).SelectMany(enchant => Enchants.Granted(enchant, store.Settings, level))]);
+            [.. Enchanted(query).SelectMany(enchant => AugmentationRanks.Granted(enchant, store.Settings, level))]);
     }
 
-    private IEnumerable<TraitDocument> Enchanted(TooltipQuery query) =>
+    private IEnumerable<EnchantDocument> Enchanted(TooltipQuery query) =>
         query.Modifiers
-            .Where(modifier => TooltipView.TypeOf(modifier.Kind, store.Settings) == TooltipView.TraitType)
+            .Where(modifier => TooltipView.TypeOf(modifier.Kind, store.Settings) == EntityType.Enchant)
             .Select(modifier => modifier.Id)
-            .Concat(query.ImbuedTraits.Select(attuned => attuned.Id))
-            .Select(id => store.All(TooltipView.TraitType, id).OfType<TraitDocument>().FirstOrDefault())
-            .OfType<TraitDocument>()
-            .Where(Enchants.Is);
+            .Concat(query.Attunements.Select(attuned => attuned.Id))
+            .Select(id => TooltipView.Augmentation(store, id, query.Hero))
+            .OfType<EnchantDocument>();
 
     public MarkupString Text(
         string source,
@@ -468,7 +466,7 @@ public sealed class TooltipViewService(
     private static string Heading(string section, Badge badge) =>
         badge.Colour is { } hex ? $"--fx-{section}:{hex};" : string.Empty;
 
-    public bool DrawsState(EntityDocument document) => document is BlessingDocument or TraitDocument;
+    public bool DrawsState(EntityDocument document) => document is GlyphDocument or AugmentationDocument;
 
     public EntityDocument? Granted(EntityDocument document) =>
         document is ItemDocument { Grants: { } power } && store.All(power.Type, power.Id) is { Count: > 0 } readings

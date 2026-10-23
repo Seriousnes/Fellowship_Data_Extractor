@@ -4,7 +4,7 @@ public sealed class TypeResolver(
     IReadOnlyList<TagRecord> tags,
     TalentTrees talents,
     GemDefinitions gems,
-    ItemTraits traits,
+    AugmentationRows augmentations,
     GrantedAbilityMappings mappings,
     DungeonNames dungeons,
     ProgressionItems progression,
@@ -29,7 +29,7 @@ public sealed class TypeResolver(
         ("/Game/Abilities/RelicPowers/", EntityType.RelicPower),
         ("/Game/Items/RelicPassives/", EntityType.RelicPassive),
         ("/Game/Abilities/Weapons/", EntityType.WeaponPower),
-        ("/Game/Abilities/Finesses/", EntityType.Blessing),
+        ("/Game/Abilities/Finesses/", EntityType.Glyph),
         ("/Game/Abilities/LegendaryStats/", EntityType.LegendaryStat),
     ];
 
@@ -46,7 +46,6 @@ public sealed class TypeResolver(
         ["GameplayAbility"] = EntityType.Ability,
         ["GameplayEffect"] = EntityType.Effect,
         ["CRAICharacter"] = EntityType.Creature,
-        [ItemTraits.Table] = EntityType.Trait,
         [ModifierInfo.Table] = EntityType.Modifier,
     };
 
@@ -74,14 +73,24 @@ public sealed class TypeResolver(
             return heroes.ForTag(tag.Name) is not null ? EntityType.Hero : null;
         }
 
+        if (tag.Table.Equals(AugmentationRows.Table, StringComparison.OrdinalIgnoreCase))
+        {
+            return entity.AugmentationCategoryTag is { } category && AugmentationTypes.ByCategory.TryGetValue(category, out var type)
+                ? type
+                : null;
+        }
+
         return Tables.TryGetValue(tag.Table, out var table) ? table : null;
     }
 
     private EntityType? Augmentation(TagRecord tag, Entity entity, string? packageName)
     {
         if (talents.ForAugmentation(tag.Name) is not null) return EntityType.Talent;
-        if (entity.GemNode is not null || gems.ForAugmentation(tag.Name) is not null) return EntityType.GemTrait;
-        if (traits.PointsAt(tag.NetId)) return EntityType.TraitPower;
+        if (entity.GemNode is not null || gems.ForAugmentation(tag.Name) is not null) return EntityType.GemAbility;
+        if (augmentations.ForAugmentation(tag.NetId) is { CategoryTag: { } category })
+        {
+            return AugmentationTypes.ByCategory.TryGetValue(category, out var granting) ? granting : null;
+        }
 
         foreach (var (folder, type) in Folders)
         {
@@ -98,7 +107,7 @@ public sealed class TypeResolver(
 
         if (segments[1].Equals("GemType", StringComparison.OrdinalIgnoreCase))
         {
-            return entity.GemTier is not null ? EntityType.Gem : EntityType.GemType;
+            return entity.GemTier is not null ? EntityType.Gem : EntityType.Radiance;
         }
 
         if (segments[1].Equals(ProgressionItems.Segment, StringComparison.OrdinalIgnoreCase))

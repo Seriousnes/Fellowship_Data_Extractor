@@ -1,0 +1,25 @@
+<div class="cx-slider">
+    <span>@Caption</span>
+    <div class="cx-slider-row">
+        <input type="range" min="@Min" max="@Max" step="1" value="@Value" aria-label="@Caption"
+               data-knob="@Key" @onchange="Changed" />
+        <input type="number" min="@Min" max="@Max" step="1" value="@Value" inputmode="numeric"
+               aria-label="@Caption" @onchange="Changed" />
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Caption { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public string Key { get; set; } = string.Empty;
+
+    [Parameter] public int Min { get; set; } = 1;
+
+    [Parameter] public int Max { get; set; } = 1;
+
+    [Parameter] public int Value { get; set; }
+
+    [Parameter] public EventCallback<string?> OnChange { get; set; }
+
+    private Task Changed(ChangeEventArgs change) => OnChange.InvokeAsync(change.Value?.ToString());
+}

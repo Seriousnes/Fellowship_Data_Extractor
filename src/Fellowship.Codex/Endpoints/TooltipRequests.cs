@@ -15,7 +15,7 @@ public static class TooltipRequests
             Difficulty = request?.Difficulty,
         };
 
-    public static TooltipQuery Read(BlessingTooltipRequest? request, out string? error) =>
+    public static TooltipQuery Read(GlyphTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error) with
         {
             EquippedTier = request?.EquippedTier,
@@ -41,7 +41,10 @@ public static class TooltipRequests
 
     public static TooltipQuery Read(
         EffectTooltipRequest? request, IEntityStoreService store, out string? error) =>
-        Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error);
+        Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error) with
+        {
+            Hero = StatQuery.NullIfEmpty(request?.Hero),
+        };
 
     public static TooltipQuery Read(GemTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error) with
@@ -49,8 +52,15 @@ public static class TooltipRequests
             Rarity = StatQuery.NullIfEmpty(request?.Rarity),
         };
 
-    public static TooltipQuery Read(GemTraitTooltipRequest? request, out string? error) =>
+    public static TooltipQuery Read(GemAbilityTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error);
+
+    public static TooltipQuery Read(EnchantTooltipRequest? request, out string? error) =>
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error) with
+        {
+            Hero = StatQuery.NullIfEmpty(request?.Hero),
+            ItemLevel = request?.ItemLevel,
+        };
 
     public static TooltipQuery Read(
         ItemTooltipRequest? request, IEntityStoreService store, out string? error) =>
@@ -66,9 +76,9 @@ public static class TooltipRequests
             PotentialPower = request?.PotentialPower,
             Armor = request?.Armor,
             Modifiers = request?.Modifiers ?? [],
-            ImbuedTraits = request?.ImbuedTraits ?? [],
-            AllocatedTraits = request?.AllocatedTraits,
-            HasImbuedTraits = request?.HasImbuedTraits,
+            Attunements = request?.Attunements ?? [],
+            AllocatedAttunements = request?.AllocatedAttunements,
+            HasAttunements = request?.HasAttunements,
         };
 
     public static TooltipQuery Read(RelicPassiveTooltipRequest? request, out string? error) =>
@@ -87,14 +97,22 @@ public static class TooltipRequests
     public static TooltipQuery Read(TalentTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error);
 
-    public static TooltipQuery Read(TraitTooltipRequest? request, out string? error) =>
-        Read(request?.ShowIcon, request?.Mobile, out error) with
-        {
-            State = StatQuery.NullIfEmpty(request?.State),
-        };
+    public static TooltipQuery Read(SigilTooltipRequest? request, out string? error) =>
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error);
 
-    public static TooltipQuery Read(TraitPowerTooltipRequest? request, out string? error) =>
-        Read(request?.ShowIcon, request?.Mobile, out error);
+    public static TooltipQuery Read(AspectTooltipRequest? request, out string? error) =>
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error);
+
+    public static TooltipQuery Read(ProtectiveEnchantTooltipRequest? request, out string? error) =>
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error);
+
+    private static TooltipQuery Augmented(
+        bool? showIcon, bool? mobile, string? state, string? rankSources, out string? error) =>
+        Read(showIcon, mobile, out error) with
+        {
+            State = StatQuery.NullIfEmpty(state),
+            RankSources = RankSources.Parse(rankSources),
+        };
 
     public static TooltipQuery Read(
         WeaponPowerTooltipRequest? request, IEntityStoreService store, out string? error) =>

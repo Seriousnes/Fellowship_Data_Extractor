@@ -8,7 +8,7 @@ public sealed class ItemPowerTests(Export export)
     private static ItemPowerInputs Bare(string slot) =>
         new(slot, Level: 0, MaxUpgrades: 0, RerollableSlots: 0,
             Legendary: false, HasGemSocket: false, HasGrantedAbility: false,
-            HasTraitTree: false);
+            HasAttunementTree: false);
 
     private float Of(ItemPowerInputs given) => ItemPower.Potential(given, Settings);
 
@@ -64,19 +64,19 @@ public sealed class ItemPowerTests(Export export)
     }
 
     [Fact]
-    public void A_trait_tree_scores_on_a_weapon_and_a_neck_and_nowhere_else()
+    public void A_attunement_tree_scores_on_a_weapon_and_a_neck_and_nowhere_else()
     {
         var factors = Settings.Items.PowerPotential;
 
         foreach (var slot in Settings.StatCalculation.SlotWeights.Keys)
         {
             var without = Of(Bare(slot));
-            var with = Of(Bare(slot) with { HasTraitTree = true });
+            var with = Of(Bare(slot) with { HasAttunementTree = true });
 
             var expected = slot == Printed(ItemPower.WeaponType)
-                ? (float)factors.WeaponTraitTreeScoreFactor
+                ? (float)factors.WeaponAttunementTreeScoreFactor
                 : slot == Printed(ItemPower.NecklaceType)
-                    ? (float)factors.NecklaceTraitTreeScoreFactor
+                    ? (float)factors.NecklaceAttunementTreeScoreFactor
                     : 0f;
 
             Assert.Equal(expected, with - without, 3);
@@ -112,7 +112,7 @@ public sealed class ItemPowerTests(Export export)
 
         Assert.NotNull(given);
         Assert.True(given.HasGrantedAbility);
-        Assert.True(given.HasTraitTree);
+        Assert.True(given.HasAttunementTree);
         Assert.False(given.HasGemSocket);
         Assert.Equal(added.RandomRolls, given.RerollableSlots);
     }
@@ -143,11 +143,11 @@ public sealed class ItemPowerTests(Export export)
         var necklace = Rolled(Printed(ItemPower.NecklaceType));
 
         var given = ItemPower.Inputs(necklace, Settings, Regal, new TooltipQuery(), 300);
-        var allocated = ItemPower.Inputs(necklace, Settings, Regal, new TooltipQuery { AllocatedTraits = 2 }, 300);
+        var allocated = ItemPower.Inputs(necklace, Settings, Regal, new TooltipQuery { AllocatedAttunements = 2 }, 300);
 
         Assert.NotNull(given);
         Assert.NotNull(allocated);
-        Assert.True(given.HasTraitTree);
+        Assert.True(given.HasAttunementTree);
         Assert.Equal(ItemPower.Potential(given, Settings), ItemPower.Potential(allocated, Settings));
     }
 }

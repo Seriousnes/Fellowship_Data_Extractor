@@ -145,7 +145,7 @@ public static class ChromeTextures
             .. Chrome,
             .. settings.RarityOrnaments.Values.Order(StringComparer.Ordinal),
             .. settings.TalentTierPlates.Values.Order(StringComparer.Ordinal),
-            .. settings.TraitTreeTextures.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal),
+            .. settings.AttunementTreeTextures.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal),
             .. kin,
             .. slotIcons.Values.Order(StringComparer.Ordinal),
         ];
@@ -270,8 +270,8 @@ public static class ChromeTextures
     public const string NodeColorTexture = "T_Buttons_TraitNode_Color";
 
     private static IEnumerable<string> NodeColorRows(Settings settings) =>
-        settings.TraitNodeColorRows.ByCategory.Values
-            .Append(settings.TraitNodeColorRows.Otherwise)
+        settings.AttunementNodeColorRows.ByCategory.Values
+            .Append(settings.AttunementNodeColorRows.Otherwise)
             .Distinct(StringComparer.Ordinal);
 
     private static string Variable(string row) => row.Replace('.', '-');

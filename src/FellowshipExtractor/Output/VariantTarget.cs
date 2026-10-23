@@ -7,6 +7,10 @@ namespace FellowshipExtractor.Output;
 
 public sealed class VariantTarget(IExportTarget inner) : IExportTarget
 {
+    private readonly Queue<(string Name, Task<IReadOnlyList<TextureVariant>> Rendered)> _rendering = new();
+
+    private readonly int _window = Environment.ProcessorCount * 4;
+
     private int _written;
 
     public Task WriteDocumentAsync(EntityDocument document, CancellationToken cancellationToken) =>
@@ -17,10 +21,18 @@ public sealed class VariantTarget(IExportTarget inner) : IExportTarget
 
     public async Task WriteImageAsync(string name, byte[] png, CancellationToken cancellationToken)
     {
-        foreach (var variant in TextureVariants.Render(png))
+        _rendering.Enqueue((name, Task.Run(() => TextureVariants.Cached(png), cancellationToken)));
+
+        while (_rendering.Count > _window) await WriteNextAsync(cancellationToken);
+    }
+
+    private async Task WriteNextAsync(CancellationToken cancellationToken)
+    {
+        var (name, rendered) = _rendering.Dequeue();
+
+        foreach (var variant in await rendered)
         {
-            await inner.WriteImageAsync(
-                TextureSizes.File(name, variant.Size), variant.Webp, cancellationToken);
+            await inner.WriteImageAsync(TextureSizes.File(name, variant.Size), variant.Webp, cancellationToken);
 
             _written++;
         }
@@ -28,8 +40,17 @@ public sealed class VariantTarget(IExportTarget inner) : IExportTarget
 
     public async ValueTask DisposeAsync()
     {
-        Console.WriteLine($"rendered {_written} texture variant(s) across {TextureSizes.All.Count} sizes");
+        try
+        {
+            while (_rendering.Count > 0) await WriteNextAsync(default);
 
-        await inner.DisposeAsync();
+            Console.WriteLine(
+                $"rendered {_written} texture variant(s) across {TextureSizes.All.Count} sizes, cached under " +
+                TextureVariants.CacheFolder);
+        }
+        finally
+        {
+            await inner.DisposeAsync();
+        }
     }
 }

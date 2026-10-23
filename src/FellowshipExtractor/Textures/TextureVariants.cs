@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 using Fellowship.SDK;
 
 using SixLabors.ImageSharp;
@@ -11,6 +14,8 @@ public readonly record struct TextureVariant(TextureSize Size, byte[] Webp);
 
 public static class TextureVariants
 {
+    private const string CompleteMarker = "complete";
+
     private static readonly WebpEncoder Encoder = new()
     {
         FileFormat = WebpFileFormatType.Lossless,
@@ -18,6 +23,60 @@ public static class TextureVariants
         Method = WebpEncodingMethod.Level6,
         SkipMetadata = true,
     };
+
+    private static readonly string Recipe = string.Join(
+        ";",
+        [
+            typeof(WebpEncoder).Assembly.GetName().Version!.ToString(),
+            $"{Encoder.FileFormat}/{Encoder.TransparentColorMode}/{Encoder.Method}/{Encoder.SkipMetadata}",
+            "Crop/Top/Lanczos3",
+            .. TextureSizes.All.Select(size => $"{size}={TextureSizes.Pixels(size)}"),
+        ]);
+
+    public static string CacheFolder { get; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "FellowshipExtractor",
+        "texture-variants",
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(Recipe)))[..16]);
+
+    public static IReadOnlyList<TextureVariant> Cached(byte[] png)
+    {
+        var folder = Path.Combine(CacheFolder, Convert.ToHexStringLower(SHA256.HashData(png)));
+
+        if (File.Exists(Path.Combine(folder, CompleteMarker)))
+        {
+            return
+            [
+                .. TextureSizes.All
+                    .Select(size => (Size: size, File: Path.Combine(folder, TextureSizes.Segment(size))))
+                    .Where(entry => File.Exists(entry.File))
+                    .Select(entry => new TextureVariant(entry.Size, File.ReadAllBytes(entry.File))),
+            ];
+        }
+
+        var variants = Render(png);
+
+        var staging = $"{folder}.{Guid.NewGuid():N}";
+        Directory.CreateDirectory(staging);
+
+        foreach (var variant in variants)
+        {
+            File.WriteAllBytes(Path.Combine(staging, TextureSizes.Segment(variant.Size)), variant.Webp);
+        }
+
+        File.WriteAllBytes(Path.Combine(staging, CompleteMarker), []);
+
+        try
+        {
+            Directory.Move(staging, folder);
+        }
+        catch (IOException) when (Directory.Exists(folder))
+        {
+            Directory.Delete(staging, recursive: true);
+        }
+
+        return variants;
+    }
 
     public static IReadOnlyList<TextureVariant> Render(byte[] png)
     {

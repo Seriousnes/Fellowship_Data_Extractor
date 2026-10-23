@@ -1,0 +1,37 @@
+@inject ITooltipViewService Ui
+@inject IEntityStoreService Store
+
+@if (Capacity(Entity, Query, Store.Settings) is { } total)
+{
+    <div class="grp">
+        <div class="sec attuned" data-craft-row="@CraftSlot.KeyOf(CraftSlots.AttunementTree, 0)"><img class="gi" alt="" src="@Ui.Chrome.AttunementGlyph"><span>@TooltipView.TreeHeader(Store.Settings)</span><span class="n">(<span class="alloc">@Filled(Query)</span>/@total)</span></div>
+        @foreach (var name in Attuned())
+        {
+            <div class="attuned"><img class="xi" alt="" src="@Ui.Chrome.ExpandGlyph"><span>@name</span></div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public ItemDocument Entity { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    public static int? Capacity(ItemDocument entity, TooltipQuery query, SettingsFile settings)
+    {
+        if (query.HasAttunements == false) return null;
+
+        if (AttunementTrees.Capacity(entity.AttunementTree, settings) is { } capacity) return capacity;
+
+        return query.HasAttunements == true ? AttunementTrees.LargestCapacity(settings) : null;
+    }
+
+    public static int Filled(TooltipQuery query) =>
+        query.Attunements.Count > 0 ? query.Attunements.Count : query.AllocatedAttunements ?? 0;
+
+    private IEnumerable<string> Attuned() =>
+        Query.Attunements
+            .Select(augmentation => TooltipView.Augmentation(Store, augmentation.Id, TooltipView.Wearer(Entity, Query)))
+            .OfType<EntityDocument>()
+            .Select(augmentation => PublicTypes.NameOf(augmentation));
+}

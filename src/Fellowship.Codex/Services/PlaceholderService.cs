@@ -78,6 +78,15 @@ public sealed class PlaceholderService(IEntityStoreService store, IRichTextServi
                 : Unscaled(placeholder, coefficient, attribute);
         }
 
+        if (placeholder is { PerRank: true, Value: { } perRank })
+        {
+            var rank = query.EquippedTier ?? AugmentationRanks.Power(store.Settings, query.ItemLevel ?? store.Settings.Items.MaxItemLevel);
+
+            return new Substitution(
+                Round((decimal)perRank * rank),
+                $"{Round((decimal)perRank)} per rank at equipped rank {rank}");
+        }
+
         if (placeholder.Value is { } number) return Number(placeholder, number, haste);
 
         return Unresolved(placeholder);

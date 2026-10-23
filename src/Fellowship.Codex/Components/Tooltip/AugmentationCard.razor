@@ -1,0 +1,63 @@
+@inject ITooltipViewService Ui
+@inject IEntityStoreService Store
+
+<div class="@TooltipView.Root plain fx-augmentation" style="@Ui.Variables(null)">
+    <style>@Sheet</style>
+    <div class="card">
+        <header class="head">
+            <p class="eyebrow">@Wording.Heading</p>
+            <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
+        </header>
+        @if (Entity.Icon is not null)
+        {
+            <AugmentationCrest Entity="Entity" State="@Query.State" />
+        }
+        <div class="band">
+            <span class="kind">@Wording.Band</span>
+            @if (Shown)
+            {
+                <span class="tier">@Text.EquippedRank <span class="count">@Number(Ranked)</span></span>
+            }
+        </div>
+        @if (AugmentationRanks.Description(Entity, Ranked, AugmentationRanks.HeroRead(Store.Settings, Entity, Hero?.Name ?? Query.Hero)) is { } description)
+        {
+            <p class="prose">@Ui.Text(description, CodexView.PlaceholdersOf(Entity), Query with { EquippedTier = Ranked }, Hero, FellowshipCodex.Schools(Entity))</p>
+        }
+        @if (Shown && Sources.Count > 0)
+        {
+            <div class="sources">
+                <p class="heading">@Text.RankSources</p>
+                @foreach (var source in Sources)
+                {
+                    <p class="source">@Text.GearSlot<span class="slot">@source.Printed</span> @Text.RanksOpen@Number(PerSource)@Text.RanksClose</p>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public AugmentationDocument Entity { get; set; } = default!;
+
+    [Parameter] public TooltipQuery Query { get; set; } = new();
+
+    [Parameter] public HeroEntry? Hero { get; set; }
+
+    private MarkupString Sheet;
+
+    private AugmentationTooltipText Text => AugmentationRanks.Text(Store.Settings);
+
+    private AugmentationCategoryText Wording => AugmentationRanks.Category(Store.Settings, Entity);
+
+    private IReadOnlyList<ItemTypeText> Sources => AugmentationRanks.Sources(Store, Query, Entity);
+
+    private int PerSource => AugmentationRanks.PerSource(Store.Settings, Query, Entity);
+
+    private bool Shown => AugmentationRanks.Ranked(Store, Entity);
+
+    private int Ranked => AugmentationRanks.Rank(Store, Query, Entity);
+
+    private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    protected override void OnParametersSet() => Sheet = new MarkupString(Ui.Style());
+}

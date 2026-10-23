@@ -15,7 +15,7 @@ public sealed class DocumentTests
     {
         var documents = typeof(EntityDocument).Assembly
             .GetTypes()
-            .Where(type => type.IsSubclassOf(typeof(EntityDocument)))
+            .Where(type => type.IsSubclassOf(typeof(EntityDocument)) && !type.IsAbstract)
             .ToArray();
 
         Assert.Equal(Enum.GetValues<EntityType>().Length, documents.Length);
@@ -71,8 +71,8 @@ public sealed class DocumentTests
     public void ADocumentsRuntimeClassIsItsType()
     {
         Assert.Equal(EntityType.Ability, EntityTypes.TypeOf(new AbilityDocument { Id = 1 }));
-        Assert.Equal(EntityType.GemType, EntityTypes.TypeOf(
-            new GemTypeDocument { Id = 1, Type = GemType.Ruby, Attribute = "RubyPower" }));
+        Assert.Equal(EntityType.Radiance, EntityTypes.TypeOf(
+            new RadianceDocument { Id = 1, Type = GemType.Ruby, Attribute = "RubyPower" }));
         Assert.Equal(EntityType.TalentSlot, EntityTypes.TypeOf(
             new TalentSlotDocument { Id = 8, Hero = Hero.Mara, Row = 4, Column = 1, Cost = 1, Talent = new EntityReference(EntityType.Talent, 8, null) }));
     }

@@ -14,7 +14,7 @@ public sealed class CooldownHasteTests
 
     private const string HasteGrantedBy = "cooldownHasteGrantedBy";
     private const string AccelerationGrantedBy = "cooldownAccelerationGrantedBy";
-    private const string Blessing = "blessing";
+    private const string Glyph = "glyph";
     private const string Major = "Major";
 
     private const string Haste = "Haste";
@@ -101,7 +101,7 @@ public sealed class CooldownHasteTests
     public void TheMonarchAcceleratesMajorCooldowns(int ability)
     {
         Assert.Equal(Major, Ability(ability)["category"]?.GetValue<string>());
-        Assert.True(Names(ability, AccelerationGrantedBy, Blessing, TheMonarch));
+        Assert.True(Names(ability, AccelerationGrantedBy, Glyph, TheMonarch));
     }
 
     [Theory]
@@ -119,7 +119,7 @@ public sealed class CooldownHasteTests
     public void IronleafWardNamesBothItsLegendaryPowerAndTheMonarch()
     {
         Assert.True(Names(IronleafWard, HasteGrantedBy, "legendary-power", 609));
-        Assert.True(Names(IronleafWard, AccelerationGrantedBy, Blessing, TheMonarch));
+        Assert.True(Names(IronleafWard, AccelerationGrantedBy, Glyph, TheMonarch));
     }
 
     [Fact]

@@ -1,0 +1,24 @@
+@use "../../Styles/shared" as *;
+
+.cx-augmentation-controls { width: 0; min-width: 100%; margin-top: 14px; }
+
+.cx-augmentation-controls select {
+  width: 100%; appearance: none;
+  @include sunken;
+  font: 400 13px/1 var(--sans); padding: 7px 9px; border-radius: 2px;
+
+  &:focus { @include edged; }
+}
+
+.cx-rarities {
+  display: flex; flex-wrap: wrap; gap: 4px;
+
+  button {
+    appearance: none; cursor: pointer; background: var(--sunken); border: 1px solid var(--line);
+    border-radius: 2px; padding: 5px 9px; font: 600 12px/1 var(--sans); color: var(--muted);
+
+    &[aria-pressed="true"] { border-color: currentColor; background: var(--raised); }
+
+    &:disabled { cursor: default; opacity: .4; }
+  }
+}

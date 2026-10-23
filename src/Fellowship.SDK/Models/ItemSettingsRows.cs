@@ -16,9 +16,9 @@ public sealed record ItemPowerPotential
 
     public double RelicAbilityScoreFactor { get; init; }
 
-    public double WeaponTraitTreeScoreFactor { get; init; }
+    public double WeaponAttunementTreeScoreFactor { get; init; }
 
-    public double NecklaceTraitTreeScoreFactor { get; init; }
+    public double NecklaceAttunementTreeScoreFactor { get; init; }
 
     public double SetBonusScoreFactor { get; init; }
 
@@ -29,9 +29,9 @@ public sealed record ItemPowerPotential
     public IReadOnlyDictionary<string, int> ScorePerGemType { get; init; } =
         new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-    public int ScorePerAllocatedWeaponTrait { get; init; }
+    public int ScorePerAllocatedWeaponAttunement { get; init; }
 
-    public int ScorePerAllocatedNecklaceTrait { get; init; }
+    public int ScorePerAllocatedNecklaceAttunement { get; init; }
 }
 
 public sealed record ItemSettingsFile

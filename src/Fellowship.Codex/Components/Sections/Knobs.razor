@@ -84,6 +84,7 @@
 
     private bool IsGem => Here.Entity is GemDocument;
 
+
     private bool Wearable => (Here.Entity as ItemDocument)?.Stats is { Count: > 0 };
 
     private IReadOnlyList<RarityEntry> Rarities =>
@@ -103,7 +104,9 @@
                 int.TryParse(Value("itemLevel"), out var level) ? level : DropItemLevel)
             : null;
 
-    private bool PicksHero => Here.Readings.Count > 1 || (Here.Entity as ItemDocument)?.Heroes is { Count: > 1 };
+    private bool PicksHero =>
+        Here.Entity is not AugmentationDocument &&
+        (Here.Readings.Count > 1 || (Here.Entity as ItemDocument)?.Heroes is { Count: > 1 });
 
     private bool PicksDifficulty => Here.Entity is CreatureDocument || Store.Menacing(Here.Entity) is not null;
 

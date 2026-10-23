@@ -2,26 +2,26 @@ using System.Globalization;
 
 namespace Fellowship.Codex.Models;
 
-public sealed class ImbuedTraits
+public sealed class Attunements
 {
-    public required IReadOnlyList<ImbuedTrait> Values { get; init; }
+    public required IReadOnlyList<Attunement> Values { get; init; }
 
-    public static bool TryParse(string? value, out ImbuedTraits result)
+    public static bool TryParse(string? value, out Attunements result)
     {
-        var parsed = new List<ImbuedTrait>();
+        var parsed = new List<Attunement>();
 
         foreach (var part in (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
-            if (!ImbuedTrait.TryParse(part, CultureInfo.InvariantCulture, out var trait))
+            if (!Attunement.TryParse(part, CultureInfo.InvariantCulture, out var augmentation))
             {
-                result = new ImbuedTraits { Values = [] };
+                result = new Attunements { Values = [] };
                 return false;
             }
 
-            parsed.Add(trait);
+            parsed.Add(augmentation);
         }
 
-        result = new ImbuedTraits { Values = parsed };
+        result = new Attunements { Values = parsed };
         return true;
     }
 }
@@ -80,11 +80,13 @@ public sealed record TooltipQuery
 
     public IReadOnlyList<ItemModifier> Modifiers { get; init; } = [];
 
-    public IReadOnlyList<ImbuedTrait> ImbuedTraits { get; init; } = [];
+    public IReadOnlyList<Attunement> Attunements { get; init; } = [];
 
-    public int? AllocatedTraits { get; init; }
+    public IReadOnlyList<string> RankSources { get; init; } = [];
 
-    public bool? HasImbuedTraits { get; init; }
+    public int? AllocatedAttunements { get; init; }
+
+    public bool? HasAttunements { get; init; }
 
     public IReadOnlyDictionary<string, IReadOnlyList<decimal>> Stats { get; init; } =
         new Dictionary<string, IReadOnlyList<decimal>>(StringComparer.OrdinalIgnoreCase);

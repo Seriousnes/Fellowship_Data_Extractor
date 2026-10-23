@@ -250,7 +250,7 @@ public sealed class TruthTests
     [Fact]
     public void APerkWritesEachHeroTheSentenceTheirOwnDynamicTextTableCarries()
     {
-        var record = Record(EntityType.TraitPower, 689);
+        var record = Record(EntityType.ProtectiveEnchant, 59);
         var elarion = (string?)record["descriptionsByHero"]?["Elarion"];
         Assert.Equal("{uniqueHeroDescription}", (string?)record["description"]);
         Assert.NotNull(elarion);
@@ -259,7 +259,7 @@ public sealed class TruthTests
     [Fact]
     public void APerkSubstitutesTheConstantTheHerosOwnTokenNames()
     {
-        var elarion = (string?)Record(EntityType.TraitPower, 688)["descriptionsByHero"]?["Elarion"];
+        var elarion = (string?)Record(EntityType.ProtectiveEnchant, 63)["descriptionsByHero"]?["Elarion"];
         Assert.NotNull(elarion);
         Assert.Contains("20%", elarion, StringComparison.Ordinal);
     }
@@ -508,37 +508,37 @@ public sealed class TruthTests
     }
 
     [Fact]
-    public void AWeaponNamesTheTraitTreeTheSettingsLayOut()
+    public void AWeaponNamesTheAttunementTreeTheSettingsLayOut()
     {
-        Assert.Equal("ItemTraitTrees.EASeason4Weapon", (string?)Record(EntityType.Item, 5981)["traitTree"]);
+        Assert.Equal("ItemTraitTrees.EASeason4Weapon", (string?)Record(EntityType.Item, 5981)["attunementTree"]);
 
-        var tree = Export.Loaded.Settings.TraitTrees.Single(entry => entry.Tag == "ItemTraitTrees.EASeason4Weapon");
+        var tree = Export.Loaded.Settings.AttunementTrees.Single(entry => entry.Tag == "ItemTraitTrees.EASeason4Weapon");
         Assert.Equal(13, tree.Nodes.Count);
-        Assert.Equal(6, tree.Nodes.Select(node => node.TraitRowIndex).Distinct().Count());
+        Assert.Equal(6, tree.Nodes.Select(node => node.AugmentationRowIndex).Distinct().Count());
         Assert.Equal([1, 2], tree.Nodes.Single(node => node.UITreeIndex == 4).ParentNodes);
-        Assert.Equal(["ItemTrait.TraitCategory.WeaponAbility"], tree.Nodes.Single(node => node.UITreeIndex == 0).TraitCategories);
+        Assert.Equal(["ItemTrait.TraitCategory.WeaponAbility"], tree.Nodes.Single(node => node.UITreeIndex == 0).AugmentationCategories);
     }
 
     [Theory]
     [InlineData("ItemTraitTrees.EASeason4Weapon", "UW_StaticWeaponTree", 4, 0d, 30d)]
     [InlineData("ItemTraitTrees.EASeason4Necklace", "UW_StaticNeclaceTree_EASeason4", 3, -180d, -25.5)]
-    public void ATraitTreeIsLaidOutOnTheCanvasItsWidgetPlacesItsNodesOn(
+    public void AAttunementTreeIsLaidOutOnTheCanvasItsWidgetPlacesItsNodesOn(
         string tag, string widget, int node, double x, double y)
     {
-        var layout = Export.Loaded.Settings.TraitTrees.Single(entry => entry.Tag == tag).Layout!;
+        var layout = Export.Loaded.Settings.AttunementTrees.Single(entry => entry.Tag == tag).Layout!;
 
         Assert.Equal(widget, layout.Widget);
         Assert.Equal((586d, 500d), (layout.Width, layout.Height));
-        Assert.Equal(new TraitTreePoint(0, 220), layout.Root);
-        Assert.Equal(new TraitTreePoint(x, y), layout.Nodes[node]);
+        Assert.Equal(new AttunementTreePoint(0, 220), layout.Root);
+        Assert.Equal(new AttunementTreePoint(x, y), layout.Nodes[node]);
         Assert.Equal((71d, 82d), (layout.NodeWidth, layout.NodeHeight));
         Assert.Contains(layout.RootLayers, layer => layer.Item);
     }
 
     [Fact]
-    public void ATraitNodeIsColouredByItsCategoryAndGreyOtherwise()
+    public void AAttunementNodeIsColouredByItsCategoryAndGreyOtherwise()
     {
-        var rows = Export.Loaded.Settings.TraitNodeColorRows!;
+        var rows = Export.Loaded.Settings.AttunementNodeColorRows!;
 
         Assert.Equal("game.rarity-rare", rows.ByCategory["ItemTrait.TraitCategory.Heroic"]);
         Assert.Equal("game.rarity-uncommon", rows.ByCategory["ItemTrait.TraitCategory.Defensive"]);
@@ -547,10 +547,10 @@ public sealed class TruthTests
     }
 
     [Fact]
-    public void ATraitNodeUpgradeCostsTheCurveInTheCurrencyItsRowNames() =>
+    public void AAttunementNodeUpgradeCostsTheCurveInTheCurrencyItsRowNames() =>
         Assert.Equal(
             [(1, 1000d), (2, 2000d), (3, 3000d), (4, 3000d)],
-            Export.Loaded.Settings.TraitNodeUpgradeCosts
+            Export.Loaded.Settings.AttunementNodeUpgradeCosts
                 .Where(cost => cost.Currency == 4 && cost.Rank <= 4)
                 .Select(cost => (cost.Rank, cost.Cost)));
 

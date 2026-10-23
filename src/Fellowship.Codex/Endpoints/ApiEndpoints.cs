@@ -8,22 +8,24 @@ public static class ApiEndpoints
         app.MapExport();
 
         app.MapAbility();
-        app.MapBlessing();
+        app.MapGlyph();
         app.MapCompanionPet();
         app.MapCreature();
         app.MapCurrency();
         app.MapDungeon();
         app.MapEffect();
         app.MapGem();
-        app.MapGemTrait();
+        app.MapEnchant();
+        app.MapGemAbility();
         app.MapItem();
         app.MapLegendaryPower();
         app.MapRelicPassive();
         app.MapMount();
         app.MapRelicPower();
         app.MapTalent();
-        app.MapTrait();
-        app.MapTraitPower();
+        app.MapSigil();
+        app.MapAspect();
+        app.MapProtectiveEnchant();
         app.MapWeaponPower();
     }
 }

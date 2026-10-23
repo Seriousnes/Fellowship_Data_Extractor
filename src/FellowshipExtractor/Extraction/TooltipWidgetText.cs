@@ -13,19 +13,52 @@ public sealed class TooltipWidgetText
     private const string EmptyTextBlock = "Text_StatName";
     private const string TreeWidget = "UW_TraitTreeTooltipBlock";
     private const string TreeHeaderBlock = "TextHeader";
+    private const string AugmentationWidget = "UW_TraitTooltip_NonTreeVersion";
+    private const string EquippedRankBlock = "CRTextBlock_249";
+    private const string RankSourcesBlock = "TitleTextBlock";
+    private const string DescriptionBlock = "RichText_Description";
+    private const string StyleSetField = "TextStyleSet";
+    private const string SourceWidget = "UW_TraitTooltip_RankSourceEntry";
+    private const string GearSlotBlock = "TextBlock";
+    private const string RanksOpenBlock = "CRTextBlock_118";
+    private const string RanksCloseBlock = "CRTextBlock_1";
     private const string TextField = "Text";
 
     public EmptyModifierSlot EmptySlot { get; }
 
-    public string TraitTreeHeader { get; }
+    public string AttunementTreeHeader { get; }
 
-    public TooltipWidgetText(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+    public AugmentationTooltipText AugmentationTooltip { get; }
+
+    public string DescriptionStyleSet { get; }
+
+    public TooltipWidgetText(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, ItemSlotNames slots)
     {
         var empty = Exports(provider, assets, EmptySlotWidget);
         EmptySlot = new EmptyModifierSlot(
             Text(empty, EmptySlotWidget, SignBlock), Text(empty, EmptySlotWidget, EmptyTextBlock));
 
-        TraitTreeHeader = Text(Exports(provider, assets, TreeWidget), TreeWidget, TreeHeaderBlock);
+        AttunementTreeHeader = Text(Exports(provider, assets, TreeWidget), TreeWidget, TreeHeaderBlock);
+
+        var augmentation = Exports(provider, assets, AugmentationWidget);
+        var source = Exports(provider, assets, SourceWidget);
+
+        DescriptionStyleSet =
+            augmentation.FirstOrDefault(export => export.Name == DescriptionBlock) is { } description &&
+            PropertyWalk.GetString(description, StyleSetField) is { } styleSet
+                ? styleSet
+                : throw new InvalidOperationException($"{AugmentationWidget} has no {DescriptionBlock} naming a {StyleSetField}.");
+
+        AugmentationTooltip = new AugmentationTooltipText(
+            Text(augmentation, AugmentationWidget, EquippedRankBlock),
+            Text(augmentation, AugmentationWidget, RankSourcesBlock),
+            Text(source, SourceWidget, GearSlotBlock),
+            Text(source, SourceWidget, RanksOpenBlock),
+            Text(source, SourceWidget, RanksCloseBlock))
+        {
+            ItemTypes = slots.Printed,
+            Categories = AugmentationCategoryTexts.Read(augmentation, AugmentationWidget),
+        };
     }
 
     private static UObject[] Exports(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets, string widget)

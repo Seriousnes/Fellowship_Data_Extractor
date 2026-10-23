@@ -48,15 +48,15 @@ public sealed class ItemSettings
             GemSocketScoreFactor = Number(config, potential, "GemSocketScoreFactor"),
             WeaponAbilityScoreFactor = Number(config, potential, "WeaponAbilityScoreFactor"),
             RelicAbilityScoreFactor = Number(config, potential, "RelicAbilityScoreFactor"),
-            WeaponTraitTreeScoreFactor = Number(config, potential, "WeaponTraitTreeScoreFactor"),
-            NecklaceTraitTreeScoreFactor = Number(config, potential, "NecklaceTraitTreeScoreFactor"),
+            WeaponAttunementTreeScoreFactor = Number(config, potential, "WeaponTraitTreeScoreFactor"),
+            NecklaceAttunementTreeScoreFactor = Number(config, potential, "NecklaceTraitTreeScoreFactor"),
             SetBonusScoreFactor = Number(config, potential, "SetBonusScoreFactor"),
             LegendaryScoreFactor = Number(config, potential, "LegendaryScoreFactor"),
             AllocatedTalentPointPowerPotential = Number(config, potential, "AllocatedTalentPointPowerPotential"),
             ScorePerGemType = GemScores(
                 config, mappings, List(config, potential, "ScorePerGemType"), gems.RarityByTier(rarities)),
-            ScorePerAllocatedWeaponTrait = (int)Number(config, potential, "ScorePerAllocatedWeaponTrait"),
-            ScorePerAllocatedNecklaceTrait = (int)Number(config, potential, "ScorePerAllocatedNecklaceTrait"),
+            ScorePerAllocatedWeaponAttunement = (int)Number(config, potential, "ScorePerAllocatedWeaponTrait"),
+            ScorePerAllocatedNecklaceAttunement = (int)Number(config, potential, "ScorePerAllocatedNecklaceTrait"),
         };
 
         FactorCount = potential.Entries.Count;

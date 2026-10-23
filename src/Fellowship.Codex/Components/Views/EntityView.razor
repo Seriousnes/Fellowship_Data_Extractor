@@ -3,8 +3,7 @@
 @inject IExportHistoryService History
 
 <CascadingValue Value="Entity">
-    <Particulars Facts="Facts" Schools="Schools" />
-    <Ranks />
+    <Particulars Facts="Facts" Schools="Schools" Tables="@(Entity is AugmentationDocument ? RankTables : null)" />
     <Overflow />
     <BorrowedName Href="@(NameSource?.Href)" Tip="@(NameSource?.Tip)" Name="@(NameSource?.Name)" />
     <BorrowedTexture Href="@(TextureSource?.Href)" Tip="@(TextureSource?.Tip)" Name="@(TextureSource?.Name)" />
@@ -33,6 +32,8 @@
     private (string Href, TooltipLink? Tip, string Name)? TextureSource;
 
     private const string SchoolFacet = "school";
+
+    private static readonly RenderFragment RankTables = @<Ranks />;
 
     protected override void OnParametersSet()
     {

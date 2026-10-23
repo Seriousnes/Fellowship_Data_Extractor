@@ -1,0 +1,26 @@
+@use "../../Styles/shared" as *;
+
+.cx-slider {
+  display: block; margin-bottom: 10px;
+
+  > span {
+    display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--faint); margin-bottom: 3px;
+  }
+}
+
+.cx-slider-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 10px; align-items: center;
+
+  input[type="range"] { width: 100%; accent-color: var(--gold-deep); }
+
+  input[type="number"] {
+    width: 100%; appearance: textfield; -moz-appearance: textfield;
+    @include sunken;
+    font: 400 13px/1 var(--sans); padding: 6px 8px; border-radius: 2px; text-align: right;
+
+    &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+    &:focus { @include edged; }
+  }
+}

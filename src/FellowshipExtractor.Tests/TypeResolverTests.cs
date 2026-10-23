@@ -3,7 +3,7 @@ namespace FellowshipExtractor.Tests;
 public sealed class TypeResolverTests
 {
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(24, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(26, Enum.GetValues<EntityType>().Length);
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
@@ -15,29 +15,31 @@ public sealed class TypeResolverTests
 
     [Theory]
     [InlineData(EntityType.Item, 5716)]
-    [InlineData(EntityType.Effect, 3363)]
+    [InlineData(EntityType.Effect, 3374)]
     [InlineData(EntityType.Ability, 2380)]
     [InlineData(EntityType.Creature, 244)]
     [InlineData(EntityType.Dungeon, 20)]
     [InlineData(EntityType.Talent, 216)]
     [InlineData(EntityType.TalentSlot, 216)]
     [InlineData(EntityType.Mount, 111)]
-    [InlineData(EntityType.Trait, 68)]
-    [InlineData(EntityType.GemTrait, 60)]
+    [InlineData(EntityType.Sigil, 8)]
+    [InlineData(EntityType.Aspect, 8)]
+    [InlineData(EntityType.ProtectiveEnchant, 11)]
+    [InlineData(EntityType.Enchant, 18)]
+    [InlineData(EntityType.GemAbility, 60)]
     [InlineData(EntityType.MountPower, 54)]
-    [InlineData(EntityType.TraitPower, 46)]
     [InlineData(EntityType.LegendaryPower, 36)]
-    [InlineData(EntityType.Currency, 16)]
+    [InlineData(EntityType.Currency, 17)]
     [InlineData(EntityType.Modifier, 26)]
     [InlineData(EntityType.Gem, 24)]
-    [InlineData(EntityType.Blessing, 8)]
+    [InlineData(EntityType.Glyph, 8)]
     [InlineData(EntityType.WeaponPower, 12)]
     [InlineData(EntityType.Hero, 12)]
     [InlineData(EntityType.RelicPower, 9)]
     [InlineData(EntityType.RelicPassive, 5)]
     [InlineData(EntityType.CompanionPet, 14)]
-    [InlineData(EntityType.GemType, 6)]
-    [InlineData(EntityType.LegendaryStat, 2)]
+    [InlineData(EntityType.Radiance, 6)]
+    [InlineData(EntityType.LegendaryStat, 3)]
     public void TheCorpusHoldsTheseCounts(EntityType type, int expected) =>
         Assert.Equal(expected, Export.Loaded.Documents.Count(d => d.Type == type));
 
@@ -54,12 +56,12 @@ public sealed class TypeResolverTests
     }
 
     [Fact]
-    public void SixtyGemTraitsTenPerType()
+    public void SixtyGemAbilitiesTenPerType()
     {
-        var traits = Export.Loaded.Documents.Where(d => d.Type == EntityType.GemTrait).ToArray();
+        var augmentations = Export.Loaded.Documents.Where(d => d.Type == EntityType.GemAbility).ToArray();
 
-        Assert.Equal(60, traits.Length);
-        Assert.All(traits.GroupBy(t => t.Body["gem"]!.GetValue<string>()), type => Assert.Equal(10, type.Count()));
+        Assert.Equal(60, augmentations.Length);
+        Assert.All(augmentations.GroupBy(t => t.Body["gem"]!.GetValue<string>()), type => Assert.Equal(10, type.Count()));
     }
 
     [Fact]
@@ -85,7 +87,7 @@ public sealed class TypeResolverTests
             item.Body["legendaryStats"]!.AsArray(),
             stat => Assert.Contains(stat!["id"]!.GetValue<int>(), ids)));
 
-        Assert.All(legendary, item => Assert.Equal(2, item.Body["legendaryStats"]!.AsArray().Count));
+        Assert.All(legendary, item => Assert.Equal(3, item.Body["legendaryStats"]!.AsArray().Count));
     }
 
     [Fact]

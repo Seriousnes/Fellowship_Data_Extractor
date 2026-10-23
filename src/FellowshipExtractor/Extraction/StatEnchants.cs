@@ -8,7 +8,12 @@ using Fellowship.SDK.Models;
 
 namespace FellowshipExtractor.Extraction;
 
-public sealed record StatEnchant(IReadOnlyDictionary<string, string> NameByHero, IReadOnlyList<TraitStat> Stats);
+public sealed record StatEnchant(
+    string Name,
+    IReadOnlyDictionary<string, string> NameByPrimaryStat,
+    IReadOnlyList<EnchantStat> Stats,
+    string? Description,
+    IReadOnlyDictionary<string, Placeholder> Placeholders);
 
 public sealed class StatEnchants
 {
@@ -16,8 +21,12 @@ public sealed class StatEnchants
     public const string PowerKey = "StatEnchantItemLevelToTraitPower";
 
     private const string NameField = "DynamicName";
+    private const string DescriptionField = "DynamicDescription";
+    private const string TextField = "Text";
     private const string TokensField = "Tokens";
+    private const string TokenNameField = "TokenName";
     private const string TokenTypeField = "Type";
+    private const string AttributeCalculationType = "AttributeCalculation";
     private const string ObjectField = "Object";
     private const string FunctionField = "CustomSourceFunction";
     private const string CustomFunctionType = "CustomSourceFunction";
@@ -43,23 +52,23 @@ public sealed class StatEnchants
 
     public int Count => _byAugmentation.Count;
 
-    public StatEnchants(AbstractFileProvider provider, ItemTraits traits, ConstantsTable constants, HeroNames heroes)
+    public StatEnchants(AbstractFileProvider provider, AugmentationRows augmentations, ConstantsTable constants, HeroNames heroes)
     {
         var powerTable = ConfigIni.Read(provider, ItemSettings.ConfigPath, SettingsSection).Text(PowerKey).Trim('"');
         Power = CurveReader.Read(provider, powerTable, CurveRowName);
 
-        foreach (var trait in traits.All)
+        foreach (var row in augmentations.All)
         {
-            if (!trait.NameFromAugmentation) continue;
+            if (!row.NameFromAugmentation) continue;
 
-            if (trait is not { AugmentationPath: { } path, Augmentation: { } netId } ||
+            if (row is not { AugmentationPath: { } path, Augmentation: { } netId } ||
                 !provider.TryLoadPackageObject<UObject>(AbilityPresentationIndex.PackagePath(path), out var augmentation))
             {
                 throw new InvalidOperationException(
-                    $"Trait {trait.DisplayName} takes its name from its augmentation, and names none that loads.");
+                    $"Augmentation {row.DisplayName} takes its name from its augmentation, and names none that loads.");
             }
 
-            var stats = new List<TraitStat>();
+            var stats = new List<EnchantStat>();
 
             foreach (var effect in Strings(augmentation, EffectsField))
             {
@@ -74,13 +83,54 @@ public sealed class StatEnchants
 
             if (stats.Count == 0) throw new InvalidOperationException($"{path} grants no modifier an enchant reads.");
 
-            _byAugmentation[netId] = new StatEnchant(Names(provider, augmentation, heroes, path), stats);
+            var (name, names) = Names(provider, augmentation, heroes, path);
+            var description = PropertyWalk.GetStruct(augmentation, DescriptionField) is { } dynamic
+                ? PropertyWalk.GetText(dynamic, TextField)
+                : null;
+
+            _byAugmentation[netId] = new StatEnchant(
+                name, names, stats, description, PerRank(augmentation, stats, path));
         }
+    }
+
+    private static Dictionary<string, Placeholder> PerRank(
+        IPropertyHolder augmentation, IReadOnlyList<EnchantStat> stats, string path)
+    {
+        var placeholders = new Dictionary<string, Placeholder>(StringComparer.Ordinal);
+
+        foreach (var token in Structs(PropertyWalk.GetStruct(augmentation, DescriptionField), TokensField))
+        {
+            if (PropertyWalk.GetString(token, TokenTypeField)?
+                    .EndsWith(AttributeCalculationType, StringComparison.Ordinal) is not true) continue;
+
+            var key = PropertyWalk.GetString(token, TokenNameField);
+            var attribute = PropertyWalk.GetStruct(token, AttributeField) is { } held
+                ? PropertyWalk.GetString(held, AttributeNameField)
+                : null;
+
+            if (key is null || stats.SingleOrDefault(stat => stat.Attribute == attribute) is not { } stat)
+            {
+                throw new InvalidOperationException(
+                    $"{path}'s description token {key} reads {attribute}, and the enchant's effect modifies no " +
+                    "such attribute.");
+            }
+
+            placeholders[key] = new Placeholder
+            {
+                Key = key,
+                Attribute = attribute,
+                Value = stat.Coefficient,
+                PerRank = true,
+                ScalesOff = [attribute!],
+            };
+        }
+
+        return placeholders;
     }
 
     public StatEnchant? ForAugmentation(int netId) => _byAugmentation.GetValueOrDefault(netId);
 
-    private static TraitStat Stat(
+    private static EnchantStat Stat(
         AbstractFileProvider provider, IPropertyHolder modifier, ConstantsTable constants, string effect)
     {
         var attribute = PropertyWalk.GetStruct(modifier, AttributeField) is { } held
@@ -110,7 +160,7 @@ public sealed class StatEnchants
         var table = lookup is null ? null : Named(PropertyWalk.GetString(lookup, CurveTableField));
         var row = lookup is null ? null : Named(PropertyWalk.GetString(lookup, RowNameField));
 
-        return new TraitStat(attribute, scaled)
+        return new EnchantStat(attribute, scaled)
         {
             Lookup = table is not null && row is not null ? CurveReader.Read(provider, table, row) : null,
         };
@@ -118,7 +168,7 @@ public sealed class StatEnchants
 
     private static string? Named(string? value) => value is null or NoName ? null : value;
 
-    private static IReadOnlyDictionary<string, string> Names(
+    private static (string Name, IReadOnlyDictionary<string, string> NameByPrimaryStat) Names(
         AbstractFileProvider provider, UObject augmentation, HeroNames heroes, string path)
     {
         var token = Structs(PropertyWalk.GetStruct(augmentation, NameField), TokensField)
@@ -178,9 +228,9 @@ public sealed class StatEnchants
             byAttribute[ordinal] = printed;
         }
 
-        var names = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        var byStat = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        foreach (var hero in heroes.Profiles)
+        foreach (var hero in heroes.Profiles.OrderBy(hero => hero.PrimaryAttribute))
         {
             if (!byAttribute.TryGetValue(hero.PrimaryAttribute, out var printed))
             {
@@ -188,10 +238,16 @@ public sealed class StatEnchants
                     $"{owner}.{function} names nothing for {hero.ShippedName}'s {SwitchedField} {hero.PrimaryAttribute}.");
             }
 
-            names[hero.ShippedName] = printed;
+            if (byStat.TryGetValue(hero.PrimaryStat, out var named) && named != printed)
+            {
+                throw new InvalidOperationException(
+                    $"{owner}.{function} names two enchants for the primary stat {hero.PrimaryStat}: {named} and {printed}.");
+            }
+
+            byStat[hero.PrimaryStat] = printed;
         }
 
-        return names;
+        return (string.Join(" / ", byStat.Values), byStat);
     }
 
     private static string? Text(FScriptText text) =>

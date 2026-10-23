@@ -1,0 +1,93 @@
+@use "Card" as *;
+@use "Crest" as *;
+
+$augmentation-head-top: 14px;
+$augmentation-rule-gap: 2px;
+$augmentation-crest-top: 12px;
+$augmentation-crest-bottom: 7px;
+$augmentation-band-height: 26px;
+$augmentation-band-inset: 14px;
+$augmentation-count-gap: 6px;
+$augmentation-prose-inset: 14px;
+$augmentation-prose-top: 8px;
+$augmentation-prose-bottom: 10px;
+$augmentation-sources-bottom: 12px;
+$augmentation-heading-size: 11.5px;
+$augmentation-text-size: 10.5px;
+$augmentation-line-height: 13.3px;
+
+.fx-tip.fx-augmentation {
+  @include augmentation-crest;
+
+  .head {
+    padding: $augmentation-head-top 0 $augmentation-rule-gap;
+  }
+
+  .eyebrow,
+  .heading {
+    font-family: $display;
+    font-size: $augmentation-heading-size;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .eyebrow { color: var(--core-text-secondary); }
+
+  .title {
+    color: var(--core-primary-main);
+  }
+
+  .fx-augmentation-crest {
+    margin: $augmentation-crest-top auto $augmentation-crest-bottom;
+  }
+
+  .band {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: $augmentation-band-height;
+    padding: 0 $augmentation-band-inset;
+    background: var(--fx-subheader) 0 0/100% 100% no-repeat;
+    font-size: $augmentation-text-size;
+    line-height: $augmentation-line-height;
+  }
+
+  .kind { color: var(--core-text-secondary); }
+
+  .tier { color: var(--core-text-info); }
+
+  .count {
+    margin-left: $augmentation-count-gap;
+    font-weight: 600;
+    color: var(--core-text-primary);
+  }
+
+  .prose {
+    padding: $augmentation-prose-top $augmentation-prose-inset $augmentation-prose-bottom;
+    font-size: $augmentation-text-size;
+    line-height: $augmentation-line-height;
+    color: var(--core-text-secondary);
+    white-space: pre-line;
+  }
+
+  .sources {
+    padding: 0 $augmentation-prose-inset $augmentation-sources-bottom;
+    font-size: $augmentation-text-size;
+    line-height: $augmentation-line-height;
+    color: var(--core-text-secondary);
+  }
+
+  .heading {
+    padding-bottom: $augmentation-prose-top;
+    color: var(--core-primary-main);
+  }
+
+  .slot {
+    font-weight: 600;
+    color: var(--core-text-primary);
+  }
+}

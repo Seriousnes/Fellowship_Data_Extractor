@@ -10,8 +10,14 @@ public static class DocumentProjection
     public delegate string? NameLookup(EntityType type, int id);
 
     public sealed class References(
-        TypeLookup types, NameLookup names, IReadOnlyDictionary<(EntityType Type, int Id), int>? redirects = null)
+        TypeLookup types,
+        NameLookup names,
+        IReadOnlyDictionary<(EntityType Type, int Id), int>? redirects = null,
+        IReadOnlyDictionary<(EntityType Type, int Id, string Stat), string>? namesByStat = null,
+        string? stat = null)
     {
+        public References For(string? primaryStat) => new(types, names, redirects, namesByStat, primaryStat);
+
         public EntityReference? At(IconSource? source) =>
             source is null || types(source.Table, source.NetId) is not { } type
                 ? null
@@ -23,7 +29,12 @@ public static class DocumentProjection
 
             var target = redirects is not null && redirects.TryGetValue((type, found), out var host) ? host : found;
 
-            return new EntityReference(type, target, names(type, target));
+            return new EntityReference(
+                type,
+                target,
+                stat is not null && namesByStat is not null && namesByStat.TryGetValue((type, target, stat), out var named)
+                    ? named
+                    : names(type, target));
         }
     }
 
@@ -90,7 +101,7 @@ public static class DocumentProjection
             Rarities = entity.Rarities?.Select(Enum.Parse<Rarity>).Order().ToArray(),
 
             RuleSet = entity.RuleSet,
-            TraitTree = entity.TraitTree,
+            AttunementTree = entity.AttunementTree,
             Stats = entity.Stats,
             Description = entity.Description,
             Acquire = entity.Acquire,
@@ -134,6 +145,7 @@ public static class DocumentProjection
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Description = entity.Description,
+            PrimaryStat = Stat(entity),
             EffectTags = entity.EffectTags,
             Icon = entity.Icon,
             Duration = entity.Duration,
@@ -285,7 +297,7 @@ public static class DocumentProjection
             Generates = Generated(entity),
         },
 
-        EntityType.GemType => new GemTypeDocument
+        EntityType.Radiance => new RadianceDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
@@ -296,14 +308,14 @@ public static class DocumentProjection
             OverflowPlaceholders = Spent(entity.GemOverflow?.Description, entity.GemOverflow?.Placeholders),
         },
 
-        EntityType.GemTrait => new GemTraitDocument
+        EntityType.GemAbility => new GemAbilityDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
             Gem = Enum.Parse<GemType>(entity.GemType!),
             Node = entity.GemNode!.Value,
             RequiredPower = entity.RequiredGemPower!.Value,
-            Replaces = references.Of(EntityType.GemTrait, entity.Replaces),
+            Replaces = references.Of(EntityType.GemAbility, entity.Replaces),
             Grants = Referenced(entity.Granted, references),
             Description = entity.Description,
             Icon = entity.Icon,
@@ -329,7 +341,7 @@ public static class DocumentProjection
             Generates = Generated(entity),
         },
 
-        EntityType.Blessing => new BlessingDocument
+        EntityType.Glyph => new GlyphDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
@@ -346,36 +358,86 @@ public static class DocumentProjection
             Generates = Generated(entity),
         },
 
-        EntityType.Trait => new TraitDocument
+        EntityType.Sigil => new SigilDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
-            Category = entity.TraitCategory,
-            CategoryTag = entity.TraitCategoryTag,
+            Category = entity.AugmentationCategory,
+            CategoryTag = entity.AugmentationCategoryTag,
             MaxRank = entity.MaxRank,
             RandomChance = entity.RandomChance,
-            Power = references.At(Augmentation(entity.Augmentation)),
-            Description = entity.Description,
-            Icon = entity.Icon,
-            RankRuns = entity.RankRuns,
-            Generates = Generated(entity),
-            NameByHero = entity.NameByHero,
-            Stats = entity.TraitStats,
-        },
-
-        EntityType.TraitPower => new TraitPowerDocument
-        {
-            Id = entity.NetId!.Value,
-            Name = Name(entity),
             Description = entity.Description,
             DescriptionsByHero = entity.DescriptionsByHero,
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             Duration = entity.Duration,
+            RankRuns = entity.RankRuns,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
+        },
+
+        EntityType.Aspect => new AspectDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Category = entity.AugmentationCategory,
+            CategoryTag = entity.AugmentationCategoryTag,
+            MaxRank = entity.MaxRank,
+            RandomChance = entity.RandomChance,
+            Description = entity.Description,
+            DescriptionsByHero = entity.DescriptionsByHero,
+            Icon = entity.Icon,
+            Cooldown = entity.Cooldown,
+            Duration = entity.Duration,
+            RankRuns = entity.RankRuns,
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
+            ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
+            Generates = Generated(entity),
+        },
+
+        EntityType.ProtectiveEnchant => new ProtectiveEnchantDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Category = entity.AugmentationCategory,
+            CategoryTag = entity.AugmentationCategoryTag,
+            MaxRank = entity.MaxRank,
+            RandomChance = entity.RandomChance,
+            Description = entity.Description,
+            DescriptionsByHero = entity.DescriptionsByHero,
+            Icon = entity.Icon,
+            Cooldown = entity.Cooldown,
+            Duration = entity.Duration,
+            RankRuns = entity.RankRuns,
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
+            ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
+            Generates = Generated(entity),
+        },
+
+        EntityType.Enchant => new EnchantDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            Category = entity.AugmentationCategory,
+            CategoryTag = entity.AugmentationCategoryTag,
+            MaxRank = entity.MaxRank,
+            RandomChance = entity.RandomChance,
+            Description = entity.Description,
+            DescriptionsByHero = entity.DescriptionsByHero,
+            Icon = entity.Icon,
+            Cooldown = entity.Cooldown,
+            Duration = entity.Duration,
+            RankRuns = entity.RankRuns,
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
+            ScalesOff = entity.ScalesOff,
+            Grants = Referenced(entity.Granted, references),
+            Generates = Generated(entity),
+            PrimaryStat = Stat(entity),
+            Stats = entity.EnchantStats,
         },
 
         EntityType.RelicPower => new RelicPowerDocument
@@ -477,6 +539,9 @@ public static class DocumentProjection
 
     public static string? Name(Entity entity) =>
         entity.DisplayName is { } name && ReadsAsWords(name) ? name : null;
+
+    private static PrimaryStat? Stat(Entity entity) =>
+        entity.PrimaryStat is { } stat ? Enum.Parse<PrimaryStat>(stat) : null;
 
     private static IconSource? Augmentation(int? netId) =>
         netId is { } id ? new IconSource(TalentTrees.AugmentationTable, id, string.Empty) : null;

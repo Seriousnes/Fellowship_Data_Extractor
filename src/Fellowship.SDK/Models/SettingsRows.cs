@@ -15,9 +15,9 @@ public sealed record TemperCeiling(int ItemLevel, int MaxTempers);
 
 public sealed record DropItemLevel(string Row, int Difficulty, int ItemLevel);
 
-public sealed record BlessingEntry(string Name, string Augmentation, string TierLevel, string TierSources, int Tiers);
+public sealed record GlyphEntry(string Name, string Augmentation, string TierLevel, string TierSources, int Tiers);
 
-public sealed record TraitTreeEntry(string Tag)
+public sealed record AttunementTreeEntry(string Tag)
 {
     public bool UseRecipeRowUnlocks { get; init; }
 
@@ -25,57 +25,57 @@ public sealed record TraitTreeEntry(string Tag)
 
     public IReadOnlyDictionary<int, int> RowToUpgradeRequirement { get; init; } = new Dictionary<int, int>();
 
-    public IReadOnlyList<TraitTreeNode> Nodes { get; init; } = [];
+    public IReadOnlyList<AttunementTreeNode> Nodes { get; init; } = [];
 
-    public TraitTreeLayout? Layout { get; init; }
+    public AttunementTreeLayout? Layout { get; init; }
 }
 
-public sealed record TraitTreePoint(double X, double Y);
+public sealed record AttunementTreePoint(double X, double Y);
 
-public sealed record TraitTreeLayout(string Widget, double Width, double Height)
+public sealed record AttunementTreeLayout(string Widget, double Width, double Height)
 {
-    public required TraitTreePoint Root { get; init; }
+    public required AttunementTreePoint Root { get; init; }
 
-    public IReadOnlyList<TraitTreeRootLayer> RootLayers { get; init; } = [];
+    public IReadOnlyList<AttunementTreeRootLayer> RootLayers { get; init; } = [];
 
     public double NodeWidth { get; init; }
 
     public double NodeHeight { get; init; }
 
-    public IReadOnlyDictionary<int, TraitTreePoint> Nodes { get; init; } = new Dictionary<int, TraitTreePoint>();
+    public IReadOnlyDictionary<int, AttunementTreePoint> Nodes { get; init; } = new Dictionary<int, AttunementTreePoint>();
 }
 
-public sealed record TraitTreeRootLayer(double Width, double Height)
+public sealed record AttunementTreeRootLayer(double Width, double Height)
 {
     public string? Texture { get; init; }
 
     public bool Item { get; init; }
 }
 
-public sealed record TraitNodeColorRows(string Otherwise)
+public sealed record AttunementNodeColorRows(string Otherwise)
 {
     public IReadOnlyDictionary<string, string> ByCategory { get; init; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }
 
-public sealed record TraitTreeNode(int UITreeIndex, int TraitRowIndex)
+public sealed record AttunementTreeNode(int UITreeIndex, int AugmentationRowIndex)
 {
     public IReadOnlyList<int> ParentNodes { get; init; } = [];
 
     public IReadOnlyList<int> ChildrenNodes { get; init; } = [];
 
-    public IReadOnlyList<string> TraitCategories { get; init; } = [];
+    public IReadOnlyList<string> AugmentationCategories { get; init; } = [];
 
-    public bool RandomizedTraitFromTraitCategories { get; init; }
+    public bool RandomizedFromAugmentationCategories { get; init; }
 
     public int? MinDungeonRatingAtGenerationTime { get; init; }
 
     public int? EnableAtItemLevel { get; init; }
 
-    public int? MaxTraitRankOverride { get; init; }
+    public int? MaxRankOverride { get; init; }
 }
 
-public sealed record TraitNodeUpgradeCost(int Rank, double Cost, int Currency);
+public sealed record AttunementNodeUpgradeCost(int Rank, double Cost, int Currency);
 
 public sealed record DifficultyScaling
 {

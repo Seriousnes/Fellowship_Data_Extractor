@@ -1,0 +1,15 @@
+.cx-ranks-scroll { overflow-x: auto; }
+
+.cx-ranks {
+  width: 100%; border-collapse: collapse; font-size: 13.5px;
+
+  thead th {
+    text-align: left; font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--faint); padding: 7px 10px; border-bottom: 1px solid var(--line); background: var(--sunken);
+    white-space: nowrap;
+  }
+
+  tbody td { padding: 6px 10px; border-bottom: 1px solid var(--line-soft); color: var(--ink); }
+
+  .cx-ranks-n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+}

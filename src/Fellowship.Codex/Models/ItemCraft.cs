@@ -9,12 +9,12 @@ namespace Fellowship.Codex.Models;
 public static class CraftSlots
 {
     public const string GemSocket = "GemSocket";
-    public const string TraitTree = "TraitTree";
+    public const string AttunementTree = "TraitTree";
     public const string GrantedAbility = "GrantedAbility";
     public const string RandomRolls = "RandomRolls";
 
     public const string GemPower = "GemPower";
-    public const string ItemTrait = "ItemTrait";
+    public const string Augmentation = "ItemTrait";
     public const string AbilityRank = "AbilityRank";
 }
 
@@ -56,9 +56,9 @@ public static class ItemCraft
 
             slots.Add(type switch
             {
-                CraftSlots.TraitTree => new CraftSlot(type, ordinal, [name])
+                CraftSlots.AttunementTree => new CraftSlot(type, ordinal, [name])
                 {
-                    Capacity = TraitTrees.Capacity(item.TraitTree, settings) ?? 0,
+                    Capacity = AttunementTrees.Capacity(item.AttunementTree, settings) ?? 0,
                 },
                 CraftSlots.GemSocket => new CraftSlot(type, ordinal, [name]),
                 _ => new CraftSlot(type, ordinal, []),
@@ -88,8 +88,8 @@ public static class ItemCraft
 
     public static string? Defining(ModifierKind kind, EntityDocument? row, SettingsFile settings) =>
         settings.StatCalculation.SlotDefinitions.TryGetValue(kind.ToString(), out var definition) &&
-        (definition.SlotType != CraftSlots.ItemTrait ||
-         row is TraitDocument { CategoryTag: { } tag } && definition.ItemTraitPool.Contains(tag, StringComparer.Ordinal))
+        (definition.SlotType != CraftSlots.Augmentation ||
+         row is AugmentationDocument { CategoryTag: { } tag } && definition.AugmentationPool.Contains(tag, StringComparer.Ordinal))
             ? kind.ToString()
             : null;
 
@@ -104,11 +104,11 @@ public static class ItemCraft
             .Select(pair => KindOf(pair.Key, settings))
             .FirstOrDefault(kind => kind is not null);
 
-    public static ModifierKind? KindOfTrait(EntityDocument? row, SettingsFile settings) =>
-        row is TraitDocument { CategoryTag: { } tag }
+    public static ModifierKind? KindOfAugmentation(EntityDocument? row, SettingsFile settings) =>
+        row is AugmentationDocument { CategoryTag: { } tag }
             ? settings.StatCalculation.SlotDefinitions
-                .Where(pair => pair.Value.SlotType == CraftSlots.ItemTrait &&
-                               pair.Value.ItemTraitPool.Contains(tag, StringComparer.Ordinal))
+                .Where(pair => pair.Value.SlotType == CraftSlots.Augmentation &&
+                               pair.Value.AugmentationPool.Contains(tag, StringComparer.Ordinal))
                 .Select(pair => KindOf(pair.Key, settings))
                 .FirstOrDefault(kind => kind is not null)
             : null;
@@ -118,9 +118,9 @@ public static class ItemCraft
     public static int MaxRank(CraftCandidate candidate, IEntityStoreService store) =>
         Definition(candidate.Accepts, store.Settings).SlotType switch
         {
-            CraftSlots.AbilityRank => Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id)?.MaxRank ?? 1,
-            CraftSlots.ItemTrait or CraftSlots.TraitTree =>
-                Find<TraitDocument>(store, TooltipView.TraitType, candidate.Id)?.MaxRank ?? 1,
+            CraftSlots.AbilityRank => Find<GlyphDocument>(store, EntityType.Glyph, candidate.Id)?.MaxRank ?? 1,
+            CraftSlots.Augmentation or CraftSlots.AttunementTree =>
+                TooltipView.Augmentation(store, candidate.Id, null)?.MaxRank ?? 1,
             _ => int.MaxValue,
         };
 
@@ -135,12 +135,12 @@ public static class ItemCraft
 
         if ((query.ItemLevel ?? store.DropItemLevel(item)) < floor) return CraftReasons.BelowItemLevel(floor);
 
-        if (slot.SlotName == CraftSlots.TraitTree)
+        if (slot.SlotName == CraftSlots.AttunementTree)
         {
             var tree = TooltipView.TreeName(store.Settings);
 
-            if (query.ImbuedTraits.Any(trait => trait.Id == candidate.Id)) return CraftReasons.AlreadyAttuned(tree);
-            if (query.ImbuedTraits.Count >= slot.Capacity) return CraftReasons.NoRoom(tree);
+            if (query.Attunements.Any(augmentation => augmentation.Id == candidate.Id)) return CraftReasons.AlreadyAttuned(tree);
+            if (query.Attunements.Count >= slot.Capacity) return CraftReasons.NoRoom(tree);
 
             var ceiling = MaxRank(candidate, store);
             return candidate.Amount < 1 || candidate.Amount > ceiling ? CraftReasons.PastRank(ceiling) : null;
@@ -148,11 +148,11 @@ public static class ItemCraft
 
         if (KindOf(candidate.Accepts, store.Settings) is not { } kind) return null;
 
-        if (TooltipView.TypeOf(kind, store.Settings) == EntityType.Blessing)
+        if (TooltipView.TypeOf(kind, store.Settings) == EntityType.Glyph)
         {
-            if (Find<BlessingDocument>(store, EntityType.Blessing, candidate.Id) is { } blessing &&
+            if (Find<GlyphDocument>(store, EntityType.Glyph, candidate.Id) is { } glyph &&
                 item.Slot is { } worn &&
-                !(blessing.Slots ?? []).Contains(worn, StringComparer.OrdinalIgnoreCase))
+                !(glyph.Slots ?? []).Contains(worn, StringComparer.OrdinalIgnoreCase))
             {
                 return CraftReasons.NotInPool(worn);
             }
@@ -181,7 +181,7 @@ public static class ItemCraft
     {
         CraftSlots.GemSocket => query with { Gem = null },
 
-        CraftSlots.TraitTree => query,
+        CraftSlots.AttunementTree => query,
 
         _ => query with
         {
@@ -194,9 +194,9 @@ public static class ItemCraft
     public static TooltipQuery With(
         TooltipQuery query, CraftSlot slot, CraftCandidate candidate, SettingsFile settings) => slot.SlotName switch
     {
-        CraftSlots.TraitTree => query with
+        CraftSlots.AttunementTree => query with
         {
-            ImbuedTraits = [.. query.ImbuedTraits, new ImbuedTrait(candidate.Id, candidate.Amount)],
+            Attunements = [.. query.Attunements, new Attunement(candidate.Id, candidate.Amount)],
         },
 
         CraftSlots.GemSocket => query with { Gem = candidate.Id },

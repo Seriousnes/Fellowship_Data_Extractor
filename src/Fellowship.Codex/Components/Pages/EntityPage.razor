@@ -168,7 +168,6 @@
 
         Add("slot", First("slot"));
         Add("gem", First("gem"));
-        Add("trait", First("trait"));
 
         var heroes = Catalog.Facet("hero")?.Values(Entity).ToArray() ?? [];
         Add("hero", heroes.Length == 1 ? heroes[0] : null);

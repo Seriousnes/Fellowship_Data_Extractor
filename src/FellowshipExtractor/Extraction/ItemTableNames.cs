@@ -38,8 +38,7 @@ public sealed class ItemTableNames
             foreach (var (rowName, row) in table.RowMap)
             {
                 if (PropertyWalk.Get(row, EnabledField)?.GenericValue is not true) continue;
-                if (PropertyWalk.GetString(row, DisplayNameField) is not { } name) continue;
-
+                var name = PropertyWalk.GetString(row, DisplayNameField) is { Length: > 0 } named ? named : null;
                 var tier = rarities.Tier(PropertyWalk.Get(row, RarityField)?.GenericValue);
 
                 _byTag.TryAdd(

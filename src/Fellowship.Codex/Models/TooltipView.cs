@@ -2,6 +2,8 @@ using System.Globalization;
 
 using Fellowship.SDK.Documents;
 
+using Fellowship.Codex.Services;
+
 namespace Fellowship.Codex.Models;
 
 public static class TooltipView
@@ -10,8 +12,6 @@ public static class TooltipView
 
     public const string AbilityCard = "tip-ability";
 
-    public const EntityType TraitType = EntityType.Trait;
-
     public const int SlotWidth = 48;
 
     public const string Unresolved = "unresolved";
@@ -19,13 +19,14 @@ public static class TooltipView
     public const string GemSocketLabel = "Gem Socket";
 
     public static EntityType TypeOf(ModifierKind kind, SettingsFile settings) =>
-        ItemCraft.Definition(kind.ToString(), settings).SlotType switch
+        ItemCraft.Definition(kind.ToString(), settings) switch
         {
-            CraftSlots.ItemTrait => TraitType,
-            CraftSlots.AbilityRank => EntityType.Blessing,
-            CraftSlots.GemPower => EntityType.GemType,
-            var slotType => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, $"{kind} is a {slotType} slot, which names no entity type."),
+            { SlotType: CraftSlots.Augmentation, AugmentationPool: [var category] }
+                when AugmentationTypes.ByCategory.TryGetValue(category, out var type) => type,
+            { SlotType: CraftSlots.AbilityRank } => EntityType.Glyph,
+            { SlotType: CraftSlots.GemPower } => EntityType.Radiance,
+            var definition => throw new ArgumentOutOfRangeException(
+                nameof(kind), kind, $"{kind} is a {definition.SlotType} slot, which names no entity type."),
         };
 
     public static ModifierTypeEntry Type(ModifierKind kind, SettingsFile settings) =>
@@ -40,8 +41,8 @@ public static class TooltipView
         Type(kind, settings).Plural is { Length: > 0 } plural ? plural : Type(kind, settings).Printed ?? kind.ToString();
 
     public static string TreeHeader(SettingsFile settings) =>
-        settings.TraitTreeHeader
-        ?? throw new InvalidOperationException("The settings state no trait tree tooltip header.");
+        settings.AttunementTreeHeader
+        ?? throw new InvalidOperationException("The settings state no attunement tree tooltip header.");
 
     public static string TreeName(SettingsFile settings) => TreeHeader(settings).TrimEnd(':', ' ');
 
@@ -68,11 +69,18 @@ public static class TooltipView
         return entries;
     }
 
-    public static string? PrintedFor(EntityDocument document, string? wearer) =>
-        document is TraitDocument { NameByHero: { } names } && wearer is not null &&
-        names.TryGetValue(wearer, out var printed)
-            ? printed
-            : null;
+    public static AugmentationDocument? Augmentation(IEntityStoreService store, int id, string? wearer)
+    {
+        AugmentationDocument[] readings =
+        [
+            .. AugmentationTypes.All.SelectMany(type => store.All(type, id)).OfType<AugmentationDocument>(),
+        ];
+
+        var hero = wearer is null ? null : store.Hero(wearer);
+
+        return (hero is null ? null : readings.FirstOrDefault(reading => EntityStore.Reads(reading, hero)))
+            ?? readings.FirstOrDefault();
+    }
 
     public static string Magnitude(StatLine line) =>
         (line.Value < 0 ? string.Empty : "+") +

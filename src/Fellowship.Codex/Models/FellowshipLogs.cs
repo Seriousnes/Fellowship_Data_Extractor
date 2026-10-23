@@ -12,13 +12,13 @@ public static class FellowshipLogs
 {
     public const int GemPowerBase = 1_000_000;
     public const int TalentBase = 2_000_000;
-    public const int TraitBase = 3_000_000;
-    public const int BlessingBase = 4_000_000;
+    public const int AugmentationBase = 3_000_000;
+    public const int GlyphBase = 4_000_000;
 
     private const string GemPowerField = "power";
-    private const string TraitRankField = "rank";
-    private const string BlessingLevelField = "level";
-    private const string ImbuedPointsField = "points";
+    private const string AugmentationRankField = "rank";
+    private const string GlyphLevelField = "level";
+    private const string AttunedPointsField = "points";
     private const string AttributeValueField = "value";
 
     private const string ArmorStat = "Armor";
@@ -79,7 +79,7 @@ public static class FellowshipLogs
 
         var stats = new Dictionary<string, IReadOnlyList<decimal>>(StringComparer.OrdinalIgnoreCase);
         var modifiers = new List<ItemModifier>();
-        var imbued = new List<ImbuedTrait>();
+        var attuned = new List<Attunement>();
         decimal? armor = null;
 
         foreach (var attribute in Array(gear, "attributes"))
@@ -99,56 +99,56 @@ public static class FellowshipLogs
 
         foreach (var power in Array(gear, "gemPowers"))
         {
-            Modifier(power, GemPowerBase, GemPowerField, EntityType.GemType);
+            Modifier(power, GemPowerBase, GemPowerField, EntityType.Radiance);
         }
 
-        foreach (var trait in Array(gear, "traits"))
+        foreach (var augmentation in Array(gear, "traits"))
         {
-            Modifier(trait, TraitBase, TraitRankField, TooltipView.TraitType);
+            Modifier(augmentation, AugmentationBase, AugmentationRankField, null);
         }
 
-        foreach (var blessing in Array(gear, "blessings"))
+        foreach (var logged in Array(gear, "blessings"))
         {
-            if (Int(blessing, "id") is not { } logged || Blessing(logged, store) is not { } resolved ||
+            if (Int(logged, "id") is not { } loggedId || Glyph(loggedId, store) is not { } resolved ||
                 ItemCraft.KindOfSlotType(CraftSlots.AbilityRank, store.Settings) is not { } glyph)
             {
-                missing.Add($"blessing id {Int(blessing, "id")} resolves to no ability rank row.");
+                missing.Add($"glyph id {Int(logged, "id")} resolves to no ability rank row.");
                 continue;
             }
 
-            modifiers.Add(new ItemModifier(glyph, resolved, Int(blessing, BlessingLevelField) ?? 1));
+            modifiers.Add(new ItemModifier(glyph, resolved, Int(logged, GlyphLevelField) ?? 1));
         }
 
-        foreach (var trait in Tree(gear, owner, Worn(store, itemId)))
+        foreach (var augmentation in Tree(gear, owner, Worn(store, itemId)))
         {
-            if (Int(trait, ImbuedPointsField) is not { } points || points <= 0) continue;
-            if (Int(trait, "id") is not { } logged || logged < TraitBase) continue;
+            if (Int(augmentation, AttunedPointsField) is not { } points || points <= 0) continue;
+            if (Int(augmentation, "id") is not { } logged || logged < AugmentationBase) continue;
 
-            var id = logged - TraitBase;
+            var id = logged - AugmentationBase;
 
-            if (store.All(TooltipView.TraitType, id).Count == 0)
+            if (TooltipView.Augmentation(store, id, null) is null)
             {
-                missing.Add($"imbued trait id {logged} names no trait.");
+                missing.Add($"attuned augmentation id {logged} names no augmentation.");
                 continue;
             }
 
-            imbued.Add(new ImbuedTrait(id, points));
+            attuned.Add(new Attunement(id, points));
         }
 
-        void Modifier(JsonElement entry, int under, string amountField, EntityType type)
+        void Modifier(JsonElement entry, int under, string amountField, EntityType? type)
         {
             if (Int(entry, "id") is not { } logged) return;
 
             var id = logged - under;
-            var row = store.All(type, id).FirstOrDefault();
+            EntityDocument? row = type is { } named ? store.All(named, id).FirstOrDefault() : TooltipView.Augmentation(store, id, null);
 
-            var kind = type == EntityType.GemType
+            var kind = type == EntityType.Radiance
                 ? ItemCraft.KindOfSlotType(CraftSlots.GemPower, store.Settings)
-                : ItemCraft.KindOfTrait(row, store.Settings);
+                : ItemCraft.KindOfAugmentation(row, store.Settings);
 
             if (row is null || kind is null)
             {
-                missing.Add($"{type} id {logged} names nothing in the export.");
+                missing.Add($"{type?.ToString() ?? "item augmentation"} id {logged} names nothing in the export.");
                 return;
             }
 
@@ -171,18 +171,18 @@ public static class FellowshipLogs
             Armor = armor,
             Stats = stats,
             Modifiers = modifiers,
-            ImbuedTraits = imbued,
-            AllocatedTraits = imbued.Count > 0 ? imbued.Count : null,
+            Attunements = attuned,
+            AllocatedAttunements = attuned.Count > 0 ? attuned.Count : null,
         };
     }
 
-    public static int? Blessing(int loggedId, IEntityStoreService store)
+    public static int? Glyph(int loggedId, IEntityStoreService store)
     {
-        var rank = loggedId - BlessingBase;
+        var rank = loggedId - GlyphBase;
 
-        foreach (var blessing in store.Entities.OfType<BlessingDocument>())
+        foreach (var glyph in store.Entities.OfType<GlyphDocument>())
         {
-            if (blessing.AbilityRank == rank) return blessing.Id;
+            if (glyph.AbilityRank == rank) return glyph.Id;
         }
 
         return null;
@@ -240,55 +240,55 @@ public static class FellowshipLogs
 
         if (attributes.Count > 0) entry["attributes"] = attributes;
 
-        Kind(EntityType.GemType, "gemPowers", GemPowerBase, GemPowerField);
-        Kind(TooltipView.TraitType, "traits", TraitBase, TraitRankField);
+        Kind([EntityType.Radiance], "gemPowers", GemPowerBase, GemPowerField);
+        Kind(AugmentationTypes.All, "traits", AugmentationBase, AugmentationRankField);
 
-        var blessings = new JsonArray();
+        var glyphs = new JsonArray();
 
         foreach (var modifier in query.Modifiers.Where(
-            row => TooltipView.TypeOf(row.Kind, store.Settings) == EntityType.Blessing))
+            row => TooltipView.TypeOf(row.Kind, store.Settings) == EntityType.Glyph))
         {
             if (RankOf(modifier.Id, item, store) is not { } logged) continue;
 
-            blessings.Add(new JsonObject
+            glyphs.Add(new JsonObject
             {
                 ["id"] = logged,
-                [BlessingLevelField] = modifier.Amount,
-                ["name"] = Name(EntityType.Blessing, modifier.Id, store),
+                [GlyphLevelField] = modifier.Amount,
+                ["name"] = Name(EntityType.Glyph, modifier.Id, store),
             });
         }
 
-        if (blessings.Count > 0) entry["blessings"] = blessings;
+        if (glyphs.Count > 0) entry["blessings"] = glyphs;
 
-        if (query.ImbuedTraits.Count > 0)
+        if (query.Attunements.Count > 0)
         {
             var tree = new JsonArray();
 
-            foreach (var trait in query.ImbuedTraits)
+            foreach (var augmentation in query.Attunements)
             {
                 tree.Add(new JsonObject
                 {
-                    ["id"] = trait.Id + TraitBase,
-                    [BlessingLevelField] = 1,
-                    [ImbuedPointsField] = trait.Rank,
-                    ["name"] = Name(TooltipView.TraitType, trait.Id, store),
+                    ["id"] = augmentation.Id + AugmentationBase,
+                    [GlyphLevelField] = 1,
+                    [AttunedPointsField] = augmentation.Rank,
+                    ["name"] = TooltipView.Augmentation(store, augmentation.Id, null) is { } named ? PublicTypes.NameOf(named) : null,
                 });
             }
 
             entry[NeckSlot.Equals(item.Slot, StringComparison.OrdinalIgnoreCase) ? NeckTree : WeaponTree] = tree;
         }
 
-        void Kind(EntityType type, string field, int under, string amountField)
+        void Kind(IReadOnlyList<EntityType> types, string field, int under, string amountField)
         {
             var entries = new JsonArray();
 
-            foreach (var modifier in query.Modifiers.Where(row => TooltipView.TypeOf(row.Kind, store.Settings) == type))
+            foreach (var modifier in query.Modifiers.Where(row => types.Contains(TooltipView.TypeOf(row.Kind, store.Settings))))
             {
                 entries.Add(new JsonObject
                 {
                     ["id"] = modifier.Id + under,
                     [amountField] = modifier.Amount,
-                    ["name"] = Name(type, modifier.Id, store),
+                    ["name"] = Name(TooltipView.TypeOf(modifier.Kind, store.Settings), modifier.Id, store),
                 });
             }
 
@@ -335,10 +335,10 @@ public static class FellowshipLogs
         return store.Rarity(rarity, gem: false)?.Tier;
     }
 
-    private static int? RankOf(int blessingId, ItemDocument item, IEntityStoreService store) =>
-        store.All(EntityType.Blessing, blessingId).OfType<BlessingDocument>().FirstOrDefault()
+    private static int? RankOf(int glyphId, ItemDocument item, IEntityStoreService store) =>
+        store.All(EntityType.Glyph, glyphId).OfType<GlyphDocument>().FirstOrDefault()
             is { AbilityRank: { } rank }
-            ? rank + BlessingBase
+            ? rank + GlyphBase
             : null;
 
     private static string? Name(EntityType type, int id, IEntityStoreService store) =>

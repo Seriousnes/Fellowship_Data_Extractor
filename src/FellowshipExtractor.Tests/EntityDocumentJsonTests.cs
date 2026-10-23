@@ -27,7 +27,7 @@ public sealed class EntityDocumentJsonTests
     private static IReadOnlyList<(EntityType Type, string Line, EntityDocument Document)> Rows => Loaded.Value;
 
     [Fact]
-    public void EveryLineOfTheExportDeserialises() => Assert.Equal(12_664, Rows.Count);
+    public void EveryLineOfTheExportDeserialises() => Assert.Equal(12_608, Rows.Count);
 
     [Fact]
     public void ADocumentsRuntimeClassIsTheDocumentOfItsTypeField() =>
@@ -64,7 +64,7 @@ public sealed class EntityDocumentJsonTests
         {
             Id = 7788,
             Name = "Searing Blaze",
-            NameBorrowedFrom = new EntityReference(EntityType.GemTrait, 4321, "Ruby Edge"),
+            NameBorrowedFrom = new EntityReference(EntityType.GemAbility, 4321, "Ruby Edge"),
         };
 
         var line = JsonSerializer.Serialize<EntityDocument>(effect, Options);
@@ -77,15 +77,15 @@ public sealed class EntityDocumentJsonTests
     [Fact]
     public void ADocumentKeepsATypePropertyOfItsOwnBesideTheDiscriminator()
     {
-        var gem = new GemTypeDocument { Id = 1, Type = GemType.Ruby, Attribute = "RubyPower" };
+        var gem = new RadianceDocument { Id = 1, Type = GemType.Ruby, Attribute = "RubyPower" };
 
         var line = JsonSerializer.Serialize<EntityDocument>(gem, Options);
         var body = JsonNode.Parse(line)!.AsObject();
 
-        Assert.Equal("gem-type", body[EntityDocuments.Discriminator]!.GetValue<string>());
+        Assert.Equal("radiance", body[EntityDocuments.Discriminator]!.GetValue<string>());
         Assert.Equal("Ruby", body["type"]!.GetValue<string>());
 
-        Assert.Equal(GemType.Ruby, Assert.IsType<GemTypeDocument>(
+        Assert.Equal(GemType.Ruby, Assert.IsType<RadianceDocument>(
             JsonSerializer.Deserialize<EntityDocument>(line, Options)).Type);
     }
 

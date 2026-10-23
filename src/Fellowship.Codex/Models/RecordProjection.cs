@@ -13,15 +13,15 @@ public static class RecordProjection
         Table = Verified(new Dictionary<EntityType, Func<EntityDocument, ICodexViewService, string, EntityRecord>>
         {
             [EntityType.Ability] = (document, view, origin) => From((AbilityDocument)document, view, origin),
-            [EntityType.Blessing] = (document, view, origin) => From((BlessingDocument)document, view, origin),
+            [EntityType.Glyph] = (document, view, origin) => From((GlyphDocument)document, view, origin),
             [EntityType.CompanionPet] = (document, view, origin) => From((CompanionPetDocument)document, view, origin),
             [EntityType.Creature] = (document, view, origin) => From((CreatureDocument)document, view, origin),
             [EntityType.Currency] = (document, view, origin) => From((CurrencyDocument)document, view, origin),
             [EntityType.Dungeon] = (document, view, origin) => From((DungeonDocument)document, view, origin),
             [EntityType.Effect] = (document, view, origin) => From((EffectDocument)document, view, origin),
             [EntityType.Gem] = (document, view, origin) => From((GemDocument)document, view, origin),
-            [EntityType.GemTrait] = (document, view, origin) => From((GemTraitDocument)document, view, origin),
-            [EntityType.GemType] = (document, view, origin) => From((GemTypeDocument)document, view, origin),
+            [EntityType.GemAbility] = (document, view, origin) => From((GemAbilityDocument)document, view, origin),
+            [EntityType.Radiance] = (document, view, origin) => From((RadianceDocument)document, view, origin),
             [EntityType.Hero] = (document, view, origin) => From((HeroDocument)document, view, origin),
             [EntityType.Item] = (document, view, origin) => From((ItemDocument)document, view, origin),
             [EntityType.LegendaryPower] = (document, view, origin) =>
@@ -36,8 +36,10 @@ public static class RecordProjection
                 From((RelicPassiveDocument)document, view, origin),
             [EntityType.Talent] = (document, view, origin) => From((TalentDocument)document, view, origin),
             [EntityType.TalentSlot] = (document, view, origin) => From((TalentSlotDocument)document, view, origin),
-            [EntityType.Trait] = (document, view, origin) => From((TraitDocument)document, view, origin),
-            [EntityType.TraitPower] = (document, view, origin) => From((TraitPowerDocument)document, view, origin),
+            [EntityType.Enchant] = (document, view, origin) => From((EnchantDocument)document, view, origin),
+            [EntityType.Sigil] = (document, view, origin) => From((SigilDocument)document, view, origin),
+            [EntityType.Aspect] = (document, view, origin) => From((AspectDocument)document, view, origin),
+            [EntityType.ProtectiveEnchant] = (document, view, origin) => From((ProtectiveEnchantDocument)document, view, origin),
             [EntityType.WeaponPower] = (document, view, origin) => From((WeaponPowerDocument)document, view, origin),
         });
 
@@ -109,13 +111,13 @@ public static class RecordProjection
         };
     }
 
-    public static BlessingRecord From(BlessingDocument document, ICodexViewService view, string origin)
+    public static GlyphRecord From(GlyphDocument document, ICodexViewService view, string origin)
     {
         var tokens = document.Placeholders ?? [];
 
-        return new BlessingRecord
+        return new GlyphRecord
         {
-            Type = EntityType.Blessing,
+            Type = EntityType.Glyph,
             Id = document.Id,
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
@@ -253,13 +255,13 @@ public static class RecordProjection
         GemOverflow = Overflow(document, view),
     };
 
-    public static GemTraitRecord From(GemTraitDocument document, ICodexViewService view, string origin)
+    public static GemAbilityRecord From(GemAbilityDocument document, ICodexViewService view, string origin)
     {
         var tokens = document.Placeholders ?? [];
 
-        return new GemTraitRecord
+        return new GemAbilityRecord
         {
-            Type = EntityType.GemTrait,
+            Type = EntityType.GemAbility,
             Id = document.Id,
             Name = PublicTypes.NameOf(document),
             GemType = document.Gem,
@@ -275,13 +277,13 @@ public static class RecordProjection
         };
     }
 
-    public static GemTypeRecord From(GemTypeDocument document, ICodexViewService view, string origin)
+    public static RadianceRecord From(RadianceDocument document, ICodexViewService view, string origin)
     {
         var tokens = document.OverflowPlaceholders ?? [];
 
-        return new GemTypeRecord
+        return new RadianceRecord
         {
-            Type = EntityType.GemType,
+            Type = EntityType.Radiance,
             Id = document.Id,
             Name = PublicTypes.NameOf(document),
             GemType = document.Type,
@@ -329,7 +331,7 @@ public static class RecordProjection
         Rarities = RarityNames(document.Rarities, view),
         Stats = Slots(document, view),
         RuleSet = document.RuleSet,
-        TraitTree = Tree(document.TraitTree, view, origin),
+        AttunementTree = Tree(document.AttunementTree, view, origin),
         Description = view.PlainText(document.Description, [], []),
         Acquire = document.Acquire,
         TitleText = document.TitleText,
@@ -483,40 +485,59 @@ public static class RecordProjection
         Talent = Referenced(document.Talent.Type, document.Talent.Id, view, origin),
     };
 
-    public static TraitRecord From(TraitDocument document, ICodexViewService view, string origin) => new()
-    {
-        Type = EntityType.Trait,
-        Id = document.Id,
-        Generates = Generated(document.Generates),
-        Name = PublicTypes.NameOf(document),
-        Category = document.Category,
-        MaxRank = document.MaxRank,
-        RandomChance = document.RandomChance,
-        Power = Reference(document.Power, view, origin),
-        Description = view.PlainText(document.Description, [], []),
-        Icon = Texture(document.Icon, view),
-        RankRuns = Runs(document.RankRuns),
-    };
+    public static EnchantRecord From(EnchantDocument document, ICodexViewService view, string origin) =>
+        (EnchantRecord)Augmentation(
+            new EnchantRecord
+            {
+                Type = EntityType.Enchant,
+                Id = document.Id,
+                Name = PublicTypes.NameOf(document),
+                PrimaryStat = document.PrimaryStat?.ToString(),
+                Stats = [.. (document.Stats ?? []).Select(stat => new EnchantStatRecord(stat.Attribute, stat.Coefficient))],
+            },
+            document, view, origin);
 
-    public static TraitPowerRecord From(TraitPowerDocument document, ICodexViewService view, string origin)
+    private static AugmentationRecord Augmentation(
+        AugmentationRecord seed, AugmentationDocument document, ICodexViewService view, string origin)
     {
         var tokens = document.Placeholders ?? [];
 
-        return new TraitPowerRecord
+        return seed with
         {
-            Type = EntityType.TraitPower,
-            Id = document.Id,
             Generates = Generated(document.Generates),
-            Name = PublicTypes.NameOf(document),
+            Category = document.Category,
+            MaxRank = document.MaxRank,
+            RandomChance = document.RandomChance,
             Description = view.PlainText(document.Description, tokens, []),
             DescriptionsByHero = Readings(document.DescriptionsByHero, view, tokens),
             Icon = Texture(document.Icon, view),
             Cooldown = document.Cooldown,
             Duration = document.Duration,
+            RankRuns = Runs(document.RankRuns),
             Placeholders = Tokens(tokens, [], view),
             ScalesOff = Scaling(document.ScalesOff, view),
+            Grants = References(document.Grants, view, origin),
         };
     }
+
+    public static SigilRecord From(SigilDocument document, ICodexViewService view, string origin) =>
+        (SigilRecord)Augmentation(
+            new SigilRecord { Type = EntityType.Sigil, Id = document.Id, Name = PublicTypes.NameOf(document) },
+            document, view, origin);
+
+    public static AspectRecord From(AspectDocument document, ICodexViewService view, string origin) =>
+        (AspectRecord)Augmentation(
+            new AspectRecord { Type = EntityType.Aspect, Id = document.Id, Name = PublicTypes.NameOf(document) },
+            document, view, origin);
+
+    public static ProtectiveEnchantRecord From(
+        ProtectiveEnchantDocument document, ICodexViewService view, string origin) =>
+        (ProtectiveEnchantRecord)Augmentation(
+            new ProtectiveEnchantRecord
+            {
+                Type = EntityType.ProtectiveEnchant, Id = document.Id, Name = PublicTypes.NameOf(document),
+            },
+            document, view, origin);
 
     public static WeaponPowerRecord From(WeaponPowerDocument document, ICodexViewService view, string origin)
     {
@@ -573,42 +594,42 @@ public static class RecordProjection
             ? entries.ToDictionary(entry => entry.Key, entry => view.PlainText(entry.Value, tokens, [])!)
             : null;
 
-    private static TraitTreeRecord? Tree(string? tag, ICodexViewService view, string origin)
+    private static AttunementTreeRecord? Tree(string? tag, ICodexViewService view, string origin)
     {
-        if (TraitTrees.Find(tag, view.Store.Settings) is not { } tree) return null;
+        if (AttunementTrees.Find(tag, view.Store.Settings) is not { } tree) return null;
 
-        return new TraitTreeRecord(tree.Tag)
+        return new AttunementTreeRecord(tree.Tag)
         {
             UseRecipeRowUnlocks = tree.UseRecipeRowUnlocks,
             RowsUnlockedAtItemGeneration = tree.RowsUnlockedAtItemGeneration,
             RowToUpgradeRequirement = tree.RowToUpgradeRequirement,
             Nodes =
             [
-                .. tree.Nodes.Select(node => new TraitTreeNodeRecord(node.UITreeIndex, node.TraitRowIndex)
+                .. tree.Nodes.Select(node => new AttunementTreeNodeRecord(node.UITreeIndex, node.AugmentationRowIndex)
                 {
                     ParentNodes = node.ParentNodes,
                     ChildrenNodes = node.ChildrenNodes,
-                    TraitCategories =
+                    AugmentationCategories =
                     [
-                        .. node.TraitCategories.Select(category => new TraitCategoryRecord(category)
+                        .. node.AugmentationCategories.Select(category => new AugmentationCategoryRecord(category)
                         {
-                            Name = TraitTrees.CategoryName(category, view.Store),
-                            Traits =
+                            Name = AttunementTrees.CategoryName(category, view.Store),
+                            Augmentations =
                             [
-                                .. TraitTrees.InCategory(category, view.Store)
-                                    .Select(trait => Referenced(TooltipView.TraitType, trait.Id, view, origin)),
+                                .. AttunementTrees.InCategory(category, view.Store)
+                                    .Select(augmentation => Referenced(EntityTypes.TypeOf(augmentation), augmentation.Id, view, origin)),
                             ],
                         }),
                     ],
-                    RandomizedTraitFromTraitCategories = node.RandomizedTraitFromTraitCategories,
+                    RandomizedFromAugmentationCategories = node.RandomizedFromAugmentationCategories,
                     MinDungeonRatingAtGenerationTime = node.MinDungeonRatingAtGenerationTime,
                     EnableAtItemLevel = node.EnableAtItemLevel,
-                    MaxTraitRankOverride = node.MaxTraitRankOverride,
+                    MaxRankOverride = node.MaxRankOverride,
                 }),
             ],
             UpgradeCosts =
             [
-                .. view.Store.Settings.TraitNodeUpgradeCosts.Select(cost => new TraitNodeUpgradeCostRecord(
+                .. view.Store.Settings.AttunementNodeUpgradeCosts.Select(cost => new AttunementNodeUpgradeCostRecord(
                     cost.Rank, cost.Cost, Referenced(EntityType.Currency, cost.Currency, view, origin))),
             ],
         };

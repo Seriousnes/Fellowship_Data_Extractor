@@ -81,8 +81,8 @@ public sealed class ReferenceTests
     {
         var disagreeing = All()
             .Where(carried => carried.Reference.Name is not null)
-            .Where(carried => Store.All(carried.Reference.Type, carried.Reference.Id) is [var named, ..] &&
-                !string.Equals(named.Name, carried.Reference.Name, StringComparison.Ordinal))
+            .Where(carried => Store.All(carried.Reference.Type, carried.Reference.Id) is [_, ..] readings &&
+                !readings.Any(named => string.Equals(named.Name, carried.Reference.Name, StringComparison.Ordinal)))
             .Select(carried =>
                 $"{EntityTypes.TypeOf(carried.Holder)} {carried.Holder.Id}.{carried.Field} calls " +
                 $"{carried.Reference.Type} {carried.Reference.Id} '{carried.Reference.Name}'")

@@ -57,18 +57,18 @@ public class ParameterTests(Export export)
     }
 
     [Fact]
-    public void A_comma_and_a_repetition_read_the_same_traits()
+    public void A_comma_and_a_repetition_read_the_same_augmentations()
     {
-        Assert.True(ImbuedTraits.TryParse("1:2,3:4", out var joined));
-        Assert.True(ImbuedTraits.TryParse(string.Join(',', "1:2", "3:4"), out var repeated));
+        Assert.True(Attunements.TryParse("1:2,3:4", out var joined));
+        Assert.True(Attunements.TryParse(string.Join(',', "1:2", "3:4"), out var repeated));
 
-        Assert.Equal([new ImbuedTrait(1, 2), new ImbuedTrait(3, 4)], joined.Values);
+        Assert.Equal([new Attunement(1, 2), new Attunement(3, 4)], joined.Values);
         Assert.Equal(joined.Values, repeated.Values);
 
-        Assert.True(ImbuedTraits.TryParse("7", out var bare));
-        Assert.Equal([new ImbuedTrait(7, 1)], bare.Values);
+        Assert.True(Attunements.TryParse("7", out var bare));
+        Assert.Equal([new Attunement(7, 1)], bare.Values);
 
-        Assert.False(ImbuedTraits.TryParse("hunters-focus", out _));
+        Assert.False(Attunements.TryParse("hunters-focus", out _));
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public class ParameterTests(Export export)
     {
         Assert.False(ItemModifiers.TryParse("nonesuch:1:2", out _));
         Assert.False(ItemModifiers.TryParse("majortrait:1", out _));
-        Assert.False(ItemModifiers.TryParse("trait", out _));
+        Assert.False(ItemModifiers.TryParse("augmentation", out _));
         Assert.False(ItemModifiers.TryParse("majortrait:one:2", out _));
         Assert.False(ItemModifiers.TryParse("majortrait:1:two", out _));
         Assert.False(ItemModifiers.TryParse("majortrait:1:2:3", out _));

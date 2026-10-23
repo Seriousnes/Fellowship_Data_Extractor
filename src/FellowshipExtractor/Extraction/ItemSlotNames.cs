@@ -30,6 +30,11 @@ public sealed class ItemSlotNames
 
     public IReadOnlyList<SlotName> Vocabulary => _vocabulary;
 
+    private readonly Dictionary<string, string> _printed = new(StringComparer.Ordinal);
+
+    public IReadOnlyList<ItemTypeText> Printed =>
+        [.. _byOrdinal.OrderBy(entry => entry.Key).Select(entry => new ItemTypeText(entry.Value.Type, _printed[entry.Value.Type], entry.Value.Shipped))];
+
     public ItemSlotNames(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
         ReadVocabulary(provider);
@@ -105,6 +110,7 @@ public sealed class ItemSlotNames
                 if (type.Equals(UnknownType, StringComparison.Ordinal)) continue;
 
                 _vocabulary.Add(new SlotName(type, SlotLabels.GetValueOrDefault(type) ?? entry.LocalizedString));
+                _printed[type] = entry.LocalizedString;
             }
         }
 

@@ -11,13 +11,13 @@ public class CodexAddressTests
     }
 
     [Fact]
-    public void A_modifier_and_a_trait_are_written_as_the_tooltip_reads_them_back()
+    public void A_modifier_and_a_augmentation_are_written_as_the_tooltip_reads_them_back()
     {
         Assert.True(ItemModifiers.TryParse("abilityrank:12:3", out var modifiers));
         Assert.Equal("abilityrank:12:3", modifiers.Values.Single().ToString());
 
-        Assert.True(ImbuedTraits.TryParse("456:2", out var traits));
-        Assert.Equal("456:2", traits.Values.Single().ToString());
+        Assert.True(Attunements.TryParse("456:2", out var augmentations));
+        Assert.Equal("456:2", augmentations.Values.Single().ToString());
     }
 
     [Fact]

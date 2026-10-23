@@ -1,0 +1,21 @@
+@inject ICodexViewService Ui
+
+<figure class="fx-glyph-crest" style="--fx-plate:url(@Plate);--fx-plate-hover:url(@Hovered);--fx-plate-width:@WidthPx">
+    @if (Texture is { } texture) { <img alt="" src="@texture"> }
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public GlyphDocument Entity { get; set; } = default!;
+
+    [Parameter] public string? State { get; set; }
+
+    [Parameter] public int Width { get; set; } = 64;
+
+    private string Plate => Ui.Chrome.GlyphPlate(State);
+
+    private string Hovered => Ui.Chrome.GlyphPlate(State, hovered: true);
+
+    private string? Texture => Ui.Chrome.GlyphRune(Entity, State);
+
+    private string WidthPx => Width.ToString(CultureInfo.InvariantCulture) + "px";
+}

@@ -159,3 +159,82 @@ main {
 .cx-foot-credit {
     margin-left: auto;
 }
+
+.cx-reconnect {
+    position: absolute;
+    right: $gutter;
+    bottom: calc(100% + 14px);
+    display: none;
+}
+
+.cx-reconnect.components-reconnect-show,
+.cx-reconnect.components-reconnect-retrying,
+.cx-reconnect.components-reconnect-paused,
+.cx-reconnect.components-reconnect-failed,
+.cx-reconnect.components-reconnect-resume-failed,
+.cx-reconnect.components-reconnect-rejected {
+    display: block;
+}
+
+.cx-reconnect-mark {
+    appearance: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--panel);
+    box-shadow: 0 10px 24px -12px #000;
+    color: var(--gold-bright);
+    font: 600 20px/1 var(--sans);
+}
+
+.cx-reconnect-mark:focus-visible {
+    @include edged;
+}
+
+.cx-reconnect-mark::before {
+    content: "";
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+    border: 2px solid var(--line);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: cx-reconnect-turn .9s linear infinite;
+}
+
+.cx-reconnect.components-reconnect-paused .cx-reconnect-mark,
+.cx-reconnect.components-reconnect-failed .cx-reconnect-mark,
+.cx-reconnect.components-reconnect-resume-failed .cx-reconnect-mark,
+.cx-reconnect.components-reconnect-rejected .cx-reconnect-mark {
+    border-color: var(--gold-deep);
+}
+
+.cx-reconnect.components-reconnect-paused .cx-reconnect-mark::before,
+.cx-reconnect.components-reconnect-failed .cx-reconnect-mark::before,
+.cx-reconnect.components-reconnect-resume-failed .cx-reconnect-mark::before,
+.cx-reconnect.components-reconnect-rejected .cx-reconnect-mark::before {
+    content: "\21BB";
+    width: auto;
+    height: auto;
+    border: 0;
+    border-radius: 0;
+    animation: none;
+}
+
+@keyframes cx-reconnect-turn {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cx-reconnect-mark::before {
+        animation-duration: 3s;
+    }
+}

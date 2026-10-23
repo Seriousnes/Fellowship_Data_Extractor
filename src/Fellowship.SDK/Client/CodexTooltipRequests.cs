@@ -57,11 +57,11 @@ public sealed record AbilityTooltipRequest
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
 }
 
-/// <summary>Tooltip for a blessing.</summary>
-public sealed record BlessingTooltipRequest
+/// <summary>Tooltip for a glyph.</summary>
+public sealed record GlyphTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
-    public static EntityType Type => EntityType.Blessing;
+    public static EntityType Type => EntityType.Glyph;
 
     /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
@@ -76,8 +76,8 @@ public sealed record BlessingTooltipRequest
         "and a link to its page.")]
     public bool? Mobile { get; init; }
 
-    /// <summary>Which of a blessing's tiers is equipped.</summary>
-    [Description("Which of a blessing's tiers is equipped. None stated reads as none equipped.")]
+    /// <summary>Which of a glyph's tiers is equipped.</summary>
+    [Description("Which of a glyph's tiers is equipped. None stated reads as none equipped.")]
     public int? EquippedTier { get; init; }
 }
 
@@ -196,6 +196,9 @@ public sealed record EffectTooltipRequest
         "Each stat's magnitude, by the name the build gives the stat, to state a magnitude the tooltip " +
         "prints rather than computes.")]
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
+
+    [Description("Hero to resolve the id against. One id resolves to a different entity per hero.")]
+    public string? Hero { get; init; }
 }
 
 /// <summary>Tooltip for a gem.</summary>
@@ -222,11 +225,11 @@ public sealed record GemTooltipRequest
     public string? Rarity { get; init; }
 }
 
-/// <summary>Tooltip for a gem trait.</summary>
-public sealed record GemTraitTooltipRequest
+/// <summary>Tooltip for a gem ability.</summary>
+public sealed record GemAbilityTooltipRequest
 {
     /// <summary>The entity type whose tooltip this request draws.</summary>
-    public static EntityType Type => EntityType.GemTrait;
+    public static EntityType Type => EntityType.GemAbility;
 
     /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
@@ -240,6 +243,38 @@ public sealed record GemTraitTooltipRequest
         "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
         "and a link to its page.")]
     public bool? Mobile { get; init; }
+}
+
+public sealed record EnchantTooltipRequest
+{
+    public static EntityType Type => EntityType.Enchant;
+
+    [Description(
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
+    [Description(
+        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
+        "and a link to its page.")]
+    public bool? Mobile { get; init; }
+
+    [Description("Hero to resolve the id against. One id resolves to a different entity per hero.")]
+    public string? Hero { get; init; }
+
+    [Description("The state to draw the node at: selected, available or unavailable.")]
+    public string? State { get; init; }
+
+    [Range(1, 10_000)]
+    [Description(
+        "The item level of each item carrying the enchant. It sets the ranks each rank source adds. None stated " +
+        "reads as the highest item level.")]
+    public int? ItemLevel { get; init; }
+
+    [Description(
+        "The gear slots of the equipped items carrying the enchant, comma separated, each an item type such as " +
+        "Head or Necklace. Each adds the ranks one item at the item level adds. None stated reads as one " +
+        "item in the first gear slot that can carry it.")]
+    public string? RankSources { get; init; }
 }
 
 /// <summary>Tooltip for an item.</summary>
@@ -303,21 +338,21 @@ public sealed record ItemTooltipRequest
 
     /// <summary>The item's modifiers.</summary>
     [Description(
-        "The item's modifiers, each a kind, an id and an amount. The kinds are trait, blessing " +
-        "and essence.")]
+        "The item's modifiers, each a kind, an id and an amount. The kinds are the build's modifier slot " +
+        "names in lower case, such as statenchant, abilityrank and gempower.")]
     public IReadOnlyList<ItemModifier>? Modifiers { get; init; }
 
-    /// <summary>The traits imbued into the item.</summary>
-    [Description("The traits imbued into the item, each an id and a rank.")]
-    public IReadOnlyList<ImbuedTrait>? ImbuedTraits { get; init; }
+    /// <summary>The augmentations attuned in the item's attunement tree.</summary>
+    [Description("The augmentations attuned in the item's attunement tree, each an id and a rank.")]
+    public IReadOnlyList<Attunement>? Attunements { get; init; }
 
-    /// <summary>How many imbued trait slots are filled.</summary>
-    [Description("How many imbued trait slots are filled.")]
-    public int? AllocatedTraits { get; init; }
+    /// <summary>How many attunement tree slots are filled.</summary>
+    [Description("How many attunement tree slots are filled.")]
+    public int? AllocatedAttunements { get; init; }
 
-    /// <summary>Draw the imbued traits line whatever slot the item is in.</summary>
-    [Description("True when the imbued traits line is to be drawn whatever slot the item is in.")]
-    public bool? HasImbuedTraits { get; init; }
+    /// <summary>Draw the attunements line whatever slot the item is in.</summary>
+    [Description("True when the attunements line is to be drawn whatever slot the item is in.")]
+    public bool? HasAttunements { get; init; }
 
     /// <summary>
     /// Each stat's magnitude, by the name the build gives the stat. A stat rolled more times than the
@@ -432,48 +467,73 @@ public sealed record TalentTooltipRequest
     public bool? Mobile { get; init; }
 }
 
-/// <summary>Tooltip for a trait.</summary>
-public sealed record TraitTooltipRequest
+public sealed record SigilTooltipRequest
 {
-    /// <summary>The entity type whose tooltip this request draws.</summary>
-    public static EntityType Type => EntityType.Trait;
+    public static EntityType Type => EntityType.Sigil;
 
-    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
         "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
-    /// <summary>
-    /// Wrap the card in the chrome a phone draws it in: a scrim, a close button and a link to its page.
-    /// </summary>
     [Description(
         "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
         "and a link to its page.")]
     public bool? Mobile { get; init; }
 
-    /// <summary>The state to draw the node at: selected, available or unavailable.</summary>
     [Description("The state to draw the node at: selected, available or unavailable.")]
     public string? State { get; init; }
+
+    [Description(
+        "The gear slots of the equipped items carrying the sigil, comma separated, each an item type such as " +
+        "Head or Necklace. Each adds one rank. None stated reads as one " +
+        "item in the first gear slot that can carry it.")]
+    public string? RankSources { get; init; }
 }
 
-/// <summary>Tooltip for a trait power.</summary>
-public sealed record TraitPowerTooltipRequest
+public sealed record AspectTooltipRequest
 {
-    /// <summary>The entity type whose tooltip this request draws.</summary>
-    public static EntityType Type => EntityType.TraitPower;
+    public static EntityType Type => EntityType.Aspect;
 
-    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
     [Description(
         "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
     public bool? ShowIcon { get; init; }
 
-    /// <summary>
-    /// Wrap the card in the chrome a phone draws it in: a scrim, a close button and a link to its page.
-    /// </summary>
     [Description(
         "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
         "and a link to its page.")]
     public bool? Mobile { get; init; }
+
+    [Description("The state to draw the node at: selected, available or unavailable.")]
+    public string? State { get; init; }
+
+    [Description(
+        "The gear slots of the equipped items carrying the aspect, comma separated, each an item type such as " +
+        "Head or Necklace. Each adds one rank. None stated reads as one " +
+        "item in the first gear slot that can carry it.")]
+    public string? RankSources { get; init; }
+}
+
+public sealed record ProtectiveEnchantTooltipRequest
+{
+    public static EntityType Type => EntityType.ProtectiveEnchant;
+
+    [Description(
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
+    [Description(
+        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
+        "and a link to its page.")]
+    public bool? Mobile { get; init; }
+
+    [Description("The state to draw the node at: selected, available or unavailable.")]
+    public string? State { get; init; }
+
+    [Description(
+        "The gear slots of the equipped items carrying the protective enchant, comma separated, each an item type such as " +
+        "Head or Necklace. Each adds one rank. None stated reads as one " +
+        "item in the first gear slot that can carry it.")]
+    public string? RankSources { get; init; }
 }
 
 /// <summary>Tooltip for a weapon power.</summary>

@@ -24,13 +24,13 @@ public sealed class ItemPowerSettingsTests
         Assert.Equal(30d, Potential.GemSocketScoreFactor);
         Assert.Equal(80d, Potential.WeaponAbilityScoreFactor);
         Assert.Equal(80d, Potential.RelicAbilityScoreFactor);
-        Assert.Equal(20d, Potential.WeaponTraitTreeScoreFactor);
-        Assert.Equal(20d, Potential.NecklaceTraitTreeScoreFactor);
+        Assert.Equal(20d, Potential.WeaponAttunementTreeScoreFactor);
+        Assert.Equal(20d, Potential.NecklaceAttunementTreeScoreFactor);
         Assert.Equal(0d, Potential.SetBonusScoreFactor);
         Assert.Equal(1000d, Potential.LegendaryScoreFactor);
         Assert.Equal(1.04d, Potential.AllocatedTalentPointPowerPotential);
-        Assert.Equal(40, Potential.ScorePerAllocatedWeaponTrait);
-        Assert.Equal(60, Potential.ScorePerAllocatedNecklaceTrait);
+        Assert.Equal(40, Potential.ScorePerAllocatedWeaponAttunement);
+        Assert.Equal(60, Potential.ScorePerAllocatedNecklaceAttunement);
     }
 
     [Fact]

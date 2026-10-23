@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-@if (Rows.Count > 0 || Falloff.Count > 0 || Schools.Count > 0)
+@if (Rows.Count > 0 || Falloff.Count > 0 || Schools.Count > 0 || Tables is not null)
 {
     <Panel Head="Details" Class="@(ReferenceEquals(Entity, Here.Entity) ? "cx-entity-details" : null)">
         @if (Rows.Count > 0)
@@ -56,6 +56,8 @@
                 }
             </Pills>
         }
+
+        @Tables
     </Panel>
 }
 
@@ -68,6 +70,8 @@
     public IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Facts { get; set; } = [];
 
     [Parameter] public IReadOnlyList<(string Label, string Href)> Schools { get; set; } = [];
+
+    [Parameter] public RenderFragment? Tables { get; set; }
 
     private sealed record Row(string Label, string? Unit, RenderFragment Value);
 

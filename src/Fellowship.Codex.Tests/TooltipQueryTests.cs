@@ -16,7 +16,7 @@ public class TooltipQueryTests(Export export)
     private TooltipQuery Query(ItemTooltipRequest request, out string? error) =>
         TooltipRequests.Read(request, export.Store, out error);
 
-    private static TooltipQuery Query(BlessingTooltipRequest request, out string? error) =>
+    private static TooltipQuery Query(GlyphTooltipRequest request, out string? error) =>
         TooltipRequests.Read(request, out error);
 
     private string Flat => export.Store.Stats.Names
@@ -33,18 +33,18 @@ public class TooltipQueryTests(Export export)
     }
 
     [Fact]
-    public void An_item_reads_each_imbued_trait_and_the_rank_it_sits_at()
+    public void An_item_reads_each_attunement_and_the_rank_it_sits_at()
     {
         var query = Query(
             new ItemTooltipRequest
             {
-                ImbuedTraits = [new ImbuedTrait(12, 2), new ImbuedTrait(7, 1)],
-                HasImbuedTraits = true,
+                Attunements = [new Attunement(12, 2), new Attunement(7, 1)],
+                HasAttunements = true,
             },
             out _);
 
-        Assert.Equal([new ImbuedTrait(12, 2), new ImbuedTrait(7, 1)], query.ImbuedTraits);
-        Assert.True(query.HasImbuedTraits);
+        Assert.Equal([new Attunement(12, 2), new Attunement(7, 1)], query.Attunements);
+        Assert.True(query.HasAttunements);
     }
 
     [Fact]
@@ -66,23 +66,23 @@ public class TooltipQueryTests(Export export)
         var query = Query(
             new ItemTooltipRequest
             {
-                ImbuedTraits = [new ImbuedTrait(12, 2), new ImbuedTrait(7, 1)],
-                AllocatedTraits = 4,
+                Attunements = [new Attunement(12, 2), new Attunement(7, 1)],
+                AllocatedAttunements = 4,
             },
             out _);
 
-        Assert.Equal(2, query.ImbuedTraits.Count);
-        Assert.Equal(4, query.AllocatedTraits);
+        Assert.Equal(2, query.Attunements.Count);
+        Assert.Equal(4, query.AllocatedAttunements);
     }
 
     [Fact]
-    public void An_item_counts_no_traits_when_the_caller_names_none()
+    public void An_item_counts_no_augmentations_when_the_caller_names_none()
     {
         var query = Query(new ItemTooltipRequest(), out _);
 
-        Assert.Null(query.AllocatedTraits);
-        Assert.Null(query.HasImbuedTraits);
-        Assert.Empty(query.ImbuedTraits);
+        Assert.Null(query.AllocatedAttunements);
+        Assert.Null(query.HasAttunements);
+        Assert.Empty(query.Attunements);
         Assert.Empty(query.Modifiers);
         Assert.False(query.NoSocket);
     }
@@ -188,15 +188,15 @@ public class TooltipQueryTests(Export export)
         Assert.Null(StatQuery.NullIfEmpty(new ItemTooltipRequest { Hero = string.Empty }.Hero));
 
     [Fact]
-    public void The_equipped_tier_a_blessing_is_drawn_at_reaches_the_query() =>
-        Assert.Equal(2, Query(new BlessingTooltipRequest { EquippedTier = 2 }, out _).EquippedTier);
+    public void The_equipped_tier_a_glyph_is_drawn_at_reaches_the_query() =>
+        Assert.Equal(2, Query(new GlyphTooltipRequest { EquippedTier = 2 }, out _).EquippedTier);
 
     [Theory]
     [InlineData(0, "unallocated")]
     [InlineData(1, "allocated")]
     [InlineData(4, "allocated")]
-    public void A_blessing_stone_is_allocated_from_the_first_equipped_tier(int tier, string state) =>
-        Assert.Equal(state, ChromeAssetService.BlessingState(tier));
+    public void A_glyph_stone_is_allocated_from_the_first_equipped_tier(int tier, string state) =>
+        Assert.Equal(state, ChromeAssetService.GlyphState(tier));
 
     [Fact]
     public void A_request_naming_only_a_stat_carries_the_stat_and_nothing_else()

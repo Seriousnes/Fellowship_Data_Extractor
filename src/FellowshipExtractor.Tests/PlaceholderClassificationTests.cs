@@ -16,10 +16,10 @@ public sealed class PlaceholderClassificationTests
     [Fact]
     public void TheOakMarksItsArmorConstantAsAMultiplierAndTheOtherPerksDoNot()
     {
-        Assert.True(Token(EntityType.TraitPower, 684, "percentage")["multiplies"]?.GetValue<bool>());
+        Assert.True(Token(EntityType.ProtectiveEnchant, 62, "percentage")["multiplies"]?.GetValue<bool>());
 
-        Assert.Null(Token(EntityType.TraitPower, 683, "percentage")["multiplies"]);
-        Assert.Null(Token(EntityType.TraitPower, 685, "percentage")["multiplies"]);
+        Assert.Null(Token(EntityType.ProtectiveEnchant, 54, "percentage")["multiplies"]);
+        Assert.Null(Token(EntityType.ProtectiveEnchant, 56, "percentage")["multiplies"]);
     }
 
     [Fact]

@@ -41,7 +41,7 @@ public sealed partial class ModifierRecipes
 
     public ModifierRecipes(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
-        foreach (var objectPath in TableFinder.ByRowStructure(assets, TraitCategoryNames.RowStructure))
+        foreach (var objectPath in TableFinder.ByRowStructure(assets, AugmentationCategoryNames.RowStructure))
         {
             if (!provider.TryLoadPackageObject<UDataTable>(
                 AbilityPresentationIndex.PackagePath(objectPath), out var table)) continue;
@@ -92,7 +92,7 @@ public sealed partial class ModifierRecipes
         if (_bySlot.Count == 0)
         {
             throw new InvalidOperationException(
-                $"No enabled {TraitCategoryNames.RowStructure} row is a {Implementation}, so no modifier slot " +
+                $"No enabled {AugmentationCategoryNames.RowStructure} row is a {Implementation}, so no modifier slot " +
                 "states the recipes that reroll it.");
         }
 
