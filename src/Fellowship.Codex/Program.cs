@@ -35,16 +35,20 @@ if (StorageExtensions.Configured(builder.Configuration))
     builder.AddStorage();
     builder.Services.AddSingleton<IExportSource, StorageExportSource>();
     builder.Services.AddSingleton<ITextureSource, StorageTextureSource>();
+    builder.Services.AddHttpClient();
+    builder.Services.AddSingleton<ITextureReader, StorageTextureReader>();
 }
 else
 {
     folder = new FolderExportSource(FolderExportSource.Located());
     builder.Services.AddSingleton<IExportSource>(folder);
     builder.Services.AddSingleton<ITextureSource, FolderTextureSource>();
+    builder.Services.AddSingleton<ITextureReader>(new FolderTextureReader(folder.Root));
 }
 
 builder.Services.AddCodexServices();
 builder.Services.AddTooltipServices();
+builder.Services.AddSingleton<ICardService, CardService>();
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
@@ -76,6 +80,8 @@ app.UseSwaggerUI(options =>
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode().ServePages();
+
+app.MapCards();
 
 app.MapGroup(string.Empty).Serve().RequireCors(Serving.Origins).MapApiEndpoints();
 

@@ -7,7 +7,7 @@
             <p class="eyebrow">@Wording.Name</p>
             <h3 class="title">@PublicTypes.NameOf(Entity)</h3>
         </header>
-        <GlyphCrest Entity="Entity" State="@ChromeAssetService.GlyphState(Query.EquippedTier ?? 0)" />
+        <GlyphCrest Entity="Entity" State="@(Query.State ?? ChromeAssetService.GlyphState(Query.EquippedTier ?? 0))" />
         <div class="band">
             <span class="kind">@Wording.Augmentation</span>
             <span class="tier">@Wording.TierLevel <span class="count">@Equipped / @Tiers</span></span>
