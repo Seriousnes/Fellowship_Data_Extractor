@@ -14,6 +14,8 @@ public sealed record HeroRecord : EntityRecord
 
     public string? SpiritAbility { get; init; }
 
+    public IReadOnlyList<RecordReference>? SpiritAbilityReferences { get; init; }
+
     public string? Portrait { get; init; }
 
     public string? Role { get; init; }

@@ -1,0 +1,21 @@
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+
+@if (Entity is { } reference)
+{
+    @if (Ui.Store.All(reference.Type, reference.Id) is [var document, ..])
+    {
+        <span class="cx-spell-link"><EntityLink Entity="document" ShowIcon>@if (Ui.Icon(DocumentFields.Text(document, nameof(ItemDocument.Icon))) is { } icon)
+        {
+            <img class="cx-spell-link-icon" alt="" loading="lazy" src="@icon" />
+        }@Ui.Name(document)</EntityLink></span>
+    }
+    else if (reference.Name is { Length: > 0 } named)
+    {
+        <span>@named</span>
+    }
+}
+
+@code {
+    [Parameter] public EntityReference? Entity { get; set; }
+}

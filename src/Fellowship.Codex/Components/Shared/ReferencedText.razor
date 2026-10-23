@@ -1,0 +1,56 @@
+@using System.Text.RegularExpressions
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+
+@foreach (var (text, reference) in segments)
+{
+    if (reference is null)
+    {
+        @Ui.Text(text, null, null)
+    }
+    else
+    {
+        <SpellLink Entity="reference" />
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+
+    [Parameter] public IReadOnlyList<EntityReference>? References { get; set; }
+
+    private IReadOnlyList<(string Text, EntityReference? Reference)> segments = [];
+
+    protected override void OnParametersSet()
+    {
+        var byName = (References ?? [])
+            .Where(reference => reference.Name is { Length: > 0 })
+            .GroupBy(reference => reference.Name!, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+
+        if (byName.Count == 0)
+        {
+            segments = [(Text, null)];
+            return;
+        }
+
+        var pattern = new Regex(
+            @"(?<quote>(?<!\w)[""'])?\b(?<name>" +
+            string.Join("|", byName.Keys.OrderByDescending(name => name.Length).Select(Regex.Escape)) +
+            @")\b(?(quote)\k<quote>|(?!\s+\p{Lu}))",
+            RegexOptions.CultureInvariant);
+
+        var split = new List<(string, EntityReference?)>();
+        var at = 0;
+        foreach (Match match in pattern.Matches(Text))
+        {
+            if (match.Index > at) split.Add((Text[at..match.Index], null));
+            split.Add((match.Groups["name"].Value, byName[match.Groups["name"].Value]));
+            at = match.Index + match.Length;
+        }
+
+        if (at < Text.Length) split.Add((Text[at..], null));
+
+        segments = split;
+    }
+}

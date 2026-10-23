@@ -269,6 +269,8 @@ public sealed record Entity
 
     public string? SpiritAbility { get; init; }
 
+    public IReadOnlyList<IconSource>? SpiritAbilityReferences { get; init; }
+
     public string? Role { get; init; }
 
     public string? RoleIcon { get; init; }

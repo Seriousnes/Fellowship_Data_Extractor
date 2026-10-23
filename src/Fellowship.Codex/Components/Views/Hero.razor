@@ -5,12 +5,12 @@
     @if (Lore.Count > 0)
     {
         <div class="cx-hero-lore">
-            @foreach (var (head, paragraphs) in Lore)
+            @foreach (var (head, paragraphs, references) in Lore)
             {
                 <Panel Head="@head">
                     @foreach (var paragraph in paragraphs)
                     {
-                        <Prose>@Ui.Text(paragraph, null, null)</Prose>
+                        <Prose><ReferencedText Text="@paragraph" References="references" /></Prose>
                     }
                 </Panel>
             }
@@ -146,7 +146,7 @@
 
     private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Basics = [];
 
-    private IReadOnlyList<(string Head, IReadOnlyList<string> Paragraphs)> Lore = [];
+    private IReadOnlyList<(string Head, IReadOnlyList<string> Paragraphs, IReadOnlyList<EntityReference>? References)> Lore = [];
 
     private IReadOnlyList<(string Label, string Value)> Stats = [];
 
@@ -170,14 +170,14 @@
 
         Lore =
         [
-            .. new (string Head, string? Text)[]
+            .. new (string Head, string? Text, IReadOnlyList<EntityReference>? References)[]
                 {
-                    ("Biography", Entity.Biography),
-                    ("Playstyle", Entity.Playstyle),
-                    ("Spirit ability", Entity.SpiritAbility),
+                    ("Biography", Entity.Biography, null),
+                    ("Playstyle", Entity.Playstyle, null),
+                    ("Spirit ability", Entity.SpiritAbility, Entity.SpiritAbilityReferences),
                 }
                 .Where(entry => entry.Text is { Length: > 0 })
-                .Select(entry => (entry.Head, Paragraphs(entry.Text!))),
+                .Select(entry => (entry.Head, Paragraphs(entry.Text!), entry.References)),
         ];
 
         Stats = Starting();

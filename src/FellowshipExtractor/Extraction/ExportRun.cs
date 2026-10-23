@@ -244,7 +244,7 @@ public static class ExportRun
 
         var roles = new EffectRoles(shared, resolver.Heroes.Codenames);
 
-        var marked = SlottedNames.Mark(powered.Entities, resolver.Owners.Slotted);
+        var marked = SpiritAbilityReferences.Mark(SlottedNames.Mark(powered.Entities, resolver.Owners.Slotted));
 
         foreach (var record in marked)
         {
@@ -271,6 +271,14 @@ public static class ExportRun
         Console.WriteLine(
             $"  {marked.Count(record => record.NamedAfter is not null)} unslotted abilities named after the ability " +
             "a hero's ability set slots under the same name");
+        foreach (var hero in marked.Where(record => record.SpiritAbilityReferences is not null))
+        {
+            Console.WriteLine(
+                $"  {DocumentProjection.Name(hero)}'s spirit ability names " +
+                string.Join(", ", hero.SpiritAbilityReferences!
+                    .Select(references.At)
+                    .Select(reference => $"{reference?.Name} ({reference?.Type} {reference?.Id})")));
+        }
         Console.WriteLine($"  {resolver.Superseded} tag ids superseded by a later id for the same name");
         Console.WriteLine(
             $"  {roles.Parts} effects named as part of one of {roles.Abilities} tagged abilities, " +

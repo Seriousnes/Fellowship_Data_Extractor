@@ -1,3 +1,5 @@
+using Fellowship.SDK.Models;
+
 namespace Fellowship.SDK.Documents;
 
 public sealed class HeroDocument : EntityDocument
@@ -13,6 +15,8 @@ public sealed class HeroDocument : EntityDocument
     public string? Playstyle { get; init; }
 
     public string? SpiritAbility { get; init; }
+
+    public IReadOnlyList<EntityReference>? SpiritAbilityReferences { get; init; }
 
     public string? Portrait { get; init; }
 

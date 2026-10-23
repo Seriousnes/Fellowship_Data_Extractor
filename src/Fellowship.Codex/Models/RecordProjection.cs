@@ -305,6 +305,7 @@ public static class RecordProjection
         Biography = document.Biography,
         Playstyle = document.Playstyle,
         SpiritAbility = document.SpiritAbility,
+        SpiritAbilityReferences = References(document.SpiritAbilityReferences, view, origin),
         Portrait = Texture(document.Portrait, view),
         Role = document.Role,
         RoleIcon = Texture(document.RoleIcon, view),

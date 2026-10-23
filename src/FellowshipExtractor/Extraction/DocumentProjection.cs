@@ -248,6 +248,7 @@ public static class DocumentProjection
             Biography = entity.Biography,
             Playstyle = entity.Playstyle,
             SpiritAbility = entity.SpiritAbility,
+            SpiritAbilityReferences = Referenced(entity.SpiritAbilityReferences, references),
             Portrait = entity.Icon,
             Role = entity.Role,
             RoleIcon = entity.RoleIcon,
