@@ -118,7 +118,7 @@
     protected override void OnParametersSet()
     {
         raw = QueryHelpers.ParseQuery(Search ?? string.Empty);
-        values = First(raw);
+        values = PageQuery.First(raw);
 
         var type = EntityTypes.TryParse(Slug, out var parsed) ? parsed : (EntityType?)null;
         var readings = type is { } entityType ? Store.All(entityType, Id) : [];
@@ -135,7 +135,7 @@
             return;
         }
 
-        Current = Query(values);
+        Current = PageQuery.Read(raw, Store, Hero, Entity);
 
         Here = new Bearings
         {
@@ -211,49 +211,6 @@
         {
         }
     }
-
-    private static IReadOnlyDictionary<string, string> First(Dictionary<string, StringValues> parsed)
-    {
-        var first = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var (key, values) in parsed)
-        {
-            if (values.FirstOrDefault() is { Length: > 0 } value) first[key] = value;
-        }
-
-        return first;
-    }
-
-    private TooltipQuery Query(IReadOnlyDictionary<string, string> values)
-    {
-        var stats = StatQuery.FromQuery(
-            new QueryCollection(raw), RequestProperties.OfEveryTooltip, Store.Stats, out _);
-
-        return StatQuery.Read(stats, Store.Stats, out _) with
-        {
-            ShowIcon = true,
-            Hero = Hero ?? StatQuery.NullIfEmpty(values.GetValueOrDefault("hero")),
-            Rarity = StatQuery.NullIfEmpty(values.GetValueOrDefault("rarity")),
-            ItemLevel = Number(values, "itemLevel"),
-            Upgrades = Number(values, "upgrades"),
-            MaxUpgrades = Number(values, "maxUpgrades"),
-            NoSocket = values.ContainsKey("noSocket"),
-            Gem = Number(values, "gem"),
-            AllocatedAttunements = Number(values, "allocatedAttunements"),
-            Modifiers = ItemModifiers.TryParse(values.GetValueOrDefault("modifiers"), out var modifiers)
-                ? modifiers.Values
-                : [],
-            Attunements = Attunements.TryParse(values.GetValueOrDefault("attunements"), out var attuned)
-                ? attuned.Values
-                : [],
-            State = StatQuery.NullIfEmpty(values.GetValueOrDefault("state")),
-            RankSources = RankSources.Parse(values.GetValueOrDefault("rankSources")),
-            Difficulty = Number(values, "difficulty"),
-        };
-    }
-
-    private static int? Number(IReadOnlyDictionary<string, string> values, string key) =>
-        values.GetValueOrDefault(key) is { } value && int.TryParse(value, out var number) ? number : null;
 
     public string Href(string key, string? value)
     {
