@@ -12,10 +12,7 @@ public sealed class ParameterNumbers : IOpenApiSchemaTransformer
     {
         if (context.ParameterDescription is null) return Task.CompletedTask;
 
-        if (schema.Type is not { } type || (type & Numeric) is 0 || !type.HasFlag(JsonSchemaType.String))
-        {
-            return Task.CompletedTask;
-        }
+        if (schema.Type is not { } type || (type & Numeric) is 0) return Task.CompletedTask;
 
         schema.Type = type & ~JsonSchemaType.String;
         schema.Pattern = null;
