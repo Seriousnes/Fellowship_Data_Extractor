@@ -265,10 +265,6 @@ public sealed record EnchantTooltipRequest
     public string? State { get; init; }
 
     [Range(1, 10_000)]
-    [Description("The enchant's equipped rank. None stated reads as the sum of its rank sources.")]
-    public int? EquippedRank { get; init; }
-
-    [Range(1, 10_000)]
     [Description(
         "The item level of each item carrying the enchant. It sets the ranks each rank source adds. None stated " +
         "reads as the highest item level.")]
@@ -487,10 +483,6 @@ public sealed record SigilTooltipRequest
     [Description("The state to draw the node at: selected, available or unavailable.")]
     public string? State { get; init; }
 
-    [Range(1, 10_000)]
-    [Description("The sigil's equipped rank. None stated reads as the sum of its rank sources.")]
-    public int? EquippedRank { get; init; }
-
     [Description(
         "The gear slots of the equipped items carrying the sigil, comma separated, each an item type such as " +
         "Head or Necklace. Each adds one rank. None stated reads as one " +
@@ -514,10 +506,6 @@ public sealed record AspectTooltipRequest
     [Description("The state to draw the node at: selected, available or unavailable.")]
     public string? State { get; init; }
 
-    [Range(1, 10_000)]
-    [Description("The aspect's equipped rank. None stated reads as the sum of its rank sources.")]
-    public int? EquippedRank { get; init; }
-
     [Description(
         "The gear slots of the equipped items carrying the aspect, comma separated, each an item type such as " +
         "Head or Necklace. Each adds one rank. None stated reads as one " +
@@ -540,10 +528,6 @@ public sealed record ProtectiveEnchantTooltipRequest
 
     [Description("The state to draw the node at: selected, available or unavailable.")]
     public string? State { get; init; }
-
-    [Range(1, 10_000)]
-    [Description("The protective enchant's equipped rank. None stated reads as the sum of its rank sources.")]
-    public int? EquippedRank { get; init; }
 
     [Description(
         "The gear slots of the equipped items carrying the protective enchant, comma separated, each an item type such as " +

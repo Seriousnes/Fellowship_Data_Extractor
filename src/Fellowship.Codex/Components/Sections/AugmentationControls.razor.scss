@@ -18,5 +18,7 @@
     border-radius: 2px; padding: 5px 9px; font: 600 12px/1 var(--sans); color: var(--muted);
 
     &[aria-pressed="true"] { border-color: currentColor; background: var(--raised); }
+
+    &:disabled { cursor: default; opacity: .4; }
   }
 }

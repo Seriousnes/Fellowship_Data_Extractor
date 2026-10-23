@@ -56,7 +56,7 @@ public static class TooltipRequests
         Read(request?.ShowIcon, request?.Mobile, out error);
 
     public static TooltipQuery Read(EnchantTooltipRequest? request, out string? error) =>
-        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.EquippedRank, request?.RankSources, out error) with
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error) with
         {
             Hero = StatQuery.NullIfEmpty(request?.Hero),
             ItemLevel = request?.ItemLevel,
@@ -98,20 +98,19 @@ public static class TooltipRequests
         Read(request?.ShowIcon, request?.Mobile, out error);
 
     public static TooltipQuery Read(SigilTooltipRequest? request, out string? error) =>
-        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.EquippedRank, request?.RankSources, out error);
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error);
 
     public static TooltipQuery Read(AspectTooltipRequest? request, out string? error) =>
-        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.EquippedRank, request?.RankSources, out error);
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error);
 
     public static TooltipQuery Read(ProtectiveEnchantTooltipRequest? request, out string? error) =>
-        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.EquippedRank, request?.RankSources, out error);
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error);
 
     private static TooltipQuery Augmented(
-        bool? showIcon, bool? mobile, string? state, int? equippedRank, string? rankSources, out string? error) =>
+        bool? showIcon, bool? mobile, string? state, string? rankSources, out string? error) =>
         Read(showIcon, mobile, out error) with
         {
             State = StatQuery.NullIfEmpty(state),
-            EquippedTier = equippedRank,
             RankSources = RankSources.Parse(rankSources),
         };
 

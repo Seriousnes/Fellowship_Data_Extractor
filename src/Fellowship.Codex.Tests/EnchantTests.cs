@@ -163,12 +163,18 @@ public sealed class EnchantTests(Export export)
     }
 
     [Fact]
-    public void A_stated_equipped_rank_outranks_the_sources_and_stops_at_the_max_rank()
+    public void Rank_sources_stop_at_the_max_rank()
     {
         var sigil = export.Store.Entities.OfType<SigilDocument>().First();
+        var everySlot = new TooltipQuery
+        {
+            RankSources = [.. AugmentationRanks.Carriers(export.Store, sigil).Select(type => type.Type)],
+        };
 
-        Assert.Equal(3, AugmentationRanks.Rank(export.Store, new TooltipQuery { EquippedTier = 3 }, sigil));
-        Assert.Equal(sigil.MaxRank, AugmentationRanks.Rank(export.Store, new TooltipQuery { EquippedTier = 99 }, sigil));
+        Assert.Equal(4, sigil.MaxRank);
+        Assert.Equal(4, AugmentationRanks.Limit(export.Store, everySlot, sigil));
+        Assert.Equal(4, AugmentationRanks.Sources(export.Store, everySlot, sigil).Count);
+        Assert.Equal(4, AugmentationRanks.Rank(export.Store, everySlot, sigil));
     }
 
     [Fact]

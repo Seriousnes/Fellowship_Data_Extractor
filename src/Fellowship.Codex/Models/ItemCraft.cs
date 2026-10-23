@@ -18,7 +18,7 @@ public static class CraftSlots
     public const string AbilityRank = "AbilityRank";
 }
 
-public readonly record struct KnobTurn(string Key, string? Value, string? Clears = null);
+public readonly record struct KnobTurn(string Key, string? Value);
 
 public sealed record CraftSlot(string SlotName, int Ordinal, IReadOnlyList<string> Accepts)
 {

@@ -29,10 +29,13 @@ public static class AugmentationRanks
     public static bool Ranked(IEntityStoreService store, AugmentationDocument augmentation) =>
         Carriers(store, augmentation).Count > 1 || augmentation.MaxRank is > 1;
 
-    public static int Ceiling(IEntityStoreService store, AugmentationDocument augmentation) =>
-        Math.Min(
-            augmentation.MaxRank ?? int.MaxValue,
-            Carriers(store, augmentation).Count * PerSource(store.Settings, new TooltipQuery(), augmentation));
+    public static int Limit(IEntityStoreService store, TooltipQuery query, AugmentationDocument augmentation)
+    {
+        var carriers = Carriers(store, augmentation).Count;
+        var perSource = PerSource(store.Settings, query, augmentation);
+
+        return augmentation.MaxRank is { } max ? Math.Min(carriers, (max + perSource - 1) / perSource) : carriers;
+    }
 
     public static IReadOnlyList<(int From, int? To, int Ranks)> RanksByItemLevel(SettingsFile settings)
     {
@@ -61,8 +64,9 @@ public static class AugmentationRanks
 
         return
         [
-            .. carriers.Where(carrier =>
-                query.RankSources.Contains(carrier.Type, StringComparer.OrdinalIgnoreCase)),
+            .. carriers
+                .Where(carrier => query.RankSources.Contains(carrier.Type, StringComparer.OrdinalIgnoreCase))
+                .Take(Limit(store, query, augmentation)),
         ];
     }
 
@@ -70,7 +74,7 @@ public static class AugmentationRanks
         Sources(store, query, augmentation).Count * PerSource(store.Settings, query, augmentation);
 
     public static int Rank(IEntityStoreService store, TooltipQuery query, AugmentationDocument augmentation) =>
-        Math.Min(query.EquippedTier ?? Summed(store, query, augmentation), augmentation.MaxRank ?? int.MaxValue);
+        Math.Min(Summed(store, query, augmentation), augmentation.MaxRank ?? int.MaxValue);
 
     private static readonly ConditionalWeakTable<IEntityStoreService, IReadOnlyDictionary<string, IReadOnlyList<ItemTypeText>>>
         CarriersByCategory = new();

@@ -248,7 +248,6 @@
                 : [],
             State = StatQuery.NullIfEmpty(values.GetValueOrDefault("state")),
             RankSources = RankSources.Parse(values.GetValueOrDefault("rankSources")),
-            EquippedTier = Number(values, "equippedRank"),
             Difficulty = Number(values, "difficulty"),
         };
     }
@@ -256,17 +255,16 @@
     private static int? Number(IReadOnlyDictionary<string, string> values, string key) =>
         values.GetValueOrDefault(key) is { } value && int.TryParse(value, out var number) ? number : null;
 
-    public string Href(string key, string? value, string? clears = null)
+    public string Href(string key, string? value)
     {
         var parameters = new Dictionary<string, StringValues>(raw, StringComparer.OrdinalIgnoreCase);
 
         if (string.IsNullOrEmpty(value)) parameters.Remove(key); else parameters[key] = value;
-        if (clears is not null) parameters.Remove(clears);
 
         return QueryHelpers.AddQueryString(Page, parameters);
     }
 
-    private void Turn(KnobTurn turn) => Nav.NavigateTo(Href(turn.Key, turn.Value, turn.Clears), replace: true);
+    private void Turn(KnobTurn turn) => Nav.NavigateTo(Href(turn.Key, turn.Value), replace: true);
 
     private async Task Copy()
     {
