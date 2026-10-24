@@ -65,7 +65,7 @@ public sealed class ModifierRecipeTests
     [InlineData("MajorTrait", "Aspect", "Aspects", "Aspect: ")]
     [InlineData("StatEnchant", "Enchant", "Enchants", "Enchant: ")]
     [InlineData("AbilityRank", "Glyph", "Glyphs", "Glyph:")]
-    [InlineData("GemPower", "Radiance", null, "Radiance")]
+    [InlineData("GemPower", "Embellishment", null, "Embellishment")]
     public void AModifierTypePrintsTheWordingItsCraftingCategoryNames(
         string name, string printed, string? plural, string header)
     {
