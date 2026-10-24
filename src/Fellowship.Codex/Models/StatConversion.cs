@@ -1,5 +1,10 @@
 namespace Fellowship.Codex.Models;
 
+/// <summary>
+/// The rating to percentage conversion of <c>UCRAttributeRatingToPercentageModifier</c>, as the shipping binary of build
+/// 26162532 computes it at 0x1453A51D0: each bracket's penalty multiplies the whole remaining raw percentage before that
+/// bracket's band is filled, so the penalties compound and each band is a band of the result.
+/// </summary>
 public static class StatConversion
 {
     public const string PercentageSuffix = "Percentage";
@@ -26,23 +31,25 @@ public static class StatConversion
     {
         if (attribute.Brackets is not { Count: > 0 } brackets) return raw;
 
+        var remaining = raw;
         var total = 0m;
-        var floor = 0m;
+        var previousCeiling = 0m;
 
-        foreach (var bracket in brackets)
+        if (remaining > 0)
         {
-            var ceiling = (decimal)bracket.MaxBracketValue;
-            if (ceiling <= floor) continue;
+            foreach (var bracket in brackets)
+            {
+                remaining *= (decimal)bracket.PenaltyPercentage;
 
-            var inside = Math.Min(raw, ceiling) - floor;
-            if (inside <= 0) return total;
+                var inside = Math.Min((decimal)bracket.MaxBracketValue - previousCeiling, remaining);
+                previousCeiling = (decimal)bracket.MaxBracketValue;
+                remaining -= inside;
+                total += inside;
 
-            total += inside * (decimal)bracket.PenaltyPercentage;
-            floor = ceiling;
+                if (remaining <= 0) break;
+            }
         }
 
-        if (raw > floor) total += (raw - floor) * (decimal)attribute.FinalPenaltyPercentage;
-
-        return total;
+        return remaining * (decimal)attribute.FinalPenaltyPercentage + total;
     }
 }

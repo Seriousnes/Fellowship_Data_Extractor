@@ -390,6 +390,7 @@ public sealed class TooltipViewService(
         return StatMagnitudes.For(
             document,
             store.Settings.StatCalculation,
+            store.Settings.Items,
             store.PrimaryAttributes,
             rarity,
             level,

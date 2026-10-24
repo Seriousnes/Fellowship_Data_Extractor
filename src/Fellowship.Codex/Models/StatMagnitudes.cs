@@ -18,6 +18,7 @@ public static class StatMagnitudes
     public static IReadOnlyList<StatLine> For(
         ItemDocument item,
         StatCalculationFile calculation,
+        ItemSettingsFile items,
         IReadOnlySet<string> primaryAttributes,
         RarityEntry? rarity,
         int itemLevel,
@@ -58,6 +59,7 @@ public static class StatMagnitudes
                 StatRows.BlockTerm(guaranteedBlock, stamina, onPrimaryPool, itemLevel),
                 StatRows.Share(declaredWeights, ordinal++),
                 tempers,
+                StatRows.PerTemper(items, stamina, itemLevel),
                 guaranteed: true);
 
             return StatRows.RoundHalfToEven(magnitude);

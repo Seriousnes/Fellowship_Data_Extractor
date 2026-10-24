@@ -37,6 +37,7 @@ public sealed class StatLineOrderTests
         StatMagnitudes.For(
             Greaves(),
             Export.Loaded.Settings.StatCalculation,
+            Export.Loaded.Settings.Items,
             new HashSet<string>(["Strength", "Intellect", "Agility"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
             itemLevel: 360,
