@@ -28,6 +28,8 @@ public sealed record AbilityRecord : EntityRecord
     public IReadOnlyList<RecordReference>? CooldownAccelerationGrantedBy { get; init; }
     public double? GlobalCooldown { get; init; }
     public IReadOnlyList<string>? GlobalCooldownScalesOff { get; init; }
+    public IReadOnlyList<EffectTrigger>? EffectTriggers { get; init; }
+    public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
     public double? Cost { get; init; }
 
     public string? Resource { get; init; }

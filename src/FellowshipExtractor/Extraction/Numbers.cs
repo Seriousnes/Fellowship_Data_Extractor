@@ -67,7 +67,7 @@ public static class Numbers
 
         foreach (var binding in all)
         {
-            if (binding.Values is not null || binding.Value is null) continue;
+            if (binding.Value is null || binding.Values?.Any(value => value != binding.Value) == true) continue;
 
             var relative = TuningNamespace.Relative(binding.RowName, tuningNamespace);
             var under = relative.Length < binding.RowName.Length;

@@ -335,6 +335,9 @@ public static class ExportRun
         Console.WriteLine(
             $"  {resolver.GlobalCooldowns.Read} global cooldowns read, " +
             $"{resolver.GlobalCooldowns.Unread} global cooldown effect classes whose duration reads no number");
+        Console.WriteLine(
+            $"  {resolver.Triggers.Triggers} effect triggers and {resolver.Triggers.Rolls} proc rolls read, " +
+            $"{resolver.Triggers.UnreadRates} proc rolls whose procs per minute reads no number");
 
         var generations = resolver.Gains.Totals;
 

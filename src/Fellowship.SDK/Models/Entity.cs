@@ -105,9 +105,15 @@ public sealed record Entity
 
     public IReadOnlyList<string>? GlobalCooldownScalesOff { get; init; }
 
+    public IReadOnlyList<EffectTrigger>? EffectTriggers { get; init; }
+
+    public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
+
     public bool? TickrateIgnoresHaste { get; init; }
 
     public int? MaxStacks { get; init; }
+
+    public EffectStacking? Stacking { get; init; }
 
     public bool? Infinite { get; init; }
 

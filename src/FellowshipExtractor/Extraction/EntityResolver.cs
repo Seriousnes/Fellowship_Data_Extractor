@@ -207,6 +207,7 @@ public sealed class EntityResolver
         Enchants = new StatEnchants(provider, AugmentationRows, _constants, Heroes);
         HeroAttributes = new HeroAttributes(provider, Heroes);
         GlobalCooldowns = new GlobalCooldowns(provider, _constants, HeroAttributes.Shared);
+        Triggers = new EffectTriggers(provider, _constants);
         DynamicText = new DynamicTextRows(provider, _assets, _constants, Heroes);
 
         DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities, RarityDrops);
@@ -1124,6 +1125,7 @@ public sealed class EntityResolver
         var cooldown = Number(split, "cooldown");
         var timing = cdo is null || cooldown is null ? null : _cooldowns.Of(cdo, charges.Charges);
         var globalCooldown = GlobalCooldowns.Of(cdo);
+        var (effectTriggers, procRolls) = Triggers.Of(cdo);
         var category = Categories.Of(cdo);
 
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
@@ -1265,6 +1267,8 @@ public sealed class EntityResolver
             CooldownAccelerationGrantedBy = timing is null ? null : Empty(AccelerationGrantedBy(category)),
             GlobalCooldown = globalCooldown?.Seconds,
             GlobalCooldownScalesOff = globalCooldown?.ScalesOff,
+            EffectTriggers = effectTriggers,
+            ProcRolls = procRolls,
             Cost = Number(split, "cost"),
             Resource = display.Resource,
             Range = Number(split, "range"),
@@ -1275,6 +1279,7 @@ public sealed class EntityResolver
             CastTimeScalesWithHaste = CastTimeScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             MaxStacks = MaxStacks(cdo),
+            Stacking = EffectStackings.Of(cdo, _provider),
             Infinite = Infinite(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
             Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand, [.. scaling]),
@@ -1340,6 +1345,8 @@ public sealed class EntityResolver
         PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::Infinite", StringComparison.Ordinal) == true;
 
     public GlobalCooldowns GlobalCooldowns { get; }
+
+    public EffectTriggers Triggers { get; }
 
     public int DeclaredByBlueprint { get; private set; }
 
