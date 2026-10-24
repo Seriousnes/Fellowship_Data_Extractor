@@ -2,7 +2,7 @@
 //
 //   dotnet run tools/hero-record.cs -- <Hero> <type> <id> [field ...]
 //       The record of that $type and id, with only the named fields; with no fields, its key names. A record whose
-//       "heroes" names other heroes and not <Hero> prints no content.
+//       "heroes" names other heroes and not <Hero> prints no content, and a "heroes" field prints <Hero> alone.
 //   dotnet run tools/hero-record.cs -- <Hero> find <name prefix>
 //       $type, id and name of each record whose "heroes" contains <Hero> and whose name starts with the prefix
 //       (case-insensitive).
@@ -57,11 +57,14 @@ foreach (var record in Records(exportFile))
     Console.WriteLine(fields.Length == 0
         ? new JsonArray(record.Select(entry => (JsonNode?)entry.Key).ToArray()).ToJsonString()
         : new JsonObject(record.Where(entry => fields.Contains(entry.Key))
-            .Select(entry => KeyValuePair.Create(entry.Key, entry.Value?.DeepClone()))).ToJsonString());
+            .Select(entry => KeyValuePair.Create(entry.Key, entry.Key == "heroes" ? OnlyHero(hero) : entry.Value?.DeepClone()))).ToJsonString());
     return 0;
 }
 Console.WriteLine($"{type} {id} is not in the export.");
 return 1;
+
+// A shared record's heroes field lists every hero that has it; only the one hero is printed.
+static JsonNode OnlyHero(string hero) => new JsonArray(JsonValue.Create(hero));
 
 static bool NamesHero(JsonObject record, string hero) =>
     record["heroes"] is JsonArray heroes
