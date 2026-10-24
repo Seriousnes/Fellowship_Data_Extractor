@@ -197,6 +197,17 @@ Decoded against **26162532**, the rating conversion, the tempering term and the 
 | Tempering: BaseItemFixed slots only (`cmp byte ptr [r15],0` at 0x14565A4B6); `+ TimesUpgraded × 1` for every stat (0x14565A4DB), and for Stamina (`cmp sil,1` at 0x14565A4DF) `× UCRItemSettings.TemperStaminaMultiplierAtItemLevel` (+0x548, `CRItemTemperMultiplierAtItemLevel` {ItemLevel +0, TemperValue +4}, the entry with the greatest `ItemLevel` ≤ the item level, 0x14565A4EC-0x14565A524) else `TemperDefaultStaminaMultiplier` (+0x540, 0x14565A53E); `DefaultGame.ini` has 1.0 and (315, 2.0) | `movd xmm1,[rax+0x30]` **0x14565A54E**, `cvtdq2ps` 0x14565A553, `mulss` 0x14565A556, `addss` **0x14565A55A**, round half to even at 0x14565A561 |
 | `UCRBasicAttributeSet` attribute-change hook: a `BaseHealth`, `Stamina`, `StaminaToMaxHealthMultiplier` or `DifficultyHealthScale` change (statics 0x14A3B0CB0, 0x14A3B0CE0, 0x14A3B0DD0, 0x14A3B0DB0) recomputes `MaxHealth` **base** = `(ceil(scale × BaseHealth) + Stamina × StaminaToMaxHealthMultiplier) × InstanceMaxHealthMultiplier (+0x3D8, 1.0) × DifficultyHealthScale`; scale is `UCRAbilitySystemGlobals.HealthScale4p` (+0x31C, 1.4) or `HealthScale5p` (+0x320, 1.8) for an `ACRAICharacter` owner (StaticClass 0x144F39030) when the `ACRGameStateBase` int at +0x468 is 4 or 5, else 1.0; health is rescaled by newMax / oldMax | vtable 0x148A999E8 slot +0x2E8 = **0x1450C2500**, body 0x1450C2558; recompute **0x1450C2280**, `roundps …,2` (ceil) at 0x1450C23CE, `SetNumericAttributeBase` 0x144A22620 at 0x1450C2405 |
 
+Decoded against **26162532**, the gem node granting (`UCRGemPowerComponent`, vtable 0x148BF31E0, constructor thunk
+0x144FFD2B0; `AppliedGemPower` map +0xA8, element stride 0x58, key `GemRankKey` {Rank +0, GemTypeID +4}; the per-colour
+active rank set map at +0xF8):
+
+| What | Where |
+| --- | --- |
+| BeginPlay (slot +0x3C0) binds the callback to each gem power attribute's value-change delegate (0x144A0D790) and evaluates each colour once with the current value truncated to an int | **0x145383260**; callback pointer at 0x14538334D |
+| Callback: `if (NewValue != OldValue) Update(this, &Attribute, (int)NewValue)` | **0x145390CE0** |
+| `Update`: authority only (`GetOwnerRole` 0x1437E4340 == 3); attribute → `GemTypeID` by the row's `GameplayAttribute` (0x14538A7B0); desired = `ActiveRanks`; toRemove = current − desired, toAdd = desired − current (`TSet::Difference` 0x145385930); removals (ClearAbility 0x144A01520, RemoveActiveGameplayEffect 0x144A1F870, loose tags 0x144AB1DB0, map entry 0x145392130) before grants (augmentation resolved 0x14153C5C0, `IsA(UCRCharacterAugmentationAsset)` 0x144F80FF0, applied by 0x145382BB0: abilities given, effects applied to self 0x144A143A0, loose tags added) | **0x145393E00**; removal loop 0x145394124-0x145394415, grant loop 0x14539441A-0x1453946E7 |
+| `ActiveRanks(subsystem, gemType, int power)`: from the row's last `GemDefinitionsData` node downwards, each node with `RequiredGemPower` ≤ power is taken until **five** are taken (`cmp r8d,[0x149FC33D8]`, a `.data` word of 5 nothing writes); the replacement of a lower node is this cap, not a node field | **0x145388B10**; loop 0x145388BF0-0x14538914C, threshold compare 0x145388C0B |
+
 `regfn <va>` in the harness names the class a `StaticClass` getter belongs to, from the registration table.
 
 The harness for this build is a console project (PeImage, ReflectionScanner, OwnerScanner, EnumScanner,
