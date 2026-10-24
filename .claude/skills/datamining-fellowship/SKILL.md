@@ -171,7 +171,7 @@ Decoded against **26162532**, the damage pipeline every `CRDamageCalculationBase
 | `AddFilter_CharacterContext` params: FilterBuilder, Alive, Targetable, Hittable, InCombat, Falling, Moving, Mounted, each `ECRTargetFilter_BoolState` (0 MustBeFalse, 1 MustBeTrue, 2 Ignore); `AddFilter_Relationship`: `ECRTargetFilter_FactionRelation` (0 Friendly, 1 Neutral, 2 Hostile, 3 NotFriendly, 4 NotNeutral, 5 NotHostile, 6 None) | UFunction params 0x149FB0DA0 / 0x149FB1260, enum params 0x149F81828 / 0x149F81858 |
 
 The harness for this build is a console project (PeImage, ReflectionScanner, OwnerScanner, EnumScanner,
-ClassScanner, TypeFuncResolver copied beside a `Program.cs` with `#:package`-free Iced 1.21.0): `dis`,
+ClassScanner, TypeFuncResolver copied beside a `Program.cs`, with a `PackageReference` to Iced 1.21.0): `dis`,
 `fn`, `cfg` (control-flow sweep, for functions split across `.pdata` ranges), `xref` (RIP-relative and
 rel32 index cached beside the exe size), `str`, `ctor` (InternalConstructor thunk → constructor chain →
 vtable stores), `vtable`, `class`/`struct`/`prop`/`enum`/`recs` (reflection records with the `+0x32`
