@@ -16,4 +16,11 @@ public sealed record GlyphRecord : EntityRecord
     public int? AbilityRank { get; init; }
 
     public IReadOnlyDictionary<string, IReadOnlyList<double?>>? Constants { get; init; }
+
+    public EquippedGlyphRecord? Equipped { get; init; }
+}
+
+public sealed record EquippedGlyphRecord(int Tier, int Tiers)
+{
+    public string? Description { get; init; }
 }

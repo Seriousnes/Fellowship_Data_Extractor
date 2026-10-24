@@ -42,4 +42,21 @@ public sealed record ItemRecord : EntityRecord
     public IReadOnlyList<ItemSourceRecord>? Sources { get; init; }
 
     public int? ItemLevel { get; init; }
+
+    public ItemMagnitudesRecord? Magnitudes { get; init; }
+}
+
+public sealed record ItemMagnitudesRecord
+{
+    public int ItemLevel { get; init; }
+
+    public int Upgrades { get; init; }
+
+    public int? MaxUpgrades { get; init; }
+
+    public string? Rarity { get; init; }
+
+    public decimal? PotentialPower { get; init; }
+
+    public IReadOnlyList<StatMagnitudeRecord> Stats { get; init; } = [];
 }

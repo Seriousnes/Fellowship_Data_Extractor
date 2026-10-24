@@ -9,6 +9,7 @@ public static class WeaponPowerGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.WeaponPower)}")
             .WithTags(PublicTypes.Label(EntityType.WeaponPower));
 
+        group.MapRecordList<WeaponPowerRecord, RecordListRequest>();
         group.MapWeaponPowerRecord();
         group.MapWeaponPowerTooltip();
 

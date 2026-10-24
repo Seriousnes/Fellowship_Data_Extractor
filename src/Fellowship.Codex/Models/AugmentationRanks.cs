@@ -160,10 +160,12 @@ public static class AugmentationRanks
     }
 
     public static IEnumerable<(string Stat, decimal Value)> Granted(
-        EnchantDocument enchant, SettingsFile settings, int itemLevel)
-    {
-        var power = Power(settings, itemLevel);
+        EnchantDocument enchant, SettingsFile settings, int itemLevel) =>
+        AtRank(enchant, settings, Power(settings, itemLevel));
 
+    public static IEnumerable<(string Stat, decimal Value)> AtRank(
+        EnchantDocument enchant, SettingsFile settings, int power)
+    {
         foreach (var stat in enchant.Stats ?? [])
         {
             if (stat.Coefficient == 0) continue;
