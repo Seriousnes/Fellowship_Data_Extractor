@@ -94,6 +94,8 @@ public static class RecordProjection
             CooldownTimeRateScalesOff = Scaling(document.CooldownTimeRateScalesOff, view),
             CooldownHasteGrantedBy = References(document.CooldownHasteGrantedBy, view, origin),
             CooldownAccelerationGrantedBy = References(document.CooldownAccelerationGrantedBy, view, origin),
+            GlobalCooldown = document.GlobalCooldown,
+            GlobalCooldownScalesOff = Scaling(document.GlobalCooldownScalesOff, view),
             Cost = document.Cost,
             Resource = document.Resource,
             Range = document.Range,

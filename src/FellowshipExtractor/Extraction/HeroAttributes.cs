@@ -65,4 +65,12 @@ public sealed class HeroAttributes
     }
 
     public IReadOnlyDictionary<string, double>? For(string codename) => _byCodename.GetValueOrDefault(codename);
+
+    /// <summary>The value every hero starts <paramref name="attribute"/> at, 0 where no hero's table states it, or null where heroes differ.</summary>
+    public double? Shared(string attribute)
+    {
+        var values = _byCodename.Values.Select(attributes => attributes.GetValueOrDefault(attribute)).Distinct().ToArray();
+
+        return values.Length == 1 ? values[0] : null;
+    }
 }

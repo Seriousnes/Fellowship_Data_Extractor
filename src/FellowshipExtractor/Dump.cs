@@ -182,6 +182,11 @@ public static class DumpAll
             if (packages.TryAdd(path, why)) routes.Add(why);
         }
 
+        foreach (var path in BlueprintParents(assets, [.. packages.Keys]))
+        {
+            if (packages.TryAdd(path, BlueprintParentRoute)) routes.Add(BlueprintParentRoute);
+        }
+
         WriteBytecode(root, provider, packages, abilities, effects, counts);
 
         foreach (var (route, many) in routes.Values) counts.Add($"bytecodeRoute.{route}", many);
@@ -1363,6 +1368,38 @@ public static class DumpAll
         counts.Add("iniKeys", keys);
 
         Console.WriteLine($"config: {files.Length} ini files, {sections} sections, {keys} keys");
+    }
+
+    private const string BlueprintParentRoute = "blueprintParent";
+    private const string BlueprintClassPrefix = "BlueprintGeneratedClass'";
+
+    /// <summary>
+    /// The Blueprint classes the written packages inherit from, up each chain. A child such as
+    /// <c>GA_GemBonus_CriticalCHangeHasteExpertiseAndSpiritBonus_Small</c> declares only properties, and its whole
+    /// graph is on a parent that no tag table names.
+    /// </summary>
+    private static IEnumerable<string> BlueprintParents(IReadOnlyList<FAssetData> assets, IReadOnlyList<string> packages)
+    {
+        var parentOf = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var asset in assets)
+        {
+            if (AssetRegistry.TagValue(asset, "ParentClass") is not { } parent) continue;
+            if (!parent.StartsWith(BlueprintClassPrefix, StringComparison.Ordinal)) continue;
+
+            parentOf.TryAdd(asset.PackageName.Text, AbilityPresentationIndex.PackagePath(parent[BlueprintClassPrefix.Length..].TrimEnd('\'')));
+        }
+
+        var seen = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
+        var pending = new Queue<string>(packages);
+
+        while (pending.TryDequeue(out var package))
+        {
+            if (!parentOf.TryGetValue(package, out var parent) || !seen.Add(parent)) continue;
+
+            yield return parent;
+            pending.Enqueue(parent);
+        }
     }
 
     private static IEnumerable<(string Path, string Route)> Related(

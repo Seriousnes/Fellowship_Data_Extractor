@@ -332,6 +332,9 @@ public static class ExportRun
             $"{resolver.PrintedAsReduction} printed as the share their multiplier removes");
         Console.WriteLine(
             $"  {resolver.ModifiersRead} effect modifier magnitudes read");
+        Console.WriteLine(
+            $"  {resolver.GlobalCooldowns.Read} global cooldowns read, " +
+            $"{resolver.GlobalCooldowns.Unread} global cooldown effect classes whose duration reads no number");
 
         var generations = resolver.Gains.Totals;
 

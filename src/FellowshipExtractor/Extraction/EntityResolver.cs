@@ -206,6 +206,7 @@ public sealed class EntityResolver
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
         Enchants = new StatEnchants(provider, AugmentationRows, _constants, Heroes);
         HeroAttributes = new HeroAttributes(provider, Heroes);
+        GlobalCooldowns = new GlobalCooldowns(provider, _constants, HeroAttributes.Shared);
         DynamicText = new DynamicTextRows(provider, _assets, _constants, Heroes);
 
         DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities, RarityDrops);
@@ -1122,6 +1123,7 @@ public sealed class EntityResolver
 
         var cooldown = Number(split, "cooldown");
         var timing = cdo is null || cooldown is null ? null : _cooldowns.Of(cdo, charges.Charges);
+        var globalCooldown = GlobalCooldowns.Of(cdo);
         var category = Categories.Of(cdo);
 
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
@@ -1261,6 +1263,8 @@ public sealed class EntityResolver
             CooldownTimeRateScalesOff = timing?.TimeRateScalesOff,
             CooldownHasteGrantedBy = cdo is null || cooldown is null ? null : Empty(HasteGrantedBy(cdo, charges.Charges)),
             CooldownAccelerationGrantedBy = timing is null ? null : Empty(AccelerationGrantedBy(category)),
+            GlobalCooldown = globalCooldown?.Seconds,
+            GlobalCooldownScalesOff = globalCooldown?.ScalesOff,
             Cost = Number(split, "cost"),
             Resource = display.Resource,
             Range = Number(split, "range"),
@@ -1334,6 +1338,8 @@ public sealed class EntityResolver
     private static bool Infinite(UObject? cdo) =>
         cdo is not null &&
         PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::Infinite", StringComparison.Ordinal) == true;
+
+    public GlobalCooldowns GlobalCooldowns { get; }
 
     public int DeclaredByBlueprint { get; private set; }
 

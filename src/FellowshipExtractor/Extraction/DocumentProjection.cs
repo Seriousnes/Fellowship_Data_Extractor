@@ -65,6 +65,8 @@ public static class DocumentProjection
             CooldownTimeRateScalesOff = entity.CooldownTimeRateScalesOff,
             CooldownHasteGrantedBy = Augmentations(entity.CooldownHasteGrantedBy, references),
             CooldownAccelerationGrantedBy = Augmentations(entity.CooldownAccelerationGrantedBy, references),
+            GlobalCooldown = entity.GlobalCooldown,
+            GlobalCooldownScalesOff = entity.GlobalCooldownScalesOff,
             Cost = entity.Cost,
             Resource = entity.Resource,
             Generates = Generated(entity),

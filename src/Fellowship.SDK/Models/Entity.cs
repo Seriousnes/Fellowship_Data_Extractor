@@ -101,6 +101,10 @@ public sealed record Entity
 
     public IReadOnlyList<int>? CooldownAccelerationGrantedBy { get; init; }
 
+    public double? GlobalCooldown { get; init; }
+
+    public IReadOnlyList<string>? GlobalCooldownScalesOff { get; init; }
+
     public bool? TickrateIgnoresHaste { get; init; }
 
     public int? MaxStacks { get; init; }

@@ -27,6 +27,8 @@ public sealed class AbilityDocument : EntityDocument
     public IReadOnlyList<string>? CooldownTimeRateScalesOff { get; init; }
     public IReadOnlyList<EntityReference>? CooldownHasteGrantedBy { get; init; }
     public IReadOnlyList<EntityReference>? CooldownAccelerationGrantedBy { get; init; }
+    public double? GlobalCooldown { get; init; }
+    public IReadOnlyList<string>? GlobalCooldownScalesOff { get; init; }
     public double? Cost { get; init; }
 
     public string? Resource { get; init; }
