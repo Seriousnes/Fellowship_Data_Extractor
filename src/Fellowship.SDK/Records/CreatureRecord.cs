@@ -19,4 +19,11 @@ public sealed record CreatureRecord : EntityRecord
     public IReadOnlyList<CreatureAbilityRecord>? Abilities { get; init; }
     public IReadOnlyList<CreatureAbilityRecord>? Passives { get; init; }
     public IReadOnlyList<RecordReference>? FoundIn { get; init; }
+
+    public CreatureDifficultyRecord? Difficulty { get; init; }
+}
+
+public sealed record CreatureDifficultyRecord(int Difficulty, string Label)
+{
+    public double? Health { get; init; }
 }

@@ -9,6 +9,7 @@ public static class SigilGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Sigil)}")
             .WithTags(PublicTypes.Label(EntityType.Sigil));
 
+        group.MapRecordList<SigilRecord, AugmentationListRequest>();
         group.MapSigilRecord();
         group.MapSigilTooltip();
 

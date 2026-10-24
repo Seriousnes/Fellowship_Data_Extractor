@@ -9,6 +9,7 @@ public static class ItemGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Item)}")
             .WithTags(PublicTypes.Label(EntityType.Item));
 
+        group.MapRecordList<ItemRecord, ItemListRequest>();
         group.MapItemRecord();
         group.MapItemTooltip();
 

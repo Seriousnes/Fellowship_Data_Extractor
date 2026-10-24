@@ -9,6 +9,7 @@ public static class CurrencyGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Currency)}")
             .WithTags(PublicTypes.Label(EntityType.Currency));
 
+        group.MapRecordList<CurrencyRecord, RecordListRequest>();
         group.MapCurrencyRecord();
         group.MapCurrencyTooltip();
 

@@ -9,6 +9,7 @@ public static class CreatureGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Creature)}")
             .WithTags(PublicTypes.Label(EntityType.Creature));
 
+        group.MapRecordList<CreatureRecord, CreatureListRequest>();
         group.MapCreatureRecord();
         group.MapCreatureTooltip();
 

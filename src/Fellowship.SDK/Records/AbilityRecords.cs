@@ -46,4 +46,16 @@ public sealed record AbilityRecord : EntityRecord
     public IReadOnlyList<Hero>? Heroes { get; init; }
 
     public RecordReference? Owner { get; init; }
+
+    public AbilityDifficultyRecord? Difficulty { get; init; }
+}
+
+public sealed record AbilityDifficultyRecord(int Difficulty, string Label)
+{
+    public IReadOnlyList<DamageBandRecord> Damage { get; init; } = [];
+}
+
+public sealed record DamageBandRecord(decimal Mean, decimal Low, decimal High)
+{
+    public string? Part { get; init; }
 }

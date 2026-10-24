@@ -34,4 +34,33 @@ public class CodexAddressTests
         Assert.Equal("api/item/5218?hero=Gunde", CodexAddresses.Record(EntityType.Item, 5218, "Gunde"));
         Assert.Equal("ability/1964", CodexAddresses.Page(EntityType.Ability, 1964));
     }
+
+    [Fact]
+    public void A_record_reading_is_written_as_query_parameters()
+    {
+        Assert.Equal(
+            "api/item/5218?hero=Gunde&itemLevel=300&upgrades=2&rarity=Epic",
+            CodexAddresses.Record(
+                EntityType.Item, 5218, new RecordReading { Hero = "Gunde", ItemLevel = 300, Upgrades = 2, Rarity = "Epic" }));
+
+        Assert.Equal(
+            "api/enchant/67?rankSources=Head%2CChest",
+            CodexAddresses.Record(EntityType.Enchant, 67, new RecordReading { RankSources = ["Head", "Chest"] }));
+    }
+
+    [Fact]
+    public void A_record_list_is_addressed_by_its_type_with_its_filter()
+    {
+        Assert.Equal("api/item", CodexAddresses.Records(EntityType.Item));
+
+        Assert.Equal(
+            "api/creature?sort=health&page=2&difficulty=30&rank=Boss",
+            CodexAddresses.Records(EntityType.Creature, new RecordFilter
+            {
+                Sort = "health",
+                Page = 2,
+                Reading = new RecordReading { Difficulty = 30 },
+                Fields = new Dictionary<string, string> { ["rank"] = "Boss" },
+            }));
+    }
 }

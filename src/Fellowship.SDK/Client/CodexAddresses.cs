@@ -32,6 +32,30 @@ public static class CodexAddresses
     public static string Record(EntityType type, int id, string? hero = null) =>
         WithQuery(new StringBuilder($"api/{EntityTypes.Slug(type)}/{Number(id)}"), [("hero", hero)]);
 
+    public static string Record(EntityType type, int id, RecordReading reading) =>
+        WithQuery(new StringBuilder($"api/{EntityTypes.Slug(type)}/{Number(id)}"), Parameters(reading));
+
+    public static string Records(EntityType type, RecordFilter? filter = null)
+    {
+        var parameters = new List<(string Key, string? Value)>
+        {
+            ("q", filter?.Q),
+            ("sort", filter?.Sort),
+            ("dir", filter?.Dir),
+            ("page", Number(filter?.Page)),
+            ("size", Number(filter?.Size)),
+        };
+
+        parameters.AddRange(Parameters(filter?.Reading));
+
+        if (filter?.Fields is { Count: > 0 } fields)
+        {
+            parameters.AddRange(fields.Select(entry => (entry.Key, (string?)entry.Value)));
+        }
+
+        return WithQuery(new StringBuilder($"api/{EntityTypes.Slug(type)}"), parameters);
+    }
+
     /// <summary>
     /// The <c>/api</c> route answering one entity's self-contained HTML tooltip fragment. The route takes
     /// a <c>QUERY</c> whose body is that type's own tooltip request record, so the address has no
@@ -82,6 +106,16 @@ public static class CodexAddresses
     public const string ExportEntities = $"{Export}/entities.jsonl";
 
     public const string ExportSettings = $"{Export}/settings.json";
+
+    private static (string Key, string? Value)[] Parameters(RecordReading? reading) =>
+    [
+        ("hero", reading?.Hero),
+        ("itemLevel", Number(reading?.ItemLevel)),
+        ("upgrades", Number(reading?.Upgrades)),
+        ("rarity", reading?.Rarity),
+        ("rankSources", reading?.RankSources is { Count: > 0 } sources ? string.Join(',', sources) : null),        ("difficulty", Number(reading?.Difficulty)),
+        ("equippedTier", Number(reading?.EquippedTier)),
+    ];
 
     private static string WithQuery(
         StringBuilder address, IReadOnlyList<(string Key, string? Value)> parameters)

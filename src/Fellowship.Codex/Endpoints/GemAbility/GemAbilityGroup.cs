@@ -9,6 +9,7 @@ public static class GemAbilityGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.GemAbility)}")
             .WithTags(PublicTypes.Label(EntityType.GemAbility));
 
+        group.MapRecordList<GemAbilityRecord, RecordListRequest>();
         group.MapGemAbilityRecord();
         group.MapGemAbilityTooltip();
 

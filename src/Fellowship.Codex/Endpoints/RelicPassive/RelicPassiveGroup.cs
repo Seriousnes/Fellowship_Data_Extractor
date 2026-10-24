@@ -9,6 +9,7 @@ public static class RelicPassiveGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.RelicPassive)}")
             .WithTags(PublicTypes.Label(EntityType.RelicPassive));
 
+        group.MapRecordList<RelicPassiveRecord, RecordListRequest>();
         group.MapRelicPassiveRecord();
         group.MapRelicPassiveTooltip();
 

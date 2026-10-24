@@ -9,6 +9,7 @@ public static class EffectGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Effect)}")
             .WithTags(PublicTypes.Label(EntityType.Effect));
 
+        group.MapRecordList<EffectRecord, RecordListRequest>();
         group.MapEffectRecord();
         group.MapEffectTooltip();
 

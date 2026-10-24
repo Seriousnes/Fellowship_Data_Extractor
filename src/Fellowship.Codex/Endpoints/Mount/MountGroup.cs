@@ -9,6 +9,7 @@ public static class MountGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Mount)}")
             .WithTags(PublicTypes.Label(EntityType.Mount));
 
+        group.MapRecordList<MountRecord, RecordListRequest>();
         group.MapMountRecord();
         group.MapMountTooltip();
 

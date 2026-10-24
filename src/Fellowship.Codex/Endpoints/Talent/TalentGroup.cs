@@ -9,6 +9,7 @@ public static class TalentGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Talent)}")
             .WithTags(PublicTypes.Label(EntityType.Talent));
 
+        group.MapRecordList<TalentRecord, RecordListRequest>();
         group.MapTalentRecord();
         group.MapTalentTooltip();
 
