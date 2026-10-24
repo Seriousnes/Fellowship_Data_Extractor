@@ -228,6 +228,16 @@ Decoded against **26162532**, the periodic timer, the fork's time rate and the c
 | `CheckDuration` **0x144A6E990** (duration timer callback 0x144A00B70, and `SetTimeRate`): `remaining = (Duration − progress × Duration) / TimeRate`; > 0.0001 re-arms the duration timer, else at expiry runs the pending period in full when `GetTimerRemaining(PeriodHandle)` (0x144041D00: 0 while executing) ≤ 0.0001 (0x144A7F6E0 at 0x144A6EBE2), else the partial tick +0x948 with factor `(period − remaining) / period` (0x144A6EC1A; `MinimumPartialTickTime` 0, so factor 0 still executes), then clears the period timer | the repeated Bursting Ice pulse: the expiry's extra execution signals the ability |
 | `UCRAbilityTask_ServerChanneling` (vtable 0x148AB50D8, thunk 0x144F1A410): `Activate` +0x2C8 = **0x14511A370** arms one looping timer at `TickInterval` (+0xB4) with `ScaledDuration` (+0xB0) ticks (0x14511A929-0x14511A9E0); callback 0x14511EA90 counts +0x114 down and broadcasts `OnTick` (+0x90) with 1.0; no Haste read after activation | |
 
+Decoded against **26162532**, the hit roll and the grievous crit:
+
+| What | Where |
+| --- | --- |
+| Chance table (slot +0x2E0 = **0x1450D97C0**): `chance[0]` = captured source CritChance (scoped modifiers included, 0x144AA1840 → 0x144AA71C0), clamped to 1 at 0x1450D9821 when `CanGrievousCrit` (preset +0x1D) is false; `chance[1]` DodgeChance, `chance[4]` ParryChance, `chance[2]` BlockChance under their preset bools; **0x1450E1170** zeroes miss under `!CanMiss`, zeroes dodge and parry for an attacker not in front, and adds 1 to `chance[0]` for a player's `AbilityType.AutoAttack` (0x14A3BAD68) from behind (dot ≤ −0.6428) | Execute 0x1450DAFB0 at 0x1450DB115 / 0x1450DB126 |
+| Roll **0x14510A540**: one uniform from a hash of four `rand()`, cumulative pick over `{miss, dodge, parry, 0, block, crit, 0}` → index 0-6 else 7; spread roll `u − 0.5` | 0x1450DB13F |
+| Index → `EHitType` **0x145105CC0** (jump table 0x145105FC8): 0 Miss, 1 Dodge, 2 Parry, 3 GlancingBlow, 4 Block, **5 → CriticalStrike or GrievousCriticalStrike by `CritChance > 1`** (0x145105F8B), 6 CrushingBlow, 7 Hit; adds spec tag `HitType.CriticalStrike` (0x14A3BB300) or `HitType.CriticalStrike.Grievous` (0x14A3BB308) | 0x1450DB16D |
+| Gather: `A[0]` CritChance (clamped to 1 under `!CanGrievousCrit`, 0x1450D93EE), `A[1]` CritMultiplier, **`A[2]` = `Global.GrievousCritScalar`** (`CT_AbilityConstants`, 1.0; 0x1450CC4A0 reads `UCRAbilitySystemGlobals.AbilityConstantsTable` +0x388 by the ini key `GlobalGrievousCritScalerKey`) | 0x1450D939C-0x1450D9410 |
+| Hit multiplier 0x145105A10: Grievous = `(A[0] − 1) × A[2] + A[1]` (0x145105A4A-0x145105A59) | `DT_EffectCalculationPresets` `HeroMagicalDirect` (effect 1391): `CanCrit` and `CanGrievousCrit` true |
+
 `vscan <vtable> <disp>..` in the harness lists the slots whose function body touches a displacement.
 
 `regfn <va>` in the harness names the class a `StaticClass` getter belongs to, from the registration table.
