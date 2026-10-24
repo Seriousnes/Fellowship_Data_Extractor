@@ -88,7 +88,7 @@ public sealed class StatParameterTests
 
         Assert.Null(error);
         Assert.Equal([50m, 50m], query.Stats["Haste"]);
-        Assert.Equal(0.1586m, query.Haste);
+        Assert.Equal(0.158448m, query.Haste);
     }
 
     [Fact]

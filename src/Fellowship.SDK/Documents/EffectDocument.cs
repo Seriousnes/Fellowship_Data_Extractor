@@ -21,6 +21,8 @@ public sealed class EffectDocument : EntityDocument
 
     public int? MaxStacks { get; init; }
 
+    public EffectStacking? Stacking { get; init; }
+
     public bool? Infinite { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
@@ -28,6 +30,8 @@ public sealed class EffectDocument : EntityDocument
     public IReadOnlyList<string>? Schools { get; init; }
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
+
+    public IReadOnlyList<EffectModifier>? ExecutionModifiers { get; init; }
 
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 

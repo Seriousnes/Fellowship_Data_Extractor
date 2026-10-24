@@ -28,6 +28,7 @@ public sealed class PrimarySlotTests
                 ],
             },
             settings,
+            Export.Loaded.Settings.Items,
             new HashSet<string>(["Strength"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
             itemLevel: 2000,

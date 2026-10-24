@@ -29,6 +29,18 @@ public static class ClassDefaults
         return null;
     }
 
+    public static IEnumerable<UObject> Chain(UObject cdo, AbstractFileProvider provider)
+    {
+        var holder = cdo;
+
+        for (var depth = 0; holder is not null && depth < MaxDepth; depth++)
+        {
+            yield return holder;
+
+            holder = Parent(holder, provider);
+        }
+    }
+
     public static UObject? Load(string classPath, AbstractFileProvider provider)
     {
         if (classPath.StartsWith(ScriptRoot, StringComparison.Ordinal)) return null;

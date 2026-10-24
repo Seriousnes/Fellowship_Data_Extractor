@@ -182,6 +182,16 @@ public static class DumpAll
             if (packages.TryAdd(path, why)) routes.Add(why);
         }
 
+        foreach (var path in BlueprintParents(assets, [.. packages.Keys]))
+        {
+            if (packages.TryAdd(path, BlueprintParentRoute)) routes.Add(BlueprintParentRoute);
+        }
+
+        foreach (var path in FolderBlueprints(assets, [.. packages.Keys]))
+        {
+            if (packages.TryAdd(path, FolderBlueprintRoute)) routes.Add(FolderBlueprintRoute);
+        }
+
         WriteBytecode(root, provider, packages, abilities, effects, counts);
 
         foreach (var (route, many) in routes.Values) counts.Add($"bytecodeRoute.{route}", many);
@@ -845,9 +855,10 @@ public static class DumpAll
                         writer.WriteStartObject();
 
                         var captured = PropertyWalk.GetStruct(scope, "CapturedAttribute");
+                        var attribute = captured is null ? null : PropertyWalk.GetStruct(captured, "AttributeToCapture");
                         writer.WriteString(
                             "capturedAttribute",
-                            captured is null ? null : PropertyWalk.GetString(captured, "AttributeName"));
+                            attribute is null ? null : PropertyWalk.GetString(attribute, "AttributeName"));
 
                         var identifier = PropertyWalk.GetStruct(scope, "TransientAggregatorIdentifier");
                         writer.WriteString(
@@ -1363,6 +1374,60 @@ public static class DumpAll
         counts.Add("iniKeys", keys);
 
         Console.WriteLine($"config: {files.Length} ini files, {sections} sections, {keys} keys");
+    }
+
+    private const string BlueprintParentRoute = "blueprintParent";
+    private const string BlueprintClassPrefix = "BlueprintGeneratedClass'";
+
+    /// <summary>
+    /// The Blueprint classes the written packages inherit from, up each chain. A child such as
+    /// <c>GA_GemBonus_CriticalCHangeHasteExpertiseAndSpiritBonus_Small</c> declares only properties, and its whole
+    /// graph is on a parent that no tag table names.
+    /// </summary>
+    private static IEnumerable<string> BlueprintParents(IReadOnlyList<FAssetData> assets, IReadOnlyList<string> packages)
+    {
+        var parentOf = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var asset in assets)
+        {
+            if (AssetRegistry.TagValue(asset, "ParentClass") is not { } parent) continue;
+            if (!parent.StartsWith(BlueprintClassPrefix, StringComparison.Ordinal)) continue;
+
+            parentOf.TryAdd(asset.PackageName.Text, AbilityPresentationIndex.PackagePath(parent[BlueprintClassPrefix.Length..].TrimEnd('\'')));
+        }
+
+        var seen = new HashSet<string>(packages, StringComparer.OrdinalIgnoreCase);
+        var pending = new Queue<string>(packages);
+
+        while (pending.TryDequeue(out var package))
+        {
+            if (!parentOf.TryGetValue(package, out var parent) || !seen.Add(parent)) continue;
+
+            yield return parent;
+            pending.Enqueue(parent);
+        }
+    }
+
+    private const string FolderBlueprintRoute = "abilityFolder";
+
+    /// <summary>
+    /// Every Blueprint in a folder holding a written package. An ability's graph spawns actors such as
+    /// <c>BP_Rime_Talent_SpendersSwap_Single</c> that apply its damage spec, and those sit beside it under no tag table.
+    /// </summary>
+    private static IEnumerable<string> FolderBlueprints(IReadOnlyList<FAssetData> assets, IReadOnlyList<string> packages)
+    {
+        var folders = packages
+            .Select(package => package[..Math.Max(0, package.LastIndexOf('/'))])
+            .Where(folder => folder.Length > 0)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var asset in assets)
+        {
+            if (AssetRegistry.TagValue(asset, "GeneratedClass") is null) continue;
+
+            var package = asset.PackageName.Text;
+            if (folders.Contains(package[..Math.Max(0, package.LastIndexOf('/'))])) yield return package;
+        }
     }
 
     private static IEnumerable<(string Path, string Route)> Related(

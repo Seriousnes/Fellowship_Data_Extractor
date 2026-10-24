@@ -85,11 +85,31 @@ public static class StatRows
         weights.Length == 0 ? 0f : weights[Math.Min(rowOrdinal, weights.Length - 1)];
 
     public static float Magnitude(
-        float pool, float slotStatWeight, float blockTerm, float share, int tempers, bool guaranteed)
+        float pool, float slotStatWeight, float blockTerm, float share, int tempers, float perTemper, bool guaranteed)
     {
         var magnitude = MathF.Max(pool * slotStatWeight * blockTerm * share, 1f);
 
-        return guaranteed ? magnitude + tempers : magnitude;
+        return guaranteed ? magnitude + tempers * perTemper : magnitude;
+    }
+
+    /// <summary>
+    /// The amount one temper adds to a stat line: 1 for every stat, and for Stamina
+    /// <c>TemperStaminaMultiplierAtItemLevel</c>'s entry with the greatest item level at or below the item's, else
+    /// <c>TemperDefaultStaminaMultiplier</c> (<c>UCRDynamicHeroItem</c> item stat body 0x14565A4DB-0x14565A55A, build
+    /// 26162532).
+    /// </summary>
+    public static float PerTemper(ItemSettingsFile items, bool stamina, int itemLevel)
+    {
+        if (!stamina) return 1f;
+
+        TemperStaminaStep? step = null;
+
+        foreach (var candidate in items.TemperStaminaMultiplierAtItemLevel)
+        {
+            if (candidate.ItemLevel <= itemLevel && (step is null || candidate.ItemLevel > step.ItemLevel)) step = candidate;
+        }
+
+        return (float)(step?.TemperValue ?? items.TemperDefaultStaminaMultiplier);
     }
 
     public static decimal RoundHalfToEven(float value)

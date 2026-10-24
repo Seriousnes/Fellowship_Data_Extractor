@@ -690,9 +690,16 @@ public sealed class BareStateWalk(
     private double? Capture(KismetExpression? element, int depth)
     {
         if (Effect?.Captured is not { } captured) return null;
-        if (Resolved(element, depth) is not EX_FinalFunction { StackNode.Name: ElementRead } read) return null;
-        if (DynamicTextFloats.Name(read.Parameters.ElementAtOrDefault(0)) is not { } field) return null;
-        if (Number(read.Parameters.ElementAtOrDefault(1), depth + 1) is not { } index) return null;
+
+        var (array, at) = Resolved(element, depth) switch
+        {
+            EX_FinalFunction { StackNode.Name: ElementRead } read => (read.Parameters.ElementAtOrDefault(0), read.Parameters.ElementAtOrDefault(1)),
+            EX_ArrayGetByRef read => (read.ArrayVariable, read.ArrayIndex),
+            _ => (null, null),
+        };
+
+        if (DynamicTextFloats.Name(array) is not { } field) return null;
+        if (Number(at, depth + 1) is not { } index) return null;
         if (PropertyWalk.Get(cdo, field)?.GenericValue is not UScriptArray captures) return null;
         if (captures.Properties.ElementAtOrDefault((int)index)?.GenericValue is not FScriptStruct { StructType: IPropertyHolder capture }) return null;
         if (PropertyWalk.GetStruct(capture, CaptureField) is not { } attribute) return null;

@@ -22,6 +22,8 @@ public sealed record EffectRecord : EntityRecord
 
     public int? MaxStacks { get; init; }
 
+    public EffectStacking? Stacking { get; init; }
+
     public bool? Infinite { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
@@ -29,6 +31,8 @@ public sealed record EffectRecord : EntityRecord
     public IReadOnlyList<string>? Schools { get; init; }
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
+
+    public IReadOnlyList<EffectModifier>? ExecutionModifiers { get; init; }
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
 

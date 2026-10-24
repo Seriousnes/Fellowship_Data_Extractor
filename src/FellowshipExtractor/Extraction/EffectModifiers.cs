@@ -30,19 +30,34 @@ public static class EffectModifiers
     private const string BackingField = "BackingAttribute";
     private const string CapturedField = "AttributeToCapture";
     private const string ComponentSuffix = "EffectComponent";
+    private const string ExecutionsField = "Executions";
+    private const string ScopedField = "CalculationModifiers";
+    private const string ScopedCaptureField = "CapturedAttribute";
+    private const string CaptureSourceField = "AttributeSource";
+    private const string SnapshotField = "bSnapshot";
+    private const string TransientIdentifierField = "TransientAggregatorIdentifier";
+    private const string TagNameField = "TagName";
+    private const string SetByCallerField = "SetByCallerMagnitude";
+    private const string DataTagField = "DataTag";
+    private const string SourceTagsField = "SourceTags";
+    private const string TargetTagsField = "TargetTags";
+    private const string RequireTagsField = "RequireTags";
 
     private const string OpEnum = GameplayEffects.OpEnum;
     private const string KindEnum = "EGameplayEffectMagnitudeCalculation";
+    private const string CaptureSourceEnum = "EGameplayEffectAttributeCaptureSource";
 
     private const string ScalableFloat = "ScalableFloat";
     private const string AttributeBased = "AttributeBased";
     private const string CustomCalculationClass = "CustomCalculationClass";
+    private const string SetByCaller = "SetByCaller";
 
     private const string TalentSegment = "Talent";
     private const string TalentsSegment = "Talents";
     private const int MaxGates = 16;
 
-    private readonly record struct Slot(string Attribute, string? Op, IPropertyHolder Magnitude, bool Declared);
+    private readonly record struct Slot(
+        string Attribute, string? Op, IPropertyHolder Magnitude, bool Declared, IPropertyHolder? Modifier = null);
 
     public static EffectMagnitudes Of(
         UObject? cdo, AbstractFileProvider provider, ConstantsTable constants, TypeMappings mappings,
@@ -79,6 +94,9 @@ public static class EffectModifiers
                     ValueHigh = read.High,
                     Coefficient = scaling?.Coefficient,
                     ScalesOff = scaling?.Attribute is { } captured ? [captured] : null,
+                    SetByCaller = CallerTag(slot.Magnitude, kind),
+                    SourceRequires = slot.Modifier is { } source ? Requires(source, SourceTagsField) : null,
+                    TargetRequires = slot.Modifier is { } target ? Requires(target, TargetTagsField) : null,
                 });
             }
 
@@ -119,7 +137,8 @@ public static class EffectModifiers
                     named,
                     EnumOrdinals.Member(mappings, OpEnum, PropertyWalk.GetString(modifier, ModifierOpField)),
                     magnitude,
-                    true));
+                    true,
+                    modifier));
             }
         }
 
@@ -143,6 +162,71 @@ public static class EffectModifiers
 
         return slots;
     }
+
+    public static IReadOnlyList<EffectModifier> Scoped(UObject? cdo, ConstantsTable constants, TypeMappings mappings)
+    {
+        if (cdo is null) return [];
+        if (PropertyWalk.Get(cdo, ExecutionsField)?.GenericValue is not UScriptArray executions) return [];
+
+        var modifiers = new List<EffectModifier>();
+
+        foreach (var execution in executions.Properties)
+        {
+            if (execution?.GenericValue is not FScriptStruct { StructType: IPropertyHolder held }) continue;
+            if (PropertyWalk.Get(held, ScopedField)?.GenericValue is not UScriptArray scoped) continue;
+
+            foreach (var entry in scoped.Properties)
+            {
+                if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
+                if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) continue;
+
+                var capture = PropertyWalk.GetStruct(modifier, ScopedCaptureField);
+                var backing = capture is not null && PropertyWalk.GetStruct(capture, CapturedField) is { } captured
+                    ? PropertyWalk.GetString(captured, AttributeNameField)
+                    : null;
+                var transient = PropertyWalk.GetStruct(modifier, TransientIdentifierField) is { } identifier
+                    ? PropertyWalk.GetString(identifier, TagNameField)
+                    : null;
+
+                if ((backing ?? transient) is not { } attribute) continue;
+
+                var kind = EnumOrdinals.Member(
+                    mappings, KindEnum, PropertyWalk.GetString(magnitude, CalculationTypeField)) ?? ScalableFloat;
+                double? value = kind.Equals(ScalableFloat, StringComparison.Ordinal) &&
+                                PropertyWalk.GetStruct(magnitude, ScalableField) is { } scalable &&
+                                MagnitudeCalculations.Scalable(scalable, constants) is { } number
+                    ? Math.Round(number, 10)
+                    : null;
+
+                modifiers.Add(new EffectModifier(attribute)
+                {
+                    Op = EnumOrdinals.Member(mappings, OpEnum, PropertyWalk.GetString(modifier, ModifierOpField)),
+                    Value = value,
+                    SetByCaller = CallerTag(magnitude, kind),
+                    SourceRequires = Requires(modifier, SourceTagsField),
+                    TargetRequires = Requires(modifier, TargetTagsField),
+                    CaptureSource = backing is null
+                        ? null
+                        : EnumOrdinals.Member(mappings, CaptureSourceEnum, PropertyWalk.GetString(capture!, CaptureSourceField)),
+                    Snapshot = backing is null ? null : PropertyWalk.Get(capture!, SnapshotField)?.GenericValue is true,
+                });
+            }
+        }
+
+        return modifiers;
+    }
+
+    private static string? CallerTag(IPropertyHolder magnitude, string kind) =>
+        kind.Equals(SetByCaller, StringComparison.Ordinal) &&
+        PropertyWalk.GetStruct(magnitude, SetByCallerField) is { } caller
+            ? PropertyWalk.GetString(caller, DataTagField)
+            : null;
+
+    private static IReadOnlyList<string>? Requires(IPropertyHolder modifier, string field) =>
+        PropertyWalk.GetStruct(modifier, field) is { } requirements &&
+        PropertyWalk.GetTags(requirements, RequireTagsField) is { Length: > 0 } tags
+            ? tags
+            : null;
 
     private static bool IsMagnitude(IPropertyHolder held) =>
         held.Properties.Any(property =>

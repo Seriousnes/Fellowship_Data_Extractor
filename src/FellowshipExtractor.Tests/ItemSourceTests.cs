@@ -8,6 +8,12 @@ public sealed class ItemSourceTests
 {
     private const int SecondThresholdOnly = 4;
     private const int EquipmentVendorOnly = 320;
+
+    /// <summary>
+    /// Orb of Sanguine Restoration (5919, one per hero) drops only in Level.ID.VikingVillageAttack, which is out of
+    /// rotation in 26162532 (Relic_Passive_AutoHealOnIncomingHighDamage DropsInSpecificDungeons).
+    /// </summary>
+    private const int OutOfRotationOnly = 12;
     private const string EquipmentInventory = "fellowship/Content/Vendors/VendorInventories/VI_Equipment";
     private const int BattleRes = 5815;
 
@@ -28,8 +34,8 @@ public sealed class ItemSourceTests
 
         var unsourced = carrying.Where(document => document.Body["sources"] is not JsonArray).ToArray();
 
-        Assert.Equal(1632, carrying.Length - unsourced.Length);
-        Assert.Equal(SecondThresholdOnly + EquipmentVendorOnly, unsourced.Length);
+        Assert.Equal(1620, carrying.Length - unsourced.Length);
+        Assert.Equal(SecondThresholdOnly + EquipmentVendorOnly + OutOfRotationOnly, unsourced.Length);
     }
 
     [Fact]

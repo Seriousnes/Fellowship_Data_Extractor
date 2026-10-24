@@ -101,9 +101,19 @@ public sealed record Entity
 
     public IReadOnlyList<int>? CooldownAccelerationGrantedBy { get; init; }
 
+    public double? GlobalCooldown { get; init; }
+
+    public IReadOnlyList<string>? GlobalCooldownScalesOff { get; init; }
+
+    public IReadOnlyList<EffectTrigger>? EffectTriggers { get; init; }
+
+    public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
+
     public bool? TickrateIgnoresHaste { get; init; }
 
     public int? MaxStacks { get; init; }
+
+    public EffectStacking? Stacking { get; init; }
 
     public bool? Infinite { get; init; }
 
@@ -224,6 +234,8 @@ public sealed record Entity
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
+
+    public IReadOnlyList<EffectModifier>? ExecutionModifiers { get; init; }
 
     public IReadOnlyList<PhaseAbility>? Abilities { get; init; }
 

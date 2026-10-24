@@ -331,7 +331,14 @@ public static class ExportRun
             $"{resolver.StatedByNativeLink} by a stated link to the row native code reads, " +
             $"{resolver.PrintedAsReduction} printed as the share their multiplier removes");
         Console.WriteLine(
-            $"  {resolver.ModifiersRead} effect modifier magnitudes read");
+            $"  {resolver.ModifiersRead} effect modifier magnitudes read, " +
+            $"{resolver.ExecutionModifiersRead} execution modifiers read");
+        Console.WriteLine(
+            $"  {resolver.GlobalCooldowns.Read} global cooldowns read, " +
+            $"{resolver.GlobalCooldowns.Unread} global cooldown effect classes whose duration reads no number");
+        Console.WriteLine(
+            $"  {resolver.Triggers.Triggers} effect triggers and {resolver.Triggers.Rolls} proc rolls read, " +
+            $"{resolver.Triggers.UnreadRates} proc rolls whose procs per minute reads no number");
 
         var generations = resolver.Gains.Totals;
 

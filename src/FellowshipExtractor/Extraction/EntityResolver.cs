@@ -206,6 +206,8 @@ public sealed class EntityResolver
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
         Enchants = new StatEnchants(provider, AugmentationRows, _constants, Heroes);
         HeroAttributes = new HeroAttributes(provider, Heroes);
+        GlobalCooldowns = new GlobalCooldowns(provider, _constants, HeroAttributes.Shared);
+        Triggers = new EffectTriggers(provider, _constants);
         DynamicText = new DynamicTextRows(provider, _assets, _constants, Heroes);
 
         DynamicVisuals = new DynamicItemVisuals(provider, _assets, Collections, rarities, RarityDrops);
@@ -1122,6 +1124,8 @@ public sealed class EntityResolver
 
         var cooldown = Number(split, "cooldown");
         var timing = cdo is null || cooldown is null ? null : _cooldowns.Of(cdo, charges.Charges);
+        var globalCooldown = GlobalCooldowns.Of(cdo);
+        var (effectTriggers, procRolls) = Triggers.Of(cdo);
         var category = Categories.Of(cdo);
 
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
@@ -1129,6 +1133,9 @@ public sealed class EntityResolver
 
         var magnitudes = EffectModifiers.Of(cdo, _provider, _constants, _mappings, CapturedBy(assetName));
         ModifiersRead += magnitudes.Modifiers.Count;
+
+        var executionModifiers = EffectModifiers.Scoped(cdo, _constants, _mappings);
+        ExecutionModifiersRead += executionModifiers.Count;
 
         foreach (var (name, fields) in magnitudes.Talents)
         {
@@ -1249,7 +1256,7 @@ public sealed class EntityResolver
                 : DescriptionTokens.TableRows(tokenHolder).Select(DynamicText.ForRow).OfType<IReadOnlyDictionary<string, string>>().FirstOrDefault(),
             Detail = Empty(detail),
             Icon = IconName(display.Icon, icons),
-            CastTime = Number(split, "castTime"),
+            CastTime = Number(split, "castTime") ?? TaskCastTime(cdo),
             ChannelTime = Number(split, "channelTime"),
             ChannelTick = Number(split, "channelTick"),
             Cooldown = cooldown,
@@ -1261,6 +1268,10 @@ public sealed class EntityResolver
             CooldownTimeRateScalesOff = timing?.TimeRateScalesOff,
             CooldownHasteGrantedBy = cdo is null || cooldown is null ? null : Empty(HasteGrantedBy(cdo, charges.Charges)),
             CooldownAccelerationGrantedBy = timing is null ? null : Empty(AccelerationGrantedBy(category)),
+            GlobalCooldown = globalCooldown?.Seconds,
+            GlobalCooldownScalesOff = globalCooldown?.ScalesOff,
+            EffectTriggers = effectTriggers,
+            ProcRolls = procRolls,
             Cost = Number(split, "cost"),
             Resource = display.Resource,
             Range = Number(split, "range"),
@@ -1271,10 +1282,12 @@ public sealed class EntityResolver
             CastTimeScalesWithHaste = CastTimeScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             MaxStacks = MaxStacks(cdo),
+            Stacking = EffectStackings.Of(cdo, _provider),
             Infinite = Infinite(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
             Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand, [.. scaling]),
             Modifiers = magnitudes.Modifiers.Count == 0 ? null : magnitudes.Modifiers,
+            ExecutionModifiers = executionModifiers.Count == 0 ? null : executionModifiers,
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Generates = Empty(Gains.Of(cdo, assetName)),
             Tuning = tuning,
@@ -1335,6 +1348,10 @@ public sealed class EntityResolver
         cdo is not null &&
         PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::Infinite", StringComparison.Ordinal) == true;
 
+    public GlobalCooldowns GlobalCooldowns { get; }
+
+    public EffectTriggers Triggers { get; }
+
     public int DeclaredByBlueprint { get; private set; }
 
     public int NamedByToken { get; private set; }
@@ -1346,6 +1363,8 @@ public sealed class EntityResolver
     public int SynthesizedFromModifier { get; private set; }
 
     public int ModifiersRead { get; private set; }
+
+    public int ExecutionModifiersRead { get; private set; }
 
     public int DurationsFromSetByCaller { get; private set; }
 
@@ -1506,6 +1525,28 @@ public sealed class EntityResolver
         var counts = MaximumCharges.Of(cdo, _constants, _mappings);
 
         return counts.Charges == SingleCast ? counts with { Charges = null } : counts;
+    }
+
+    private const string CastingTaskField = "CastingTaskData";
+    private const string CastingDurationField = "CastingDuration";
+
+    /// <summary>
+    /// The cast of an ability whose graph runs a casting task: <c>CastingTaskData.CastingDuration</c> on the nearest
+    /// class in its chain declaring one. Every mount states it once, on <c>GA_Mount_MountUp_Base</c>.
+    /// </summary>
+    private double? TaskCastTime(UObject? cdo)
+    {
+        if (cdo is null) return null;
+
+        foreach (var holder in ClassDefaults.Chain(cdo, _provider))
+        {
+            if (PropertyWalk.GetStruct(holder, CastingTaskField) is not { } task) continue;
+            if (PropertyWalk.GetStruct(task, CastingDurationField) is not { } duration) continue;
+
+            return MagnitudeCalculations.Scalable(duration, _constants);
+        }
+
+        return null;
     }
 
     private bool CastTimeScalesWithHaste(UObject? cdo) =>
