@@ -208,6 +208,19 @@ active rank set map at +0xF8):
 | `Update`: authority only (`GetOwnerRole` 0x1437E4340 == 3); attribute → `GemTypeID` by the row's `GameplayAttribute` (0x14538A7B0); desired = `ActiveRanks`; toRemove = current − desired, toAdd = desired − current (`TSet::Difference` 0x145385930); removals (ClearAbility 0x144A01520, RemoveActiveGameplayEffect 0x144A1F870, loose tags 0x144AB1DB0, map entry 0x145392130) before grants (augmentation resolved 0x14153C5C0, `IsA(UCRCharacterAugmentationAsset)` 0x144F80FF0, applied by 0x145382BB0: abilities given, effects applied to self 0x144A143A0, loose tags added) | **0x145393E00**; removal loop 0x145394124-0x145394415, grant loop 0x14539441A-0x1453946E7 |
 | `ActiveRanks(subsystem, gemType, int power)`: from the row's last `GemDefinitionsData` node downwards, each node with `RequiredGemPower` ≤ power is taken until **five** are taken (`cmp r8d,[0x149FC33D8]`, a `.data` word of 5 nothing writes); the replacement of a lower node is this cap, not a node field | **0x145388B10**; loop 0x145388BF0-0x14538914C, threshold compare 0x145388C0B |
 
+Decoded against **26162532**, procs, the applied and refresh delegates and the trait grant:
+
+| What | Where |
+| --- | --- |
+| `UCRRandomStreamComponent::RollProcPerMinute(ProcTag, PPM, ScaleWithHaste)`: per-tag `{LastRollTime, LastProcTime, HasProcced}` map at +0xF8 (stride 0x1C, new entry at `DungeonStartTimestamp`); `PPM ×= Haste` attribute (0x1452C8137); `chance = PPM × sinceRoll / 60 × max(1, 0.05 × PPM × min(sinceProc, 1000) − 3.5)`; before the first proc `chance = max(chance, PPM / FirstProcChanceFloorPPMDivisor)` (+0x14D8, ini 9.0); `rand() & 0x7FFF / 32767`; `LastRollTime = now` on every roll | exec 0x1450547A0, body **0x1452C7ED0**, roll 0x1452C8159-0x1452C8243 |
+| `UCRPrimaryAttributeDamageCalculation` gather (vtable 0x148B74348 slot +0x2D8): base gather, then the `PrimaryAttribute` capture (0x14A3B19B0 +0xE0) into A[0x24]; every capture of that static is Source + **snapshot** (`mov word ptr [rbp+0x27],0x100` at 0x1450D51D2) | **0x1450D96D0**, definitions built at 0x1450D4E30 |
+| `UCRAbilityTask_WaitGameplayEffectAppliedToTarget` Activate binds ASC +0x188 and, under `InTriggerPeriodicExecutions` (+0x2B9), +0x1D0; `UCRAbilityTask_WaitGameplayEffectDurationRefresh` Activate binds ASC **+0x12C0** | vtables 0x148AC9050 / 0x148ACAB58, Activate **0x14512FEE0** / **0x145130020**, callbacks 0x145136650 / 0x145136890 |
+| `ApplyGameplayEffectSpecToSelf` broadcasts +0x170 then the instigator's +0x188 unconditionally after a successful application, a stack add included | **0x1449FC32B**, broadcasts 0x1449FC72A / 0x1449FC73B; container apply 0x144A69540 (existing stack flag 0x144A69625, `StackDurationRefreshPolicy` +0xA11 at 0x144A6987D) |
+| Stack refresh: `RestartActiveGameplayEffectDuration` (0x144A8D1E0, from 0x144A69E24) → `OnDurationChange` 0x144A84840 → owner virtual +0x718 = fork override **0x1452D5500**, which broadcasts the instigator's +0x12C0 only when the effect's progress (0x144A7A8D0) is 0 | `jmp [rax+0x718]` 0x144A84944, `add r14,0x12C0` 0x1452D5623 |
+| Trait grant: rank = `min(EquippedRanks, MaxTraitRank)` (0x14536B8F3-0x14536B902) into the record's +0x2C; `FGameplayAbilitySpec(class, Level = record+0x2C, InputID = record+0x30 or −1 under ability CDO byte +0x3BA)` then `GiveAbility` | apply **0x145369190** (0x145369373-0x1453693BA), caller chunk 0x14536A777, gather 0x1453A8D40 |
+
+`vscan <vtable> <disp>..` in the harness lists the slots whose function body touches a displacement.
+
 `regfn <va>` in the harness names the class a `StaticClass` getter belongs to, from the registration table.
 
 The harness for this build is a console project (PeImage, ReflectionScanner, OwnerScanner, EnumScanner,
