@@ -31,8 +31,6 @@ public sealed record RecordReading
 
     public IReadOnlyList<string>? RankSources { get; init; }
 
-    public int? Rank { get; init; }
-
     public int? Difficulty { get; init; }
 
     public int? EquippedTier { get; init; }

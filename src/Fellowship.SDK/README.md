@@ -31,7 +31,7 @@ string tooltipHtml = await client.TooltipAsync<AbilityTooltipRequest>(
     id: 1, new AbilityTooltipRequest { Hero = "Ardeos", ShowIcon = true });
 ```
 
-Read a record at an item level, tempering, rarity, rank, set of rank sources, glyph tier or difficulty. An item answers
+Read a record at an item level, tempering, rarity, set of rank sources, glyph tier or difficulty. An item answers
 `Magnitudes`, an augmentation answers `Equipped` and a creature answers `Difficulty`:
 
 ```csharp

@@ -165,8 +165,12 @@ public static class RecordLists
 
     public static IReadOnlySet<string> Readings { get; } = typeof(RecordListRequest).Assembly.GetTypes()
         .Where(request => request.IsSubclassOf(typeof(RecordListRequest)))
-        .SelectMany(request => RequestProperties.Of(request))
-        .Where(key => !RequestProperties.Of(typeof(RecordListRequest)).Contains(key))
+        .SelectMany(request => request.GetProperties())
+        .Where(property => property.DeclaringType != typeof(RecordListRequest))
+        .SelectMany(property => property.GetCustomAttributes(typeof(ReadsAttribute), false)
+            .Cast<ReadsAttribute>()
+            .Select(reads => reads.Measure)
+            .Append(property.Name))
         .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     public static IEnumerable<Measure> Measures(ICodexService codex) =>
