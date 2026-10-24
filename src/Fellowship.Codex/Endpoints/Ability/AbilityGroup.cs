@@ -9,6 +9,7 @@ public static class AbilityGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Ability)}")
             .WithTags(PublicTypes.Label(EntityType.Ability));
 
+        group.MapRecordList<AbilityRecord, RecordListRequest>();
         group.MapAbilityRecord();
         group.MapAbilityTooltip();
 

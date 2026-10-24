@@ -39,6 +39,19 @@ public sealed class CodexClient
         GetAsync(reference.Type, reference.Id, hero, cancellation);
 
     [RequiresUnreferencedCode(TrimWarning)]
+    public Task<TRecord> GetAsync<TRecord>(
+        int id, RecordReading reading, CancellationToken cancellation = default)
+        where TRecord : EntityRecord =>
+        ReadAsync<TRecord>(CodexAddresses.Record(EntityRecords.TypeOf(typeof(TRecord)), id, reading), cancellation);
+
+    [RequiresUnreferencedCode(TrimWarning)]
+    public Task<RecordPage<TRecord>> ListAsync<TRecord>(
+        RecordFilter? filter = null, CancellationToken cancellation = default)
+        where TRecord : EntityRecord =>
+        ReadAsync<RecordPage<TRecord>>(
+            CodexAddresses.Records(EntityRecords.TypeOf(typeof(TRecord)), filter), cancellation);
+
+    [RequiresUnreferencedCode(TrimWarning)]
     public Task<SearchResponse> SearchAsync(
         string query, EntityType? type = null, int? limit = null, CancellationToken cancellation = default) =>
         ReadAsync<SearchResponse>(CodexAddresses.Search(query, type, limit), cancellation);

@@ -9,6 +9,7 @@ public static class AspectGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Aspect)}")
             .WithTags(PublicTypes.Label(EntityType.Aspect));
 
+        group.MapRecordList<AspectRecord, AugmentationListRequest>();
         group.MapAspectRecord();
         group.MapAspectTooltip();
 

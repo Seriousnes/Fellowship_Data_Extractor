@@ -1,5 +1,7 @@
 using System.ComponentModel;
 
+using Fellowship.SDK.Client;
+
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
@@ -12,6 +14,28 @@ public sealed record EnchantRecordRequest
 
     [Description("Hero whose primary stat picks the version of the Enchant.")]
     public string? Hero { get; init; }
+
+    [Description(AugmentationReading.ItemLevel)]
+    public int? ItemLevel { get; init; }
+
+    [Description(AugmentationReading.RankSources)]
+    public string? RankSources { get; init; }
+
+    public RecordReading ToReading() => AugmentationReading.Of(Hero, ItemLevel, RankSources);
+}
+
+public sealed record EnchantListRequest : RecordListRequest
+{
+    [Description("Hero whose primary stat picks the version of each Enchant.")]
+    public string? Hero { get; init; }
+
+    [Description(AugmentationReading.ItemLevel)]
+    public int? ItemLevel { get; init; }
+
+    [Description(AugmentationReading.RankSources)]
+    public string? RankSources { get; init; }
+
+    public override RecordReading ToReading() => AugmentationReading.Of(Hero, ItemLevel, RankSources);
 }
 
 public static class EnchantRecordEndpoint
@@ -25,6 +49,10 @@ public static class EnchantRecordEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] EnchantRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One<EnchantRecord>(request.Id, request.Hero, http, store, view);
+        [AsParameters] EnchantRecordRequest request,
+        HttpContext http,
+        IEntityStoreService store,
+        ICodexViewService view,
+        ITooltipViewService tooltips) =>
+        Records.One<EnchantRecord>(request.Id, request.ToReading(), http, store, view, tooltips);
 }

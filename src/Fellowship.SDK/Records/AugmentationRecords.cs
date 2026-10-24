@@ -20,6 +20,21 @@ public abstract record AugmentationRecord : EntityRecord
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
     public IReadOnlyList<RecordReference>? Grants { get; init; }
+
+    public EquippedAugmentationRecord? Equipped { get; init; }
+}
+
+public sealed record EquippedAugmentationRecord
+{
+    public int Rank { get; init; }
+
+    public IReadOnlyList<string> RankSources { get; init; } = [];
+
+    public int? ItemLevel { get; init; }
+
+    public string? Description { get; init; }
+
+    public IReadOnlyList<GrantedStatRecord>? Stats { get; init; }
 }
 
 public sealed record SigilRecord : AugmentationRecord;

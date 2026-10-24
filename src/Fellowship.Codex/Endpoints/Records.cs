@@ -1,3 +1,5 @@
+using Fellowship.SDK.Client;
+
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
@@ -11,20 +13,29 @@ public static class Records
         HttpContext http,
         IEntityStoreService store,
         ICodexViewService view)
+        where TRecord : EntityRecord =>
+        One<TRecord>(id, new RecordReading { Hero = hero }, http, store, view, null);
+
+    public static IResult One<TRecord>(
+        int id,
+        RecordReading reading,
+        HttpContext http,
+        IEntityStoreService store,
+        ICodexViewService view,
+        ITooltipViewService? tooltips)
         where TRecord : EntityRecord
     {
         var type = EntityRecords.TypeOf(typeof(TRecord));
-        var request = StatQuery.NullIfEmpty(hero);
+        reading = reading with { Hero = StatQuery.NullIfEmpty(reading.Hero) };
 
-        if (request is not null && store.Hero(request) is null)
-        {
-            return Lookups.NoSuchHero(request, store.Settings.Heroes);
-        }
+        if (RecordReadings.Refused(reading, store) is { } refused) return refused;
 
-        var outcome = store.Resolve(type, id, request, out var document, out var wearer);
+        var outcome = store.Resolve(type, id, reading.Hero, out var document, out var wearer);
 
-        return outcome == Lookup.Found
-            ? Results.Ok(RecordProjection.Of<TRecord>(document!, view, Origins.Of(http)))
-            : Lookups.Problem(outcome, type, id, wearer, store.All(type, id));
+        if (outcome != Lookup.Found) return Lookups.Problem(outcome, type, id, wearer, store.All(type, id));
+
+        var record = RecordProjection.Of<TRecord>(document!, view, Origins.Of(http));
+
+        return Results.Ok(tooltips is null ? record : RecordReadings.Read(record, document!, reading, store, tooltips));
     }
 }

@@ -9,6 +9,7 @@ public static class LegendaryPowerGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.LegendaryPower)}")
             .WithTags(PublicTypes.Label(EntityType.LegendaryPower));
 
+        group.MapRecordList<LegendaryPowerRecord, RecordListRequest>();
         group.MapLegendaryPowerRecord();
         group.MapLegendaryPowerTooltip();
 

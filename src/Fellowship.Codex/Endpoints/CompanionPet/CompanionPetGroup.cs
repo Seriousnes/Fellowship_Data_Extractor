@@ -9,6 +9,7 @@ public static class CompanionPetGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.CompanionPet)}")
             .WithTags(PublicTypes.Label(EntityType.CompanionPet));
 
+        group.MapRecordList<CompanionPetRecord, RecordListRequest>();
         group.MapCompanionPetRecord();
         group.MapCompanionPetTooltip();
 

@@ -1,15 +1,7 @@
-using System.ComponentModel;
-
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Endpoints;
-
-public sealed record SigilRecordRequest
-{
-    [Description("The id.")]
-    public int Id { get; init; }
-}
 
 public static class SigilRecordEndpoint
 {
@@ -18,9 +10,14 @@ public static class SigilRecordEndpoint
             .WithName("GetSigil")
             .WithSummary($"Get {PublicTypes.Noun(EntityType.Sigil)} by ID.")
             .Produces<SigilRecord>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] SigilRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One<SigilRecord>(request.Id, null, http, store, view);
+        [AsParameters] AugmentationRecordRequest request,
+        HttpContext http,
+        IEntityStoreService store,
+        ICodexViewService view,
+        ITooltipViewService tooltips) =>
+        Records.One<SigilRecord>(request.Id, request.ToReading(), http, store, view, tooltips);
 }

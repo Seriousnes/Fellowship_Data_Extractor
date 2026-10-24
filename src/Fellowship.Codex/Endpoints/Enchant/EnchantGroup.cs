@@ -9,6 +9,7 @@ public static class EnchantGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Enchant)}")
             .WithTags(PublicTypes.Label(EntityType.Enchant));
 
+        group.MapRecordList<EnchantRecord, EnchantListRequest>();
         group.MapEnchantRecord();
         group.MapEnchantTooltip();
 

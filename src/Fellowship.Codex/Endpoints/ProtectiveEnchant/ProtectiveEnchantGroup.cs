@@ -9,6 +9,7 @@ public static class ProtectiveEnchantGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.ProtectiveEnchant)}")
             .WithTags(PublicTypes.Label(EntityType.ProtectiveEnchant));
 
+        group.MapRecordList<ProtectiveEnchantRecord, AugmentationListRequest>();
         group.MapProtectiveEnchantRecord();
         group.MapProtectiveEnchantTooltip();
 

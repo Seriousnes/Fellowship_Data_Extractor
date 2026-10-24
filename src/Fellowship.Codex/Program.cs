@@ -14,6 +14,7 @@ builder.Services.AddOpenApi(ApiDocument.Name, options =>
     options.AddOperationTransformer<StatsNote>();
     options.AddOperationTransformer<ListParameters>();
     options.AddOperationTransformer<BrowsingParameters>();
+    options.AddOperationTransformer<RecordListParameters>();
     options.AddSchemaTransformer<TypeSlugs>();
     options.AddSchemaTransformer<ParameterNumbers>();
 });

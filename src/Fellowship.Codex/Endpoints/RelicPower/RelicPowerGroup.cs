@@ -9,6 +9,7 @@ public static class RelicPowerGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.RelicPower)}")
             .WithTags(PublicTypes.Label(EntityType.RelicPower));
 
+        group.MapRecordList<RelicPowerRecord, RecordListRequest>();
         group.MapRelicPowerRecord();
         group.MapRelicPowerTooltip();
 

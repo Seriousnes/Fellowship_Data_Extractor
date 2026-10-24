@@ -1,15 +1,7 @@
-using System.ComponentModel;
-
 using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Endpoints;
-
-public sealed record AspectRecordRequest
-{
-    [Description("The id.")]
-    public int Id { get; init; }
-}
 
 public static class AspectRecordEndpoint
 {
@@ -18,9 +10,14 @@ public static class AspectRecordEndpoint
             .WithName("GetAspect")
             .WithSummary($"Get {PublicTypes.Noun(EntityType.Aspect)} by ID.")
             .Produces<AspectRecord>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
     private static IResult Handle(
-        [AsParameters] AspectRecordRequest request, HttpContext http, IEntityStoreService store, ICodexViewService view) =>
-        Records.One<AspectRecord>(request.Id, null, http, store, view);
+        [AsParameters] AugmentationRecordRequest request,
+        HttpContext http,
+        IEntityStoreService store,
+        ICodexViewService view,
+        ITooltipViewService tooltips) =>
+        Records.One<AspectRecord>(request.Id, request.ToReading(), http, store, view, tooltips);
 }
