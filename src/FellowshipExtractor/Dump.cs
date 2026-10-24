@@ -187,6 +187,11 @@ public static class DumpAll
             if (packages.TryAdd(path, BlueprintParentRoute)) routes.Add(BlueprintParentRoute);
         }
 
+        foreach (var path in FolderBlueprints(assets, [.. packages.Keys]))
+        {
+            if (packages.TryAdd(path, FolderBlueprintRoute)) routes.Add(FolderBlueprintRoute);
+        }
+
         WriteBytecode(root, provider, packages, abilities, effects, counts);
 
         foreach (var (route, many) in routes.Values) counts.Add($"bytecodeRoute.{route}", many);
@@ -1399,6 +1404,28 @@ public static class DumpAll
 
             yield return parent;
             pending.Enqueue(parent);
+        }
+    }
+
+    private const string FolderBlueprintRoute = "abilityFolder";
+
+    /// <summary>
+    /// Every Blueprint in a folder holding a written package. An ability's graph spawns actors such as
+    /// <c>BP_Rime_Talent_SpendersSwap_Single</c> that apply its damage spec, and those sit beside it under no tag table.
+    /// </summary>
+    private static IEnumerable<string> FolderBlueprints(IReadOnlyList<FAssetData> assets, IReadOnlyList<string> packages)
+    {
+        var folders = packages
+            .Select(package => package[..Math.Max(0, package.LastIndexOf('/'))])
+            .Where(folder => folder.Length > 0)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var asset in assets)
+        {
+            if (AssetRegistry.TagValue(asset, "GeneratedClass") is null) continue;
+
+            var package = asset.PackageName.Text;
+            if (folders.Contains(package[..Math.Max(0, package.LastIndexOf('/'))])) yield return package;
         }
     }
 
