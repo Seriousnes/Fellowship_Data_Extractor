@@ -61,6 +61,13 @@ public static partial class RecordReadings
                     string.Join(", ", Difficulties.Ladder(settings).Select(step => Number(step.Difficulty))) + ".");
         }
 
+        if (reading.EquippedTier is { } tier && (tier < 0 || tier > settings.Glyphs.Tiers))
+        {
+            return Unreadable(
+                "No such tier.",
+                $"The equipped tier is {Number(tier)}, and a glyph's tiers run from 0 to {Number(settings.Glyphs.Tiers)}.");
+        }
+
         return null;
     }
 
@@ -96,6 +103,42 @@ public static partial class RecordReadings
 
             CreatureRecord creature when document is CreatureDocument read && reading.Difficulty is { } difficulty =>
                 creature with { Difficulty = Scaled(read, difficulty, store.Settings) },
+
+            AbilityRecord ability when document is AbilityDocument read && reading.Difficulty is { } difficulty &&
+                store.Menacing(read) is { } owner =>
+                ability with
+                {
+                    Difficulty = new AbilityDifficultyRecord(difficulty, Difficulties.At(store.Settings, difficulty)!.Label)
+                    {
+                        Damage =
+                        [
+                            .. (read.Coefficients ?? [])
+                                .Select(coefficient => (coefficient.Part, Band: Difficulties.Damage(
+                                    coefficient, owner, store.Settings, difficulty)))
+                                .Where(entry => entry.Band is not null)
+                                .Select(entry => new DamageBandRecord(entry.Band!.Mean, entry.Band.Low, entry.Band.High)
+                                {
+                                    Part = entry.Part,
+                                }),
+                        ],
+                    },
+                },
+
+            GlyphRecord glyph when document is GlyphDocument read && reading.EquippedTier is { } tier =>
+                glyph with
+                {
+                    Equipped = new EquippedGlyphRecord(tier, store.Settings.Glyphs.Tiers)
+                    {
+                        Description = read.Description is { } text
+                            ? Prose(tooltips.Text(
+                                text,
+                                read.Placeholders,
+                                new TooltipQuery { EquippedTier = tier },
+                                null,
+                                FellowshipCodex.Schools(read)).Value)
+                            : null,
+                    },
+                },
 
             _ => (EntityRecord)record,
         });

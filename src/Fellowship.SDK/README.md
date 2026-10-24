@@ -35,8 +35,8 @@ Read a record at an item level, tempering, rarity, set of rank sources or diffic
 `Magnitudes`, an augmentation answers `Equipped` and a creature answers `Difficulty`:
 
 ```csharp
-ItemRecord apron = await client.GetAsync<ItemRecord>(
-    id: 5127, new RecordReading { Hero = "Elarion", ItemLevel = 315, Upgrades = 8 });
+ItemRecord grips = await client.GetAsync<ItemRecord>(
+    id: 5872, new RecordReading { Hero = "Helena", ItemLevel = 315, Upgrades = 8 });
 
 EnchantRecord enchant = await client.GetAsync<EnchantRecord>(
     id: 67, new RecordReading { Hero = "Mara", ItemLevel = 300, RankSources = ["Head", "Chest"] });

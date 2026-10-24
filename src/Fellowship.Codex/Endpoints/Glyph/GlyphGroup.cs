@@ -9,7 +9,7 @@ public static class GlyphGroup
         var group = app.MapGroup($"/api/{EntityTypes.Slug(EntityType.Glyph)}")
             .WithTags(PublicTypes.Label(EntityType.Glyph));
 
-        group.MapRecordList<GlyphRecord, RecordListRequest>();
+        group.MapRecordList<GlyphRecord, GlyphListRequest>();
         group.MapGlyphRecord();
         group.MapGlyphTooltip();
 

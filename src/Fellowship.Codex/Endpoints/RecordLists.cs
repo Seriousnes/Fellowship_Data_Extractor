@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -148,12 +147,20 @@ public static class RecordLists
             ]));
     }
 
-    private static readonly ConditionalWeakTable<EntityDocument, ConcurrentDictionary<string, EntityRecord>> Projections = new();
+    private static readonly ConditionalWeakTable<EntityDocument, Projection> Projections = new();
+
+    private sealed record Projection(string Origin, EntityRecord Record);
 
     private static TRecord Projected<TRecord>(EntityDocument document, ICodexViewService view, string origin)
-        where TRecord : EntityRecord =>
-        (TRecord)Projections.GetOrCreateValue(document)
-            .GetOrAdd(origin, at => RecordProjection.Of<TRecord>(document, view, at));
+        where TRecord : EntityRecord
+    {
+        if (Projections.TryGetValue(document, out var held) && held.Origin == origin) return (TRecord)held.Record;
+
+        var record = RecordProjection.Of<TRecord>(document, view, origin);
+        Projections.AddOrUpdate(document, new Projection(origin, record));
+
+        return record;
+    }
 
     private static bool Measured(ICodexService codex, string key) =>
         (key.EndsWith("Min", StringComparison.OrdinalIgnoreCase) ||

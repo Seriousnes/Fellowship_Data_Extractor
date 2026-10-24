@@ -97,6 +97,38 @@ public sealed class RecordReadingTests(Export export)
         Assert.True(high.Health > low.Health);
     }
 
+    [Fact]
+    public void A_difficulty_scales_the_damage_of_an_ability_a_creature_owns()
+    {
+        var ability = Store.Entities.OfType<AbilityDocument>().First(row =>
+            row.Coefficients is { Count: > 0 } && Store.Menacing(row) is not null);
+        var ladder = Difficulties.Ladder(Store.Settings);
+
+        var low = Read<AbilityRecord>(ability, new RecordReading { Difficulty = ladder[0].Difficulty }).Difficulty!;
+        var high = Read<AbilityRecord>(ability, new RecordReading { Difficulty = ladder[^1].Difficulty }).Difficulty!;
+
+        Assert.NotEmpty(high.Damage);
+        Assert.True(high.Damage[0].Mean > low.Damage[0].Mean);
+    }
+
+    [Fact]
+    public void A_glyph_reads_at_its_equipped_tier()
+    {
+        var glyph = Store.Entities.OfType<GlyphDocument>().First(row => row.Description is not null);
+
+        var equipped = Read<GlyphRecord>(glyph, new RecordReading { EquippedTier = 2 }).Equipped!;
+
+        Assert.Equal(2, equipped.Tier);
+        Assert.Equal(Store.Settings.Glyphs.Tiers, equipped.Tiers);
+        Assert.False(string.IsNullOrWhiteSpace(equipped.Description));
+        Assert.DoesNotContain("<", equipped.Description);
+    }
+
+    [Fact]
+    public void A_tier_past_the_glyph_tiers_is_refused() =>
+        Assert.NotNull(RecordReadings.Refused(
+            new RecordReading { EquippedTier = Store.Settings.Glyphs.Tiers + 1 }, Store));
+
     [Theory]
     [InlineData(0, null, null, null)]
     [InlineData(null, "Shiny", null, null)]
