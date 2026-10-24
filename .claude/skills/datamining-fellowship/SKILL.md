@@ -247,6 +247,15 @@ Decoded against **26162532**, the spec's source tags and the attribute reads:
 | Damage execution record **0x1451048C0** (from the engine execution params, at 0x1450DB03E): spec copy +0x70, aggregated source tags +0x330, aggregated target tags +0x350, evaluate parameters at +0x8 = {&+0x330, &+0x350} (0x145104A17); every capture (0x144AA1840 → 0x144AA71C0) evaluates with them | `FAggregatorMod::UpdateQualifies` **0x144AB4D40**: null tags → empty container 0x14A3813B8, requirements through 0x144AB1F10 |
 | `UAbilitySystemBlueprintLibrary::GetFloatAttribute` exec **0x144A35BD0** (native table 0x148972110) → 0x144A0D5F0 → `GetNumericAttribute` **0x144A0FD30** → `GetNumericValue` (0x144A0C9B0 / 0x144A0CAA0): the stored current value, no tags | a UFunction's exec is the second pointer of its `FNameNativePtrPair`; the first `str` hit is the singleton table |
 
+Decoded against **26162532**, the effect constructor defaults and the inhibition re-arm's reach:
+
+| What | Where |
+| --- | --- |
+| `UGameplayEffect` constructor **0x144A62990**: `mov word ptr [rsi+0x240],1` (`bExecutePeriodicEffectOnApplication` true, `PeriodicInhibitionPolicy` +0x241 NeverReset), `StackingType` +0x9E1 None, `StackDurationRefreshPolicy` +0xA11 / `StackPeriodResetPolicy` +0xA12 both 0 (Refresh / Reset on successful application); an asset that omits a field has these | 0x144A62DBB, 0x144A62DCE, 0x144A62E0B; `UCRGameplayEffectDamage` ctor 0x1450E6540 sets none of them |
+| `InhibitActiveGameplayEffect` = ASC vtable **+0x710** = **0x144A21B50**: no-op when `bIsInhibited` (+0x30C) already equals the request; un-inhibit → 0x144A67570 (re-arms the period only under `PeriodicInhibitionPolicy != 0`, 0x144A67734), inhibit → 0x144A8B390 | game-code callers: component check 0x144A7F8C0 (application 0x144A6A5C2, replication 0x144A880B9), tag handler 0x144AAF450, 0x144A120E0 |
+| Period timer arming in the container apply is gated by `bSetPeriod` (`[rsp+0x41]`: 1 for a new effect, `StackPeriodResetPolicy != NeverReset` for an existing stack) | 0x144A6A1D4 → SetTimer 0x144A6A3DA |
+| Every `SetTimer` on `PeriodHandle` (+0x318): application 0x144A6A3DA and the inhibition re-arm 0x144A67AEB; every call of +0x950: 0x144A6A2F3 and 0x144A679B8; no `UCRAbilitySystemComponent` override touches +0x318 or +0x950; the partial-tick virtual +0x948 has one caller besides the duration check, 0x14533CE50 in `ACRGameStateDungeon` | so an instigator's Haste change cannot re-time a period on another actor; a new application (StackingType None: a second instance) is the one re-time |
+
 `vscan <vtable> <disp>..` in the harness lists the slots whose function body touches a displacement.
 
 `regfn <va>` in the harness names the class a `StaticClass` getter belongs to, from the registration table.
