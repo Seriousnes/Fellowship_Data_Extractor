@@ -28,22 +28,8 @@ public sealed record RecordFieldFilter(RecordField Field)
 {
     public IReadOnlyList<string> Wanted { get; init; } = [];
 
-    public double? Min { get; init; }
-
-    public double? Max { get; init; }
-
-    public bool Matches(EntityRecord record)
-    {
-        if (Wanted.Count > 0 &&
-            !Field.Texts(record).Any(value => Wanted.Contains(value, StringComparer.OrdinalIgnoreCase)))
-        {
-            return false;
-        }
-
-        if (Min is null && Max is null) return true;
-
-        return Field.Numbers(record).Any(value => (Min is not { } min || value >= min) && (Max is not { } max || value <= max));
-    }
+    public bool Matches(EntityRecord record) =>
+        Wanted.Count == 0 || Field.Texts(record).Any(value => Wanted.Contains(value, StringComparer.OrdinalIgnoreCase));
 }
 
 public static class RecordFields

@@ -31,7 +31,7 @@ string tooltipHtml = await client.TooltipAsync<AbilityTooltipRequest>(
     id: 1, new AbilityTooltipRequest { Hero = "Ardeos", ShowIcon = true });
 ```
 
-Read a record at an item level, tempering, rarity, set of rank sources or difficulty. An item answers
+Read a record at an item level, tempering, rarity, rank, set of rank sources, glyph tier or difficulty. An item answers
 `Magnitudes`, an augmentation answers `Equipped` and a creature answers `Difficulty`:
 
 ```csharp
@@ -42,8 +42,8 @@ EnchantRecord enchant = await client.GetAsync<EnchantRecord>(
     id: 67, new RecordReading { Hero = "Mara", ItemLevel = 300, RankSources = ["Head", "Chest"] });
 ```
 
-List one type's records a page at a time. `Fields` takes a facet, a flag, a measure bound such as
-`cooldownMin`, or any scalar record field, as `slot` or `itemLevelMin`:
+List one type's records a page at a time, each read at the `Reading`. `Fields` takes a facet, a flag, a
+measure bound such as `cooldownMin`, or any scalar record field, as `slot` or `primaryStat`:
 
 ```csharp
 RecordPage<ItemRecord> page = await client.ListAsync<ItemRecord>(new RecordFilter

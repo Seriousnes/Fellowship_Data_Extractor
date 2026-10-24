@@ -114,6 +114,7 @@ public static class CodexAddresses
         ("upgrades", Number(reading?.Upgrades)),
         ("rarity", reading?.Rarity),
         ("rankSources", reading?.RankSources is { Count: > 0 } sources ? string.Join(',', sources) : null),
+        ("rank", Number(reading?.Rank)),
         ("difficulty", Number(reading?.Difficulty)),
         ("equippedTier", Number(reading?.EquippedTier)),
     ];

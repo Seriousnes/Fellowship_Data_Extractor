@@ -85,6 +85,24 @@ public sealed class RecordReadingTests(Export export)
     }
 
     [Fact]
+    public void A_stated_rank_reads_the_augmentation_at_that_rank_up_to_its_max()
+    {
+        var enchant = Store.Entities.OfType<EnchantDocument>().First(row => row.Stats is { Count: > 0 });
+
+        var equipped = Read<EnchantRecord>(enchant, new RecordReading { Rank = 9 }).Equipped!;
+
+        Assert.Equal(Math.Min(9, enchant.MaxRank ?? int.MaxValue), equipped.Rank);
+        Assert.Empty(equipped.RankSources);
+        Assert.Equal(
+            AugmentationRanks.AtRank(enchant, Store.Settings, equipped.Rank).Select(stat => stat.Value),
+            equipped.Stats!.Select(stat => stat.Value));
+    }
+
+    [Fact]
+    public void A_rank_and_rank_sources_together_are_refused() =>
+        Assert.NotNull(RecordReadings.Refused(new RecordReading { Rank = 2, RankSources = ["Head"] }, Store));
+
+    [Fact]
     public void A_difficulty_scales_a_creature_health()
     {
         var creature = Store.Entities.OfType<CreatureDocument>().First(row => row.Health is > 0);

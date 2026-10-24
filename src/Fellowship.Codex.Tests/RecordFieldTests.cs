@@ -51,14 +51,11 @@ public sealed class RecordFieldTests
     }
 
     [Fact]
-    public void A_numeric_field_bounds_a_range()
+    public void A_reading_names_no_measure_bound()
     {
-        Assert.True(new RecordFieldFilter(Field("itemLevel")) { Min = 300, Max = 300 }.Matches(Item));
-        Assert.False(new RecordFieldFilter(Field("itemLevel")) { Min = 301 }.Matches(Item));
-        Assert.False(new RecordFieldFilter(Field("itemLevel")) { Max = 299 }.Matches(Item));
+        Assert.Contains("itemLevel", RecordLists.Readings);
+        Assert.Contains("rank", RecordLists.Readings);
+        Assert.Contains("difficulty", RecordLists.Readings);
+        Assert.DoesNotContain("page", RecordLists.Readings);
     }
-
-    [Fact]
-    public void A_bound_leaves_out_a_record_with_no_value() =>
-        Assert.False(new RecordFieldFilter(Field("itemLevel")) { Min = 1 }.Matches(Item with { ItemLevel = null }));
 }

@@ -53,6 +53,16 @@ public static partial class RecordReadings
             }
         }
 
+        if (reading.Rank is { } rank)
+        {
+            if (rank < 1) return Unreadable("No such rank.", $"The rank is {Number(rank)}, below 1.");
+
+            if (reading.RankSources is { Count: > 0 })
+            {
+                return Unreadable("Two ranks.", "The rank is stated and summed from rankSources. State one of them.");
+            }
+        }
+
         if (reading.Difficulty is { } difficulty && Difficulties.At(settings, difficulty) is null)
         {
             return Unreadable(
@@ -98,7 +108,7 @@ public static partial class RecordReadings
                 item with { Magnitudes = Magnitudes(read, reading, store, tooltips) },
 
             AugmentationRecord augmentation when document is AugmentationDocument read &&
-                (reading.ItemLevel is not null || reading.RankSources is { Count: > 0 }) =>
+                (reading.ItemLevel is not null || reading.RankSources is { Count: > 0 } || reading.Rank is not null) =>
                 augmentation with { Equipped = Equipped(read, reading, store, tooltips) },
 
             CreatureRecord creature when document is CreatureDocument read && reading.Difficulty is { } difficulty =>
@@ -188,13 +198,17 @@ public static partial class RecordReadings
             RankSources = reading.RankSources ?? [],
         };
 
-        var rank = AugmentationRanks.Rank(store, query, augmentation);
+        var rank = reading.Rank is { } stated
+            ? Math.Min(stated, augmentation.MaxRank ?? int.MaxValue)
+            : AugmentationRanks.Rank(store, query, augmentation);
         var level = augmentation is EnchantDocument ? AugmentationRanks.Level(settings, query) : (int?)null;
 
         return new EquippedAugmentationRecord
         {
             Rank = rank,
-            RankSources = [.. AugmentationRanks.Sources(store, query, augmentation).Select(source => source.Type)],
+            RankSources = reading.Rank is null
+                ? [.. AugmentationRanks.Sources(store, query, augmentation).Select(source => source.Type)]
+                : [],
             ItemLevel = level,
             Description = AugmentationRanks.Description(
                     augmentation, rank, AugmentationRanks.HeroRead(settings, augmentation, reading.Hero)) is { } text

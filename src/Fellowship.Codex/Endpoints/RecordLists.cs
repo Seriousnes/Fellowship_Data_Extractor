@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -104,19 +105,19 @@ public static class RecordLists
 
             if (readingKeys.Contains(key)) continue;
 
-            if (codex.Facet(key) is not null || codex.Flag(key) is not null || Measured(codex, key))
+            if (codex.Facet(key) is not null || codex.Flag(key) is not null || Bounded(codex, key))
             {
                 browsing[key] = values;
                 continue;
             }
 
-            if (Filter(typeof(TRecord), key, values, out var error) is { } filter)
+            if (RecordFields.Find(typeof(TRecord), key) is { } filtered)
             {
-                filters.Add(filter);
+                filters.Add(new RecordFieldFilter(filtered) { Wanted = Wanted(values) });
                 continue;
             }
 
-            return Unreadable(error ?? Unknown(key, codex, typeof(TRecord), readingKeys));
+            return Unreadable(Unknown(key, codex, typeof(TRecord), readingKeys));
         }
 
         var query = CodexQuery.Parse(new QueryCollection(browsing), codex, Controls, null, out var refusal);
@@ -162,39 +163,27 @@ public static class RecordLists
         return record;
     }
 
-    private static bool Measured(ICodexService codex, string key) =>
+    public static IReadOnlySet<string> Readings { get; } = typeof(RecordListRequest).Assembly.GetTypes()
+        .Where(request => request.IsSubclassOf(typeof(RecordListRequest)))
+        .SelectMany(request => RequestProperties.Of(request))
+        .Where(key => !RequestProperties.Of(typeof(RecordListRequest)).Contains(key))
+        .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
+    public static IEnumerable<Measure> Measures(ICodexService codex) =>
+        codex.Measures.Where(measure => !Readings.Contains(measure.Key));
+
+    private static bool Bounded(ICodexService codex, string key) =>
         (key.EndsWith("Min", StringComparison.OrdinalIgnoreCase) ||
             key.EndsWith("Max", StringComparison.OrdinalIgnoreCase)) &&
-        codex.Measure(key[..^3]) is not null;
+        Measures(codex).Any(measure => string.Equals(measure.Key, key[..^3], StringComparison.OrdinalIgnoreCase));
 
-    private static RecordFieldFilter? Filter(Type record, string key, StringValues values, out string? error)
-    {
-        error = null;
-
-        var wanted = values
+    private static string[] Wanted(StringValues values) =>
+    [
+        .. values
             .SelectMany(value => (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
             .Select(value => value.Trim())
-            .Where(value => value.Length > 0)
-            .ToArray();
-
-        if (RecordFields.Find(record, key) is { } field) return new RecordFieldFilter(field) { Wanted = wanted };
-
-        var isMax = key.EndsWith("Max", StringComparison.OrdinalIgnoreCase);
-
-        if (!isMax && !key.EndsWith("Min", StringComparison.OrdinalIgnoreCase)) return null;
-
-        if (RecordFields.Find(record, key[..^3]) is not { Numeric: true } bounded) return null;
-
-        if (wanted.Length == 0) return new RecordFieldFilter(bounded);
-
-        if (!double.TryParse(wanted[^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var bound))
-        {
-            error = $"'{wanted[^1]}' is not a number.";
-            return null;
-        }
-
-        return isMax ? new RecordFieldFilter(bounded) { Max = bound } : new RecordFieldFilter(bounded) { Min = bound };
-    }
+            .Where(value => value.Length > 0),
+    ];
 
     private static Row<TRecord>[] Sorted<TRecord>(Row<TRecord>[] rows, RecordField field, bool descending)
         where TRecord : EntityRecord
@@ -217,7 +206,7 @@ public static class RecordLists
         string.Join(", ", reading.Select(JsonNamingPolicy.CamelCase.ConvertName).Order(StringComparer.Ordinal)
             .Concat(codex.Facets.Select(facet => facet.Key))
             .Concat(codex.Flags.Select(flag => flag.Key))
-            .Concat(codex.Measures.SelectMany(measure => new[] { measure.Key + "Min", measure.Key + "Max" }))
+            .Concat(Measures(codex).SelectMany(measure => new[] { measure.Key + "Min", measure.Key + "Max" }))
             .Concat(RecordFields.Of(record).Select(field => field.Key))
             .Distinct(StringComparer.OrdinalIgnoreCase)) + ".";
 

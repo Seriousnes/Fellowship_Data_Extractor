@@ -21,7 +21,10 @@ public sealed record EnchantRecordRequest
     [Description(AugmentationReading.RankSources)]
     public string? RankSources { get; init; }
 
-    public RecordReading ToReading() => AugmentationReading.Of(Hero, ItemLevel, RankSources);
+    [Description(AugmentationReading.Rank)]
+    public int? Rank { get; init; }
+
+    public RecordReading ToReading() => AugmentationReading.Of(Hero, ItemLevel, RankSources, Rank);
 }
 
 public sealed record EnchantListRequest : RecordListRequest
@@ -35,7 +38,10 @@ public sealed record EnchantListRequest : RecordListRequest
     [Description(AugmentationReading.RankSources)]
     public string? RankSources { get; init; }
 
-    public override RecordReading ToReading() => AugmentationReading.Of(Hero, ItemLevel, RankSources);
+    [Description(AugmentationReading.Rank)]
+    public int? Rank { get; init; }
+
+    public override RecordReading ToReading() => AugmentationReading.Of(Hero, ItemLevel, RankSources, Rank);
 }
 
 public static class EnchantRecordEndpoint
