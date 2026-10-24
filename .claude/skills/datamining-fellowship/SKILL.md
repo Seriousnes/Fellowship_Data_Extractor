@@ -155,6 +155,30 @@ Chrona cost:
 | `GetCapturedAttribute`: the captured attribute's evaluated current value | **0x14521B530**, exec thunk 0x144F5C740; capture lookup 0x144A68940, aggregator evaluate 0x144A9D040 |
 | `GetScalableFloat64Value`: `Value × row` at level 0 | **0x1452214C0**, exec thunk 0x144F61EE0; `mulss` at 0x144A9D37A |
 
+Decoded against **26162532**, the damage pipeline every `CRDamageCalculationBase` execution runs:
+
+| What | Where |
+| --- | --- |
+| `UCRDamageCalculationBase::Execute_Implementation` | **0x1450DAFB0**, vtable 0x148B73498 slot +0x2D0; `CRIntellectDamageCalculation` vtable 0x148B74058 and `CRUserDefinedDamageCalculation` vtable 0x148B73788 differ from it only at slot +0x2D8 |
+| Attribute gather, slot +0x2D8: base 0x1450D9120; Intellect override 0x1450D9680 adds the Intellect capture to A[0x24]; user-defined override 0x1450D9770 puts the `Transient.Damage` aggregator (tag global 0x14A3BB450) there | capture statics 0x14A3B1E90 (built at 0x1450D33B0: LifeSteal +0x8, DamageScale +0x50, SourceDamageReflect +0x98, TargetDamageReflect +0xE0, DodgeChance +0x128, ParryChance +0x170, BlockChance +0x1B8, BlockDamageReductionFlat +0x200, BlockDamageReductionMultiplier +0x248, IncomingDamageMultiplier +0x290, Armor +0x2D8, DifficultyDamageScale +0x320, DamageThreatMultiplier +0x368, Avoidance +0x3B0, PhysicalDamageReduction +0x3F8, MagicDamageReduction +0x440, PhysicalIncomingDamageMultiplier +0x488, MagicalIncomingDamageMultiplier +0x4D0, AoeIncomingDamageMultiplier +0x518, Expertise +0x560, DamageMitigationScale +0x5A8, BalancingDamageAura +0x5F0) and 0x14A3B19B0 (built at 0x1450D4E30: Strength +0x8, Agility +0x50, Intellect +0x98, PrimaryAttribute +0xE0, CritChance +0x128, CritMultiplier +0x170, MaxHealth +0x1B8) |
+| Raw roll `round(A[0x24] × DamageScale × hitMultiplier × DifficultyDamageScale × (1 + roll × Spread) × (1 + Expertise) × PartialTickFactor × StackCount × BalancingDamageAura)` | **0x145105A10**; hit multiplier 0x145105A21-0x145105A71 (crit = CritMultiplier A[4], grievous = (CritChance − 1) × grievous + CritMultiplier, glancing 0.75, crushing 1.5); roll uniform in [−0.5, 0.5) at 0x14510A640-0x14510A662; Spread = `SetByCallerTags.Spread` (0x14A3BB388) else preset `DefaultSpread`; `SetByCaller.PartialTickFactor` (0x14A3BB3B0) for EffectType.Dot/Hot specs at 0x1450D9522-0x1450D960B; stack count at 0x1450D9610-0x1450D9661 |
+| Target side: armor table, `clamp(1 − Avoidance)`, IncomingDamageMultiplier, EffectType.Physical (0x14A3BAC10) or EffectType.Magic (0x14A3BAC08) reduction pair, AoeIncomingDamageMultiplier, block | **0x145105AE0** |
+| Final: `round(T × DamageMitigationScale)`, threat, lifesteal, reflect (skipped under EffectLogic.IgnoreDamageReflect 0x14A3BACE8) | **0x145105930**; round half away from zero **0x1412A6B40** |
+| `HealthChangedInfo` (struct params 0x149F7D900) built in Execute: `TotalHealthChange` = −(health damage + absorbed) at 0x1450DB752-0x1450DB769, `OverHealOrOverKillAmount` 0 at 0x1450DB7BD | handed to 0x1450E1670 (instigating classes, then character virtuals +0xB18 target / +0xB20 source of `ACRCharacterBase` vtable 0x148B41418 = 0x1452E0540 / 0x1452E0940, which copy it into the `Event.Incoming.*` / `Event.Damage.*` gameplay-event payloads) and to the recorder 0x145278E20 (skipped under EffectLogic.NoLogging 0x14A3BACF0) |
+| Preset row (`CREffectCalculationPreset`, size 0x38, `FText` 0x10 here): bools CanMiss 0x18 … ApplyTargetAoeIncomingDamageMultiplier 0x29, `DefaultSpread` 0x2C, `ApplyAscensionScaling` 0x30 | read through ctx+0x328 in 0x1450D9120 and 0x1450D97C0 |
+| `FAggregatorModChannel::EvaluateWithBase`: Override wins, else `((Base + ΣAdditive) × (1 + Σ(Multiplicitive − 1)) / (1 + Σ(Division − 1))) × ΠMultiplyCompound + ΣAddFinal` | **0x144AA79C0**, channel loop 0x144AA7B50, capture entry 0x144AA71C0 / 0x144AA1840; `EGameplayModOp` params 0x149F62B38 (0 AddBase, 1 MultiplyAdditive, 2 DivideAdditive, 3 Override, 4 MultiplyCompound, 5 AddFinal) |
+| `UCRBasicAttributeSet` vtable 0x148A999E8: PostGameplayEffectExecute **0x1450C2B10**, health apply (clamp to MinHealth/MaxHealth, `CRHealthModifiedData` to character delegates +0x17A8/+0x17C0) slot +0x318 = **0x1450C3300** | `DamageScale` base 1.0 at 0x1450BA04B, `DamageMitigationScale` base 1.0 at 0x1450BA0D3 in the constructor 0x1450B9C70 |
+| `AddFilter_CharacterContext` params: FilterBuilder, Alive, Targetable, Hittable, InCombat, Falling, Moving, Mounted, each `ECRTargetFilter_BoolState` (0 MustBeFalse, 1 MustBeTrue, 2 Ignore); `AddFilter_Relationship`: `ECRTargetFilter_FactionRelation` (0 Friendly, 1 Neutral, 2 Hostile, 3 NotFriendly, 4 NotNeutral, 5 NotHostile, 6 None) | UFunction params 0x149FB0DA0 / 0x149FB1260, enum params 0x149F81828 / 0x149F81858 |
+
+The harness for this build is a console project (PeImage, ReflectionScanner, OwnerScanner, EnumScanner,
+ClassScanner, TypeFuncResolver copied beside a `Program.cs` with `#:package`-free Iced 1.21.0): `dis`,
+`fn`, `cfg` (control-flow sweep, for functions split across `.pdata` ranges), `xref` (RIP-relative and
+rel32 index cached beside the exe size), `str`, `ctor` (InternalConstructor thunk → constructor chain →
+vtable stores), `vtable`, `class`/`struct`/`prop`/`enum`/`recs` (reflection records with the `+0x32`
+offset word), `disp`. A property record's struct offset is the `uint16` at record +0x32, except for a
+bool, whose record has a different layout. The native gameplay tag behind a `.data` global is the ASCII
+literal in the static initializer that `lea rcx,[global]` points at, found with `xref`.
+
 All ten terms of the per-item body are confirmed against printed cards, and both `ItemType` gates are
 confirmed by a card that carries a gated slot and scores nothing for it. When a card's arithmetic could
 split two ways because two factors share a value, read the rung's `rarityAdditions` row rather than
