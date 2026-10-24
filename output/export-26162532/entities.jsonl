@@ -2333,67 +2333,67 @@
 {"$type":"ability","scalesOff":["Armor","MaxHealth"],"heroes":["Meiko"],"id":1676}
 {"$type":"ability","targetCountFalloff":[{"effect":{"type":"effect","id":2450,"name":"Everlasting Spirit: Pulse"},"threshold":5}],"radius":800,"period":8.99,"scalesOff":["Agility","DamageScale"],"coefficients":[{"attribute":"Agility","value":0.35,"spread":0.2}],"heroes":["Meiko"],"id":1677}
 {"$type":"ability","scalesOff":["CritChance","HealScale","Intellect"],"heroes":["Vigour"],"id":1678}
-{"$type":"ability","description":"Summon Magestalker, increasing your movement speed.","icon":"T_Portrait_Mount_SpiderMagic_UnarmoredPurpleMagenta","id":1679,"name":"Mount Magestalker"}
-{"$type":"ability","description":"Summon Gilded Vaultcreeper, increasing your movement speed.","icon":"T_Portrait_Mount_SpiderMagic_UnarmoredBlackGold","id":1680,"name":"Mount Gilded Vaultcreeper"}
-{"$type":"ability","description":"Summon Bittertoxin Stalker, increasing your movement speed.","icon":"T_Portrait_Mount_Spider_UnarmoredGreenYellow","id":1681,"name":"Mount Bittertoxin Stalker"}
-{"$type":"ability","description":"Summon Canyon Weaver, increasing your movement speed.","icon":"T_Portrait_Mount_Spider_UnarmoredBrownBlue","id":1682,"name":"Mount Canyon Weaver"}
-{"$type":"ability","description":"Summon Nightveil Widow, increasing your movement speed.","icon":"T_Portrait_Mount_Spider_UnarmoredBlackRed","owner":{"type":"mount","id":2631,"name":"Nightveil Widow"},"id":1683,"name":"Mount Nightveil Widow"}
-{"$type":"ability","description":"Summon Charged Rat, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_UnarmoredStorm","id":1684,"name":"Mount Charged Rat"}
-{"$type":"ability","description":"Summon Saltwash Bilgerat, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_UnarmoredSoul","id":1685,"name":"Mount Saltwash Bilgerat"}
-{"$type":"ability","description":"Summon Stormstruck Rat, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_UnarmoredGhostTeal","id":1686,"name":"Mount Spectral Rat"}
-{"$type":"ability","description":"Summon Spiteful Cellar Spirit, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_UnarmoredGhostRed","id":1687,"name":"Mount Spiteful Cellar Spirit"}
-{"$type":"ability","description":"Summon Crystalwhisker, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_UnarmoredCrystal","id":1688,"name":"Mount Crystalwhisker"}
-{"$type":"ability","description":"Summon Dark Bombastic, increasing your movement speed.","icon":"T_Portrait_Mount_RatBombastic_Soul","id":1689,"name":"Mount Dark Bombastic"}
-{"$type":"ability","description":"Summon Sir Bombastic, increasing your movement speed.","icon":"T_Portrait_Mount_RatBombastic_Brown","owner":{"type":"mount","id":2623,"name":"Sir Bombastic"},"id":1690,"name":"Mount Sir Bombastic"}
+{"$type":"ability","description":"Summon Magestalker, increasing your movement speed.","icon":"T_Portrait_Mount_SpiderMagic_UnarmoredPurpleMagenta","castTime":1.5,"id":1679,"name":"Mount Magestalker"}
+{"$type":"ability","description":"Summon Gilded Vaultcreeper, increasing your movement speed.","icon":"T_Portrait_Mount_SpiderMagic_UnarmoredBlackGold","castTime":1.5,"id":1680,"name":"Mount Gilded Vaultcreeper"}
+{"$type":"ability","description":"Summon Bittertoxin Stalker, increasing your movement speed.","icon":"T_Portrait_Mount_Spider_UnarmoredGreenYellow","castTime":1.5,"id":1681,"name":"Mount Bittertoxin Stalker"}
+{"$type":"ability","description":"Summon Canyon Weaver, increasing your movement speed.","icon":"T_Portrait_Mount_Spider_UnarmoredBrownBlue","castTime":1.5,"id":1682,"name":"Mount Canyon Weaver"}
+{"$type":"ability","description":"Summon Nightveil Widow, increasing your movement speed.","icon":"T_Portrait_Mount_Spider_UnarmoredBlackRed","castTime":1.5,"owner":{"type":"mount","id":2631,"name":"Nightveil Widow"},"id":1683,"name":"Mount Nightveil Widow"}
+{"$type":"ability","description":"Summon Charged Rat, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_UnarmoredStorm","castTime":1.5,"id":1684,"name":"Mount Charged Rat"}
+{"$type":"ability","description":"Summon Saltwash Bilgerat, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_UnarmoredSoul","castTime":1.5,"id":1685,"name":"Mount Saltwash Bilgerat"}
+{"$type":"ability","description":"Summon Stormstruck Rat, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_UnarmoredGhostTeal","castTime":1.5,"id":1686,"name":"Mount Spectral Rat"}
+{"$type":"ability","description":"Summon Spiteful Cellar Spirit, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_UnarmoredGhostRed","castTime":1.5,"id":1687,"name":"Mount Spiteful Cellar Spirit"}
+{"$type":"ability","description":"Summon Crystalwhisker, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_UnarmoredCrystal","castTime":1.5,"id":1688,"name":"Mount Crystalwhisker"}
+{"$type":"ability","description":"Summon Dark Bombastic, increasing your movement speed.","icon":"T_Portrait_Mount_RatBombastic_Soul","castTime":1.5,"id":1689,"name":"Mount Dark Bombastic"}
+{"$type":"ability","description":"Summon Sir Bombastic, increasing your movement speed.","icon":"T_Portrait_Mount_RatBombastic_Brown","castTime":1.5,"owner":{"type":"mount","id":2623,"name":"Sir Bombastic"},"id":1690,"name":"Mount Sir Bombastic"}
 {"$type":"ability","id":1691}
 {"$type":"ability","description":"Summon Gilded Hoarder, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_ArmoredSoul","id":1692,"name":"Mount Gilded Hoarder"}
-{"$type":"ability","description":"Summon Squeaks, increasing your movement speed.","icon":"T_Portrait_Mount_Rat_UnarmoredBlack","owner":{"type":"mount","id":2619,"name":"Squeaks"},"id":1693,"name":"Mount Squeaks"}
-{"$type":"ability","description":"Summon B\u00E4ckah\u00E4st, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_UnarmoredWater","owner":{"type":"mount","id":2617,"name":"B\u00E4ckah\u00E4st"},"id":1694,"name":"Mount B\u00E4ckah\u00E4st"}
-{"$type":"ability","description":"Summon Ael\u0027dethi Chillcharger, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_UnarmoredIce","id":1695,"name":"Mount Ael\u0027dethi Chillcharger"}
+{"$type":"ability","description":"Summon Squeaks, increasing your movement speed.","icon":"T_Portrait_Mount_Rat_UnarmoredBlack","castTime":1.5,"owner":{"type":"mount","id":2619,"name":"Squeaks"},"id":1693,"name":"Mount Squeaks"}
+{"$type":"ability","description":"Summon B\u00E4ckah\u00E4st, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_UnarmoredWater","castTime":1.5,"owner":{"type":"mount","id":2617,"name":"B\u00E4ckah\u00E4st"},"id":1694,"name":"Mount B\u00E4ckah\u00E4st"}
+{"$type":"ability","description":"Summon Ael\u0027dethi Chillcharger, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_UnarmoredIce","castTime":1.5,"id":1695,"name":"Mount Ael\u0027dethi Chillcharger"}
 {"$type":"ability","id":1696}
-{"$type":"ability","description":"Summon Forgehoof Steed, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_UnarmoredFire","id":1697,"name":"Mount Forgehoof Steed"}
-{"$type":"ability","description":"Summon Apostate\u0027s Chillcharger, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_TabardIce","id":1698,"name":"Mount Apostate\u0027s Chillcharger"}
-{"$type":"ability","description":"Summon Eldrin Chillcharger, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredIce","owner":{"type":"mount","id":5759,"name":"Eldrin Chillcharger"},"id":1699,"name":"Mount Eldrin Chillcharger"}
-{"$type":"ability","description":"Summon Raging Deathcharger, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredDeathRed","owner":{"type":"mount","id":2612,"name":"Raging Deathcharger"},"id":1700,"name":"Mount Raging Deathcharger"}
-{"$type":"ability","description":"Summon Chilling Deathcharger, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredDeathBlue","id":1701,"name":"Mount Chilling Deathcharger"}
-{"$type":"ability","description":"Summon Alabaster Steed, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_UnarmoredWhite","owner":{"type":"mount","id":2609,"name":"Alabaster Steed"},"id":1702,"name":"Mount Alabaster Steed"}
-{"$type":"ability","description":"Summon Palomino Runner, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_UnarmoredTan","owner":{"type":"mount","id":2608,"name":"Palomino Runner"},"id":1703,"name":"Mount Palomino Runner"}
-{"$type":"ability","description":"Summon Roan Stallion, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_UnarmoredRoan","owner":{"type":"mount","id":2607,"name":"Roan Stallion"},"id":1704,"name":"Mount Roan Stallion"}
-{"$type":"ability","description":"Summon Vidahlian Courser, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_UnarmoredBrown","owner":{"type":"mount","id":2606,"name":"Vidahlian Courser"},"id":1705,"name":"Mount Vidahlian Courser"}
-{"$type":"ability","description":"Summon Obsidian Charger, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_UnarmoredBlack","owner":{"type":"mount","id":2605,"name":"Obsidian Charger"},"id":1706,"name":"Mount Obsidian Charger"}
-{"$type":"ability","description":"Summon Arcalian Steed, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_TabardBlackRed","owner":{"type":"mount","id":2561,"name":"Arcalian Steed"},"id":1707,"name":"Mount Arcalian Steed"}
-{"$type":"ability","description":"Summon Alabaster Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_ArmoredWhite","owner":{"type":"mount","id":2604,"name":"Alabaster Warhorse"},"id":1708,"name":"Mount Alabaster Warhorse"}
-{"$type":"ability","description":"Summon Palomino Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_ArmoredTan","owner":{"type":"mount","id":2603,"name":"Palomino Warhorse"},"id":1709,"name":"Mount Palomino Warhorse"}
-{"$type":"ability","description":"Summon Roan Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_ArmoredRoan","id":1710,"name":"Mount Roan Warhorse"}
-{"$type":"ability","description":"Summon Vidahlian Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_ArmoredBrown","owner":{"type":"mount","id":2601,"name":"Vidahlian Warhorse"},"id":1711,"name":"Mount Vidahlian Warhorse"}
-{"$type":"ability","description":"Summon Obsidian Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_ArmoredBlack","owner":{"type":"mount","id":2600,"name":"Obsidian Warhorse"},"id":1712,"name":"Mount Obsidian Warhorse"}
-{"$type":"ability","description":"Summon Corrupted Bloodfang, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_UndeadBlackRed","owner":{"type":"mount","id":2598,"name":"Corrupted Bloodfang"},"id":1713,"name":"Mount Corrupted Bloodfang"}
-{"$type":"ability","description":"Summon Sharani Nightstalker, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_UndeadBlackPurple","id":1714,"name":"Mount Sharani Nightstalker"}
+{"$type":"ability","description":"Summon Forgehoof Steed, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_UnarmoredFire","castTime":1.5,"id":1697,"name":"Mount Forgehoof Steed"}
+{"$type":"ability","description":"Summon Apostate\u0027s Chillcharger, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_TabardIce","castTime":1.5,"id":1698,"name":"Mount Apostate\u0027s Chillcharger"}
+{"$type":"ability","description":"Summon Eldrin Chillcharger, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredIce","castTime":1.5,"owner":{"type":"mount","id":5759,"name":"Eldrin Chillcharger"},"id":1699,"name":"Mount Eldrin Chillcharger"}
+{"$type":"ability","description":"Summon Raging Deathcharger, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredDeathRed","castTime":1.5,"owner":{"type":"mount","id":2612,"name":"Raging Deathcharger"},"id":1700,"name":"Mount Raging Deathcharger"}
+{"$type":"ability","description":"Summon Chilling Deathcharger, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredDeathBlue","castTime":1.5,"id":1701,"name":"Mount Chilling Deathcharger"}
+{"$type":"ability","description":"Summon Alabaster Steed, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_UnarmoredWhite","castTime":1.5,"owner":{"type":"mount","id":2609,"name":"Alabaster Steed"},"id":1702,"name":"Mount Alabaster Steed"}
+{"$type":"ability","description":"Summon Palomino Runner, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_UnarmoredTan","castTime":1.5,"owner":{"type":"mount","id":2608,"name":"Palomino Runner"},"id":1703,"name":"Mount Palomino Runner"}
+{"$type":"ability","description":"Summon Roan Stallion, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_UnarmoredRoan","castTime":1.5,"owner":{"type":"mount","id":2607,"name":"Roan Stallion"},"id":1704,"name":"Mount Roan Stallion"}
+{"$type":"ability","description":"Summon Vidahlian Courser, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_UnarmoredBrown","castTime":1.5,"owner":{"type":"mount","id":2606,"name":"Vidahlian Courser"},"id":1705,"name":"Mount Vidahlian Courser"}
+{"$type":"ability","description":"Summon Obsidian Charger, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_UnarmoredBlack","castTime":1.5,"owner":{"type":"mount","id":2605,"name":"Obsidian Charger"},"id":1706,"name":"Mount Obsidian Charger"}
+{"$type":"ability","description":"Summon Arcalian Steed, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_TabardBlackRed","castTime":1.5,"owner":{"type":"mount","id":2561,"name":"Arcalian Steed"},"id":1707,"name":"Mount Arcalian Steed"}
+{"$type":"ability","description":"Summon Alabaster Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_ArmoredWhite","castTime":1.5,"owner":{"type":"mount","id":2604,"name":"Alabaster Warhorse"},"id":1708,"name":"Mount Alabaster Warhorse"}
+{"$type":"ability","description":"Summon Palomino Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_ArmoredTan","castTime":1.5,"owner":{"type":"mount","id":2603,"name":"Palomino Warhorse"},"id":1709,"name":"Mount Palomino Warhorse"}
+{"$type":"ability","description":"Summon Roan Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_ArmoredRoan","castTime":1.5,"id":1710,"name":"Mount Roan Warhorse"}
+{"$type":"ability","description":"Summon Vidahlian Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_ArmoredBrown","castTime":1.5,"owner":{"type":"mount","id":2601,"name":"Vidahlian Warhorse"},"id":1711,"name":"Mount Vidahlian Warhorse"}
+{"$type":"ability","description":"Summon Obsidian Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_Horse_ArmoredBlack","castTime":1.5,"owner":{"type":"mount","id":2600,"name":"Obsidian Warhorse"},"id":1712,"name":"Mount Obsidian Warhorse"}
+{"$type":"ability","description":"Summon Corrupted Bloodfang, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_UndeadBlackRed","castTime":1.5,"owner":{"type":"mount","id":2598,"name":"Corrupted Bloodfang"},"id":1713,"name":"Mount Corrupted Bloodfang"}
+{"$type":"ability","description":"Summon Sharani Nightstalker, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_UndeadBlackPurple","castTime":1.5,"id":1714,"name":"Mount Sharani Nightstalker"}
 {"$type":"ability","description":"Summon Lunarscar Tiger, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_ArmoredWhiteRed","id":1715,"name":"Mount Lunarscar Tiger"}
-{"$type":"ability","description":"Summon Radiant Panther, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_UnarmoredGhostGold","id":1716,"name":"Mount Farvalaan Spiritpaw"}
-{"$type":"ability","description":"Summon Ael\u2019dethi Prowler, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_UnarmoredStripedWhiteBlue","owner":{"type":"mount","id":2564,"name":"Ael\u0027dethi Prowler"},"id":1717,"name":"Mount Ael\u0027dethi Prowler"}
+{"$type":"ability","description":"Summon Radiant Panther, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_UnarmoredGhostGold","castTime":1.5,"id":1716,"name":"Mount Farvalaan Spiritpaw"}
+{"$type":"ability","description":"Summon Ael\u2019dethi Prowler, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_UnarmoredStripedWhiteBlue","castTime":1.5,"owner":{"type":"mount","id":2564,"name":"Ael\u0027dethi Prowler"},"id":1717,"name":"Mount Ael\u0027dethi Prowler"}
 {"$type":"ability","description":"Summon Wraithtide Huntress, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_ArmoredStripedOrangeBlack","id":1718,"name":"Mount Wraithtide Huntress"}
-{"$type":"ability","description":"Summon Tuzari Bloodfang, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_UnarmoredStripedBlackRed","id":1719,"name":"Mount Tuzari Bloodfang"}
-{"$type":"ability","description":"Summon Midnight Panther, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_UnarmoredBlack","owner":{"type":"mount","id":2590,"name":"Midnight Panther"},"id":1720,"name":"Mount Midnight Panther"}
-{"$type":"ability","description":"Summon Bloodfang Matriarch, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_ArmoredStripedBlackRed","owner":{"type":"mount","id":2589,"name":"Bloodfang Matriarch"},"id":1721,"name":"Mount Bloodfang Matriarch"}
-{"$type":"ability","description":"Summon Stormstruck Ashpaw, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_UnarmoredStorm","id":1722,"name":"Mount Stormstruck Ashpaw"}
-{"$type":"ability","description":"Summon Radiant Dawnpaw, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_UnarmoredLight","id":1723,"name":"Mount Radiant Dawnpaw"}
-{"$type":"ability","description":"Summon Spectral Grizzly, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_ArmoredGhostTeal","id":1724,"name":"Mount Spectral Grizzly"}
-{"$type":"ability","description":"Summon Raging Ghostclaw, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_ArmoredGhostRed","id":1725,"name":"Mount Raging Ghostclaw"}
-{"$type":"ability","description":"Summon Magesworn Warbear, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_ArmoredGhostPurple","id":1726,"name":"Mount Magesworn Warbear"}
-{"$type":"ability","description":"Summon Guardian Ghostclaw, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_ArmoredGhostBlue","owner":{"type":"mount","id":2567,"name":"Guardian Ghostclaw"},"id":1727,"name":"Mount Guardian Ghostclaw"}
-{"$type":"ability","description":"Summon Iceback Mauler, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_UnarmoredWhite","id":1728,"name":"Mount Iceback Mauler"}
-{"$type":"ability","description":"Summon Woodpaw Grizzly, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_UnarmoredBrown","owner":{"type":"mount","id":2580,"name":"Woodpaw Grizzly"},"id":1729,"name":"Mount Woodpaw Grizzly"}
-{"$type":"ability","description":"Summon Ashpaw Grizzly, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_UnarmoredBlack","id":1730,"name":"Mount Ashpaw Grizzly"}
-{"$type":"ability","description":"Summon Drakheim Warbear, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_ArmoredWhiteBlue","owner":{"type":"mount","id":2578,"name":"Drakheim Warbear"},"id":1731,"name":"Mount Drakheim Warbear"}
+{"$type":"ability","description":"Summon Tuzari Bloodfang, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_UnarmoredStripedBlackRed","castTime":1.5,"id":1719,"name":"Mount Tuzari Bloodfang"}
+{"$type":"ability","description":"Summon Midnight Panther, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_UnarmoredBlack","castTime":1.5,"owner":{"type":"mount","id":2590,"name":"Midnight Panther"},"id":1720,"name":"Mount Midnight Panther"}
+{"$type":"ability","description":"Summon Bloodfang Matriarch, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_ArmoredStripedBlackRed","castTime":1.5,"owner":{"type":"mount","id":2589,"name":"Bloodfang Matriarch"},"id":1721,"name":"Mount Bloodfang Matriarch"}
+{"$type":"ability","description":"Summon Stormstruck Ashpaw, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_UnarmoredStorm","castTime":1.5,"id":1722,"name":"Mount Stormstruck Ashpaw"}
+{"$type":"ability","description":"Summon Radiant Dawnpaw, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_UnarmoredLight","castTime":1.5,"id":1723,"name":"Mount Radiant Dawnpaw"}
+{"$type":"ability","description":"Summon Spectral Grizzly, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_ArmoredGhostTeal","castTime":1.5,"id":1724,"name":"Mount Spectral Grizzly"}
+{"$type":"ability","description":"Summon Raging Ghostclaw, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_ArmoredGhostRed","castTime":1.5,"id":1725,"name":"Mount Raging Ghostclaw"}
+{"$type":"ability","description":"Summon Magesworn Warbear, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_ArmoredGhostPurple","castTime":1.5,"id":1726,"name":"Mount Magesworn Warbear"}
+{"$type":"ability","description":"Summon Guardian Ghostclaw, increasing your movement speed.","icon":"T_Portrait_Mount_BearMagic_ArmoredGhostBlue","castTime":1.5,"owner":{"type":"mount","id":2567,"name":"Guardian Ghostclaw"},"id":1727,"name":"Mount Guardian Ghostclaw"}
+{"$type":"ability","description":"Summon Iceback Mauler, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_UnarmoredWhite","castTime":1.5,"id":1728,"name":"Mount Iceback Mauler"}
+{"$type":"ability","description":"Summon Woodpaw Grizzly, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_UnarmoredBrown","castTime":1.5,"owner":{"type":"mount","id":2580,"name":"Woodpaw Grizzly"},"id":1729,"name":"Mount Woodpaw Grizzly"}
+{"$type":"ability","description":"Summon Ashpaw Grizzly, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_UnarmoredBlack","castTime":1.5,"id":1730,"name":"Mount Ashpaw Grizzly"}
+{"$type":"ability","description":"Summon Drakheim Warbear, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_ArmoredWhiteBlue","castTime":1.5,"owner":{"type":"mount","id":2578,"name":"Drakheim Warbear"},"id":1731,"name":"Mount Drakheim Warbear"}
 {"$type":"ability","description":"Summon Ashpaw Companion, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_ArmoredBlackRed","id":1732,"name":"Mount Ashpaw Companion"}
 {"$type":"ability","description":"Summon Woodpaw Warbear, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_ArmoredBrownGreen","id":1733,"name":"Mount Woodpaw Warbear"}
 {"$type":"ability","scalesOff":["DodgeChance"],"heroes":["Meiko"],"id":1734}
 {"$type":"ability","id":1735}
 {"$type":"ability","id":1736}
-{"$type":"ability","description":"Summon Stormstruck Rat, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_ArmoredStorm","owner":{"type":"mount","id":4087,"name":"Stormstruck Rat"},"id":1737,"name":"Mount Stormstruck Rat"}
-{"$type":"ability","id":1738,"name":"Mount Rat Magic Armored Ghost Teal"}
-{"$type":"ability","description":"Summon Vengeful Vermin, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_ArmoredGhostRed","owner":{"type":"mount","id":4080,"name":"Vengeful Vermin"},"id":1739,"name":"Mount Vengeful Vermin"}
+{"$type":"ability","description":"Summon Stormstruck Rat, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_ArmoredStorm","castTime":1.5,"owner":{"type":"mount","id":4087,"name":"Stormstruck Rat"},"id":1737,"name":"Mount Stormstruck Rat"}
+{"$type":"ability","castTime":1.5,"id":1738,"name":"Mount Rat Magic Armored Ghost Teal"}
+{"$type":"ability","description":"Summon Vengeful Vermin, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_ArmoredGhostRed","castTime":1.5,"owner":{"type":"mount","id":4080,"name":"Vengeful Vermin"},"id":1739,"name":"Mount Vengeful Vermin"}
 {"$type":"ability","id":1740}
 {"$type":"ability","id":1741}
 {"$type":"ability","id":1742}
@@ -2401,16 +2401,16 @@
 {"$type":"ability","id":1744}
 {"$type":"ability","id":1745}
 {"$type":"ability","id":1746}
-{"$type":"ability","description":"Summon Scryer\u0027s Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredGhostPurple","owner":{"type":"mount","id":4110,"name":"Scryer\u0027s Warhorse"},"id":1747,"name":"Mount Scryer\u0027s Warhorse"}
+{"$type":"ability","description":"Summon Scryer\u0027s Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredGhostPurple","castTime":1.5,"owner":{"type":"mount","id":4110,"name":"Scryer\u0027s Warhorse"},"id":1747,"name":"Mount Scryer\u0027s Warhorse"}
 {"$type":"ability","id":1748}
 {"$type":"ability","id":1749}
 {"$type":"ability","id":1750}
 {"$type":"ability","id":1751}
 {"$type":"ability","id":1752}
-{"$type":"ability","description":"Summon Spectral Feline, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_ArmoredGhostTeal","id":1753,"name":"Mount Spectral Feline"}
+{"$type":"ability","description":"Summon Spectral Feline, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_ArmoredGhostTeal","castTime":1.5,"id":1753,"name":"Mount Spectral Feline"}
 {"$type":"ability","id":1754}
-{"$type":"ability","id":1755,"name":"Mount Cat Magic Armored Ghost Purple"}
-{"$type":"ability","description":"Summon Radiant Feline, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_ArmoredGhostGold","owner":{"type":"mount","id":4079,"name":"Radiant Feline"},"id":1756,"name":"Mount Radiant Feline"}
+{"$type":"ability","castTime":1.5,"id":1755,"name":"Mount Cat Magic Armored Ghost Purple"}
+{"$type":"ability","description":"Summon Radiant Feline, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_ArmoredGhostGold","castTime":1.5,"owner":{"type":"mount","id":4079,"name":"Radiant Feline"},"id":1756,"name":"Mount Radiant Feline"}
 {"$type":"ability","id":1757}
 {"$type":"ability","id":1758}
 {"$type":"ability","id":1759}
@@ -2428,29 +2428,29 @@
 {"$type":"ability","icon":"T_Nhance_RPG_Icons_GhostWhirlpool","maxTargets":99,"owner":{"type":"creature","id":124,"name":"Deathless Katrine"},"id":1771,"name":"Touch of Death"}
 {"$type":"ability","heroes":["Mara"],"id":1772}
 {"$type":"ability","heroes":["Elarion"],"id":1773}
-{"$type":"ability","description":"Summon Cheesers, increasing your movement speed.","icon":"T_Portrait_Mount_Rat_ArmoredWhite","owner":{"type":"mount","id":4091,"name":"Cheesers"},"id":1774,"name":"Mount Cheesers"}
-{"$type":"ability","description":"Summon Wyrdwood Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredBrownGreen","owner":{"type":"mount","id":4090,"name":"Wyrdwood Warhorse"},"id":1775,"name":"Mount Wyrdwood Warhorse"}
+{"$type":"ability","description":"Summon Cheesers, increasing your movement speed.","icon":"T_Portrait_Mount_Rat_ArmoredWhite","castTime":1.5,"owner":{"type":"mount","id":4091,"name":"Cheesers"},"id":1774,"name":"Mount Cheesers"}
+{"$type":"ability","description":"Summon Wyrdwood Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredBrownGreen","castTime":1.5,"owner":{"type":"mount","id":4090,"name":"Wyrdwood Warhorse"},"id":1775,"name":"Mount Wyrdwood Warhorse"}
 {"$type":"ability","id":1776}
-{"$type":"ability","description":"Summon Wraithtide Huntress, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_ArmoredStripedOrangeBlack","owner":{"type":"mount","id":4089,"name":"Wraithtide Huntress"},"id":1777,"name":"Mount Wraithtide Huntress"}
-{"$type":"ability","description":"Summon Gilded Hoarder, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_ArmoredSoul","owner":{"type":"mount","id":4086,"name":"Gilded Hoarder"},"id":1778,"name":"Mount Gilded Hoarder"}
+{"$type":"ability","description":"Summon Wraithtide Huntress, increasing your movement speed.","icon":"T_Portrait_Mount_Cat_ArmoredStripedOrangeBlack","castTime":1.5,"owner":{"type":"mount","id":4089,"name":"Wraithtide Huntress"},"id":1777,"name":"Mount Wraithtide Huntress"}
+{"$type":"ability","description":"Summon Gilded Hoarder, increasing your movement speed.","icon":"T_Portrait_Mount_RatMagic_ArmoredSoul","castTime":1.5,"owner":{"type":"mount","id":4086,"name":"Gilded Hoarder"},"id":1778,"name":"Mount Gilded Hoarder"}
 {"$type":"ability","owner":{"type":"mount","id":4112,"name":"Arcanist\u0027s Warhorse"},"id":1779}
-{"$type":"ability","description":"Summon Lunarscar Tiger, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_ArmoredWhiteRed","owner":{"type":"mount","id":4111,"name":"Lunarscar Tiger"},"id":1780,"name":"Mount Lunarscar Tiger"}
-{"$type":"ability","description":"Summon Woodpaw Warbear, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_ArmoredBrownGreen","owner":{"type":"mount","id":5758,"name":"Woodpaw Warbear"},"id":1781,"name":"Mount Woodpaw Warbear"}
-{"$type":"ability","description":"Summon Ashpaw Companion, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_ArmoredBlackRed","owner":{"type":"mount","id":5757,"name":"Ashpaw Companion"},"id":1782,"name":"Mount Ashpaw Companion"}
+{"$type":"ability","description":"Summon Lunarscar Tiger, increasing your movement speed.","icon":"T_Portrait_Mount_CatMagic_ArmoredWhiteRed","castTime":1.5,"owner":{"type":"mount","id":4111,"name":"Lunarscar Tiger"},"id":1780,"name":"Mount Lunarscar Tiger"}
+{"$type":"ability","description":"Summon Woodpaw Warbear, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_ArmoredBrownGreen","castTime":1.5,"owner":{"type":"mount","id":5758,"name":"Woodpaw Warbear"},"id":1781,"name":"Mount Woodpaw Warbear"}
+{"$type":"ability","description":"Summon Ashpaw Companion, increasing your movement speed.","icon":"T_Portrait_Mount_Bear_ArmoredBlackRed","castTime":1.5,"owner":{"type":"mount","id":5757,"name":"Ashpaw Companion"},"id":1782,"name":"Mount Ashpaw Companion"}
 {"$type":"ability","heroes":["Sylvie"],"id":1783}
 {"$type":"ability","castTimeScalesWithHaste":true,"heroes":["Sylvie"],"id":1784}
 {"$type":"ability","generates":[{"resource":"Resources","resourceName":"Energy","amount":1,"per":"ComboPoint","rowGroup":"Talent.ComboPointsRefundEnergy","source":"Mara.Talent.ComboPointsRefundEnergy.EnergyGainPerComboPoint","sourceKind":"ConstantsRow"}],"scalesOff":["Agility","DamageScale","Haste"],"heroes":["Mara"],"id":1785}
 {"$type":"ability","icon":"T_Ability_Anchor","owner":{"type":"creature","id":125,"name":"First Mate Marrow"},"id":1786,"name":"High Tide"}
-{"$type":"ability","description":"Summon The Sun Lover, increasing your movement speed.","icon":"T_Portrait_Mount_Rat_ArmoredTwitch","owner":{"type":"mount","id":5400,"name":"The Sun Lover"},"id":1787,"name":"Mount The Sun Lover"}
-{"$type":"ability","description":"Summon Arcanist\u0027s Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredBrownPurple","owner":{"type":"mount","id":4112,"name":"Arcanist\u0027s Warhorse"},"id":1788,"name":"Mount Arcanist\u0027s Warhorse"}
+{"$type":"ability","description":"Summon The Sun Lover, increasing your movement speed.","icon":"T_Portrait_Mount_Rat_ArmoredTwitch","castTime":1.5,"owner":{"type":"mount","id":5400,"name":"The Sun Lover"},"id":1787,"name":"Mount The Sun Lover"}
+{"$type":"ability","description":"Summon Arcanist\u0027s Warhorse, increasing your movement speed.","icon":"T_Portrait_Mount_HorseMagic_ArmoredBrownPurple","castTime":1.5,"owner":{"type":"mount","id":4112,"name":"Arcanist\u0027s Warhorse"},"id":1788,"name":"Mount Arcanist\u0027s Warhorse"}
 {"$type":"ability","castTime":1.5,"radius":5000,"period":1.5,"coefficients":[{"attribute":"Intellect","value":0.3996}],"owner":{"type":"creature","id":22,"name":"Kaldurson Isilag\u00F0ur"},"id":1789}
 {"$type":"ability","radius":1200,"period":1.5,"coefficients":[{"attribute":"Intellect","value":0.3996}],"owner":{"type":"creature","id":23,"name":"Kaldurson Eldsupptok"},"id":1790}
 {"$type":"ability","castTime":1.5,"radius":5000,"period":1.5,"coefficients":[{"attribute":"Intellect","value":0.3996}],"owner":{"type":"creature","id":25,"name":"Fodir Kaldur"},"id":1791}
 {"$type":"ability","radius":1200,"period":1.5,"coefficients":[{"attribute":"Intellect","value":0.3996}],"owner":{"type":"creature","id":25,"name":"Fodir Kaldur"},"id":1792}
 {"$type":"ability","icon":"T_Nhance_RPG_Shadow_03","castTime":2,"range":5000,"scalesOff":["PrimaryAttribute"],"coefficients":[{"attribute":"PrimaryAttribute","value":1337,"spread":0.2}],"schools":["Magic / Necromancy"],"owner":{"type":"creature","id":141,"name":"Malgut the Fetid"},"id":1793}
 {"$type":"ability","id":1794}
-{"$type":"ability","description":"Summon Haunted Broom, increasing your movement speed.","icon":"T_Portrait_Mount_Broom_DefaultSoul","owner":{"type":"mount","id":4499,"name":"Haunted Broom"},"id":1795,"name":"Mount Haunted Broom"}
-{"$type":"ability","description":"Summon Broomstick of the Wicked, increasing your movement speed.","icon":"T_Portrait_Mount_Broom_CauldronPurpleOrange","owner":{"type":"mount","id":4498,"name":"Broomstick of the Wicked"},"id":1796,"name":"Mount Broomstick of the Wicked"}
+{"$type":"ability","description":"Summon Haunted Broom, increasing your movement speed.","icon":"T_Portrait_Mount_Broom_DefaultSoul","castTime":1.5,"owner":{"type":"mount","id":4499,"name":"Haunted Broom"},"id":1795,"name":"Mount Haunted Broom"}
+{"$type":"ability","description":"Summon Broomstick of the Wicked, increasing your movement speed.","icon":"T_Portrait_Mount_Broom_CauldronPurpleOrange","castTime":1.5,"owner":{"type":"mount","id":4498,"name":"Broomstick of the Wicked"},"id":1796,"name":"Mount Broomstick of the Wicked"}
 {"$type":"ability","duration":20,"heroes":["Tariq"],"id":1797}
 {"$type":"ability","id":1798}
 {"$type":"ability","id":1799}
@@ -2460,14 +2460,14 @@
 {"$type":"ability","maxTargets":1,"range":5000,"castTimeScalesWithHaste":true,"scalesOff":["MoveSpeed"],"owner":{"type":"creature","id":283,"name":"Winter Trickster Rat"},"id":1803}
 {"$type":"ability","radius":500,"scalesOff":["DamageScale"],"coefficients":[{"attribute":"Strength","value":2,"part":"Damage","spread":0.2}],"id":1804,"name":"Windup Mouse"}
 {"$type":"ability","id":1805}
-{"$type":"ability","description":"Summon Frostfang, increasing your movement speed.","icon":"T_Portrait_Wolf_WinterPrestige_Ice","id":1806,"name":"Mount Frostfang"}
-{"$type":"ability","description":"Summon Cindermaw, increasing your movement speed.","icon":"T_Portrait_Wolf_WinterPrestige_Fire","owner":{"type":"mount","id":4662,"name":"Cindermaw"},"id":1807,"name":"Mount Cindermaw"}
-{"$type":"ability","description":"Summon Whitemane Wolf, increasing your movement speed.","icon":"T_Portrait_Wolf_WinterFestive","owner":{"type":"mount","id":4660,"name":"Whitemane Wolf"},"id":1808,"name":"Mount Whitemane Wolf"}
-{"$type":"ability","description":"Summon Willy Wind-Up, increasing your movement speed.","icon":"T_Portrait_WindUpMouse_WinterTrancendence","owner":{"type":"mount","id":4658,"name":"Willy Wind-Up"},"id":1809,"name":"Mount Willy Wind-Up"}
-{"$type":"ability","description":"Summon Snowball, increasing your movement speed.","icon":"T_Portrait_Rat_WinterFestive","id":1810,"name":"Mount Snowball"}
-{"$type":"ability","description":"Summon Warmheart Drafthorse, increasing your movement speed.","icon":"T_Portrait_Horse_WinterFestive","owner":{"type":"mount","id":4654,"name":"Warmheart Drafthorse"},"id":1811,"name":"Mount Warmheart Drafthorse"}
-{"$type":"ability","description":"Summon Brum the Winter Warmth, increasing your movement speed.","icon":"T_Portrait_Bear_Prestige_WinterFestive","owner":{"type":"mount","id":4653,"name":"Brum the Winter Warmth"},"id":1812,"name":"Mount Brum the Winter Warmth"}
-{"$type":"ability","description":"Summon Southpaw Companion, increasing your movement speed.","icon":"T_Portrait_Bear_WinterFestive","id":1813,"name":"Mount Southpaw Companion"}
+{"$type":"ability","description":"Summon Frostfang, increasing your movement speed.","icon":"T_Portrait_Wolf_WinterPrestige_Ice","castTime":1.5,"id":1806,"name":"Mount Frostfang"}
+{"$type":"ability","description":"Summon Cindermaw, increasing your movement speed.","icon":"T_Portrait_Wolf_WinterPrestige_Fire","castTime":1.5,"owner":{"type":"mount","id":4662,"name":"Cindermaw"},"id":1807,"name":"Mount Cindermaw"}
+{"$type":"ability","description":"Summon Whitemane Wolf, increasing your movement speed.","icon":"T_Portrait_Wolf_WinterFestive","castTime":1.5,"owner":{"type":"mount","id":4660,"name":"Whitemane Wolf"},"id":1808,"name":"Mount Whitemane Wolf"}
+{"$type":"ability","description":"Summon Willy Wind-Up, increasing your movement speed.","icon":"T_Portrait_WindUpMouse_WinterTrancendence","castTime":1.5,"owner":{"type":"mount","id":4658,"name":"Willy Wind-Up"},"id":1809,"name":"Mount Willy Wind-Up"}
+{"$type":"ability","description":"Summon Snowball, increasing your movement speed.","icon":"T_Portrait_Rat_WinterFestive","castTime":1.5,"id":1810,"name":"Mount Snowball"}
+{"$type":"ability","description":"Summon Warmheart Drafthorse, increasing your movement speed.","icon":"T_Portrait_Horse_WinterFestive","castTime":1.5,"owner":{"type":"mount","id":4654,"name":"Warmheart Drafthorse"},"id":1811,"name":"Mount Warmheart Drafthorse"}
+{"$type":"ability","description":"Summon Brum the Winter Warmth, increasing your movement speed.","icon":"T_Portrait_Bear_Prestige_WinterFestive","castTime":1.5,"owner":{"type":"mount","id":4653,"name":"Brum the Winter Warmth"},"id":1812,"name":"Mount Brum the Winter Warmth"}
+{"$type":"ability","description":"Summon Southpaw Companion, increasing your movement speed.","icon":"T_Portrait_Bear_WinterFestive","castTime":1.5,"id":1813,"name":"Mount Southpaw Companion"}
 {"$type":"ability","description":"Instantly \u003Crt.effect\u003ESilence\u003C/\u003E all enemies in the target area for \u003Crt.bold\u003E7 seconds\u003C/\u003E.","icon":"T_Lisa_AoESilence","category":"Control","cooldown":200,"maxTargets":40,"cooldownDurationScalesOff":["CooldownReduction"],"cooldownTimeRateScalesOff":["CooldownRecovery"],"globalCooldown":1.5,"globalCooldownScalesOff":["Haste"],"cost":98,"resource":"Mana","range":3000,"radius":500,"duration":7,"castTimeScalesWithHaste":true,"scalesOff":["CooldownReduction","Haste","Mana","MaxResources"],"placeholders":[{"key":"NumTargets","value":40,"constants":{"MaxNumOfTargets":40}}],"schools":["Magic / Arcane"],"heroes":["Aeona"],"id":1814,"name":"Intercession"}
 {"$type":"ability","icon":"T_Nhance_RPG_Icons_HolyWatch","castTimeScalesWithHaste":true,"owner":{"type":"creature","id":281,"name":"Eira the White Witch"},"id":1815,"name":"Engage"}
 {"$type":"ability","icon":"T_Nhance_RPG_Icons_MindBlow","castTime":4,"channelTick":1,"castTimeScalesWithHaste":true,"scalesOff":["DamageScale","MoveSpeed","PrimaryAttribute"],"coefficients":[{"attribute":"PrimaryAttribute","value":0.686,"part":"Damage","spread":0.2}],"schools":["Magic / Frost"],"owner":{"type":"creature","id":281,"name":"Eira the White Witch"},"id":1816,"name":"Winterbane"}
@@ -2551,10 +2551,10 @@
 {"$type":"ability","id":1894}
 {"$type":"ability","id":1895}
 {"$type":"ability","id":1896}
-{"$type":"ability","description":"Summon Spirit of Akari, increasing your movement speed.","icon":"T_Portrait_Akari_Stag","owner":{"type":"mount","id":4911,"name":"Spirit of Akari"},"id":1897,"name":"Mount Spirit of Akari"}
-{"$type":"ability","id":1898,"name":"Mount Raptor Base"}
-{"$type":"ability","id":1899,"name":"Mount Raptor Ascended"}
-{"$type":"ability","description":"Summon Vilesoul Raptor, increasing your movement speed.","icon":"T_Portrait_Raptor_Armored","owner":{"type":"mount","id":4907,"name":"Vilesoul Raptor"},"id":1900,"name":"Mount Vilesoul Raptor"}
+{"$type":"ability","description":"Summon Spirit of Akari, increasing your movement speed.","icon":"T_Portrait_Akari_Stag","castTime":1.5,"owner":{"type":"mount","id":4911,"name":"Spirit of Akari"},"id":1897,"name":"Mount Spirit of Akari"}
+{"$type":"ability","castTime":1.5,"id":1898,"name":"Mount Raptor Base"}
+{"$type":"ability","castTime":1.5,"id":1899,"name":"Mount Raptor Ascended"}
+{"$type":"ability","description":"Summon Vilesoul Raptor, increasing your movement speed.","icon":"T_Portrait_Raptor_Armored","castTime":1.5,"owner":{"type":"mount","id":4907,"name":"Vilesoul Raptor"},"id":1900,"name":"Mount Vilesoul Raptor"}
 {"$type":"ability","id":1901}
 {"$type":"ability","range":6000,"duration":60,"scalesOff":["AmethystPower","DiamondPower","EmeraldPower","RubyPower","SapphirePower","TopazPower"],"owner":{"type":"creature","id":286,"name":"Anomalous Orb"},"id":1902}
 {"$type":"ability","castTime":15,"radius":5000,"owner":{"type":"creature","id":286,"name":"Anomalous Orb"},"id":1903,"name":"Detonate"}
@@ -2587,12 +2587,12 @@
 {"$type":"ability","range":6000,"duration":5,"scalesOff":["CritChance","Expertise","Haste","Spirit"],"id":1930}
 {"$type":"ability","range":6000,"duration":5,"scalesOff":["CritChance","Expertise","Haste","Spirit"],"id":1931}
 {"$type":"ability","scalesOff":["MaxHealth"],"owner":{"type":"creature","id":172,"name":"Godfall Titan"},"id":1932}
-{"$type":"ability","id":1933,"name":"Mount Wolf Ice"}
-{"$type":"ability","id":1934,"name":"Mount Wolf Fire"}
-{"$type":"ability","id":1935,"name":"Mount Rat With A Hat"}
-{"$type":"ability","id":1936,"name":"Mount Raptor Armored Ghost"}
+{"$type":"ability","castTime":1.5,"id":1933,"name":"Mount Wolf Ice"}
+{"$type":"ability","castTime":1.5,"id":1934,"name":"Mount Wolf Fire"}
+{"$type":"ability","castTime":1.5,"id":1935,"name":"Mount Rat With A Hat"}
+{"$type":"ability","castTime":1.5,"id":1936,"name":"Mount Raptor Armored Ghost"}
 {"$type":"ability","id":1937}
-{"$type":"ability","id":1938,"name":"Mount Bear Wild Nature"}
+{"$type":"ability","castTime":1.5,"id":1938,"name":"Mount Bear Wild Nature"}
 {"$type":"ability","id":1939}
 {"$type":"ability","heroes":["Xavian"],"id":1940}
 {"$type":"ability","range":6000,"scalesOff":["DamageScale","MaxHealth"],"id":1941}
@@ -2700,15 +2700,15 @@
 {"$type":"ability","icon":"T_Icon_BloodCombat_128","castTime":1,"castTimeScalesWithHaste":true,"schools":["Magic / Blood"],"owner":{"type":"creature","id":336,"name":"Ascended Bloodweaver"},"id":2043,"name":"Bloodwell Barrier"}
 {"$type":"ability","cooldown":10,"radius":2000,"duration":15,"period":1,"coefficients":[{"attribute":"PrimaryAttribute","value":3}],"id":2044}
 {"$type":"ability","period":1,"scalesOff":["MaxHealth","Strength"],"coefficients":[{"attribute":"PrimaryAttribute","value":0.37,"spread":0.2}],"owner":{"type":"creature","id":336,"name":"Ascended Bloodweaver"},"id":2045}
-{"$type":"ability","description":"Summon Vexira, increasing your movement speed.","icon":"T_Mount_Spider_Vexira","owner":{"type":"mount","id":5413,"name":"Vexira"},"id":2046,"name":"Mount Vexira"}
-{"$type":"ability","description":"Summon Inflatable Shark, increasing your movement speed.","icon":"T_Mount_Shark_Inflateable","owner":{"type":"mount","id":5412,"name":"Inflatable Shark"},"id":2047,"name":"Mount Inflatable Shark"}
-{"$type":"ability","description":"Summon Swiftpaw, increasing your movement speed.","icon":"T_Mount_Fox_Armored","owner":{"type":"mount","id":5410,"name":"Swiftpaw"},"id":2048,"name":"Mount Swiftpaw"}
-{"$type":"ability","description":"Summon Aurellian Swiftpaw, increasing your movement speed.","icon":"T_Mount_Fox_Armored","owner":{"type":"mount","id":5409,"name":"Aurellian Swiftpaw"},"id":2049,"name":"Mount Aurellian Swiftpaw"}
-{"$type":"ability","description":"Summon Bloodshard Elemental, increasing your movement speed.","icon":"T_Mount_Elemental_Blood","owner":{"type":"mount","id":5407,"name":"Bloodshard Elemental"},"id":2050,"name":"Mount Bloodshard Elemental"}
-{"$type":"ability","description":"Summon Indomitable Chicken, increasing your movement speed.","icon":"T_Mount_Chicken_Base","owner":{"type":"mount","id":5405,"name":"Indomitable Chicken"},"id":2051,"name":"Mount Indomitable Chicken"}
-{"$type":"ability","description":"Summon Axulian Slayer, increasing your movement speed.","icon":"T_Mount_Cat_HeskyrT2","owner":{"type":"mount","id":5403,"name":"Axulian Slayer"},"id":2052,"name":"Mount Axulian Slayer"}
-{"$type":"ability","description":"Summon Axulian Matriarch, increasing your movement speed.","icon":"T_Mount_Cat_HeskyrT1","owner":{"type":"mount","id":5402,"name":"Axulian Matriarch"},"id":2053,"name":"Mount Axulian Matriarch"}
-{"$type":"ability","description":"Summon Axulian Prowler, increasing your movement speed.","icon":"T_Mount_Cat_HeskyrT0","owner":{"type":"mount","id":5401,"name":"Axulian Prowler"},"id":2054,"name":"Mount Axulian Prowler"}
+{"$type":"ability","description":"Summon Vexira, increasing your movement speed.","icon":"T_Mount_Spider_Vexira","castTime":1.5,"owner":{"type":"mount","id":5413,"name":"Vexira"},"id":2046,"name":"Mount Vexira"}
+{"$type":"ability","description":"Summon Inflatable Shark, increasing your movement speed.","icon":"T_Mount_Shark_Inflateable","castTime":1.5,"owner":{"type":"mount","id":5412,"name":"Inflatable Shark"},"id":2047,"name":"Mount Inflatable Shark"}
+{"$type":"ability","description":"Summon Swiftpaw, increasing your movement speed.","icon":"T_Mount_Fox_Armored","castTime":1.5,"owner":{"type":"mount","id":5410,"name":"Swiftpaw"},"id":2048,"name":"Mount Swiftpaw"}
+{"$type":"ability","description":"Summon Aurellian Swiftpaw, increasing your movement speed.","icon":"T_Mount_Fox_Armored","castTime":1.5,"owner":{"type":"mount","id":5409,"name":"Aurellian Swiftpaw"},"id":2049,"name":"Mount Aurellian Swiftpaw"}
+{"$type":"ability","description":"Summon Bloodshard Elemental, increasing your movement speed.","icon":"T_Mount_Elemental_Blood","castTime":1.5,"owner":{"type":"mount","id":5407,"name":"Bloodshard Elemental"},"id":2050,"name":"Mount Bloodshard Elemental"}
+{"$type":"ability","description":"Summon Indomitable Chicken, increasing your movement speed.","icon":"T_Mount_Chicken_Base","castTime":1.5,"owner":{"type":"mount","id":5405,"name":"Indomitable Chicken"},"id":2051,"name":"Mount Indomitable Chicken"}
+{"$type":"ability","description":"Summon Axulian Slayer, increasing your movement speed.","icon":"T_Mount_Cat_HeskyrT2","castTime":1.5,"owner":{"type":"mount","id":5403,"name":"Axulian Slayer"},"id":2052,"name":"Mount Axulian Slayer"}
+{"$type":"ability","description":"Summon Axulian Matriarch, increasing your movement speed.","icon":"T_Mount_Cat_HeskyrT1","castTime":1.5,"owner":{"type":"mount","id":5402,"name":"Axulian Matriarch"},"id":2053,"name":"Mount Axulian Matriarch"}
+{"$type":"ability","description":"Summon Axulian Prowler, increasing your movement speed.","icon":"T_Mount_Cat_HeskyrT0","castTime":1.5,"owner":{"type":"mount","id":5401,"name":"Axulian Prowler"},"id":2054,"name":"Mount Axulian Prowler"}
 {"$type":"ability","scalesOff":["IncomingDamageMultiplier","MagicalIncomingDamageMultiplier"],"heroes":["Xavian"],"id":2055}
 {"$type":"ability","radius":700,"heroes":["Sylvie"],"id":2056}
 {"$type":"ability","heroes":["Sylvie"],"id":2057}
@@ -2971,7 +2971,7 @@
 {"$type":"ability","icon":"T_Ink_Hammerstorm","scalesOff":["PrimaryAttribute","Strength"],"coefficients":[{"attribute":"PrimaryAttribute","value":2.209,"part":"Fire.Damage","spread":0.2},{"attribute":"PrimaryAttribute","value":5.523,"part":"Lightning.Damage","spread":0.2}],"id":2319,"name":"Cursed Lightning"}
 {"$type":"ability","scalesOff":["PrimaryAttribute"],"coefficients":[{"attribute":"PrimaryAttribute","value":1.79,"part":"Projectile","spread":0.2}],"id":2320}
 {"$type":"ability","period":0.2,"id":2321,"name":"Roots"}
-{"$type":"ability","description":"Summon Armored Boar, increasing your movement speed.","id":2322,"name":"Mount Armored Boar"}
+{"$type":"ability","description":"Summon Armored Boar, increasing your movement speed.","castTime":1.5,"id":2322,"name":"Mount Armored Boar"}
 {"$type":"ability","scalesOff":["Haste"],"id":2323}
 {"$type":"ability","id":2324}
 {"$type":"ability","id":2325}

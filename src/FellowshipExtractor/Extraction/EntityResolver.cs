@@ -1251,7 +1251,7 @@ public sealed class EntityResolver
                 : DescriptionTokens.TableRows(tokenHolder).Select(DynamicText.ForRow).OfType<IReadOnlyDictionary<string, string>>().FirstOrDefault(),
             Detail = Empty(detail),
             Icon = IconName(display.Icon, icons),
-            CastTime = Number(split, "castTime"),
+            CastTime = Number(split, "castTime") ?? TaskCastTime(cdo),
             ChannelTime = Number(split, "channelTime"),
             ChannelTick = Number(split, "channelTick"),
             Cooldown = cooldown,
@@ -1512,6 +1512,28 @@ public sealed class EntityResolver
         var counts = MaximumCharges.Of(cdo, _constants, _mappings);
 
         return counts.Charges == SingleCast ? counts with { Charges = null } : counts;
+    }
+
+    private const string CastingTaskField = "CastingTaskData";
+    private const string CastingDurationField = "CastingDuration";
+
+    /// <summary>
+    /// The cast of an ability whose graph runs a casting task: <c>CastingTaskData.CastingDuration</c> on the nearest
+    /// class in its chain declaring one. Every mount states it once, on <c>GA_Mount_MountUp_Base</c>.
+    /// </summary>
+    private double? TaskCastTime(UObject? cdo)
+    {
+        if (cdo is null) return null;
+
+        foreach (var holder in ClassDefaults.Chain(cdo, _provider))
+        {
+            if (PropertyWalk.GetStruct(holder, CastingTaskField) is not { } task) continue;
+            if (PropertyWalk.GetStruct(task, CastingDurationField) is not { } duration) continue;
+
+            return MagnitudeCalculations.Scalable(duration, _constants);
+        }
+
+        return null;
     }
 
     private bool CastTimeScalesWithHaste(UObject? cdo) =>
