@@ -238,6 +238,15 @@ Decoded against **26162532**, the hit roll and the grievous crit:
 | Gather: `A[0]` CritChance (clamped to 1 under `!CanGrievousCrit`, 0x1450D93EE), `A[1]` CritMultiplier, **`A[2]` = `Global.GrievousCritScalar`** (`CT_AbilityConstants`, 1.0; 0x1450CC4A0 reads `UCRAbilitySystemGlobals.AbilityConstantsTable` +0x388 by the ini key `GlobalGrievousCritScalerKey`) | 0x1450D939C-0x1450D9410 |
 | Hit multiplier 0x145105A10: Grievous = `(A[0] − 1) × A[2] + A[1]` (0x145105A4A-0x145105A59) | `DT_EffectCalculationPresets` `HeroMagicalDirect` (effect 1391): `CanCrit` and `CanGrievousCrit` true |
 
+Decoded against **26162532**, the spec's source tags and the attribute reads:
+
+| What | Where |
+| --- | --- |
+| `FellowshipMakeEffectSpec` (exec 0x144FEC040) body **0x1450DE2A0**: ASC virtual +0x6C8 `MakeOutgoingSpec`, `FindAbilitySpecFromHandle` 0x144A0B1C0, `SetStackCount` 0x144A8EB10, the ability spec's SetByCaller map appended (0x14169BD70), then the ability virtual **+0x2E0** | `UCRGameplayAbility` vtable 0x148BD4810 (constructor 0x1450D5D80, thunk 0x144FEA5D0) |
+| +0x2E0 = **0x1450D7960**: `ApplyAbilityTagsToGameplayEffectSpec` **0x1449D7DC0** (`AbilityTags` +0xB0 and the ability spec's `DynamicAbilityTags` +0x58 appended to `CapturedSourceTags.CapturedSpecTags`, `GetSpecTags` 0x144AAA400 on spec +0x60), then the ability's unreflected container +0x648 appended too, and +0x668 to 0x144A81D80 | `TagContainerAggregator` {ActorTags +0, SpecTags +0x20, ScopedTags +0x40} |
+| Damage execution record **0x1451048C0** (from the engine execution params, at 0x1450DB03E): spec copy +0x70, aggregated source tags +0x330, aggregated target tags +0x350, evaluate parameters at +0x8 = {&+0x330, &+0x350} (0x145104A17); every capture (0x144AA1840 → 0x144AA71C0) evaluates with them | `FAggregatorMod::UpdateQualifies` **0x144AB4D40**: null tags → empty container 0x14A3813B8, requirements through 0x144AB1F10 |
+| `UAbilitySystemBlueprintLibrary::GetFloatAttribute` exec **0x144A35BD0** (native table 0x148972110) → 0x144A0D5F0 → `GetNumericAttribute` **0x144A0FD30** → `GetNumericValue` (0x144A0C9B0 / 0x144A0CAA0): the stored current value, no tags | a UFunction's exec is the second pointer of its `FNameNativePtrPair`; the first `str` hit is the singleton table |
+
 `vscan <vtable> <disp>..` in the harness lists the slots whose function body touches a displacement.
 
 `regfn <va>` in the harness names the class a `StaticClass` getter belongs to, from the registration table.
