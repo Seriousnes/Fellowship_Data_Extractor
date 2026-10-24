@@ -1134,6 +1134,9 @@ public sealed class EntityResolver
         var magnitudes = EffectModifiers.Of(cdo, _provider, _constants, _mappings, CapturedBy(assetName));
         ModifiersRead += magnitudes.Modifiers.Count;
 
+        var executionModifiers = EffectModifiers.Scoped(cdo, _constants, _mappings);
+        ExecutionModifiersRead += executionModifiers.Count;
+
         foreach (var (name, fields) in magnitudes.Talents)
         {
             if (!talents.TryGetValue(name, out var varied)) talents[name] = varied = new(StringComparer.Ordinal);
@@ -1284,6 +1287,7 @@ public sealed class EntityResolver
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
             Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand, [.. scaling]),
             Modifiers = magnitudes.Modifiers.Count == 0 ? null : magnitudes.Modifiers,
+            ExecutionModifiers = executionModifiers.Count == 0 ? null : executionModifiers,
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Generates = Empty(Gains.Of(cdo, assetName)),
             Tuning = tuning,
@@ -1359,6 +1363,8 @@ public sealed class EntityResolver
     public int SynthesizedFromModifier { get; private set; }
 
     public int ModifiersRead { get; private set; }
+
+    public int ExecutionModifiersRead { get; private set; }
 
     public int DurationsFromSetByCaller { get; private set; }
 

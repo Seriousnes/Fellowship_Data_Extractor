@@ -31,6 +31,8 @@ public sealed class EffectDocument : EntityDocument
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
 
+    public IReadOnlyList<EffectModifier>? ExecutionModifiers { get; init; }
+
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }

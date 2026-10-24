@@ -32,6 +32,8 @@ public sealed record EffectRecord : EntityRecord
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
 
+    public IReadOnlyList<EffectModifier>? ExecutionModifiers { get; init; }
+
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
 
     public RecordReference? NameBorrowedFrom { get; init; }

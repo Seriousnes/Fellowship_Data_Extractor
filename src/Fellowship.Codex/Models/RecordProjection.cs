@@ -237,6 +237,7 @@ public static class RecordProjection
             Placeholders = Tokens(tokens, tags, view),
             Schools = Some(tags),
             Modifiers = Some(document.Modifiers),
+            ExecutionModifiers = Some(document.ExecutionModifiers),
             Talents = document.Talents,
             NameBorrowedFrom = Reference(document.NameBorrowedFrom, view, origin),
             TextureBorrowedFrom = Reference(document.TextureBorrowedFrom, view, origin),

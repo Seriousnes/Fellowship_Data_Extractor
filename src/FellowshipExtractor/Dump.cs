@@ -855,9 +855,10 @@ public static class DumpAll
                         writer.WriteStartObject();
 
                         var captured = PropertyWalk.GetStruct(scope, "CapturedAttribute");
+                        var attribute = captured is null ? null : PropertyWalk.GetStruct(captured, "AttributeToCapture");
                         writer.WriteString(
                             "capturedAttribute",
-                            captured is null ? null : PropertyWalk.GetString(captured, "AttributeName"));
+                            attribute is null ? null : PropertyWalk.GetString(attribute, "AttributeName"));
 
                         var identifier = PropertyWalk.GetStruct(scope, "TransientAggregatorIdentifier");
                         writer.WriteString(

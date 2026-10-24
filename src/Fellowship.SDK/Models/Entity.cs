@@ -235,6 +235,8 @@ public sealed record Entity
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
 
+    public IReadOnlyList<EffectModifier>? ExecutionModifiers { get; init; }
+
     public IReadOnlyList<PhaseAbility>? Abilities { get; init; }
 
     public IReadOnlyList<PhaseAbility>? Passives { get; init; }

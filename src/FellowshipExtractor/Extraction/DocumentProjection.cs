@@ -166,6 +166,7 @@ public static class DocumentProjection
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Schools = Schools(entity.Tags) ?? Schools(entity.ApplierTags),
             Modifiers = entity.Modifiers,
+            ExecutionModifiers = entity.ExecutionModifiers,
             Generates = Generated(entity),
             Talents = entity.Talents,
             NameBorrowedFrom = references.At(entity.NameInheritedFrom),
