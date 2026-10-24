@@ -170,6 +170,18 @@ Decoded against **26162532**, the damage pipeline every `CRDamageCalculationBase
 | `UCRBasicAttributeSet` vtable 0x148A999E8: PostGameplayEffectExecute **0x1450C2B10**, health apply (clamp to MinHealth/MaxHealth, `CRHealthModifiedData` to character delegates +0x17A8/+0x17C0) slot +0x318 = **0x1450C3300** | `DamageScale` base 1.0 at 0x1450BA04B, `DamageMitigationScale` base 1.0 at 0x1450BA0D3 in the constructor 0x1450B9C70 |
 | `AddFilter_CharacterContext` params: FilterBuilder, Alive, Targetable, Hittable, InCombat, Falling, Moving, Mounted, each `ECRTargetFilter_BoolState` (0 MustBeFalse, 1 MustBeTrue, 2 Ignore); `AddFilter_Relationship`: `ECRTargetFilter_FactionRelation` (0 Friendly, 1 Neutral, 2 Hostile, 3 NotFriendly, 4 NotNeutral, 5 NotHostile, 6 None) | UFunction params 0x149FB0DA0 / 0x149FB1260, enum params 0x149F81828 / 0x149F81858 |
 
+Also decoded against **26162532**:
+
+| What | Where |
+| --- | --- |
+| `CRLinkedEffectComponent` activation override: registers parent callbacks, applies every `AdditionalEffectsToApply` entry on each activation (no already-applied test), links child handles in the context's list at +0xA0 | vtable 0x148C3BE20 slot +0x2D0 = **0x1450BD430**; constructor 0x14502E7C0 defaults the two RemoveLinkedOnDestroy flags true |
+| Partial tick on removal of a Dot/Hot spec: factor = (period − remaining)/period into `SetByCaller.PartialTickFactor`, one extra tick; a boundary expiry executes a full tick instead | ASC vtable 0x148AAE478 slot +0x948 = **0x1452D0C70**, called from 0x144A6EC1A (full tick at 0x144A6EBE2); `UCRAbilitySystemGlobals.MinimumPartialTickTime` +0x32C, 0; skip tag `EffectLogic.IgnorePartialTicks` 0x14A3BACD0 |
+| Stat-enchant node ranks: `GetStatEnchantPowerFromItemLevel` (curve at subsystem +0xE8, truncated) summed per `ItemTrait.TraitCategory.StatEnchant` node, 1 per other node, into `CREquippedTraitInfo.EquippedRanks` | body **0x1453ACAD0** (exec 0x145025560, native table 0x148C2B300); the sum at **0x145370B40**; tag global 0x14A3BB6B8 |
+| `GE_PrimaryAttributeIntellect` (effect 4): `Intellect MultiplyCompound = AttributeBased(PrimaryAttributeMultiplier)`, `Intellect Additive = AttributeBased(PrimaryAttributeFlatBonus)`; no native reader of the multiplier | effects dump |
+| `ACRAoeActorBase`: `ApplicationPeriod` +0x300 and `ApplicationDelay` +0x330 default 0 (constructor 0x144F3FEA0); the first application is a one-shot `FTimerManager::SetTimer` of ApplicationDelay | **0x1450CD020**, SetTimer 0x144042060 at 0x1450CD108; `NetServerMaxTickRate` 30 in the ini |
+| `UCRGemAttributeSet` vtable 0x148BF2DB0 overrides no attribute-change virtual | ctor 0x144FFD230 |
+| Not found: the stack-count factoring (`ComputeStackedModifierMagnitude`); no {0,1,1,0,1,0} bias table in the image, no int-to-float plus ModOp compare in 0x1449C0000-0x144B00000 or 0x144F00000-0x145500000, `GetStackCount` 0x144A7AC80 (spec +0x1C0) has no such caller | open |
+
 The harness for this build is a console project (PeImage, ReflectionScanner, OwnerScanner, EnumScanner,
 ClassScanner, TypeFuncResolver copied beside a `Program.cs`, with a `PackageReference` to Iced 1.21.0): `dis`,
 `fn`, `cfg` (control-flow sweep, for functions split across `.pdata` ranges), `xref` (RIP-relative and
