@@ -1,11 +1,12 @@
 @page "/tools/attunement-trees"
+@page "/tools/attunement-trees/{Slot}"
+@page "/tools/attunement-trees/{Slot}/{Picked}"
 @rendermode InteractiveServer
 @using Fellowship.SDK.Models
-@using Microsoft.AspNetCore.WebUtilities
-@using Microsoft.Extensions.Primitives
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
-@inject NavigationManager Nav
+@using Microsoft.JSInterop
+@inject IJSRuntime Js
 
 <PageTitle>Attunement trees - Fellowship Codex</PageTitle>
 
@@ -45,7 +46,7 @@ else
             }
             else
             {
-                <a class="cx-tal-act" href="@Address(item)">Reset</a>
+                <button type="button" class="cx-tal-act" @onclick="() => Go(AttunementTreePlan.Empty, null)">Reset</button>
             }
 
             <button type="button" class="cx-tal-act" data-copy>Copy link</button>
@@ -164,11 +165,11 @@ else
 }
 
 @code {
-    [SupplyParameterFromQuery(Name = "slot")] public string? Slot { get; set; }
+    [Parameter] public string? Slot { get; set; }
 
-    [SupplyParameterFromQuery(Name = "picks")] public string? Picked { get; set; }
+    [Parameter] public string? Picked { get; set; }
 
-    [SupplyParameterFromQuery(Name = "at")] public int? At { get; set; }
+    private int? At;
 
     private const string Page = "/tools/attunement-trees";
 
@@ -199,16 +200,27 @@ else
 
     private int Capacity => AttunementTrees.Capacity(Tree?.Tag, Store.Settings) ?? 0;
 
+    private (string? Slot, string? Picked)? Applied;
+
     protected override void OnParametersSet()
     {
+        if (Applied is { } applied && applied == (Slot, Picked)) return;
+
+        Applied = (Slot, Picked);
         Slots = AttunementTrees.BySlot(Store);
 
         var chosen = Slots.FirstOrDefault(entry => entry.Slot.Equals(Slot, StringComparison.OrdinalIgnoreCase));
 
+        At = null;
         Chosen = chosen.Slot;
         Tree = chosen.Tree;
         Plan = Tree is null ? AttunementTreePlan.Empty : AttunementTrees.Read(Picked, Tree, Store);
 
+        Focus();
+    }
+
+    private void Focus()
+    {
         Choosing = Tree is null ? null : AttunementTrees.Infusable(Tree).FirstOrDefault(node => node.UITreeIndex == At);
 
         Offered = Choosing is null ? [] : AttunementTrees.Offered(Choosing, Store);
@@ -294,16 +306,20 @@ else
     private static double Widest(AttunementTreeLayout layout) =>
         layout.RootLayers.Count == 0 ? layout.Width : layout.RootLayers.Max(layer => layer.Width);
 
-    private void Press(AttunementTreeEntry tree, AttunementTreeNode node) =>
+    private Task Press(AttunementTreeEntry tree, AttunementTreeNode node) =>
         Go(AttunementTrees.Allocatable(tree, Plan, node) ? Infusing(tree, node) : Plan, node.UITreeIndex);
 
-    private void Remove(AttunementTreeEntry tree, AttunementTreeNode node)
-    {
-        if (Plan.Path.Contains(node.UITreeIndex)) Go(Leaving(tree, node), At);
-    }
+    private Task Remove(AttunementTreeEntry tree, AttunementTreeNode node) =>
+        Plan.Path.Contains(node.UITreeIndex) ? Go(Leaving(tree, node), At) : Task.CompletedTask;
 
-    private void Go(AttunementTreePlan plan, int? at) =>
-        Nav.NavigateTo(Address(Chosen!, plan, at), replace: true);
+    private async Task Go(AttunementTreePlan plan, int? at)
+    {
+        Plan = plan;
+        At = at;
+        Focus();
+
+        await Js.InvokeVoidAsync("history.replaceState", null, string.Empty, Address(Chosen!, plan));
+    }
 
     private AttunementTreePlan Leaving(AttunementTreeEntry tree, AttunementTreeNode node) =>
         AttunementTrees.Planned(tree, Plan.Assigned, Plan.Path.Where(index => index != node.UITreeIndex).ToHashSet());
@@ -319,16 +335,8 @@ else
         AttunementTrees.Planned(
             tree, new Dictionary<int, AugmentationDocument>(Plan.Assigned) { [node.UITreeIndex] = augmentation }, Plan.Path);
 
-    private string Address(string slot, AttunementTreePlan? plan = null, int? at = null)
-    {
-        var values = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["slot"] = slot,
-        };
-
-        if (plan is not null && Tree is { } tree && AttunementTrees.Write(tree, plan) is { Length: > 0 } code) values["picks"] = code;
-        if (at is { } node) values["at"] = node.ToString(CultureInfo.InvariantCulture);
-
-        return QueryHelpers.AddQueryString(Page, values);
-    }
+    private string Address(string slot, AttunementTreePlan? plan = null) =>
+        plan is not null && Tree is { } tree && AttunementTrees.Write(tree, plan) is { Length: > 0 } code
+            ? $"{Page}/{Uri.EscapeDataString(slot)}/{code}"
+            : $"{Page}/{Uri.EscapeDataString(slot)}";
 }

@@ -1,10 +1,11 @@
 @page "/tools/talents"
+@page "/tools/talents/{Hero}"
+@page "/tools/talents/{Hero}/{Picks}"
 @rendermode InteractiveServer
-@using Microsoft.AspNetCore.WebUtilities
-@using Microsoft.Extensions.Primitives
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
-@inject NavigationManager Nav
+@using Microsoft.JSInterop
+@inject IJSRuntime Js
 
 <PageTitle>Talent calculator - Fellowship Codex</PageTitle>
 
@@ -16,7 +17,7 @@
     <div class="cx-roster">
         @foreach (var who in Heroes)
         {
-            <a href="@Address(who.Name, who.Name == Wearer?.Name ? Picks : null)"
+            <a href="@Address(who.Name, who.Name == Wearer?.Name ? TalentPlan.Write(Tree, Taken) : null)"
                aria-current="@(who.Name == Wearer?.Name ? "page" : null)"
                style="color:@(Ui.HeroColour(who.Name) ?? "var(--muted)")">
                 <span class="cx-pip" style="background:@(Ui.HeroSwatch(who.Name) ?? "var(--muted)")"></span>
@@ -46,7 +47,7 @@ else
             }
             else
             {
-                <a class="cx-tal-act" href="@Address(hero.Name)">Reset</a>
+                <button type="button" class="cx-tal-act" @onclick="() => Go(new HashSet<int>())">Reset</button>
             }
 
             <button type="button" class="cx-tal-act" data-copy>Copy link</button>
@@ -102,9 +103,9 @@ else
 }
 
 @code {
-    [SupplyParameterFromQuery(Name = "hero")] public string? Hero { get; set; }
+    [Parameter] public string? Hero { get; set; }
 
-    [SupplyParameterFromQuery(Name = "picks")] public string? Picks { get; set; }
+    [Parameter] public string? Picks { get; set; }
 
     private const string Page = "/tools/talents";
 
@@ -117,6 +118,8 @@ else
     private IReadOnlyList<TalentRow> Tree = [];
 
     private IReadOnlySet<int> Taken = new HashSet<int>();
+
+    private (string? Hero, string? Picks)? Applied;
 
     private TalentNode? Focused;
 
@@ -145,6 +148,9 @@ else
 
     protected override void OnParametersSet()
     {
+        if (Applied is { } applied && applied == (Hero, Picks)) return;
+
+        Applied = (Hero, Picks);
         Wearer = Store.Hero(Hero);
 
         Tree = Wearer is null || !Enum.TryParse<Hero>(Wearer.Name, out var hero)
@@ -152,23 +158,24 @@ else
             : TalentPlan.Tree(Store, hero);
 
         Taken = TalentPlan.Read(Picks, Tree);
-
-        if (Focused is { } focused && !Tree.SelectMany(row => row.Nodes).Any(node => node.Id == focused.Id)) Focused = null;
+        Focused = null;
     }
 
-    private void Press(TalentNode node)
+    private Task Press(TalentNode node)
     {
         Focused = node;
 
-        if (!Taken.Contains(node.Id) && node.Cost <= Left) Go(Toggled(node));
+        return !Taken.Contains(node.Id) && node.Cost <= Left ? Go(Toggled(node)) : Task.CompletedTask;
     }
 
-    private void Remove(TalentNode node)
+    private Task Remove(TalentNode node) => Taken.Contains(node.Id) ? Go(Toggled(node)) : Task.CompletedTask;
+
+    private async Task Go(IReadOnlySet<int> taken)
     {
-        if (Taken.Contains(node.Id)) Go(Toggled(node));
-    }
+        Taken = taken;
 
-    private void Go(string picks) => Nav.NavigateTo(Address(Wearer?.Name, picks), replace: true);
+        await Js.InvokeVoidAsync("history.replaceState", null, string.Empty, Address(Wearer?.Name, TalentPlan.Write(Tree, taken)));
+    }
 
     private RenderFragment Face(TalentNode node, string state)
     {
@@ -183,26 +190,21 @@ else
         </span>;
     }
 
-    private string Toggled(TalentNode node)
+    private IReadOnlySet<int> Toggled(TalentNode node)
     {
         var taken = new HashSet<int>(Taken);
 
         if (!taken.Remove(node.Id)) taken.Add(node.Id);
 
-        return TalentPlan.Write(Tree, taken);
+        return taken;
     }
 
     private string Beyond(TalentNode node) =>
         $"{Ui.Name(node.Talent)} costs {node.Cost}, and only {Left} of the " +
         $"{TalentPlan.Points} points are left.";
 
-    private string Address(string? hero, string? picks = null)
-    {
-        var values = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
-
-        if (hero is { Length: > 0 }) values["hero"] = hero;
-        if (picks is { Length: > 0 }) values["picks"] = picks;
-
-        return QueryHelpers.AddQueryString(Page, values);
-    }
+    private static string Address(string? hero, string? picks = null) =>
+        hero is not { Length: > 0 } ? Page
+        : picks is { Length: > 0 } ? $"{Page}/{Uri.EscapeDataString(hero)}/{picks}"
+        : $"{Page}/{Uri.EscapeDataString(hero)}";
 }
