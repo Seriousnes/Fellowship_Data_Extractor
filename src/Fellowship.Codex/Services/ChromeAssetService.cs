@@ -64,7 +64,7 @@ public interface IChromeAssetService
     [return: NotNullIfNotNull(nameof(icon))]
     string? Texture(string? icon);
 
-    string AttunementNode(string? state);
+    string AttunementNode(AttunementNodeState state);
 
     string AttunementNodeColor(IReadOnlyList<string> categories);
 
@@ -72,15 +72,15 @@ public interface IChromeAssetService
 
     string TalentTier(int row);
 
-    string TalentSlot(string? state);
+    string TalentSlot(TalentSlotState state);
 
     string TalentCost { get; }
 
     string TalentFrame { get; }
 
-    string GlyphPlate(string? state, bool hovered = false);
+    string GlyphPlate(GlyphState state, bool hovered = false);
 
-    string? GlyphRune(GlyphDocument glyph, string? state);
+    string? GlyphRune(GlyphDocument glyph, GlyphState state);
 
     string SlotGlyph(string? slot);
 
@@ -134,7 +134,6 @@ public sealed class ChromeAssetService(
     private const string NodeSuffix = "Default";
     private const string NodeColorTexture = "T_Buttons_TraitNode_Color";
     private const string GlyphFamily = "T_Buttons_BlessingButton_";
-    private const string Unavailable = "Unavailable";
     private const string Hover = "Hover";
     private const string LockTexture = "T_Icons_Locked";
     private const string LockPlateTexture = "T_Backgrounds_WeaponTreeNodeBackground_LockIconBG";
@@ -189,14 +188,11 @@ public sealed class ChromeAssetService(
                 $"glyph texture in {nameof(ChromeAssetService)}, so a row of that type draws no glyph.");
     }
 
-    public static readonly IReadOnlyList<string> NodeStates = ["selected", "available", "unavailable"];
+    public static TState State<TState>(string? state) where TState : struct, Enum =>
+        QueryKeys.TryParse<TState>(state, out var named) ? named : default;
 
-    public static readonly IReadOnlyList<string> GlyphStates = ["allocated", "unallocated"];
-
-    public static string GlyphState(int equippedTier) =>
-        equippedTier > 0 ? GlyphStates[0] : GlyphStates[1];
-
-    public static readonly IReadOnlyList<string> TalentStates = ["disabled", "selected", "default", "hover"];
+    public static GlyphState GlyphStateFor(int equippedTier) =>
+        equippedTier > 0 ? GlyphState.Allocated : GlyphState.Unallocated;
 
     public string? Frame(string? rarity) => rarity is null ? null : Url(Name(FrameMask, rarity));
 
@@ -221,8 +217,7 @@ public sealed class ChromeAssetService(
     [return: NotNullIfNotNull(nameof(icon))]
     public string? Texture(string? icon) => icon is null ? null : Url(icon);
 
-    public string AttunementNode(string? state) =>
-        Url(NodeFamily + Chosen(NodeStates, state) + NodeSuffix);
+    public string AttunementNode(AttunementNodeState state) => Url(NodeFamily + state + NodeSuffix);
 
     public string AttunementNodeColor(IReadOnlyList<string> categories)
     {
@@ -247,26 +242,21 @@ public sealed class ChromeAssetService(
                 $"{string.Join(", ", store.Settings.TalentTierPlates.Keys)}. A row draws its numeral from " +
                 "that plate.");
 
-    public string TalentSlot(string? state) =>
-        Url(TalentButtonFamily + Chosen(TalentStates, state));
+    public string TalentSlot(TalentSlotState state) => Url(TalentButtonFamily + state);
 
     public string TalentCost => Url(TalentCostTexture);
 
     public string TalentFrame => Url(Tinted(TalentFrameTexture));
 
-    public static bool Padlocked(string? state) =>
-        string.Equals(Chosen(NodeStates, state), Unavailable, StringComparison.Ordinal);
+    public static bool Padlocked(AttunementNodeState state) => state is AttunementNodeState.Unavailable;
 
-    public static bool Allocated(string? state) =>
-        string.Equals(Chosen(NodeStates, state), Chosen(NodeStates, NodeStates[0]), StringComparison.Ordinal);
+    public static bool Allocated(AttunementNodeState state) => state is AttunementNodeState.Selected;
 
-    public string GlyphPlate(string? state, bool hovered = false) =>
-        Url(GlyphFamily + Chosen(GlyphStates, state) + (hovered ? Hover : string.Empty));
+    public string GlyphPlate(GlyphState state, bool hovered = false) =>
+        Url(GlyphFamily + state + (hovered ? Hover : string.Empty));
 
-    public string? GlyphRune(GlyphDocument glyph, string? state) =>
-        Texture(Chosen(GlyphStates, state) == Chosen(GlyphStates, GlyphState(1))
-            ? glyph.IconHovered
-            : glyph.Icon);
+    public string? GlyphRune(GlyphDocument glyph, GlyphState state) =>
+        Texture(state is GlyphState.Allocated ? glyph.IconHovered : glyph.Icon);
 
     public string LockGlyph => Url(LockTexture);
 
@@ -325,9 +315,4 @@ public sealed class ChromeAssetService(
 
     private string Url(string name) => texture.Address(name, TextureSize.Full);
 
-    private static string Chosen(IReadOnlyList<string> states, string? state) =>
-        states.FirstOrDefault(known => string.Equals(known, state, StringComparison.OrdinalIgnoreCase))
-            is { } found
-            ? char.ToUpperInvariant(found[0]) + found[1..]
-            : char.ToUpperInvariant(states[0][0]) + states[0][1..];
 }

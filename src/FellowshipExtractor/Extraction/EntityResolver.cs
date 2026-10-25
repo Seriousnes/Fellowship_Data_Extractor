@@ -18,6 +18,8 @@ public sealed class EntityResolver
     private const string VisualKeyField = "VisualCollectionMappingKey";
     private const string SlotOrdinalField = "HeroItemType";
     private const string StaminaStat = "Stamina";
+    private const string DungeonLevelType = "Dungeon";
+    private const string AdventureLevelType = "Adventure";
     private const string HoveredIconField = "UIIconHovered";
     private const string EffectTable = "GameplayEffect";
     private const string CostEffectClass = "/Script/fellowship.CRCostEffect";
@@ -590,6 +592,7 @@ public sealed class EntityResolver
                 Rarity = entity.Rarity ?? row.Rarity,
                 RarityTier = entity.RarityTier ?? row.RarityTier,
                 Icon = entity.Icon ?? IconName(row.IconPath, icons),
+                EnabledInGame = row.EnabledInGame ? entity.EnabledInGame : false,
             };
         }
 
@@ -856,6 +859,7 @@ public sealed class EntityResolver
             SeasonalPinnacle = dungeon.SeasonalPinnacle,
             AvailableForCasual = dungeon.AvailableForCasual,
             MinimumDifficulty = dungeon.MinimumDifficulty,
+            EnabledInGame = Playable(dungeon) ? entity.EnabledInGame : false,
             Difficulties = DungeonDifficulties.For(dungeon.Tag),
             Floors = layout is null
                 ? null
@@ -963,6 +967,12 @@ public sealed class EntityResolver
             ItemLevel = Sources.DropLevel(tiers.Count > 0 && tiers.All(tier => tier == top)),
         };
     }
+
+    private bool Playable(Dungeon dungeon) =>
+        dungeon.EnabledInGame &&
+        (dungeon.LevelType is not (DungeonLevelType or AdventureLevelType) ||
+         dungeon.SeasonalPinnacle is true ||
+         InRotation(dungeon.Tag));
 
     private bool InRotation(string levelTag) =>
         Dungeons.Find(levelTag)?.AvailableForCasual is true || DungeonDifficulties.For(levelTag) is { Count: > 0 };

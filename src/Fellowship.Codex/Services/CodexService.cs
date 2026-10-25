@@ -27,17 +27,19 @@ public interface ICodexService
 
     FacetView View(Facet facet, IReadOnlyList<EntityDocument> rows);
 
+    FacetCount Tally(Facet facet, IReadOnlyList<EntityDocument> rows);
+
     string Printed(Facet facet, string value);
 
     IReadOnlyList<string> Offered(Facet facet);
 
-    Facet? Facet(string key);
+    Facet Facet(FacetType type);
 
-    Measure? Measure(string key);
+    Measure Measure(MeasureType type);
 
-    Flag? Flag(string key);
+    Flag Flag(FlagType type);
 
-    Sorting? Sorting(string key);
+    Sorting Sorting(SortingType type);
 
     IEnumerable<string> Scaling(IReadOnlyList<string>? attributes);
 }
@@ -46,7 +48,15 @@ public sealed class CodexService : ICodexService
     private readonly IEntityStoreService store;
     private readonly IDesignTokenService tokens;
 
-    private readonly IReadOnlyDictionary<string, string[]> offered;
+    private readonly IReadOnlyDictionary<FacetType, string[]> offered;
+
+    private readonly IReadOnlyDictionary<FacetType, Facet> facets;
+
+    private readonly IReadOnlyDictionary<FlagType, Flag> flags;
+
+    private readonly IReadOnlyDictionary<MeasureType, Measure> measures;
+
+    private readonly IReadOnlyDictionary<SortingType, Sorting> sortings;
 
     public IReadOnlyList<Facet> Facets { get; }
 
@@ -72,7 +82,7 @@ public sealed class CodexService : ICodexService
 
         Facets =
         [
-            new Facet("slot", "Slot", document => document switch
+            new Facet(FacetType.Slot, document => document switch
             {
                 ItemDocument item => One(item.Slot),
                 GlyphDocument { Slots: { } slots } => slots,
@@ -82,16 +92,16 @@ public sealed class CodexService : ICodexService
                 Primary = true,
             },
 
-            new Facet("kind", "Item type", document =>
+            new Facet(FacetType.Kind, document =>
                 One(document is ItemDocument item ? Kind(item) : null)),
 
-            new Facet("armor", "Armour", document =>
+            new Facet(FacetType.Armor, document =>
                 One(document is ItemDocument { ArmorType: { } armor } ? armor.ToString() : null)),
 
-            new Facet("stat", "Primary stat", document =>
+            new Facet(FacetType.Stat, document =>
                 One(document is ItemDocument { PrimaryStat: { } stat } ? stat.ToString() : null)),
 
-            new Facet("hero", "Hero", document => document switch
+            new Facet(FacetType.Hero, document => document switch
             {
                 ItemDocument { Heroes: { } heroes } => heroes.Select(hero => hero.ToString()),
                 AbilityDocument { Heroes: { } heroes } => heroes.Select(hero => hero.ToString()),
@@ -105,7 +115,7 @@ public sealed class CodexService : ICodexService
                 Primary = true,
             },
 
-            new Facet("source", "Source", document => document switch
+            new Facet(FacetType.Source, document => document switch
             {
                 ItemDocument { Sources: { } sources } => sources.Select(source => source.Name),
                 AbilityDocument { Owner: { } owner } => One(Owner(store, owner)),
@@ -114,14 +124,14 @@ public sealed class CodexService : ICodexService
                 _ => [],
             }),
 
-            new Facet("rank", "Rank", document =>
+            new Facet(FacetType.Rank, document =>
                 One(document is CreatureDocument { Rank: { } rank } ? rank.ToString() : null)),
 
-            new Facet("school", "School", Schools),
-            new Facet("resource", "Resource", document =>
+            new Facet(FacetType.School, Schools),
+            new Facet(FacetType.Resource, document =>
                 One(document is AbilityDocument { Resource: { } resource } ? resource : null)),
 
-            new Facet("gem", "Gem type", document => One(document switch
+            new Facet(FacetType.Gem, document => One(document switch
             {
                 RadianceDocument gem => gem.Type.ToString(),
                 GemDocument gem => gem.Type.ToString(),
@@ -133,7 +143,7 @@ public sealed class CodexService : ICodexService
                 Primary = true,
             },
 
-            new Facet("rarity", "Rarity", document => document switch
+            new Facet(FacetType.Rarity, document => document switch
             {
                 ItemDocument { Rarities: { Count: > 0 } rarities } =>
                     rarities.Select(tier => RarityWord(store, tier, gem: false)),
@@ -150,60 +160,65 @@ public sealed class CodexService : ICodexService
 
         Flags =
         [
-            new Flag("unobtainable", "Show unobtainable items",
-                document => PublicTypes.DisplayNameOf(document) is null ||
-                            document is ItemDocument { EnabledInGame: false })
+            new Flag(FlagType.Unobtainable, document =>
+                PublicTypes.DisplayNameOf(document) is null || document.EnabledInGame is false)
             {
                 Hides = true,
             },
-            new Flag("icon", "Has texture", document => DocumentFields.Text(document, nameof(ItemDocument.Icon)) is not null),
-            new Flag("described", "Has description text",
-                document => DocumentFields.Text(document, nameof(ItemDocument.Description)) is not null),
-            new Flag("legendary", "Is legendary",
-                document => document is ItemDocument { Rarities: { } rarities } &&
-                            rarities.Contains(Rarity.Legendary)),
-            new Flag("grants", "Grants an ability", document => document is ItemDocument { Grants: not null }),
-            new Flag("socket", "Rolls with a gem socket", document => document is ItemDocument { GemSlot: true }),
-            new Flag("unique", "Unique equipped", document => document is ItemDocument { UniqueEquipped: true }),
+            new Flag(FlagType.Icon, document => DocumentFields.Text(document, nameof(ItemDocument.Icon)) is not null),
+            new Flag(FlagType.Described, document =>
+                DocumentFields.Text(document, nameof(ItemDocument.Description)) is not null),
+            new Flag(FlagType.Legendary, document =>
+                document is ItemDocument { Rarities: { } rarities } && rarities.Contains(Rarity.Legendary)),
+            new Flag(FlagType.Grants, document => document is ItemDocument { Grants: not null }),
+            new Flag(FlagType.Socket, document => document is ItemDocument { GemSlot: true }),
+            new Flag(FlagType.Unique, document => document is ItemDocument { UniqueEquipped: true }),
         ];
 
         Measures =
         [
-            new Measure("cooldown", "Cooldown", document => DocumentFields.Number(document, nameof(AbilityDocument.Cooldown)))
+            new Measure(MeasureType.Cooldown, document => DocumentFields.Number(document, nameof(AbilityDocument.Cooldown)))
             {
                 Unit = "s",
             },
-            new Measure("cast", "Cast time", document => DocumentFields.Number(document, nameof(AbilityDocument.CastTime)))
+            new Measure(MeasureType.Cast, document => DocumentFields.Number(document, nameof(AbilityDocument.CastTime)))
             {
                 Unit = "s",
             },
-            new Measure("channel", "Channel", document => DocumentFields.Number(document, nameof(AbilityDocument.ChannelTime)))
+            new Measure(MeasureType.Channel, document => DocumentFields.Number(document, nameof(AbilityDocument.ChannelTime)))
             {
                 Unit = "s",
             },
-            new Measure("range", "Range", document => DocumentFields.Number(document, nameof(AbilityDocument.Range))),
-            new Measure("radius", "Radius", document => DocumentFields.Number(document, nameof(AbilityDocument.Radius))),
-            new Measure("duration", "Duration", document => DocumentFields.Number(document, nameof(AbilityDocument.Duration)))
+            new Measure(MeasureType.Range, document => DocumentFields.Number(document, nameof(AbilityDocument.Range))),
+            new Measure(MeasureType.Radius, document => DocumentFields.Number(document, nameof(AbilityDocument.Radius))),
+            new Measure(MeasureType.Duration, document => DocumentFields.Number(document, nameof(AbilityDocument.Duration)))
             {
                 Unit = "s",
             },
-            new Measure("cost", "Cost", document => DocumentFields.Number(document, nameof(AbilityDocument.Cost))),
-            new Measure("charges", "Charges", document => DocumentFields.Number(document, nameof(AbilityDocument.Charges))),
-            new Measure("rank", "Max rank", document => DocumentFields.Number(document, nameof(AugmentationDocument.MaxRank))),
+            new Measure(MeasureType.Cost, document => DocumentFields.Number(document, nameof(AbilityDocument.Cost))),
+            new Measure(MeasureType.Charges, document => DocumentFields.Number(document, nameof(AbilityDocument.Charges))),
+            new Measure(MeasureType.Rank, document => DocumentFields.Number(document, nameof(AugmentationDocument.MaxRank))),
 
-            new Measure("id", "ID", document => (double?)document.Id),
+            new Measure(MeasureType.Id, document => (double?)document.Id),
         ];
 
         Sortings =
         [
-            new Sorting("name", "Name", PublicTypes.NameOf),
-            new Sorting("type", "Type", document => PublicTypes.Label(EntityTypes.TypeOf(document))),
+            new Sorting(SortingType.Name, PublicTypes.NameOf),
+            new Sorting(SortingType.Type, document => PublicTypes.Label(EntityTypes.TypeOf(document))),
 
-            new Sorting("slot", "Slot", document => (document as ItemDocument)?.Slot),
-            new Sorting("ilvl", "Item level", document => (document as ItemDocument)?.ItemLevel),
-            new Sorting("kind", "Type", document => document is ItemDocument item ? Kind(item) : null),
+            new Sorting(SortingType.Slot, document => (document as ItemDocument)?.Slot),
+            new Sorting(SortingType.Ilvl, document => (document as ItemDocument)?.ItemLevel),
+            new Sorting(SortingType.Kind, document => document is ItemDocument item ? Kind(item) : null),
 
-            new Sorting("source", "Source", document => document switch
+            new Sorting(SortingType.Stat, document => document switch
+            {
+                ItemDocument { PrimaryStat: { } stat } => stat.ToString(),
+                EnchantDocument { PrimaryStat: { } stat } => stat.ToString(),
+                _ => null,
+            }),
+
+            new Sorting(SortingType.Source, document => document switch
             {
                 ItemDocument { Sources: [var first, ..] } => first.Name,
                 AbilityDocument { Owner: { } owner } => Owner(store, owner),
@@ -211,22 +226,22 @@ public sealed class CodexService : ICodexService
                 _ => null,
             }),
 
-            new Sorting("location", "Location", document =>
+            new Sorting(SortingType.Location, document =>
                 document is CreatureDocument { FoundIn: [var dungeon, ..] } ? Owner(store, dungeon) : null),
 
-            new Sorting("rank", "Rank", document => document switch
+            new Sorting(SortingType.Rank, document => document switch
             {
                 CreatureDocument { Rank: { } rank } => (int)rank,
                 _ => DocumentFields.Number(document, nameof(AugmentationDocument.MaxRank)),
             }),
 
-            new Sorting("health", "Health", document => (document as CreatureDocument)?.Health),
+            new Sorting(SortingType.Health, document => (document as CreatureDocument)?.Health),
 
-            new Sorting("qualifier", "Qualifier", document => (document as DungeonDocument)?.QualifierTime),
+            new Sorting(SortingType.Qualifier, document => (document as DungeonDocument)?.QualifierTime),
 
-            new Sorting("score", "Required score", document => (document as DungeonDocument)?.RequiredScore),
+            new Sorting(SortingType.Score, document => (document as DungeonDocument)?.RequiredScore),
 
-            new Sorting("hero", "Hero", document => document switch
+            new Sorting(SortingType.Hero, document => document switch
             {
                 ItemDocument { Heroes: [var wearer, ..] } => wearer.ToString(),
                 AbilityDocument { Heroes: [var caster, ..] } => caster.ToString(),
@@ -236,12 +251,12 @@ public sealed class CodexService : ICodexService
                 _ => null,
             }),
 
-            new Sorting("school", "School", document => Schools(document).FirstOrDefault()),
+            new Sorting(SortingType.School, document => Schools(document).FirstOrDefault()),
 
-            new Sorting("applier", "Applied by", document =>
+            new Sorting(SortingType.Applier, document =>
                 document is EffectDocument { AppliedBy: { } applier } ? Owner(store, applier) : null),
 
-            new Sorting("gem", "Gem type", document => document switch
+            new Sorting(SortingType.Gem, document => document switch
             {
                 RadianceDocument gem => gem.Type.ToString(),
                 GemDocument gem => gem.Type.ToString(),
@@ -249,23 +264,23 @@ public sealed class CodexService : ICodexService
                 _ => null,
             }),
 
-            new Sorting("power", "Power required", document => (document as GemAbilityDocument)?.RequiredPower),
+            new Sorting(SortingType.Power, document => (document as GemAbilityDocument)?.RequiredPower),
 
-            new Sorting("tier", "Tier", document => document switch
+            new Sorting(SortingType.Tier, document => document switch
             {
                 TalentSlotDocument slot => slot.Row,
                 TalentDocument talent => store.Slot(talent.Id)?.Row,
                 _ => null,
             }),
 
-            new Sorting("cost", "Cost", document => document switch
+            new Sorting(SortingType.Cost, document => document switch
             {
                 TalentDocument talent when store.Slot(talent.Id) is { } slot => (double)slot.Cost,
                 TalentSlotDocument slot => (double)slot.Cost,
                 _ => DocumentFields.Number(document, nameof(AbilityDocument.Cost)),
             }),
 
-            new Sorting("rarity", "Rarity", document => document switch
+            new Sorting(SortingType.Rarity, document => document switch
             {
                 ItemDocument { Rarity: { } rarity } => (int)rarity,
                 CurrencyDocument { Rarity: { } coin } => (int)coin,
@@ -273,8 +288,13 @@ public sealed class CodexService : ICodexService
                 _ => null,
             }),
 
-            new Sorting("category", "Category", document => (document as AugmentationDocument)?.Category),
+            new Sorting(SortingType.Category, document => (document as AugmentationDocument)?.Category),
         ];
+
+        facets = Defined(Facets, facet => facet.Type);
+        flags = Defined(Flags, flag => flag.Type);
+        measures = Defined(Measures, measure => measure.Type);
+        sortings = Defined(Sortings, sorting => sorting.Type);
 
         var counts = store.Entities
             .Where(document => PublicTypes.IsListed(document))
@@ -295,15 +315,34 @@ public sealed class CodexService : ICodexService
         var listed = store.Entities.Where(document => PublicTypes.IsListed(document)).ToArray();
 
         offered = Facets.ToDictionary(
-            facet => facet.Key,
-            facet => View(facet, listed).Values.Select(value => value.Value).ToArray(),
-            StringComparer.OrdinalIgnoreCase);
+            facet => facet.Type,
+            facet => Tally(facet, listed).Values.Select(value => value.Value).ToArray());
     }
 
     public IReadOnlyList<EntityDocument> Of(EntityType type) =>
         [.. store.Entities.Where(document => EntityTypes.TypeOf(document) == type)];
 
-    public FacetView View(Facet facet, IReadOnlyList<EntityDocument> rows)
+    private static IReadOnlyDictionary<TType, TDefined> Defined<TType, TDefined>(
+        IReadOnlyList<TDefined> defined, Func<TDefined, TType> type) where TType : struct, Enum
+    {
+        var missing = Enum.GetValues<TType>().Except(defined.Select(type)).ToArray();
+        var twice = defined.GroupBy(type).Where(group => group.Count() > 1).Select(group => group.Key).ToArray();
+
+        if (missing.Length > 0 || twice.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Each {typeof(TType).Name} member has one {typeof(TDefined).Name}, and " +
+                $"{string.Join(", ", missing.Concat(twice))} {(missing.Length + twice.Length == 1 ? "does" : "do")} not, " +
+                "so the rail would offer a key that answers nothing or answers twice.");
+        }
+
+        return defined.ToDictionary(type);
+    }
+
+    public FacetView View(Facet facet, IReadOnlyList<EntityDocument> rows) =>
+        new(facet.Key, facet.Label, Tally(facet, rows).Values);
+
+    public FacetCount Tally(Facet facet, IReadOnlyList<EntityDocument> rows)
     {
         var counted = new Dictionary<string, int>(StringComparer.Ordinal);
 
@@ -317,7 +356,7 @@ public sealed class CodexService : ICodexService
             }
         }
 
-        return new FacetView(facet.Key, facet.Label,
+        return new FacetCount(facet,
         [
             .. counted
                 .GroupBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
@@ -343,19 +382,15 @@ public sealed class CodexService : ICodexService
 
     public string Printed(Facet facet, string value) => Spaced(value);
 
-    public IReadOnlyList<string> Offered(Facet facet) => offered.GetValueOrDefault(facet.Key, []);
+    public IReadOnlyList<string> Offered(Facet facet) => offered[facet.Type];
 
-    public Facet? Facet(string key) =>
-        Facets.FirstOrDefault(f => string.Equals(f.Key, key, StringComparison.OrdinalIgnoreCase));
+    public Facet Facet(FacetType type) => facets[type];
 
-    public Measure? Measure(string key) =>
-        Measures.FirstOrDefault(m => string.Equals(m.Key, key, StringComparison.OrdinalIgnoreCase));
+    public Measure Measure(MeasureType type) => measures[type];
 
-    public Flag? Flag(string key) =>
-        Flags.FirstOrDefault(f => string.Equals(f.Key, key, StringComparison.OrdinalIgnoreCase));
+    public Flag Flag(FlagType type) => flags[type];
 
-    public Sorting? Sorting(string key) =>
-        Sortings.FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.OrdinalIgnoreCase));
+    public Sorting Sorting(SortingType type) => sortings[type];
 
     private static IEnumerable<string> One(string? value) => value is null ? [] : [value];
 

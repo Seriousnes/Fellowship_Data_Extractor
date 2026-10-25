@@ -140,7 +140,7 @@ public static class Coefficients
     private static readonly HashSet<string> Known =
         new(Attributes.Select(a => a.Name), StringComparer.Ordinal);
 
-    private static readonly string[] Primary = ["Intellect", "Strength", "Agility"];
+    private static readonly string[] Primary = Enum.GetNames<PrimaryStat>();
 
     public static string Captured(string attribute, IReadOnlyList<string>? capturedAttributes)
     {

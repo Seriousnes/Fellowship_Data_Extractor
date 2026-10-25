@@ -103,7 +103,7 @@ public sealed class PlaceholderService(IEntityStoreService store, IRichTextServi
         return named.Length == 1 ? named[0] : null;
     }
 
-    private static readonly string[] Primary = ["Strength", "Intellect", "Agility"];
+    private static readonly string[] Primary = Enum.GetNames<PrimaryStat>();
 
     private Substitution Banded(
         Placeholder placeholder,

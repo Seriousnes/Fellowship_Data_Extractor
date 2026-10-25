@@ -63,7 +63,7 @@ else
                                     aria-disabled="@(!picked && mine.Cost > Left ? "true" : null)"
                                     title="@(!picked && mine.Cost > Left ? Beyond(mine) : null)"
                                     @onclick="() => Press(mine)"
-                                    @oncontextmenu="() => Remove(mine)" @oncontextmenu:preventDefault="@picked">@Face(mine, picked ? Picked : Unpicked)</button>
+                                    @oncontextmenu="() => Remove(mine)" @oncontextmenu:preventDefault="@picked">@Face(mine, picked ? TalentSlotState.Selected : TalentSlotState.Disabled)</button>
                         }
                     </div>
                 </div>
@@ -99,10 +99,6 @@ else
     [Parameter] public string? Picks { get; set; }
 
     private const string Page = "/tools/talents";
-
-    private const string Picked = "selected";
-
-    private const string Unpicked = "disabled";
 
     private HeroEntry? Wearer;
 
@@ -168,7 +164,7 @@ else
         await Js.InvokeVoidAsync("history.replaceState", null, string.Empty, Address(Wearer?.Name, TalentPlan.Write(Tree, taken)));
     }
 
-    private RenderFragment Face(TalentNode node, string state)
+    private RenderFragment Face(TalentNode node, TalentSlotState state)
     {
         var link = Ui.Tip(node.Talent);
 

@@ -244,9 +244,27 @@ public static class ExportRun
 
         var marked = SpiritAbilityReferences.Mark(SlottedNames.Mark(powered.Entities, resolver.Owners.Slotted));
 
-        foreach (var record in marked)
+        var projected = marked
+            .Select(record => (Record: record, Document: DocumentProjection.From(record, references.For(record.PrimaryStat), roles)))
+            .ToArray();
+
+        var unreachable = Reachability.Unreachable(
+        [
+            .. projected.Select(pair => pair.Document),
+            .. projected.Select(pair => DocumentProjection.Implied(pair.Record)).OfType<Fellowship.SDK.Documents.EntityDocument>(),
+        ]);
+
+        Console.WriteLine(
+            $"  {unreachable.Count} creatures, abilities and effects no enabled source reaches: " +
+            string.Join(", ", unreachable.GroupBy(key => key.Type).Select(group => $"{group.Count()} {group.Key}")));
+
+        foreach (var (record, document) in projected)
         {
-            await target.WriteDocumentAsync(DocumentProjection.From(record, references.For(record.PrimaryStat), roles), default);
+            await target.WriteDocumentAsync(
+                unreachable.Contains((EntityTypes.TypeOf(document), document.Id))
+                    ? DocumentProjection.From(record with { EnabledInGame = false }, references.For(record.PrimaryStat), roles)
+                    : document,
+                default);
             written++;
 
             if (DocumentProjection.Implied(record) is { } implied)

@@ -15,6 +15,7 @@
   <ItemGroup>
     <Using Include="Fellowship.SDK" />
     <Using Include="Fellowship.SDK.Records" />
+    <Using Include="Fellowship.SDK.Client" />
   </ItemGroup>
 
   <ItemGroup>

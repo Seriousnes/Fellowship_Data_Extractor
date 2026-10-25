@@ -29,7 +29,7 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.GemAbility, 60)]
     [InlineData(EntityType.MountPower, 54)]
     [InlineData(EntityType.LegendaryPower, 36)]
-    [InlineData(EntityType.Currency, 17)]
+    [InlineData(EntityType.Currency, 33)]
     [InlineData(EntityType.Modifier, 26)]
     [InlineData(EntityType.Gem, 24)]
     [InlineData(EntityType.Glyph, 8)]

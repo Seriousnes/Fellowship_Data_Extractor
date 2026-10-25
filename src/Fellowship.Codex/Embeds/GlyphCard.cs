@@ -13,9 +13,10 @@ public sealed class GlyphCard(ICodexViewService ui, TooltipProse prose) : ProseC
 
     protected override IReadOnlyList<CardLayer> Icon(GlyphDocument entity, TooltipQuery query)
     {
-        var plate = new CardLayer(Ui.Chrome.GlyphPlate(query.State), PlateShare, true);
+        var state = ChromeAssetService.State<GlyphState>(query.State);
+        var plate = new CardLayer(Ui.Chrome.GlyphPlate(state), PlateShare, true);
 
-        return Ui.Chrome.GlyphRune(entity, query.State) is { } rune
+        return Ui.Chrome.GlyphRune(entity, state) is { } rune
             ? [plate, new CardLayer(rune, RuneShare, true)]
             : [plate];
     }

@@ -60,7 +60,7 @@ public static class RecordProjection
     }
 
     public static EntityRecord Of(EntityDocument document, ICodexViewService view, string origin) =>
-        Table[EntityTypes.TypeOf(document)](document, view, origin);
+        Table[EntityTypes.TypeOf(document)](document, view, origin) with { EnabledInGame = document.EnabledInGame };
 
     public static TRecord Of<TRecord>(EntityDocument document, ICodexViewService view, string origin)
         where TRecord : EntityRecord =>
@@ -77,7 +77,6 @@ public static class RecordProjection
             Id = document.Id,
             Generates = Generated(document.Generates),
             Name = PublicTypes.NameOf(document),
-            EnabledInGame = document.EnabledInGame,
             Description = view.PlainText(document.Description, tokens, tags),
             Detail = Lines(document.Detail, view, tokens, tags),
             Icon = Texture(document.Icon, view),
@@ -328,7 +327,6 @@ public static class RecordProjection
         Slot = document.Slot,
         GemSlot = document.GemSlot,
         UniqueEquipped = document.UniqueEquipped,
-        EnabledInGame = document.EnabledInGame,
         Rarity = view.Rarity(document),
         Rarities = RarityNames(document.Rarities, view),
         Stats = Slots(document, view),

@@ -6,17 +6,17 @@
         <Column Head="" Class="cx-texture">
             <Content Context="row"><Texture Entity="row" /></Content>
         </Column>
-        <Column Head="Name" Key="name">
+        <Column Head="Name" Key="SortingType.Name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column Head="Type" Key="type" Class="cx-tags">
+        <Column Head="Type" Key="SortingType.Type" Class="cx-tags">
             <Content Context="row">
-                <a href="@View.Replace("type", EntityTypes.Slug(EntityTypes.TypeOf(row)))">
+                <a href="@View.OfType(EntityTypes.TypeOf(row))">
                     @PublicTypes.Label(EntityTypes.TypeOf(row))
                 </a>
             </Content>
         </Column>
-        <Column Head="Source" Key="source" Class="cx-tags">
+        <Column Head="Source" Key="SortingType.Source" Class="cx-tags">
             <Content Context="row">
                 @foreach (var source in Sources(row))
                 {
@@ -37,5 +37,5 @@
     protected override void OnParametersSet() => Documents = Rows;
 
     private IEnumerable<string> Sources(EntityDocument row) =>
-        Ui.Codex.Facet("source") is { } facet ? facet.Values(row) : [];
+        Ui.Codex.Facet(FacetType.Source).Values(row);
 }

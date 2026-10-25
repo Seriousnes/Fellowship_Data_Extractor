@@ -10,6 +10,8 @@ public abstract class EntityDocument
     public required int Id { get; init; }
 
     public string? Name { get; init; }
+
+    public bool? EnabledInGame { get; init; }
 }
 
 public static class EntityDocuments

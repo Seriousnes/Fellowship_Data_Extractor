@@ -41,8 +41,8 @@ public sealed class CodexSearchService(
         var window = ordered.Skip((page - 1) * query.PageSize).Take(query.PageSize).ToArray();
 
         var facets = codex.Facets
-            .Select(facet => codex.View(
-                facet, Narrowed(query, facet.Key) ? Without(rows, query, facet.Key) : applied))
+            .Select(facet => codex.Tally(
+                facet, Narrowed(query, facet.Type) ? Without(rows, query, facet.Type) : applied))
             .Where(view => view.Values.Count > 0)
             .ToArray();
 
@@ -56,34 +56,34 @@ public sealed class CodexSearchService(
 
         var measured = codex.Measures
             .Where(measure => unbounded.Any(row => measure.Value(row) is not null))
-            .Select(measure => measure.Key)
+            .Select(measure => measure.Type)
             .ToArray();
 
         var flagged = codex.Flags
             .Where(flag => flag.Hides
-                ? query.Flags.ContainsKey(flag.Key) || rows.Any(flag.Predicate)
+                ? query.Flags.ContainsKey(flag.Type) || rows.Any(flag.Predicate)
                 : unbounded.Any(flag.Predicate))
-            .Select(flag => flag.Key)
+            .Select(flag => flag.Type)
             .ToArray();
 
         return new CodexResults(ordered.Length, page, pages, window, facets, types, chosen, measured, flagged);
     }
 
-    private static readonly IReadOnlyDictionary<string, (double?, double?)> NoRanges =
-        new Dictionary<string, (double?, double?)>(StringComparer.OrdinalIgnoreCase);
+    private static readonly IReadOnlyDictionary<MeasureType, (double?, double?)> NoRanges =
+        new Dictionary<MeasureType, (double?, double?)>();
 
     private EntityDocument[]? listed;
 
     private EntityDocument[] Listed() =>
         listed ??= [.. store.Entities.Where(row => PublicTypes.IsListed(row))];
 
-    private static bool Narrowed(CodexQuery query, string facet) =>
+    private static bool Narrowed(CodexQuery query, FacetType facet) =>
         query.Selections.TryGetValue(facet, out var values) && values.Count > 0;
 
-    private EntityDocument[] Without(IReadOnlyList<EntityDocument> rows, CodexQuery query, string facet) =>
+    private EntityDocument[] Without(IReadOnlyList<EntityDocument> rows, CodexQuery query, FacetType facet) =>
         [.. rows.Where(row => Matches(row, query, skipFacet: facet))];
 
-    private bool Matches(EntityDocument row, CodexQuery query, string? skipFacet = null, bool skipTypes = false)
+    private bool Matches(EntityDocument row, CodexQuery query, FacetType? skipFacet = null, bool skipTypes = false)
     {
         if (!skipTypes && query.Types.Count > 0 && !query.Types.Contains(EntityTypes.TypeOf(row)))
         {
@@ -93,27 +93,25 @@ public sealed class CodexSearchService(
         foreach (var (key, values) in query.Selections)
         {
             if (values.Count == 0) continue;
-            if (string.Equals(key, skipFacet, StringComparison.OrdinalIgnoreCase)) continue;
-            if (codex.Facet(key) is not { } facet) continue;
-            if (!facet.Matches(row, values)) return false;
+            if (key == skipFacet) continue;
+            if (!codex.Facet(key).Matches(row, values)) return false;
         }
 
         foreach (var (key, wanted) in query.Flags)
         {
-            if (codex.Flag(key) is not { Hides: false } flag) continue;
+            var flag = codex.Flag(key);
+            if (flag.Hides) continue;
             if (flag.Predicate(row) != wanted) return false;
         }
 
         foreach (var flag in codex.Flags)
         {
-            if (!query.Flags.GetValueOrDefault(flag.Key) && !flag.Admits(row)) return false;
+            if (!query.Flags.GetValueOrDefault(flag.Type) && !flag.Admits(row)) return false;
         }
 
         foreach (var (key, range) in query.Ranges)
         {
-            if (codex.Measure(key) is not { } measure) continue;
-
-            if (measure.Value(row) is not { } value) return false;
+            if (codex.Measure(key).Value(row) is not { } value) return false;
             if (range.Min is { } min && value < min) return false;
             if (range.Max is { } max && value > max) return false;
         }
@@ -123,8 +121,10 @@ public sealed class CodexSearchService(
 
     private EntityDocument[] Order(EntityDocument[] rows, CodexQuery query)
     {
-        if (query.Group is not null && codex.Facet(query.Group) is { } grouping)
+        if (query.Group is { } group)
         {
+            var grouping = codex.Facet(group);
+
             return
             [
                 .. Order(rows, query with { Group = null })
@@ -132,11 +132,11 @@ public sealed class CodexSearchService(
             ];
         }
 
-        if (query.Text is not null && query.Sort == "name" && !query.Descending) return rows;
+        if (query.Text is not null && query.Sort == SortingType.Name && !query.Descending) return rows;
 
-        var ordered = codex.Sorting(query.Sort) is { } sorting
-            ? Sorted(rows, sorting, query.Descending)
-            : Measured(rows, codex.Measure(query.Sort)!, query.Descending);
+        var ordered = query.Sort.Sorting is { } sorting
+            ? Sorted(rows, codex.Sorting(sorting), query.Descending)
+            : Measured(rows, codex.Measure(query.Sort.Measure!.Value), query.Descending);
 
         return
         [

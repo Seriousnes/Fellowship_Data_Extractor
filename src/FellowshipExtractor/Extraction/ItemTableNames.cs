@@ -11,6 +11,8 @@ public sealed record NamedRow(string? DisplayName, string? Description)
     public string? Rarity { get; init; }
 
     public int? RarityTier { get; init; }
+
+    public bool EnabledInGame { get; init; } = true;
 }
 
 public sealed class ItemTableNames
@@ -37,7 +39,6 @@ public sealed class ItemTableNames
 
             foreach (var (rowName, row) in table.RowMap)
             {
-                if (PropertyWalk.Get(row, EnabledField)?.GenericValue is not true) continue;
                 var name = PropertyWalk.GetString(row, DisplayNameField) is { Length: > 0 } named ? named : null;
                 var tier = rarities.Tier(PropertyWalk.Get(row, RarityField)?.GenericValue);
 
@@ -48,6 +49,7 @@ public sealed class ItemTableNames
                         IconPath = PropertyWalk.GetString(row, IconField),
                         Rarity = rarities.Label(tier),
                         RarityTier = tier,
+                        EnabledInGame = PropertyWalk.Get(row, EnabledField)?.GenericValue is true,
                     });
             }
         }

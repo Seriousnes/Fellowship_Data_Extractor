@@ -18,7 +18,7 @@ public sealed record EnchantRecordRequest
     [Description(AugmentationReading.ItemLevel)]
     public int? ItemLevel { get; init; }
 
-    [Reads(AugmentationReading.RankMeasure)]
+    [Reads(MeasureType.Rank)]
     [Description(AugmentationReading.RankSources)]
     public string? RankSources { get; init; }
 
@@ -33,7 +33,7 @@ public sealed record EnchantListRequest : RecordListRequest
     [Description(AugmentationReading.ItemLevel)]
     public int? ItemLevel { get; init; }
 
-    [Reads(AugmentationReading.RankMeasure)]
+    [Reads(MeasureType.Rank)]
     [Description(AugmentationReading.RankSources)]
     public string? RankSources { get; init; }
 

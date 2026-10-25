@@ -71,16 +71,16 @@ else
             <input type="hidden" name="@source.Key" value="@source.Document.Id" />
             @if (Entries.Count > 1)
             {
-                <input type="hidden" name="@FalloffPicker.Entry" value="@Chosen" />
+                <input type="hidden" name="@QueryKeys.Key(FalloffParameter.Entry)" value="@Chosen" />
             }
 
             <Knob Caption="Single-target damage">
-                <input type="number" name="@DamageKey" min="0" step="any" required
+                <input type="number" name="@QueryKeys.Key(FalloffParameter.Damage)" min="0" step="any" required
                        value="@Damage.ToString(CultureInfo.InvariantCulture)" />
             </Knob>
 
             <Knob Caption="Targets">
-                <input type="number" name="@TargetsKey" min="0" step="1" required
+                <input type="number" name="@QueryKeys.Key(FalloffParameter.Targets)" min="0" step="1" required
                        value="@Targets" />
             </Knob>
 
@@ -106,21 +106,17 @@ else
 }
 
 @code {
-    [SupplyParameterFromQuery(Name = FalloffPicker.AbilityKey)] public string? Ability { get; set; }
+    [SupplyParameterFromQuery(Name = nameof(FalloffParameter.Ability))] public string? Ability { get; set; }
 
-    [SupplyParameterFromQuery(Name = FalloffPicker.TalentKey)] public string? Talent { get; set; }
+    [SupplyParameterFromQuery(Name = nameof(FalloffParameter.Talent))] public string? Talent { get; set; }
 
-    [SupplyParameterFromQuery(Name = FalloffPicker.Entry)] public string? Index { get; set; }
+    [SupplyParameterFromQuery(Name = nameof(FalloffParameter.Entry))] public string? Index { get; set; }
 
-    [SupplyParameterFromQuery(Name = DamageKey)] public string? Given { get; set; }
+    [SupplyParameterFromQuery(Name = nameof(FalloffParameter.Damage))] public string? Given { get; set; }
 
-    [SupplyParameterFromQuery(Name = TargetsKey)] public string? Hit { get; set; }
+    [SupplyParameterFromQuery(Name = nameof(FalloffParameter.Targets))] public string? Hit { get; set; }
 
     private const string Page = "/tools/multi-target-falloff";
-
-    private const string DamageKey = "damage";
-
-    private const string TargetsKey = "targets";
 
     private const double StartingDamage = 1000;
 
@@ -171,6 +167,6 @@ else
         Math.Round(scaler, 6).ToString(CultureInfo.InvariantCulture);
 
     private static string Address(FalloffSource source, int entry, double damage, int targets) =>
-        $"{Page}?{source.Key}={source.Document.Id}&{FalloffPicker.Entry}={entry}" +
-        $"&{DamageKey}={damage.ToString(CultureInfo.InvariantCulture)}&{TargetsKey}={targets}";
+        $"{Page}?{source.Key}={source.Document.Id}&{QueryKeys.Key(FalloffParameter.Entry)}={entry}" +
+        $"&{QueryKeys.Key(FalloffParameter.Damage)}={damage.ToString(CultureInfo.InvariantCulture)}&{QueryKeys.Key(FalloffParameter.Targets)}={targets}";
 }

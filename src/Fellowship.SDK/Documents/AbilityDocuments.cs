@@ -11,7 +11,6 @@ public sealed class AbilityDocument : EntityDocument
 
     public AbilityCategory? Category { get; init; }
 
-    public bool? EnabledInGame { get; init; }
 
     public EntityReference? NamedAfter { get; init; }
 

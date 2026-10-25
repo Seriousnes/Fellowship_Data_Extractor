@@ -31,7 +31,7 @@ else
     [Parameter] public string? Origin { get; set; }
 
     private Dictionary<string, object?> Knobs =>
-        new(StringComparer.Ordinal) { ["Query"] = Query, ["Hero"] = Hero };
+        new(StringComparer.Ordinal) { [nameof(Item.Query)] = Query, [nameof(Item.Hero)] = Hero };
 
     private RenderFragment Card =>
         @<CascadingValue Value="Entity">

@@ -61,7 +61,7 @@
     private IEnumerable<string> Wearers(EntityDocument reading) =>
         reading is AugmentationDocument
             ? Store.Settings.Heroes.Where(hero => EntityStore.Reads(reading, hero)).Select(hero => hero.Name)
-            : Ui.Codex.Facet("hero")?.Values(reading) ?? [];
+            : Ui.Codex.Facet(FacetType.Hero).Values(reading);
 
     private static string? Discriminator(ArmorType? armour, PrimaryStat? stat)
     {

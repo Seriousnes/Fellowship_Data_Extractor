@@ -5,8 +5,6 @@ namespace Fellowship.Codex.Tests;
 [Collection(Corpus.Name)]
 public sealed class ObtainableTests(Export export)
 {
-    private const string UnobtainableFlag = "unobtainable";
-
     private readonly SearchIndexService index = new(export.Store, NullLogger<SearchIndexService>.Instance);
 
     private IReadOnlyList<ItemDocument> Items => [.. export.Store.Entities.OfType<ItemDocument>()];
@@ -19,7 +17,7 @@ public sealed class ObtainableTests(Export export)
         .. Items.Where(item => item.EnabledInGame is false && PublicTypes.DisplayNameOf(item) is not null),
     ];
 
-    private CodexResults Run(IReadOnlyDictionary<string, bool> flags) =>
+    private CodexResults Run(IReadOnlyDictionary<FlagType, bool> flags) =>
         new CodexSearchService(export.Store, export.View.Codex, index).Run(new CodexQuery
         {
             Types = [EntityType.Item],
@@ -33,16 +31,16 @@ public sealed class ObtainableTests(Export export)
     [Fact]
     public void An_item_list_shows_only_obtainable_items_by_default()
     {
-        var shown = Run(new Dictionary<string, bool>());
+        var shown = Run(new Dictionary<FlagType, bool>());
 
         Assert.Equal(Items.Count(item => !Unobtainable(item)), shown.Total);
-        Assert.Contains(UnobtainableFlag, shown.Flagged);
+        Assert.Contains(FlagType.Unobtainable, shown.Flagged);
     }
 
     [Fact]
     public void Showing_unobtainable_items_lists_every_item()
     {
-        var shown = Run(new Dictionary<string, bool> { [UnobtainableFlag] = true });
+        var shown = Run(new Dictionary<FlagType, bool> { [FlagType.Unobtainable] = true });
 
         Assert.Equal(Items.Count, shown.Total);
     }
@@ -50,8 +48,8 @@ public sealed class ObtainableTests(Export export)
     [Fact]
     public void The_unobtainable_flag_set_to_no_is_the_default_list() =>
         Assert.Equal(
-            Run(new Dictionary<string, bool>()).Total,
-            Run(new Dictionary<string, bool> { [UnobtainableFlag] = false }).Total);
+            Run(new Dictionary<FlagType, bool>()).Total,
+            Run(new Dictionary<FlagType, bool> { [FlagType.Unobtainable] = false }).Total);
 
     [Fact]
     public void A_name_search_reaches_no_disabled_item()

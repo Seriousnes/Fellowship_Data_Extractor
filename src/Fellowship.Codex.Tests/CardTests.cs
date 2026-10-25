@@ -159,7 +159,7 @@ public class CardTests(Export export)
 
         var card = await cards.Card(glyph, Query(glyph));
 
-        Assert.Equal(export.Chrome.GlyphPlate(ChromeAssetService.GlyphState(1)), card.Icon[0].Address);
-        Assert.Equal(export.Chrome.GlyphRune(glyph, ChromeAssetService.GlyphState(1)), card.Icon[1].Address);
+        Assert.Equal(export.Chrome.GlyphPlate(ChromeAssetService.GlyphStateFor(1)), card.Icon[0].Address);
+        Assert.Equal(export.Chrome.GlyphRune(glyph, ChromeAssetService.GlyphStateFor(1)), card.Icon[1].Address);
     }
 }

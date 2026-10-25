@@ -12,7 +12,6 @@ public sealed record ItemRecord : EntityRecord
     public string? Slot { get; init; }
     public bool? GemSlot { get; init; }
     public bool? UniqueEquipped { get; init; }
-    public bool? EnabledInGame { get; init; }
 
     public string? Rarity { get; init; }
 

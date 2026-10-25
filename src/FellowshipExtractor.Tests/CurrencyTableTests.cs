@@ -15,11 +15,13 @@ public sealed class CurrencyTableTests
             .Where(tag => tag.Table == "ItemID" && tag.Name.StartsWith(TagPrefix, StringComparison.Ordinal))
             .ToDictionary(tag => tag.Name, tag => tag.NetId, StringComparer.OrdinalIgnoreCase);
 
-    private static IReadOnlySet<int> Currencies() =>
-        Export.Loaded.Documents.Where(row => row.Type == EntityType.Currency).Select(row => row.Id).ToHashSet();
+    private static IReadOnlyDictionary<int, bool> Currencies() =>
+        Export.Loaded.Documents
+            .Where(row => row.Type == EntityType.Currency)
+            .ToDictionary(row => row.Id, row => row.Body["enabledInGame"]?.GetValue<bool>() is not false);
 
     [Fact]
-    public void ACurrencyRowIsADocumentExactlyWhenItIsEnabledInGame()
+    public void ACurrencyRowIsADocumentEnabledInGameExactlyWhenTheRowIs()
     {
         var ids = NetIds();
         var written = Currencies();
@@ -33,9 +35,10 @@ public sealed class CurrencyTableTests
 
             var enabled = PropertyWalk.Get(row, EnabledField)?.GenericValue is true;
 
+            Assert.True(written.ContainsKey(id), $"{rowName.Text} is not written.");
             Assert.True(
-                enabled == written.Contains(id),
-                $"{rowName.Text} is {(enabled ? "enabled" : "disabled")} and {(written.Contains(id) ? "is" : "is not")} written.");
+                enabled == written[id],
+                $"{rowName.Text} is {(enabled ? "enabled" : "disabled")} and its document is {(written[id] ? "enabled" : "disabled")}.");
         }
     }
 
@@ -44,6 +47,6 @@ public sealed class CurrencyTableTests
     [InlineData("RareDust", false)]
     [InlineData("CHIP", true)]
     [InlineData("CosmicThread", true)]
-    public void SuppliesAndTheRareMaterialsAreGone(string row, bool written) =>
-        Assert.Equal(written, Currencies().Contains(NetIds()[TagPrefix + row]));
+    public void SuppliesAndTheRareMaterialsAreDisabledInGame(string row, bool enabled) =>
+        Assert.Equal(enabled, Currencies()[NetIds()[TagPrefix + row]]);
 }
