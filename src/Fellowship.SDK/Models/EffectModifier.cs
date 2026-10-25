@@ -1,7 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace Fellowship.SDK.Models;
 
 public sealed record EffectModifier(string Attribute)
 {
+    [JsonIgnore]
+    public string? Row { get; init; }
+
     public string? Op { get; init; }
 
     public double? Value { get; init; }

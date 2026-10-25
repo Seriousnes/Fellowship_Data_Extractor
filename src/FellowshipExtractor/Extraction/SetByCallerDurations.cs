@@ -18,6 +18,7 @@ public static class SetByCallerDurations
     private const string Assignment = "AssignTagSetByCallerMagnitude";
     private const int MagnitudeParameter = 2;
     private const int MaxDepth = 24;
+    private const int SpecDepth = 8;
 
     public static string? DeclaredTag(UObject? effect, TypeMappings mappings)
     {
@@ -32,20 +33,32 @@ public static class SetByCallerDurations
         return PropertyWalk.GetString(tag, TagNameField);
     }
 
-    public static (double? Duration, string? Derivation) From(
-        UObject? applier, string tag, ConstantsTable constants)
+    public static (double? Duration, string? Derivation, IReadOnlyList<string> Gates) From(
+        UObject? applier, string tag, ConstantsTable constants, string? effectClass = null)
     {
-        if (applier is null) return (null, null);
+        if (applier is null) return (null, null, []);
 
         var values = new List<double>();
         var derivations = new List<string>();
         var assignments = 0;
+        var gates = new SortedSet<string>(StringComparer.Ordinal);
 
         foreach (var export in applier.Owner?.GetExports() ?? [])
         {
             if (export is not UStruct { ScriptBytecode: { Length: > 0 } bytecode } body) continue;
 
             var walk = new BareStateWalk(body, applier, constants, null);
+            var locals = new Dictionary<string, List<KismetExpression>>(StringComparer.Ordinal);
+
+            foreach (var statement in bytecode)
+            {
+                if (statement is EX_Let { Variable: { } variable, Assignment: { } assigned } &&
+                    DynamicTextFloats.Name(variable) is { } local)
+                {
+                    if (!locals.TryGetValue(local, out var held)) locals[local] = held = [];
+                    held.Add(assigned);
+                }
+            }
 
             foreach (var statement in bytecode)
             {
@@ -54,12 +67,23 @@ public static class SetByCallerDurations
 
                 foreach (var parameters in calls)
                 {
+                    if (effectClass is not null &&
+                        Spec(parameters.FirstOrDefault(), locals, applier, 0, []) is { } spec &&
+                        !spec.Equals(effectClass, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     assignments++;
 
                     var magnitude = parameters.ElementAtOrDefault(MagnitudeParameter);
-                    if (walk.Number(magnitude) is not { } read) continue;
+                    var tested = walk.Gates.ToHashSet(StringComparer.Ordinal);
+                    var read = walk.Number(magnitude);
 
-                    values.Add(read);
+                    gates.UnionWith(walk.Gates.Except(tested, StringComparer.Ordinal));
+                    if (read is null) continue;
+
+                    values.Add(read.Value);
                     derivations.Add($"{read} = {walk.Text(magnitude)}");
                 }
 
@@ -67,13 +91,13 @@ public static class SetByCallerDurations
             }
         }
 
-        if (assignments == 0 || values.Count != assignments) return (null, null);
+        if (assignments == 0 || values.Count != assignments) return (null, null, []);
 
         var distinct = values.Distinct().ToArray();
 
         return distinct.Length == 1
-            ? (distinct[0], string.Join(" and ", derivations.Distinct(StringComparer.Ordinal)))
-            : (null, null);
+            ? (distinct[0], string.Join(" and ", derivations.Distinct(StringComparer.Ordinal)), [.. gates])
+            : (null, null, []);
     }
 
     private static void Assignments(
@@ -91,6 +115,42 @@ public static class SetByCallerDurations
         }
 
         foreach (var child in Children(expression)) Assignments(child, tag, applier, calls, depth + 1);
+    }
+
+    private static string? Spec(
+        KismetExpression? expression,
+        IReadOnlyDictionary<string, List<KismetExpression>> locals,
+        UObject applier,
+        int depth,
+        HashSet<string> visiting)
+    {
+        if (expression is null || depth > SpecDepth) return null;
+
+        switch (expression)
+        {
+            case EX_ObjectConst constant when PropertyWalk.AsString(constant.Value) is { } path:
+                return Leaf(path);
+            case EX_InstanceVariable variable when DynamicTextFloats.Name(variable) is { } property &&
+                                                  PropertyWalk.Get(applier, property)?.GenericValue is FPackageIndex index &&
+                                                  PropertyWalk.AsString(index) is { } path:
+                return Leaf(path);
+            case EX_LocalVariable or EX_LocalOutVariable when DynamicTextFloats.Name(expression) is { } local:
+                if (!visiting.Add(local) || !locals.TryGetValue(local, out var values)) return null;
+                return values.Select(value => Spec(value, locals, applier, depth + 1, visiting))
+                    .FirstOrDefault(found => found is not null);
+        }
+
+        return Children(expression).Select(child => Spec(child, locals, applier, depth + 1, visiting))
+            .FirstOrDefault(found => found is not null);
+    }
+
+    private static string Leaf(string path)
+    {
+        var name = path[(path.LastIndexOf('/') + 1)..];
+        var dot = name.LastIndexOf('.');
+        if (dot >= 0) name = name[(dot + 1)..];
+
+        return name.EndsWith("_C", StringComparison.Ordinal) ? name[..^2] : name;
     }
 
     private static string? Tag(KismetExpression? expression, UObject applier)

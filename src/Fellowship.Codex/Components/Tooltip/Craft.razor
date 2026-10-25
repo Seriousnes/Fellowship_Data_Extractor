@@ -18,6 +18,8 @@
             <div class="cx-craft-tip" aria-live="polite" @ref="layer">
                 <Tooltip Entity="Entity" Query="Current" Hero="Wearer" />
 
+                <ChangedBy OnTurn="Turn" />
+
                 <div class="cx-craft-hits">
                     @foreach (var slot in Editable)
                     {

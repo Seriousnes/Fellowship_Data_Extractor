@@ -14,9 +14,14 @@ public static class DocumentProjection
         NameLookup names,
         IReadOnlyDictionary<(EntityType Type, int Id), int>? redirects = null,
         IReadOnlyDictionary<(EntityType Type, int Id, string Stat), string>? namesByStat = null,
-        string? stat = null)
+        string? stat = null,
+        ChangeIndex? changes = null)
     {
-        public References For(string? primaryStat) => new(types, names, redirects, namesByStat, primaryStat);
+        public ChangeIndex Changes { get; } = changes ?? ChangeIndex.None;
+
+        public References For(string? primaryStat) => new(types, names, redirects, namesByStat, primaryStat, Changes);
+
+        public References With(ChangeIndex index) => new(types, names, redirects, namesByStat, stat, index);
 
         public EntityReference? At(IconSource? source) =>
             source is null || types(source.Table, source.NetId) is not { } type
@@ -80,6 +85,7 @@ public static class DocumentProjection
             Schools = Schools(entity.Tags),
             Heroes = Owning(entity),
             Owner = references.At(entity.Owner),
+            ChangedBy = references.Changes.ChangedBy(entity, references),
         },
 
         EntityType.Item => new ItemDocument
@@ -174,6 +180,7 @@ public static class DocumentProjection
             AppliedBy = references.At(entity.AppliedBy),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
             Role = roles.Role(entity.Name),
+            ChangedBy = references.Changes.ChangedBy(entity, references),
         },
 
         EntityType.Creature => new CreatureDocument
@@ -355,6 +362,7 @@ public static class DocumentProjection
             TargetCountFalloff = Falloff(entity, references),
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
+            Changes = references.Changes.Of(entity),
         },
 
         EntityType.Glyph => new GlyphDocument
@@ -522,6 +530,7 @@ public static class DocumentProjection
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
+            Changes = references.Changes.Of(entity),
         },
 
         EntityType.RelicPassive => new RelicPassiveDocument

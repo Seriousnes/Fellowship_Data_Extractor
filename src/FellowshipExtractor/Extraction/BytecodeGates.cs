@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
@@ -7,6 +8,7 @@ namespace FellowshipExtractor.Extraction;
 public sealed class BytecodeGates
 {
     private const int MaxDepth = 12;
+    private const int MaxStates = 200000;
 
     private readonly KismetExpression[] _bytecode;
     private readonly int[][] _successors;
@@ -49,6 +51,64 @@ public sealed class BytecodeGates
         return reached;
     }
 
+    public IReadOnlySet<int> OnlyJumped(int at)
+    {
+        if (_bytecode[at] is not EX_JumpIfNot) return new HashSet<int>();
+
+        var reached = Reachable(-1);
+
+        reached.ExceptWith(Reachable(-1, at));
+
+        return reached;
+    }
+
+    public IReadOnlySet<int> From(int offset)
+    {
+        var root = At(_bytecode, offset);
+        if (root < 0) return new HashSet<int>();
+
+        var seen = new HashSet<int>();
+        var visited = new HashSet<(int, string)>();
+        var pending = new Stack<(int At, ImmutableStack<int> Flow)>([(root, ImmutableStack<int>.Empty)]);
+
+        while (pending.Count > 0 && visited.Count < MaxStates)
+        {
+            var (at, flow) = pending.Pop();
+            if (at < 0 || at >= _bytecode.Length) continue;
+            if (!visited.Add((at, string.Join(",", flow)))) continue;
+
+            seen.Add(at);
+
+            switch (_bytecode[at])
+            {
+                case EX_PushExecutionFlow push:
+                    pending.Push((at + 1, flow.Push(At(_bytecode, (int)push.PushingAddress))));
+                    break;
+                case EX_PopExecutionFlow:
+                    if (!flow.IsEmpty) pending.Push((flow.Peek(), flow.Pop()));
+                    break;
+                case EX_PopExecutionFlowIfNot:
+                    pending.Push((at + 1, flow));
+                    if (!flow.IsEmpty) pending.Push((flow.Peek(), flow.Pop()));
+                    break;
+                case EX_JumpIfNot branch:
+                    pending.Push((At(_bytecode, (int)branch.CodeOffset), flow));
+                    pending.Push((at + 1, flow));
+                    break;
+                case EX_Jump jump:
+                    pending.Push((At(_bytecode, (int)jump.CodeOffset), flow));
+                    break;
+                case EX_Return or EX_EndOfScript or EX_ComputedJump:
+                    break;
+                default:
+                    pending.Push((at + 1, flow));
+                    break;
+            }
+        }
+
+        return seen.Select(at => _bytecode[at].StatementIndex).ToHashSet();
+    }
+
     private static KismetExpression? Guarding(KismetExpression statement) => statement switch
     {
         EX_JumpIfNot branch => branch.BooleanExpression,
@@ -56,7 +116,7 @@ public sealed class BytecodeGates
         _ => null,
     };
 
-    private HashSet<int> Reachable(int without)
+    private HashSet<int> Reachable(int without, int jumpless = -1)
     {
         var seen = new HashSet<int>();
         var pending = new Stack<int>();
@@ -70,7 +130,9 @@ public sealed class BytecodeGates
         {
             var at = pending.Pop();
             var successors = _successors[at];
-            var guarded = at == without && Guarding(_bytecode[at]) is not null ? successors.Length - 1 : -1;
+            var guarded = at == without && Guarding(_bytecode[at]) is not null ? successors.Length - 1
+                : at == jumpless ? 0
+                : -1;
 
             for (var step = 0; step < successors.Length; step++)
             {
@@ -230,7 +292,7 @@ public sealed class BytecodeGates
         return -1;
     }
 
-    private static IEnumerable<int> Entered(KismetExpression? expression, string function, int depth)
+    internal static IEnumerable<int> Entered(KismetExpression? expression, string function, int depth)
     {
         if (expression is null || depth > MaxDepth) yield break;
 

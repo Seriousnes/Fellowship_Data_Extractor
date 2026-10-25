@@ -18,9 +18,11 @@ public sealed class EffectNameSources
         IEnumerable<TagRecord> tags,
         IReadOnlySet<string> effectNames,
         Func<TagRecord, UObject?> load,
-        Func<TagRecord, UObject, string?> printedName)
+        Func<TagRecord, UObject, string?> printedName,
+        Func<string, UObject?> loadClass)
     {
         var unpackaged = 0;
+        var bySpawnedActor = new Dictionary<string, EffectNameSource?>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var tag in tags)
         {
@@ -29,25 +31,42 @@ public sealed class EffectNameSources
 
             if (cdo.Owner is null) unpackaged++;
 
+            var source = new EffectNameSource(name, new IconSource(tag.Table, tag.NetId, tag.Name));
+
             foreach (var (applied, _, widened) in GameplayEffects.Applying(cdo, effectNames))
             {
                 if (tag.Name.Equals(applied, StringComparison.OrdinalIgnoreCase)) continue;
 
                 if (!widened) _lentByProperty.Add(applied);
 
-                if (!_byEffect.TryGetValue(applied, out var agreed))
+                Lend(_byEffect, applied, source);
+            }
+
+            foreach (var actor in RowSinks.SpawnedPaths(cdo).Select(loadClass).OfType<UObject>())
+            {
+                foreach (var (applied, _, _) in GameplayEffects.Applying(actor, effectNames))
                 {
-                    _byEffect[applied] = new EffectNameSource(name, new IconSource(tag.Table, tag.NetId, tag.Name));
-                    continue;
+                    if (!tag.Name.Equals(applied, StringComparison.OrdinalIgnoreCase)) Lend(bySpawnedActor, applied, source);
                 }
-
-                if (agreed is null || agreed.DisplayName.Equals(name, StringComparison.Ordinal)) continue;
-
-                _byEffect[applied] = null;
             }
         }
 
+        foreach (var (applied, source) in bySpawnedActor) _byEffect.TryAdd(applied, source);
+
         Unpackaged = unpackaged;
+    }
+
+    private static void Lend(Dictionary<string, EffectNameSource?> byEffect, string applied, EffectNameSource source)
+    {
+        if (!byEffect.TryGetValue(applied, out var agreed))
+        {
+            byEffect[applied] = source;
+            return;
+        }
+
+        if (agreed is null || agreed.DisplayName.Equals(source.DisplayName, StringComparison.Ordinal)) return;
+
+        byEffect[applied] = null;
     }
 
     public EffectNameSource? For(string effectName) => _byEffect.GetValueOrDefault(effectName);

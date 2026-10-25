@@ -435,19 +435,32 @@ public sealed class AbilityOwners
             .Select(tag => tag.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+        var bySpawnedActor = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var tag in tags)
         {
             if (!tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase)) continue;
             if (!_byName.TryGetValue(tag.Name, out var asset)) continue;
 
             var applied = AppliedEffects.Find(_provider, asset.ObjectPath, effects, _codenames);
-            if (applied.Count == 0) continue;
+            var spawned = SpawnedPaths(asset.ObjectPath)
+                .SelectMany(actor => AppliedEffects.Find(_provider, actor, effects, _codenames))
+                .ToArray();
+            if (applied.Count == 0 && spawned.Length == 0) continue;
 
             _applierTags[tag.Name] = AbilityTypes(asset.ObjectPath);
 
             foreach (var (name, _) in applied) Owns(_appliers, name, tag.Name, effects);
+            foreach (var (name, _) in spawned) Owns(bySpawnedActor, name, tag.Name, effects);
         }
+
+        foreach (var (name, owner) in bySpawnedActor) _appliers.TryAdd(name, owner);
     }
+
+    private IReadOnlyList<string> SpawnedPaths(string objectPath) =>
+        _provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(objectPath), out var package)
+            ? RowSinks.SpawnedPaths(package.GetExports().FirstOrDefault(export => export.Name.StartsWith("Default__", StringComparison.Ordinal)))
+            : [];
 
     private IReadOnlyList<string> AbilityTypes(string objectPath)
     {

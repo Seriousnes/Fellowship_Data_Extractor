@@ -26,8 +26,11 @@ public sealed class EntityResolver
     private const string AbilityTypePrefix = "AbilityType.";
     private const string TalentTagPrefix = "Talents.";
     private const string TagSuffix = "Tag";
+    private const int MinimumGatePrefix = 8;
     private const string GrantedTagsField = "GrantedGameplayTags";
     private const string GrantedEffectsField = "GrantedGameplayEffects";
+    private const string AbilityTagsField = "AbilityTags";
+    private const string CooldownTagsField = "CooldownTags";
     private const string DynamicDefinitionClass = DynamicItemRuleSets.DefinitionClass;
     private const string SpecificDungeonsField = "DropsInSpecificDungeons";
     private const string CreatureTable = "CRAICharacter";
@@ -249,7 +252,7 @@ public sealed class EntityResolver
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
 
         EffectNames = new EffectNameSources(
-            _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
+            _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName, LoadClassDefault);
 
         Types = new TypeResolver(
             _tags, Talents, Gems, AugmentationRows, Mappings, Dungeons, Progression, Customizations, TableNames, Heroes,
@@ -349,6 +352,14 @@ public sealed class EntityResolver
         if (HeroItems.Find(tag.Name) is { } fixedItem) entity = WithFixedItem(entity, fixedItem, icons);
 
         entity = WithProvenance(entity, tag, asset, cdo);
+
+        if ((tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase) ||
+             tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) &&
+            Spellings(tag.Name).All(spelling => FindAsset(spelling) is null))
+        {
+            entity = entity with { Uncooked = true };
+        }
+
         entity = WithOwners(entity, tag);
 
         entity = WithSpentResource(entity, display, tag, cdo);
@@ -755,7 +766,7 @@ public sealed class EntityResolver
             $"{tag.Name} from {applier} assigning {supplied}: {recovered.Derivation}");
         DurationsFromSetByCaller++;
 
-        return entity with { Duration = duration };
+        return entity with { Duration = duration, DurationGates = recovered.Gates.Count == 0 ? entity.DurationGates : recovered.Gates };
     }
 
     private Entity WithCreature(Entity entity, TagRecord tag, UObject? cdo)
@@ -1076,13 +1087,52 @@ public sealed class EntityResolver
 
         var boundByEffect = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
+        var carried = cdo is null ? null : TagNames.Split(cdo);
+        var tested = new SortedSet<string>(StringComparer.Ordinal);
+        var added = new SortedSet<string>(StringComparer.Ordinal);
+        var gated = new Dictionary<string, List<EffectModifier>>(StringComparer.Ordinal);
+        var testerBindings = new List<CurveBinding>(bindings);
+        var declaredGates = new List<(string Prefix, string Tag)>(DeclaredGates(cdo));
+        var gatedReads = new List<GatedRead>(TagGatedReads.Of(cdo));
+        var effectBindings = new Dictionary<string, IReadOnlyList<CurveBinding>>(StringComparer.OrdinalIgnoreCase);
+        var effectAdds = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        var uses = new Dictionary<string, SortedSet<string>>(StringComparer.OrdinalIgnoreCase);
+        var supplied = new Dictionary<string, string>(StringComparer.Ordinal);
+        var ownRows = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        var foreign = new SortedSet<ForeignRead>(Comparer<ForeignRead>.Create((a, b) =>
+            string.CompareOrdinal($"{a.Tag}|{a.Owner}|{a.Property}", $"{b.Tag}|{b.Owner}|{b.Property}")));
+
         if (cdo is not null)
         {
             foreach (var attribute in GameplayEffects.Captures(cdo) ?? []) scaling.Add(attribute);
             foreach (var attribute in custom.Captures) scaling.Add(attribute);
 
+            Gate(cdo, tested, added, gated);
+            Use(cdo, bindings, uses, foreign, supplied);
+
+            foreach (var calculator in custom.Calculators)
+            {
+                Use(calculator, CurveBindings.Collect(calculator, _constants), uses, foreign, supplied);
+            }
+
+            ownRows.UnionWith(uses.Keys);
+
             foreach (var effect in Effects(cdo))
             {
+                Gate(effect.Default, tested, added, gated);
+                Use(effect.Default, effect.Constants ?? [], uses, foreign, supplied);
+                declaredGates.AddRange(DeclaredGates(effect.Default));
+                testerBindings.AddRange(effect.Constants ?? []);
+                gatedReads.AddRange(TagGatedReads.Of(effect.Default));
+
+                if (effect.Default?.Class?.Name.Text is { } effectClass)
+                {
+                    var effectName = effectClass.EndsWith("_C", StringComparison.Ordinal) ? effectClass[..^2] : effectClass;
+
+                    effectBindings.TryAdd(effectName, effect.Constants ?? []);
+                    effectAdds.TryAdd(effectName, [.. TagNames.Of(effect.Default).Added.Where(TagNames.IsTalent)]);
+                }
+
                 if (effect.Spread is { } band) bands.Add(effect.Constants ?? [], band, effect.SpreadOverridden);
                 if (effect.Constants is null && effect.CapturedAttributes is null) continue;
 
@@ -1136,6 +1186,13 @@ public sealed class EntityResolver
         var grantedTags = cdo is null ? [] : PropertyWalk.GetTags(cdo, GrantedTagsField) ?? [];
         foreach (var tag in grantedTags) SupplementTalent(split, tag);
 
+        var tagRows = grantedTags
+            .Concat(added)
+            .Select(tag => TuningNamespace.ForTalentTag(tag, _constants))
+            .OfType<string>()
+            .SelectMany(scope => _constants.AllUnder(scope).Select(record => record.Key))
+            .ToArray();
+
         var charges = Charged(cdo);
 
         var cooldown = Number(split, "cooldown");
@@ -1159,6 +1216,7 @@ public sealed class EntityResolver
         var taken = new HashSet<string>(claimed.Keys, StringComparer.Ordinal);
 
         var declared = cdo is null ? DynamicTextFloatBody.Empty : DynamicTextFloats.Of(cdo);
+        var printed = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
 
         foreach (var name in placeholders.Keys.ToArray())
         {
@@ -1166,13 +1224,19 @@ public sealed class EntityResolver
             if (placeholder.FromTable) continue;
 
             var own = placeholder.Constants is not null;
+
+            foreach (var key in placeholder.Constants?.Keys ?? []) Printed(printed, name, key);
             var source = placeholder.Constants ?? reachable;
 
             var spent = new List<string>();
 
             if (Declared(placeholder, cdo, declared, bindings, spent) is { } bound)
             {
-                foreach (var row in spent) taken.Add(TuningNamespace.Relative(row, tuning));
+                foreach (var row in spent)
+                {
+                    taken.Add(TuningNamespace.Relative(row, tuning));
+                    Printed(printed, name, row);
+                }
 
                 placeholders[name] = bound;
                 DeclaredByBlueprint++;
@@ -1200,6 +1264,7 @@ public sealed class EntityResolver
                 if (Coefficients.From(source, own ? null : taken, placeholder.ScalesOff) is { } resolved)
                 {
                     taken.Add(resolved.Key);
+                    Printed(printed, name, resolved.Key);
                     placeholders[name] = placeholder with
                     {
                         Attribute = resolved.Attribute,
@@ -1219,6 +1284,7 @@ public sealed class EntityResolver
             else if (!own && Numbers.SingleField(reachable, split.Own, taken, wanted) is { } row)
             {
                 taken.Add(row.Key);
+                Printed(printed, name, row.Key);
                 placeholders[name] = placeholder with { Value = row.Value, Tickrate = tickrate };
                 continue;
             }
@@ -1252,6 +1318,47 @@ public sealed class EntityResolver
         {
             placeholders[only] = new Placeholder { Value = stated };
             SynthesizedFromModifier++;
+        }
+
+        foreach (var (_, held) in uses)
+        {
+            foreach (var use in held.ToArray())
+            {
+                if (!use.StartsWith(RowSinks.SinkUse, StringComparison.Ordinal)) continue;
+
+                foreach (var (tag, assigned) in supplied)
+                {
+                    if (use.Contains($"[{tag}]", StringComparison.Ordinal)) held.Add(assigned);
+                }
+            }
+        }
+
+        var candidates = split.Rows
+            .Concat(tagRows)
+            .Concat(tuning is null ? [] : _constants.AllUnder(tuning).Select(record => record.Key))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        foreach (var (token, keys) in printed)
+        {
+            if (!placeholders.TryGetValue(token, out var shown)) continue;
+
+            var flags = RowSinks.PrintedUse + Flags(shown);
+
+            foreach (var key in keys)
+            {
+                foreach (var row in candidates)
+                {
+                    if (!row.Equals(key, StringComparison.OrdinalIgnoreCase) &&
+                        !row.EndsWith("." + key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (!uses.TryGetValue(row, out var held)) uses[row] = held = new(StringComparer.Ordinal);
+                    held.Add(flags);
+                }
+            }
         }
 
         var described = DescriptionTokens.Renamed(placeholders, display.Description, Heroes);
@@ -1293,6 +1400,7 @@ public sealed class EntityResolver
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
             Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand, [.. scaling]),
             Modifiers = magnitudes.Modifiers.Count == 0 ? null : magnitudes.Modifiers,
+            DurationGates = magnitudes.DurationGates.Count == 0 ? null : magnitudes.DurationGates,
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Generates = Empty(Gains.Of(cdo, assetName)),
             Tuning = tuning,
@@ -1302,7 +1410,281 @@ public sealed class EntityResolver
             Talents = talents.Count == 0 ? null : Renamed(talents),
             TalentGates = cdo is null ? null : Empty(TalentGates(cdo, talents.Keys)),
             GrantedTags = Empty(grantedTags),
+            Rows = Rows(split.Rows),
+            TagRows = Rows(tagRows),
+            NamespaceRows = tuning is null ? null : Rows(_constants.AllUnder(tuning).Select(record => record.Key)),
+            TestedTags = tested.Count == 0 ? null : [.. tested],
+            AddedTags = added.Count == 0 ? null : [.. added],
+            HeldTags = carried is null ? null : Empty([.. carried.Held.Order(StringComparer.Ordinal)]),
+            EffectAssetTags = carried is null ? null : Empty([.. carried.Asset.Order(StringComparer.Ordinal)]),
+            AbilityTags = cdo is null ? null : Empty([.. PropertyWalk.GetTags(cdo, AbilityTagsField) ?? []]),
+            OngoingTags = carried is null ? null : Empty([.. carried.Ongoing.Order(StringComparer.Ordinal)]),
+            CooldownTags = cdo is null ? null : Empty([.. PropertyWalk.GetTags(cdo, CooldownTagsField) ?? []]),
+            TriggerTags = Empty(AbilityLinks.Triggers(cdo)),
+            SentEvents = Empty(AbilityLinks.Sent(cdo)),
+            SpawnedActors = Empty(RowSinks.SpawnedActors(cdo)),
+            BypassCostTags = Empty(AbilityLinks.Bypassed(cdo)),
+            InstantTags = Empty(AbilityLinks.Instant(cdo)),
+            LooseTags = Empty(AbilityLinks.Loose(cdo)),
+            ProcEffects = AbilityLinks.ProcEffects(cdo) is { Count: > 0 } procs ? procs : null,
+            ProcAssetTags = AbilityLinks.ProcAssetTags(cdo) is { Count: > 0 } marked ? marked : null,
+            StackGrants = RowSinks.StackGrants(cdo) is { Count: > 0 } stacked
+                ? [.. stacked.Select(grant => new StackGrant(grant.Effect, grant.Stacks, grant.Gates))]
+                : null,
+            CooldownTerms = Empty(CooldownTerms.Of(cdo, _provider, _constants)),
+            Counts = custom.Calculators.Prepend(cdo).SelectMany(asset => CountReads.Of(asset))
+                .GroupBy(entry => entry.Key, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First().Value, StringComparer.Ordinal) is { Count: > 0 } counts
+                ? counts
+                : null,
+            GrantedAbilityNames = Empty(AbilityLinks.GrantedAbilities(cdo)),
+
+            GrantedEffects = cdo is null ? null : Empty([.. ClassPaths(cdo, GrantedEffectsField).Select(ClassName)]),
+            GatedConstants = GatedConstants(tested, testerBindings, declaredGates, gatedReads, effectBindings),
+            GatedAdds = GatedAdds(gatedReads, effectAdds),
+            GatedModifiers = gated.Count == 0
+                ? null
+                : gated.ToDictionary(
+                    entry => entry.Key,
+                    entry => (IReadOnlyList<EffectModifier>)entry.Value,
+                    StringComparer.Ordinal),
+            RowUses = uses.Count == 0
+                ? null
+                : uses.ToDictionary(
+                    entry => entry.Key,
+                    entry => (IReadOnlyList<string>)[.. entry.Value],
+                    StringComparer.OrdinalIgnoreCase),
+            ForeignReads = foreign.Count == 0 ? null : [.. foreign],
+            OwnRows = ownRows.Count == 0 ? null : [.. ownRows],
+            Replacements = AbilityReplacements.Of(cdo) is { Count: > 0 } replaced ? replaced : null,
         };
+    }
+
+    private static void Printed(Dictionary<string, SortedSet<string>> printed, string token, string key)
+    {
+        if (!printed.TryGetValue(token, out var keys)) printed[token] = keys = new(StringComparer.Ordinal);
+        keys.Add(key);
+    }
+
+    private static string Flags(Placeholder placeholder) =>
+        string.Join(
+            ';',
+            new[]
+            {
+                placeholder.Key ?? string.Empty,
+                placeholder.Format is { } format ? $"format={format}" : null,
+                placeholder.Percent is true ? "percent" : null,
+                placeholder.Multiplies is true ? "multiplies" : null,
+                placeholder.Unit is { } unit ? $"unit={unit}" : null,
+                placeholder.Quantity != default ? $"quantity={placeholder.Quantity}" : null,
+                placeholder.Attribute is { } attribute ? $"attribute={attribute}" : null,
+                placeholder.Tickrate is true ? "tickrate" : null,
+            }.OfType<string>());
+
+    private void Use(
+        UObject? asset,
+        IReadOnlyList<CurveBinding> bindings,
+        Dictionary<string, SortedSet<string>> uses,
+        ISet<ForeignRead> foreign,
+        Dictionary<string, string> supplied)
+    {
+        if (asset is null) return;
+
+        var variables = RowSinks.Variables(asset);
+
+        foreach (var binding in bindings)
+        {
+            if (binding.RowName.Equals("None", StringComparison.Ordinal)) continue;
+            if (!uses.TryGetValue(binding.RowName, out var held)) uses[binding.RowName] = held = new(StringComparer.Ordinal);
+
+            var declared = variables.Contains(RowSinks.Head(binding.Property));
+            held.Add((declared ? RowSinks.VariableUse : RowSinks.PropertyUse) + binding.Property);
+        }
+
+        foreach (var slot in EffectModifiers.Uses(asset, _mappings))
+        {
+            var stated = $"{RowSinks.AttributeUse}{slot.Attribute}|{slot.Op}|{(slot.Executed ? RowSinks.Execution : RowSinks.Holder)}";
+            if (slot.Required.Count > 0) stated += RowSinks.GateMark + string.Join(";", slot.Required);
+
+            if (slot.SetByCallerTag is { } tag) supplied.TryAdd(tag, stated);
+            if (slot.Row is not { } row) continue;
+            if (!uses.TryGetValue(row, out var held)) uses[row] = held = new(StringComparer.Ordinal);
+
+            held.Add(stated);
+        }
+
+        var sinks = RowSinks.Of(asset, LoadClassDefault);
+
+        foreach (var (row, sunk) in RowSinks.Rows(sinks, bindings))
+        {
+            if (!uses.TryGetValue(row, out var held)) uses[row] = held = new(StringComparer.Ordinal);
+
+            foreach (var sink in sunk) held.Add(RowSinks.SinkUse + sink);
+        }
+
+        var own = RowSinks.OwnerClass(asset.Class?.Name.Text);
+
+        foreach (var sink in sinks)
+        {
+            if (sink.Owner is not { } owner || owner == own) continue;
+            if (bindings.Any(binding => RowSinks.Binds(binding, sink.Property))) continue;
+
+            foreach (var tag in sink.Gates.Where(gate => !gate.StartsWith(RowSinks.PerGate, StringComparison.Ordinal))) foreign.Add(new ForeignRead(tag, owner, sink.Property));
+        }
+
+        foreach (var read in TagGatedReads.Of(asset))
+        {
+            if (read is not { Owner: { } owner, Property: { } property }) continue;
+            if (bindings.Any(binding => RowSinks.Binds(binding, property))) continue;
+
+            foreign.Add(new ForeignRead(read.Tag, owner, property));
+        }
+    }
+
+    private void Gate(
+        UObject? asset, SortedSet<string> tested, SortedSet<string> added, Dictionary<string, List<EffectModifier>> gated)
+    {
+        if (asset is null) return;
+
+        var tags = TagNames.Of(asset);
+        tested.UnionWith(tags.Named);
+        added.UnionWith(tags.Added.Where(TagNames.IsTalent));
+
+        foreach (var (tag, modifiers) in EffectModifiers.Gated(asset, _provider, _constants, _mappings))
+        {
+            if (!gated.TryGetValue(tag, out var under)) gated[tag] = under = [];
+
+            foreach (var modifier in modifiers)
+            {
+                if (!under.Contains(modifier)) under.Add(modifier);
+            }
+        }
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, double>>? GatedConstants(
+        IEnumerable<string> tested,
+        IReadOnlyList<CurveBinding> bindings,
+        IEnumerable<(string Prefix, string Tag)> declared,
+        IEnumerable<GatedRead> reads,
+        IReadOnlyDictionary<string, IReadOnlyList<CurveBinding>> effectBindings)
+    {
+        var gated = new Dictionary<string, SortedDictionary<string, double>>(StringComparer.Ordinal);
+        var read = new HashSet<CurveBinding>();
+
+        void Add(string tag, CurveBinding binding)
+        {
+            if (binding is not { Value: { } value, Values: null }) return;
+            if (!gated.TryGetValue(tag, out var rows)) gated[tag] = rows = new(StringComparer.Ordinal);
+
+            rows[binding.RowName] = value;
+            read.Add(binding);
+        }
+
+        foreach (var gate in reads)
+        {
+            if (!TagNames.IsTalent(gate.Tag)) continue;
+
+            if (gate.Property is { } property)
+            {
+                foreach (var binding in bindings)
+                {
+                    if (HeroNames.LastSegment(binding.Property).Equals(property, StringComparison.OrdinalIgnoreCase) ||
+                        binding.Property.Equals(property, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Add(gate.Tag, binding);
+                    }
+                }
+            }
+
+            if (gate.Effect is { } effect && effectBindings.TryGetValue(effect, out var applied))
+            {
+                foreach (var binding in applied) Add(gate.Tag, binding);
+            }
+        }
+
+        var talents = tested
+            .Where(tag => tag.StartsWith(TalentTagPrefix, StringComparison.Ordinal))
+            .Select(tag => (Tag: tag, Talent: HeroNames.LastSegment(tag)))
+            .OrderByDescending(entry => entry.Talent.Length)
+            .ToArray();
+
+        var prefixes = declared
+            .Where(gate => gate.Prefix.Length > MinimumGatePrefix)
+            .OrderByDescending(gate => gate.Prefix.Length)
+            .ToArray();
+
+        foreach (var binding in bindings)
+        {
+            if (read.Contains(binding)) continue;
+
+            var property = Normalized(binding.Property);
+
+            var tag = prefixes.FirstOrDefault(gate => property.StartsWith(gate.Prefix, StringComparison.Ordinal)).Tag
+                ?? talents.FirstOrDefault(entry =>
+                    property.Contains(entry.Talent, StringComparison.OrdinalIgnoreCase)).Tag;
+
+            if (tag is not null) Add(tag, binding);
+        }
+
+        return gated.Count == 0
+            ? null
+            : gated.ToDictionary(
+                entry => entry.Key,
+                entry => (IReadOnlyDictionary<string, double>)entry.Value,
+                StringComparer.Ordinal);
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<string>>? GatedAdds(
+        IEnumerable<GatedRead> reads, IReadOnlyDictionary<string, string[]> effectAdds)
+    {
+        var adds = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+
+        foreach (var gate in reads)
+        {
+            if (gate.Effect is not { } effect || !effectAdds.TryGetValue(effect, out var added) || added.Length == 0)
+            {
+                continue;
+            }
+
+            if (!adds.TryGetValue(gate.Tag, out var under)) adds[gate.Tag] = under = new(StringComparer.Ordinal);
+            under.UnionWith(added);
+        }
+
+        return adds.Count == 0
+            ? null
+            : adds.ToDictionary(
+                entry => entry.Key,
+                entry => (IReadOnlyList<string>)[.. entry.Value],
+                StringComparer.Ordinal);
+    }
+
+    private static IEnumerable<(string Prefix, string Tag)> DeclaredGates(UObject? asset)
+    {
+        if (asset is null) yield break;
+
+        foreach (var property in PropertyWalk.Walk(asset))
+        {
+            if (!property.Name.EndsWith(TagSuffix, StringComparison.Ordinal)) continue;
+            if (PropertyWalk.AsString(property.Value) is not { } tag) continue;
+            if (!TagNames.IsTalent(tag)) continue;
+
+            yield return (Normalized(property.Name[..^TagSuffix.Length]), tag);
+        }
+    }
+
+    private static string Normalized(string property) =>
+        property.Replace(" ", string.Empty).ToLowerInvariant();
+
+    private IReadOnlyDictionary<string, double>? Rows(IEnumerable<string> reached)
+    {
+        var rows = new SortedDictionary<string, double>(StringComparer.Ordinal);
+
+        foreach (var row in reached)
+        {
+            if (_constants.Lookup(row).Record is { Key: { } key, Value: { } value }) rows[key] = value;
+        }
+
+        return rows.Count == 0 ? null : rows;
     }
 
     private IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> Renamed(
@@ -1797,6 +2179,22 @@ public sealed class EntityResolver
         Talents = UnionTalents(outer.Talents, inner.Talents),
         TalentGates = Union(outer.TalentGates, inner.TalentGates),
         GrantedTags = Union(outer.GrantedTags, inner.GrantedTags),
+        DurationGates = Union(outer.DurationGates, inner.DurationGates),
+        Rows = Union(outer.Rows, inner.Rows),
+        TagRows = Union(outer.TagRows, inner.TagRows),
+        NamespaceRows = Union(outer.NamespaceRows, inner.NamespaceRows),
+        GatedAdds = Union(outer.GatedAdds, inner.GatedAdds),
+        TestedTags = Union(outer.TestedTags, inner.TestedTags),
+        AddedTags = Union(outer.AddedTags, inner.AddedTags),
+        GatedConstants = Union(outer.GatedConstants, inner.GatedConstants),
+        GatedModifiers = Union(outer.GatedModifiers, inner.GatedModifiers),
+        RowUses = UnionUses(outer.RowUses, inner.RowUses),
+        OwnRows = Union(outer.OwnRows, inner.OwnRows),
+        Replacements = Union(outer.Replacements, inner.Replacements),
+        CooldownTerms = outer.CooldownTerms ?? inner.CooldownTerms,
+        ForeignReads = outer.ForeignReads is null || inner.ForeignReads is null
+            ? outer.ForeignReads ?? inner.ForeignReads
+            : [.. outer.ForeignReads.Concat(inner.ForeignReads).Distinct()],
     };
 
     private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? UnionTalents(
@@ -1817,6 +2215,21 @@ public sealed class EntityResolver
                 }
                 merged[talent] = fields;
             }
+        }
+
+        return merged;
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<string>>? UnionUses(
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? first,
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? second)
+    {
+        if (first is null || second is null) return first ?? second;
+
+        var merged = new Dictionary<string, IReadOnlyList<string>>(first, StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, value) in second)
+        {
+            merged[key] = merged.TryGetValue(key, out var held) ? Union(held, value)! : value;
         }
 
         return merged;
@@ -2000,6 +2413,10 @@ public sealed class EntityResolver
         return named;
     }
 
+    private static IEnumerable<string> Spellings(string name) =>
+        new[] { name, name + "_C", name.EndsWith("_C", StringComparison.Ordinal) ? name[..^2] : name }
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
     private FAssetData? FindAsset(string name)
     {
         if (_byPrimaryAssetName.TryGetValue(name, out var primary)) return primary;
@@ -2059,6 +2476,13 @@ public sealed class EntityResolver
         }
     }
 
+    private UObject? LoadClassDefault(string classPath)
+    {
+        if (!_provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(classPath), out var package)) return null;
+
+        return package.GetExports().FirstOrDefault(e => e.Name.StartsWith("Default__", StringComparison.Ordinal));
+    }
+
     private UObject? LoadDefaultObject(FAssetData? asset)
     {
         if (asset is null) return null;
@@ -2074,6 +2498,14 @@ public sealed class EntityResolver
     }
 
     private static IReadOnlyList<T>? Empty<T>(IReadOnlyList<T> items) => items.Count == 0 ? null : items;
+
+    private static string ClassName(string path)
+    {
+        var name = path[(path.LastIndexOf('/') + 1)..];
+        var dot = name.IndexOf('.');
+
+        return dot < 0 ? name : name[..dot];
+    }
 
     private SortedDictionary<string, IReadOnlyList<double?>>? Ranked(IEnumerable<string> rows)
     {

@@ -56,6 +56,9 @@ internal static class DocumentFields
 
     public static IReadOnlyList<ResourceGain> List(EntityDocument document, string name) =>
         Property(document, name)?.GetValue(document) as IReadOnlyList<ResourceGain> ?? [];
+
+    public static IReadOnlyList<EntityReference> References(EntityDocument document, string name) =>
+        Property(document, name)?.GetValue(document) as IReadOnlyList<EntityReference> ?? [];
 }
 
 public static class FellowshipCodex

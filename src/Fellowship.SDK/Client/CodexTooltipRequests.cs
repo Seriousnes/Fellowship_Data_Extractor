@@ -55,6 +55,11 @@ public sealed record AbilityTooltipRequest
         "Each stat's magnitude, by the name the build gives the stat, to state a magnitude the tooltip " +
         "prints rather than computes.")]
     public IReadOnlyDictionary<string, StatRolls>? Stats { get; init; }
+
+    [Description(
+        "The talents and legendary powers whose changes the tooltip applies, each a type and an id, with the " +
+        "effects held while a change applies after a '~', such as talent:38~effect:1376.")]
+    public IReadOnlyList<ChangeSource>? ChangedBy { get; init; }
 }
 
 /// <summary>Tooltip for a glyph.</summary>
@@ -199,6 +204,11 @@ public sealed record EffectTooltipRequest
 
     [Description("Hero to resolve the id against. One id resolves to a different entity per hero.")]
     public string? Hero { get; init; }
+
+    [Description(
+        "The talents and legendary powers whose changes the tooltip applies, each a type and an id, with the " +
+        "effects held while a change applies after a '~', such as talent:38~effect:1376.")]
+    public IReadOnlyList<ChangeSource>? ChangedBy { get; init; }
 }
 
 /// <summary>Tooltip for a gem.</summary>

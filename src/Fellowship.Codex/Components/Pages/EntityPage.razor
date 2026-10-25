@@ -29,7 +29,7 @@
     <Crumbs Trail="@(new List<(string, string?)> { (PublicTypes.Label(type), Under), (Name, null) })" />
 
     <h1 class="cx-entity-name"
-        style="--cx-name:@Ui.NameColour(Entity);@(Rarity is null ? null : $"--cx-rarity:{Rarity};")color:var(--cx-rarity, var(--cx-name))">@Name</h1>
+        style="--cx-name:@Ui.NameColour(Entity);@(Rarity is null ? null : $"--cx-rarity:{Rarity};")color:var(--cx-rarity, var(--cx-name))"><span class="cx-entity-name-icon"><Texture Entity="Entity" Width="TooltipView.SlotWidth" /></span>@Name</h1>
 
     <CascadingValue Value="Here">
         <div class="cx-entity">

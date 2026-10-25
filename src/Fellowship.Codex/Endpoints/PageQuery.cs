@@ -51,6 +51,7 @@ public static class PageQuery
                 ?? (document is GlyphDocument ? QueryKeys.Key(ChromeAssetService.GlyphStateFor(1)) : null),
             RankSources = RankSources.Parse(Value(values, ReadingParameter.RankSources)),
             Difficulty = Number(values, ReadingParameter.Difficulty),
+            ChangedBy = TooltipRequests.ChangedBy(Value(values, ReadingParameter.ChangedBy), store, out _),
         };
     }
 

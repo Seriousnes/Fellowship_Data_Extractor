@@ -20,6 +20,8 @@
 .cx-entity ::deep .cx-craft-side:empty,
 .cx-entity-side:empty { display: none; }
 
+.cx-entity-name-icon { display: none; }
+
 @media (max-width: 860px) {
   .cx-entity { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
 
@@ -29,4 +31,14 @@
   .cx-entity ::deep .cx-entity-details { grid-column: 1; grid-row: auto; }
 
   .cx-entity ::deep .cx-entity-details { margin-top: 16px; }
+
+  .cx-entity-name { display: flex; align-items: center; gap: 12px; }
+
+  .cx-entity-name-icon { display: block; flex: 0 0 auto; }
+
+  .cx-entity ::deep .cx-craft-tip .fx-tip { width: 100%; }
+
+  .cx-entity ::deep .cx-craft-tip .fx-tip > .fx-slot { display: none; }
+
+  .cx-entity ::deep .cx-craft-tip .fx-tip > .card { flex: 1 1 auto; width: auto; }
 }
