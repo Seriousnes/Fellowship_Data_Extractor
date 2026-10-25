@@ -1,0 +1,24 @@
+@use "../../Styles/shared" as *;
+
+.cx-hero-picker { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+.cx-hero-picker-rule { width: 1px; align-self: stretch; background: var(--line); }
+
+.cx-hero-picker-faces { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.cx-hero-picker-face {
+  display: block; width: 44px; height: 44px; padding: 2px; box-sizing: border-box;
+  border-radius: 50%; background: var(--sunken); border: 2px solid var(--line);
+  filter: saturate(.55) brightness(.8);
+  transition: transform .12s ease, filter .12s ease;
+
+  img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+  &:hover { filter: none; transform: translateY(-2px); }
+  &:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+  &[aria-current] { filter: none; border-color: var(--cx-hero); box-shadow: 0 0 10px var(--cx-hero); }
+}
+
+@media (max-width: 599px) {
+  .cx-hero-picker-rule { display: none; }
+}

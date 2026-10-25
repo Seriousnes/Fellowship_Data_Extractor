@@ -4,9 +4,18 @@
 
 @include tool-bar;
 
-.cx-tree-roster a { padding: 4px 12px 4px 4px; }
+.cx-tree-slots { display: flex; gap: 8px; }
 
-.cx-tree-roster-icon { width: 24px; height: 24px; border-radius: 2px; flex: 0 0 auto; }
+.cx-tree-slot {
+  display: grid; place-items: center; width: 44px; height: 44px;
+  @include sunken;
+  border-radius: 2px;
+
+  img { width: 26px; height: 26px; }
+
+  &:hover { border-color: var(--gold-deep); }
+  &[aria-current] { background: var(--raised); border-color: var(--gold-bright); }
+}
 
 .cx-tree {
   position: relative; width: 100%; margin: 0 auto;

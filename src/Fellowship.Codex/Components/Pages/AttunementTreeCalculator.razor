@@ -14,16 +14,19 @@
 
 <h1>Attunement trees</h1>
 
-<Panel Head="Slot" Badge="@Roster">
-    <div class="cx-roster cx-tree-roster">
-        @foreach (var (slot, _) in Slots)
-        {
-            <a href="@Address(slot)" aria-current="@(slot.Equals(Chosen, StringComparison.OrdinalIgnoreCase) ? "page" : null)">
-                <img class="cx-tree-roster-icon" alt="" src="@Ui.Chrome.SlotGlyph(slot)" />
-                <span class="cx-who">@slot</span>
-            </a>
-        }
-    </div>
+<Panel>
+    @if (Chosen is { } chosen && Tree is { } picking)
+    {
+        <HeroPicker Heroes="@HeroNames" Current="@Plan.Hero?.Name"
+                    Href="@(name => Address(chosen, Plan with { Hero = Hero(name) }))"
+                    OnPick="@(name => Go(Wearing(picking, Hero(name)!), At))">
+            @SlotButtons
+        </HeroPicker>
+    }
+    else
+    {
+        @SlotButtons
+    }
 </Panel>
 
 @if (Chosen is not { } item || Tree is not { Layout: { } layout } tree)
@@ -34,35 +37,15 @@
 }
 else
 {
-    <Panel Head="Hero" Badge="@($"{Heroes.Count} heroes")">
-        <div class="cx-roster">
-            @foreach (var who in Heroes)
-            {
-                var mine = who;
-
-                <a href="@Address(item, Plan with { Hero = mine })" @onclick="() => Go(Wearing(tree, mine), At)" @onclick:preventDefault
-                   aria-current="@(mine.Id == Plan.Hero?.Id ? "page" : null)"
-                   style="color:@(Ui.HeroColour(Ui.Name(mine)) ?? "var(--muted)")">
-                    <span class="cx-pip" style="background:@(Ui.HeroSwatch(Ui.Name(mine)) ?? "var(--muted)")"></span>
-                    <span class="cx-who">@Ui.Name(mine)</span>
-                </a>
-            }
-        </div>
-    </Panel>
-
     <Panel Head="@($"{item} attunement tree")">
         <div class="cx-tal-bar">
-            <p class="cx-tal-spend">
-                <b>@Plan.Path.Count</b> of @Capacity augmentations infused
-            </p>
-
             @if (Plan.Assigned.Count == 0)
             {
                 <span class="cx-tal-act" aria-disabled="true">Reset</span>
             }
             else
             {
-                <button type="button" class="cx-tal-act" @onclick="() => Go(AttunementTreePlan.Empty, null)">Reset</button>
+                <button type="button" class="cx-tal-act" @onclick="() => Go(Plan with { Assigned = AttunementTreePlan.Empty.Assigned, Path = AttunementTreePlan.Empty.Path }, null)">Reset</button>
             }
 
             <button type="button" class="cx-tal-act" data-copy>Copy link</button>
@@ -124,7 +107,6 @@ else
                         OnPicked="picked => Go(Reread(tree, Plan with { Item = picked }), At)" />
         }
 
-        <Note>Choose your hero, your @item.ToLowerInvariant() and the augmentation it rolled into each node. Left click an open node to infuse it, and right click an infused node to remove it. On a touch screen, tap a node to infuse it, and the bar at the foot of the screen has its tooltip and a button to remove it. Each row takes one infusion, and a node opens once a node it follows is infused.</Note>
     </Panel>
 
     @if (Choosing is { } choosing)
@@ -223,10 +205,6 @@ else
     private IReadOnlyList<AugmentationDocument> Offered = [];
 
     private IReadOnlyList<HeroDocument> Heroes = [];
-
-    private string Roster => $"{Slots.Count} trees";
-
-    private int Capacity => AttunementTrees.Capacity(Tree?.Tag, Store.Settings) ?? 0;
 
     private (string? Slot, string? Picked)? Applied;
 
@@ -335,6 +313,22 @@ else
     private static double Widest(AttunementTreeLayout layout) =>
         layout.RootLayers.Count == 0 ? layout.Width : layout.RootLayers.Max(layer => layer.Width);
 
+    private RenderFragment SlotButtons =>
+        @<div class="cx-tree-slots" role="group" aria-label="Slot">
+            @foreach (var (slot, other) in Slots)
+            {
+                <a class="cx-tree-slot" href="@Address(slot, AttunementTreePlan.Empty with { Hero = Plan.Hero }, other)"
+                   aria-label="@slot" title="@slot"
+                   aria-current="@(slot.Equals(Chosen, StringComparison.OrdinalIgnoreCase) ? "page" : null)">
+                    <img alt="" src="@Ui.Chrome.SlotGlyph(slot)" />
+                </a>
+            }
+        </div>;
+
+    private IReadOnlyList<string> HeroNames => [.. Heroes.Select(hero => hero.Name!)];
+
+    private HeroDocument? Hero(string name) => Heroes.FirstOrDefault(hero => hero.Name == name);
+
     private AttunementTreePlan Reread(AttunementTreeEntry tree, AttunementTreePlan plan) =>
         AttunementTrees.Read(AttunementTrees.Write(tree, plan), tree, Store);
 
@@ -369,8 +363,8 @@ else
         AttunementTrees.Planned(
             tree, Plan.Hero, Plan.Item, new Dictionary<int, AugmentationDocument>(Plan.Assigned) { [node.UITreeIndex] = augmentation }, Plan.Path);
 
-    private string Address(string slot, AttunementTreePlan? plan = null) =>
-        plan is not null && Tree is { } tree && AttunementTrees.Write(tree, plan) is { Length: > 0 } code
+    private string Address(string slot, AttunementTreePlan? plan = null, AttunementTreeEntry? on = null) =>
+        plan is not null && (on ?? Tree) is { } tree && AttunementTrees.Write(tree, plan) is { Length: > 0 } code
             ? $"{Page}/{Uri.EscapeDataString(slot.ToLowerInvariant())}/{code}"
             : $"{Page}/{Uri.EscapeDataString(slot.ToLowerInvariant())}";
 }

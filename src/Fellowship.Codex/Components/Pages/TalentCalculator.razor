@@ -13,18 +13,9 @@
 
 <h1>Talent calculator</h1>
 
-<Panel Head="Hero" Badge="@Roster">
-    <div class="cx-roster">
-        @foreach (var who in Heroes)
-        {
-            <a href="@Address(who.Name, who.Name == Wearer?.Name ? TalentPlan.Write(Tree, Taken) : null)"
-               aria-current="@(who.Name == Wearer?.Name ? "page" : null)"
-               style="color:@(Ui.HeroColour(who.Name) ?? "var(--muted)")">
-                <span class="cx-pip" style="background:@(Ui.HeroSwatch(who.Name) ?? "var(--muted)")"></span>
-                <span class="cx-who">@who.Name</span>
-            </a>
-        }
-    </div>
+<Panel>
+    <HeroPicker Heroes="@HeroNames" Current="@Wearer?.Name"
+                Href="@(name => Address(name, name == Wearer?.Name ? TalentPlan.Write(Tree, Taken) : null))" />
 </Panel>
 
 @if (Wearer is not { } hero)
@@ -126,7 +117,7 @@ else
     private IReadOnlyList<HeroEntry> Heroes =>
         [.. Store.Settings.Heroes.OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase)];
 
-    private string Roster => $"{Store.Settings.Heroes.Count} heroes";
+    private IReadOnlyList<string> HeroNames => [.. Heroes.Select(who => who.Name)];
 
     private int Spent => TalentPlan.Spent(Tree, Taken);
 
