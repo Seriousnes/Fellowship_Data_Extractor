@@ -31,9 +31,10 @@ public static class CraftingOdds
         ];
     }
 
-    public static IReadOnlyList<CraftingCandidate> Pool(ModifierKind kind, string gearSlot, IEntityStoreService store) =>
+    public static IReadOnlyList<CraftingCandidate> Pool(
+        ModifierKind kind, string gearSlot, IEntityStoreService store, string? wearer = null) =>
     [
-        .. ItemCraft.Pool(kind.ToString(), store, null)
+        .. ItemCraft.Pool(kind.ToString(), store, wearer)
             .DistinctBy(document => document.Id)
             .Where(document => document is not GlyphDocument glyph ||
                                (glyph.Slots ?? []).Contains(gearSlot, StringComparer.OrdinalIgnoreCase))

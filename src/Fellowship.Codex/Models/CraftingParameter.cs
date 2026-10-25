@@ -6,4 +6,5 @@ public enum CraftingParameter
     GearSlot,
     ModifierSlot,
     Target,
+    Hero,
 }

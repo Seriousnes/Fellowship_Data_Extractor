@@ -37,6 +37,16 @@
             </select>
         </Knob>
 
+        <Knob Caption="Hero">
+            <select name="@QueryKeys.Key(CraftingParameter.Hero)">
+                <option value="">Any</option>
+                @foreach (var who in Store.Settings.Heroes.OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    <option value="@who.Name" selected="@(who.Name == Wearer)">@who.Name</option>
+                }
+            </select>
+        </Knob>
+
         <Knob Caption="Target">
             <select name="@QueryKeys.Key(CraftingParameter.Target)">
                 @foreach (var candidate in Pool)
@@ -142,6 +152,8 @@
 
     [SupplyParameterFromQuery(Name = nameof(CraftingParameter.Target))] public string? Wanted { get; set; }
 
+    [SupplyParameterFromQuery(Name = nameof(CraftingParameter.Hero))] public string? Hero { get; set; }
+
     private const string Page = "/tools/crafting";
 
     private const string Gold = "gold";
@@ -164,6 +176,8 @@
     private IReadOnlyList<CraftingCandidate> Pool = [];
 
     private CraftingCandidate? Target;
+
+    private string? Wearer;
 
     private IReadOnlyList<CraftingAttempt> Attempts = [];
 
@@ -190,7 +204,8 @@
         ModifierSlots = [.. TooltipView.Type(Kind, Store.Settings).Recipes.Select(reroll => reroll.SlotIndex).Distinct().Order()];
         ModifierSlot = Whole(Slot) is { } at && ModifierSlots.Contains(at - 1) ? at - 1 : ModifierSlots.FirstOrDefault();
 
-        Pool = CraftingOdds.Pool(Kind, GearSlot, Store);
+        Wearer = Store.Hero(Hero)?.Name;
+        Pool = CraftingOdds.Pool(Kind, GearSlot, Store, Wearer);
         Target = Pool.FirstOrDefault(candidate => candidate.Document.Id == Whole(Wanted)) ?? Pool.FirstOrDefault();
 
         Attempts = Target is { } target
