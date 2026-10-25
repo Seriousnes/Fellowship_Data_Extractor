@@ -2,7 +2,7 @@
     <span>@Caption</span>
     <div class="cx-slider-row">
         <input type="range" min="@Min" max="@Max" step="1" value="@Value" aria-label="@Caption"
-               data-knob="@Key" @onchange="Changed" />
+               data-knob="@QueryKeys.Key(Key)" @onchange="Changed" />
         <input type="number" min="@Min" max="@Max" step="1" value="@Value" inputmode="numeric"
                aria-label="@Caption" @onchange="Changed" />
     </div>
@@ -11,7 +11,7 @@
 @code {
     [Parameter, EditorRequired] public string Caption { get; set; } = string.Empty;
 
-    [Parameter, EditorRequired] public string Key { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public ReadingParameter Key { get; set; }
 
     [Parameter] public int Min { get; set; } = 1;
 

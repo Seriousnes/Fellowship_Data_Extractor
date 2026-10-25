@@ -6,10 +6,10 @@
         <Column Head="" Class="cx-texture">
             <Content Context="row"><Texture Entity="row" /></Content>
         </Column>
-        <Column Head="Name" Key="name">
+        <Column Head="Name" Key="SortingType.Name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column Head="Rank" Key="rank" Class="cx-tags">
+        <Column Head="Rank" Key="SortingType.Rank" Class="cx-tags">
             <Content Context="row">
                 @if (row.Rank is { } rank)
                 {
@@ -17,8 +17,8 @@
                 }
             </Content>
         </Column>
-        <Column Head="Health" Key="health" Numeric Value="row => row.Health" />
-        <Column Head="Location" Key="location" Class="cx-tags">
+        <Column Head="Health" Key="SortingType.Health" Numeric Value="row => row.Health" />
+        <Column Head="Location" Key="SortingType.Location" Class="cx-tags">
             <Content Context="row">
                 @foreach (var dungeon in row.FoundIn ?? [])
                 {

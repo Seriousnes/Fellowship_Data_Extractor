@@ -234,7 +234,7 @@ public static class ExportRun
         var folded = AdditionalAbilities.Fold(shared, resolver.Presentation);
         var powered = AugmentationPowers.Fold(folded.Entities);
 
-        var references = new DocumentProjection.References(
+        var unchanged = new DocumentProjection.References(
             (table, netId) => types.GetValueOrDefault((table, netId)),
             (type, id) => names.GetValueOrDefault((type, id)),
             folded.Redirects.Concat(powered.Redirects).ToDictionary(),
@@ -242,11 +242,33 @@ public static class ExportRun
 
         var roles = new EffectRoles(shared, resolver.Heroes.Codenames);
 
+        var modifiers = new ModifierIndex(shared, entity => roles.PartOf(entity.Name));
+        var changes = new ChangeIndex(shared, modifiers, unchanged);
+        var references = unchanged.With(changes);
+
         var marked = SpiritAbilityReferences.Mark(SlottedNames.Mark(powered.Entities, resolver.Owners.Slotted));
 
-        foreach (var record in marked)
+        var projected = marked
+            .Select(record => (Record: record, Document: DocumentProjection.From(record, references.For(record.PrimaryStat), roles)))
+            .ToArray();
+
+        var unreachable = Reachability.Unreachable(
+        [
+            .. projected.Select(pair => pair.Document),
+            .. projected.Select(pair => DocumentProjection.Implied(pair.Record)).OfType<Fellowship.SDK.Documents.EntityDocument>(),
+        ]);
+
+        Console.WriteLine(
+            $"  {unreachable.Count} creatures, abilities and effects no enabled source reaches: " +
+            string.Join(", ", unreachable.GroupBy(key => key.Type).Select(group => $"{group.Count()} {group.Key}")));
+
+        foreach (var (record, document) in projected)
         {
-            await target.WriteDocumentAsync(DocumentProjection.From(record, references.For(record.PrimaryStat), roles), default);
+            await target.WriteDocumentAsync(
+                unreachable.Contains((EntityTypes.TypeOf(document), document.Id))
+                    ? DocumentProjection.From(record with { EnabledInGame = false }, references.For(record.PrimaryStat), roles)
+                    : document,
+                default);
             written++;
 
             if (DocumentProjection.Implied(record) is { } implied)
@@ -276,6 +298,18 @@ public static class ExportRun
                 string.Join(", ", hero.SpiritAbilityReferences!
                     .Select(references.At)
                     .Select(reference => $"{reference?.Name} ({reference?.Type} {reference?.Id})")));
+        }
+        Console.WriteLine(
+            $"  {changes.Changes} changes from {changes.Sources} talents and legendary powers to {changes.Targets} " +
+            "abilities and effects");
+        foreach (var (reason, count) in changes.Unprojected().OrderByDescending(entry => entry.Value))
+        {
+            Console.WriteLine($"    {count} records not projected: {reason}");
+
+            if (changes.Ungranted.GetValueOrDefault(reason) is { } tags)
+            {
+                Console.WriteLine($"      {tags.Count} tags, such as {string.Join(", ", tags.Take(4))}");
+            }
         }
         Console.WriteLine($"  {resolver.Superseded} tag ids superseded by a later id for the same name");
         Console.WriteLine(

@@ -33,27 +33,31 @@ public static class PageQuery
         return StatQuery.Read(stats, store.Stats, out _) with
         {
             ShowIcon = true,
-            Hero = hero ?? StatQuery.NullIfEmpty(values.GetValueOrDefault("hero")),
-            Rarity = StatQuery.NullIfEmpty(values.GetValueOrDefault("rarity")),
-            ItemLevel = Number(values, "itemLevel"),
-            Upgrades = Number(values, "upgrades"),
-            MaxUpgrades = Number(values, "maxUpgrades"),
-            NoSocket = values.ContainsKey("noSocket"),
-            Gem = Number(values, "gem"),
-            AllocatedAttunements = Number(values, "allocatedAttunements"),
-            Modifiers = ItemModifiers.TryParse(values.GetValueOrDefault("modifiers"), out var modifiers)
+            Hero = hero ?? StatQuery.NullIfEmpty(Value(values, ReadingParameter.Hero)),
+            Rarity = StatQuery.NullIfEmpty(Value(values, ReadingParameter.Rarity)),
+            ItemLevel = Number(values, ReadingParameter.ItemLevel),
+            Upgrades = Number(values, ReadingParameter.Upgrades),
+            MaxUpgrades = Number(values, ReadingParameter.MaxUpgrades),
+            NoSocket = values.ContainsKey(QueryKeys.Key(ReadingParameter.NoSocket)),
+            Gem = Number(values, ReadingParameter.Gem),
+            AllocatedAttunements = Number(values, ReadingParameter.AllocatedAttunements),
+            Modifiers = ItemModifiers.TryParse(Value(values, ReadingParameter.Modifiers), out var modifiers)
                 ? modifiers.Values
                 : [],
-            Attunements = Attunements.TryParse(values.GetValueOrDefault("attunements"), out var attuned)
+            Attunements = Attunements.TryParse(Value(values, ReadingParameter.Attunements), out var attuned)
                 ? attuned.Values
                 : [],
-            State = StatQuery.NullIfEmpty(values.GetValueOrDefault("state"))
-                ?? (document is GlyphDocument ? ChromeAssetService.GlyphState(1) : null),
-            RankSources = RankSources.Parse(values.GetValueOrDefault("rankSources")),
-            Difficulty = Number(values, "difficulty"),
+            State = StatQuery.NullIfEmpty(Value(values, ReadingParameter.State))
+                ?? (document is GlyphDocument ? QueryKeys.Key(ChromeAssetService.GlyphStateFor(1)) : null),
+            RankSources = RankSources.Parse(Value(values, ReadingParameter.RankSources)),
+            Difficulty = Number(values, ReadingParameter.Difficulty),
+            ChangedBy = TooltipRequests.ChangedBy(Value(values, ReadingParameter.ChangedBy), store, out _),
         };
     }
 
-    private static int? Number(IReadOnlyDictionary<string, string> values, string key) =>
-        values.GetValueOrDefault(key) is { } value && int.TryParse(value, out var number) ? number : null;
+    private static string? Value(IReadOnlyDictionary<string, string> values, ReadingParameter parameter) =>
+        values.GetValueOrDefault(QueryKeys.Key(parameter));
+
+    private static int? Number(IReadOnlyDictionary<string, string> values, ReadingParameter parameter) =>
+        Value(values, parameter) is { } value && int.TryParse(value, out var number) ? number : null;
 }

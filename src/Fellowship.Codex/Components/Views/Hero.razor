@@ -140,8 +140,6 @@
 @code {
     [Parameter, EditorRequired] public HeroDocument Entity { get; set; } = default!;
 
-    private const string HeroFacet = "hero";
-
     private const string Uncategorised = "Other";
 
     private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Basics = [];
@@ -218,7 +216,7 @@
 
     private IReadOnlyList<EntityDocument> Owned(string name)
     {
-        if (Ui.Codex.Facet(HeroFacet) is not { } facet) return [];
+        var facet = Ui.Codex.Facet(FacetType.Hero);
 
         return
         [

@@ -86,18 +86,18 @@ else
 
                 if (!layout.Nodes.TryGetValue(mine.UITreeIndex, out var spot)) continue;
 
-                var state = Plan.Path.Contains(mine.UITreeIndex) ? Selected
-                    : AttunementTrees.Allocatable(tree, Plan, mine) ? Available
-                    : Unavailable;
+                var state = Plan.Path.Contains(mine.UITreeIndex) ? AttunementNodeState.Selected
+                    : AttunementTrees.Allocatable(tree, Plan, mine) ? AttunementNodeState.Available
+                    : AttunementNodeState.Unavailable;
 
                 var augmentation = Plan.Assigned.GetValueOrDefault(mine.UITreeIndex);
                 var tip = augmentation is null ? null : Ui.Tip(augmentation);
 
                 <button type="button" class="cx-tree-node" style="@Placed(layout, spot)"
-                        aria-current="@(At == mine.UITreeIndex ? "true" : null)" data-infused="@(state == Selected ? "true" : null)"
+                        aria-current="@(At == mine.UITreeIndex ? "true" : null)" data-infused="@(state is AttunementNodeState.Selected ? "true" : null)"
                         data-tip="@tip?.Address" data-tip-request="@tip?.Body" title="@(tip is null ? Offer(mine) : null)"
                         @onclick="() => Press(tree, mine)"
-                        @oncontextmenu="() => Remove(tree, mine)" @oncontextmenu:preventDefault="@(state == Selected)">@Face(mine, augmentation, state)</button>
+                        @oncontextmenu="() => Remove(tree, mine)" @oncontextmenu:preventDefault="@(state is AttunementNodeState.Selected)">@Face(mine, augmentation, state)</button>
             }
         </div>
 
@@ -183,12 +183,6 @@ else
 
     private const double Scale = 1.25;
 
-    private const string Selected = "selected";
-
-    private const string Available = "available";
-
-    private const string Unavailable = "unavailable";
-
     private static readonly IReadOnlyList<(string Label, string? Href)> Trail =
         [("Tools", null), ("Attunement trees", null)];
 
@@ -233,7 +227,7 @@ else
         Offered = Choosing is null ? [] : AttunementTrees.Offered(Choosing, Store, Plan.Hero?.Name);
     }
 
-    private RenderFragment Face(AttunementTreeNode node, AugmentationDocument? augmentation, string state) =>
+    private RenderFragment Face(AttunementTreeNode node, AugmentationDocument? augmentation, AttunementNodeState state) =>
         @<span class="cx-tree-face">
             <img class="cx-tree-frame" alt="" src="@Ui.Chrome.AttunementNode(state)" />
             @if (augmentation is not null && Ui.Icon(augmentation.Icon) is { } icon)
@@ -241,13 +235,13 @@ else
                 <span class="cx-tree-well"><img alt="" src="@icon" /></span>
             }
             <img class="cx-tree-tint" alt=""
-                 src="@Ui.Chrome.AttunementNodeColor(state == Unavailable ? [] : node.AugmentationCategories)" />
+                 src="@Ui.Chrome.AttunementNodeColor(state is AttunementNodeState.Unavailable ? [] : node.AugmentationCategories)" />
         </span>;
 
     private RenderFragment Choice(AttunementTreeNode node, AugmentationDocument augmentation) =>
         @<span class="cx-tree-option">
             <span class="cx-tree-face">
-                <img class="cx-tree-frame" alt="" src="@Ui.Chrome.AttunementNode(Selected)" />
+                <img class="cx-tree-frame" alt="" src="@Ui.Chrome.AttunementNode(AttunementNodeState.Selected)" />
                 @if (Ui.Icon(augmentation.Icon) is { } icon)
                 {
                     <span class="cx-tree-well"><img alt="" src="@icon" /></span>

@@ -14,6 +14,8 @@ public abstract record EntityRecord
     public required int Id { get; init; }
 
     public required string Name { get; init; }
+
+    public bool? EnabledInGame { get; init; }
 }
 
 public static class EntityRecords

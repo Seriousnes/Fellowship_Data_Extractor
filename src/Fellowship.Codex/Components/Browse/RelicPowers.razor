@@ -6,13 +6,13 @@
         <Column Head="" Class="cx-texture">
             <Content Context="row"><Texture Entity="row" /></Content>
         </Column>
-        <Column Head="Name" Key="name">
+        <Column Head="Name" Key="SortingType.Name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column Head="Cooldown" Key="cooldown" Unit="s" Numeric Value="row => row.Cooldown" />
-        <Column Head="Cast" Key="cast" Unit="s" Numeric Value="row => row.CastTime" />
-        <Column Head="Range" Key="range" Numeric Value="row => row.Range" />
-        <Column Head="Duration" Key="duration" Unit="s" Numeric Value="row => row.Duration" />
+        <Column Head="Cooldown" Key="MeasureType.Cooldown" Unit="s" Numeric Value="row => row.Cooldown" />
+        <Column Head="Cast" Key="MeasureType.Cast" Unit="s" Numeric Value="row => row.CastTime" />
+        <Column Head="Range" Key="MeasureType.Range" Numeric Value="row => row.Range" />
+        <Column Head="Duration" Key="MeasureType.Duration" Unit="s" Numeric Value="row => row.Duration" />
     </Columns>
 </Table>
 

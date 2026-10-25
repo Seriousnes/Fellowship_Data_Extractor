@@ -1,0 +1,132 @@
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+
+@if (Sources.Count > 0)
+{
+    <ul class="cx-changed">
+        @foreach (var source in Sources)
+        {
+            var mine = source;
+            var tip = Ui.Tip(mine.Document);
+            var colour = Ui.LinkColour(mine.Document);
+            var taken = Ticked.Contains(mine.Source);
+
+            <li @key="mine.Key">
+                <label class="cx-changed-row" title="@(mine.Usable ? null : Unprinted)">
+                    <input type="checkbox" data-knob="@QueryKeys.Key(ReadingParameter.ChangedBy)" value="@mine.Key"
+                           checked="@taken" disabled="@(!mine.Usable && !taken)"
+                           @onchange="ticked => Tick(mine.Source, ticked)" />
+                    <span class="cx-changed-name" style="@(colour is null ? null : $"color:{colour}")"
+                          data-tip="@tip.Address" data-tip-request="@tip.Body">@Ui.Name(mine.Document)</span>
+                </label>
+
+                @if (mine.Gates.Count > 0)
+                {
+                    <ul class="cx-changed-gates">
+                        @foreach (var gate in mine.Gates)
+                        {
+                            var held = gate;
+                            var gated = Ticked.Contains(held.Source);
+
+                            <li @key="held.Key">
+                                <label class="cx-changed-row cx-changed-gate"
+                                       title="@(held.Changes ? null : Unprinted)">
+                                    <input type="checkbox" data-knob="@QueryKeys.Key(ReadingParameter.ChangedBy)" value="@held.Key"
+                                           checked="@gated" disabled="@(!taken || (!held.Changes && !gated))"
+                                           @onchange="ticked => Tick(held.Source, ticked)" />
+                                    <span class="cx-changed-name">While @Effects(held.Effects) active@(held.OnTarget ? " on the target" : null)</span>
+                                </label>
+                            </li>
+                        }
+                    </ul>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private const string Unprinted = "The tooltip prints none of the values this changes.";
+
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+
+    [Parameter] public EventCallback<KnobTurn> OnTurn { get; set; }
+
+    private sealed record Gate(ChangeSource Source, IReadOnlyList<EntityDocument> Effects, bool OnTarget, bool Changes)
+    {
+        public string Key => Source.ToString();
+    }
+
+    private sealed record Choice(ChangeSource Source, EntityDocument Document, bool Changes, IReadOnlyList<Gate> Gates)
+    {
+        public string Key => Source.ToString();
+
+        public bool Usable => Changes || Gates.Any(gate => gate.Changes);
+    }
+
+    private IReadOnlyList<Choice> Sources = [];
+
+    private IReadOnlyList<ChangeSource> Ticked = [];
+
+    protected override void OnParametersSet()
+    {
+        Ticked = TooltipRequests.ChangedBy(
+            Here.Values.GetValueOrDefault(QueryKeys.Key(ReadingParameter.ChangedBy)), Store, out _);
+
+        Sources = Here.Entity is { } entity and (AbilityDocument or EffectDocument)
+            ? [.. AppliedChanges.Sources(entity, Store).Select(document => Choose(entity, document))]
+            : [];
+    }
+
+    private Choice Choose(EntityDocument entity, EntityDocument document)
+    {
+        var source = new ChangeSource(EntityTypes.TypeOf(document), document.Id);
+
+        return new Choice(
+            source,
+            document,
+            AppliedChanges.Changes(entity, document, null),
+            [.. AppliedChanges.Gates(document, entity).Select(held => new Gate(
+                source with { While = held.Effects },
+                [.. held.Effects.SelectMany(effect => Store.All(EntityType.Effect, effect).Take(1))],
+                held.OnTarget,
+                AppliedChanges.Changes(entity, document, held.Effects)))]);
+    }
+
+    private RenderFragment Effects(IReadOnlyList<EntityDocument> effects) => __builder =>
+    {
+        for (var at = 0; at < effects.Count; at++)
+        {
+            var named = effects[at];
+            var link = Ui.Tip(named);
+            var hue = Ui.LinkColour(named);
+
+            if (at > 0)
+            {
+                @(at == effects.Count - 1 ? " and " : ", ")
+            }
+
+            <span class="cx-changed-effect" style="@(hue is null ? null : $"color:{hue}")"
+                  data-tip="@link.Address" data-tip-request="@link.Body">@Ui.Name(named)</span>
+        }
+
+        @(effects.Count == 1 ? " is" : " are")
+    };
+
+    private Task Tick(ChangeSource source, ChangeEventArgs ticked)
+    {
+        var on = ticked.Value is true;
+
+        bool Chosen(ChangeSource listed) => listed == source ? on : Ticked.Contains(listed);
+
+        var chosen = Sources.SelectMany(choice =>
+            Chosen(choice.Source)
+                ? choice.Gates.Select(gate => gate.Source).Where(Chosen).Prepend(choice.Source)
+                : []);
+
+        var value = string.Join(',', chosen);
+
+        return OnTurn.InvokeAsync(new KnobTurn(ReadingParameter.ChangedBy, value.Length == 0 ? null : value));
+    }
+}

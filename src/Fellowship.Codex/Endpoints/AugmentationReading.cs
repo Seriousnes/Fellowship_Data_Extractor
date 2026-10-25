@@ -7,15 +7,13 @@ using Fellowship.Codex.Models;
 namespace Fellowship.Codex.Endpoints;
 
 [AttributeUsage(AttributeTargets.Property)]
-public sealed class ReadsAttribute(string measure) : Attribute
+public sealed class ReadsAttribute(MeasureType measure) : Attribute
 {
-    public string Measure => measure;
+    public MeasureType Measure => measure;
 }
 
 public static class AugmentationReading
 {
-    public const string RankMeasure = "rank";
-
     public const string ItemLevel =
         "The item level of each item carrying the enchant. It sets the ranks each rank source adds and the " +
         "stats the enchant grants. Defaults to the highest item level. Either of itemLevel and rankSources " +
@@ -39,7 +37,7 @@ public sealed record AugmentationRecordRequest
     [Description("The id.")]
     public int Id { get; init; }
 
-    [Reads(AugmentationReading.RankMeasure)]
+    [Reads(MeasureType.Rank)]
     [Description(AugmentationReading.RankSources)]
     public string? RankSources { get; init; }
 
@@ -48,7 +46,7 @@ public sealed record AugmentationRecordRequest
 
 public sealed record AugmentationListRequest : RecordListRequest
 {
-    [Reads(AugmentationReading.RankMeasure)]
+    [Reads(MeasureType.Rank)]
     [Description(AugmentationReading.RankSources)]
     public string? RankSources { get; init; }
 

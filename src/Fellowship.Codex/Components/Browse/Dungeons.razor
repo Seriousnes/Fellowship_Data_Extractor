@@ -6,11 +6,11 @@
         <Column Head="" Class="cx-banner">
             <Content Context="row"><Texture Entity="row" /></Content>
         </Column>
-        <Column Head="Name" Key="name">
+        <Column Head="Name" Key="SortingType.Name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column Head="Qualifier" Key="qualifier" Numeric Unit="s" Value="row => row.QualifierTime" />
-        <Column Head="Required score" Key="score" Numeric Value="row => row.RequiredScore" />
+        <Column Head="Qualifier" Key="SortingType.Qualifier" Numeric Unit="s" Value="row => row.QualifierTime" />
+        <Column Head="Required score" Key="SortingType.Score" Numeric Value="row => row.RequiredScore" />
         <Column Head="Creatures" Numeric Value="row => Dwelling(row)" />
     </Columns>
 </Table>

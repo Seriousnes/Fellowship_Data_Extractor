@@ -13,10 +13,10 @@ public sealed partial class TooltipProse(IFragmentService fragments, IEntityStor
     {
         var tooltip = await fragments.Render<Components.Tooltip.Tooltip>(new()
         {
-            ["Entity"] = document,
-            ["Query"] = query,
-            ["Hero"] = store.Hero(query.Hero),
-            ["Origin"] = string.Empty,
+            [nameof(Components.Tooltip.Tooltip.Entity)] = document,
+            [nameof(Components.Tooltip.Tooltip.Query)] = query,
+            [nameof(Components.Tooltip.Tooltip.Hero)] = store.Hero(query.Hero),
+            [nameof(Components.Tooltip.Tooltip.Origin)] = string.Empty,
         });
 
         var lines = new List<CardLine>();

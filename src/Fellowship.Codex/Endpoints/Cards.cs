@@ -14,14 +14,12 @@ public static class Cards
 
     private const string Version = "v";
 
-    private const string Hero = "hero";
-
     public static string Address(ICodexViewService ui, EntityDocument document, string? search, string? hero, string build)
     {
         var query = new Dictionary<string, StringValues>(QueryHelpers.ParseQuery(search), StringComparer.OrdinalIgnoreCase);
 
-        query.Remove(Hero);
-        if (hero is not null) query[Hero] = hero;
+        query.Remove(QueryKeys.Key(ReadingParameter.Hero));
+        if (hero is not null) query[QueryKeys.Key(ReadingParameter.Hero)] = hero;
         query[Version] = build;
 
         return QueryHelpers.AddQueryString($"/{Prefix}{ui.Path(document)}.png", query);
@@ -54,7 +52,7 @@ public static class Cards
         var raw = QueryHelpers.ParseQuery(http.Request.QueryString.Value);
         raw.Remove(Version);
 
-        var hero = raw.TryGetValue(Hero, out var given) ? StatQuery.NullIfEmpty(given.FirstOrDefault()) : null;
+        var hero = raw.TryGetValue(QueryKeys.Key(ReadingParameter.Hero), out var given) ? StatQuery.NullIfEmpty(given.FirstOrDefault()) : null;
         var wearer = store.Hero(hero);
 
         var document = (wearer is null ? null : readings.FirstOrDefault(reading => EntityStore.Reads(reading, wearer)))

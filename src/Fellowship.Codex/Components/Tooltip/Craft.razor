@@ -18,6 +18,8 @@
             <div class="cx-craft-tip" aria-live="polite" @ref="layer">
                 <Tooltip Entity="Entity" Query="Current" Hero="Wearer" />
 
+                <ChangedBy OnTurn="Turn" />
+
                 <div class="cx-craft-hits">
                     @foreach (var slot in Editable)
                     {
@@ -123,7 +125,7 @@
         var type = EntityTypes.TryParse(Slug, out var parsed) ? parsed : (EntityType?)null;
         var readings = type is { } entityType ? Store.All(entityType, Id) : [];
 
-        Entity = Store.Hero(Hero ?? values.GetValueOrDefault("hero")) is { } wearer
+        Entity = Store.Hero(Hero ?? values.GetValueOrDefault(QueryKeys.Key(ReadingParameter.Hero))) is { } wearer
             ? readings.FirstOrDefault(reading => EntityStore.Reads(reading, wearer)) ?? readings.FirstOrDefault()
             : readings.FirstOrDefault();
 
@@ -177,12 +179,12 @@
 
         var (key, value) = slot.SlotName switch
         {
-            CraftSlots.GemSocket => ("gem", candidate.Id.ToString(CultureInfo.InvariantCulture)),
+            CraftSlots.GemSocket => (ReadingParameter.Gem, candidate.Id.ToString(CultureInfo.InvariantCulture)),
 
-            CraftSlots.AttunementTree => ("attunements", string.Join(
+            CraftSlots.AttunementTree => (ReadingParameter.Attunements, string.Join(
                 ',', query.Attunements.Select(attuned => $"{attuned.Id}:{attuned.Rank}"))),
 
-            _ => ("modifiers", string.Join(
+            _ => (ReadingParameter.Modifiers, string.Join(
                 ',',
                 query.Modifiers.Select(modifier =>
                     $"{modifier.Kind.ToString().ToLowerInvariant()}:{modifier.Id}:{modifier.Amount}"))),
@@ -212,9 +214,10 @@
         }
     }
 
-    public string Href(string key, string? value)
+    public string Href(ReadingParameter parameter, string? value)
     {
         var parameters = new Dictionary<string, StringValues>(raw, StringComparer.OrdinalIgnoreCase);
+        var key = QueryKeys.Key(parameter);
 
         if (string.IsNullOrEmpty(value)) parameters.Remove(key); else parameters[key] = value;
 
@@ -305,21 +308,21 @@
     {
         var parameters = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
         {
-            ["hero"] = values.GetValueOrDefault("hero") ?? default,
-            ["rarity"] = query.Rarity ?? default,
-            ["itemLevel"] = Text(query.ItemLevel),
-            ["upgrades"] = Text(query.Upgrades),
-            ["maxUpgrades"] = Text(query.MaxUpgrades),
-            ["noSocket"] = query.NoSocket ? "true" : default,
-            ["gem"] = Text(query.Gem),
-            ["potentialPower"] = Text(query.PotentialPower),
-            ["armor"] = Text(query.Armor),
-            ["allocatedAttunements"] = Text(query.AllocatedAttunements),
-            ["modifiers"] = Empty(string.Join(
+            [QueryKeys.Key(ReadingParameter.Hero)] = values.GetValueOrDefault(QueryKeys.Key(ReadingParameter.Hero)) ?? default,
+            [QueryKeys.Key(ReadingParameter.Rarity)] = query.Rarity ?? default,
+            [QueryKeys.Key(ReadingParameter.ItemLevel)] = Text(query.ItemLevel),
+            [QueryKeys.Key(ReadingParameter.Upgrades)] = Text(query.Upgrades),
+            [QueryKeys.Key(ReadingParameter.MaxUpgrades)] = Text(query.MaxUpgrades),
+            [QueryKeys.Key(ReadingParameter.NoSocket)] = query.NoSocket ? "true" : default,
+            [QueryKeys.Key(ReadingParameter.Gem)] = Text(query.Gem),
+            [QueryKeys.Key(ReadingParameter.PotentialPower)] = Text(query.PotentialPower),
+            [QueryKeys.Key(ReadingParameter.Armor)] = Text(query.Armor),
+            [QueryKeys.Key(ReadingParameter.AllocatedAttunements)] = Text(query.AllocatedAttunements),
+            [QueryKeys.Key(ReadingParameter.Modifiers)] = Empty(string.Join(
                 ',',
                 query.Modifiers.Select(modifier =>
                     $"{modifier.Kind.ToString().ToLowerInvariant()}:{modifier.Id}:{modifier.Amount}"))),
-            ["attunements"] = Empty(string.Join(
+            [QueryKeys.Key(ReadingParameter.Attunements)] = Empty(string.Join(
                 ',', query.Attunements.Select(attuned => $"{attuned.Id}:{attuned.Rank}"))),
         };
 

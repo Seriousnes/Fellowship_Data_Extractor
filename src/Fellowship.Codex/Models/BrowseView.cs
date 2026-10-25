@@ -10,20 +10,22 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
 
     public CodexResults Results => results;
 
-    public string Toggle(string facet, string value) =>
-        where + query.ToQueryString(toggle: (facet, value));
+    public string Toggle(FacetType facet, string value) => where + query.Toggled(facet, value).ToQueryString();
 
-    public string Replace(string key, string? value) =>
-        where + query.ToQueryString(replace: (key, value));
+    public string Choose(FacetType facet, string? value) => where + query.WithFacet(facet, value).ToQueryString();
+
+    public string State(FlagType flag, bool? wanted) => where + query.WithFlag(flag, wanted).ToQueryString();
+
+    public string OfType(EntityType? type) => where + query.WithType(type).ToQueryString();
+
+    public string GroupBy(FacetType? group) => where + query.WithGroup(group).ToQueryString();
 
     public string PageLink(int page) => where + query.ToQueryString(page: page);
 
-    public string SortLink(string column) =>
-        query.Sort == column && !query.Descending
-            ? where + query.ToQueryString(replace: ("dir", "desc"))
-            : where + (query with { Descending = false }).ToQueryString(replace: ("sort", column));
+    public string SortLink(SortColumn column) =>
+        where + query.WithSort(column, descending: query.Sort == column && !query.Descending).ToQueryString();
 
-    public string? SortState(string column) =>
+    public string? SortState(SortColumn column) =>
         query.Sort != column ? null : query.Descending ? "descending" : "ascending";
 
     public string Where => where;
@@ -31,53 +33,40 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
     public string Bare =>
         query.Text is null ? where : where + "?q=" + Uri.EscapeDataString(query.Text);
 
-    public IReadOnlyList<FacetView> Rail =>
+    public IReadOnlyList<FacetCount> Rail =>
     [
-        .. results.Facets.Where(facet => facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Key)),
+        .. results.Facets.Where(facet => facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Type)),
     ];
 
-    public IReadOnlyList<FacetView> Primary => [.. Rail.Where(facet => codex.Facet(facet.Key)?.Primary == true)];
+    public IReadOnlyList<FacetCount> Primary => [.. Rail.Where(facet => facet.Facet.Primary)];
 
-    public IReadOnlyList<FacetView> More => [.. Rail.Where(facet => codex.Facet(facet.Key)?.Primary != true)];
+    public IReadOnlyList<FacetCount> More => [.. Rail.Where(facet => !facet.Facet.Primary)];
 
     public IReadOnlyList<Flag> Flags => [.. Offered.Where(flag => !flag.Hides)];
 
     public IReadOnlyList<Flag> Reveals => [.. Offered.Where(flag => flag.Hides)];
 
     private IEnumerable<Flag> Offered =>
-        codex.Flags.Where(flag =>
-            query.Flags.ContainsKey(flag.Key) ||
-            results.Flagged.Contains(flag.Key, StringComparer.OrdinalIgnoreCase));
+        codex.Flags.Where(flag => query.Flags.ContainsKey(flag.Type) || results.Flagged.Contains(flag.Type));
 
-    public bool Revealed(string flag) => query.Flags.GetValueOrDefault(flag);
+    public bool Revealed(FlagType flag) => query.Flags.GetValueOrDefault(flag);
 
-    public bool Selected(string facet) =>
+    public bool Selected(FacetType facet) =>
         query.Selections.TryGetValue(facet, out var values) && values.Count > 0;
 
-    public bool Stated(string flag) => query.Flags.ContainsKey(flag);
+    public bool Stated(FlagType flag) => query.Flags.ContainsKey(flag);
 
-    public bool Bounded(string measure) => query.Ranges.ContainsKey(measure);
+    public bool Bounded(MeasureType measure) => query.Ranges.ContainsKey(measure);
 
-    public bool? Answer(string flag) =>
+    public bool? Answer(FlagType flag) =>
         query.Flags.TryGetValue(flag, out var wanted) ? wanted : null;
 
-    public string Unbound(string measure)
-    {
-        var without = query with
-        {
-            Ranges = query.Ranges
-                .Where(r => !string.Equals(r.Key, measure, StringComparison.OrdinalIgnoreCase))
-                .ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase),
-        };
-
-        return where + without.ToQueryString(page: 1);
-    }
+    public string Unbound(MeasureType measure) => where + query.WithoutRange(measure).ToQueryString();
 
     public IReadOnlyList<Measure> Ranges =>
     [
         .. codex.Measures.Where(measure =>
-            query.Ranges.ContainsKey(measure.Key) ||
-            results.Measured.Contains(measure.Key, StringComparer.OrdinalIgnoreCase)),
+            query.Ranges.ContainsKey(measure.Type) || results.Measured.Contains(measure.Type)),
     ];
 
     public static string? On(bool chosen) => chosen ? "on" : null;
@@ -107,13 +96,12 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
 
             foreach (var type in query.Types)
             {
-                var slug = EntityTypes.Slug(type);
-                chips.Add((Models.FellowshipCodex.Label(type), where + query.ToQueryString(toggle: ("type", slug))));
+                chips.Add((Models.FellowshipCodex.Label(type), where + query.Toggled(type).ToQueryString()));
             }
 
             foreach (var (key, values) in query.Selections)
             {
-                if (codex.Facet(key) is not { } facet) continue;
+                var facet = codex.Facet(key);
 
                 foreach (var value in values)
                 {
@@ -123,14 +111,14 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
 
             foreach (var (key, wanted) in query.Flags)
             {
-                if (codex.Flag(key) is not { } flag || (flag.Hides && !wanted)) continue;
-                chips.Add(((wanted ? string.Empty : "Not: ") + flag.Label,
-                    where + query.ToQueryString(replace: (key, null))));
+                var flag = codex.Flag(key);
+                if (flag.Hides && !wanted) continue;
+                chips.Add(((wanted ? string.Empty : "Not: ") + flag.Label, State(key, null)));
             }
 
             foreach (var (key, range) in query.Ranges)
             {
-                if (codex.Measure(key) is not { } measure) continue;
+                var measure = codex.Measure(key);
 
                 var bounds = range switch
                 {

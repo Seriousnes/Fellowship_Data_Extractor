@@ -27,7 +27,7 @@ public sealed class EntityDocumentJsonTests
     private static IReadOnlyList<(EntityType Type, string Line, EntityDocument Document)> Rows => Loaded.Value;
 
     [Fact]
-    public void EveryLineOfTheExportDeserialises() => Assert.Equal(13_208, Rows.Count);
+    public void EveryLineOfTheExportDeserialises() => Assert.Equal(13_224, Rows.Count);
 
     [Fact]
     public void ADocumentsRuntimeClassIsTheDocumentOfItsTypeField() =>

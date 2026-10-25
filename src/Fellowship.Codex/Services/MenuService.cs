@@ -88,7 +88,7 @@ public sealed class MenuService : IMenuService
     [
         .. Enum.GetValues<ArmorType>().Select(worn =>
         {
-            var narrowed = Link(where, "kind", worn.ToString());
+            var narrowed = Link(where, FacetType.Kind, worn.ToString());
 
             return new MenuLink(
                 FellowshipCodex.Spaced(worn.ToString()), narrowed, null,
@@ -97,45 +97,35 @@ public sealed class MenuService : IMenuService
     ];
 
     private static IReadOnlyList<MenuLink> Accessories(string where) =>
-        [.. CodexService.SlotWords.Select(slot => Narrow(where, "kind", slot, null))];
+        [.. CodexService.SlotWords.Select(slot => Narrow(where, FacetType.Kind, slot, null))];
 
     private IReadOnlyList<MenuLink> Weapons(string where) =>
-        [.. Roster.Select(who => Narrow(where, "kind", who, Colour(tokens.Hero(who))))];
+        [.. Roster.Select(who => Narrow(where, FacetType.Kind, who, Colour(tokens.Hero(who))))];
 
     private IReadOnlyList<MenuLink> Heroes(string where) =>
-        [.. Roster.Select(who => Narrow(where, "hero", who, Colour(tokens.Hero(who))))];
+        [.. Roster.Select(who => Narrow(where, FacetType.Hero, who, Colour(tokens.Hero(who))))];
 
     private IReadOnlyList<MenuLink> Worn(string where) =>
     [
         .. store.Settings.StatCalculation.SlotWeights.Keys
             .Where(slot => !CodexService.SlotWords.Contains(slot, StringComparer.OrdinalIgnoreCase))
             .Where(slot => !string.Equals(slot, CodexService.WeaponSlot, StringComparison.OrdinalIgnoreCase))
-            .Select(slot => Narrow(where, "slot", slot, null)),
+            .Select(slot => Narrow(where, FacetType.Slot, slot, null)),
     ];
 
     private IReadOnlyList<MenuLink> Stones(string where) =>
     [
         .. Enum.GetValues<GemType>()
-            .Select(cut => Narrow(where, "gem", cut.ToString(), Colour(tokens.Gem(cut.ToString())))),
+            .Select(cut => Narrow(where, FacetType.Gem, cut.ToString(), Colour(tokens.Gem(cut.ToString())))),
     ];
 
     private IReadOnlyList<MenuLink> Zones(string where) =>
-        [.. Named("source", EntityType.Creature).Select(zone => Narrow(where, "source", zone, null))];
+        [.. Named(FacetType.Source, EntityType.Creature).Select(zone => Narrow(where, FacetType.Source, zone, null))];
 
-    private IEnumerable<string> Named(string key, EntityType type)
-    {
-        if (codex.Facet(key) is not { } facet)
-        {
-            throw new InvalidOperationException(
-                $"The menu lists {PublicTypes.Label(type)} by '{key}', and that names no facet, so the rail could " +
-                $"not filter by what the menu offers. The facets are " +
-                $"{string.Join(", ", codex.Facets.Select(one => one.Key))}.");
-        }
-
-        return codex.View(facet, codex.Of(type)).Values
+    private IEnumerable<string> Named(FacetType facet, EntityType type) =>
+        codex.Tally(codex.Facet(facet), codex.Of(type)).Values
             .Select(value => value.Value)
             .OrderBy(value => value, StringComparer.OrdinalIgnoreCase);
-    }
 
     private static MenuLink Category(Category category, params MenuSection[] sections) =>
         new(category.Label, $"/{category.Slug}", sections);
@@ -144,11 +134,11 @@ public sealed class MenuService : IMenuService
         new(PublicTypes.Label(type), Where(type), sections);
 
     private static MenuLink Narrow(
-        string where, string key, string value, string? colour, params MenuSection[] sections) =>
-        new(FellowshipCodex.Spaced(value), Link(where, key, value), colour, sections);
+        string where, FacetType facet, string value, string? colour, params MenuSection[] sections) =>
+        new(FellowshipCodex.Spaced(value), Link(where, facet, value), colour, sections);
 
-    private static string Link(string where, string key, string value) =>
-        $"{where}{(where.Contains('?', StringComparison.Ordinal) ? '&' : '?')}{key}={Uri.EscapeDataString(value)}";
+    private static string Link(string where, FacetType facet, string value) =>
+        $"{where}{(where.Contains('?', StringComparison.Ordinal) ? '&' : '?')}{QueryKeys.Key(facet)}={Uri.EscapeDataString(value)}";
 
     private static string Where(EntityType type) => PublicTypes.Where(type);
 

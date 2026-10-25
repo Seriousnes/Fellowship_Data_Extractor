@@ -38,6 +38,8 @@ public sealed class FolderTarget(string output, string build) : IExportTarget
         var image = Path.Combine(output, ExportLayout.UiFolder, name);
         Directory.CreateDirectory(Path.GetDirectoryName(image)!);
 
+        if (File.Exists(image) && (await File.ReadAllBytesAsync(image, cancellationToken)).AsSpan().SequenceEqual(content)) return;
+
         await File.WriteAllBytesAsync(image, content, cancellationToken);
     }
 

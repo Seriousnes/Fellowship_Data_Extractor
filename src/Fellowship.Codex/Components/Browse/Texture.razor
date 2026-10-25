@@ -2,7 +2,7 @@
 
 @if (Entity is GlyphDocument glyph)
 {
-    <GlyphCrest Entity="glyph" Width="SlotWidth" />
+    <GlyphCrest Entity="glyph" Width="Width" />
 }
 else if (Entity is DungeonDocument dungeon)
 {
@@ -11,11 +11,11 @@ else if (Entity is DungeonDocument dungeon)
 else
 {
     <Icon Src="@Ui.Icon(DocumentFields.Text(Entity, nameof(ItemDocument.Icon)))"
-          Rarity="@Ui.RarityName(Entity)" Width="SlotWidth" />
+          Rarity="@Ui.RarityName(Entity)" Width="Width" />
 }
 
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
-    private const int SlotWidth = 34;
+    [Parameter] public int Width { get; set; } = 34;
 }

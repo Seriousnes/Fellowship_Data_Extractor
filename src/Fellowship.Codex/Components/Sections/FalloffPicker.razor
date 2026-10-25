@@ -55,12 +55,6 @@
 
     [Parameter] public int? Id { get; set; }
 
-    public const string AbilityKey = "ability";
-
-    public const string TalentKey = "talent";
-
-    public const string Entry = "entry";
-
     private IReadOnlyList<FalloffSource> offered = [];
     private IReadOnlyList<FalloffSource> shown = [];
 
@@ -88,9 +82,9 @@
     private string Href(FalloffSource source) =>
         Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
-            [AbilityKey] = source.Type == EntityType.Ability ? source.Document.Id : null,
-            [TalentKey] = source.Type == EntityType.Talent ? source.Document.Id : null,
-            [Entry] = null,
+            [QueryKeys.Key(FalloffParameter.Ability)] = source.Type == EntityType.Ability ? source.Document.Id : null,
+            [QueryKeys.Key(FalloffParameter.Talent)] = source.Type == EntityType.Talent ? source.Document.Id : null,
+            [QueryKeys.Key(FalloffParameter.Entry)] = null,
         });
 
     protected override void OnInitialized() => offered = DamageFalloff.Sources(Store);

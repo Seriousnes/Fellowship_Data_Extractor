@@ -14,9 +14,14 @@ public static class DocumentProjection
         NameLookup names,
         IReadOnlyDictionary<(EntityType Type, int Id), int>? redirects = null,
         IReadOnlyDictionary<(EntityType Type, int Id, string Stat), string>? namesByStat = null,
-        string? stat = null)
+        string? stat = null,
+        ChangeIndex? changes = null)
     {
-        public References For(string? primaryStat) => new(types, names, redirects, namesByStat, primaryStat);
+        public ChangeIndex Changes { get; } = changes ?? ChangeIndex.None;
+
+        public References For(string? primaryStat) => new(types, names, redirects, namesByStat, primaryStat, Changes);
+
+        public References With(ChangeIndex index) => new(types, names, redirects, namesByStat, stat, index);
 
         public EntityReference? At(IconSource? source) =>
             source is null || types(source.Table, source.NetId) is not { } type
@@ -80,12 +85,14 @@ public static class DocumentProjection
             Schools = Schools(entity.Tags),
             Heroes = Owning(entity),
             Owner = references.At(entity.Owner),
+            ChangedBy = references.Changes.ChangedBy(entity, references),
         },
 
         EntityType.Item => new ItemDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             ArmorType = entity.ArmorType is { } armor ? Enum.Parse<ArmorType>(armor) : null,
             PrimaryStat = entity.PrimaryStat is { } stat ? Enum.Parse<PrimaryStat>(stat) : null,
             Hero = entity.Heroes is { Count: 1 } only ? Enum.Parse<Hero>(only[0]) : null,
@@ -93,7 +100,6 @@ public static class DocumentProjection
             Slot = entity.Slot,
             GemSlot = entity.GemSlot,
             UniqueEquipped = entity.UniqueEquipped,
-            EnabledInGame = entity.EnabledInGame,
 
             Rarity = Enum.TryParse<Rarity>(entity.RuleSet, out var fixedRarity)
                 ? fixedRarity
@@ -121,6 +127,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Type = Enum.Parse<GemType>(entity.GemType!),
             Power = entity.GemPower!.Value,
 
@@ -133,6 +140,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Hero = Enum.Parse<Hero>(entity.Heroes!.Single()),
             Row = entity.TalentRow!.Value,
             Column = entity.TalentColumn!.Value,
@@ -145,6 +153,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             PrimaryStat = Stat(entity),
             EffectTags = entity.EffectTags,
@@ -171,12 +180,14 @@ public static class DocumentProjection
             AppliedBy = references.At(entity.AppliedBy),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
             Role = roles.Role(entity.Name),
+            ChangedBy = references.Changes.ChangedBy(entity, references),
         },
 
         EntityType.Creature => new CreatureDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Icon = entity.Icon,
             Rank = entity.Rank,
             Health = entity.Health,
@@ -198,6 +209,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Icon = entity.Icon,
             Background = entity.Background,
@@ -231,6 +243,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Icon = entity.Icon,
@@ -243,6 +256,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Title = entity.HeroTitle,
             MainStat = entity.PrimaryStat is { } mainStat ? Enum.Parse<PrimaryStat>(mainStat) : null,
             Color = entity.HeroColor,
@@ -264,6 +278,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Lore = entity.Lore,
             Icon = entity.Icon,
@@ -275,6 +290,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Rarity = entity.RarityTier is { } currencyTier ? (Rarity)currencyTier : null,
             Description = entity.Description,
             Icon = entity.Icon,
@@ -284,6 +300,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Acquire = entity.Acquire,
             Icon = entity.Icon,
@@ -293,6 +310,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Icon = entity.Icon,
             Grants = Referenced(entity.Granted, references),
@@ -303,6 +321,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Type = Enum.Parse<GemType>(entity.GemType!),
             Attribute = entity.GemAttribute!,
             Icon = entity.GemOverflow?.Icon,
@@ -314,6 +333,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Gem = Enum.Parse<GemType>(entity.GemType!),
             Node = entity.GemNode!.Value,
             RequiredPower = entity.RequiredGemPower!.Value,
@@ -329,6 +349,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
@@ -341,12 +362,14 @@ public static class DocumentProjection
             TargetCountFalloff = Falloff(entity, references),
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
+            Changes = references.Changes.Of(entity),
         },
 
         EntityType.Glyph => new GlyphDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
@@ -364,6 +387,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Category = entity.AugmentationCategory,
             CategoryTag = entity.AugmentationCategoryTag,
             MaxRank = entity.MaxRank,
@@ -384,6 +408,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Category = entity.AugmentationCategory,
             CategoryTag = entity.AugmentationCategoryTag,
             MaxRank = entity.MaxRank,
@@ -404,6 +429,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Category = entity.AugmentationCategory,
             CategoryTag = entity.AugmentationCategoryTag,
             MaxRank = entity.MaxRank,
@@ -424,6 +450,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Category = entity.AugmentationCategory,
             CategoryTag = entity.AugmentationCategoryTag,
             MaxRank = entity.MaxRank,
@@ -446,6 +473,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Icon = entity.Icon,
             CastTime = entity.CastTime,
@@ -467,6 +495,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Icon = entity.Icon,
             CastTime = entity.CastTime,
@@ -493,6 +522,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
@@ -500,12 +530,14 @@ public static class DocumentProjection
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
+            Changes = references.Changes.Of(entity),
         },
 
         EntityType.RelicPassive => new RelicPassiveDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
@@ -519,6 +551,7 @@ public static class DocumentProjection
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),

@@ -1,0 +1,23 @@
+@use "../../Styles/shared" as *;
+
+.cx-changed { width: 0; min-width: 100%; list-style: none; margin: 10px 0 0; padding: 0; }
+
+.cx-changed-row {
+  display: flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer;
+  font: 400 15px/1.3 var(--sans); color: var(--ink);
+
+  &:has(input:disabled) { cursor: not-allowed; opacity: .45; }
+}
+
+.cx-changed-row input {
+  flex: 0 0 auto; width: 20px; height: 20px; margin: 0; cursor: inherit;
+  accent-color: var(--gold-deep);
+
+  &:focus-visible { outline: 1px solid var(--gold-deep); outline-offset: 2px; }
+}
+
+.cx-changed-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+
+.cx-changed-gates { list-style: none; margin: 0; padding: 0 0 0 28px; }
+
+.cx-changed-gate { font-size: 13px; color: var(--muted); }

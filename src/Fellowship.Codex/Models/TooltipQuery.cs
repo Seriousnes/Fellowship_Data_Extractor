@@ -50,6 +50,30 @@ public sealed class ItemModifiers
     }
 }
 
+public sealed class ChangeSources
+{
+    public required IReadOnlyList<ChangeSource> Values { get; init; }
+
+    public static bool TryParse(string? value, out ChangeSources result)
+    {
+        var parsed = new List<ChangeSource>();
+
+        foreach (var part in (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!ChangeSource.TryParse(part, CultureInfo.InvariantCulture, out var source))
+            {
+                result = new ChangeSources { Values = [] };
+                return false;
+            }
+
+            parsed.Add(source);
+        }
+
+        result = new ChangeSources { Values = parsed };
+        return true;
+    }
+}
+
 public sealed record TooltipQuery
 {
     public string? Hero { get; init; }
@@ -83,6 +107,8 @@ public sealed record TooltipQuery
     public IReadOnlyList<Attunement> Attunements { get; init; } = [];
 
     public IReadOnlyList<string> RankSources { get; init; } = [];
+
+    public IReadOnlyList<ChangeSource> ChangedBy { get; init; } = [];
 
     public int? AllocatedAttunements { get; init; }
 
