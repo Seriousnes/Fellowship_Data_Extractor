@@ -18,6 +18,10 @@ public sealed class ChangeIndex
 
     private static readonly string CooldownField = Field(nameof(AbilityDocument.Cooldown));
 
+    private static readonly string DurationField = Field(nameof(AbilityDocument.Duration));
+
+    private static readonly string ChannelTimeField = Field(nameof(AbilityDocument.ChannelTime));
+
     private static readonly IReadOnlyDictionary<ModifierType, (string Field, string Op)> Fields =
         new Dictionary<ModifierType, (string, string)>
         {
@@ -45,6 +49,7 @@ public sealed class ChangeIndex
     private readonly Dictionary<(EntityType Type, int Id), List<EntityReference>> _changedBy = [];
     private readonly Dictionary<string, int> _unprojected = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SortedSet<string>> _ungranted = new(StringComparer.Ordinal);
+    private readonly Dictionary<(EntityType Type, int Id), List<Entity>> _targets = [];
 
     public IReadOnlyDictionary<string, SortedSet<string>> Ungranted => _ungranted;
 
@@ -58,6 +63,9 @@ public sealed class ChangeIndex
         {
             if (entity is not { Type: (EntityType.Ability or EntityType.Effect) and var type, NetId: { } id }) continue;
             if (references.Of(type, id) is not { } target) continue;
+
+            if (!_targets.TryGetValue((target.Type, target.Id), out var read)) _targets[(target.Type, target.Id)] = read = [];
+            read.Add(entity);
 
             foreach (var term in entity.CooldownTerms ?? [])
             {
@@ -98,7 +106,7 @@ public sealed class ChangeIndex
 
             foreach (var record in modifiers.Of(source, references) ?? [])
             {
-                if (Projected(record) is not { } projected) continue;
+                if (!Projectable(record)) continue;
 
                 foreach (var target in record.Targets!)
                 {
@@ -108,10 +116,21 @@ public sealed class ChangeIndex
                         continue;
                     }
 
-                    Record(named, new Change(target, projected.Field, projected.Op, record.Value!.Value)
+                    var projected = Projected(record, target);
+
+                    if (projected.Count == 0)
                     {
-                        While = record.Condition?.Effects,
-                    });
+                        Count($"{record.Type} with no document field");
+                        continue;
+                    }
+
+                    foreach (var (field, op) in projected)
+                    {
+                        Record(named, new Change(target, field, op, record.Value!.Value)
+                        {
+                            While = record.Condition?.Effects,
+                        });
+                    }
                 }
             }
         }
@@ -169,7 +188,7 @@ public sealed class ChangeIndex
         if (!sources.Any(held => held.Type == source.Type && held.Id == source.Id)) sources.Add(source);
     }
 
-    private (string Field, string Op)? Projected(SourceChange record)
+    private bool Projectable(SourceChange record)
     {
         var reason = record switch
         {
@@ -181,14 +200,60 @@ public sealed class ChangeIndex
             { Per: not null } => $"{record.Type} per combat event",
             { Condition: { } condition } when !OnlyEffects(condition) =>
                 $"{record.Type} under a condition other than held effects",
-            _ when !Fields.ContainsKey(record.Type!.Value) => $"{record.Type} with no document field",
             _ => null,
         };
 
-        if (reason is null) return Fields[record.Type!.Value];
+        if (reason is null) return true;
 
         Count(reason);
-        return null;
+        return false;
+    }
+
+    private IReadOnlyList<(string Field, string Op)> Projected(SourceChange record, EntityReference target)
+    {
+        var read = _targets.GetValueOrDefault((target.Type, target.Id)) ?? [];
+        var uses = record.Row is { } row
+            ? [.. read.SelectMany(entity => entity.RowUses?.GetValueOrDefault(row) ?? [])]
+            : Array.Empty<string>();
+
+        if (record.Type is ModifierType.DamageMultiplier or ModifierType.HealingMultiplier)
+        {
+            return [.. uses.Select(Attribute).OfType<(string, string)>().Distinct()];
+        }
+
+        if (!Fields.TryGetValue(record.Type!.Value, out var projected)) return [];
+
+        if (projected.Field == DurationField && read.Any(entity => SetsChannel(entity, uses)))
+        {
+            return [(ChannelTimeField, projected.Op)];
+        }
+
+        return [projected];
+    }
+
+    private static (string Field, string Op)? Attribute(string use)
+    {
+        if (!use.StartsWith(RowSinks.AttributeUse, StringComparison.Ordinal)) return null;
+
+        var stated = use[RowSinks.AttributeUse.Length..];
+        var gate = stated.IndexOf(RowSinks.GateMark, StringComparison.Ordinal);
+
+        return (gate < 0 ? stated : stated[..gate]).Split('|') is [var attribute, var op, ..] ? (attribute, op) : null;
+    }
+
+    private static bool SetsChannel(Entity target, IReadOnlyList<string> uses)
+    {
+        if (target is not { ChannelTime: { } channel, Rows: { } rows, RowUses: { } rowUses }) return false;
+
+        var consumers = uses
+            .Where(use => use.StartsWith(RowSinks.SinkUse, StringComparison.Ordinal))
+            .Select(use => use[RowSinks.SinkUse.Length..].Split('|', '~')[0])
+            .ToHashSet(StringComparer.Ordinal);
+
+        return rows.Any(entry => entry.Value == channel &&
+            rowUses.GetValueOrDefault(entry.Key)?.Any(use =>
+                use.StartsWith(RowSinks.SinkUse, StringComparison.Ordinal) &&
+                consumers.Contains(use[RowSinks.SinkUse.Length..])) == true);
     }
 
     private static bool OnlyEffects(ModifierCondition condition) =>
