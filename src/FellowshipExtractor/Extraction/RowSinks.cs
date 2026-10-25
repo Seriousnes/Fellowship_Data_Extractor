@@ -192,7 +192,10 @@ public static class RowSinks
         return [.. sinks];
     }
 
-    public static IReadOnlyList<string> SpawnedActors(UObject? asset)
+    public static IReadOnlyList<string> SpawnedActors(UObject? asset) =>
+        [.. SpawnedPaths(asset).Select(Leaf).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+
+    public static IReadOnlyList<string> SpawnedPaths(UObject? asset)
     {
         var spawned = new SortedSet<string>(StringComparer.Ordinal);
 
@@ -202,7 +205,7 @@ public static class RowSinks
 
             foreach (var statement in bytecode)
             {
-                foreach (var path in Spawned(statement, 0)) spawned.Add(Leaf(path));
+                foreach (var path in Spawned(statement, 0)) spawned.Add(path);
             }
         }
 

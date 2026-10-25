@@ -39,13 +39,18 @@ public static class AppliedChanges
     public static IReadOnlyList<Change> Toward(EntityDocument source, EntityDocument target) =>
         [.. ChangesOf(source).Where(change => Aims(change, target))];
 
-    public static IReadOnlyList<IReadOnlyList<int>> Gates(EntityDocument source, EntityDocument target) =>
+    public static IReadOnlyList<ChangeGate> Gates(EntityDocument source, EntityDocument target) =>
     [
         .. Toward(source, target)
-            .Where(change => change.While is { Count: > 0 })
-            .Select(change => (IReadOnlyList<int>)[.. change.While!.Select(held => held.Id).Order()])
-            .DistinctBy(held => string.Join(',', held)),
+            .Where(change => Needed(change).Any())
+            .Select(change => new ChangeGate(
+                [.. Needed(change).Order()],
+                change.While is not { Count: > 0 }))
+            .DistinctBy(gate => string.Join(',', gate.Effects)),
     ];
+
+    private static IEnumerable<int> Needed(Change change) =>
+        (change.While ?? []).Concat(change.WhileTarget ?? []).Select(held => held.Id).Distinct();
 
     public static IReadOnlyList<EntityDocument> Sources(EntityDocument target, IEntityStoreService store) =>
     [
@@ -168,7 +173,7 @@ public static class AppliedChanges
         document[field] is JsonArray entries ? entries.OfType<JsonObject>() : [];
 
     private static bool Holds(Change change, IReadOnlyList<int>? held) =>
-        change.While is not { Count: > 0 } needed || needed.All(effect => held?.Contains(effect.Id) is true);
+        Needed(change).All(effect => held?.Contains(effect) is true);
 
     private static bool Aims(Change change, EntityDocument target) =>
         change.Target.Type == EntityTypes.TypeOf(target) && change.Target.Id == target.Id;

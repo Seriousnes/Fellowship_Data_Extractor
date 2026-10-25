@@ -35,7 +35,7 @@
                                     <input type="checkbox" data-knob="@QueryKeys.Key(ReadingParameter.ChangedBy)" value="@held.Key"
                                            checked="@gated" disabled="@(!taken || (!held.Changes && !gated))"
                                            @onchange="ticked => Tick(held.Source, ticked)" />
-                                    <span class="cx-changed-name">While @Effects(held.Effects) active</span>
+                                    <span class="cx-changed-name">While @Effects(held.Effects) active@(held.OnTarget ? " on the target" : null)</span>
                                 </label>
                             </li>
                         }
@@ -53,7 +53,7 @@
 
     [Parameter] public EventCallback<KnobTurn> OnTurn { get; set; }
 
-    private sealed record Gate(ChangeSource Source, IReadOnlyList<EntityDocument> Effects, bool Changes)
+    private sealed record Gate(ChangeSource Source, IReadOnlyList<EntityDocument> Effects, bool OnTarget, bool Changes)
     {
         public string Key => Source.ToString();
     }
@@ -88,9 +88,10 @@
             document,
             AppliedChanges.Changes(entity, document, null),
             [.. AppliedChanges.Gates(document, entity).Select(held => new Gate(
-                source with { While = held },
-                [.. held.SelectMany(effect => Store.All(EntityType.Effect, effect).Take(1))],
-                AppliedChanges.Changes(entity, document, held)))]);
+                source with { While = held.Effects },
+                [.. held.Effects.SelectMany(effect => Store.All(EntityType.Effect, effect).Take(1))],
+                held.OnTarget,
+                AppliedChanges.Changes(entity, document, held.Effects)))]);
     }
 
     private RenderFragment Effects(IReadOnlyList<EntityDocument> effects) => __builder =>

@@ -50,7 +50,6 @@ public sealed class ChangeIndex
     private readonly Dictionary<string, int> _unprojected = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SortedSet<string>> _ungranted = new(StringComparer.Ordinal);
     private readonly Dictionary<(EntityType Type, int Id), List<Entity>> _targets = [];
-
     public IReadOnlyDictionary<string, SortedSet<string>> Ungranted => _ungranted;
 
     private ChangeIndex()
@@ -78,11 +77,16 @@ public sealed class ChangeIndex
                 Gated(modifiers, references, tag, new Change(target, CooldownField, term.Array, term.Value));
             }
 
+            var onTarget = (entity.GatedModifiers ?? new Dictionary<string, IReadOnlyList<EffectModifier>>())
+                .Where(entry => entry.Key.StartsWith(EffectModifiers.TargetMark, StringComparison.Ordinal))
+                .SelectMany(entry => entry.Value)
+                .ToHashSet();
+
             foreach (var (tag, gated) in entity.GatedModifiers ?? new Dictionary<string, IReadOnlyList<EffectModifier>>())
             {
                 foreach (var modifier in gated)
                 {
-                    if (tag.StartsWith(EffectModifiers.TargetMark, StringComparison.Ordinal))
+                    if (tag.StartsWith(EffectModifiers.TargetMark, StringComparison.Ordinal) || onTarget.Contains(modifier))
                     {
                         Count("effect modifier gated on a tag the target holds");
                         continue;
@@ -129,6 +133,7 @@ public sealed class ChangeIndex
                         Record(named, new Change(target, field, op, record.Value!.Value)
                         {
                             While = record.Condition?.Effects,
+                            WhileTarget = record.Condition?.TargetEffects,
                         });
                     }
                 }
@@ -257,7 +262,7 @@ public sealed class ChangeIndex
     }
 
     private static bool OnlyEffects(ModifierCondition condition) =>
-        condition with { Effects = null } == new ModifierCondition();
+        condition with { Effects = null, TargetEffects = null } == new ModifierCondition();
 
     private void Count(string reason) => _unprojected[reason] = _unprojected.GetValueOrDefault(reason) + 1;
 
@@ -265,5 +270,7 @@ public sealed class ChangeIndex
         first.Target.Type == second.Target.Type && first.Target.Id == second.Target.Id &&
         first.Field == second.Field && first.Op == second.Op && first.Value == second.Value &&
         (first.While ?? []).Select(held => (held.Type, held.Id))
-            .SequenceEqual((second.While ?? []).Select(held => (held.Type, held.Id)));
+            .SequenceEqual((second.While ?? []).Select(held => (held.Type, held.Id))) &&
+        (first.WhileTarget ?? []).Select(held => (held.Type, held.Id))
+            .SequenceEqual((second.WhileTarget ?? []).Select(held => (held.Type, held.Id)));
 }

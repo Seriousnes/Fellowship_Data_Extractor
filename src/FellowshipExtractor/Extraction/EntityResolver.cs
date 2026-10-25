@@ -252,7 +252,7 @@ public sealed class EntityResolver
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
 
         EffectNames = new EffectNameSources(
-            _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName);
+            _tags, _effectNames, tag => LoadDefaultObject(FindAsset(tag.Name)), PrintedName, LoadClassDefault);
 
         Types = new TypeResolver(
             _tags, Talents, Gems, AugmentationRows, Mappings, Dungeons, Progression, Customizations, TableNames, Heroes,
