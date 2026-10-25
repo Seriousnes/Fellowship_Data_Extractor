@@ -4,49 +4,46 @@
 
 @if (Sources.Count > 0)
 {
-    <Panel Head="Changed by" Badge="@Sources.Count.ToString(CultureInfo.InvariantCulture)">
-        <ul class="cx-changed">
-            @foreach (var source in Sources)
-            {
-                var mine = source;
-                var tip = Ui.Tip(mine.Document);
-                var colour = Ui.LinkColour(mine.Document);
-                var taken = Ticked.Contains(mine.Source);
+    <ul class="cx-changed">
+        @foreach (var source in Sources)
+        {
+            var mine = source;
+            var tip = Ui.Tip(mine.Document);
+            var colour = Ui.LinkColour(mine.Document);
+            var taken = Ticked.Contains(mine.Source);
 
-                <li @key="mine.Key">
-                    <label class="cx-changed-row" title="@(mine.Usable ? null : Unprinted)">
-                        <input type="checkbox" data-knob="@QueryKeys.Key(ReadingParameter.ChangedBy)" value="@mine.Key"
-                               checked="@taken" disabled="@(!mine.Usable && !taken)"
-                               @onchange="ticked => Tick(mine.Source, ticked)" />
-                        <span class="cx-changed-texture"><Texture Entity="mine.Document" /></span>
-                        <span class="cx-changed-name" style="@(colour is null ? null : $"color:{colour}")"
-                              data-tip="@tip.Address" data-tip-request="@tip.Body">@Ui.Name(mine.Document)</span>
-                    </label>
+            <li @key="mine.Key">
+                <label class="cx-changed-row" title="@(mine.Usable ? null : Unprinted)">
+                    <input type="checkbox" data-knob="@QueryKeys.Key(ReadingParameter.ChangedBy)" value="@mine.Key"
+                           checked="@taken" disabled="@(!mine.Usable && !taken)"
+                           @onchange="ticked => Tick(mine.Source, ticked)" />
+                    <span class="cx-changed-name" style="@(colour is null ? null : $"color:{colour}")"
+                          data-tip="@tip.Address" data-tip-request="@tip.Body">@Ui.Name(mine.Document)</span>
+                </label>
 
-                    @if (mine.Gates.Count > 0)
-                    {
-                        <ul class="cx-changed-gates">
-                            @foreach (var gate in mine.Gates)
-                            {
-                                var held = gate;
-                                var gated = Ticked.Contains(held.Source);
+                @if (mine.Gates.Count > 0)
+                {
+                    <ul class="cx-changed-gates">
+                        @foreach (var gate in mine.Gates)
+                        {
+                            var held = gate;
+                            var gated = Ticked.Contains(held.Source);
 
-                                <li @key="held.Key">
-                                    <label class="cx-changed-row cx-changed-gate"
-                                           title="@(held.Changes ? null : Unprinted)">
-                                        <input type="checkbox" data-knob="@QueryKeys.Key(ReadingParameter.ChangedBy)" value="@held.Key"
-                                               checked="@gated" disabled="@(!taken || (!held.Changes && !gated))"
-                                               @onchange="ticked => Tick(held.Source, ticked)" />
-                                        <span class="cx-changed-name">While @Effects(held.Effects) active</span>
-                                    </label>
-                                </li>
-                            }
-                        </ul>
-                    }
-                </li>
-            }
-        </ul>
-    </Panel>
+                            <li @key="held.Key">
+                                <label class="cx-changed-row cx-changed-gate"
+                                       title="@(held.Changes ? null : Unprinted)">
+                                    <input type="checkbox" data-knob="@QueryKeys.Key(ReadingParameter.ChangedBy)" value="@held.Key"
+                                           checked="@gated" disabled="@(!taken || (!held.Changes && !gated))"
+                                           @onchange="ticked => Tick(held.Source, ticked)" />
+                                    <span class="cx-changed-name">While @Effects(held.Effects) active</span>
+                                </label>
+                            </li>
+                        }
+                    </ul>
+                }
+            </li>
+        }
+    </ul>
 }
 
 @code {
