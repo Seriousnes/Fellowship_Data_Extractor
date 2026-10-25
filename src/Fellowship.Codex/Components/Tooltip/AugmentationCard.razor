@@ -10,7 +10,7 @@
         </header>
         @if (Entity.Icon is not null)
         {
-            <AugmentationCrest Entity="Entity" State="@Query.State" />
+            <AugmentationCrest Entity="Entity" State="@(ChromeAssetService.State<AttunementNodeState>(Query.State))" />
         }
         <div class="band">
             <span class="kind">@Wording.Band</span>

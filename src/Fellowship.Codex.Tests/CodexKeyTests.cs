@@ -7,7 +7,7 @@ public sealed class CodexKeyTests
     [InlineData("Unobtainable")]
     public void A_flag_key_reads_in_any_case(string key)
     {
-        Assert.True(CodexKeys.TryParse<FlagType>(key, out var flag));
+        Assert.True(QueryKeys.TryParse<FlagType>(key, out var flag));
         Assert.Equal(FlagType.Unobtainable, flag);
     }
 
@@ -16,13 +16,13 @@ public sealed class CodexKeyTests
     [InlineData("3")]
     [InlineData("slot,hero")]
     [InlineData("")]
-    public void A_number_or_a_list_is_no_facet(string key) => Assert.False(CodexKeys.TryParse<FacetType>(key, out _));
+    public void A_number_or_a_list_is_no_facet(string key) => Assert.False(QueryKeys.TryParse<FacetType>(key, out _));
 
     [Fact]
     public void A_key_is_the_lowercase_member_name()
     {
-        Assert.Equal("ilvl", CodexKeys.Key(SortingType.Ilvl));
-        Assert.Equal("slot", CodexKeys.Key(FacetType.Slot));
+        Assert.Equal("ilvl", QueryKeys.Key(SortingType.Ilvl));
+        Assert.Equal("slot", QueryKeys.Key(FacetType.Slot));
         Assert.Equal("Show unobtainable entries", CodexKeys.Label(FlagType.Unobtainable));
     }
 

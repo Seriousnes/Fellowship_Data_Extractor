@@ -148,7 +148,7 @@ public sealed class ChromePixelTests
     [Fact]
     public void TheWellTheStylesheetCutsTheArtToIsTheHoleInEveryPlate()
     {
-        var wells = ChromeAssetService.NodeStates
+        var wells = Enum.GetValues<Fellowship.Codex.Models.AttunementNodeState>()
             .Select(state => Well(Texture(Read.Chrome.AttunementNode(state))))
             .ToArray();
 
@@ -166,11 +166,11 @@ public sealed class ChromePixelTests
     public void EveryStateFrameIsTheShapeTheStylesheetDerivesItsHeightFrom()
     {
         Assert.All(
-            ChromeAssetService.NodeStates,
+            Enum.GetValues<Fellowship.Codex.Models.AttunementNodeState>(),
             state => Assert.Equal((208, 240), Shape(Texture(Read.Chrome.AttunementNode(state)))));
 
         Assert.All(
-            ChromeAssetService.GlyphStates,
+            Enum.GetValues<Fellowship.Codex.Models.GlyphState>(),
             state => Assert.Equal((148, 188), Shape(Texture(Read.Chrome.GlyphPlate(state)))));
     }
 
@@ -305,7 +305,7 @@ public sealed class ChromePixelTests
 
         Assert.All(glyphs, glyph =>
         {
-            var allocated = Read.Chrome.GlyphRune(glyph, ChromeAssetService.GlyphState(1));
+            var allocated = Read.Chrome.GlyphRune(glyph, ChromeAssetService.GlyphStateFor(1));
 
             Assert.NotNull(allocated);
             Assert.True(File.Exists(Texture(allocated)), $"{Texture(allocated)} is not there.");

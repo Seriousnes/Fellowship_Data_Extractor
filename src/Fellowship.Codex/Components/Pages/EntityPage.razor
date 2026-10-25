@@ -53,9 +53,9 @@
 
     [Parameter] public string? Named { get; set; }
 
-    [SupplyParameterFromQuery(Name = "hero")] public string? Hero { get; set; }
+    [SupplyParameterFromQuery(Name = nameof(ReadingParameter.Hero))] public string? Hero { get; set; }
 
-    [SupplyParameterFromQuery(Name = "state")] public string? State { get; set; }
+    [SupplyParameterFromQuery(Name = nameof(ReadingParameter.State))] public string? State { get; set; }
 
     private EntityType type;
 
@@ -88,7 +88,7 @@
     private string Search => new Uri(Nav.Uri).Query;
 
     private string? Rarity =>
-        Values.GetValueOrDefault("rarity") is { Length: > 0 } request &&
+        Values.GetValueOrDefault(QueryKeys.Key(ReadingParameter.Rarity)) is { Length: > 0 } request &&
         Store.Rarity(request, Entity is GemDocument) is { } rarity
             ? CodexView.Readable(Ui.Tokens.Rarity(rarity.Name))
             : null;
@@ -138,7 +138,7 @@
         if (Named != PublicTypes.Segment(Entity) || Hero != addressed)
         {
             var parameters = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(new Uri(Nav.Uri).Query);
-            parameters.Remove("hero");
+            parameters.Remove(QueryKeys.Key(ReadingParameter.Hero));
 
             Nav.NavigateTo(Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(
                 Ui.Href(Entity, wearer?.Name), parameters), replace: true);

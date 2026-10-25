@@ -6,7 +6,7 @@
         @if (PerHero is not null)
         {
             <Knob Caption="Hero">
-                <select data-knob="hero" value="@Wearing" @onchange="Wearer">
+                <select data-knob="@QueryKeys.Key(ReadingParameter.Hero)" value="@Wearing" @onchange="Wearer">
                     @foreach (var who in Store.Settings.Heroes
                         .Where(who => augmentation.DescriptionsByHero!.ContainsKey(who.Name))
                         .OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase))
@@ -21,9 +21,9 @@
         {
             @if (augmentation is EnchantDocument)
             {
-                <Slider Caption="Item level" Key="itemLevel" Min="1" Max="Store.Settings.Items.MaxItemLevel"
+                <Slider Caption="Item level" Key="ReadingParameter.ItemLevel" Min="1" Max="Store.Settings.Items.MaxItemLevel"
                         Value="AugmentationRanks.Level(Store.Settings, Query)"
-                        OnChange="@(value => Turn("itemLevel", value))" />
+                        OnChange="@(value => Turn(ReadingParameter.ItemLevel, value))" />
             }
 
             var sources = Sources(augmentation);
@@ -35,7 +35,7 @@
                     {
                         var mine = type;
                         var chosen = sources.Contains(mine.Type);
-                        <button type="button" data-knob="rankSources" data-choice="@mine.Type"
+                        <button type="button" data-knob="@QueryKeys.Key(ReadingParameter.RankSources)" data-choice="@mine.Type"
                                 aria-pressed="@(chosen ? "true" : "false")" disabled="@(full && !chosen)"
                                 @onclick="() => Source(augmentation, mine.Type)">
                             @mine.Printed
@@ -52,16 +52,16 @@
 
     [Parameter] public EventCallback<KnobTurn> OnTurn { get; set; }
 
-    private Task Turn(string key, string? value) => OnTurn.InvokeAsync(new KnobTurn(key, value));
+    private Task Turn(ReadingParameter knob, string? value) => OnTurn.InvokeAsync(new KnobTurn(knob, value));
 
-    private Task Wearer(ChangeEventArgs who) => Turn("hero", who.Value?.ToString());
+    private Task Wearer(ChangeEventArgs who) => Turn(ReadingParameter.Hero, who.Value?.ToString());
 
     private AugmentationTooltipText Text => AugmentationRanks.Text(Store.Settings);
 
     private TooltipQuery Query => new()
     {
-        RankSources = RankSources.Parse(Value("rankSources")),
-        ItemLevel = int.TryParse(Value("itemLevel"), out var level) ? level : null,
+        RankSources = RankSources.Parse(Value(ReadingParameter.RankSources)),
+        ItemLevel = int.TryParse(Value(ReadingParameter.ItemLevel), out var level) ? level : null,
     };
 
     private IReadOnlyList<string> Sources(AugmentationDocument augmentation) =>
@@ -72,7 +72,7 @@
         var sources = Sources(augmentation);
         var written = RankSources.Write(sources.Contains(type) ? sources.Where(source => source != type) : [.. sources, type]);
 
-        return OnTurn.InvokeAsync(new KnobTurn("rankSources", written));
+        return OnTurn.InvokeAsync(new KnobTurn(ReadingParameter.RankSources, written));
     }
 
     private string? PerHero =>
@@ -82,5 +82,5 @@
 
     private string? Wearing => Here.Reading ?? PerHero;
 
-    private string? Value(string knob) => Here.Values.GetValueOrDefault(knob);
+    private string? Value(ReadingParameter knob) => Here.Values.GetValueOrDefault(QueryKeys.Key(knob));
 }

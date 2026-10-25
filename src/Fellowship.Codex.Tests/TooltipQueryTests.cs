@@ -192,11 +192,11 @@ public class TooltipQueryTests(Export export)
         Assert.Equal(2, Query(new GlyphTooltipRequest { EquippedTier = 2 }, out _).EquippedTier);
 
     [Theory]
-    [InlineData(0, "unallocated")]
-    [InlineData(1, "allocated")]
-    [InlineData(4, "allocated")]
-    public void A_glyph_stone_is_allocated_from_the_first_equipped_tier(int tier, string state) =>
-        Assert.Equal(state, ChromeAssetService.GlyphState(tier));
+    [InlineData(0, GlyphState.Unallocated)]
+    [InlineData(1, GlyphState.Allocated)]
+    [InlineData(4, GlyphState.Allocated)]
+    public void A_glyph_stone_is_allocated_from_the_first_equipped_tier(int tier, GlyphState state) =>
+        Assert.Equal(state, ChromeAssetService.GlyphStateFor(tier));
 
     [Fact]
     public void A_request_naming_only_a_stat_carries_the_stat_and_nothing_else()

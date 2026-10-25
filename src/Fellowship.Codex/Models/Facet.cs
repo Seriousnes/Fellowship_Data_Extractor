@@ -6,7 +6,7 @@ namespace Fellowship.Codex.Models;
 
 public sealed record Facet(FacetType Type, Func<EntityDocument, IEnumerable<string>> Values)
 {
-    public string Key => CodexKeys.Key(Type);
+    public string Key => QueryKeys.Key(Type);
 
     public string Label => CodexKeys.Label(Type);
 

@@ -26,11 +26,11 @@ public static class CodexAddresses
 
     /// <summary>The browsable page for one entity.</summary>
     public static string Page(EntityType type, int id, string? hero = null) =>
-        WithQuery(new StringBuilder($"{EntityTypes.Slug(type)}/{Number(id)}"), [("hero", hero)]);
+        WithQuery(new StringBuilder($"{EntityTypes.Slug(type)}/{Number(id)}"), [(QueryKeys.Key(ReadingParameter.Hero), hero)]);
 
     /// <summary>The <c>/api</c> route answering one entity's record.</summary>
     public static string Record(EntityType type, int id, string? hero = null) =>
-        WithQuery(new StringBuilder($"api/{EntityTypes.Slug(type)}/{Number(id)}"), [("hero", hero)]);
+        WithQuery(new StringBuilder($"api/{EntityTypes.Slug(type)}/{Number(id)}"), [(QueryKeys.Key(ReadingParameter.Hero), hero)]);
 
     public static string Record(EntityType type, int id, RecordReading reading) =>
         WithQuery(new StringBuilder($"api/{EntityTypes.Slug(type)}/{Number(id)}"), Parameters(reading));
@@ -39,11 +39,11 @@ public static class CodexAddresses
     {
         var parameters = new List<(string Key, string? Value)>
         {
-            ("q", filter?.Q),
-            ("sort", filter?.Sort),
-            ("dir", filter?.Dir),
-            ("page", Number(filter?.Page)),
-            ("size", Number(filter?.Size)),
+            (QueryKeys.Key(BrowseParameter.Q), filter?.Q),
+            (QueryKeys.Key(BrowseParameter.Sort), filter?.Sort),
+            (QueryKeys.Key(BrowseParameter.Dir), filter?.Dir),
+            (QueryKeys.Key(BrowseParameter.Page), Number(filter?.Page)),
+            (QueryKeys.Key(BrowseParameter.Size), Number(filter?.Size)),
         };
 
         parameters.AddRange(Parameters(filter?.Reading));
@@ -69,9 +69,9 @@ public static class CodexAddresses
         WithQuery(
             new StringBuilder("api/search"),
             [
-                ("q", query),
-                ("type", type is { } value ? EntityTypes.Slug(value) : null),
-                ("limit", Number(limit)),
+                (QueryKeys.Key(BrowseParameter.Q), query),
+                (QueryKeys.Key(BrowseParameter.Type), type is { } value ? EntityTypes.Slug(value) : null),
+                (QueryKeys.Key(BrowseParameter.Limit), Number(limit)),
             ]);
 
     /// <summary>The <c>/api</c> route answering a filtered page of entities.</summary>
@@ -79,15 +79,15 @@ public static class CodexAddresses
     {
         var parameters = new List<(string Key, string? Value)>
         {
-            ("q", filter?.Q),
-            ("type", filter?.Type is { Count: > 0 } types
+            (QueryKeys.Key(BrowseParameter.Q), filter?.Q),
+            (QueryKeys.Key(BrowseParameter.Type), filter?.Type is { Count: > 0 } types
                 ? string.Join(",", types.Select(EntityTypes.Slug))
                 : null),
-            ("sort", filter?.Sort),
-            ("dir", filter?.Dir),
-            ("group", filter?.Group),
-            ("page", Number(filter?.Page)),
-            ("size", Number(filter?.Size)),
+            (QueryKeys.Key(BrowseParameter.Sort), filter?.Sort),
+            (QueryKeys.Key(BrowseParameter.Dir), filter?.Dir),
+            (QueryKeys.Key(BrowseParameter.Group), filter?.Group),
+            (QueryKeys.Key(BrowseParameter.Page), Number(filter?.Page)),
+            (QueryKeys.Key(BrowseParameter.Size), Number(filter?.Size)),
         };
 
         if (filter?.Facets is { Count: > 0 } facets)
@@ -109,12 +109,13 @@ public static class CodexAddresses
 
     private static (string Key, string? Value)[] Parameters(RecordReading? reading) =>
     [
-        ("hero", reading?.Hero),
-        ("itemLevel", Number(reading?.ItemLevel)),
-        ("upgrades", Number(reading?.Upgrades)),
-        ("rarity", reading?.Rarity),
-        ("rankSources", reading?.RankSources is { Count: > 0 } sources ? string.Join(',', sources) : null),        ("difficulty", Number(reading?.Difficulty)),
-        ("equippedTier", Number(reading?.EquippedTier)),
+        (QueryKeys.Key(ReadingParameter.Hero), reading?.Hero),
+        (QueryKeys.Key(ReadingParameter.ItemLevel), Number(reading?.ItemLevel)),
+        (QueryKeys.Key(ReadingParameter.Upgrades), Number(reading?.Upgrades)),
+        (QueryKeys.Key(ReadingParameter.Rarity), reading?.Rarity),
+        (QueryKeys.Key(ReadingParameter.RankSources), reading?.RankSources is { Count: > 0 } sources ? string.Join(',', sources) : null),
+        (QueryKeys.Key(ReadingParameter.Difficulty), Number(reading?.Difficulty)),
+        (QueryKeys.Key(ReadingParameter.EquippedTier), Number(reading?.EquippedTier)),
     ];
 
     private static string WithQuery(

@@ -44,5 +44,5 @@
     private string? Typed =>
         Microsoft.AspNetCore.WebUtilities.QueryHelpers
             .ParseQuery(Nav.ToAbsoluteUri(Nav.Uri).Query)
-            .TryGetValue("q", out var typed) ? typed.ToString() : null;
+            .TryGetValue(QueryKeys.Key(BrowseParameter.Q), out var typed) ? typed.ToString() : null;
 }

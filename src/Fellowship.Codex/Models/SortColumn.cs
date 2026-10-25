@@ -12,7 +12,7 @@ public readonly record struct SortColumn
 
     public MeasureType? Measure { get; }
 
-    public string Key => Sorting is { } sorting ? CodexKeys.Key(sorting) : CodexKeys.Key(Measure!.Value);
+    public string Key => Sorting is { } sorting ? QueryKeys.Key(sorting) : QueryKeys.Key(Measure!.Value);
 
     public static implicit operator SortColumn(SortingType sorting) => new(sorting, null);
 
@@ -22,8 +22,8 @@ public readonly record struct SortColumn
     {
         sort = default;
 
-        if (CodexKeys.TryParse<SortingType>(key, out var sorting)) sort = sorting;
-        else if (CodexKeys.TryParse<MeasureType>(key, out var measure)) sort = measure;
+        if (QueryKeys.TryParse<SortingType>(key, out var sorting)) sort = sorting;
+        else if (QueryKeys.TryParse<MeasureType>(key, out var measure)) sort = measure;
         else return false;
 
         return true;

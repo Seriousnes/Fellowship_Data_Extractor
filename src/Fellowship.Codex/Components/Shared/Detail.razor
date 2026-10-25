@@ -5,7 +5,7 @@
 @code {
     [Parameter, EditorRequired] public EntityDocument Entity { get; set; } = default!;
 
-    private Dictionary<string, object?> Knobs => new(StringComparer.Ordinal) { ["Entity"] = Entity };
+    private Dictionary<string, object?> Knobs => new(StringComparer.Ordinal) { [nameof(Views.Item.Entity)] = Entity };
 
     private static System.Type Component(EntityType type) => type switch
     {

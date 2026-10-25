@@ -8,7 +8,7 @@
     [Parameter, EditorRequired] public BrowseView View { get; set; } = default!;
 
     private Dictionary<string, object?> Knobs =>
-        new(StringComparer.Ordinal) { ["Rows"] = Documents, ["View"] = View };
+        new(StringComparer.Ordinal) { [nameof(Everything.Rows)] = Documents, [nameof(Everything.View)] = View };
 
     private static System.Type Component(EntityType? type) => type switch
     {

@@ -93,7 +93,7 @@
     {
         Phases = [.. (Entity.Abilities ?? []).GroupBy(slot => slot.Phase, StringComparer.Ordinal)];
 
-        var difficulty = Store.Difficulty(Here.Values.GetValueOrDefault(DifficultyKnob.Key));
+        var difficulty = Store.Difficulty(Here.Values.GetValueOrDefault(QueryKeys.Key(ReadingParameter.Difficulty)));
 
         Step = Difficulties.At(Store.Settings, difficulty)
             ?? new DifficultyStep(difficulty, string.Empty, difficulty, difficulty.ToString());

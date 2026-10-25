@@ -52,5 +52,5 @@
             : null;
 
     private string Filter(string school) =>
-        $"{PublicTypes.Where(EntityTypes.TypeOf(Entity))}&{CodexKeys.Key(FacetType.School)}={Uri.EscapeDataString(school)}";
+        $"{PublicTypes.Where(EntityTypes.TypeOf(Entity))}&{QueryKeys.Key(FacetType.School)}={Uri.EscapeDataString(school)}";
 }

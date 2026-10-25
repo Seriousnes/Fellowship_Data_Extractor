@@ -8,21 +8,25 @@ namespace FellowshipExtractor.Extraction;
 
 public static class Reachability
 {
-    private const string TypeField = "type";
-    private const string IdField = "id";
+    private static readonly string TypeField = Field(nameof(EntityReference.Type));
+    private static readonly string IdField = Field(nameof(EntityReference.Id));
 
     private static readonly IReadOnlySet<EntityType> Derived =
         new HashSet<EntityType> { EntityType.Creature, EntityType.Ability, EntityType.Effect };
 
-    private static readonly IReadOnlySet<string> ReachedFrom =
-        new HashSet<string>(StringComparer.Ordinal) { "owner", "appliedBy", "partOf", "foundIn" };
+    private static readonly IReadOnlySet<string> ReachedFrom = Fields(
+        nameof(EffectDocument.Owner), nameof(EffectDocument.AppliedBy), nameof(EffectDocument.PartOf),
+        nameof(CreatureDocument.FoundIn));
 
-    private static readonly IReadOnlySet<string> Reaching =
-        new HashSet<string>(StringComparer.Ordinal)
-        {
-            "placements", "abilities", "passives", "grants", "spiritAbilityReferences", "legendaryStats", "talent",
-            "targetCountFalloff",
-        };
+    private static readonly IReadOnlySet<string> Reaching = Fields(
+        nameof(DungeonDocument.Placements), nameof(CreatureDocument.Abilities), nameof(CreatureDocument.Passives),
+        nameof(ItemDocument.Grants), nameof(HeroDocument.SpiritAbilityReferences), nameof(ItemDocument.LegendaryStats),
+        nameof(TalentSlotDocument.Talent), nameof(AbilityDocument.TargetCountFalloff));
+
+    private static IReadOnlySet<string> Fields(params string[] properties) =>
+        properties.Select(Field).ToHashSet(StringComparer.Ordinal);
+
+    private static string Field(string property) => EntityDocuments.Options.PropertyNamingPolicy!.ConvertName(property);
 
     public static IReadOnlySet<(EntityType Type, int Id)> Unreachable(IReadOnlyList<EntityDocument> documents)
     {

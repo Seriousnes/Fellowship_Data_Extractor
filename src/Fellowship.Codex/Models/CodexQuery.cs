@@ -67,11 +67,11 @@ public sealed record CodexQuery
             {
                 switch (control)
                 {
-                    case "q":
+                    case BrowseParameter.Q:
                         text = raw.Count > 0 ? raw[^1] : null;
                         break;
 
-                    case "type":
+                    case BrowseParameter.Type:
                         foreach (var slug in values)
                         {
                             if (!EntityTypes.TryParse(slug, out var named) || !PublicTypes.IsListed(named))
@@ -91,25 +91,25 @@ public sealed record CodexQuery
 
                         break;
 
-                    case "sort":
+                    case BrowseParameter.Sort:
                         if (values.Length > 0) sort = values[^1];
                         break;
 
-                    case "dir":
+                    case BrowseParameter.Dir:
                         descending = values.Length > 0 &&
                             values[^1].StartsWith('d');
                         break;
 
-                    case "group":
+                    case BrowseParameter.Group:
                         group = values.Length > 0 ? values[^1] : null;
                         break;
 
-                    case "page":
+                    case BrowseParameter.Page:
                         if (!TryNumber(values, out var wanted, out error)) return new CodexQuery { Category = category };
                         page = wanted is > 0 ? (int)wanted : 1;
                         break;
 
-                    case "size":
+                    case BrowseParameter.Size:
                         if (!TryNumber(values, out var size, out error)) return new CodexQuery { Category = category };
                         pageSize = size is > 0 ? Math.Min((int)size, MaximumPageSize) : DefaultPageSize;
                         break;
@@ -123,7 +123,7 @@ public sealed record CodexQuery
                 continue;
             }
 
-            if (CodexKeys.TryParse<FacetType>(key, out var faceted))
+            if (QueryKeys.TryParse<FacetType>(key, out var faceted))
             {
                 var facet = codex.Facet(faceted);
                 var offered = codex.Offered(facet);
@@ -160,14 +160,14 @@ public sealed record CodexQuery
                 continue;
             }
 
-            if (CodexKeys.TryParse<FlagType>(key, out var flag))
+            if (QueryKeys.TryParse<FlagType>(key, out var flag))
             {
                 var value = values.Length == 0 || !(values[^1] is "0" or "false" or "no");
                 flags[flag] = value;
                 continue;
             }
 
-            if (Bound(key) is var (measureKey, isMax) && CodexKeys.TryParse<MeasureType>(measureKey, out var measure))
+            if (Bound(key) is var (measureKey, isMax) && QueryKeys.TryParse<MeasureType>(measureKey, out var measure))
             {
                 if (!TryNumber(values, out var bound, out error)) return new CodexQuery { Category = category };
                 if (bound is null) continue;
@@ -196,7 +196,7 @@ public sealed record CodexQuery
 
         if (group is not null)
         {
-            if (!CodexKeys.TryParse<FacetType>(group, out var named))
+            if (!QueryKeys.TryParse<FacetType>(group, out var named))
             {
                 error = $"'{group}' is not a facet to group by. The facets are " +
                     string.Join(", ", codex.Facets.Select(f => f.Key)) + ".";
@@ -222,8 +222,12 @@ public sealed record CodexQuery
         };
     }
 
-    private static string? Declared(IReadOnlySet<string> declared, string key) =>
-        declared.Contains(key) ? key.ToLowerInvariant() : null;
+    private static BrowseParameter? Declared(IReadOnlySet<string> declared, string key) =>
+        !declared.Contains(key) ? null
+        : QueryKeys.TryParse<BrowseParameter>(key, out var control) ? control
+        : throw new InvalidOperationException(
+            $"'{key}' is declared as a filter parameter and no {nameof(BrowseParameter)} names it, so a caller " +
+            "would find it in the published document and see it do nothing.");
 
     private static (string Key, bool IsMax) Bound(string key) =>
         key.EndsWith("Max", StringComparison.OrdinalIgnoreCase) ? (key[..^3], true)
@@ -292,7 +296,7 @@ public sealed record CodexQuery
         var parts = Parameters(ranges: true).Select(field => $"{Uri.EscapeDataString(field.Name)}={Uri.EscapeDataString(field.Value)}").ToList();
 
         var wanted = page ?? Page;
-        if (wanted > 1) parts.Add($"page={wanted.ToString(CultureInfo.InvariantCulture)}");
+        if (wanted > 1) parts.Add($"{QueryKeys.Key(BrowseParameter.Page)}={wanted.ToString(CultureInfo.InvariantCulture)}");
 
         return parts.Count == 0 ? string.Empty : "?" + string.Join('&', parts);
     }
@@ -301,30 +305,30 @@ public sealed record CodexQuery
 
     private IEnumerable<(string Name, string Value)> Parameters(bool ranges)
     {
-        if (!string.IsNullOrWhiteSpace(Text)) yield return ("q", Text);
+        if (!string.IsNullOrWhiteSpace(Text)) yield return (QueryKeys.Key(BrowseParameter.Q), Text);
 
-        foreach (var type in Types) yield return ("type", EntityTypes.Slug(type));
+        foreach (var type in Types) yield return (QueryKeys.Key(BrowseParameter.Type), EntityTypes.Slug(type));
 
-        foreach (var (key, values) in Selections.OrderBy(pair => CodexKeys.Key(pair.Key), StringComparer.Ordinal))
+        foreach (var (key, values) in Selections.OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
         {
-            foreach (var value in values) yield return (CodexKeys.Key(key), value);
+            foreach (var value in values) yield return (QueryKeys.Key(key), value);
         }
 
-        foreach (var (key, wanted) in Flags.OrderBy(pair => CodexKeys.Key(pair.Key), StringComparer.Ordinal))
+        foreach (var (key, wanted) in Flags.OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
         {
-            yield return (CodexKeys.Key(key), wanted ? "1" : "0");
+            yield return (QueryKeys.Key(key), wanted ? "1" : "0");
         }
 
-        foreach (var (key, range) in Ranges.Where(_ => ranges).OrderBy(pair => CodexKeys.Key(pair.Key), StringComparer.Ordinal))
+        foreach (var (key, range) in Ranges.Where(_ => ranges).OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
         {
-            if (range.Min is { } min) yield return (CodexKeys.Key(key) + "Min", FellowshipCodex.Number(min));
-            if (range.Max is { } max) yield return (CodexKeys.Key(key) + "Max", FellowshipCodex.Number(max));
+            if (range.Min is { } min) yield return (QueryKeys.Key(key) + "Min", FellowshipCodex.Number(min));
+            if (range.Max is { } max) yield return (QueryKeys.Key(key) + "Max", FellowshipCodex.Number(max));
         }
 
-        if (Sort != SortingType.Name) yield return ("sort", Sort.Key);
-        if (Descending) yield return ("dir", "desc");
-        if (Group is { } group) yield return ("group", CodexKeys.Key(group));
-        if (PageSize != DefaultPageSize) yield return ("size", PageSize.ToString(CultureInfo.InvariantCulture));
+        if (Sort != SortingType.Name) yield return (QueryKeys.Key(BrowseParameter.Sort), Sort.Key);
+        if (Descending) yield return (QueryKeys.Key(BrowseParameter.Dir), "desc");
+        if (Group is { } group) yield return (QueryKeys.Key(BrowseParameter.Group), QueryKeys.Key(group));
+        if (PageSize != DefaultPageSize) yield return (QueryKeys.Key(BrowseParameter.Size), PageSize.ToString(CultureInfo.InvariantCulture));
     }
 
     public double? Bound(MeasureType measure, bool max) =>

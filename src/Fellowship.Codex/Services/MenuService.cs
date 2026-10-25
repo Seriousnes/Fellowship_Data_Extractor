@@ -138,7 +138,7 @@ public sealed class MenuService : IMenuService
         new(FellowshipCodex.Spaced(value), Link(where, facet, value), colour, sections);
 
     private static string Link(string where, FacetType facet, string value) =>
-        $"{where}{(where.Contains('?', StringComparison.Ordinal) ? '&' : '?')}{CodexKeys.Key(facet)}={Uri.EscapeDataString(value)}";
+        $"{where}{(where.Contains('?', StringComparison.Ordinal) ? '&' : '?')}{QueryKeys.Key(facet)}={Uri.EscapeDataString(value)}";
 
     private static string Where(EntityType type) => PublicTypes.Where(type);
 

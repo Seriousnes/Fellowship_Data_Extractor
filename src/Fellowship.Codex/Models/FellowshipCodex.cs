@@ -9,7 +9,7 @@ namespace Fellowship.Codex.Models;
 
 public sealed record Sorting(SortingType Type, Func<EntityDocument, IComparable?> Value)
 {
-    public string Key => CodexKeys.Key(Type);
+    public string Key => QueryKeys.Key(Type);
 
     public string Label => CodexKeys.Label(Type);
 }

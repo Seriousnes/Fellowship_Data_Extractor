@@ -7,7 +7,7 @@
 @code {
     [Parameter, EditorRequired] public GlyphDocument Entity { get; set; } = default!;
 
-    [Parameter] public string? State { get; set; }
+    [Parameter] public GlyphState State { get; set; }
 
     [Parameter] public int Width { get; set; } = 64;
 
