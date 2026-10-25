@@ -161,22 +161,11 @@
 
         IEnumerable<EntityDocument> Pooled() => definition.SlotType switch
         {
-            CraftSlots.GemSocket => Store.Entities.OfType<GemDocument>(),
-
             CraftSlots.AttunementTree => AttunementTrees.Find(Item.AttunementTree, Store.Settings) is { } tree
                 ? tree.Nodes.SelectMany(node => AttunementTrees.Offered(node, Store, TooltipView.Wearer(Item, Query))).DistinctBy(augmentation => augmentation.Id)
                 : [],
 
-            CraftSlots.Augmentation => definition.AugmentationPool
-                .SelectMany(category => AttunementTrees.InCategory(category, Store, TooltipView.Wearer(Item, Query))),
-
-            CraftSlots.GemPower => Store.Entities
-                .OfType<RadianceDocument>()
-                .Where(gem => definition.GemPowerPool.Any(tag => tag.EndsWith(
-                    $"{TagSeparator}{gem.Type}", StringComparison.OrdinalIgnoreCase))),
-
-            _ => Store.Entities.Where(row =>
-                EntityTypes.TypeOf(row) == TooltipView.TypeOf(ItemCraft.KindOf(accepts, Store.Settings)!.Value, Store.Settings)),
+            _ => ItemCraft.Pool(accepts, Store, TooltipView.Wearer(Item, Query)),
         };
 
         var label = definition.SlotType switch
@@ -188,8 +177,6 @@
 
         return new Group(label, [.. Pooled().Select(row => Entity(accepts, row))]);
     }
-
-    private const char TagSeparator = '.';
 
     private Choice Entity(string accepts, EntityDocument document)
     {

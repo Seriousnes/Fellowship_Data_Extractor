@@ -83,6 +83,53 @@ public sealed class ModifierRecipeTests
         Assert.Equal("Attunement Tree:", Export.Loaded.Settings.AttunementTreeHeader);
     }
 
+    [Theory]
+    [InlineData(AspectRecipe, "Shrine of Infusion")]
+    [InlineData("Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1OneOption", "Gem Removal Table")]
+    [InlineData("Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot1OneOption", "Master Craftsman")]
+    [InlineData("Crafting.Recipes.TraitTrees.RerollNecklaceTraits", "Master Craftsman")]
+    [InlineData("Crafting.Recipes.HeroItems.UpgradeItemRarityMax.Basic", null)]
+    [InlineData("Crafting.Recipes.Gems.DesocketGemFromItem", null)]
+    public void ARecipeNamesTheVendorItIsAvailableAt(string recipe, string? vendor)
+    {
+        Assert.Equal(vendor, Recipe(recipe).Vendor);
+    }
+
+    [Fact]
+    public void ARerollRecipeCostsGoldAndAnExportedCurrency()
+    {
+        var aspect = Recipe(AspectRecipe);
+
+        Assert.Equal("(Slot 1) Random Aspect", aspect.Name);
+        Assert.Equal(80, aspect.GoldCost);
+        Assert.False(aspect.GoldCostScalesWithItemLevel);
+
+        var cost = Assert.Single(aspect.Costs);
+        Assert.Equal(1, cost.Amount);
+
+        var currencies = Export.Loaded.Documents
+            .Where(document => document.Type == EntityType.Currency)
+            .Select(document => document.Id)
+            .ToHashSet();
+
+        Assert.All(
+            Export.Loaded.Settings.CraftingRecipes.SelectMany(recipe => recipe.Costs),
+            each => Assert.Contains(each.Currency, currencies));
+    }
+
+    [Fact]
+    public void EveryModifierRecipeIsACraftingRecipe()
+    {
+        var recipes = Export.Loaded.Settings.CraftingRecipes.Select(recipe => recipe.Recipe).ToHashSet();
+
+        Assert.All(
+            Export.Loaded.Settings.ModifierTypes.SelectMany(type => type.Recipes),
+            reroll => Assert.Contains(reroll.Recipe, recipes));
+    }
+
+    private static CraftingRecipeEntry Recipe(string id) =>
+        Export.Loaded.Settings.CraftingRecipes.Single(recipe => recipe.Recipe == id);
+
     private static ModifierTypeEntry Type(string name) =>
         Export.Loaded.Settings.ModifierTypes.Single(type => type.Name == name);
 }

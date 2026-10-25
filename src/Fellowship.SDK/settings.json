@@ -4661,6 +4661,988 @@
       ]
     }
   ],
+  "craftingRecipes": [
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1OneOption",
+      "name": "(Slot 1) Random Embellishment",
+      "category": "Embellishment",
+      "description": "Apply a random Embellishment to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2OneOption",
+      "name": "(Slot 2) Random Embellishment",
+      "category": "Embellishment",
+      "description": "Apply a random Embellishment to Slot 2, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3OneOption",
+      "name": "(Slot 3) Random Embellishment",
+      "category": "Embellishment",
+      "description": "Apply a random Embellishment to Slot 3, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1ThreeOptions",
+      "name": "(Slot 1) Pick from 3 Embellishments",
+      "category": "Embellishment",
+      "description": "Choose 1 of 3 randomly selected Embellishments to apply to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2ThreeOptions",
+      "name": "(Slot 2) Pick from 3 Embellishments",
+      "category": "Embellishment",
+      "description": "Choose 1 of 3 randomly selected Embellishments to apply to Slot 2, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3ThreeOptions",
+      "name": "(Slot 3) Pick from 3 Embellishments",
+      "category": "Embellishment",
+      "description": "Choose 1 of 3 randomly selected Embellishments  to apply to Slot 3, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1AllOptions",
+      "name": "(Slot 1) Choose Any Embellishment",
+      "category": "Embellishment Mastery",
+      "description": "Apply a random Embellishment to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 11,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2AllOptions",
+      "name": "(Slot 2) Choose Any Embellishment",
+      "category": "Embellishment Mastery",
+      "description": "Choose any Embellishment to apply to Slot 2, replacing any existing modifier.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 11,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3AllOptions",
+      "name": "(Slot 3) Choose Any Embellishment",
+      "category": "Embellishment Mastery",
+      "description": "Choose any Embellishment to apply to Slot 3, replacing any existing modifier.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 11,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot1OneOption",
+      "name": "(Slot 1) Random Sigil",
+      "category": "Sigils",
+      "description": "Apply a random Sigil to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot2OneOption",
+      "name": "(Slot 2) Random Sigil",
+      "category": "Sigils",
+      "description": "Apply a random Sigil to Slot 2, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot3OneOption",
+      "name": "(Slot 3) Random Sigil",
+      "category": "Sigils",
+      "description": "Apply a random Sigil to Slot 3, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot1ThreeOptions",
+      "name": "(Slot 1) Pick from 3 Sigils",
+      "category": "Sigils",
+      "description": "Choose 1 of 3 randomly selected Sigils to apply to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot2ThreeOptions",
+      "name": "(Slot 2) Pick from 3 Sigils",
+      "category": "Sigils",
+      "description": "Choose 1 of 3 randomly selected Sigils to apply to Slot 2, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot3ThreeOptions",
+      "name": "(Slot 3) Pick from 3 Sigils",
+      "category": "Sigils",
+      "description": "Choose 1 of 3 randomly selected Sigils to apply to Slot 3, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot1AllOptions",
+      "name": "(Slot 1) Choose Any Sigil",
+      "category": "Sigil Mastery",
+      "description": "Choose any Sigil to apply to Slot 1, replacing any existing modifier.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 13,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot2AllOptions",
+      "name": "(Slot 2) Choose Any Sigil",
+      "category": "Sigil Mastery",
+      "description": "Choose any Sigil to apply to Slot 2, replacing any existing modifier.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 13,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.HeroicTrait.Slot3AllOptions",
+      "name": "(Slot 3) Choose Any Sigil",
+      "category": "Sigil Mastery",
+      "description": "Choose any Sigil to apply to Slot 3, replacing any existing modifier.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 13,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot1OneOption",
+      "name": "(Slot 1) Random Aspect",
+      "category": "Aspects",
+      "description": "Apply a random Aspect to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot2OneOption",
+      "name": "(Slot 2) Random Aspect",
+      "category": "Aspects",
+      "description": "Apply a random Aspect to Slot 2, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot3OneOption",
+      "name": "(Slot 3) Random Aspect",
+      "category": "Aspects",
+      "description": "Apply a random Aspect to Slot 3, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot1ThreeOptions",
+      "name": "(Slot 1) Pick from 3 Aspects",
+      "category": "Aspects",
+      "description": "Choose 1 of 3 randomly selected Aspects to apply to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot2ThreeOptions",
+      "name": "(Slot 2) Pick from 3 Aspects",
+      "category": "Aspects",
+      "description": "Choose 1 of 3 randomly selected Aspects to apply to Slot 2, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot3ThreeOptions",
+      "name": "(Slot 3) Pick from 3 Aspects",
+      "category": "Aspects",
+      "description": "Choose 1 of 3 randomly selected Aspects to apply to Slot 3, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot1AllOptions",
+      "name": "(Slot 1) Choose Any Aspect",
+      "category": "Aspect Mastery",
+      "description": "Choose any Aspect to apply to Slot 1, replacing any existing modifier.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 13,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot2AllOptions",
+      "name": "(Slot 2) Choose Any Aspect",
+      "category": "Aspect Mastery",
+      "description": "Choose any Aspect to apply to Slot 2, replacing any existing modifier.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 13,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.MasterTrait.Slot3AllOptions",
+      "name": "(Slot 3) Choose Any Aspect",
+      "category": "Aspect Mastery",
+      "description": "Choose any Aspect to apply to Slot 3, replacing any existing modifier.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 13,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot1OneOption",
+      "name": "(Slot 1) Random Enchant",
+      "category": "Enchants",
+      "description": "Apply a random Enchant to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Master Craftsman",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot2OneOption",
+      "name": "(Slot 2) Random Enchant",
+      "category": "Enchants",
+      "description": "Apply a random Enchant to Slot 2, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Master Craftsman",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3OneOption",
+      "name": "(Slot 3) Random Enchant",
+      "category": "Enchants",
+      "description": "Apply a random Enchant to Slot 3, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Master Craftsman",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot1ThreeOptions",
+      "name": "(Slot 1) Pick from 3 Enchants",
+      "category": "Enchants",
+      "description": "Choose 1 of 3 randomly selected Enchants to apply to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Master Craftsman",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot2ThreeOptions",
+      "name": "(Slot 2) Pick from 3 Enchants",
+      "category": "Enchants",
+      "description": "Choose 1 of 3 randomly selected Enchants to apply to Slot 2, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Master Craftsman",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3ThreeOptions",
+      "name": "(Slot 3) Pick from 3 Enchants",
+      "category": "Enchants",
+      "description": "Choose 1 of 3 randomly selected Enchants to apply to Slot 3, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Master Craftsman",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot1AllOptions",
+      "name": "(Slot 1) Choose Any Enchant",
+      "category": "Enchant Mastery",
+      "description": "Choose any Enchant to apply to Slot 1, replacing any existing modifier.",
+      "vendor": "Master Craftsman",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5122,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot2AllOptions",
+      "name": "(Slot 2) Choose Any Enchant",
+      "category": "Enchant Mastery",
+      "description": "Choose any Enchant to apply to Slot 2, replacing any existing modifier.",
+      "vendor": "Master Craftsman",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5122,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3AllOptions",
+      "name": "(Slot 3) Choose Any Enchant",
+      "category": "Enchant Mastery",
+      "description": "Choose any Enchant to apply to Slot 3, replacing any existing modifier.",
+      "vendor": "Master Craftsman",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5122,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot1OneOption",
+      "name": "(Slot 1) Random Glyph",
+      "category": "Glyphs",
+      "description": "Apply a random Glyph to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot2OneOption",
+      "name": "(Slot 2) Random Glyph",
+      "category": "Glyphs",
+      "description": "Apply a random Glyph to Slot 2, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3OneOption",
+      "name": "(Slot 3) Random Glyph",
+      "category": "Glyphs",
+      "description": "Apply a random Glyph to Slot 3, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot1ThreeOptions",
+      "name": "(Slot 1) Pick from 3 Glyphs",
+      "category": "Glyphs",
+      "description": "Choose 1 of 3 randomly selected Glyphs to apply to Slot 1, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot2ThreeOptions",
+      "name": "(Slot 2) Pick from 3 Glyphs",
+      "category": "Glyphs",
+      "description": "Choose 1 of 3 randomly selected Glyphs to apply to Slot 2, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3ThreeOptions",
+      "name": "(Slot 3) Pick from 3 Glyphs",
+      "category": "Glyphs",
+      "description": "Choose 1 of 3 randomly selected Glyphs to apply to Slot 3, replacing any existing modifier. The previous modifier can be restored if the result is unwanted.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 420,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot1AllOptions",
+      "name": "(Slot 1) Choose Any Glyph",
+      "category": "Glyph Mastery",
+      "description": "Choose any Glyph to apply to Slot 1, replacing any existing modifier.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5122,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot2AllOptions",
+      "name": "(Slot 2) Choose Any Glyph",
+      "category": "Glyph Mastery",
+      "description": "Choose any Glyph to apply to Slot 2, replacing any existing modifier.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5122,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3AllOptions",
+      "name": "(Slot 3) Choose Any Glyph",
+      "category": "Glyph Mastery",
+      "description": "Choose any Glyph to apply to Slot 3, replacing any existing modifier.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 1000,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 5122,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.Gems.SplitOneIntoThreeOfLesserTier",
+      "name": "Split Gem",
+      "category": "Gem Fusion",
+      "description": "Split a Large, Spendid, or Flawless Gem into 3x smaller Gems of the same color.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 0,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.Gems.DesocketGemFromItem",
+      "name": "Unsocket gem from item",
+      "category": "Gem Fusion",
+      "description": "Remove a socketed Gem from an item.",
+      "goldCost": 0,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.Gems.FuseToTier2",
+      "name": "Unstable Fusion",
+      "category": "Gem Fusion",
+      "description": "Fuse with Aether to combine 3x Small Gems into a Large Gem of the same color.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 0,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 1
+        }
+      ],
+      "inputs": 3
+    },
+    {
+      "recipe": "Crafting.Recipes.Gems.FuseToTier3",
+      "name": "Imbued Fusion",
+      "category": "Gem Fusion",
+      "description": "Fuse with an Imbued Aether to combine 3x Large Gems into a Splendid Gem of the same color.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 0,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 3
+        }
+      ],
+      "inputs": 3
+    },
+    {
+      "recipe": "Crafting.Recipes.Gems.FuseToTier4",
+      "name": "Arcane Fusion",
+      "category": "Gem Fusion",
+      "description": "Fuse with an Arcane Aether to combine 3x Splendid Gems into a Flawless Gem of the same color.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 0,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 5
+        }
+      ],
+      "inputs": 3
+    },
+    {
+      "recipe": "Crafting.Recipes.Gems.RerollToRandomColor",
+      "name": "Unstable Transmutation",
+      "category": "Gem Transmutation",
+      "description": "Transmute a gem using Aether to transform it into a gem of a DIFFERENT random color.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 20,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.Gems.RerollIntoThreeChoices",
+      "name": "Focused Transmutation",
+      "category": "Gem Transmutation",
+      "description": "Transmute a gem using Aether to transform it into gem of a DIFFERENT color. Provides a choice of 3 random colors.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 50,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 3,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.Gems.RerollIntoSixChoices",
+      "name": "Eternal Transmutation",
+      "category": "Gem Transmutation",
+      "description": "Transmute a gem using an Eternal Aether to transform it into ANY color of your choice.",
+      "vendor": "Gem Removal Table",
+      "goldCost": 100,
+      "goldCostScalesWithItemLevel": false,
+      "costs": [
+        {
+          "currency": 11,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.TraitTrees.RerollHeroicTraits",
+      "name": "Sigil Attunement",
+      "category": "Attunements",
+      "description": "Attune a Weapon to Godstones to randomize all Sigils.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 50,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.TraitTrees.RerollMajorTraits",
+      "name": "Aspect Attunement",
+      "category": "Attunements",
+      "description": "Attune a Weapon to Godstones to randomize all Aspects.",
+      "vendor": "Shrine of Infusion",
+      "goldCost": 80,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [
+        {
+          "currency": 19,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.TraitTrees.RerollNecklaceTraits",
+      "name": "Necklace Attunement",
+      "category": "Attunements",
+      "description": "Attune a Neck to Godstones to randomize all Protective Enchants.",
+      "vendor": "Master Craftsman",
+      "goldCost": 85,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [
+        {
+          "currency": 5124,
+          "amount": 5
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.TraitTrees.UnlockRow1",
+      "name": "Unlock Trait Row 1",
+      "category": "Traits",
+      "description": "Unlock Trait Row 1",
+      "goldCost": 25,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.TraitTrees.UnlockRow2",
+      "name": "Unlock Trait Row 2",
+      "category": "Traits",
+      "description": "Unlock Trait Row 2",
+      "goldCost": 35,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.TraitTrees.UnlockRow3",
+      "name": "Unlock Trait Row 3",
+      "category": "Traits",
+      "description": "Unlock Trait Row 3",
+      "goldCost": 40,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.TraitTrees.UnlockRow4",
+      "name": "Unlock Trait Row 4",
+      "category": "Traits",
+      "description": "Unlock Trait Row 4",
+      "goldCost": 55,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.TraitTrees.UnlockRow5",
+      "name": "Unlock Trait Row 5",
+      "category": "Traits",
+      "description": "Unlock Trait Row 4",
+      "goldCost": 100,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.UpgradeItemRarityMax.Basic",
+      "name": "Upgrade Item Rarity - Basic Bloodstone",
+      "category": "Item Transmutation",
+      "description": "Upgrades the rarity of the item to \u0027Regal\u0027.\r\nUpgrades ilevel to 315.\r\nExisting modifiers are kept. Any added modifiers are based on existing modifiers. \r\nTempers the item 3 out of 8 times.",
+      "goldCost": 200,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [
+        {
+          "currency": 5118,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.UpgradeItemRarityMax.Powerful",
+      "name": "Upgrade Item Rarity - Powerful Bloodstone",
+      "category": "Item Transmutation",
+      "description": "Upgrades the rarity of the item to \u0027Regal\u0027. \r\nUpgrades ilevel to 315\r\nExisting modifiers are kept. Any added modifiers are based on existing modifiers. \r\nTempers the item 5 out of 8 times.",
+      "goldCost": 350,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [
+        {
+          "currency": 5119,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    },
+    {
+      "recipe": "Crafting.Recipes.HeroItems.UpgradeItemRarityMax.Ultimate",
+      "name": "Upgrade Item Rarity - Ultimate Bloodstone",
+      "category": "Item Transmutation",
+      "description": "Upgrades the rarity of the item to \u0027Regal\u0027. \r\nUpgrades ilevel to 315.\r\nExisting modifiers are kept. Any added modifiers are based on existing modifiers. \r\nTempers the item 8 out of 8 times.",
+      "goldCost": 500,
+      "goldCostScalesWithItemLevel": true,
+      "costs": [
+        {
+          "currency": 5120,
+          "amount": 1
+        }
+      ],
+      "inputs": 1
+    }
+  ],
   "emptyModifierSlot": {
     "sign": "?",
     "text": "Empty Modifier"

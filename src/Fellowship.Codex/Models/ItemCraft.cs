@@ -86,6 +86,29 @@ public static class ItemCraft
                 $"The settings define no item slot {name}, so the editor knows no slot type for it. The slots " +
                 $"defined are {string.Join(", ", settings.StatCalculation.SlotDefinitions.Keys)}.");
 
+    public static IEnumerable<EntityDocument> Pool(string accepts, IEntityStoreService store, string? wearer)
+    {
+        var definition = Definition(accepts, store.Settings);
+
+        return definition.SlotType switch
+        {
+            CraftSlots.GemSocket => store.Entities.OfType<GemDocument>(),
+
+            CraftSlots.Augmentation => definition.AugmentationPool
+                .SelectMany(category => AttunementTrees.InCategory(category, store, wearer)),
+
+            CraftSlots.GemPower => store.Entities
+                .OfType<RadianceDocument>()
+                .Where(gem => definition.GemPowerPool.Any(tag => tag.EndsWith(
+                    $"{TagSeparator}{gem.Type}", StringComparison.OrdinalIgnoreCase))),
+
+            _ => store.Entities.Where(row =>
+                EntityTypes.TypeOf(row) == TooltipView.TypeOf(KindOf(accepts, store.Settings)!.Value, store.Settings)),
+        };
+    }
+
+    private const char TagSeparator = '.';
+
     public static string? Defining(ModifierKind kind, EntityDocument? row, SettingsFile settings) =>
         settings.StatCalculation.SlotDefinitions.TryGetValue(kind.ToString(), out var definition) &&
         (definition.SlotType != CraftSlots.Augmentation ||

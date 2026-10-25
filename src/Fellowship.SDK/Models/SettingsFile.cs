@@ -90,6 +90,8 @@ public sealed record SettingsFile
 
     public IReadOnlyList<ModifierTypeEntry> ModifierTypes { get; init; } = [];
 
+    public IReadOnlyList<CraftingRecipeEntry> CraftingRecipes { get; init; } = [];
+
     public EmptyModifierSlot? EmptyModifierSlot { get; init; }
 
     public StatCalculationFile StatCalculation { get; init; } = new();
