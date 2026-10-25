@@ -92,7 +92,7 @@ public static class RecordLists
             {
                 if (string.Equals(key, "sort", StringComparison.OrdinalIgnoreCase) &&
                     values.LastOrDefault() is { Length: > 0 } sort &&
-                    codex.Sorting(sort) is null && codex.Measure(sort) is null &&
+                    !SortColumn.TryParse(sort, out _) &&
                     RecordFields.Find(typeof(TRecord), sort) is { } field)
                 {
                     sortField = field;
@@ -105,7 +105,7 @@ public static class RecordLists
 
             if (readingKeys.Contains(key)) continue;
 
-            if (codex.Facet(key) is not null || codex.Flag(key) is not null || Bounded(codex, key))
+            if (CodexKeys.TryParse<FacetType>(key, out _) || CodexKeys.TryParse<FlagType>(key, out _) || Bounded(codex, key))
             {
                 browsing[key] = values;
                 continue;
@@ -169,7 +169,7 @@ public static class RecordLists
         .Where(property => property.DeclaringType != typeof(RecordListRequest))
         .SelectMany(property => property.GetCustomAttributes(typeof(ReadsAttribute), false)
             .Cast<ReadsAttribute>()
-            .Select(reads => reads.Measure)
+            .Select(reads => CodexKeys.Key(reads.Measure))
             .Append(property.Name))
         .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
@@ -179,7 +179,8 @@ public static class RecordLists
     private static bool Bounded(ICodexService codex, string key) =>
         (key.EndsWith("Min", StringComparison.OrdinalIgnoreCase) ||
             key.EndsWith("Max", StringComparison.OrdinalIgnoreCase)) &&
-        Measures(codex).Any(measure => string.Equals(measure.Key, key[..^3], StringComparison.OrdinalIgnoreCase));
+        CodexKeys.TryParse<MeasureType>(key[..^3], out var bounded) &&
+        Measures(codex).Any(measure => measure.Type == bounded);
 
     private static string[] Wanted(StringValues values) =>
     [

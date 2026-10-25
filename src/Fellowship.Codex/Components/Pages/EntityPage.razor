@@ -173,10 +173,10 @@
     private IReadOnlyList<(string, string)> Nearby()
     {
         var nearby = new List<(string, string)>();
-        void Add(string facet, string? value)
+        void Add(FacetType facet, string? value)
         {
             if (value is null) return;
-            if (Catalog.Facet(facet) is not { } definition) return;
+            var definition = Catalog.Facet(facet);
 
             var count = Store.Entities.Count(row =>
                 EntityTypes.TypeOf(row) == type && PublicTypes.IsListed(row) &&
@@ -187,18 +187,18 @@
 
             nearby.Add((
                 $"{definition.Label}: {Catalog.Printed(definition, value)}",
-                $"{Under}&{facet}={Uri.EscapeDataString(value)}"));
+                $"{Under}&{definition.Key}={Uri.EscapeDataString(value)}"));
         }
 
-        string? First(string key) => Catalog.Facet(key)?.Values(Entity).FirstOrDefault();
+        string? First(FacetType facet) => Catalog.Facet(facet).Values(Entity).FirstOrDefault();
 
-        Add("slot", First("slot"));
-        Add("gem", First("gem"));
+        Add(FacetType.Slot, First(FacetType.Slot));
+        Add(FacetType.Gem, First(FacetType.Gem));
 
-        var heroes = Catalog.Facet("hero")?.Values(Entity).ToArray() ?? [];
-        Add("hero", heroes.Length == 1 ? heroes[0] : null);
+        var heroes = Catalog.Facet(FacetType.Hero).Values(Entity).ToArray();
+        Add(FacetType.Hero, heroes.Length == 1 ? heroes[0] : null);
 
-        Add("school", First("school"));
+        Add(FacetType.School, First(FacetType.School));
 
         return nearby;
     }

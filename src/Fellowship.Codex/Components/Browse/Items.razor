@@ -6,12 +6,12 @@
         <Column Head="" Class="cx-texture">
             <Content Context="row"><Texture Entity="row" /></Content>
         </Column>
-        <Column Head="Name" Key="name">
+        <Column Head="Name" Key="SortingType.Name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column Head="ILvl" Key="ilvl" Numeric Value="row => row.ItemLevel" />
-        <Column Head="Slot" Key="slot" Value="row => row.Slot" />
-        <Column Head="Source" Key="source" Class="cx-tags">
+        <Column Head="ILvl" Key="SortingType.Ilvl" Numeric Value="row => row.ItemLevel" />
+        <Column Head="Slot" Key="SortingType.Slot" Value="row => row.Slot" />
+        <Column Head="Source" Key="SortingType.Source" Class="cx-tags">
             <Content Context="row">
                 @foreach (var source in row.Sources ?? [])
                 {
@@ -19,7 +19,7 @@
                 }
             </Content>
         </Column>
-        <Column Head="Type" Key="kind" Class="cx-tags">
+        <Column Head="Type" Key="SortingType.Kind" Class="cx-tags">
             <Content Context="row">
                 @if (string.Equals(row.Slot, WeaponSlot, StringComparison.Ordinal))
                 {

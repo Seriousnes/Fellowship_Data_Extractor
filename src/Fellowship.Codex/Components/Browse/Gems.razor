@@ -6,16 +6,16 @@
         <Column Head="" Class="cx-texture">
             <Content Context="row"><Texture Entity="row" /></Content>
         </Column>
-        <Column Head="Name" Key="name">
+        <Column Head="Name" Key="SortingType.Name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column Head="Type" Key="gem">
+        <Column Head="Type" Key="SortingType.Gem">
             <Content Context="row">
                 <span style="color:@CodexView.Readable(Ui.Tokens.Gem(row.Type.ToString()))">@row.Type</span>
             </Content>
         </Column>
-        <Column Head="Power" Key="power" Numeric Value="row => row.Power" />
-        <Column Head="Rarity" Key="rarity">
+        <Column Head="Power" Key="SortingType.Power" Numeric Value="row => row.Power" />
+        <Column Head="Rarity" Key="SortingType.Rarity">
             <Content Context="row">
                 <span style="color:@Ui.LinkColour(row)">@Ui.RarityName(row.Rarity)</span>
             </Content>

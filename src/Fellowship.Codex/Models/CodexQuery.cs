@@ -18,20 +18,19 @@ public sealed record CodexQuery
 
     public IReadOnlyList<EntityType> Types { get; init; } = [];
 
-    public IReadOnlyDictionary<string, IReadOnlyList<string>> Selections { get; init; } =
-        new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+    public IReadOnlyDictionary<FacetType, IReadOnlyList<string>> Selections { get; init; } =
+        new Dictionary<FacetType, IReadOnlyList<string>>();
 
-    public IReadOnlyDictionary<string, bool> Flags { get; init; } =
-        new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+    public IReadOnlyDictionary<FlagType, bool> Flags { get; init; } = new Dictionary<FlagType, bool>();
 
-    public IReadOnlyDictionary<string, (double? Min, double? Max)> Ranges { get; init; } =
-        new Dictionary<string, (double?, double?)>(StringComparer.OrdinalIgnoreCase);
+    public IReadOnlyDictionary<MeasureType, (double? Min, double? Max)> Ranges { get; init; } =
+        new Dictionary<MeasureType, (double?, double?)>();
 
-    public string Sort { get; init; } = "name";
+    public SortColumn Sort { get; init; } = SortingType.Name;
 
     public bool Descending { get; init; }
 
-    public string? Group { get; init; }
+    public FacetType? Group { get; init; }
 
     public int Page { get; init; } = 1;
 
@@ -46,9 +45,9 @@ public sealed record CodexQuery
     {
         error = null;
 
-        var selections = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
-        var flags = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        var ranges = new Dictionary<string, (double?, double?)>(StringComparer.OrdinalIgnoreCase);
+        var selections = new Dictionary<FacetType, IReadOnlyList<string>>();
+        var flags = new Dictionary<FlagType, bool>();
+        var ranges = new Dictionary<MeasureType, (double?, double?)>();
         var types = new List<EntityType>();
 
         string? text = null, sort = "name", group = null;
@@ -124,8 +123,9 @@ public sealed record CodexQuery
                 continue;
             }
 
-            if (codex.Facet(key) is { } facet)
+            if (CodexKeys.TryParse<FacetType>(key, out var faceted))
             {
+                var facet = codex.Facet(faceted);
                 var offered = codex.Offered(facet);
                 var chosen = new List<string>();
 
@@ -156,24 +156,24 @@ public sealed record CodexQuery
                     }
                 }
 
-                selections[facet.Key] = chosen;
+                selections[faceted] = chosen;
                 continue;
             }
 
-            if (codex.Flag(key) is { } flag)
+            if (CodexKeys.TryParse<FlagType>(key, out var flag))
             {
                 var value = values.Length == 0 || !(values[^1] is "0" or "false" or "no");
-                flags[flag.Key] = value;
+                flags[flag] = value;
                 continue;
             }
 
-            if (Bound(key) is var (measureKey, isMax) && codex.Measure(measureKey) is { } measure)
+            if (Bound(key) is var (measureKey, isMax) && CodexKeys.TryParse<MeasureType>(measureKey, out var measure))
             {
                 if (!TryNumber(values, out var bound, out error)) return new CodexQuery { Category = category };
                 if (bound is null) continue;
 
-                var current = ranges.GetValueOrDefault(measure.Key);
-                ranges[measure.Key] = isMax ? (current.Item1, bound) : (bound, current.Item2);
+                var current = ranges.GetValueOrDefault(measure);
+                ranges[measure] = isMax ? (current.Item1, bound) : (bound, current.Item2);
                 continue;
             }
 
@@ -185,18 +185,25 @@ public sealed record CodexQuery
             return new CodexQuery { Category = category };
         }
 
-        if (codex.Sorting(sort) is null && codex.Measure(sort) is null)
+        if (!SortColumn.TryParse(sort, out var sorted))
         {
             error = $"'{sort}' is not a column. Sort by one of " +
                 string.Join(", ", codex.Sortings.Select(s => s.Key).Concat(codex.Measures.Select(m => m.Key))) + ".";
             return new CodexQuery { Category = category };
         }
 
-        if (group is not null && codex.Facet(group) is null)
+        FacetType? grouped = null;
+
+        if (group is not null)
         {
-            error = $"'{group}' is not a facet to group by. The facets are " +
-                string.Join(", ", codex.Facets.Select(f => f.Key)) + ".";
-            return new CodexQuery { Category = category };
+            if (!CodexKeys.TryParse<FacetType>(group, out var named))
+            {
+                error = $"'{group}' is not a facet to group by. The facets are " +
+                    string.Join(", ", codex.Facets.Select(f => f.Key)) + ".";
+                return new CodexQuery { Category = category };
+            }
+
+            grouped = named;
         }
 
         return new CodexQuery
@@ -207,9 +214,9 @@ public sealed record CodexQuery
             Selections = selections,
             Flags = flags,
             Ranges = ranges,
-            Sort = sort,
+            Sort = sorted,
             Descending = descending,
-            Group = group,
+            Group = grouped,
             Page = page,
             PageSize = pageSize,
         };
@@ -240,125 +247,90 @@ public sealed record CodexQuery
         return true;
     }
 
-    public string ToQueryString(
-        (string Key, string? Value)? replace = null,
-        (string Key, string Value)? toggle = null,
-        int? page = null)
+    public CodexQuery WithType(EntityType? type) => this with { Types = type is { } only ? [only] : [], Page = 1 };
+
+    public CodexQuery Toggled(EntityType type) =>
+        this with { Types = Types.Contains(type) ? [.. Types.Where(kept => kept != type)] : [.. Types, type], Page = 1 };
+
+    public CodexQuery Toggled(FacetType facet, string value)
     {
-        var parts = new List<string>();
+        var chosen = Selections.GetValueOrDefault(facet)?.ToList() ?? [];
+        if (!chosen.Remove(value)) chosen.Add(value);
 
-        void Add(string key, string value) =>
-            parts.Add($"{Uri.EscapeDataString(key)}={Uri.EscapeDataString(value)}");
+        return this with { Selections = new Dictionary<FacetType, IReadOnlyList<string>>(Selections) { [facet] = chosen }, Page = 1 };
+    }
 
-        var text = Text;
-        var types = Types.ToList();
-        var selections = Selections.ToDictionary(
-            pair => pair.Key, pair => pair.Value.ToList(), StringComparer.OrdinalIgnoreCase);
-        var flags = new Dictionary<string, bool>(Flags, StringComparer.OrdinalIgnoreCase);
-        var sort = Sort;
-        var descending = Descending;
-        var group = Group;
+    public CodexQuery WithFacet(FacetType facet, string? value)
+    {
+        var selections = new Dictionary<FacetType, IReadOnlyList<string>>(Selections);
 
-        if (toggle is { } switched)
-        {
-            if (string.Equals(switched.Key, "type", StringComparison.OrdinalIgnoreCase))
-            {
-                if (EntityTypes.TryParse(switched.Value, out var type) && !types.Remove(type)) types.Add(type);
-            }
-            else
-            {
-                var chosen = selections.TryGetValue(switched.Key, out var list) ? list : [];
-                if (!chosen.Remove(switched.Value)) chosen.Add(switched.Value);
-                selections[switched.Key] = chosen;
-            }
-        }
+        if (value is null) selections.Remove(facet);
+        else selections[facet] = [value];
 
-        if (replace is { } set)
-        {
-            switch (set.Key.ToLowerInvariant())
-            {
-                case "q": text = set.Value; break;
-                case "sort": sort = set.Value ?? "name"; break;
-                case "dir": descending = set.Value?.StartsWith('d') == true; break;
-                case "group": group = set.Value; break;
-                case "type":
-                    types = set.Value is null ? [] : EntityTypes.TryParse(set.Value, out var replaced) ? [replaced] : [];
-                    break;
-                default:
-                    if (flags.ContainsKey(set.Key) || set.Value is "0" or "1")
-                    {
-                        if (set.Value is null) flags.Remove(set.Key);
-                        else flags[set.Key] = set.Value is not "0";
-                    }
-                    else if (set.Value is null)
-                    {
-                        selections.Remove(set.Key);
-                    }
-                    else
-                    {
-                        selections[set.Key] = [set.Value];
-                    }
+        return this with { Selections = selections, Page = 1 };
+    }
 
-                    break;
-            }
-        }
+    public CodexQuery WithFlag(FlagType flag, bool? wanted)
+    {
+        var flags = new Dictionary<FlagType, bool>(Flags);
 
-        if (!string.IsNullOrWhiteSpace(text)) Add("q", text);
-        foreach (var type in types) Add("type", EntityTypes.Slug(type));
+        if (wanted is { } stated) flags[flag] = stated;
+        else flags.Remove(flag);
 
-        foreach (var (key, values) in selections.OrderBy(p => p.Key, StringComparer.Ordinal))
-        {
-            foreach (var value in values) Add(key, value);
-        }
+        return this with { Flags = flags, Page = 1 };
+    }
 
-        foreach (var (key, wanted) in flags.OrderBy(p => p.Key, StringComparer.Ordinal))
-        {
-            Add(key, wanted ? "1" : "0");
-        }
+    public CodexQuery WithoutRange(MeasureType measure) =>
+        this with { Ranges = Ranges.Where(range => range.Key != measure).ToDictionary(), Page = 1 };
 
-        foreach (var (key, range) in Ranges.OrderBy(p => p.Key, StringComparer.Ordinal))
-        {
-            if (range.Min is { } min) Add(key + "Min", FellowshipCodex.Number(min));
-            if (range.Max is { } max) Add(key + "Max", FellowshipCodex.Number(max));
-        }
+    public CodexQuery WithSort(SortColumn sort, bool descending) => this with { Sort = sort, Descending = descending, Page = 1 };
 
-        if (sort != "name") Add("sort", sort);
-        if (descending) Add("dir", "desc");
-        if (group is not null) Add("group", group);
-        if (PageSize != DefaultPageSize) Add("size", PageSize.ToString(CultureInfo.InvariantCulture));
+    public CodexQuery WithGroup(FacetType? group) => this with { Group = group, Page = 1 };
 
-        var wantedPage = page ?? (replace is null && toggle is null ? Page : 1);
-        if (wantedPage > 1) Add("page", wantedPage.ToString(CultureInfo.InvariantCulture));
+    public string ToQueryString(int? page = null)
+    {
+        var parts = Parameters(ranges: true).Select(field => $"{Uri.EscapeDataString(field.Name)}={Uri.EscapeDataString(field.Value)}").ToList();
+
+        var wanted = page ?? Page;
+        if (wanted > 1) parts.Add($"page={wanted.ToString(CultureInfo.InvariantCulture)}");
 
         return parts.Count == 0 ? string.Empty : "?" + string.Join('&', parts);
     }
 
-    public IEnumerable<(string Name, string Value)> Fields()
+    public IEnumerable<(string Name, string Value)> Fields() => Parameters(ranges: false);
+
+    private IEnumerable<(string Name, string Value)> Parameters(bool ranges)
     {
         if (!string.IsNullOrWhiteSpace(Text)) yield return ("q", Text);
 
         foreach (var type in Types) yield return ("type", EntityTypes.Slug(type));
 
-        foreach (var (key, values) in Selections.OrderBy(p => p.Key, StringComparer.Ordinal))
+        foreach (var (key, values) in Selections.OrderBy(pair => CodexKeys.Key(pair.Key), StringComparer.Ordinal))
         {
-            foreach (var value in values) yield return (key, value);
+            foreach (var value in values) yield return (CodexKeys.Key(key), value);
         }
 
-        foreach (var (key, wanted) in Flags.OrderBy(p => p.Key, StringComparer.Ordinal))
+        foreach (var (key, wanted) in Flags.OrderBy(pair => CodexKeys.Key(pair.Key), StringComparer.Ordinal))
         {
-            yield return (key, wanted ? "1" : "0");
+            yield return (CodexKeys.Key(key), wanted ? "1" : "0");
         }
 
-        if (Sort != "name") yield return ("sort", Sort);
+        foreach (var (key, range) in Ranges.Where(_ => ranges).OrderBy(pair => CodexKeys.Key(pair.Key), StringComparer.Ordinal))
+        {
+            if (range.Min is { } min) yield return (CodexKeys.Key(key) + "Min", FellowshipCodex.Number(min));
+            if (range.Max is { } max) yield return (CodexKeys.Key(key) + "Max", FellowshipCodex.Number(max));
+        }
+
+        if (Sort != SortingType.Name) yield return ("sort", Sort.Key);
         if (Descending) yield return ("dir", "desc");
-        if (Group is not null) yield return ("group", Group);
+        if (Group is { } group) yield return ("group", CodexKeys.Key(group));
         if (PageSize != DefaultPageSize) yield return ("size", PageSize.ToString(CultureInfo.InvariantCulture));
     }
 
-    public double? Bound(string measure, bool max) =>
+    public double? Bound(MeasureType measure, bool max) =>
         Ranges.TryGetValue(measure, out var range) ? max ? range.Max : range.Min : null;
 
-    public bool Chosen(string facet, string value) =>
+    public bool Chosen(FacetType facet, string value) =>
         Selections.TryGetValue(facet, out var values) &&
         values.Contains(value, StringComparer.OrdinalIgnoreCase);
 
@@ -374,9 +346,9 @@ public sealed record CodexResults(
     int Page,
     int Pages,
     IReadOnlyList<EntityDocument> Rows,
-    IReadOnlyList<FacetView> Facets,
+    IReadOnlyList<FacetCount> Facets,
     IReadOnlyDictionary<EntityType, int> Types,
     EntityType? Chosen,
-    IReadOnlyList<string> Measured,
-    IReadOnlyList<string> Flagged);
+    IReadOnlyList<MeasureType> Measured,
+    IReadOnlyList<FlagType> Flagged);
 

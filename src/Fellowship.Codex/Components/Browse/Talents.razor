@@ -6,10 +6,10 @@
         <Column Head="" Class="cx-texture">
             <Content Context="row"><Texture Entity="row" /></Content>
         </Column>
-        <Column Head="Name" Key="name">
+        <Column Head="Name" Key="SortingType.Name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column Head="Hero" Key="hero">
+        <Column Head="Hero" Key="SortingType.Hero">
             <Content Context="row">
                 @if (Slot(row.Id)?.Hero is { } hero)
                 {
@@ -17,8 +17,8 @@
                 }
             </Content>
         </Column>
-        <Column Head="Cost" Key="cost" Numeric Value="row => Slot(row.Id)?.Cost" />
-        <Column Head="Tier" Key="tier" Numeric Value="row => Slot(row.Id)?.Row" />
+        <Column Head="Cost" Key="SortingType.Cost" Numeric Value="row => Slot(row.Id)?.Cost" />
+        <Column Head="Tier" Key="SortingType.Tier" Numeric Value="row => Slot(row.Id)?.Row" />
     </Columns>
 </Table>
 

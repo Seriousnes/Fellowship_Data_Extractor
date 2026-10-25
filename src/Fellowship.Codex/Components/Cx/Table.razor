@@ -78,9 +78,9 @@
 
     [Parameter] public Func<T, string?>? Group { get; set; }
 
-    [Parameter] public Func<string, string>? SortLink { get; set; }
+    [Parameter] public Func<SortColumn, string>? SortLink { get; set; }
 
-    [Parameter] public Func<string, string?>? SortState { get; set; }
+    [Parameter] public Func<SortColumn, string?>? SortState { get; set; }
 
     [Parameter] public string Ungrouped { get; set; } = "Carries none";
 

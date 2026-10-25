@@ -31,8 +31,6 @@
 
     private (string Href, TooltipLink? Tip, string Name)? TextureSource;
 
-    private const string SchoolFacet = "school";
-
     private static readonly RenderFragment RankTables = @<Ranks />;
 
     protected override void OnParametersSet()
@@ -40,7 +38,7 @@
         Facts = [.. Extra, .. Ui.Facts(Entity)];
         ByVersion = ReferenceEquals(Entity, Here.Entity) ? History.Of(Entity) : [];
 
-        IEnumerable<string> schools = Ui.Codex.Facet(SchoolFacet)?.Values(Entity) ?? [];
+        var schools = Ui.Codex.Facet(FacetType.School).Values(Entity);
 
         Schools = [.. schools.Select(school => (school, Filter(school)))];
 
@@ -54,5 +52,5 @@
             : null;
 
     private string Filter(string school) =>
-        $"{PublicTypes.Where(EntityTypes.TypeOf(Entity))}&{SchoolFacet}={Uri.EscapeDataString(school)}";
+        $"{PublicTypes.Where(EntityTypes.TypeOf(Entity))}&{CodexKeys.Key(FacetType.School)}={Uri.EscapeDataString(school)}";
 }

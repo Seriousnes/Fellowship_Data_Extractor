@@ -5,36 +5,14 @@ using System.Reflection;
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
 
-using Fellowship.Codex.Services;
-
 namespace Fellowship.Codex.Models;
 
-public sealed record Facet(
-    string Key,
-    string Label,
-    Func<EntityDocument, IEnumerable<string>> Values)
+public sealed record Sorting(SortingType Type, Func<EntityDocument, IComparable?> Value)
 {
-    public Func<IDesignTokenService, string, string?>? Colour { get; init; }
+    public string Key => CodexKeys.Key(Type);
 
-    public bool Primary { get; init; }
-
-    public bool Matches(EntityDocument document, IReadOnlyCollection<string> wanted) =>
-        Values(document).Any(value => wanted.Contains(value, StringComparer.OrdinalIgnoreCase));
+    public string Label => CodexKeys.Label(Type);
 }
-
-public sealed record Flag(string Key, string Label, Func<EntityDocument, bool> Predicate)
-{
-    public bool Hides { get; init; }
-
-    public bool Admits(EntityDocument document) => !Hides || !Predicate(document);
-}
-
-public sealed record Measure(string Key, string Label, Func<EntityDocument, double?> Value)
-{
-    public string? Unit { get; init; }
-}
-
-public sealed record Sorting(string Key, string Label, Func<EntityDocument, IComparable?> Value);
 
 public sealed class SortOrder : IComparer<IComparable?>
 {

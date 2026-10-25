@@ -6,15 +6,15 @@
         <Column Head="" Class="cx-texture">
             <Content Context="row"><Texture Entity="row" /></Content>
         </Column>
-        <Column Head="Name" Key="name">
+        <Column Head="Name" Key="SortingType.Name">
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
-        <Column Head="Applied by" Key="applier">
+        <Column Head="Applied by" Key="SortingType.Applier">
             <Content Context="row">
                 <Owner Type="EntityType.Ability" Holder="row.AppliedBy" />
             </Content>
         </Column>
-        <Column Head="Type" Key="school" Class="cx-tags">
+        <Column Head="Type" Key="SortingType.School" Class="cx-tags">
             <Content Context="row">
                 @foreach (var school in row.Schools ?? [])
                 {
