@@ -7,6 +7,8 @@ namespace FellowshipExtractor.Extraction;
 
 public sealed record EffectRef
 {
+    public UObject? Default { get; init; }
+
     public IReadOnlyList<string>? CapturedAttributes { get; init; }
     public IReadOnlyList<CurveBinding>? Constants { get; init; }
 
@@ -97,6 +99,7 @@ public static class GameplayEffects
 
         return new EffectRef
         {
+            Default = effect,
             CapturedAttributes = Combined(Captures(effect), custom.Captures),
             Constants = Prefixed(custom.Duration, Collected(effect, constants)),
             Spread = band ?? presets.Of(effect),

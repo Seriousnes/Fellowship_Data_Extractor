@@ -1,5 +1,6 @@
 @inject ICodexViewService Codex
 @inject ITooltipViewService Cards
+@inject IEntityStoreService Store
 
 @if (Query.Mobile)
 {
@@ -33,9 +34,13 @@ else
     private Dictionary<string, object?> Knobs =>
         new(StringComparer.Ordinal) { [nameof(Item.Query)] = Query, [nameof(Item.Hero)] = Hero };
 
+    private EntityDocument Shown = default!;
+
+    protected override void OnParametersSet() => Shown = AppliedChanges.Apply(Entity, Query.ChangedBy, Store);
+
     private RenderFragment Card =>
-        @<CascadingValue Value="Entity">
-            <DynamicComponent Type="GetTooltipComponent(Entity)" Parameters="Knobs" />
+        @<CascadingValue Value="Shown">
+            <DynamicComponent Type="GetTooltipComponent(Shown)" Parameters="Knobs" />
         </CascadingValue>;
 
     private static Type GetTooltipComponent(EntityDocument document) => document switch

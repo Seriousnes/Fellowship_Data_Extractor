@@ -48,4 +48,6 @@ public sealed class AbilityDocument : EntityDocument
     public IReadOnlyList<Hero>? Heroes { get; init; }
 
     public EntityReference? Owner { get; init; }
+
+    public IReadOnlyList<EntityReference>? ChangedBy { get; init; }
 }

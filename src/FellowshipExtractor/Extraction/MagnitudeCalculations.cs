@@ -8,6 +8,8 @@ namespace FellowshipExtractor.Extraction;
 public sealed record CustomMagnitudes(CurveBinding? Duration, IReadOnlyList<string> Captures)
 {
     public static readonly CustomMagnitudes None = new(null, []);
+
+    public IReadOnlyList<UObject> Calculators { get; init; } = [];
 }
 
 public sealed record MagnitudeReading(double? Value, double? Low, double? High)
@@ -31,6 +33,7 @@ public static class MagnitudeCalculations
     {
         CurveBinding? duration = null;
         List<string>? captures = null;
+        var calculators = new List<UObject>();
         var properties = PropertyWalk.Walk(cdo).ToArray();
         var gated = TalentGated(properties);
 
@@ -39,6 +42,8 @@ public static class MagnitudeCalculations
             if (!property.Name.Equals(ClassField, StringComparison.Ordinal)) continue;
             if (PropertyWalk.AsString(property.Value) is not { } classPath) continue;
             if (Calculation(provider, classPath) is not { } calculation) continue;
+
+            if (!calculators.Contains(calculation)) calculators.Add(calculation);
 
             if (!gated.Any(scope => property.Path.StartsWith(scope, StringComparison.Ordinal)) &&
                 BareStateWalk.Compiled(calculation, Function) is { ScriptBytecode: { Length: > 0 } read })
@@ -67,9 +72,9 @@ public static class MagnitudeCalculations
             };
         }
 
-        return duration is null && captures is null
+        return duration is null && captures is null && calculators.Count == 0
             ? CustomMagnitudes.None
-            : new CustomMagnitudes(duration, captures ?? []);
+            : new CustomMagnitudes(duration, captures ?? []) { Calculators = calculators };
     }
 
     private const string RequireTagsField = "RequireTags";

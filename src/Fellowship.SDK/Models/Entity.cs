@@ -121,6 +121,96 @@ public sealed record Entity
 
     public IReadOnlyList<string>? GrantedTags { get; init; }
 
+    public IReadOnlyDictionary<string, double>? Rows { get; init; }
+
+    public IReadOnlyDictionary<string, double>? TagRows { get; init; }
+
+    public IReadOnlyDictionary<string, double>? NamespaceRows { get; init; }
+
+    public IReadOnlyDictionary<string, IReadOnlyList<string>>? GatedAdds { get; init; }
+
+    public IReadOnlyList<string>? TestedTags { get; init; }
+
+    public IReadOnlyList<string>? AddedTags { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? HeldTags { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? EffectAssetTags { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? AbilityTags { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? GrantedEffects { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? OngoingTags { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? CooldownTags { get; init; }
+
+    [JsonIgnore]
+    public bool? Uncooked { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? TriggerTags { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? SentEvents { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? SpawnedActors { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? BypassCostTags { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? InstantTags { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? LooseTags { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, IReadOnlyList<string>>? ProcEffects { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, IReadOnlyList<string>>? ProcAssetTags { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<StackGrant>? StackGrants { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<CooldownTerm>? CooldownTerms { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? DurationGates { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, CountRead>? Counts { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? GrantedAbilityNames { get; init; }
+
+
+
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, double>>? GatedConstants { get; init; }
+
+    public IReadOnlyDictionary<string, IReadOnlyList<EffectModifier>>? GatedModifiers { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, IReadOnlyList<string>>? RowUses { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<ForeignRead>? ForeignReads { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? OwnRows { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? Replacements { get; init; }
+
     public string? TalentSlot { get; init; }
 
     public int? TalentRow { get; init; }
@@ -361,6 +451,7 @@ public sealed record Placeholder
     public bool? ShowDamageType { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
+
     public IReadOnlyDictionary<string, object?>? Constants { get; init; }
 
     public bool? FromOwnConstants { get; init; }
@@ -387,6 +478,13 @@ public sealed record Placeholder
 
     [JsonIgnore]
     public bool FromTable { get; init; }
+}
+
+public sealed record ForeignRead(string Tag, string Owner, string Property);
+
+public sealed record CooldownTerm(string Array, double Value)
+{
+    public string? Tag { get; init; }
 }
 
 public sealed record PlaceholderTerm(string Attribute, double Coefficient);

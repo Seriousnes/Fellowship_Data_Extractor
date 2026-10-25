@@ -8,12 +8,46 @@ namespace Fellowship.Codex.Endpoints;
 public static class TooltipRequests
 {
     public static TooltipQuery Read(
-        AbilityTooltipRequest? request, IEntityStoreService store, out string? error) =>
-        Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error) with
+        AbilityTooltipRequest? request, IEntityStoreService store, out string? error)
+    {
+        var read = Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error);
+
+        var sources = error is null ? ChangedBy(request?.ChangedBy, store, out error) : [];
+
+        return read with
         {
             Hero = StatQuery.NullIfEmpty(request?.Hero),
             Difficulty = request?.Difficulty,
+            ChangedBy = sources,
         };
+    }
+
+    public static IReadOnlyList<ChangeSource> ChangedBy(
+        IReadOnlyList<ChangeSource>? sources, IEntityStoreService store, out string? error)
+    {
+        error = null;
+
+        if (sources is not { Count: > 0 }) return [];
+
+        foreach (var source in sources)
+        {
+            if (store.All(source.Type, source.Id) is [_, ..]) continue;
+
+            error = $"The build has no {PublicTypes.Noun(source.Type)} {source.Id} to change the tooltip.";
+            return [];
+        }
+
+        return sources;
+    }
+
+    public static IReadOnlyList<ChangeSource> ChangedBy(string? written, IEntityStoreService store, out string? error)
+    {
+        if (ChangeSources.TryParse(written, out var parsed)) return ChangedBy(parsed.Values, store, out error);
+
+        error = $"'{written}' is not a list of change sources, each written type:id with any held effect " +
+            "after a '~', such as talent:38~effect:1376.";
+        return [];
+    }
 
     public static TooltipQuery Read(GlyphTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error) with
@@ -40,11 +74,18 @@ public static class TooltipRequests
         Read(request?.ShowIcon, request?.Mobile, out error);
 
     public static TooltipQuery Read(
-        EffectTooltipRequest? request, IEntityStoreService store, out string? error) =>
-        Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error) with
+        EffectTooltipRequest? request, IEntityStoreService store, out string? error)
+    {
+        var read = Read(request?.Stats, request?.ShowIcon, request?.Mobile, store, out error);
+
+        var sources = error is null ? ChangedBy(request?.ChangedBy, store, out error) : [];
+
+        return read with
         {
             Hero = StatQuery.NullIfEmpty(request?.Hero),
+            ChangedBy = sources,
         };
+    }
 
     public static TooltipQuery Read(GemTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error) with

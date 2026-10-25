@@ -13,6 +13,13 @@ public sealed record EffectMagnitudes(
 {
     public static readonly EffectMagnitudes None =
         new([], new Dictionary<string, IReadOnlyDictionary<string, double>>(StringComparer.Ordinal));
+
+    public IReadOnlyList<string> DurationGates { get; init; } = [];
+}
+
+public sealed record SlotUse(string Attribute, string? Op, string? Row, string? SetByCallerTag, bool Executed)
+{
+    public IReadOnlyList<string> Required { get; init; } = [];
 }
 
 public static class EffectModifiers
@@ -30,6 +37,19 @@ public static class EffectModifiers
     private const string BackingField = "BackingAttribute";
     private const string CapturedField = "AttributeToCapture";
     private const string ComponentSuffix = "EffectComponent";
+    private const string ExecutionsField = "Executions";
+    private const string CalculationModifiersField = "CalculationModifiers";
+    private const string CapturedAttributeField = "CapturedAttribute";
+    private const string RequireTagsField = "RequireTags";
+    private const string SetByCallerKind = "SetByCaller";
+    private const string SetByCallerField = "SetByCallerMagnitude";
+    private const string DataTagField = "DataTag";
+    private const string TagNameField = "TagName";
+
+    private const string TargetTagsField = "TargetTags";
+    public const string TargetMark = "~target:";
+
+    private static readonly string[] TagFilterFields = ["SourceTags", TargetTagsField];
 
     private const string OpEnum = GameplayEffects.OpEnum;
     private const string KindEnum = "EGameplayEffectMagnitudeCalculation";
@@ -56,6 +76,7 @@ public static class EffectModifiers
         var effect = EffectContext.For(cdo, capturedBy);
         var modifiers = new List<EffectModifier>();
         var talents = new Dictionary<string, Dictionary<string, double>>(StringComparer.Ordinal);
+        var durationGates = new SortedSet<string>(StringComparer.Ordinal);
 
         foreach (var slot in slots)
         {
@@ -79,10 +100,12 @@ public static class EffectModifiers
                     ValueHigh = read.High,
                     Coefficient = scaling?.Coefficient,
                     ScalesOff = scaling?.Attribute is { } captured ? [captured] : null,
+                    Row = Row(slot.Magnitude, kind),
                 });
             }
 
             if (gates is { Count: > 0 }) Vary(slot, read, gates, provider, constants, talents, effect);
+            if (gates is { Count: > 0 } && slot.Attribute.Equals(DurationField, StringComparison.Ordinal)) durationGates.UnionWith(gates);
         }
 
         return new EffectMagnitudes(
@@ -90,7 +113,139 @@ public static class EffectModifiers
             talents.ToDictionary(
                 talent => talent.Key,
                 talent => (IReadOnlyDictionary<string, double>)talent.Value,
-                StringComparer.Ordinal));
+                StringComparer.Ordinal))
+        {
+            DurationGates = [.. durationGates],
+        };
+    }
+
+    public static IReadOnlyDictionary<string, IReadOnlyList<EffectModifier>> Gated(
+        UObject? effect, AbstractFileProvider provider, ConstantsTable constants, TypeMappings mappings)
+    {
+        var gated = new Dictionary<string, List<EffectModifier>>(StringComparer.Ordinal);
+        if (effect is null) return new Dictionary<string, IReadOnlyList<EffectModifier>>(StringComparer.Ordinal);
+
+        foreach (var (attribute, modifier, _) in GatedSlots(effect))
+        {
+            var required = Required(modifier);
+
+            if (required.Length == 0) continue;
+            if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) continue;
+
+            var declared = PropertyWalk.GetString(magnitude, CalculationTypeField);
+            var kind = EnumOrdinals.Member(mappings, KindEnum, declared) ?? ScalableFloat;
+            var read = Read(magnitude, kind, provider, constants, null, EffectContext.For(effect, null));
+            var scaling = kind.Equals(AttributeBased, StringComparison.Ordinal)
+                ? Captured(magnitude, constants)
+                : null;
+
+            if (!read.HasValue && scaling?.Attribute is null) continue;
+
+            var stated = new EffectModifier(attribute)
+            {
+                Op = EnumOrdinals.Member(mappings, OpEnum, PropertyWalk.GetString(modifier, ModifierOpField)),
+                Value = read.Value,
+                ValueLow = read.Low,
+                ValueHigh = read.High,
+                Coefficient = scaling?.Coefficient,
+                ScalesOff = scaling?.Attribute is { } captured ? [captured] : null,
+                Row = Row(magnitude, kind),
+            };
+
+            foreach (var tag in required)
+            {
+                if (!gated.TryGetValue(tag, out var under)) gated[tag] = under = [];
+                if (!under.Contains(stated)) under.Add(stated);
+            }
+        }
+
+        return gated.ToDictionary(
+            entry => entry.Key,
+            entry => (IReadOnlyList<EffectModifier>)entry.Value,
+            StringComparer.Ordinal);
+    }
+
+    public static IEnumerable<SlotUse> Uses(UObject? effect, TypeMappings mappings)
+    {
+        if (effect is null) yield break;
+
+        foreach (var (attribute, modifier, executed) in GatedSlots(effect))
+        {
+            if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) continue;
+
+            var kind = EnumOrdinals.Member(mappings, KindEnum, PropertyWalk.GetString(magnitude, CalculationTypeField))
+                ?? ScalableFloat;
+            var op = EnumOrdinals.Member(mappings, OpEnum, PropertyWalk.GetString(modifier, ModifierOpField));
+
+            var tag = kind.Equals(SetByCallerKind, StringComparison.Ordinal) &&
+                      PropertyWalk.GetStruct(magnitude, SetByCallerField) is { } supplied &&
+                      PropertyWalk.GetStruct(supplied, DataTagField) is { } named
+                ? PropertyWalk.GetString(named, TagNameField)
+                : null;
+
+            yield return new SlotUse(attribute, op, Row(magnitude, kind), tag is { Length: > 0 } ? tag : null, executed)
+            {
+                Required = Required(modifier),
+            };
+        }
+    }
+
+    private static string[] Required(IPropertyHolder modifier) =>
+        [
+            .. TagFilterFields
+                .SelectMany(filter => PropertyWalk.GetStruct(modifier, filter) is { } tags
+                    ? (PropertyWalk.GetTags(tags, RequireTagsField) ?? [])
+                        .Select(tag => filter == TargetTagsField ? TargetMark + tag : tag)
+                    : [])
+                .Distinct(StringComparer.Ordinal),
+        ];
+
+    private static IEnumerable<(string Attribute, IPropertyHolder Modifier, bool Executed)> GatedSlots(UObject effect)
+    {
+        foreach (var modifier in Structs(effect, ModifiersField))
+        {
+            if (PropertyWalk.GetStruct(modifier, AttributeField) is not { } attribute) continue;
+            if (PropertyWalk.GetString(attribute, AttributeNameField) is not { } named) continue;
+
+            yield return (named, modifier, false);
+        }
+
+        foreach (var execution in Structs(effect, ExecutionsField))
+        {
+            foreach (var modifier in Structs(execution, CalculationModifiersField))
+            {
+                if (PropertyWalk.GetStruct(modifier, CapturedAttributeField) is not { } captured) continue;
+                if (PropertyWalk.GetStruct(captured, CapturedField) is not { } attribute) continue;
+                if (PropertyWalk.GetString(attribute, AttributeNameField) is not { } named) continue;
+
+                yield return (named, modifier, true);
+            }
+        }
+    }
+
+    private static string? Row(IPropertyHolder magnitude, string kind)
+    {
+        var scalable = kind.Equals(AttributeBased, StringComparison.Ordinal)
+            ? PropertyWalk.GetStruct(magnitude, AttributeBasedField) is { } based
+                ? PropertyWalk.GetStruct(based, CoefficientField)
+                : null
+            : PropertyWalk.GetStruct(magnitude, ScalableField);
+
+        var row = scalable is not null && PropertyWalk.GetStruct(scalable, "Curve") is { } curve
+            ? PropertyWalk.GetString(curve, "RowName")
+            : null;
+
+        return row is null || row.Length == 0 || row.Equals("None", StringComparison.Ordinal) ? null : row;
+    }
+
+    private static IEnumerable<IPropertyHolder> Structs(IPropertyHolder holder, string field)
+    {
+        if (PropertyWalk.Get(holder, field)?.GenericValue is not UScriptArray entries) yield break;
+
+        foreach (var entry in entries.Properties)
+        {
+            if (entry?.GenericValue is FScriptStruct { StructType: IPropertyHolder held }) yield return held;
+        }
     }
 
     private static bool Emits(Slot slot, MagnitudeReading read, (double? Coefficient, string? Attribute)? scaling)
