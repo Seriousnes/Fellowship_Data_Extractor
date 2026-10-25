@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Primitives;
+
 using Fellowship.SDK;
 using Fellowship.SDK.Models;
 
@@ -119,6 +121,25 @@ public class AppliedChangesTests(Export export)
                 ((AbilityDocument)target!).Placeholders!.Select(placeholder => placeholder.Coefficient),
                 changed.Placeholders!.Select(placeholder => placeholder.Coefficient));
         }
+    }
+
+    [Fact]
+    public void A_page_address_reads_its_changed_by_sources_into_the_query()
+    {
+        var (source, change) = Changes.First(entry => entry.Change.While is null);
+        var target = export.Store.All(change.Target.Type, change.Target.Id).First();
+        var written = new ChangeSource(EntityTypes.TypeOf(source), source.Id);
+
+        var query = PageQuery.Read(
+            new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
+            {
+                [QueryKeys.Key(ReadingParameter.ChangedBy)] = written.ToString(),
+            },
+            export.Store,
+            null,
+            target);
+
+        Assert.Equal([written], query.ChangedBy);
     }
 
     private static IReadOnlyList<EntityReference> DocumentFieldsOf(EntityDocument target) => target switch

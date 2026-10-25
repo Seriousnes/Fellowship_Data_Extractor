@@ -163,21 +163,21 @@ public static class RowSinks
                 {
                     if (variable is EX_InstanceVariable && DynamicTextFloats.Name(variable) is { } property)
                     {
-                        walk.Visit(value, SetConsumer + property + walk.Readers(property, package), [], 0, Unvisited, gates);
+                        walk.Visit(value, SetConsumer + property + walk.Readers(property, package), [], gates);
                     }
                     else if (variable is EX_LocalOutVariable || DynamicTextFloats.Name(variable) == Returned)
                     {
-                        walk.Visit(value, ReturnConsumer + body.Name, [], 0, Unvisited, gates);
+                        walk.Visit(value, ReturnConsumer + body.Name, [], gates);
                     }
                     else if (Invoking(value) is { } call && Calling(call) is { } called && !IsArithmetic(called))
                     {
-                        walk.Visit(value, null, [], 0, Unvisited, gates);
+                        walk.Visit(value, null, [], gates);
                     }
 
                     continue;
                 }
 
-                walk.Visit(statement, null, [], 0, Unvisited, gates);
+                walk.Visit(statement, null, [], gates);
             }
         }
 
@@ -413,13 +413,33 @@ public static class RowSinks
         Context context,
         ISet<RowSink> sinks)
     {
+        private const string Inherited = "\0inherited";
+
+        private readonly Dictionary<string, IReadOnlyList<RowSink>> _expanded = new(StringComparer.Ordinal);
+
+        private readonly List<Expansion> _expanding = [];
+
+        private sealed class Expansion(string local)
+        {
+            public string Local { get; } = local;
+
+            public bool Cut { get; set; }
+        }
+
         public void Visit(
             KismetExpression? expression,
             string? consumer,
             IReadOnlyList<string> steps,
+            IReadOnlyList<string>? gates = null) =>
+            Visit(expression, consumer, steps, 0, gates, sinks);
+
+        private void Visit(
+            KismetExpression? expression,
+            string? consumer,
+            IReadOnlyList<string> steps,
             int depth,
-            IReadOnlySet<string> visiting,
-            IReadOnlyList<string>? gates = null)
+            IReadOnlyList<string>? gates,
+            ISet<RowSink> into)
         {
             if (expression is null || depth > MaxDepth) return;
 
@@ -427,16 +447,22 @@ public static class RowSinks
             {
                 case EX_LocalVariable or EX_LocalOutVariable:
                 {
-                    if (DynamicTextFloats.Name(expression) is not { } name) return;
-                    if (visiting.Contains(name) || !locals.TryGetValue(name, out var values)) return;
+                    if (DynamicTextFloats.Name(expression) is not { } name || Expand(name) is not { } reached) return;
 
-                    var deeper = new HashSet<string>(visiting, StringComparer.Ordinal) { name };
-                    foreach (var value in values) Visit(value, consumer, steps, depth + 1, deeper, gates);
+                    foreach (var sink in reached)
+                    {
+                        into.Add(sink.Consumer == Inherited
+                            ? new RowSink(sink.Property, sink.Owner, consumer ?? ReturnConsumer + function, [.. steps, .. sink.Steps])
+                            {
+                                Gates = [.. gates ?? [], .. sink.Gates],
+                            }
+                            : sink with { Gates = [.. gates ?? [], .. sink.Gates] });
+                    }
 
                     return;
                 }
                 case EX_Cast cast:
-                    Visit(cast.Target, consumer, steps, depth + 1, visiting, gates);
+                    Visit(cast.Target, consumer, steps, depth + 1, gates, into);
                     return;
             }
 
@@ -448,7 +474,7 @@ public static class RowSinks
                 {
                     if (Read(parameters.FirstOrDefault()) is var (property, owner))
                     {
-                        sinks.Add(new RowSink(property, owner, consumer ?? ReturnConsumer + function, steps)
+                        into.Add(new RowSink(property, owner, consumer ?? ReturnConsumer + function, steps)
                         {
                             Gates = gates ?? [],
                         });
@@ -462,10 +488,10 @@ public static class RowSinks
                     for (var at = 0; at < parameters.Count; at++)
                     {
                         IReadOnlyList<string>? gated = called.StartsWith(Select, StringComparison.Ordinal) && at == 0
-                            ? [.. gates ?? [], .. States(parameters.ElementAtOrDefault(2), true, 0, visiting)]
+                            ? [.. gates ?? [], .. States(parameters.ElementAtOrDefault(2), true, 0, Unvisited)]
                             : gates;
 
-                        Visit(parameters[at], consumer, [.. steps, Step(called, at, parameters)], depth + 1, visiting, gated);
+                        Visit(parameters[at], consumer, [.. steps, Step(called, at, parameters)], depth + 1, gated, into);
                     }
 
                     return;
@@ -475,18 +501,44 @@ public static class RowSinks
 
                 for (var at = 0; at < parameters.Count; at++)
                 {
-                    Visit(parameters[at], $"{called}#{at}{qualifier}", [], depth + 1, visiting, gates);
+                    Visit(parameters[at], $"{called}#{at}{qualifier}", [], depth + 1, gates, into);
                 }
 
                 if (expression is EX_Context outer)
                 {
-                    Visit(outer.ObjectExpression, consumer, steps, depth + 1, visiting, gates);
+                    Visit(outer.ObjectExpression, consumer, steps, depth + 1, gates, into);
                 }
 
                 return;
             }
 
-            foreach (var child in Children(expression)) Visit(child, consumer, steps, depth + 1, visiting, gates);
+            foreach (var child in Children(expression)) Visit(child, consumer, steps, depth + 1, gates, into);
+        }
+
+        private IReadOnlyList<RowSink>? Expand(string local)
+        {
+            if (_expanded.TryGetValue(local, out var expanded)) return expanded;
+            if (!locals.TryGetValue(local, out var values)) return null;
+
+            var open = _expanding.FindIndex(expansion => expansion.Local == local);
+
+            if (open >= 0)
+            {
+                foreach (var expansion in _expanding.Skip(open + 1)) expansion.Cut = true;
+                return null;
+            }
+
+            var current = new Expansion(local);
+            var reached = new HashSet<RowSink>(new SinkComparer());
+
+            _expanding.Add(current);
+            foreach (var value in values) Visit(value, Inherited, [], 1, null, reached);
+            _expanding.RemoveAt(_expanding.Count - 1);
+
+            IReadOnlyList<RowSink> found = [.. reached];
+            if (!current.Cut) _expanded[local] = found;
+
+            return found;
         }
 
         public Dictionary<int, IReadOnlyList<string>> Controlled(UStruct body)
