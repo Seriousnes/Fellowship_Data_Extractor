@@ -4298,71 +4298,71 @@
   "modifierTypes": [
     {
       "name": "GemPower",
-      "printed": "Radiance",
-      "header": "Radiance",
+      "printed": "Embellishment",
+      "header": "Embellishment",
       "maximumLimit": 2,
-      "maximumLimitWarning": "An item can have up to 2 Radiances active at a time.",
+      "maximumLimitWarning": "An item can have up to 2 Embellishments active at a time.",
       "recipes": [
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1OneOption",
           "slotIndex": 0,
-          "category": "Radiance",
+          "category": "Embellishment",
           "options": 1,
           "allOptions": false
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2OneOption",
           "slotIndex": 1,
-          "category": "Radiance",
+          "category": "Embellishment",
           "options": 1,
           "allOptions": false
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3OneOption",
           "slotIndex": 2,
-          "category": "Radiance",
+          "category": "Embellishment",
           "options": 1,
           "allOptions": false
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1ThreeOptions",
           "slotIndex": 0,
-          "category": "Radiance",
+          "category": "Embellishment",
           "options": 3,
           "allOptions": false
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2ThreeOptions",
           "slotIndex": 1,
-          "category": "Radiance",
+          "category": "Embellishment",
           "options": 3,
           "allOptions": false
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3ThreeOptions",
           "slotIndex": 2,
-          "category": "Radiance",
+          "category": "Embellishment",
           "options": 3,
           "allOptions": false
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot1AllOptions",
           "slotIndex": 0,
-          "category": "Radiance Mastery",
+          "category": "Embellishment Mastery",
           "options": 1,
           "allOptions": true
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot2AllOptions",
           "slotIndex": 1,
-          "category": "Radiance Mastery",
+          "category": "Embellishment Mastery",
           "options": 1,
           "allOptions": true
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.GemPower.Slot3AllOptions",
           "slotIndex": 2,
-          "category": "Radiance Mastery",
+          "category": "Embellishment Mastery",
           "options": 1,
           "allOptions": true
         }
@@ -4538,7 +4538,7 @@
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3OneOption",
-          "slotIndex": 1,
+          "slotIndex": 2,
           "category": "Enchants",
           "options": 1,
           "allOptions": false
@@ -4559,7 +4559,7 @@
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.StatEnchant.Slot3ThreeOptions",
-          "slotIndex": 1,
+          "slotIndex": 2,
           "category": "Enchants",
           "options": 3,
           "allOptions": false
@@ -4632,7 +4632,7 @@
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3ThreeOptions",
-          "slotIndex": 1,
+          "slotIndex": 2,
           "category": "Glyphs",
           "options": 3,
           "allOptions": false
@@ -4653,7 +4653,7 @@
         },
         {
           "recipe": "Crafting.Recipes.HeroItems.Slots.RerollSlotIntoSpecific.Blessing.Slot3AllOptions",
-          "slotIndex": 1,
+          "slotIndex": 2,
           "category": "Glyph Mastery",
           "options": 3,
           "allOptions": true
