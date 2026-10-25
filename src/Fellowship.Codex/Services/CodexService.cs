@@ -150,9 +150,9 @@ public sealed class CodexService : ICodexService
 
         Flags =
         [
-            new Flag("unobtainable", "Show unobtainable items",
+            new Flag("unobtainable", "Show unobtainable entries",
                 document => PublicTypes.DisplayNameOf(document) is null ||
-                            document is ItemDocument { EnabledInGame: false })
+                            document.EnabledInGame is false)
             {
                 Hides = true,
             },
