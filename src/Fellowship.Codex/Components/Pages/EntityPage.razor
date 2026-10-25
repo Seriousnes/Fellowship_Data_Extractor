@@ -173,8 +173,6 @@
     private IReadOnlyList<(string, string)> Nearby()
     {
         var nearby = new List<(string, string)>();
-        var flag = Catalog.Flag(CodexQuery.NamedFlag);
-
         void Add(string facet, string? value)
         {
             if (value is null) return;
@@ -183,7 +181,7 @@
             var count = Store.Entities.Count(row =>
                 EntityTypes.TypeOf(row) == type && PublicTypes.IsListed(row) &&
                 definition.Matches(row, [value]) &&
-                (flag is null || flag.Predicate(row)));
+                Catalog.Flags.All(flag => flag.Admits(row)));
 
             if (count < 2) return;
 

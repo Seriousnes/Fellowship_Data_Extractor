@@ -22,7 +22,12 @@ public sealed record Facet(
         Values(document).Any(value => wanted.Contains(value, StringComparer.OrdinalIgnoreCase));
 }
 
-public sealed record Flag(string Key, string Label, Func<EntityDocument, bool> Predicate);
+public sealed record Flag(string Key, string Label, Func<EntityDocument, bool> Predicate)
+{
+    public bool Hides { get; init; }
+
+    public bool Admits(EntityDocument document) => !Hides || !Predicate(document);
+}
 
 public sealed record Measure(string Key, string Label, Func<EntityDocument, double?> Value)
 {

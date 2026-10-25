@@ -22,10 +22,12 @@ public sealed class DynamicItemDefinitionTests
             .ToDictionary(tag => tag.Name, tag => tag.NetId, StringComparer.OrdinalIgnoreCase);
 
     [Fact]
-    public void ADefinitionDisabledInGameIsNoItemDocument()
+    public void ADefinitionDisabledInGameIsAnItemDocumentDisabledInGame()
     {
         var ids = ItemIds();
-        var items = Export.Loaded.Documents.Where(row => row.Type == EntityType.Item).Select(row => row.Id).ToHashSet();
+        var items = Export.Loaded.Documents
+            .Where(row => row.Type == EntityType.Item)
+            .ToLookup(row => row.Id, row => row.Body["enabledInGame"]?.GetValue<bool>());
 
         var disabled = Definitions()
             .Where(definition => PropertyWalk.Get(definition, DynamicItemRuleSets.EnabledField)?.GenericValue is false)
@@ -33,7 +35,12 @@ public sealed class DynamicItemDefinitionTests
 
         Assert.NotEmpty(disabled);
         Assert.All(disabled, definition =>
-            Assert.DoesNotContain(ids[PropertyWalk.GetString(definition, ItemIdField)!], items));
+        {
+            var readings = items[ids[PropertyWalk.GetString(definition, ItemIdField)!]].ToArray();
+
+            Assert.NotEmpty(readings);
+            Assert.All(readings, enabled => Assert.False(enabled));
+        });
     }
 
     [Fact]

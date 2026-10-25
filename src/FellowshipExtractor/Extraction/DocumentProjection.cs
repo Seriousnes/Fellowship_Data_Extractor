@@ -93,6 +93,7 @@ public static class DocumentProjection
             Slot = entity.Slot,
             GemSlot = entity.GemSlot,
             UniqueEquipped = entity.UniqueEquipped,
+            EnabledInGame = entity.EnabledInGame,
 
             Rarity = Enum.TryParse<Rarity>(entity.RuleSet, out var fixedRarity)
                 ? fixedRarity

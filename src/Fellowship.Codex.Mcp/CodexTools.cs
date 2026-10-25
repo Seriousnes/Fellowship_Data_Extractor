@@ -31,7 +31,8 @@ public sealed class CodexTools(LiveExport export)
     [McpServerTool(Name = "find_entity", ReadOnly = true), Description(
         "Finds entities by name and returns the type and id that get_entity takes. Matches name " +
         "prefixes only, so \"ire\" does not reach \"Fire\"; camel-case subwords are indexed, so " +
-        "\"Bolt\" reaches \"FireBolt\". Entities the game leaves unnamed are not reachable by text. " +
+        "\"Bolt\" reaches \"FireBolt\". Entities the game leaves unnamed, and items it disables, are not " +
+        "reachable by text. " +
         "A number matches ids across every type.")]
     public FoundResult FindEntity(
         [Description("The name prefix to match, or an id.")] string q,

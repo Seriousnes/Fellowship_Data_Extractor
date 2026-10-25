@@ -203,7 +203,7 @@
         Legendaries =
         [
             .. owned.OfType<ItemDocument>()
-                .Where(item => item.Rarity == Rarity.Legendary)
+                .Where(item => item.Rarity == Rarity.Legendary && item.EnabledInGame is not false)
                 .OrderBy(item => item.Slot, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(item => Ui.Name(item), StringComparer.OrdinalIgnoreCase),
         ];

@@ -150,7 +150,12 @@ public sealed class CodexService : ICodexService
 
         Flags =
         [
-            new Flag("named", "Named in the game", document => PublicTypes.DisplayNameOf(document) is not null),
+            new Flag("unobtainable", "Show unobtainable items",
+                document => PublicTypes.DisplayNameOf(document) is null ||
+                            document is ItemDocument { EnabledInGame: false })
+            {
+                Hides = true,
+            },
             new Flag("icon", "Has texture", document => DocumentFields.Text(document, nameof(ItemDocument.Icon)) is not null),
             new Flag("described", "Has description text",
                 document => DocumentFields.Text(document, nameof(ItemDocument.Description)) is not null),

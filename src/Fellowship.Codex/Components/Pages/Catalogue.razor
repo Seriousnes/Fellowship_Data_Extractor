@@ -110,6 +110,18 @@ else
                 </form>
             }
 
+            @foreach (var flag in View.Reveals)
+            {
+                var shown = View.Revealed(flag.Key);
+
+                <details class="cx-facet" data-more="@("reveal-" + flag.Key)" hidden="@(!shown)" open>
+                    <summary>@flag.Label <FilterOff Clear="@(shown ? View.Replace(flag.Key, null) : null)" /></summary>
+                    <ul class="cx-facet-values">
+                        <li><a href="@View.Replace(flag.Key, shown ? null : "1")" class="@BrowseView.On(shown)">Yes</a></li>
+                    </ul>
+                </details>
+            }
+
             <select class="cx-more" aria-label="Additional filters">
                 <option value="">Additional filters…</option>
                 @if (View.More.Any(facet => !View.Selected(facet.Key)))
@@ -136,6 +148,15 @@ else
                         @foreach (var measure in View.Ranges.Where(measure => !View.Bounded(measure.Key)))
                         {
                             <option value="@("range-" + measure.Key)">@Name(measure)</option>
+                        }
+                    </optgroup>
+                }
+                @if (View.Reveals.Any(flag => !View.Revealed(flag.Key)))
+                {
+                    <optgroup label="Include">
+                        @foreach (var flag in View.Reveals.Where(flag => !View.Revealed(flag.Key)))
+                        {
+                            <option value="@("reveal-" + flag.Key)">@flag.Label</option>
                         }
                     </optgroup>
                 }

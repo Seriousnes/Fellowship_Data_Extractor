@@ -108,6 +108,7 @@ public static class AttunementTrees
         .. store.Entities
             .OfType<ItemDocument>()
             .Where(item => tree.Tag.Equals(item.AttunementTree, StringComparison.OrdinalIgnoreCase) &&
+                           item.EnabledInGame is not false &&
                            Wears(hero, item))
             .DistinctBy(item => item.Id)
             .OrderBy(item => PublicTypes.NameOf(item), StringComparer.OrdinalIgnoreCase),
