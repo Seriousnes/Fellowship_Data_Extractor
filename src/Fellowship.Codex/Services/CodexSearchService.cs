@@ -60,7 +60,9 @@ public sealed class CodexSearchService(
             .ToArray();
 
         var flagged = codex.Flags
-            .Where(flag => unbounded.Any(flag.Predicate))
+            .Where(flag => flag.Hides
+                ? query.Flags.ContainsKey(flag.Key) || rows.Any(flag.Predicate)
+                : unbounded.Any(flag.Predicate))
             .Select(flag => flag.Key)
             .ToArray();
 
@@ -98,15 +100,13 @@ public sealed class CodexSearchService(
 
         foreach (var (key, wanted) in query.Flags)
         {
-            if (codex.Flag(key) is not { } flag) continue;
+            if (codex.Flag(key) is not { Hides: false } flag) continue;
             if (flag.Predicate(row) != wanted) return false;
         }
 
-        if (!query.StatesNamed &&
-            codex.Flag(CodexQuery.NamedFlag) is { } named &&
-            !named.Predicate(row))
+        foreach (var flag in codex.Flags)
         {
-            return false;
+            if (!query.Flags.GetValueOrDefault(flag.Key) && !flag.Admits(row)) return false;
         }
 
         foreach (var (key, range) in query.Ranges)

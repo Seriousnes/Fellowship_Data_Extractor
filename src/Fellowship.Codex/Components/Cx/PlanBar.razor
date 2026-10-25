@@ -1,0 +1,25 @@
+<div class="cx-plan-bar">
+    <span class="cx-plan-bar-tip" data-tip="@Tip.Address" data-tip-request="@Tip.Body">
+        @if (Icon is not null)
+        {
+            <img class="cx-plan-bar-icon" alt="" src="@Icon" />
+        }
+        <span class="cx-plan-bar-name">@Name</span>
+    </span>
+
+    <span class="cx-plan-bar-acts">@ChildContent</span>
+
+    <button type="button" class="cx-plan-bar-shut" aria-label="Close" @onclick="OnShut">&times;</button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = default!;
+
+    [Parameter, EditorRequired] public TooltipLink Tip { get; set; } = default!;
+
+    [Parameter] public string? Icon { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [Parameter] public EventCallback OnShut { get; set; }
+}

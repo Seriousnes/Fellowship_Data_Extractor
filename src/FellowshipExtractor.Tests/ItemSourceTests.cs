@@ -22,7 +22,8 @@ public sealed class ItemSourceTests
     public void EveryItemThatCarriesStatsStatesWhereItComesFrom()
     {
         var carrying = Export.Loaded.Documents
-            .Where(document => document.Type == EntityType.Item && document.Body["stats"] is JsonArray)
+            .Where(document => document.Type == EntityType.Item && document.Body["stats"] is JsonArray &&
+                               document.Body["enabledInGame"] is null)
             .ToArray();
 
         Assert.Equal(1956, carrying.Length);
@@ -37,7 +38,8 @@ public sealed class ItemSourceTests
     public void EveryItemThatCarriesStatsArrivesAtAStatedItemLevel()
     {
         var carrying = Export.Loaded.Documents
-            .Where(document => document.Type == EntityType.Item && document.Body["stats"] is JsonArray)
+            .Where(document => document.Type == EntityType.Item && document.Body["stats"] is JsonArray &&
+                               document.Body["enabledInGame"] is null)
             .ToArray();
 
         var unlevelled = carrying.Where(document => document.Body["itemLevel"] is null).ToArray();

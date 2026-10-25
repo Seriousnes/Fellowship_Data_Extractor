@@ -10,11 +10,13 @@ public static class ItemVariants
         Entity item,
         ItemNaming naming,
         HeroNames heroes,
-        HeroTextures texture)
+        HeroTextures texture,
+        Func<Entity, bool> wearsArmor)
     {
         var declared = item.Variants is { Count: > 0 } variants ? variants : null;
         var eligible = declared?.Select(variant => variant.Hero) ?? heroes.Codenames;
 
+        var armored = wearsArmor(item);
         var relative = item.Stats?.FirstOrDefault(slot => slot.Kind == SlotKinds.Primary);
         var cards = new List<Card>();
 
@@ -33,7 +35,7 @@ public static class ItemVariants
             cards.Add(new Card
             {
                 DisplayName = name,
-                ArmorType = armorType,
+                ArmorType = armored ? armorType : null,
                 PrimaryStat = relative is null ? null : hero.PrimaryStat,
                 Hero = hero.ShippedName,
                 Codename = codename,

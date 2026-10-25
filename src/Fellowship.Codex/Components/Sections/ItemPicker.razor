@@ -1,0 +1,189 @@
+@inject ICodexViewService Ui
+
+<div class="cx-item-picker" @onfocusin="Focus" @onfocusout="Blur">
+    <button type="button" class="cx-item-picker-face" @ref="face"
+            role="combobox" aria-haspopup="listbox" aria-controls="cx-item-picker-drop"
+            aria-label="@Label" aria-expanded="@(showing ? "true" : "false")"
+            @onclick="Toggle" @onkeydown="Pressed">
+        @if (Picked is { } picked)
+        {
+            <Icon Src="@Ui.Icon(picked.Icon)" Rarity="@Ui.Rarity(picked)" Width="PlateWidth" Lazy="false" />
+            <span class="cx-t">
+                <span class="cx-nm" style="color:@Ui.NameColour(picked)">@Ui.Name(picked)</span>
+                <span class="cx-ty">@Slot</span>
+            </span>
+        }
+        else
+        {
+            <span class="cx-t">
+                <span class="cx-nm">@Label</span>
+                <span class="cx-ty">@Slot</span>
+            </span>
+        }
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+    </button>
+
+    @if (showing)
+    {
+        <div class="cx-item-picker-drop" id="cx-item-picker-drop" role="listbox" aria-label="@Label"
+             @onkeydown="Pressed">
+            <div class="cx-item-picker-find">
+                <input type="search" autocomplete="off" aria-label="Filter by name"
+                       placeholder="Filter by name" value="@filter" @ref="find" @oninput="Filter" />
+            </div>
+
+            @for (var at = 0; at < shown.Count; at++)
+            {
+                var item = shown[at];
+                var mine = at;
+
+                <button type="button" class="cx-item-picker-step" role="option" @key="item.Id"
+                        @ref="rows[item.Id]" @onclick="() => Choose(item)"
+                        aria-selected="@(item.Id == Picked?.Id ? "true" : "false")"
+                        data-active="@(active == mine ? "on" : null)">
+                    <Icon Src="@Ui.Icon(item.Icon)" Rarity="@Ui.Rarity(item)" Width="PlateWidth" />
+                    <span class="cx-nm" style="color:@Ui.NameColour(item)">@Ui.Name(item)</span>
+                    <span class="cx-ty">@item.Hero</span>
+                </button>
+            }
+
+            @if (shown.Count == 0)
+            {
+                <p class="cx-item-picker-none">No @Slot.ToLowerInvariant() matches @filter.</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<ItemDocument> Items { get; set; } = [];
+
+    [Parameter, EditorRequired] public string Slot { get; set; } = default!;
+
+    [Parameter] public ItemDocument? Picked { get; set; }
+
+    [Parameter] public EventCallback<ItemDocument> OnPicked { get; set; }
+
+    private const int PlateWidth = 30;
+
+    private ElementReference face;
+    private ElementReference find;
+
+    private readonly Dictionary<int, ElementReference> rows = [];
+
+    private IReadOnlyList<ItemDocument> shown = [];
+
+    private string filter = string.Empty;
+    private bool showing;
+    private bool finding;
+    private bool revealing;
+    private int active = -1;
+    private int touches;
+
+    private string Label => $"Choose a {Slot.ToLowerInvariant()}";
+
+    private void Filter(ChangeEventArgs typed)
+    {
+        filter = typed.Value?.ToString() ?? string.Empty;
+        Settle();
+    }
+
+    private void Settle()
+    {
+        var wanted = filter.Trim();
+
+        shown = wanted.Length == 0
+            ? Items
+            : [.. Items.Where(item => Ui.Name(item).Contains(wanted, StringComparison.OrdinalIgnoreCase))];
+        active = -1;
+    }
+
+    private void Shut()
+    {
+        showing = false;
+        rows.Clear();
+    }
+
+    private void Toggle()
+    {
+        touches++;
+
+        if (showing)
+        {
+            Shut();
+            return;
+        }
+
+        showing = true;
+        filter = string.Empty;
+        Settle();
+        finding = true;
+    }
+
+    private async Task Choose(ItemDocument item)
+    {
+        touches++;
+        Shut();
+        await OnPicked.InvokeAsync(item);
+        await face.FocusAsync();
+    }
+
+    private void Focus() => touches++;
+
+    private async Task Blur()
+    {
+        var mine = ++touches;
+        await Task.Delay(200);
+
+        if (mine != touches) return;
+
+        Shut();
+        StateHasChanged();
+    }
+
+    private async Task Pressed(KeyboardEventArgs key)
+    {
+        switch (key.Key)
+        {
+            case "Escape":
+                Shut();
+                await face.FocusAsync();
+                return;
+
+            case "ArrowDown" or "ArrowUp" when !showing:
+                Toggle();
+                return;
+
+            case "ArrowDown" when shown.Count > 0:
+                active = active >= shown.Count - 1 ? 0 : active + 1;
+                revealing = true;
+                return;
+
+            case "ArrowUp" when shown.Count > 0:
+                active = active <= 0 ? shown.Count - 1 : active - 1;
+                revealing = true;
+                return;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (finding && showing)
+        {
+            finding = false;
+            await find.FocusAsync();
+            return;
+        }
+
+        if (!revealing) return;
+
+        revealing = false;
+
+        if (!showing || active < 0 || active >= shown.Count) return;
+
+        if (rows.TryGetValue(shown[active].Id, out var row)) await row.FocusAsync();
+    }
+}

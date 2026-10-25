@@ -4,9 +4,18 @@
 
 @include tool-bar;
 
-.cx-tree-roster a { padding: 4px 12px 4px 4px; }
+.cx-tree-slots { display: flex; gap: 8px; }
 
-.cx-tree-roster-icon { width: 24px; height: 24px; border-radius: 2px; flex: 0 0 auto; }
+.cx-tree-slot {
+  display: grid; place-items: center; width: 44px; height: 44px;
+  @include sunken;
+  border-radius: 2px;
+
+  img { width: 26px; height: 26px; }
+
+  &:hover { border-color: var(--gold-deep); }
+  &[aria-current] { background: var(--raised); border-color: var(--gold-bright); }
+}
 
 .cx-tree {
   position: relative; width: 100%; margin: 0 auto;
@@ -32,6 +41,7 @@
 }
 
 .cx-tree-node {
+  appearance: none; margin: 0; padding: 0; border: 0; background: none; cursor: pointer;
   position: absolute; display: block; width: var(--cx-tree-node); transform: translate(-50%, -50%);
 
   &:hover { text-decoration: none; }
@@ -40,7 +50,7 @@
 
   &[aria-current] .cx-tree-face { filter: drop-shadow(0 0 6px var(--gold-bright)); }
 
-  &[aria-disabled="true"] { cursor: help; }
+  &:not([data-infused]) .cx-tree-well img { filter: grayscale(1) brightness(.8); }
 }
 
 .cx-tree-face {
@@ -74,6 +84,7 @@
 }
 
 .cx-tree-choice {
+  appearance: none; margin: 0; font: inherit; text-align: left; cursor: pointer;
   display: flex; align-items: center; min-width: 0; padding: 6px 10px 6px 6px;
   @include sunken;
   border-radius: 2px; color: var(--muted);
@@ -95,3 +106,5 @@
 .cx-tree-option-name {
   min-width: 0; font-family: var(--display); letter-spacing: .02em;
 }
+
+.cx-tree-item ::deep .fx-slot { width: 100%; }

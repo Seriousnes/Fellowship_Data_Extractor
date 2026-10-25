@@ -32,7 +32,6 @@
 .cx-more:focus { @include edged; }
 
 .cx-group { border-top: 1px solid var(--line-soft); margin-top: 12px; padding-top: 10px; }
-
 .cx-facet-values { list-style: none; margin: 6px 0 0; padding: 0; max-height: 260px; overflow-y: auto; }
 .cx-facet-values li a {
   display: flex; align-items: baseline; gap: 7px; padding: 2px 4px; border-radius: 2px;

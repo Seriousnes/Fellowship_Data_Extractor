@@ -14,6 +14,7 @@ public sealed class ItemDocument : EntityDocument
     public string? Slot { get; init; }
     public bool? GemSlot { get; init; }
     public bool? UniqueEquipped { get; init; }
+    public bool? EnabledInGame { get; init; }
 
     public Rarity? Rarity { get; init; }
 

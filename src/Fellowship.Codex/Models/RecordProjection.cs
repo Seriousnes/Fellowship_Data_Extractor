@@ -328,6 +328,7 @@ public static class RecordProjection
         Slot = document.Slot,
         GemSlot = document.GemSlot,
         UniqueEquipped = document.UniqueEquipped,
+        EnabledInGame = document.EnabledInGame,
         Rarity = view.Rarity(document),
         Rarities = RarityNames(document.Rarities, view),
         Stats = Slots(document, view),

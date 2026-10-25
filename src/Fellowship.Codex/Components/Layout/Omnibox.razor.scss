@@ -72,3 +72,22 @@
 }
 .cx-omnibox-all:hover, .cx-omnibox-all[data-active] { background: var(--gold); text-decoration: none; }
 .cx-omnibox-none { padding: 18px; text-align: center; color: var(--muted); }
+
+$phone: 899px;
+$strip: 52px;
+$menu: 40px;
+$strip-gap: 10px;
+
+@media (max-width: $phone) {
+  .cx-omnibox-docked {
+    position: fixed; top: 0; right: $gutter; left: calc(#{$gutter} + #{$menu} + #{$strip-gap}); z-index: 61;
+    width: auto; height: $strip;
+  }
+  .cx-omnibox-docked svg { left: 10px; width: 15px; height: 15px; }
+  .cx-omnibox-docked input { font-size: 16px; padding: 9px 30px 9px 32px; border-radius: 3px; }
+  .cx-omnibox-docked .cx-omnibox-clear { right: 4px; font-size: 18px; }
+  .cx-omnibox-docked .cx-omnibox-drop {
+    position: fixed; top: $strip; left: 0; right: 0; width: auto;
+    max-height: calc(100dvh - #{$strip}); border-left: 0; border-right: 0;
+  }
+}
