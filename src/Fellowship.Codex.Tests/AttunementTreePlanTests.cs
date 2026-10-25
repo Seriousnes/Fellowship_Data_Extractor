@@ -14,7 +14,7 @@ public class AttunementTreePlanTests(Export export)
 
     private AttunementTreePlan Plan(IReadOnlyList<int> path, params (int Node, AugmentationDocument Augmentation)[] assigned) =>
         AttunementTrees.Planned(
-            Tree, assigned.ToDictionary(pick => pick.Node, pick => pick.Augmentation), path.ToHashSet());
+            Tree, null, null, assigned.ToDictionary(pick => pick.Node, pick => pick.Augmentation), path.ToHashSet());
 
     private AttunementTreePlan RoundTrip(AttunementTreePlan plan) =>
         AttunementTrees.Read(AttunementTrees.Write(Tree, plan), Tree, export.Store);
@@ -30,6 +30,51 @@ public class AttunementTreePlanTests(Export export)
         Assert.Equal(
             plan.Assigned.OrderBy(pick => pick.Key).Select(pick => (pick.Key, pick.Value.Id)),
             read.Assigned.OrderBy(pick => pick.Key).Select(pick => (pick.Key, pick.Value.Id)));
+    }
+
+    private HeroDocument Hero(Hero hero) =>
+        AttunementTrees.Heroes(export.Store).Single(each => each.Name == hero.ToString());
+
+    [Fact]
+    public void The_hero_and_item_read_back_from_the_code()
+    {
+        var hero = Hero(Fellowship.SDK.Hero.Xavian);
+        var item = AttunementTrees.Items(Tree, hero, export.Store)[0];
+
+        var read = RoundTrip(Plan([1], (1, In(1))) with { Hero = hero, Item = item });
+
+        Assert.Equal(hero.Id, read.Hero?.Id);
+        Assert.Equal((item.Id, item.Hero), (read.Item?.Id, read.Item?.Hero));
+        Assert.Equal([1], read.Path);
+    }
+
+    [Fact]
+    public void Every_item_on_a_tree_names_one_reading_for_each_hero_it_offers()
+    {
+        foreach (var hero in AttunementTrees.Heroes(export.Store))
+        {
+            Assert.All(AttunementTrees.Items(Tree, hero, export.Store), item => Assert.Equal(hero.Name, item.Hero?.ToString()));
+        }
+    }
+
+    [Fact]
+    public void An_item_from_another_tree_is_dropped()
+    {
+        var neck = AttunementTrees.BySlot(export.Store).Single(entry => entry.Slot == Printed(ItemPower.NecklaceType)).Tree;
+        var hero = Hero(Fellowship.SDK.Hero.Xavian);
+
+        var read = RoundTrip(Plan([]) with { Hero = hero, Item = AttunementTrees.Items(neck, hero, export.Store)[0] });
+
+        Assert.Equal(hero.Id, read.Hero?.Id);
+        Assert.Null(read.Item);
+    }
+
+    [Fact]
+    public void An_item_without_a_hero_is_dropped()
+    {
+        var hero = Hero(Fellowship.SDK.Hero.Xavian);
+
+        Assert.Null(RoundTrip(Plan([]) with { Item = AttunementTrees.Items(Tree, hero, export.Store)[0] }).Item);
     }
 
     [Fact]
@@ -75,7 +120,7 @@ public class AttunementTreePlanTests(Export export)
         var plan = Plan([1, 3, 6], (1, In(1)), (3, In(3)), (6, In(6, 1)));
         Assert.Equal(3, plan.Path.Count);
 
-        var left = AttunementTrees.Planned(Tree, plan.Assigned, plan.Path.Where(node => node != 1).ToHashSet());
+        var left = AttunementTrees.Planned(Tree, plan.Hero, plan.Item, plan.Assigned, plan.Path.Where(node => node != 1).ToHashSet());
 
         Assert.Empty(left.Path);
         Assert.Equal(3, left.Assigned.Count);

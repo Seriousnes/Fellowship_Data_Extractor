@@ -158,7 +158,7 @@
 
     private IReadOnlyList<EffectDocument> Effects = [];
 
-    private string Calculator => $"/tools/talents/{Uri.EscapeDataString(Ui.Name(Entity))}";
+    private string Calculator => $"/tools/talents/{Uri.EscapeDataString(Ui.Name(Entity).ToLowerInvariant())}";
 
     protected override void OnParametersSet()
     {

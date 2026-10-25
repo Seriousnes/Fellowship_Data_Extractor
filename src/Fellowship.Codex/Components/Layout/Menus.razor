@@ -48,7 +48,7 @@
                                             @foreach (var (slot, _) in AttunementTrees.BySlot(Ui.Store))
                                             {
                                                 <li>
-                                                    <a href="@AttunementTreePage/@Uri.EscapeDataString(slot)">@slot</a>
+                                                    <a href="@AttunementTreePage/@Uri.EscapeDataString(slot.ToLowerInvariant())">@slot</a>
                                                 </li>
                                             }
                                         </ul>
@@ -67,7 +67,7 @@
                                             @foreach (var who in Nav.Roster)
                                             {
                                                 <li>
-                                                    <a href="@Calculator/@Uri.EscapeDataString(who)"
+                                                    <a href="@Calculator/@Uri.EscapeDataString(who.ToLowerInvariant())"
                                                        style="color:@(Ui.HeroColour(who) ?? "var(--muted)")">@who</a>
                                                 </li>
                                             }

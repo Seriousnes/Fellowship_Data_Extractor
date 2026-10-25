@@ -76,12 +76,40 @@ public static class AttunementTrees
     public static IReadOnlyList<AttunementTreeNode> Infusable(AttunementTreeEntry tree) =>
         [.. tree.Nodes.Where(node => !Root(node)).OrderBy(node => node.UITreeIndex)];
 
-    public static AttunementTreePlan Read(
-        string? code, AttunementTreeEntry tree, IEntityStoreService store, string? wearer = null)
+    public static IReadOnlyList<HeroDocument> Heroes(IEntityStoreService store) =>
+    [
+        .. store.Entities
+            .OfType<HeroDocument>()
+            .DistinctBy(hero => hero.Id)
+            .OrderBy(hero => hero.Name, StringComparer.OrdinalIgnoreCase),
+    ];
+
+    public static IReadOnlyList<ItemDocument> Items(AttunementTreeEntry tree, HeroDocument hero, IEntityStoreService store) =>
+    [
+        .. store.Entities
+            .OfType<ItemDocument>()
+            .Where(item => tree.Tag.Equals(item.AttunementTree, StringComparison.OrdinalIgnoreCase) &&
+                           Wears(hero, item))
+            .DistinctBy(item => item.Id)
+            .OrderBy(item => PublicTypes.NameOf(item), StringComparer.OrdinalIgnoreCase),
+    ];
+
+    private static bool Wears(HeroDocument hero, ItemDocument item) =>
+        item.Hero?.ToString() == hero.Name || (item.Heroes ?? []).Any(each => each.ToString() == hero.Name);
+
+    public static AttunementTreePlan Read(string? code, AttunementTreeEntry tree, IEntityStoreService store)
     {
         var nodes = Infusable(tree);
         var bytes = PlanCode.Decode(code);
-        var ids = PlanCode.Numbers(bytes, PlanCode.MaskLength(nodes.Count));
+        var numbers = PlanCode.Numbers(bytes, PlanCode.MaskLength(nodes.Count));
+
+        var hero = numbers.Count > 0 && numbers[0] > 0
+            ? store.All(EntityType.Hero, numbers[0]).OfType<HeroDocument>().FirstOrDefault()
+            : null;
+
+        var item = hero is not null && numbers.Count > 1 && numbers[1] > 0
+            ? Items(tree, hero, store).FirstOrDefault(each => each.Id == numbers[1])
+            : null;
 
         var path = nodes
             .Where((node, at) => PlanCode.Bit(bytes, at))
@@ -90,19 +118,23 @@ public static class AttunementTrees
 
         var assigned = new Dictionary<int, AugmentationDocument>();
 
-        foreach (var (node, id) in nodes.Zip(ids))
+        foreach (var (node, id) in nodes.Zip(numbers.Skip(2)))
         {
-            if (id > 0 && Offered(node, store, wearer).FirstOrDefault(augmentation => augmentation.Id == id) is { } augmentation)
+            if (id > 0 && Offered(node, store, hero?.Name).FirstOrDefault(augmentation => augmentation.Id == id) is { } augmentation)
             {
                 assigned[node.UITreeIndex] = augmentation;
             }
         }
 
-        return Planned(tree, assigned, path);
+        return Planned(tree, hero, item, assigned, path);
     }
 
     public static AttunementTreePlan Planned(
-        AttunementTreeEntry tree, IReadOnlyDictionary<int, AugmentationDocument> assigned, IReadOnlySet<int> path)
+        AttunementTreeEntry tree,
+        HeroDocument? hero,
+        ItemDocument? item,
+        IReadOnlyDictionary<int, AugmentationDocument> assigned,
+        IReadOnlySet<int> path)
     {
         var kept = new Dictionary<int, AugmentationDocument>();
 
@@ -122,7 +154,7 @@ public static class AttunementTrees
             if (path.Contains(node.UITreeIndex) && Allocatable(tree, kept, followed, node)) followed.Add(node.UITreeIndex);
         }
 
-        return new AttunementTreePlan(kept, followed);
+        return new AttunementTreePlan(hero, item, kept, followed);
     }
 
     public static bool Allocatable(AttunementTreeEntry tree, AttunementTreePlan plan, AttunementTreeNode node) =>
@@ -149,12 +181,21 @@ public static class AttunementTrees
         return PlanCode.Encode(
         [
             .. PlanCode.Mask([.. nodes.Select(node => plan.Path.Contains(node.UITreeIndex))]),
-            .. PlanCode.Numbers(nodes.Select(node => plan.Assigned.GetValueOrDefault(node.UITreeIndex)?.Id ?? 0)),
+            .. PlanCode.Numbers(
+            [
+                plan.Hero?.Id ?? 0,
+                plan.Item?.Id ?? 0,
+                .. nodes.Select(node => plan.Assigned.GetValueOrDefault(node.UITreeIndex)?.Id ?? 0),
+            ]),
         ]);
     }
 }
 
-public sealed record AttunementTreePlan(IReadOnlyDictionary<int, AugmentationDocument> Assigned, IReadOnlySet<int> Path)
+public sealed record AttunementTreePlan(
+    HeroDocument? Hero,
+    ItemDocument? Item,
+    IReadOnlyDictionary<int, AugmentationDocument> Assigned,
+    IReadOnlySet<int> Path)
 {
-    public static AttunementTreePlan Empty { get; } = new(new Dictionary<int, AugmentationDocument>(), new HashSet<int>());
+    public static AttunementTreePlan Empty { get; } = new(null, null, new Dictionary<int, AugmentationDocument>(), new HashSet<int>());
 }

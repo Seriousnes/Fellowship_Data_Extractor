@@ -205,6 +205,6 @@ else
 
     private static string Address(string? hero, string? picks = null) =>
         hero is not { Length: > 0 } ? Page
-        : picks is { Length: > 0 } ? $"{Page}/{Uri.EscapeDataString(hero)}/{picks}"
-        : $"{Page}/{Uri.EscapeDataString(hero)}";
+        : picks is { Length: > 0 } ? $"{Page}/{Uri.EscapeDataString(hero.ToLowerInvariant())}/{picks}"
+        : $"{Page}/{Uri.EscapeDataString(hero.ToLowerInvariant())}";
 }

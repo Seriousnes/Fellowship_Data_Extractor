@@ -34,6 +34,22 @@
 }
 else
 {
+    <Panel Head="Hero" Badge="@($"{Heroes.Count} heroes")">
+        <div class="cx-roster">
+            @foreach (var who in Heroes)
+            {
+                var mine = who;
+
+                <a href="@Address(item, Plan with { Hero = mine })" @onclick="() => Go(Wearing(tree, mine), At)" @onclick:preventDefault
+                   aria-current="@(mine.Id == Plan.Hero?.Id ? "page" : null)"
+                   style="color:@(Ui.HeroColour(Ui.Name(mine)) ?? "var(--muted)")">
+                    <span class="cx-pip" style="background:@(Ui.HeroSwatch(Ui.Name(mine)) ?? "var(--muted)")"></span>
+                    <span class="cx-who">@Ui.Name(mine)</span>
+                </a>
+            }
+        </div>
+    </Panel>
+
     <Panel Head="@($"{item} attunement tree")">
         <div class="cx-tal-bar">
             <p class="cx-tal-spend">
@@ -74,6 +90,10 @@ else
                     {
                         <img class="cx-tree-layer" alt="" src="@Ui.Chrome.Texture(texture)" style="@Sized(layout, layer)" />
                     }
+                    else if (layer.Item && Plan.Item is { } rooted)
+                    {
+                        <span class="cx-tree-layer cx-tree-item" style="@Sized(layout, layer)"><Icon Src="@Ui.Icon(rooted.Icon)" Rarity="@Ui.Rarity(rooted)" Lazy="false" /></span>
+                    }
                 }
             </span>
 
@@ -98,7 +118,13 @@ else
             }
         </div>
 
-        <Note>Choose a node to set the augmentation your item rolled into it. Left click an open node to infuse it, and right click an infused node to remove it. On a touch screen, tap a node to infuse it, and the bar at the foot of the screen has its tooltip and a button to remove it. Each row takes one infusion, and a node opens once a node it follows is infused.</Note>
+        @if (Plan.Hero is { } hero)
+        {
+            <ItemPicker Items="@AttunementTrees.Items(tree, hero, Store)" Slot="@item" Picked="@Plan.Item"
+                        OnPicked="picked => Go(Reread(tree, Plan with { Item = picked }), At)" />
+        }
+
+        <Note>Choose your hero, your @item.ToLowerInvariant() and the augmentation it rolled into each node. Left click an open node to infuse it, and right click an infused node to remove it. On a touch screen, tap a node to infuse it, and the bar at the foot of the screen has its tooltip and a button to remove it. Each row takes one infusion, and a node opens once a node it follows is infused.</Note>
     </Panel>
 
     @if (Choosing is { } choosing)
@@ -196,6 +222,8 @@ else
 
     private IReadOnlyList<AugmentationDocument> Offered = [];
 
+    private IReadOnlyList<HeroDocument> Heroes = [];
+
     private string Roster => $"{Slots.Count} trees";
 
     private int Capacity => AttunementTrees.Capacity(Tree?.Tag, Store.Settings) ?? 0;
@@ -208,6 +236,7 @@ else
 
         Applied = (Slot, Picked);
         Slots = AttunementTrees.BySlot(Store);
+        Heroes = AttunementTrees.Heroes(Store);
 
         var chosen = Slots.FirstOrDefault(entry => entry.Slot.Equals(Slot, StringComparison.OrdinalIgnoreCase));
 
@@ -223,7 +252,7 @@ else
     {
         Choosing = Tree is null ? null : AttunementTrees.Infusable(Tree).FirstOrDefault(node => node.UITreeIndex == At);
 
-        Offered = Choosing is null ? [] : AttunementTrees.Offered(Choosing, Store);
+        Offered = Choosing is null ? [] : AttunementTrees.Offered(Choosing, Store, Plan.Hero?.Name);
     }
 
     private RenderFragment Face(AttunementTreeNode node, AugmentationDocument? augmentation, string state) =>
@@ -306,6 +335,11 @@ else
     private static double Widest(AttunementTreeLayout layout) =>
         layout.RootLayers.Count == 0 ? layout.Width : layout.RootLayers.Max(layer => layer.Width);
 
+    private AttunementTreePlan Reread(AttunementTreeEntry tree, AttunementTreePlan plan) =>
+        AttunementTrees.Read(AttunementTrees.Write(tree, plan), tree, Store);
+
+    private AttunementTreePlan Wearing(AttunementTreeEntry tree, HeroDocument hero) => Reread(tree, Plan with { Hero = hero });
+
     private Task Press(AttunementTreeEntry tree, AttunementTreeNode node) =>
         Go(AttunementTrees.Allocatable(tree, Plan, node) ? Infusing(tree, node) : Plan, node.UITreeIndex);
 
@@ -322,21 +356,21 @@ else
     }
 
     private AttunementTreePlan Leaving(AttunementTreeEntry tree, AttunementTreeNode node) =>
-        AttunementTrees.Planned(tree, Plan.Assigned, Plan.Path.Where(index => index != node.UITreeIndex).ToHashSet());
+        AttunementTrees.Planned(tree, Plan.Hero, Plan.Item, Plan.Assigned, Plan.Path.Where(index => index != node.UITreeIndex).ToHashSet());
 
     private AttunementTreePlan Infusing(AttunementTreeEntry tree, AttunementTreeNode node) =>
-        AttunementTrees.Planned(tree, Plan.Assigned, Plan.Path.Append(node.UITreeIndex).ToHashSet());
+        AttunementTrees.Planned(tree, Plan.Hero, Plan.Item, Plan.Assigned, Plan.Path.Append(node.UITreeIndex).ToHashSet());
 
     private AttunementTreePlan Clearing(AttunementTreeEntry tree, AttunementTreeNode node) =>
         AttunementTrees.Planned(
-            tree, Plan.Assigned.Where(pick => pick.Key != node.UITreeIndex).ToDictionary(), Plan.Path);
+            tree, Plan.Hero, Plan.Item, Plan.Assigned.Where(pick => pick.Key != node.UITreeIndex).ToDictionary(), Plan.Path);
 
     private AttunementTreePlan Assigning(AttunementTreeEntry tree, AttunementTreeNode node, AugmentationDocument augmentation) =>
         AttunementTrees.Planned(
-            tree, new Dictionary<int, AugmentationDocument>(Plan.Assigned) { [node.UITreeIndex] = augmentation }, Plan.Path);
+            tree, Plan.Hero, Plan.Item, new Dictionary<int, AugmentationDocument>(Plan.Assigned) { [node.UITreeIndex] = augmentation }, Plan.Path);
 
     private string Address(string slot, AttunementTreePlan? plan = null) =>
         plan is not null && Tree is { } tree && AttunementTrees.Write(tree, plan) is { Length: > 0 } code
-            ? $"{Page}/{Uri.EscapeDataString(slot)}/{code}"
-            : $"{Page}/{Uri.EscapeDataString(slot)}";
+            ? $"{Page}/{Uri.EscapeDataString(slot.ToLowerInvariant())}/{code}"
+            : $"{Page}/{Uri.EscapeDataString(slot.ToLowerInvariant())}";
 }
