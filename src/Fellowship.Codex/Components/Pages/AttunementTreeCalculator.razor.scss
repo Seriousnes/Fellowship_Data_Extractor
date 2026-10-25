@@ -32,6 +32,7 @@
 }
 
 .cx-tree-node {
+  appearance: none; margin: 0; padding: 0; border: 0; background: none; cursor: pointer;
   position: absolute; display: block; width: var(--cx-tree-node); transform: translate(-50%, -50%);
 
   &:hover { text-decoration: none; }
@@ -40,7 +41,7 @@
 
   &[aria-current] .cx-tree-face { filter: drop-shadow(0 0 6px var(--gold-bright)); }
 
-  &[aria-disabled="true"] { cursor: help; }
+  &:not([data-infused]) .cx-tree-well img { filter: grayscale(1) brightness(.8); }
 }
 
 .cx-tree-face {
@@ -74,6 +75,7 @@
 }
 
 .cx-tree-choice {
+  appearance: none; margin: 0; font: inherit; text-align: left; cursor: pointer;
   display: flex; align-items: center; min-width: 0; padding: 6px 10px 6px 6px;
   @include sunken;
   border-radius: 2px; color: var(--muted);

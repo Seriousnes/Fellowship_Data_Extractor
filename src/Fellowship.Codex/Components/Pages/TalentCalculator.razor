@@ -1,8 +1,10 @@
 @page "/tools/talents"
+@rendermode InteractiveServer
 @using Microsoft.AspNetCore.WebUtilities
 @using Microsoft.Extensions.Primitives
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
+@inject NavigationManager Nav
 
 <PageTitle>Talent calculator - Fellowship Codex</PageTitle>
 
@@ -50,7 +52,7 @@ else
             <button type="button" class="cx-tal-act" data-copy>Copy link</button>
         </div>
 
-        <div class="cx-talents" style="@Frame">
+        <div class="cx-talents" style="@Frame" data-hover-tip>
             @foreach (var row in Tree)
             {
                 <div class="cx-tal-band">
@@ -62,29 +64,41 @@ else
                         @foreach (var node in row.Nodes)
                         {
                             var mine = node;
+                            var picked = Taken.Contains(mine.Id);
 
-                            if (Taken.Contains(mine.Id))
-                            {
-                                <a class="cx-tal" href="@Address(hero.Name, Toggled(mine))"
-                                   aria-current="true">@Face(mine, Picked)</a>
-                            }
-                            else if (mine.Cost <= Left)
-                            {
-                                <a class="cx-tal" href="@Address(hero.Name, Toggled(mine))">@Face(mine, Unpicked)</a>
-                            }
-                            else
-                            {
-                                <span class="cx-tal" aria-disabled="true" tabindex="0"
-                                      title="@Beyond(mine)">@Face(mine, Unpicked)</span>
-                            }
+                            <button type="button" class="cx-tal"
+                                    aria-current="@(picked ? "true" : null)"
+                                    aria-disabled="@(!picked && mine.Cost > Left ? "true" : null)"
+                                    title="@(!picked && mine.Cost > Left ? Beyond(mine) : null)"
+                                    @onclick="() => Press(mine)"
+                                    @oncontextmenu="() => Remove(mine)" @oncontextmenu:preventDefault="@picked">@Face(mine, picked ? Picked : Unpicked)</button>
                         }
                     </div>
                 </div>
             }
         </div>
 
-        <Note>Hover a talent for its full tooltip. A picked talent spends its cost from the fourteen.</Note>
+        <Note>Hover a talent for its full tooltip. Left click a talent to pick it, and right click a picked talent to remove it. On a touch screen, tap a talent to pick it, and the bar at the foot of the screen has its tooltip and a button to remove it. A picked talent spends its cost from the fourteen.</Note>
     </Panel>
+
+    @if (Focused is { } focused)
+    {
+        <PlanBar Name="@Ui.Name(focused.Talent)" Tip="@Ui.Tip(focused.Talent)" Icon="@Ui.Icon(focused.Talent.Icon)"
+                 OnShut="() => Focused = null">
+            @if (Taken.Contains(focused.Id))
+            {
+                <button type="button" class="cx-tal-act" @onclick="() => Remove(focused)">Remove talent</button>
+            }
+            else if (focused.Cost <= Left)
+            {
+                <button type="button" class="cx-tal-act" @onclick="() => Press(focused)">Pick talent</button>
+            }
+            else
+            {
+                <span class="cx-tal-act" aria-disabled="true">@Left of @focused.Cost points left</span>
+            }
+        </PlanBar>
+    }
 }
 
 @code {
@@ -103,6 +117,8 @@ else
     private IReadOnlyList<TalentRow> Tree = [];
 
     private IReadOnlySet<int> Taken = new HashSet<int>();
+
+    private TalentNode? Focused;
 
     private IReadOnlyList<HeroEntry> Heroes =>
         [.. Store.Settings.Heroes.OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase)];
@@ -136,7 +152,23 @@ else
             : TalentPlan.Tree(Store, hero);
 
         Taken = TalentPlan.Read(Picks, Tree);
+
+        if (Focused is { } focused && !Tree.SelectMany(row => row.Nodes).Any(node => node.Id == focused.Id)) Focused = null;
     }
+
+    private void Press(TalentNode node)
+    {
+        Focused = node;
+
+        if (!Taken.Contains(node.Id) && node.Cost <= Left) Go(Toggled(node));
+    }
+
+    private void Remove(TalentNode node)
+    {
+        if (Taken.Contains(node.Id)) Go(Toggled(node));
+    }
+
+    private void Go(string picks) => Nav.NavigateTo(Address(Wearer?.Name, picks), replace: true);
 
     private RenderFragment Face(TalentNode node, string state)
     {

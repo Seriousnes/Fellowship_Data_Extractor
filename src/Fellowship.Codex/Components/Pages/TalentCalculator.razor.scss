@@ -37,6 +37,7 @@ $slot-frame: math.percentage(math.div($slot-frame-px, $slot-canvas));
 }
 
 .cx-tal {
+  appearance: none; width: 100%; margin: 0; border: 0; background: none;
   display: flex; align-items: center; gap: 12px; min-width: 0; text-align: left;
   cursor: pointer; padding: 9px 10px 9px 14px; border-radius: 2px;
   color: var(--muted); font: 400 15px/1.2 var(--sans);

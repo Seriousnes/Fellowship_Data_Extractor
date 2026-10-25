@@ -1,5 +1,3 @@
-using System.Globalization;
-
 using Fellowship.Codex.Services;
 
 using Fellowship.SDK.Documents;
@@ -8,9 +6,6 @@ namespace Fellowship.Codex.Models;
 
 public static class AttunementTrees
 {
-    private const char PairSeparator = ',';
-    private const char NodeSeparator = '.';
-
     public static AttunementTreeEntry? Find(string? tag, SettingsFile settings) =>
         tag is null
             ? null
@@ -78,62 +73,88 @@ public static class AttunementTrees
             .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase),
     ];
 
-    public static IReadOnlyDictionary<int, AugmentationDocument> Read(
-        string? picks, AttunementTreeEntry tree, IEntityStoreService store, string? wearer = null)
+    public static IReadOnlyList<AttunementTreeNode> Infusable(AttunementTreeEntry tree) =>
+        [.. tree.Nodes.Where(node => !Root(node)).OrderBy(node => node.UITreeIndex)];
+
+    public static AttunementTreePlan Read(
+        string? code, AttunementTreeEntry tree, IEntityStoreService store, string? wearer = null)
     {
-        var asked = new Dictionary<int, AugmentationDocument>();
+        var nodes = Infusable(tree);
+        var bytes = PlanCode.Decode(code);
+        var ids = PlanCode.Numbers(bytes, PlanCode.MaskLength(nodes.Count));
 
-        foreach (var pair in (picks ?? string.Empty).Split(
-                     PairSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        var path = nodes
+            .Where((node, at) => PlanCode.Bit(bytes, at))
+            .Select(node => node.UITreeIndex)
+            .ToHashSet();
+
+        var assigned = new Dictionary<int, AugmentationDocument>();
+
+        foreach (var (node, id) in nodes.Zip(ids))
         {
-            if (pair.Split(NodeSeparator) is not [var nodeText, var augmentationText] ||
-                !int.TryParse(nodeText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var node) ||
-                !int.TryParse(augmentationText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id) ||
-                TooltipView.Augmentation(store, id, wearer) is not { } augmentation)
+            if (id > 0 && Offered(node, store, wearer).FirstOrDefault(augmentation => augmentation.Id == id) is { } augmentation)
             {
-                continue;
+                assigned[node.UITreeIndex] = augmentation;
             }
-
-            asked.TryAdd(node, augmentation);
         }
 
-        return Allocated(tree, asked);
+        return Planned(tree, assigned, path);
     }
 
-    public static IReadOnlyDictionary<int, AugmentationDocument> Allocated(
-        AttunementTreeEntry tree, IReadOnlyDictionary<int, AugmentationDocument> asked)
+    public static AttunementTreePlan Planned(
+        AttunementTreeEntry tree, IReadOnlyDictionary<int, AugmentationDocument> assigned, IReadOnlySet<int> path)
     {
         var kept = new Dictionary<int, AugmentationDocument>();
 
-        foreach (var row in Rows(tree))
+        foreach (var node in Infusable(tree))
         {
-            foreach (var node in row)
-            {
-                if (Root(node) || !asked.TryGetValue(node.UITreeIndex, out var augmentation)) continue;
-                if (!Allocatable(tree, kept, node)) continue;
-                if (!node.AugmentationCategories.Contains(augmentation.CategoryTag ?? string.Empty, StringComparer.OrdinalIgnoreCase)) continue;
-                if (kept.Values.Any(taken => taken.Id == augmentation.Id)) continue;
+            if (!assigned.TryGetValue(node.UITreeIndex, out var augmentation)) continue;
+            if (!node.AugmentationCategories.Contains(augmentation.CategoryTag ?? string.Empty, StringComparer.OrdinalIgnoreCase)) continue;
+            if (kept.Values.Any(taken => taken.Id == augmentation.Id)) continue;
 
-                kept[node.UITreeIndex] = augmentation;
-            }
+            kept[node.UITreeIndex] = augmentation;
         }
 
-        return kept;
+        var followed = new HashSet<int>();
+
+        foreach (var node in Rows(tree).SelectMany(row => row))
+        {
+            if (path.Contains(node.UITreeIndex) && Allocatable(tree, kept, followed, node)) followed.Add(node.UITreeIndex);
+        }
+
+        return new AttunementTreePlan(kept, followed);
     }
 
-    public static bool Allocatable(
-        AttunementTreeEntry tree, IReadOnlyDictionary<int, AugmentationDocument> allocated, AttunementTreeNode node) =>
+    public static bool Allocatable(AttunementTreeEntry tree, AttunementTreePlan plan, AttunementTreeNode node) =>
+        Allocatable(tree, plan.Assigned, plan.Path, node);
+
+    private static bool Allocatable(
+        AttunementTreeEntry tree,
+        IReadOnlyDictionary<int, AugmentationDocument> assigned,
+        IReadOnlySet<int> path,
+        AttunementTreeNode node) =>
         !Root(node) &&
-        !tree.Nodes.Any(other => other.AugmentationRowIndex == node.AugmentationRowIndex && allocated.ContainsKey(other.UITreeIndex)) &&
+        assigned.ContainsKey(node.UITreeIndex) &&
+        !tree.Nodes.Any(other => other.AugmentationRowIndex == node.AugmentationRowIndex && path.Contains(other.UITreeIndex)) &&
         node.ParentNodes.Any(parent => tree.Nodes.FirstOrDefault(other => other.UITreeIndex == parent) is { } linked &&
-                                       (Root(linked) || allocated.ContainsKey(parent)));
+                                       (Root(linked) || path.Contains(parent)));
 
-    public static bool Lit(AttunementTreeNode node, IReadOnlyDictionary<int, AugmentationDocument> allocated) =>
-        Root(node) || allocated.ContainsKey(node.UITreeIndex);
+    public static bool Lit(AttunementTreeNode node, AttunementTreePlan plan) =>
+        Root(node) || plan.Path.Contains(node.UITreeIndex);
 
-    public static string Write(IReadOnlyDictionary<int, AugmentationDocument> allocated) =>
-        string.Join(
-            PairSeparator,
-            allocated.OrderBy(pick => pick.Key).Select(pick => string.Create(
-                CultureInfo.InvariantCulture, $"{pick.Key}{NodeSeparator}{pick.Value.Id}")));
+    public static string Write(AttunementTreeEntry tree, AttunementTreePlan plan)
+    {
+        var nodes = Infusable(tree);
+
+        return PlanCode.Encode(
+        [
+            .. PlanCode.Mask([.. nodes.Select(node => plan.Path.Contains(node.UITreeIndex))]),
+            .. PlanCode.Numbers(nodes.Select(node => plan.Assigned.GetValueOrDefault(node.UITreeIndex)?.Id ?? 0)),
+        ]);
+    }
+}
+
+public sealed record AttunementTreePlan(IReadOnlyDictionary<int, AugmentationDocument> Assigned, IReadOnlySet<int> Path)
+{
+    public static AttunementTreePlan Empty { get; } = new(new Dictionary<int, AugmentationDocument>(), new HashSet<int>());
 }
