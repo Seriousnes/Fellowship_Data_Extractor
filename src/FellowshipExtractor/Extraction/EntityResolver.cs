@@ -81,6 +81,7 @@ public sealed class EntityResolver
     public ItemSlots Slots { get; }
     public StatCalculation StatCalculation { get; }
 
+    public CraftingRecipes CraftingRecipes { get; }
     public ModifierRecipes ModifierRecipes { get; }
     public ItemSlotNames SlotNames { get; }
     public SlotIcons SlotGlyphs { get; }
@@ -196,7 +197,8 @@ public sealed class EntityResolver
         RarityDrops = new RarityDropChances(provider, rarities);
         RuleSets = new DynamicItemRuleSets(provider, _assets, rarities, RarityDrops);
         Gems = new GemDefinitions(provider, _assets, _constants, _augmentationIds, rarities);
-        ModifierRecipes = new ModifierRecipes(provider, _assets);
+        CraftingRecipes = new CraftingRecipes(provider, _assets, _tags, TableNames);
+        ModifierRecipes = new ModifierRecipes(CraftingRecipes);
         StatCalculation = new StatCalculation(provider, _assets, SlotNames, Armor, RuleSets, ModifierRecipes);
 
         AugmentationRows = new AugmentationRows(
@@ -246,7 +248,8 @@ public sealed class EntityResolver
             new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new GlyphWording(provider, _constants),
             CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, AttunementTrees,
-            ModifierRecipes, new TooltipWidgetText(provider, _assets, SlotNames), new AbilityTooltipTexts(provider, _assets));
+            ModifierRecipes, CraftingRecipes, new TooltipWidgetText(provider, _assets, SlotNames),
+            new AbilityTooltipTexts(provider, _assets));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));

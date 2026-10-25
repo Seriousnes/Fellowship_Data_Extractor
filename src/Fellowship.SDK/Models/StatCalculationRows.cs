@@ -90,3 +90,22 @@ public sealed record ModifierRecipe(string Recipe, int SlotIndex)
 
     public bool AllOptions { get; init; }
 }
+
+public sealed record CraftingRecipeEntry(string Recipe, string Name)
+{
+    public string? Category { get; init; }
+
+    public string? Description { get; init; }
+
+    public string? Vendor { get; init; }
+
+    public int GoldCost { get; init; }
+
+    public bool GoldCostScalesWithItemLevel { get; init; }
+
+    public IReadOnlyList<RecipeCost> Costs { get; init; } = [];
+
+    public int Inputs { get; init; } = 1;
+}
+
+public sealed record RecipeCost(int Currency, int Amount);

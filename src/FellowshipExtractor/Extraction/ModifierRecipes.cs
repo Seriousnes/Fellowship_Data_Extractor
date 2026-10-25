@@ -1,9 +1,6 @@
 using System.Text.RegularExpressions;
 
-using CUE4Parse.FileProvider;
-using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
-using CUE4Parse.UE4.Assets.Exports.Engine;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.i18N;
 
@@ -22,7 +19,6 @@ public sealed partial class ModifierRecipes
     private const string RecipeNameField = "RecipeName";
     private const string ImplementationField = "RecipeImplementation";
     private const string DataField = "RecipeSpecificData";
-    private const string EnabledField = "EnabledInGame";
     private const string CategoryField = "Category";
     private const string SlotIndexField = "SlotIndex";
     private const string ModifierTypeField = "ModifierType";
@@ -39,53 +35,46 @@ public sealed partial class ModifierRecipes
 
     public int Count => _bySlot.Values.Sum(recipes => recipes.Count);
 
-    public ModifierRecipes(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
+    public ModifierRecipes(CraftingRecipes crafting)
     {
-        foreach (var objectPath in TableFinder.ByRowStructure(assets, AugmentationCategoryNames.RowStructure))
+        foreach (var (rowName, row) in crafting.Rows)
         {
-            if (!provider.TryLoadPackageObject<UDataTable>(
-                AbilityPresentationIndex.PackagePath(objectPath), out var table)) continue;
+            if (PropertyWalk.GetString(row, ImplementationField) != Implementation) continue;
 
-            foreach (var (rowName, row) in table.RowMap)
+            if (PropertyWalk.Get(row, DataField)?.GenericValue is not FScriptStruct
+                {
+                    StructType: FInstancedStruct { NonConstStruct: IPropertyHolder data },
+                })
             {
-                if (PropertyWalk.GetString(row, ImplementationField) != Implementation) continue;
-                if (PropertyWalk.Get(row, EnabledField)?.GenericValue is not true) continue;
+                throw new InvalidOperationException(
+                    $"Recipe {rowName} is a {Implementation} and its {DataField} holds no struct, so " +
+                    "nothing states which slot it rerolls.");
+            }
 
-                if (PropertyWalk.Get(row, DataField)?.GenericValue is not FScriptStruct
-                    {
-                        StructType: FInstancedStruct { NonConstStruct: IPropertyHolder data },
-                    })
+            var slot = PropertyWalk.GetString(data, ModifierTypeField)
+                ?? throw new InvalidOperationException(
+                    $"Recipe {rowName} names no {ModifierTypeField}, so nothing states which slot it " +
+                    "rerolls.");
+
+            var recipe = new ModifierRecipe(
+                PropertyWalk.GetString(row, RecipeIdField) ?? rowName,
+                PropertyWalk.AsOrdinal(PropertyWalk.Get(data, SlotIndexField)?.GenericValue) ?? 0)
+            {
+                Category = PropertyWalk.GetText(row, CategoryField) is { Length: > 0 } category ? category : null,
+                Options = PropertyWalk.AsOrdinal(PropertyWalk.Get(data, OptionsField)?.GenericValue) ?? 0,
+                AllOptions = PropertyWalk.Get(data, AllOptionsField)?.GenericValue is true,
+            };
+
+            if (!_bySlot.TryGetValue(slot, out var recipes)) _bySlot[slot] = recipes = [];
+            recipes.Add(recipe);
+
+            if (PropertyWalk.Get(row, RecipeNameField)?.GenericValue is FText
                 {
-                    throw new InvalidOperationException(
-                        $"Recipe {rowName.Text} is a {Implementation} and its {DataField} holds no struct, so " +
-                        "nothing states which slot it rerolls.");
-                }
-
-                var slot = PropertyWalk.GetString(data, ModifierTypeField)
-                    ?? throw new InvalidOperationException(
-                        $"Recipe {rowName.Text} names no {ModifierTypeField}, so nothing states which slot it " +
-                        "rerolls.");
-
-                var recipe = new ModifierRecipe(
-                    PropertyWalk.GetString(row, RecipeIdField) ?? rowName.Text,
-                    PropertyWalk.AsOrdinal(PropertyWalk.Get(data, SlotIndexField)?.GenericValue) ?? 0)
-                {
-                    Category = PropertyWalk.GetText(row, CategoryField) is { Length: > 0 } category ? category : null,
-                    Options = PropertyWalk.AsOrdinal(PropertyWalk.Get(data, OptionsField)?.GenericValue) ?? 0,
-                    AllOptions = PropertyWalk.Get(data, AllOptionsField)?.GenericValue is true,
-                };
-
-                if (!_bySlot.TryGetValue(slot, out var recipes)) _bySlot[slot] = recipes = [];
-                recipes.Add(recipe);
-
-                if (PropertyWalk.Get(row, RecipeNameField)?.GenericValue is FText
-                    {
-                        TextHistory: FTextHistory.StringTableEntry entry,
-                    })
-                {
-                    if (!_names.TryGetValue(slot, out var names)) _names[slot] = names = [];
-                    names.Add((entry.TableId.Text, entry.Key));
-                }
+                    TextHistory: FTextHistory.StringTableEntry entry,
+                })
+            {
+                if (!_names.TryGetValue(slot, out var names)) _names[slot] = names = [];
+                names.Add((entry.TableId.Text, entry.Key));
             }
         }
 

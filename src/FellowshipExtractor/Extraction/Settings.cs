@@ -71,6 +71,8 @@ public sealed class Settings
 
     public IReadOnlyList<ModifierTypeEntry> ModifierTypes { get; }
 
+    public IReadOnlyList<CraftingRecipeEntry> CraftingRecipes { get; }
+
     public EmptyModifierSlot EmptyModifierSlot { get; }
 
     public string AttunementTreeHeader { get; }
@@ -101,11 +103,13 @@ public sealed class Settings
         StatEnchants enchants,
         AttunementTrees attunementTrees,
         ModifierRecipes recipes,
+        CraftingRecipes crafting,
         TooltipWidgetText widgetText,
         AbilityTooltipTexts abilityTooltip)
     {
         _attunementTrees = attunementTrees;
         ModifierTypes = recipes.Types;
+        CraftingRecipes = crafting.All;
         EmptyModifierSlot = widgetText.EmptySlot;
         AttunementTreeHeader = widgetText.AttunementTreeHeader;
         AugmentationTooltip = widgetText.AugmentationTooltip;
@@ -212,6 +216,7 @@ public sealed class Settings
         AugmentationTooltip = AugmentationTooltip,
         AbilityTooltip = AbilityTooltip,
         ModifierTypes = ModifierTypes,
+        CraftingRecipes = CraftingRecipes,
         EmptyModifierSlot = EmptyModifierSlot,
         Items = Items,
         SlotIcons = SlotIcons,

@@ -1,0 +1,234 @@
+@page "/tools/crafting"
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+
+<PageTitle>Crafting - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>Crafting</h1>
+
+<Panel Head="Calculator">
+    <form class="cx-cr-form" method="get" action="@Page">
+        <Knob Caption="Modifier">
+            <select name="@QueryKeys.Key(CraftingParameter.Modifier)">
+                @foreach (var kind in Kinds)
+                {
+                    <option value="@Token(kind)" selected="@(kind == Kind)">@TooltipView.Type(kind, Store.Settings).Printed</option>
+                }
+            </select>
+        </Knob>
+
+        <Knob Caption="Gear slot">
+            <select name="@QueryKeys.Key(CraftingParameter.GearSlot)">
+                @foreach (var slot in GearSlots)
+                {
+                    <option value="@slot" selected="@(slot == GearSlot)">@slot</option>
+                }
+            </select>
+        </Knob>
+
+        <Knob Caption="Modifier slot">
+            <select name="@QueryKeys.Key(CraftingParameter.ModifierSlot)">
+                @foreach (var at in ModifierSlots)
+                {
+                    <option value="@(at + 1)" selected="@(at == ModifierSlot)">@(at + 1)</option>
+                }
+            </select>
+        </Knob>
+
+        <Knob Caption="Target">
+            <select name="@QueryKeys.Key(CraftingParameter.Target)">
+                @foreach (var candidate in Pool)
+                {
+                    <option value="@candidate.Document.Id" selected="@(candidate.Document.Id == Target?.Document.Id)">
+                        @PublicTypes.NameOf(candidate.Document)
+                    </option>
+                }
+            </select>
+        </Knob>
+
+        <button type="submit">Calculate</button>
+    </form>
+
+    @if (Target is null)
+    {
+        <Empty Message="Nothing rolls here.">No @Plural roll on a @GearSlot.</Empty>
+    }
+    else
+    {
+        <div class="cx-pairs">
+            <Facts>
+                <Fact Label="@Plural">@CodexView.Number(Pool.Count)</Fact>
+                @if (Definition.MinimumItemLevel > 0)
+                {
+                    <Fact Label="From item level">@CodexView.Number(Definition.MinimumItemLevel)</Fact>
+                }
+                @if (TooltipView.Type(Kind, Store.Settings).MaximumLimit is { } cap)
+                {
+                    <Fact Label="Per item">@CodexView.Number(cap)</Fact>
+                }
+            </Facts>
+        </div>
+
+        <div class="cx-cr-scroll">
+            <table class="cx-cr-table">
+                <thead>
+                    <tr>
+                        <th>Recipe</th>
+                        <th>Vendor</th>
+                        <th class="cx-cr-n">Chance per craft</th>
+                        <th class="cx-cr-n">Expected crafts</th>
+                        <th>Expected cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var attempt in Attempts)
+                    {
+                        <tr>
+                            <td>@attempt.Recipe.Name</td>
+                            <td>@attempt.Recipe.Vendor</td>
+                            <td class="cx-cr-n">@Percent(attempt.Chance)</td>
+                            <td class="cx-cr-n">@(attempt.Chance > 0 ? Rounded(attempt.ExpectedCrafts) : null)</td>
+                            <td>@(attempt.Chance > 0 ? Cost(attempt.Recipe, attempt.ExpectedCrafts) : null)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</Panel>
+
+<Panel Head="Recipes">
+    <div class="cx-cr-scroll">
+        <table class="cx-cr-table">
+            <thead>
+                <tr>
+                    <th>Recipe</th>
+                    <th>Vendor</th>
+                    <th>Category</th>
+                    <th>Cost</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var recipe in Recipes)
+                {
+                    <tr>
+                        <td class="cx-cr-name">@recipe.Name</td>
+                        <td>@recipe.Vendor</td>
+                        <td>@recipe.Category</td>
+                        <td>
+                            @Cost(recipe, 1)
+                            @if (recipe.GoldCostScalesWithItemLevel)
+                            {
+                                <span class="cx-cr-note">scales with item level</span>
+                            }
+                        </td>
+                        <td class="cx-cr-text">@recipe.Description</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</Panel>
+
+@code {
+    [SupplyParameterFromQuery(Name = nameof(CraftingParameter.Modifier))] public string? Modifier { get; set; }
+
+    [SupplyParameterFromQuery(Name = nameof(CraftingParameter.GearSlot))] public string? Gear { get; set; }
+
+    [SupplyParameterFromQuery(Name = nameof(CraftingParameter.ModifierSlot))] public string? Slot { get; set; }
+
+    [SupplyParameterFromQuery(Name = nameof(CraftingParameter.Target))] public string? Wanted { get; set; }
+
+    private const string Page = "/tools/crafting";
+
+    private const string Gold = "gold";
+
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail =
+        [("Tools", null), ("Crafting", null)];
+
+    private IReadOnlyList<ModifierKind> Kinds = [];
+
+    private ModifierKind Kind;
+
+    private IReadOnlyList<string> GearSlots = [];
+
+    private string GearSlot = string.Empty;
+
+    private IReadOnlyList<int> ModifierSlots = [];
+
+    private int ModifierSlot;
+
+    private IReadOnlyList<CraftingCandidate> Pool = [];
+
+    private CraftingCandidate? Target;
+
+    private IReadOnlyList<CraftingAttempt> Attempts = [];
+
+    private ItemSlotDefinition Definition => ItemCraft.Definition(Kind.ToString(), Store.Settings);
+
+    private string Plural => TooltipView.Plural(Kind, Store.Settings);
+
+    private IEnumerable<CraftingRecipeEntry> Recipes => Store.Settings.CraftingRecipes
+        .OrderBy(recipe => recipe.Vendor is null)
+        .ThenBy(recipe => recipe.Vendor, StringComparer.Ordinal)
+        .ThenBy(recipe => recipe.Category, StringComparer.Ordinal);
+
+    protected override void OnParametersSet()
+    {
+        Kinds = [.. Store.Settings.ModifierTypes.Select(type => ItemCraft.KindOf(type.Name, Store.Settings)).OfType<ModifierKind>()];
+        Kind = Kinds.FirstOrDefault(kind => Token(kind).Equals(Modifier, StringComparison.OrdinalIgnoreCase));
+        if (!Kinds.Contains(Kind)) Kind = Kinds.FirstOrDefault();
+
+        GearSlots = CraftingOdds.GearSlots(Kind, Store);
+        GearSlot = GearSlots.FirstOrDefault(slot => slot.Equals(Gear, StringComparison.OrdinalIgnoreCase))
+            ?? GearSlots.FirstOrDefault()
+            ?? string.Empty;
+
+        ModifierSlots = [.. TooltipView.Type(Kind, Store.Settings).Recipes.Select(reroll => reroll.SlotIndex).Distinct().Order()];
+        ModifierSlot = Whole(Slot) is { } at && ModifierSlots.Contains(at - 1) ? at - 1 : ModifierSlots.FirstOrDefault();
+
+        Pool = CraftingOdds.Pool(Kind, GearSlot, Store);
+        Target = Pool.FirstOrDefault(candidate => candidate.Document.Id == Whole(Wanted)) ?? Pool.FirstOrDefault();
+
+        Attempts = Target is { } target
+            ? CraftingOdds.Attempts(Kind, ModifierSlot, Pool, IndexOf(target), Store.Settings)
+            : [];
+    }
+
+    private int IndexOf(CraftingCandidate candidate)
+    {
+        for (var at = 0; at < Pool.Count; at++)
+        {
+            if (ReferenceEquals(Pool[at], candidate)) return at;
+        }
+
+        return -1;
+    }
+
+    private static string Token(ModifierKind kind) => TooltipView.Token(kind);
+
+    private static int? Whole(string? value) =>
+        int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
+
+    private static string Percent(double chance) =>
+        (Math.Round(chance * 100, 2)).ToString(CultureInfo.InvariantCulture) + "%";
+
+    private static string Rounded(double value) => CodexView.Number(Math.Round(value, 2));
+
+    private string Cost(CraftingRecipeEntry recipe, double crafts)
+    {
+        var parts = new List<string>();
+
+        if (recipe.GoldCost > 0) parts.Add($"{Rounded(recipe.GoldCost * crafts)} {Gold}");
+
+        foreach (var cost in recipe.Costs)
+        {
+            parts.Add($"{Rounded(cost.Amount * crafts)} {Ui.Name(EntityType.Currency, cost.Currency)}");
+        }
+
+        return string.Join(", ", parts);
+    }
+}
