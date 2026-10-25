@@ -73,6 +73,25 @@ public static class AttunementTrees
             .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase),
     ];
 
+    public static IReadOnlyList<AttunementUpgradeRun> UpgradeRuns(SettingsFile settings)
+    {
+        var runs = new List<AttunementUpgradeRun>();
+
+        foreach (var cost in settings.AttunementNodeUpgradeCosts.OrderBy(cost => cost.Rank))
+        {
+            if (runs.Count > 0 && runs[^1] is var last &&
+                last.Last + 1 == cost.Rank && last.Cost == cost.Cost && last.Currency == cost.Currency)
+            {
+                runs[^1] = last with { Last = cost.Rank };
+                continue;
+            }
+
+            runs.Add(new AttunementUpgradeRun(cost.Rank, cost.Rank, cost.Cost, cost.Currency));
+        }
+
+        return runs;
+    }
+
     public static IReadOnlyList<AttunementTreeNode> Infusable(AttunementTreeEntry tree) =>
         [.. tree.Nodes.Where(node => !Root(node)).OrderBy(node => node.UITreeIndex)];
 
@@ -199,3 +218,5 @@ public sealed record AttunementTreePlan(
 {
     public static AttunementTreePlan Empty { get; } = new(null, null, new Dictionary<int, AugmentationDocument>(), new HashSet<int>());
 }
+
+public sealed record AttunementUpgradeRun(int First, int Last, double Cost, int Currency);

@@ -78,6 +78,16 @@ public class AttunementTreePlanTests(Export export)
     }
 
     [Fact]
+    public void The_upgrade_runs_give_every_rank_its_cost()
+    {
+        var runs = AttunementTrees.UpgradeRuns(export.Store.Settings);
+
+        Assert.All(export.Store.Settings.AttunementNodeUpgradeCosts, cost => Assert.Single(
+            runs,
+            run => run.First <= cost.Rank && cost.Rank <= run.Last && run.Cost == cost.Cost && run.Currency == cost.Currency));
+    }
+
+    [Fact]
     public void A_code_is_base64url() =>
         Assert.Matches("^[A-Za-z0-9_-]+$", AttunementTrees.Write(Tree, Plan([1], (1, In(1)), (12, In(12)))));
 

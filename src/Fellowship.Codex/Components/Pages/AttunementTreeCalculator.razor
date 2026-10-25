@@ -175,14 +175,14 @@ else
         }
     }
 
-    @if (Store.Settings.AttunementNodeUpgradeCosts.Count > 0)
+    @if (AttunementTrees.UpgradeRuns(Store.Settings) is { Count: > 0 } runs)
     {
         <Panel Head="Upgrade costs">
             <KeyValues>
-                @foreach (var cost in Store.Settings.AttunementNodeUpgradeCosts)
+                @foreach (var run in runs)
                 {
-                    <KeyValue Key="@($"Rank {cost.Rank}")">
-                        @cost.Cost.ToString("N0", CultureInfo.InvariantCulture) <Ref Entity="new EntityReference(EntityType.Currency, cost.Currency, null)" />
+                    <KeyValue Key="@(run.First == run.Last ? $"Rank {run.First}" : $"Ranks {run.First}–{run.Last}")">
+                        @run.Cost.ToString("N0", CultureInfo.InvariantCulture) <Ref Entity="new EntityReference(EntityType.Currency, run.Currency, null)" />@(run.First == run.Last ? null : " each")
                     </KeyValue>
                 }
             </KeyValues>
