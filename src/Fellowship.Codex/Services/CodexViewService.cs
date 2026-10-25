@@ -43,8 +43,6 @@ public interface ICodexViewService
 
     string? HeroColour(string name);
 
-    string? HeroSwatch(string name);
-
     string Name(EntityDocument document);
 
     string Name(EntityType type, int id);
@@ -148,8 +146,6 @@ public sealed class CodexViewService(
             : tokens.Color("core.text-primary") ?? "#EAE3DB");
 
     public string? HeroColour(string name) => Readable(tokens.Hero(name));
-
-    public string? HeroSwatch(string name) => tokens.Hero(name);
 
     public string Name(EntityDocument document) => PublicTypes.NameOf(document);
 

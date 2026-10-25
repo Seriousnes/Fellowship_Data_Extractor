@@ -1,9 +1,12 @@
 @page "/tools/attunement-trees"
+@page "/tools/attunement-trees/{Slot}"
+@page "/tools/attunement-trees/{Slot}/{Picked}"
+@rendermode InteractiveServer
 @using Fellowship.SDK.Models
-@using Microsoft.AspNetCore.WebUtilities
-@using Microsoft.Extensions.Primitives
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
+@using Microsoft.JSInterop
+@inject IJSRuntime Js
 
 <PageTitle>Attunement trees - Fellowship Codex</PageTitle>
 
@@ -11,16 +14,19 @@
 
 <h1>Attunement trees</h1>
 
-<Panel Head="Slot" Badge="@Roster">
-    <div class="cx-roster cx-tree-roster">
-        @foreach (var (slot, _) in Slots)
-        {
-            <a href="@Address(slot)" aria-current="@(slot.Equals(Chosen, StringComparison.OrdinalIgnoreCase) ? "page" : null)">
-                <img class="cx-tree-roster-icon" alt="" src="@Ui.Chrome.SlotGlyph(slot)" />
-                <span class="cx-who">@slot</span>
-            </a>
-        }
-    </div>
+<Panel>
+    @if (Chosen is { } chosen && Tree is { } picking)
+    {
+        <HeroPicker Heroes="@HeroNames" Current="@Plan.Hero?.Name"
+                    Href="@(name => Address(chosen, Plan with { Hero = Hero(name) }))"
+                    OnPick="@(name => Go(Wearing(picking, Hero(name)!), At))">
+            @SlotButtons
+        </HeroPicker>
+    }
+    else
+    {
+        @SlotButtons
+    }
 </Panel>
 
 @if (Chosen is not { } item || Tree is not { Layout: { } layout } tree)
@@ -33,23 +39,19 @@ else
 {
     <Panel Head="@($"{item} attunement tree")">
         <div class="cx-tal-bar">
-            <p class="cx-tal-spend">
-                <b>@Picks.Count</b> of @Capacity augmentations infused
-            </p>
-
-            @if (Picks.Count == 0)
+            @if (Plan.Assigned.Count == 0)
             {
                 <span class="cx-tal-act" aria-disabled="true">Reset</span>
             }
             else
             {
-                <a class="cx-tal-act" href="@Address(item)">Reset</a>
+                <button type="button" class="cx-tal-act" @onclick="() => Go(Plan with { Assigned = AttunementTreePlan.Empty.Assigned, Path = AttunementTreePlan.Empty.Path }, null)">Reset</button>
             }
 
             <button type="button" class="cx-tal-act" data-copy>Copy link</button>
         </div>
 
-        <div class="cx-tree" style="@Board(layout)">
+        <div class="cx-tree" style="@Board(layout)" data-hover-tip>
             <svg class="cx-tree-edges" viewBox="@ViewBox(layout)" preserveAspectRatio="none" aria-hidden="true">
                 @foreach (var node in tree.Nodes)
                 {
@@ -58,7 +60,7 @@ else
                         var from = Point(tree, layout, parent);
                         var to = Point(tree, layout, node.UITreeIndex);
 
-                        <line class="@(Picks.ContainsKey(node.UITreeIndex) && AttunementTrees.Lit(Node(tree, parent)!, Picks) ? "on" : null)"
+                        <line class="@(Plan.Path.Contains(node.UITreeIndex) && AttunementTrees.Lit(Node(tree, parent)!, Plan) ? "on" : null)"
                               x1="@Coordinate(from.X)" y1="@Coordinate(from.Y)" x2="@Coordinate(to.X)" y2="@Coordinate(to.Y)" />
                     }
                 }
@@ -71,47 +73,49 @@ else
                     {
                         <img class="cx-tree-layer" alt="" src="@Ui.Chrome.Texture(texture)" style="@Sized(layout, layer)" />
                     }
+                    else if (layer.Item && Plan.Item is { } rooted)
+                    {
+                        <span class="cx-tree-layer cx-tree-item" style="@Sized(layout, layer)"><Icon Src="@Ui.Icon(rooted.Icon)" Rarity="@Ui.Rarity(rooted)" Lazy="false" /></span>
+                    }
                 }
             </span>
 
-            @foreach (var node in tree.Nodes.Where(node => !AttunementTrees.Root(node)))
+            @foreach (var node in AttunementTrees.Infusable(tree))
             {
                 var mine = node;
 
                 if (!layout.Nodes.TryGetValue(mine.UITreeIndex, out var spot)) continue;
 
-                if (Picks.TryGetValue(mine.UITreeIndex, out var augmentation))
-                {
-                    var tip = Ui.Tip(augmentation);
+                var state = Plan.Path.Contains(mine.UITreeIndex) ? Selected
+                    : AttunementTrees.Allocatable(tree, Plan, mine) ? Available
+                    : Unavailable;
 
-                    <a class="cx-tree-node" href="@Address(item, Picks, mine.UITreeIndex)" style="@Placed(layout, spot)"
-                       aria-current="@(At == mine.UITreeIndex ? "true" : null)"
-                       data-tip="@tip.Address" data-tip-request="@tip.Body">@Face(mine, augmentation, Selected)</a>
-                }
-                else if (AttunementTrees.Allocatable(tree, Picks, mine))
-                {
-                    <a class="cx-tree-node" href="@Address(item, Picks, mine.UITreeIndex)" style="@Placed(layout, spot)"
-                       aria-current="@(At == mine.UITreeIndex ? "true" : null)"
-                       title="@Offer(mine)">@Face(mine, null, Available)</a>
-                }
-                else
-                {
-                    <span class="cx-tree-node" aria-disabled="true" tabindex="0" style="@Placed(layout, spot)"
-                          title="@Offer(mine)">@Face(mine, null, Unavailable)</span>
-                }
+                var augmentation = Plan.Assigned.GetValueOrDefault(mine.UITreeIndex);
+                var tip = augmentation is null ? null : Ui.Tip(augmentation);
+
+                <button type="button" class="cx-tree-node" style="@Placed(layout, spot)"
+                        aria-current="@(At == mine.UITreeIndex ? "true" : null)" data-infused="@(state == Selected ? "true" : null)"
+                        data-tip="@tip?.Address" data-tip-request="@tip?.Body" title="@(tip is null ? Offer(mine) : null)"
+                        @onclick="() => Press(tree, mine)"
+                        @oncontextmenu="() => Remove(tree, mine)" @oncontextmenu:preventDefault="@(state == Selected)">@Face(mine, augmentation, state)</button>
             }
         </div>
 
-        <Note>Choose a lit node to infuse a augmentation into it. Each row takes one augmentation, and a node opens once a node it follows is infused.</Note>
+        @if (Plan.Hero is { } hero)
+        {
+            <ItemPicker Items="@AttunementTrees.Items(tree, hero, Store)" Slot="@item" Picked="@Plan.Item"
+                        OnPicked="picked => Go(Reread(tree, Plan with { Item = picked }), At)" />
+        }
+
     </Panel>
 
     @if (Choosing is { } choosing)
     {
         <Panel Head="@($"Node {choosing.UITreeIndex}: {Categories(choosing)}")" Badge="@Offered.Count.ToString()">
-            <div class="cx-tree-choices">
-                @if (Picks.ContainsKey(choosing.UITreeIndex))
+            <div class="cx-tree-choices" data-hover-tip>
+                @if (Plan.Assigned.ContainsKey(choosing.UITreeIndex))
                 {
-                    <a class="cx-tal-act" href="@Address(item, Without(tree, choosing.UITreeIndex))">Remove</a>
+                    <button type="button" class="cx-tal-act" @onclick="() => Go(Clearing(tree, choosing), choosing.UITreeIndex)">Clear</button>
                 }
 
                 @foreach (var offered in Offered)
@@ -119,34 +123,48 @@ else
                     var choice = offered;
                     var tip = Ui.Tip(choice);
 
-                    if (Picks.TryGetValue(choosing.UITreeIndex, out var current) && current.Id == choice.Id)
+                    if (Plan.Assigned.TryGetValue(choosing.UITreeIndex, out var current) && current.Id == choice.Id)
                     {
                         <span class="cx-tree-choice" aria-current="true"
                               data-tip="@tip.Address" data-tip-request="@tip.Body">@Choice(choosing, choice)</span>
                     }
-                    else if (Picks.Values.Any(taken => taken.Id == choice.Id))
+                    else if (Plan.Assigned.Values.Any(taken => taken.Id == choice.Id))
                     {
                         <span class="cx-tree-choice" aria-disabled="true" tabindex="0"
                               data-tip="@tip.Address" data-tip-request="@tip.Body">@Choice(choosing, choice)</span>
                     }
                     else
                     {
-                        <a class="cx-tree-choice" href="@Address(item, With(tree, choosing.UITreeIndex, choice))"
-                           data-tip="@tip.Address" data-tip-request="@tip.Body">@Choice(choosing, choice)</a>
+                        <button type="button" class="cx-tree-choice" @onclick="() => Go(Assigning(tree, choosing, choice), choosing.UITreeIndex)"
+                                data-tip="@tip.Address" data-tip-request="@tip.Body">@Choice(choosing, choice)</button>
                     }
                 }
             </div>
         </Panel>
+
+        @if (Plan.Assigned.GetValueOrDefault(choosing.UITreeIndex) is { } focused)
+        {
+            <PlanBar Name="@Ui.Name(focused)" Tip="@Ui.Tip(focused)" Icon="@Ui.Icon(focused.Icon)" OnShut="() => Go(Plan, null)">
+                @if (Plan.Path.Contains(choosing.UITreeIndex))
+                {
+                    <button type="button" class="cx-tal-act" @onclick="() => Remove(tree, choosing)">Remove from path</button>
+                }
+                else if (AttunementTrees.Allocatable(tree, Plan, choosing))
+                {
+                    <button type="button" class="cx-tal-act" @onclick="() => Press(tree, choosing)">Infuse</button>
+                }
+            </PlanBar>
+        }
     }
 
-    @if (Store.Settings.AttunementNodeUpgradeCosts.Count > 0)
+    @if (AttunementTrees.UpgradeRuns(Store.Settings) is { Count: > 0 } runs)
     {
         <Panel Head="Upgrade costs">
             <KeyValues>
-                @foreach (var cost in Store.Settings.AttunementNodeUpgradeCosts)
+                @foreach (var run in runs)
                 {
-                    <KeyValue Key="@($"Rank {cost.Rank}")">
-                        @cost.Cost.ToString("N0", CultureInfo.InvariantCulture) <Ref Entity="new EntityReference(EntityType.Currency, cost.Currency, null)" />
+                    <KeyValue Key="@(run.First == run.Last ? $"Rank {run.First}" : $"Ranks {run.First}–{run.Last}")">
+                        @run.Cost.ToString("N0", CultureInfo.InvariantCulture) <Ref Entity="new EntityReference(EntityType.Currency, run.Currency, null)" />@(run.First == run.Last ? null : " each")
                     </KeyValue>
                 }
             </KeyValues>
@@ -155,11 +173,11 @@ else
 }
 
 @code {
-    [SupplyParameterFromQuery(Name = "slot")] public string? Slot { get; set; }
+    [Parameter] public string? Slot { get; set; }
 
-    [SupplyParameterFromQuery(Name = "picks")] public string? Picked { get; set; }
+    [Parameter] public string? Picked { get; set; }
 
-    [SupplyParameterFromQuery(Name = "at")] public int? At { get; set; }
+    private int? At;
 
     private const string Page = "/tools/attunement-trees";
 
@@ -180,30 +198,39 @@ else
 
     private AttunementTreeEntry? Tree;
 
-    private IReadOnlyDictionary<int, AugmentationDocument> Picks = new Dictionary<int, AugmentationDocument>();
+    private AttunementTreePlan Plan = AttunementTreePlan.Empty;
 
     private AttunementTreeNode? Choosing;
 
     private IReadOnlyList<AugmentationDocument> Offered = [];
 
-    private string Roster => $"{Slots.Count} trees";
+    private IReadOnlyList<HeroDocument> Heroes = [];
 
-    private int Capacity => AttunementTrees.Capacity(Tree?.Tag, Store.Settings) ?? 0;
+    private (string? Slot, string? Picked)? Applied;
 
     protected override void OnParametersSet()
     {
+        if (Applied is { } applied && applied == (Slot, Picked)) return;
+
+        Applied = (Slot, Picked);
         Slots = AttunementTrees.BySlot(Store);
+        Heroes = AttunementTrees.Heroes(Store);
 
         var chosen = Slots.FirstOrDefault(entry => entry.Slot.Equals(Slot, StringComparison.OrdinalIgnoreCase));
 
+        At = null;
         Chosen = chosen.Slot;
         Tree = chosen.Tree;
-        Picks = Tree is null ? new Dictionary<int, AugmentationDocument>() : AttunementTrees.Read(Picked, Tree, Store);
+        Plan = Tree is null ? AttunementTreePlan.Empty : AttunementTrees.Read(Picked, Tree, Store);
 
-        Choosing = Tree?.Nodes.FirstOrDefault(node =>
-            node.UITreeIndex == At && (Picks.ContainsKey(node.UITreeIndex) || AttunementTrees.Allocatable(Tree, Picks, node)));
+        Focus();
+    }
 
-        Offered = Choosing is null ? [] : AttunementTrees.Offered(Choosing, Store);
+    private void Focus()
+    {
+        Choosing = Tree is null ? null : AttunementTrees.Infusable(Tree).FirstOrDefault(node => node.UITreeIndex == At);
+
+        Offered = Choosing is null ? [] : AttunementTrees.Offered(Choosing, Store, Plan.Hero?.Name);
     }
 
     private RenderFragment Face(AttunementTreeNode node, AugmentationDocument? augmentation, string state) =>
@@ -286,31 +313,58 @@ else
     private static double Widest(AttunementTreeLayout layout) =>
         layout.RootLayers.Count == 0 ? layout.Width : layout.RootLayers.Max(layer => layer.Width);
 
-    private IReadOnlyDictionary<int, AugmentationDocument> With(AttunementTreeEntry tree, int node, AugmentationDocument augmentation)
-    {
-        var asked = new Dictionary<int, AugmentationDocument>(Picks) { [node] = augmentation };
+    private RenderFragment SlotButtons =>
+        @<div class="cx-tree-slots" role="group" aria-label="Slot">
+            @foreach (var (slot, other) in Slots)
+            {
+                <a class="cx-tree-slot" href="@Address(slot, AttunementTreePlan.Empty with { Hero = Plan.Hero }, other)"
+                   aria-label="@slot" title="@slot"
+                   aria-current="@(slot.Equals(Chosen, StringComparison.OrdinalIgnoreCase) ? "page" : null)">
+                    <img alt="" src="@Ui.Chrome.SlotGlyph(slot)" />
+                </a>
+            }
+        </div>;
 
-        return AttunementTrees.Allocated(tree, asked);
+    private IReadOnlyList<string> HeroNames => [.. Heroes.Select(hero => hero.Name!)];
+
+    private HeroDocument? Hero(string name) => Heroes.FirstOrDefault(hero => hero.Name == name);
+
+    private AttunementTreePlan Reread(AttunementTreeEntry tree, AttunementTreePlan plan) =>
+        AttunementTrees.Read(AttunementTrees.Write(tree, plan), tree, Store);
+
+    private AttunementTreePlan Wearing(AttunementTreeEntry tree, HeroDocument hero) => Reread(tree, Plan with { Hero = hero });
+
+    private Task Press(AttunementTreeEntry tree, AttunementTreeNode node) =>
+        Go(AttunementTrees.Allocatable(tree, Plan, node) ? Infusing(tree, node) : Plan, node.UITreeIndex);
+
+    private Task Remove(AttunementTreeEntry tree, AttunementTreeNode node) =>
+        Plan.Path.Contains(node.UITreeIndex) ? Go(Leaving(tree, node), At) : Task.CompletedTask;
+
+    private async Task Go(AttunementTreePlan plan, int? at)
+    {
+        Plan = plan;
+        At = at;
+        Focus();
+
+        await Js.InvokeVoidAsync("history.replaceState", null, string.Empty, Address(Chosen!, plan));
     }
 
-    private IReadOnlyDictionary<int, AugmentationDocument> Without(AttunementTreeEntry tree, int node)
-    {
-        var asked = new Dictionary<int, AugmentationDocument>(Picks);
-        asked.Remove(node);
+    private AttunementTreePlan Leaving(AttunementTreeEntry tree, AttunementTreeNode node) =>
+        AttunementTrees.Planned(tree, Plan.Hero, Plan.Item, Plan.Assigned, Plan.Path.Where(index => index != node.UITreeIndex).ToHashSet());
 
-        return AttunementTrees.Allocated(tree, asked);
-    }
+    private AttunementTreePlan Infusing(AttunementTreeEntry tree, AttunementTreeNode node) =>
+        AttunementTrees.Planned(tree, Plan.Hero, Plan.Item, Plan.Assigned, Plan.Path.Append(node.UITreeIndex).ToHashSet());
 
-    private string Address(string slot, IReadOnlyDictionary<int, AugmentationDocument>? picks = null, int? at = null)
-    {
-        var values = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["slot"] = slot,
-        };
+    private AttunementTreePlan Clearing(AttunementTreeEntry tree, AttunementTreeNode node) =>
+        AttunementTrees.Planned(
+            tree, Plan.Hero, Plan.Item, Plan.Assigned.Where(pick => pick.Key != node.UITreeIndex).ToDictionary(), Plan.Path);
 
-        if (picks is { Count: > 0 }) values["picks"] = AttunementTrees.Write(picks);
-        if (at is { } node) values["at"] = node.ToString(CultureInfo.InvariantCulture);
+    private AttunementTreePlan Assigning(AttunementTreeEntry tree, AttunementTreeNode node, AugmentationDocument augmentation) =>
+        AttunementTrees.Planned(
+            tree, Plan.Hero, Plan.Item, new Dictionary<int, AugmentationDocument>(Plan.Assigned) { [node.UITreeIndex] = augmentation }, Plan.Path);
 
-        return QueryHelpers.AddQueryString(Page, values);
-    }
+    private string Address(string slot, AttunementTreePlan? plan = null, AttunementTreeEntry? on = null) =>
+        plan is not null && (on ?? Tree) is { } tree && AttunementTrees.Write(tree, plan) is { Length: > 0 } code
+            ? $"{Page}/{Uri.EscapeDataString(slot.ToLowerInvariant())}/{code}"
+            : $"{Page}/{Uri.EscapeDataString(slot.ToLowerInvariant())}";
 }

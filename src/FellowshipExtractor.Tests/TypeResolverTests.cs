@@ -14,7 +14,7 @@ public sealed class TypeResolverTests
         Assert.Equal(slug, EntityTypes.Slug(type));
 
     [Theory]
-    [InlineData(EntityType.Item, 5716)]
+    [InlineData(EntityType.Item, 6316)]
     [InlineData(EntityType.Effect, 3374)]
     [InlineData(EntityType.Ability, 2380)]
     [InlineData(EntityType.Creature, 244)]

@@ -22,6 +22,7 @@ public sealed class SuggestionService(ISearchIndexService index, ICodexViewServi
         if (string.IsNullOrWhiteSpace(text)) return SearchResponse.Empty;
 
         var hits = index.Search(text, Ceiling)
+            .Where(hit => view.Codex.Flags.All(flag => flag.Admits(hit.Document)))
             .GroupBy(hit => (EntityTypes.TypeOf(hit.Document), hit.Document.Id))
             .Select(readings => readings.First())
             .ToArray();

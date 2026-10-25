@@ -24,6 +24,21 @@ public class TalentPlanTests(Export export)
         Assert.Equal(slots, laid);
     }
 
+    [Fact]
+    public void Every_hero_reads_their_picks_back_from_a_base64url_code()
+    {
+        foreach (var hero in Enum.GetValues<Hero>())
+        {
+            var tree = Tree(hero);
+            var taken = tree.SelectMany(row => row.Nodes).Where((node, at) => at % 3 == 0).Select(node => node.Id).ToHashSet();
+
+            var code = TalentPlan.Write(tree, taken);
+
+            Assert.Matches("^[A-Za-z0-9_-]+$", code);
+            Assert.Equal(taken.Order(), TalentPlan.Read(code, tree).Order());
+        }
+    }
+
     [Theory]
     [InlineData(1, "I")]
     [InlineData(4, "IV")]

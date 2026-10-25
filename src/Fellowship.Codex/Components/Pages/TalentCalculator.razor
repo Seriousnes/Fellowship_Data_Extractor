@@ -1,8 +1,11 @@
 @page "/tools/talents"
-@using Microsoft.AspNetCore.WebUtilities
-@using Microsoft.Extensions.Primitives
+@page "/tools/talents/{Hero}"
+@page "/tools/talents/{Hero}/{Picks}"
+@rendermode InteractiveServer
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
+@using Microsoft.JSInterop
+@inject IJSRuntime Js
 
 <PageTitle>Talent calculator - Fellowship Codex</PageTitle>
 
@@ -10,18 +13,9 @@
 
 <h1>Talent calculator</h1>
 
-<Panel Head="Hero" Badge="@Roster">
-    <div class="cx-roster">
-        @foreach (var who in Heroes)
-        {
-            <a href="@Address(who.Name, who.Name == Wearer?.Name ? Picks : null)"
-               aria-current="@(who.Name == Wearer?.Name ? "page" : null)"
-               style="color:@(Ui.HeroColour(who.Name) ?? "var(--muted)")">
-                <span class="cx-pip" style="background:@(Ui.HeroSwatch(who.Name) ?? "var(--muted)")"></span>
-                <span class="cx-who">@who.Name</span>
-            </a>
-        }
-    </div>
+<Panel>
+    <HeroPicker Heroes="@HeroNames" Current="@Wearer?.Name"
+                Href="@(name => Address(name, name == Wearer?.Name ? TalentPlan.Write(Tree, Taken) : null))" />
 </Panel>
 
 @if (Wearer is not { } hero)
@@ -44,13 +38,13 @@ else
             }
             else
             {
-                <a class="cx-tal-act" href="@Address(hero.Name)">Reset</a>
+                <button type="button" class="cx-tal-act" @onclick="() => Go(new HashSet<int>())">Reset</button>
             }
 
             <button type="button" class="cx-tal-act" data-copy>Copy link</button>
         </div>
 
-        <div class="cx-talents" style="@Frame">
+        <div class="cx-talents" style="@Frame" data-hover-tip>
             @foreach (var row in Tree)
             {
                 <div class="cx-tal-band">
@@ -62,35 +56,47 @@ else
                         @foreach (var node in row.Nodes)
                         {
                             var mine = node;
+                            var picked = Taken.Contains(mine.Id);
 
-                            if (Taken.Contains(mine.Id))
-                            {
-                                <a class="cx-tal" href="@Address(hero.Name, Toggled(mine))"
-                                   aria-current="true">@Face(mine, Picked)</a>
-                            }
-                            else if (mine.Cost <= Left)
-                            {
-                                <a class="cx-tal" href="@Address(hero.Name, Toggled(mine))">@Face(mine, Unpicked)</a>
-                            }
-                            else
-                            {
-                                <span class="cx-tal" aria-disabled="true" tabindex="0"
-                                      title="@Beyond(mine)">@Face(mine, Unpicked)</span>
-                            }
+                            <button type="button" class="cx-tal"
+                                    aria-current="@(picked ? "true" : null)"
+                                    aria-disabled="@(!picked && mine.Cost > Left ? "true" : null)"
+                                    title="@(!picked && mine.Cost > Left ? Beyond(mine) : null)"
+                                    @onclick="() => Press(mine)"
+                                    @oncontextmenu="() => Remove(mine)" @oncontextmenu:preventDefault="@picked">@Face(mine, picked ? Picked : Unpicked)</button>
                         }
                     </div>
                 </div>
             }
         </div>
 
-        <Note>Hover a talent for its full tooltip. A picked talent spends its cost from the fourteen.</Note>
+        <Note>Hover a talent for its full tooltip. Left click a talent to pick it, and right click a picked talent to remove it. On a touch screen, tap a talent to pick it, and the bar at the foot of the screen has its tooltip and a button to remove it. A picked talent spends its cost from the fourteen.</Note>
     </Panel>
+
+    @if (Focused is { } focused)
+    {
+        <PlanBar Name="@Ui.Name(focused.Talent)" Tip="@Ui.Tip(focused.Talent)" Icon="@Ui.Icon(focused.Talent.Icon)"
+                 OnShut="() => Focused = null">
+            @if (Taken.Contains(focused.Id))
+            {
+                <button type="button" class="cx-tal-act" @onclick="() => Remove(focused)">Remove talent</button>
+            }
+            else if (focused.Cost <= Left)
+            {
+                <button type="button" class="cx-tal-act" @onclick="() => Press(focused)">Pick talent</button>
+            }
+            else
+            {
+                <span class="cx-tal-act" aria-disabled="true">@Left of @focused.Cost points left</span>
+            }
+        </PlanBar>
+    }
 }
 
 @code {
-    [SupplyParameterFromQuery(Name = "hero")] public string? Hero { get; set; }
+    [Parameter] public string? Hero { get; set; }
 
-    [SupplyParameterFromQuery(Name = "picks")] public string? Picks { get; set; }
+    [Parameter] public string? Picks { get; set; }
 
     private const string Page = "/tools/talents";
 
@@ -104,10 +110,14 @@ else
 
     private IReadOnlySet<int> Taken = new HashSet<int>();
 
+    private (string? Hero, string? Picks)? Applied;
+
+    private TalentNode? Focused;
+
     private IReadOnlyList<HeroEntry> Heroes =>
         [.. Store.Settings.Heroes.OrderBy(who => who.Name, StringComparer.OrdinalIgnoreCase)];
 
-    private string Roster => $"{Store.Settings.Heroes.Count} heroes";
+    private IReadOnlyList<string> HeroNames => [.. Heroes.Select(who => who.Name)];
 
     private int Spent => TalentPlan.Spent(Tree, Taken);
 
@@ -129,6 +139,9 @@ else
 
     protected override void OnParametersSet()
     {
+        if (Applied is { } applied && applied == (Hero, Picks)) return;
+
+        Applied = (Hero, Picks);
         Wearer = Store.Hero(Hero);
 
         Tree = Wearer is null || !Enum.TryParse<Hero>(Wearer.Name, out var hero)
@@ -136,6 +149,23 @@ else
             : TalentPlan.Tree(Store, hero);
 
         Taken = TalentPlan.Read(Picks, Tree);
+        Focused = null;
+    }
+
+    private Task Press(TalentNode node)
+    {
+        Focused = node;
+
+        return !Taken.Contains(node.Id) && node.Cost <= Left ? Go(Toggled(node)) : Task.CompletedTask;
+    }
+
+    private Task Remove(TalentNode node) => Taken.Contains(node.Id) ? Go(Toggled(node)) : Task.CompletedTask;
+
+    private async Task Go(IReadOnlySet<int> taken)
+    {
+        Taken = taken;
+
+        await Js.InvokeVoidAsync("history.replaceState", null, string.Empty, Address(Wearer?.Name, TalentPlan.Write(Tree, taken)));
     }
 
     private RenderFragment Face(TalentNode node, string state)
@@ -151,26 +181,21 @@ else
         </span>;
     }
 
-    private string Toggled(TalentNode node)
+    private IReadOnlySet<int> Toggled(TalentNode node)
     {
         var taken = new HashSet<int>(Taken);
 
         if (!taken.Remove(node.Id)) taken.Add(node.Id);
 
-        return TalentPlan.Write(Tree, taken);
+        return taken;
     }
 
     private string Beyond(TalentNode node) =>
         $"{Ui.Name(node.Talent)} costs {node.Cost}, and only {Left} of the " +
         $"{TalentPlan.Points} points are left.";
 
-    private string Address(string? hero, string? picks = null)
-    {
-        var values = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
-
-        if (hero is { Length: > 0 }) values["hero"] = hero;
-        if (picks is { Length: > 0 }) values["picks"] = picks;
-
-        return QueryHelpers.AddQueryString(Page, values);
-    }
+    private static string Address(string? hero, string? picks = null) =>
+        hero is not { Length: > 0 } ? Page
+        : picks is { Length: > 0 } ? $"{Page}/{Uri.EscapeDataString(hero.ToLowerInvariant())}/{picks}"
+        : $"{Page}/{Uri.EscapeDataString(hero.ToLowerInvariant())}";
 }

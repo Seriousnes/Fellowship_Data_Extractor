@@ -364,12 +364,6 @@ public sealed record CodexQuery
 
     public bool ChosenType(EntityType type) => Types.Contains(type);
 
-    public const string NamedFlag = "named";
-
-    public bool StatesNamed => Flags.ContainsKey(NamedFlag);
-
-    public bool Named => !Flags.TryGetValue(NamedFlag, out var wanted) || wanted;
-
     public bool IsEmpty =>
         Text is null && Types.Count == 0 && Selections.All(s => s.Value.Count == 0) &&
         Flags.Count == 0 && Ranges.Count == 0;

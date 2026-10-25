@@ -28,6 +28,8 @@ public sealed record HeroItem
     public required IReadOnlyList<string> Tags { get; init; }
 
     public int? DefaultItemLevel { get; init; }
+
+    public bool EnabledInGame { get; init; }
 }
 
 public sealed class HeroItemTable
@@ -42,6 +44,7 @@ public sealed class HeroItemTable
     private const string OverrideRarityField = "ItemRarityOverride";
     private const string TagsField = "Tags";
     private const string DefaultsField = "DefaultItemForHeroes";
+    private const string EnabledField = "EnabledInGame";
 
     private readonly Dictionary<string, HeroItem> _byTag = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _primaryStatByHero = new(StringComparer.OrdinalIgnoreCase);
@@ -58,6 +61,8 @@ public sealed class HeroItemTable
     public IReadOnlyDictionary<string, HeroItem> Rows => _byTag;
 
     public IReadOnlyDictionary<string, string> PrimaryStatByHero => _primaryStatByHero;
+
+    public IReadOnlySet<string> ArmoredSlots { get; }
 
     public HeroItemTable(
         AbstractFileProvider provider,
@@ -100,6 +105,11 @@ public sealed class HeroItemTable
         }
 
         ResolvePrimaryStats(statsByHero);
+
+        ArmoredSlots = _byTag.Values
+            .Where(item => item is { Slot: not null, ArmorType: not null })
+            .Select(item => item.Slot!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     public HeroItem? Find(string tagName) => _byTag.GetValueOrDefault(tagName);
@@ -120,6 +130,7 @@ public sealed class HeroItemTable
             IconPath = Icon(row, slot?.Type),
             Tags = PropertyWalk.GetTags(row, TagsField) ?? [],
             DefaultItemLevel = DefaultLevel(row),
+            EnabledInGame = PropertyWalk.Get(row, EnabledField)?.GenericValue is not false,
         };
     }
 

@@ -52,8 +52,6 @@ public static class ExportRun
 
         if (entity.Type is EntityType.Creature && !HasContent(entity)) return "a creature carrying nothing";
 
-        if (entity is { Type: EntityType.Item, EnabledInGame: false }) return "an item disabled in game";
-
         return null;
     }
 

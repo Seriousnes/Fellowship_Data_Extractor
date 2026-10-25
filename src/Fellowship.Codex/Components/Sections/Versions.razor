@@ -23,19 +23,7 @@
                     <CountBadge Text="@pair" />
                 }
             </SubHead>
-            <div class="cx-roster">
-                @foreach (var hero in version.Heroes)
-                {
-                    var where = Ui.Href(version.Reading, hero);
-                    var ink = $"color:{Ui.HeroColour(hero) ?? "var(--muted)"}";
-                    var swatch = $"background:{Ui.HeroSwatch(hero) ?? "var(--muted)"}";
-
-                    <a href="@where" style="@ink" aria-current="@(hero == Here.Reading ? "page" : null)">
-                        <span class="cx-pip" style="@swatch"></span>
-                        <span class="cx-who">@hero</span>
-                    </a>
-                }
-            </div>
+            <HeroPicker Heroes="@version.Heroes" Current="@Here.Reading" Href="@(hero => Ui.Href(version.Reading, hero))" />
         }
     </Panel>
 }

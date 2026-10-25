@@ -393,7 +393,7 @@ document.addEventListener('click', event => {
 
     const link = event.target.closest?.('[data-tip]');
 
-    if (link && coarse(event) && !event.target.closest('.cx-menus, .cx-sel')) {
+    if (link && coarse(event) && !event.target.closest('.cx-menus, .cx-sel, [data-hover-tip]')) {
         event.preventDefault();
         event.stopPropagation();
         present(link);

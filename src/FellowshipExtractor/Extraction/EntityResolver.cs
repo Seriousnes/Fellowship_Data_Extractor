@@ -17,6 +17,7 @@ public sealed class EntityResolver
     private const string RuleSetPrefix = "DynamicHeroItemRuleSet.";
     private const string VisualKeyField = "VisualCollectionMappingKey";
     private const string SlotOrdinalField = "HeroItemType";
+    private const string StaminaStat = "Stamina";
     private const string HoveredIconField = "UIIconHovered";
     private const string EffectTable = "GameplayEffect";
     private const string CostEffectClass = "/Script/fellowship.CRCostEffect";
@@ -494,9 +495,15 @@ public sealed class EntityResolver
         }
 
         return cdo is not null && ItemNames.Read(cdo) is { } naming
-            ? ItemVariants.Expand(entity, naming, Heroes, DynamicTextures(cdo, icons))
+            ? ItemVariants.Expand(entity, naming, Heroes, DynamicTextures(cdo, icons), WearsArmor)
             : [entity];
     }
+
+    private bool WearsArmor(Entity item) =>
+        item.Slot is { } slot &&
+        (HeroItems.ArmoredSlots.Contains(slot) ||
+         (StatCalculation.SlotWeights.TryGetValue(slot, out var weight) && weight.ArmorWeight > 0 &&
+          item.Stats?.Any(stat => stat.Stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase)) is true));
 
     private HeroTextures DynamicTextures(UObject cdo, IconWriter? icons)
     {
@@ -974,6 +981,7 @@ public sealed class EntityResolver
             DisplayName = entity.DisplayName ?? item.DisplayName,
             Slot = item.Slot ?? entity.Slot,
             ArmorType = item.ArmorType,
+            EnabledInGame = item.EnabledInGame ? entity.EnabledInGame : false,
             Stats = entity.Stats ?? Empty(item.Stats),
             UniqueEquipped = item.UniqueEquipped ? true : null,
             Rarities = entity.Rarities ?? (item.Rarity is { } rarity ? [rarity] : null),

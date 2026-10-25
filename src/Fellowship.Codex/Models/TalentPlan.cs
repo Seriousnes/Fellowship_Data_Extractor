@@ -38,29 +38,16 @@ public static class TalentPlan
 
     public static IReadOnlySet<int> Read(string? picks, IReadOnlyList<TalentRow> tree)
     {
-        if (picks is not { Length: > 0 }) return new HashSet<int>();
+        var bytes = PlanCode.Decode(picks);
 
-        var offered = tree.SelectMany(row => row.Nodes).Select(node => node.Id).ToHashSet();
-        var taken = new HashSet<int>();
-
-        foreach (var part in picks.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            if (int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id) &&
-                offered.Contains(id))
-            {
-                taken.Add(id);
-            }
-        }
-
-        return taken;
+        return tree.SelectMany(row => row.Nodes)
+            .Where((node, at) => PlanCode.Bit(bytes, at))
+            .Select(node => node.Id)
+            .ToHashSet();
     }
 
     public static string Write(IReadOnlyList<TalentRow> tree, IReadOnlySet<int> taken) =>
-        string.Join(
-            ',',
-            tree.SelectMany(row => row.Nodes)
-                .Where(node => taken.Contains(node.Id))
-                .Select(node => node.Id.ToString(CultureInfo.InvariantCulture)));
+        PlanCode.Encode(PlanCode.Mask([.. tree.SelectMany(row => row.Nodes).Select(node => taken.Contains(node.Id))]));
 
     public static int Spent(IReadOnlyList<TalentRow> tree, IReadOnlySet<int> taken) =>
         tree.SelectMany(row => row.Nodes).Where(node => taken.Contains(node.Id)).Sum(node => node.Cost);

@@ -1,0 +1,55 @@
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+@inject ITextureSource Textures
+
+<div class="cx-hero-picker">
+    @if (ChildContent is not null)
+    {
+        @ChildContent
+        <span class="cx-hero-picker-rule" aria-hidden="true"></span>
+    }
+
+    <div class="cx-hero-picker-faces" role="group" aria-label="Hero">
+        @foreach (var name in Heroes)
+        {
+            var mine = name;
+
+            <a class="cx-hero-picker-face" href="@Href(mine)"
+               @onclick="() => OnPick.InvokeAsync(mine)" @onclick:preventDefault="@OnPick.HasDelegate"
+               aria-label="@mine" title="@mine"
+               aria-current="@(string.Equals(mine, Current, StringComparison.OrdinalIgnoreCase) ? "page" : null)"
+               style="--cx-hero:@(Ui.HeroColour(mine) ?? "var(--muted)")">
+                @if (Portrait(mine) is { } portrait)
+                {
+                    <img alt="" src="@portrait" />
+                }
+            </a>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<string> Heroes { get; set; } = [];
+
+    [Parameter] public string? Current { get; set; }
+
+    [Parameter, EditorRequired] public Func<string, string> Href { get; set; } = default!;
+
+    [Parameter] public EventCallback<string> OnPick { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private IReadOnlyDictionary<string, string> Portraits = new Dictionary<string, string>();
+
+    protected override void OnInitialized() =>
+        Portraits = Store.Entities
+            .OfType<HeroDocument>()
+            .Where(hero => hero.Name is not null && hero.Portrait is not null)
+            .DistinctBy(hero => hero.Name)
+            .ToDictionary(
+                hero => hero.Name!,
+                hero => Textures.Address(hero.Portrait!, TextureSize.Small),
+                StringComparer.OrdinalIgnoreCase);
+
+    private string? Portrait(string name) => Portraits.GetValueOrDefault(name);
+}
