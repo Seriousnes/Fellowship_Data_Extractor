@@ -75,7 +75,9 @@
             Here.Values.GetValueOrDefault(QueryKeys.Key(ReadingParameter.ChangedBy)), Store, out _);
 
         Sources = Here.Entity is { } entity and (AbilityDocument or EffectDocument)
-            ? [.. AppliedChanges.Sources(entity, Store).Select(document => Choose(entity, document))]
+            ? [.. AppliedChanges.Sources(entity, Store)
+                .Select(document => Choose(entity, document))
+                .Where(choice => choice.Usable || Ticked.Contains(choice.Source))]
             : [];
     }
 
@@ -91,7 +93,8 @@
                 source with { While = held.Effects },
                 [.. held.Effects.SelectMany(effect => Store.All(EntityType.Effect, effect).Take(1))],
                 held.OnTarget,
-                AppliedChanges.Changes(entity, document, held.Effects)))]);
+                AppliedChanges.Changes(entity, document, held.Effects)))
+                .Where(gate => gate.Changes || Ticked.Contains(gate.Source))]);
     }
 
     private RenderFragment Effects(IReadOnlyList<EntityDocument> effects) => __builder =>

@@ -1117,9 +1117,11 @@ public sealed class EntityResolver
 
             ownRows.UnionWith(uses.Keys);
 
+            var shown = tokenHolder is null ? null : DescriptionTokens.Effects(tokenHolder, assetName);
+
             foreach (var effect in Effects(cdo))
             {
-                Gate(effect.Default, tested, added, gated);
+                Gate(effect.Default, tested, added, shown is null || Shown(effect.Default, shown) ? gated : null);
                 Use(effect.Default, effect.Constants ?? [], uses, foreign, supplied);
                 declaredGates.AddRange(DeclaredGates(effect.Default));
                 testerBindings.AddRange(effect.Constants ?? []);
@@ -1542,13 +1544,15 @@ public sealed class EntityResolver
     }
 
     private void Gate(
-        UObject? asset, SortedSet<string> tested, SortedSet<string> added, Dictionary<string, List<EffectModifier>> gated)
+        UObject? asset, SortedSet<string> tested, SortedSet<string> added, Dictionary<string, List<EffectModifier>>? gated)
     {
         if (asset is null) return;
 
         var tags = TagNames.Of(asset);
         tested.UnionWith(tags.Named);
         added.UnionWith(tags.Added.Where(TagNames.IsTalent));
+
+        if (gated is null) return;
 
         foreach (var (tag, modifiers) in EffectModifiers.Gated(asset, _provider, _constants, _mappings))
         {
@@ -1560,6 +1564,10 @@ public sealed class EntityResolver
             }
         }
     }
+
+    private static bool Shown(UObject? effect, IReadOnlySet<string> shown) =>
+        effect?.Class?.Name.Text is { } effectClass &&
+        shown.Contains(effectClass.EndsWith("_C", StringComparison.Ordinal) ? effectClass[..^2] : effectClass);
 
     private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, double>>? GatedConstants(
         IEnumerable<string> tested,
