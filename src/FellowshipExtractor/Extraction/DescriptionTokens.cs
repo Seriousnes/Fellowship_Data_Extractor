@@ -78,6 +78,26 @@ public static class DescriptionTokens
         return description;
     }
 
+    public static IReadOnlySet<string>? Effects(IPropertyHolder row, string? ownAsset)
+    {
+        if (PropertyWalk.GetStruct(row, "DynamicDescription") is not { } dynamic) return null;
+        if (PropertyWalk.Get(dynamic, "Tokens")?.GenericValue is not UScriptArray tokens) return null;
+
+        var named = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var entry in tokens.Properties)
+        {
+            if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder token }) continue;
+            if (PropertyWalk.GetString(token, "Object") is not { Length: > 0 } objectPath) continue;
+            if (IsSelf(objectPath, ownAsset)) return null;
+
+            var effect = AbilityPresentationIndex.AssetName(objectPath);
+            named.Add(effect.EndsWith("_C", StringComparison.Ordinal) ? effect[..^2] : effect);
+        }
+
+        return named.Count == 0 ? null : named;
+    }
+
     private static bool IsSelf(string objectPath, string? ownAsset)
     {
         if (ownAsset is null) return false;

@@ -16,7 +16,7 @@
   &:focus-visible { outline: 1px solid var(--gold-deep); outline-offset: 2px; }
 }
 
-.cx-changed-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.cx-changed-name { flex: 0 1 auto; min-width: 0; overflow-wrap: anywhere; }
 
 .cx-changed-gates { list-style: none; margin: 0; padding: 0 0 0 28px; }
 
