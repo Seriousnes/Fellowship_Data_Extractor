@@ -18,6 +18,8 @@ public sealed class SearchIndexService : ISearchIndexService
 
     private readonly string[][] displayWords;
 
+    private readonly string[][] grantedWords;
+
     private readonly string[] terms;
 
     private readonly int[][] postings;
@@ -30,6 +32,7 @@ public sealed class SearchIndexService : ISearchIndexService
 
         display = new string[docs.Length];
         displayWords = new string[docs.Length][];
+        grantedWords = new string[docs.Length][];
 
         var building = new Dictionary<string, List<int>>(StringComparer.Ordinal);
         var reachable = 0;
@@ -43,7 +46,11 @@ public sealed class SearchIndexService : ISearchIndexService
 
             if (displayWords[at].Length > 0) reachable++;
 
-            foreach (var term in displayWords[at])
+            grantedWords[at] = displayWords[at].Length > 0 && docs[at] is ItemDocument { Grants.Name: { } granted }
+                ? [.. Words(granted).Distinct(StringComparer.Ordinal).Except(displayWords[at], StringComparer.Ordinal)]
+                : [];
+
+            foreach (var term in displayWords[at].Concat(grantedWords[at]))
             {
                 if (!building.TryGetValue(term, out var list)) building[term] = list = [];
                 list.Add(at);
@@ -149,6 +156,7 @@ public sealed class SearchIndexService : ISearchIndexService
         {
             if (name.StartsWith(word, StringComparison.Ordinal)) score += 120;
             else if (Starts(displayWords[doc], word)) score += 70;
+            else if (Starts(grantedWords[doc], word)) score += 30;
         }
 
         if (DocumentFields.Text(docs[doc], nameof(ItemDocument.Icon)) is not null) score += 15;
