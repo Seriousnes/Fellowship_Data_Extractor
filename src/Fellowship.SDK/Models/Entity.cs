@@ -93,6 +93,10 @@ public sealed record Entity
 
     public bool? CastTimeScalesWithHaste { get; init; }
 
+    public double? GlobalCooldown { get; init; }
+
+    public bool? GlobalCooldownScalesWithHaste { get; init; }
+
     public IReadOnlyList<string>? CooldownDurationScalesOff { get; init; }
 
     public IReadOnlyList<string>? CooldownTimeRateScalesOff { get; init; }

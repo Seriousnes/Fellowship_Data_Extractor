@@ -49,6 +49,7 @@ public sealed class EntityResolver
     private readonly ConstantsTable _constants;
     private readonly EffectCalculationPresets _presets;
     private readonly CooldownScaling _cooldowns;
+    private readonly GlobalCooldowns _globalCooldowns;
     private AugmentationIndex? _augmentations;
 
     private readonly Dictionary<string, bool> _spreadSources = new(StringComparer.OrdinalIgnoreCase);
@@ -167,6 +168,7 @@ public sealed class EntityResolver
         _constants = new ConstantsTable(provider);
         _presets = new EffectCalculationPresets(provider, _assets);
         _cooldowns = new CooldownScaling(provider, _assets, _constants);
+        _globalCooldowns = new GlobalCooldowns(provider, _constants);
         _multiplyingOps = Reductions.MultiplyingOps(mappings);
 
         IndexAssets();
@@ -1199,6 +1201,7 @@ public sealed class EntityResolver
 
         var cooldown = Number(split, "cooldown");
         var timing = cdo is null || cooldown is null ? null : _cooldowns.Of(cdo, charges.Charges);
+        var globalCooldown = cdo is null ? null : _globalCooldowns.Of(cdo, assetName);
         var category = Categories.Of(cdo);
 
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
@@ -1380,6 +1383,8 @@ public sealed class EntityResolver
             ChannelTime = Number(split, "channelTime"),
             ChannelTick = Number(split, "channelTick"),
             Cooldown = cooldown,
+            GlobalCooldown = globalCooldown?.Duration,
+            GlobalCooldownScalesWithHaste = globalCooldown?.ScalesWithHaste,
             Charges = charges.Charges,
             ChargesByLevelType = charges.ByLevelType,
             TargetCountFalloff = Falloffs.Of(cdo),
@@ -2172,6 +2177,8 @@ public sealed class EntityResolver
         MaxTargets = outer.MaxTargets ?? inner.MaxTargets,
         Resource = outer.Resource ?? inner.Resource,
         CastTimeScalesWithHaste = outer.CastTimeScalesWithHaste ?? inner.CastTimeScalesWithHaste,
+        GlobalCooldown = outer.GlobalCooldown ?? inner.GlobalCooldown,
+        GlobalCooldownScalesWithHaste = outer.GlobalCooldownScalesWithHaste ?? inner.GlobalCooldownScalesWithHaste,
         CooldownDurationScalesOff = outer.CooldownDurationScalesOff ?? inner.CooldownDurationScalesOff,
         CooldownTimeRateScalesOff = outer.CooldownTimeRateScalesOff ?? inner.CooldownTimeRateScalesOff,
         CooldownHasteGrantedBy = outer.CooldownHasteGrantedBy ?? inner.CooldownHasteGrantedBy,

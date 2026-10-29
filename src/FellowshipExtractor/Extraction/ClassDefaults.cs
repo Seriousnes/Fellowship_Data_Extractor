@@ -53,6 +53,18 @@ public static class ClassDefaults
         return null;
     }
 
+    public static IEnumerable<UObject> Chain(UObject cdo, AbstractFileProvider provider)
+    {
+        var holder = cdo;
+
+        for (var depth = 0; holder is not null && depth < MaxDepth; depth++)
+        {
+            yield return holder;
+
+            holder = Parent(holder, provider);
+        }
+    }
+
     private static UObject? Parent(UObject cdo, AbstractFileProvider provider) =>
         cdo.Class?.Load() is UStruct type && type.SuperStruct?.ResolvedObject?.GetPathName() is { } parent
             ? Load(parent, provider)

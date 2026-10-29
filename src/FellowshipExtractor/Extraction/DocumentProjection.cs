@@ -62,6 +62,8 @@ public static class DocumentProjection
             ChannelTime = entity.ChannelTime,
             ChannelTick = entity.ChannelTick,
             Cooldown = entity.Cooldown,
+            GlobalCooldown = entity.GlobalCooldown,
+            GlobalCooldownScalesWithHaste = entity.GlobalCooldownScalesWithHaste,
             Charges = entity.Charges,
             ChargesByLevelType = entity.ChargesByLevelType,
             TargetCountFalloff = Falloff(entity, references),

@@ -20,6 +20,7 @@ public sealed class BareStateWalk(
     private const string AssetTagsRead = "GetAllAssetTagsForThisEffect";
     private const string EffectRead = "GetGameplayEffectDef";
     private const string CaptureRead = "GetCapturedAttribute";
+    private const string TagCountRead = "GetTagCountIncludingStackingEffects";
     private const string ElementRead = "Array_Get";
     private const string EntryRead = "Map_Find";
     private const string CaptureField = "AttributeToCapture";
@@ -385,6 +386,13 @@ public sealed class BareStateWalk(
             return number;
         }
 
+        if (expression is EX_InstanceVariable instance &&
+            DynamicTextFloats.Name(instance) is { } field &&
+            PropertyWalk.AsNumber(PropertyWalk.Get(cdo, field)?.GenericValue) is { } declared)
+        {
+            return declared;
+        }
+
         return Bound(expression) is { } assigned ? Number(assigned, depth + 1) : null;
     }
 
@@ -462,6 +470,11 @@ public sealed class BareStateWalk(
         if (invoked.Equals(CaptureRead, StringComparison.Ordinal))
         {
             return Capture(call.Parameters.ElementAtOrDefault(1), depth + 1);
+        }
+
+        if (invoked.Equals(TagCountRead, StringComparison.Ordinal))
+        {
+            return TagBoolean(TagTests[0], call.Parameters) is true ? null : 0;
         }
 
         if (invoked.StartsWith("Multiply_", StringComparison.Ordinal))
@@ -690,9 +703,17 @@ public sealed class BareStateWalk(
     private double? Capture(KismetExpression? element, int depth)
     {
         if (Effect?.Captured is not { } captured) return null;
-        if (Resolved(element, depth) is not EX_FinalFunction { StackNode.Name: ElementRead } read) return null;
-        if (DynamicTextFloats.Name(read.Parameters.ElementAtOrDefault(0)) is not { } field) return null;
-        if (Number(read.Parameters.ElementAtOrDefault(1), depth + 1) is not { } index) return null;
+
+        var (array, at) = Resolved(element, depth) switch
+        {
+            EX_FinalFunction { StackNode.Name: ElementRead } read =>
+                (read.Parameters.ElementAtOrDefault(0), read.Parameters.ElementAtOrDefault(1)),
+            EX_ArrayGetByRef read => (read.ArrayVariable, read.ArrayIndex),
+            _ => (null, null),
+        };
+
+        if (DynamicTextFloats.Name(array) is not { } field) return null;
+        if (Number(at, depth + 1) is not { } index) return null;
         if (PropertyWalk.Get(cdo, field)?.GenericValue is not UScriptArray captures) return null;
         if (captures.Properties.ElementAtOrDefault((int)index)?.GenericValue is not FScriptStruct { StructType: IPropertyHolder capture }) return null;
         if (PropertyWalk.GetStruct(capture, CaptureField) is not { } attribute) return null;
