@@ -62,6 +62,11 @@ public sealed class ExtractorOptions
     public string OutputDir { get; init; } =
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "output");
 
+    public string BlueprintsDir { get; init; } =
+        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "blueprints");
+
+    public string ResolvedBlueprintsDir => Path.GetFullPath(BlueprintsDir);
+
     public string PaksDir => Path.Combine(InstallDir, "fellowship", "Content", "Paks");
 
     public string ShippingExe =>

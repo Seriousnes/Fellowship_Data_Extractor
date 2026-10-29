@@ -33,6 +33,12 @@ The extractor takes the following commands in place of the export:
 - **`usmap`**: Recovers the property mappings without exporting.
 - **`dump FILTER [COUNT]`**: Writes every export of the matching cooked assets as JSON under
   `output/dump`, for reading an asset that is not in the export. `COUNT` defaults to 1.
+- **`blueprints [FILTER]`**: Writes every cooked blueprint under `blueprints/` at the repository
+  root, one folder per package. `defaults.json` has the class default object, its components and
+  its sub-objects. Each function and ubergraph with bytecode is a `.txt` of pseudo-code, with
+  structured `if`/`else` and `sequence` blocks, and labels and `goto` where the jumps allow no
+  structure. Each event stub names the ubergraph label it enters. A `FILTER` writes only the
+  packages whose path contains it.
 - **`dump-all FOLDER`**: Writes the evidence base behind every ability and gameplay effect into the
   named folder. Give it a folder of its own rather than `output/`.
 

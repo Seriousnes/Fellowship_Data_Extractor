@@ -1,5 +1,6 @@
 using CUE4Parse.UE4.Exceptions;
 using FellowshipExtractor;
+using FellowshipExtractor.Blueprints;
 using FellowshipExtractor.Dump;
 using FellowshipExtractor.Extraction;
 using FellowshipExtractor.Output;
@@ -95,6 +96,8 @@ switch (command)
         await DumpCommand.RunAsync(options, args[1], limit);
         return 0;
     }
+    case "blueprints":
+        return await BlueprintsCommand.RunAsync(options, args.Length > 1 ? args[1] : null);
     case "dump-all":
     {
         if (args.Length < 2)
@@ -129,6 +132,10 @@ switch (command)
                usmap                 recover the mappings without exporting
                dump <filter> [count] write every export of the matching cooked assets as JSON under
                                      output/dump, for reading an asset the export does not carry
+               blueprints [filter]   write every cooked blueprint under blueprints/, one folder per
+                                     package: defaults.json holds the class defaults and components,
+                                     and each function or ubergraph is a pseudo-code .txt; a filter
+                                     names the packages to write and keeps the rest of the folder
                dump-all <folder>     write the whole evidence base for every ability and gameplay
                                      effect the export carries into the named folder: property trees,
                                      expanded modifier magnitudes, Blueprint bytecode, the constants
