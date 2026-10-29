@@ -20,7 +20,7 @@
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
-    private TooltipLink link = new(string.Empty, null);
+    private TooltipLink link = new(null, null);
 
     private string? Tone => Ui.LinkColour(Entity) is { } colour ? $"color:{colour}" : null;
 

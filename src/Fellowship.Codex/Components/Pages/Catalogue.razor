@@ -162,6 +162,21 @@ else
                 }
             </select>
 
+            @if (Query.Text is not null)
+            {
+                <details class="cx-facet cx-group" open>
+                    <summary>Sort results by</summary>
+                    <ul class="cx-facet-values">
+                        @foreach (var column in Orders)
+                        {
+                            <li>
+                                <a href="@View.SortBy(column)" class="@BrowseView.On(Query.Sort == column && !Query.Descending)">@Catalog.Sorting(column).Label</a>
+                            </li>
+                        }
+                    </ul>
+                </details>
+            }
+
             <details class="cx-facet cx-group" open="@(Query.Group is not null)">
                 <summary>Group results by</summary>
                 <ul class="cx-facet-values">
@@ -240,6 +255,8 @@ else
             return [.. types.Where(type => Results.Types.ContainsKey(type.Type) || Results.Chosen == type.Type)];
         }
     }
+
+    private static readonly SortingType[] Orders = [SortingType.Relevance, SortingType.Name];
 
     private Facet? Grouping => Query.Group is { } group ? Catalog.Facet(group) : null;
 

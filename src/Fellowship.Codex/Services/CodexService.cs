@@ -204,6 +204,8 @@ public sealed class CodexService : ICodexService
 
         Sortings =
         [
+            new Sorting(SortingType.Relevance, PublicTypes.NameOf),
+
             new Sorting(SortingType.Name, PublicTypes.NameOf),
             new Sorting(SortingType.Type, document => PublicTypes.Label(EntityTypes.TypeOf(document))),
 

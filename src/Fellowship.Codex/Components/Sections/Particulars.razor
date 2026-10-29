@@ -123,8 +123,7 @@
             rows.Add(new Row(heroes.Length == 1 ? "Hero" : "Heroes", null, @<span class="cx-heroes">
                 @foreach (var hero in heroes)
                 {
-                    var where = $"/search?{QueryKeys.Key(FacetType.Hero)}={Uri.EscapeDataString(hero)}";
-                    <a href="@where" style="color:@(Ui.HeroColour(hero) ?? "inherit")">@hero</a>
+                    <HeroBadge Name="@hero" />
                 }
             </span>));
         }

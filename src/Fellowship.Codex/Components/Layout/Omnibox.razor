@@ -12,7 +12,7 @@
     <input id="cx-omnibox" type="search" role="combobox" autocomplete="off"
            aria-label="Search the codex" aria-controls="cx-omnibox-drop" aria-autocomplete="list"
            aria-expanded="@(Open ? "true" : "false")"
-           placeholder="Search items, abilities, talents, creatures"
+           placeholder="Search abilities, talents, items, heroes"
            autofocus="@Hero" @ref="box"
            @bind="typed" @bind:event="oninput" @bind:after="Typing"
            @onkeydown="Key" @onfocus="Focus" @onblur="Blur" />
@@ -113,7 +113,9 @@
 
     private string All =>
         "/search?q=" + Uri.EscapeDataString(typed.Trim()) +
-        (scope is null ? string.Empty : "&type=" + Uri.EscapeDataString(scope));
+        (scope is null || !EntityTypes.TryParse(scope, out var scoped) || !PublicTypes.IsListed(scoped)
+            ? string.Empty
+            : "&type=" + Uri.EscapeDataString(scope));
 
     private string Classes =>
         !Hero ? "cx-omnibox"

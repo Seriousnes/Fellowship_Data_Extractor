@@ -4,6 +4,9 @@ namespace Fellowship.Codex.Models;
 
 public enum SortingType
 {
+    [Description("Relevance")]
+    Relevance,
+
     [Description("Name")]
     Name,
 
