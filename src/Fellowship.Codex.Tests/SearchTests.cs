@@ -90,30 +90,72 @@ public sealed class SearchTests(Export export)
         }
     }
 
+    [Fact]
+    public void An_exact_hero_name_lists_the_hero_first()
+    {
+        foreach (var hero in Heroes)
+        {
+            var first = Suggestions.For(hero.Name, null, OmniboxRows).Results[0];
+
+            Assert.Equal((Slug(EntityType.Hero), hero.Id), (first.Type, first.Id));
+        }
+    }
+
     [Theory]
     [InlineData("Rime")]
     [InlineData("Frost")]
-    public void Omnibox_hits_and_groups_run_ability_talent_effect_item_then_the_rest(string text)
+    public void Omnibox_groups_run_hero_ability_talent_effect_item_then_the_rest(string text)
     {
-        var found = Suggestions.For(text, null, OmniboxRows);
+        var groups = Suggestions.For(text, null, OmniboxRows).Groups;
 
-        Assert.Equal([.. found.Results.Select(hit => Rank(hit.Type)).Order()], found.Results.Select(hit => Rank(hit.Type)));
-        Assert.Equal([.. found.Groups.Select(group => Rank(group.Type)).Order()], found.Groups.Select(group => Rank(group.Type)));
+        Assert.Equal([.. groups.Select(group => Rank(group.Type)).Order()], groups.Select(group => Rank(group.Type)));
+    }
+
+    private static bool Furnished(EntityDocument document) => document switch
+    {
+        AbilityDocument ability => ability is { Icon: not null, Description: not null },
+        EffectDocument effect => effect is { Icon: not null, Description: not null, NameBorrowedFrom: null },
+        _ => false,
+    };
+
+    [Fact]
+    public void Of_two_equal_matches_the_higher_type_ranks_first()
+    {
+        var shared = export.Store.Entities
+            .Where(PublicTypes.IsSearched)
+            .Where(Furnished)
+            .Where(document => PublicTypes.DisplayNameOf(document) is not null)
+            .GroupBy(document => PublicTypes.DisplayNameOf(document)!)
+            .First(group => group.Any(document => document is AbilityDocument) && group.Any(document => document is EffectDocument));
+
+        var hits = index.Search(shared.Key, SuggestionService.Ceiling)
+            .Where(hit => PublicTypes.DisplayNameOf(hit.Document) == shared.Key && Furnished(hit.Document))
+            .ToArray();
+
+        var ability = Array.FindIndex(hits, hit => hit.Document is AbilityDocument);
+        var effect = Array.FindIndex(hits, hit => hit.Document is EffectDocument);
+
+        Assert.InRange(ability, 0, effect - 1);
+        Assert.Equal(
+            PublicTypes.Weight(EntityType.Ability) - PublicTypes.Weight(EntityType.Effect),
+            hits[ability].Score - hits[effect].Score);
     }
 
     [Fact]
-    public void The_leading_types_rank_ability_talent_effect_item()
+    public void Type_weights_run_hero_ability_talent_effect_item_then_nothing()
     {
-        EntityType[] leading = [EntityType.Ability, EntityType.Talent, EntityType.Effect, EntityType.Item];
+        EntityType[] leading = [EntityType.Hero, EntityType.Ability, EntityType.Talent, EntityType.Effect, EntityType.Item];
 
-        Assert.Equal([0, 1, 2, 3], leading.Select(PublicTypes.Rank));
-        Assert.All(
-            Enum.GetValues<EntityType>().Except(leading),
-            type => Assert.True(PublicTypes.Rank(type) > leading.Length - 1));
+        Assert.Equal([50, 40, 30, 20, 10], leading.Select(PublicTypes.Weight));
+        Assert.All(Enum.GetValues<EntityType>().Except(leading), type => Assert.Equal(0, PublicTypes.Weight(type)));
     }
 
     [Fact]
-    public void The_search_page_lists_the_hero_and_runs_in_type_order()
+    public void No_type_weight_lifts_a_name_starting_with_the_query_over_an_exact_name() =>
+        Assert.True(PublicTypes.Weight(EntityType.Hero) + 900 < 2000);
+
+    [Fact]
+    public void The_search_page_lists_the_exact_hero_first()
     {
         var hero = Heroes[0];
         var results = new CodexSearchService(export.Store, export.View.Codex, index).Run(new CodexQuery
@@ -123,14 +165,11 @@ public sealed class SearchTests(Export export)
             PageSize = int.MaxValue,
         });
 
-        Assert.Contains(results.Rows, row => row is HeroDocument found && found.Id == hero.Id);
-
-        var ranks = results.Rows.Select(row => PublicTypes.Rank(EntityTypes.TypeOf(row))).ToArray();
-        Assert.Equal([.. ranks.Order()], ranks);
+        Assert.True(results.Rows[0] is HeroDocument found && found.Id == hero.Id);
     }
 
     [Fact]
-    public void Sorting_search_results_by_name_keeps_type_order_first()
+    public void Sorting_search_results_by_name_sorts_every_row_by_name()
     {
         var hero = Heroes[0];
         var rows = new CodexSearchService(export.Store, export.View.Codex, index).Run(new CodexQuery
@@ -140,14 +179,8 @@ public sealed class SearchTests(Export export)
             PageSize = int.MaxValue,
         }).Rows;
 
-        var ranks = rows.Select(row => PublicTypes.Rank(EntityTypes.TypeOf(row))).ToArray();
-        Assert.Equal([.. ranks.Order()], ranks);
-
-        foreach (var group in rows.GroupBy(row => EntityTypes.TypeOf(row)))
-        {
-            var names = group.Select(PublicTypes.NameOf).ToArray();
-            Assert.Equal([.. names.Order(StringComparer.OrdinalIgnoreCase)], names);
-        }
+        var names = rows.Select(PublicTypes.NameOf).ToArray();
+        Assert.Equal([.. names.Order(StringComparer.OrdinalIgnoreCase)], names);
     }
 
     [Fact]

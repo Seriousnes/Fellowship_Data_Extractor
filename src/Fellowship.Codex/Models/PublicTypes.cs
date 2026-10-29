@@ -82,8 +82,11 @@ public static class PublicTypes
 
     private static readonly EntityType[] OwnPage = [EntityType.Hero];
 
+    private const int WeightStep = 10;
+
     private static readonly EntityType[] Leading =
     [
+        EntityType.Hero,
         EntityType.Ability,
         EntityType.Talent,
         EntityType.Effect,
@@ -159,6 +162,8 @@ public static class PublicTypes
 
     public static int Rank(EntityType type) =>
         Array.IndexOf(Leading, type) is var leading and >= 0 ? leading : Leading.Length + Find(type).Position;
+
+    public static int Weight(EntityType type) => Math.Max(0, Leading.Length - Rank(type)) * WeightStep;
 
     public static string NoSuchType(string? value) =>
         $"'{value}' is not a type. The types are {Accepted}.";

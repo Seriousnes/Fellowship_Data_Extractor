@@ -46,12 +46,7 @@ public sealed class SuggestionService(ISearchIndexService index, ICodexViewServi
             text,
             hits.Length,
             groups,
-            [
-                .. chosen
-                    .Take(limit)
-                    .OrderBy(hit => PublicTypes.Rank(EntityTypes.TypeOf(hit.Document)))
-                    .Select(hit => SearchResults.From(hit.Document, view)),
-            ]);
+            [.. chosen.Take(limit).Select(hit => SearchResults.From(hit.Document, view))]);
     }
 
     public static IReadOnlyList<string> Words(string? text)

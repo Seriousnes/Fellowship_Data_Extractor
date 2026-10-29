@@ -32,8 +32,8 @@ public sealed class CodexTools(LiveExport export)
         "Finds entities by name and returns the type and id that get_entity takes. Matches name " +
         "prefixes only, so \"ire\" does not reach \"Fire\"; camel-case subwords are indexed, so " +
         "\"Bolt\" reaches \"FireBolt\". A word of four or more letters that prefixes no name matches names " +
-        "within one edit, or two edits from seven letters, so \"Rmie\" reaches \"Rime\". Results run " +
-        "abilities, talents, effects, items, then every other type. Entities the game leaves unnamed, and items it disables, are not " +
+        "within one edit, or two edits from seven letters, so \"Rmie\" reaches \"Rime\". Results run by " +
+        "relevance, and between equal matches heroes lead, then abilities, talents, effects and items. Entities the game leaves unnamed, and items it disables, are not " +
         "reachable by text. " +
         "A number matches ids across every type.")]
     public FoundResult FindEntity(

@@ -155,7 +155,7 @@ public sealed class SearchIndexService : ISearchIndexService
     private int Score(int doc, IReadOnlyList<string> typed, string whole)
     {
         var name = display[doc];
-        var score = 0;
+        var score = PublicTypes.Weight(EntityTypes.TypeOf(docs[doc]));
 
         if (name == whole) score += 2000;
         else if (name.StartsWith(whole, StringComparison.Ordinal)) score += 900;

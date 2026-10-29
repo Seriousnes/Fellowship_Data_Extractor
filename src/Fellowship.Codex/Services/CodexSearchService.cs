@@ -132,17 +132,11 @@ public sealed class CodexSearchService(
             ];
         }
 
-        if (query.Text is null) return Within(rows, query);
+        if (query.Text is not null && query.Sort == SortingType.Relevance)
+        {
+            return query.Descending ? [.. Enumerable.Reverse(rows)] : rows;
+        }
 
-        var within = query.Sort == SortingType.Relevance
-            ? query.Descending ? [.. Enumerable.Reverse(rows)] : rows
-            : Within(rows, query);
-
-        return [.. within.OrderBy(row => PublicTypes.Rank(EntityTypes.TypeOf(row)))];
-    }
-
-    private EntityDocument[] Within(EntityDocument[] rows, CodexQuery query)
-    {
         var ordered = query.Sort.Sorting is { } sorting
             ? Sorted(rows, codex.Sorting(sorting), query.Descending)
             : Measured(rows, codex.Measure(query.Sort.Measure!.Value), query.Descending);
