@@ -50,7 +50,7 @@ public sealed record CodexQuery
         var ranges = new Dictionary<MeasureType, (double?, double?)>();
         var types = new List<EntityType>();
 
-        string? text = null, sort = "name", group = null;
+        string? text = null, sort = null, group = null;
         var descending = false;
         var page = 1;
         var pageSize = DefaultPageSize;
@@ -185,6 +185,10 @@ public sealed record CodexQuery
             return new CodexQuery { Category = category };
         }
 
+        var searched = string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
+        sort ??= DefaultSort(searched).Key;
+
         if (!SortColumn.TryParse(sort, out var sorted))
         {
             error = $"'{sort}' is not a column. Sort by one of " +
@@ -208,7 +212,7 @@ public sealed record CodexQuery
 
         return new CodexQuery
         {
-            Text = string.IsNullOrWhiteSpace(text) ? null : text.Trim(),
+            Text = searched,
             Category = category,
             Types = types,
             Selections = selections,
@@ -325,11 +329,13 @@ public sealed record CodexQuery
             if (range.Max is { } max) yield return (QueryKeys.Key(key) + "Max", FellowshipCodex.Number(max));
         }
 
-        if (Sort != SortingType.Name) yield return (QueryKeys.Key(BrowseParameter.Sort), Sort.Key);
+        if (Sort != DefaultSort(Text)) yield return (QueryKeys.Key(BrowseParameter.Sort), Sort.Key);
         if (Descending) yield return (QueryKeys.Key(BrowseParameter.Dir), "desc");
         if (Group is { } group) yield return (QueryKeys.Key(BrowseParameter.Group), QueryKeys.Key(group));
         if (PageSize != DefaultPageSize) yield return (QueryKeys.Key(BrowseParameter.Size), PageSize.ToString(CultureInfo.InvariantCulture));
     }
+
+    public static SortColumn DefaultSort(string? text) => text is null ? SortingType.Name : SortingType.Relevance;
 
     public double? Bound(MeasureType measure, bool max) =>
         Ranges.TryGetValue(measure, out var range) ? max ? range.Max : range.Min : null;

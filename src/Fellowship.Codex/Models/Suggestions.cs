@@ -17,7 +17,7 @@ public static class SearchResults
             PublicTypes.Label(type),
             document.Id,
             PublicTypes.NameOf(document),
-            view.Icon(DocumentFields.Text(document, nameof(ItemDocument.Icon))),
+            view.Icon(document),
             view.RarityName(document),
             view.Href(document),
             tip.Address,

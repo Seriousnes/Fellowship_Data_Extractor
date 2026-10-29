@@ -1,0 +1,22 @@
+@inject ICodexViewService Ui
+@inject ITextureSource Textures
+
+@if (Ui.HeroNamed(Name) is { } hero)
+{
+    <a class="cx-hero-badge" href="@Ui.Href(hero)"
+       style="--cx-hero:@(Ui.HeroFill(Name) ?? "var(--sunken)");--cx-hero-ink:@(Ui.HeroInk(Name) ?? "var(--ink)")">
+        @if (hero.Portrait is { } portrait)
+        {
+            <img alt="" loading="lazy" src="@Textures.Address(portrait, TextureSize.Small)" />
+        }
+        @Ui.Name(hero)
+    </a>
+}
+else
+{
+    <span style="color:@(Ui.HeroColour(Name) ?? "inherit")">@Name</span>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = string.Empty;
+}

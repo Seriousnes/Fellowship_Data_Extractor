@@ -18,7 +18,7 @@ public sealed class CodexSearchService(
         var found = query.Text is { } text
             ? index.Search(text, int.MaxValue)
                 .Select(hit => hit.Document)
-                .Where(row => PublicTypes.IsListed(row))
+                .Where(PublicTypes.IsSearched)
                 .ToArray()
             : Listed();
 
@@ -132,8 +132,17 @@ public sealed class CodexSearchService(
             ];
         }
 
-        if (query.Text is not null && query.Sort == SortingType.Name && !query.Descending) return rows;
+        if (query.Text is null) return Within(rows, query);
 
+        var within = query.Sort == SortingType.Relevance
+            ? query.Descending ? [.. Enumerable.Reverse(rows)] : rows
+            : Within(rows, query);
+
+        return [.. within.OrderBy(row => PublicTypes.Rank(EntityTypes.TypeOf(row)))];
+    }
+
+    private EntityDocument[] Within(EntityDocument[] rows, CodexQuery query)
+    {
         var ordered = query.Sort.Sorting is { } sorting
             ? Sorted(rows, codex.Sorting(sorting), query.Descending)
             : Measured(rows, codex.Measure(query.Sort.Measure!.Value), query.Descending);

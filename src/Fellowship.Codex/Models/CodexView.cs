@@ -45,6 +45,33 @@ public static class CodexView
         return colour;
     }
 
+    public static string? Ink(string? colour)
+    {
+        if (colour is null || colour.Length != 7 || colour[0] != '#') return null;
+
+        if (!int.TryParse(colour.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var packed))
+        {
+            return null;
+        }
+
+        var shade = Luminance((packed >> 16) & 0xFF, (packed >> 8) & 0xFF, packed & 0xFF);
+
+        return Contrast(Luminance(Light), shade) >= Contrast(shade, Luminance(Dark)) ? Light : Dark;
+    }
+
+    public const string Light = "#FFFFFF";
+
+    public const string Dark = "#000000";
+
+    public static double Contrast(double lighter, double darker) => (lighter + 0.05) / (darker + 0.05);
+
+    public static double Luminance(string colour)
+    {
+        var packed = int.Parse(colour.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+
+        return Luminance((packed >> 16) & 0xFF, (packed >> 8) & 0xFF, packed & 0xFF);
+    }
+
     private static double Luminance(double r, double g, double b) =>
         0.2126 * Channel(r) + 0.7152 * Channel(g) + 0.0722 * Channel(b);
 

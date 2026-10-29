@@ -25,6 +25,9 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
     public string SortLink(SortColumn column) =>
         where + query.WithSort(column, descending: query.Sort == column && !query.Descending).ToQueryString();
 
+    public string SortBy(SortColumn column) =>
+        where + query.WithSort(column, descending: false).ToQueryString();
+
     public string? SortState(SortColumn column) =>
         query.Sort != column ? null : query.Descending ? "descending" : "ascending";
 

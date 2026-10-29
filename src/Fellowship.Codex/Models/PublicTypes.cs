@@ -80,6 +80,16 @@ public static class PublicTypes
         EntityType.Modifier,
     ];
 
+    private static readonly EntityType[] OwnPage = [EntityType.Hero];
+
+    private static readonly EntityType[] Leading =
+    [
+        EntityType.Ability,
+        EntityType.Talent,
+        EntityType.Effect,
+        EntityType.Item,
+    ];
+
     public static IReadOnlyList<PublicType> All { get; } = Verified(
     [
         .. Table.Select((row, position) => new PublicType(
@@ -143,6 +153,12 @@ public static class PublicTypes
 
     public static bool IsListed(EntityDocument document) =>
         IsListed(EntityTypes.TypeOf(document)) && document is not AbilityDocument { NamedAfter: not null };
+
+    public static bool IsSearched(EntityDocument document) =>
+        IsListed(document) || OwnPage.Contains(EntityTypes.TypeOf(document));
+
+    public static int Rank(EntityType type) =>
+        Array.IndexOf(Leading, type) is var leading and >= 0 ? leading : Leading.Length + Find(type).Position;
 
     public static string NoSuchType(string? value) =>
         $"'{value}' is not a type. The types are {Accepted}.";

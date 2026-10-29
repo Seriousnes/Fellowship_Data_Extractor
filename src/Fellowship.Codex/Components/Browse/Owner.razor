@@ -5,7 +5,7 @@
 {
     @foreach (var hero in heroes)
     {
-        <a class="cx-owner" href="@HeroList(hero.ToString())" style="color:@Ui.HeroColour(hero.ToString())">@hero</a>
+        <span class="cx-owner"><HeroBadge Name="@hero.ToString()" /></span>
     }
 }
 else if (Holder is { } holder && Name(holder) is { } name)
@@ -21,14 +21,9 @@ else if (Holder is { } holder && Name(holder) is { } name)
 }
 
 @code {
-    [Parameter, EditorRequired] public EntityType Type { get; set; }
-
     [Parameter] public IReadOnlyList<Hero>? Owners { get; set; }
 
     [Parameter] public EntityReference? Holder { get; set; }
-
-    private string HeroList(string hero) =>
-        $"{PublicTypes.Where(Type)}&{QueryKeys.Key(FacetType.Hero)}={Uri.EscapeDataString(hero)}";
 
     private string? Name(EntityReference holder) =>
         holder.Name ?? (Ui.Store.All(holder.Type, holder.Id) is [var first, ..] ? Ui.Name(first) : null);

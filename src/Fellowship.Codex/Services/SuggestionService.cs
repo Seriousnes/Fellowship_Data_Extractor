@@ -29,8 +29,8 @@ public sealed class SuggestionService(ISearchIndexService index, ICodexViewServi
 
         var groups = hits
             .GroupBy(hit => EntityTypes.TypeOf(hit.Document))
+            .OrderBy(group => PublicTypes.Rank(group.Key))
             .Select(group => new SearchGroup(EntityTypes.Slug(group.Key), PublicTypes.Label(group.Key), group.Count()))
-            .OrderByDescending(group => group.Count)
             .ToArray();
 
         IReadOnlyList<SearchIndexService.Hit> chosen = hits;
@@ -46,7 +46,12 @@ public sealed class SuggestionService(ISearchIndexService index, ICodexViewServi
             text,
             hits.Length,
             groups,
-            [.. chosen.Take(limit).Select(hit => SearchResults.From(hit.Document, view))]);
+            [
+                .. chosen
+                    .Take(limit)
+                    .OrderBy(hit => PublicTypes.Rank(EntityTypes.TypeOf(hit.Document)))
+                    .Select(hit => SearchResults.From(hit.Document, view)),
+            ]);
     }
 
     public static IReadOnlyList<string> Words(string? text)
