@@ -26,6 +26,24 @@ public sealed class GlobalCooldownTests
     }
 
     [Fact]
+    public void ACooldownShorterThanTheGlobalCooldownIsNotWritten() =>
+        Assert.Null(Ability(1229)["cooldown"]);
+
+    [Theory]
+    [InlineData(1409)]
+    [InlineData(1541)]
+    [InlineData(1000)]
+    public void AZeroCooldownIsNotWritten(int id) =>
+        Assert.Null(Ability(id)["cooldown"]);
+
+    [Theory]
+    [InlineData(171, 15)]
+    [InlineData(554, 1)]
+    [InlineData(1410, 12)]
+    public void AnAbilitysOwnCooldownDurationOutranksANameMatchedRow(int id, double seconds) =>
+        Assert.Equal(seconds, Ability(id)["cooldown"]?.GetValue<double>());
+
+    [Fact]
     public void AnAbilityClearingItsParentsGlobalCooldownHasNone()
     {
         var ability = Ability(1541);
