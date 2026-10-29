@@ -18,7 +18,7 @@ public sealed class CodexSearchService(
         var found = query.Text is { } text
             ? index.Search(text, int.MaxValue)
                 .Select(hit => hit.Document)
-                .Where(row => PublicTypes.IsListed(row))
+                .Where(PublicTypes.IsSearched)
                 .ToArray()
             : Listed();
 
@@ -132,7 +132,10 @@ public sealed class CodexSearchService(
             ];
         }
 
-        if (query.Text is not null && query.Sort == SortingType.Name && !query.Descending) return rows;
+        if (query.Text is not null && query.Sort == SortingType.Relevance)
+        {
+            return query.Descending ? [.. Enumerable.Reverse(rows)] : rows;
+        }
 
         var ordered = query.Sort.Sorting is { } sorting
             ? Sorted(rows, codex.Sorting(sorting), query.Descending)

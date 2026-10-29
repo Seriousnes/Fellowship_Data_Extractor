@@ -11,9 +11,16 @@
         </Column>
         <Column Head="Type" Key="SortingType.Type" Class="cx-tags">
             <Content Context="row">
-                <a href="@View.OfType(EntityTypes.TypeOf(row))">
+                @if (PublicTypes.IsListed(EntityTypes.TypeOf(row)))
+                {
+                    <a href="@View.OfType(EntityTypes.TypeOf(row))">
+                        @PublicTypes.Label(EntityTypes.TypeOf(row))
+                    </a>
+                }
+                else
+                {
                     @PublicTypes.Label(EntityTypes.TypeOf(row))
-                </a>
+                }
             </Content>
         </Column>
         <Column Head="Source" Key="SortingType.Source" Class="cx-tags">

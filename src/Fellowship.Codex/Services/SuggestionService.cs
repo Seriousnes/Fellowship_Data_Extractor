@@ -29,8 +29,8 @@ public sealed class SuggestionService(ISearchIndexService index, ICodexViewServi
 
         var groups = hits
             .GroupBy(hit => EntityTypes.TypeOf(hit.Document))
+            .OrderBy(group => PublicTypes.Rank(group.Key))
             .Select(group => new SearchGroup(EntityTypes.Slug(group.Key), PublicTypes.Label(group.Key), group.Count()))
-            .OrderByDescending(group => group.Count)
             .ToArray();
 
         IReadOnlyList<SearchIndexService.Hit> chosen = hits;

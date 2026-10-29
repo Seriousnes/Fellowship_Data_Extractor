@@ -8,7 +8,7 @@ public sealed record SearchResult(
     string? IconUrl,
     string? Rarity,
     string Href,
-    string Tooltip,
+    string? Tooltip,
     string? TooltipBody,
     string? Slot,
     string? ArmorType,

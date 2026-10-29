@@ -16,7 +16,7 @@ using static Fellowship.Codex.Models.CodexView;
 
 namespace Fellowship.Codex.Services;
 
-public sealed record TooltipLink(string Address, string? Body);
+public sealed record TooltipLink(string? Address, string? Body);
 
 public interface ICodexViewService
 {
@@ -31,6 +31,8 @@ public interface ICodexViewService
     [return: NotNullIfNotNull(nameof(icon))]
     string? Icon(string? icon);
 
+    string? Icon(EntityDocument document);
+
     string? RarityName(EntityDocument document);
 
     string? RarityName(Rarity? rarity);
@@ -42,6 +44,12 @@ public interface ICodexViewService
     string NameColour(EntityDocument document);
 
     string? HeroColour(string name);
+
+    string? HeroFill(string name);
+
+    string? HeroInk(string name);
+
+    HeroDocument? HeroNamed(string name);
 
     string Name(EntityDocument document);
 
@@ -100,6 +108,9 @@ public sealed class CodexViewService(
     [return: NotNullIfNotNull(nameof(icon))]
     public string? Icon(string? icon) => chrome.Texture(icon);
 
+    public string? Icon(EntityDocument document) =>
+        Icon(document is HeroDocument hero ? hero.Portrait : DocumentFields.Text(document, nameof(ItemDocument.Icon)));
+
     public string? RarityName(EntityDocument document) => Tier(document) is { } tier ? Named(tier) : null;
 
     public string? RarityName(Rarity? rarity) => rarity is { } tier ? Named(tier) : null;
@@ -147,6 +158,17 @@ public sealed class CodexViewService(
 
     public string? HeroColour(string name) => Readable(tokens.Hero(name));
 
+    public string? HeroFill(string name) => tokens.Hero(name);
+
+    public string? HeroInk(string name) => Ink(tokens.Hero(name));
+
+    private readonly ConcurrentDictionary<string, HeroDocument?> heroes = new(StringComparer.OrdinalIgnoreCase);
+
+    public HeroDocument? HeroNamed(string name) =>
+        heroes.GetOrAdd(name, wanted => store.Entities
+            .OfType<HeroDocument>()
+            .FirstOrDefault(hero => string.Equals(hero.Name, wanted, StringComparison.OrdinalIgnoreCase)));
+
     public string Name(EntityDocument document) => PublicTypes.NameOf(document);
 
     public string Name(EntityType type, int id) => PublicTypes.NameOf(store.All(type, id)[0]);
@@ -181,7 +203,7 @@ public sealed class CodexViewService(
     public TooltipLink Tip(EntityDocument document, bool showIcon = false)
     {
         var type = EntityTypes.TypeOf(document);
-        var address = "/" + CodexAddresses.Tooltip(type, document.Id);
+        var address = PublicTypes.IsListed(type) ? "/" + CodexAddresses.Tooltip(type, document.Id) : null;
 
         var icon = showIcon ? true : (bool?)null;
         var hero = Reading(document);

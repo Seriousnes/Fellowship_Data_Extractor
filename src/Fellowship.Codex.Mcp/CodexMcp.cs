@@ -17,7 +17,7 @@ public static class CodexMcp
         "This server reads a datamined export of Fellowship. Call list_types for the entity types in " +
         "the build, find_entity to turn a name into a type and an id, then get_entity for that " +
         "entity's record. Ids are namespaced per type, so the same number names a different entity " +
-        "under each slug. Names match by prefix, not by substring. A record's damage and healing " +
+        "under each slug. Names match by prefix, not by substring, and a misspelled word matches names within one or two edits. A record's damage and healing " +
         "coefficients read as text such as '180% of Intellect' rather than a number, because a record " +
         "is not parameterised by hero, item level or rarity. A record's resource paths are the codex " +
         "API's own, rooted at /api, and its texture fields carry a texture name, which addresses a file at " +

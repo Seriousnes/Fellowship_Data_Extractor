@@ -26,7 +26,7 @@ public sealed class SearchIndexService : ISearchIndexService
 
     public SearchIndexService(IEntityStoreService store, ILogger<SearchIndexService> logger)
     {
-        docs = [.. store.Entities.Where(document => PublicTypes.IsListed(document))];
+        docs = [.. store.Entities.Where(PublicTypes.IsSearched)];
 
         display = new string[docs.Length];
         displayWords = new string[docs.Length][];
@@ -108,7 +108,23 @@ public sealed class SearchIndexService : ISearchIndexService
         ];
     }
 
-    private HashSet<int> Reach(string prefix)
+    private HashSet<int> Reach(string word)
+    {
+        var reached = Prefixed(word);
+
+        if (reached.Count > 0 || Tolerance(word) is not (> 0 and var bound)) return reached;
+
+        for (var at = 0; at < terms.Length; at++)
+        {
+            if (Distance(word, terms[at], bound) > bound) continue;
+
+            foreach (var doc in postings[at]) reached.Add(doc);
+        }
+
+        return reached;
+    }
+
+    private HashSet<int> Prefixed(string prefix)
     {
         var reached = new HashSet<int>();
 
@@ -139,7 +155,7 @@ public sealed class SearchIndexService : ISearchIndexService
     private int Score(int doc, IReadOnlyList<string> typed, string whole)
     {
         var name = display[doc];
-        var score = 0;
+        var score = PublicTypes.Weight(EntityTypes.TypeOf(docs[doc]));
 
         if (name == whole) score += 2000;
         else if (name.StartsWith(whole, StringComparison.Ordinal)) score += 900;
@@ -149,13 +165,94 @@ public sealed class SearchIndexService : ISearchIndexService
         {
             if (name.StartsWith(word, StringComparison.Ordinal)) score += 120;
             else if (Starts(displayWords[doc], word)) score += 70;
+            else if (Near(displayWords[doc], word) is { } near) score += Closeness(near);
         }
 
-        if (DocumentFields.Text(docs[doc], nameof(ItemDocument.Icon)) is not null) score += 15;
-        if (DocumentFields.Text(docs[doc], nameof(ItemDocument.Description)) is not null) score += 10;
+        if (docs[doc] is HeroDocument { Portrait: not null } || DocumentFields.Text(docs[doc], nameof(ItemDocument.Icon)) is not null) score += 15;
+        if (docs[doc] is HeroDocument { Biography: not null } || DocumentFields.Text(docs[doc], nameof(ItemDocument.Description)) is not null) score += 10;
         if (docs[doc] is EffectDocument { NameBorrowedFrom: not null }) score -= 45;
 
         return score;
+    }
+
+    private static int Closeness((bool First, bool Whole, int Edits) near) =>
+        (near.First ? 50 : 25) + (near.Whole ? 30 : 0) - 15 * near.Edits;
+
+    private static (bool First, bool Whole, int Edits)? Near(string[] words, string typed)
+    {
+        if (Tolerance(typed) is not (> 0 and var bound)) return null;
+
+        (bool First, bool Whole, int Edits)? nearest = null;
+
+        for (var at = 0; at < words.Length; at++)
+        {
+            var edits = Distance(typed, words[at], bound);
+
+            if (edits > bound) continue;
+
+            var whole = Distance(typed, words[at], bound, whole: true) <= bound;
+            var found = (First: at == 0, Whole: whole, Edits: edits);
+
+            if (nearest is null || Closeness(found) > Closeness(nearest.Value)) nearest = found;
+        }
+
+        return nearest;
+    }
+
+    public static int Tolerance(string typed) =>
+        typed.All(char.IsDigit) ? 0
+        : typed.Length >= 7 ? 2
+        : typed.Length >= 4 ? 1
+        : 0;
+
+    public static int Distance(string typed, string term, int bound, bool whole = false)
+    {
+        if (whole && Math.Abs(term.Length - typed.Length) > bound) return bound + 1;
+
+        var width = Math.Min(term.Length, typed.Length + bound);
+
+        if (typed.Length - width > bound) return bound + 1;
+
+        Span<int> before = stackalloc int[width + 1];
+        Span<int> above = stackalloc int[width + 1];
+        Span<int> row = stackalloc int[width + 1];
+
+        for (var j = 0; j <= width; j++) above[j] = j;
+
+        for (var i = 1; i <= typed.Length; i++)
+        {
+            row[0] = i;
+            var least = i;
+
+            for (var j = 1; j <= width; j++)
+            {
+                var cost = typed[i - 1] == term[j - 1] ? 0 : 1;
+                var edits = Math.Min(Math.Min(above[j] + 1, row[j - 1] + 1), above[j - 1] + cost);
+
+                if (i > 1 && j > 1 && typed[i - 1] == term[j - 2] && typed[i - 2] == term[j - 1])
+                {
+                    edits = Math.Min(edits, before[j - 2] + 1);
+                }
+
+                row[j] = edits;
+                least = Math.Min(least, edits);
+            }
+
+            if (least > bound) return bound + 1;
+
+            var spent = before;
+            before = above;
+            above = row;
+            row = spent;
+        }
+
+        if (whole) return Math.Min(above[term.Length], bound + 1);
+
+        var nearest = bound + 1;
+
+        for (var j = Math.Max(0, typed.Length - bound); j <= width; j++) nearest = Math.Min(nearest, above[j]);
+
+        return nearest;
     }
 
     private static bool Starts(string[] words, string prefix)
