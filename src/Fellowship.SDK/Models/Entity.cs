@@ -309,8 +309,6 @@ public sealed record Entity
 
     public double? Agility { get; init; }
 
-    public string? Scaling { get; init; }
-
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }

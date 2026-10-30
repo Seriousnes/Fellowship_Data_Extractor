@@ -44,7 +44,9 @@ public interface IEntityStoreService
 
     int DropItemLevel(EntityDocument document);
 
-    int Difficulty(string? value);
+    int Difficulty(string? value, EntityDocument? entity = null);
+
+    IReadOnlyList<DifficultyStep> Ladder(EntityDocument? entity);
 
     CreatureDocument? Menacing(EntityDocument? document);
 
@@ -268,9 +270,23 @@ public sealed class EntityStoreService : IEntityStoreService
             ? LegendaryDropRow
             : DefaultDropRow);
 
-    public int Difficulty(string? value) =>
-        Difficulties.Read(value, Settings)
-        ?? Settings.DifficultyScaling.Health.Keys.DefaultIfEmpty(1).Min();
+    public int Difficulty(string? value, EntityDocument? entity = null)
+    {
+        var ladder = Ladder(entity);
+
+        return Difficulties.Read(value, Settings) is { } read && ladder.Any(step => step.Difficulty == read)
+            ? read
+            : ladder.Select(step => step.Difficulty).DefaultIfEmpty(1).First();
+    }
+
+    public IReadOnlyList<DifficultyStep> Ladder(EntityDocument? entity) =>
+        Difficulties.Ladder(Settings, entity switch
+        {
+            DungeonDocument dungeon => [dungeon],
+            _ when Menacing(entity) is { FoundIn: { Count: > 0 } found } =>
+                [.. found.SelectMany(dungeon => All(dungeon.Type, dungeon.Id)).OfType<DungeonDocument>()],
+            _ => [],
+        });
 
     public CreatureDocument? Menacing(EntityDocument? document) => document switch
     {

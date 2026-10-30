@@ -226,7 +226,7 @@ public sealed class EntityResolver
         Sources = new ItemSources(provider, _assets, Dungeons, Vendors, Challenges, HeroItems, Drops, Heroes);
 
         Leagues = new Leagues(provider, _assets);
-        CreatureStats = new CreatureStats(provider, Heroes, Leagues.Listed, Characters());
+        CreatureStats = new CreatureStats(provider, Leagues.Listed);
 
         string[] creatures =
         [
@@ -801,7 +801,6 @@ public sealed class EntityResolver
             Intellect = attributes?.Intellect,
             Strength = attributes?.Strength,
             Agility = attributes?.Agility,
-            Scaling = attributes?.Scaling,
             Abilities = Empty(Sourced(slots.Where(slot => !slot.Passive))),
             Passives = Empty(Sourced(slots.Where(slot => slot.Passive))),
             FoundIn = Empty(found),
@@ -2395,30 +2394,6 @@ public sealed class EntityResolver
         var exports = loaded.GetExports().ToArray();
         return exports.FirstOrDefault(e => e.Name.StartsWith("Default__", StringComparison.Ordinal))
             ?? exports.FirstOrDefault();
-    }
-
-    private HashSet<string> Characters()
-    {
-        var named = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var tag in _tags)
-        {
-            if (tag.Table.Equals(HeroNames.Table, StringComparison.OrdinalIgnoreCase) &&
-                tag.Name.StartsWith(HeroVariants.HeroTagPrefix, StringComparison.OrdinalIgnoreCase) &&
-                tag.Name[HeroVariants.HeroTagPrefix.Length..] is var codename && !codename.Contains('.'))
-            {
-                named.Add(codename);
-            }
-
-            if (tag.Table.Equals(CreatureTable, StringComparison.OrdinalIgnoreCase) &&
-                LoadDefaultObject(FindAsset(tag.Name)) is { } creature &&
-                PropertyWalk.GetString(creature, CharacterIdField) is { } characterId)
-            {
-                named.Add(characterId);
-            }
-        }
-
-        return named;
     }
 
     private static IEnumerable<string> Spellings(string name) =>

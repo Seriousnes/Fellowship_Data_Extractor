@@ -199,7 +199,6 @@ public static class DocumentProjection
             Intellect = entity.Intellect,
             Strength = entity.Strength,
             Agility = entity.Agility,
-            Scaling = entity.Scaling,
             Abilities = Abilities(entity.Abilities, references),
             Passives = Abilities(entity.Passives, references),
             FoundIn = Referenced(entity.FoundIn, references),

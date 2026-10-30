@@ -7,16 +7,6 @@ public sealed class SystemsReaderTests
     private const int CrownOfTheWild = 36;
 
     [Fact]
-    public void AScalingNamespaceIsOneACharacterNames()
-    {
-        var namespaces = Export.Loaded.Settings.DifficultyScaling.Namespaces!;
-
-        Assert.DoesNotContain("Season3", namespaces.Keys);
-        Assert.Contains("Tariq", namespaces.Keys);
-        Assert.Contains("TargetDummy", namespaces.Keys);
-    }
-
-    [Fact]
     public void ADungeonPlacesItsCreaturesOnTheFloorsItsAlwaysLoadedSublevelsHold()
     {
         var crown = Export.Loaded.Documents.Single(row => row.Type == EntityType.Dungeon && row.Id == CrownOfTheWild).Body;

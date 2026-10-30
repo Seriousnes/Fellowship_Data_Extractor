@@ -269,7 +269,7 @@ public sealed class TooltipViewService(
     {
         if (store.Menacing(document) is not { } creature) yield break;
 
-        var step = Difficulties.At(store.Settings, store.Difficulty(query.Difficulty?.ToString()));
+        var step = Difficulties.At(store.Settings, store.Difficulty(query.Difficulty?.ToString(), document));
 
         if (step is null) yield break;
 

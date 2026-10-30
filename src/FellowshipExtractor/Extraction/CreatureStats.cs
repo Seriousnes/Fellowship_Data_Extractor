@@ -20,9 +20,11 @@ public sealed record CreatureAttributes
     public double? Strength { get; init; }
 
     public double? Agility { get; init; }
-
-    public string? Scaling { get; init; }
 }
+
+public sealed record CreatureScaling(
+    IReadOnlyDictionary<int, double> Health,
+    IReadOnlyDictionary<int, double> Damage);
 
 public sealed class CreatureStats
 {
@@ -47,7 +49,11 @@ public sealed class CreatureStats
 
     private readonly double _defaultBaseHealth;
 
-    public DifficultyScaling Scaling { get; }
+    // A creature at a difficulty has the scaling of the curve key one above it. Wraithtide Vault runs at
+    // difficulty 47 and not 48, and Deathless Katrine at Eternal 27 there logs the health of key 48.
+    public const int CurveKeyAboveDifficulty = 1;
+
+    public CreatureScaling Scaling { get; }
 
     public int Namespaces { get; }
 
@@ -57,19 +63,8 @@ public sealed class CreatureStats
 
     public int Healthless => _healthless.Count;
 
-    private HashSet<string> _scaled = [];
-
-    public int ScaledApart => _scaled.Count;
-
-    private readonly HeroNames _heroes;
-
-    public IReadOnlyList<string> Unnamed { get; }
-
-    public CreatureStats(
-        AbstractFileProvider provider, HeroNames heroes, IReadOnlySet<int> difficulties, IReadOnlySet<string> characters)
+    public CreatureStats(AbstractFileProvider provider, IReadOnlySet<int> difficulties)
     {
-        _heroes = heroes;
-
         var attributes = CurveRows.Load(
             provider, BaseTable, "how much health, armour, resist, kill score and spirit points a creature has");
 
@@ -99,56 +94,21 @@ public sealed class CreatureStats
         var scaling = CurveRows.Load(
             provider, ScalingTable, "how far a creature's health and damage climb with difficulty");
 
-        var scaled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var (rowName, _) in scaling.RowMap)
-        {
-            var named = rowName.Text.IndexOf('.');
-            if (named > 0) scaled.Add(rowName.Text[..named]);
-        }
-
-        scaled.Remove(DefaultNamespace);
-
-        Unnamed = [.. scaled.Where(scope => !characters.Contains(scope)).Order(StringComparer.Ordinal)];
-        scaled.ExceptWith(Unnamed);
-
-        _scaled = scaled;
-
-        var apart = new Dictionary<string, DifficultyScaling>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var scope in scaled)
-        {
-            apart[heroes.Renamed(scope)] = new DifficultyScaling
-            {
-                Health = ByDifficulty(scaling, scope, HealthScale, required: false, difficulties),
-                Damage = ByDifficulty(scaling, scope, DamageScale, required: false, difficulties),
-            };
-        }
-
-        Scaling = new DifficultyScaling
-        {
-            Health = ByDifficulty(scaling, DefaultNamespace, HealthScale, required: true, difficulties),
-            Damage = ByDifficulty(scaling, DefaultNamespace, DamageScale, required: true, difficulties),
-            Namespaces = apart,
-        };
+        Scaling = new CreatureScaling(
+            ByDifficulty(scaling, HealthScale, difficulties),
+            ByDifficulty(scaling, DamageScale, difficulties));
     }
 
     private static IReadOnlyDictionary<int, double> ByDifficulty(
-        UCurveTable table, string scope, string attribute, bool required, IReadOnlySet<int> difficulties)
+        UCurveTable table, string attribute, IReadOnlySet<int> difficulties)
     {
-        var wanted = $"{scope}.{attribute}";
+        var wanted = $"{DefaultNamespace}.{attribute}";
 
         var row = table.RowMap.FirstOrDefault(entry =>
-            entry.Key.Text.Equals(wanted, StringComparison.OrdinalIgnoreCase)).Value;
-
-        if (row is null)
-        {
-            return required
-                ? throw new InvalidOperationException(
-                    $"{ScalingTable} has no {wanted} row, so a creature's reading at a difficulty other than " +
-                    "the first has no curve behind it.")
-                : new Dictionary<int, double>();
-        }
+            entry.Key.Text.Equals(wanted, StringComparison.OrdinalIgnoreCase)).Value
+            ?? throw new InvalidOperationException(
+                $"{ScalingTable} has no {wanted} row, so a creature's reading at a difficulty other than " +
+                "the first has no curve behind it.");
 
         var steps = CurveRows.Keys(row);
 
@@ -159,7 +119,10 @@ public sealed class CreatureStats
         }
 
         var byDifficulty = new Dictionary<int, double>(steps.Count);
-        foreach (var difficulty in difficulties) byDifficulty[difficulty] = CurveRows.Evaluate(steps, difficulty);
+        foreach (var difficulty in difficulties)
+        {
+            byDifficulty[difficulty] = CurveRows.Evaluate(steps, difficulty + CurveKeyAboveDifficulty);
+        }
 
         return byDifficulty;
     }
@@ -178,7 +141,6 @@ public sealed class CreatureStats
             Intellect = Shared(characterId, Intellect),
             Strength = Shared(characterId, Strength),
             Agility = Shared(characterId, Agility),
-            Scaling = _scaled.Contains(characterId) ? _heroes.Renamed(characterId) : null,
         };
 
         if (attributes is { Health: null, Armor: null, Resist: null, KillScore: null, SpiritPoints: null })

@@ -21,8 +21,7 @@ public sealed class LeagueDifficultyTests
     {
         var listed = Leagues.SelectMany(league => league.Difficulties).Distinct().Order();
 
-        Assert.Equal(listed, Export.Loaded.Settings.DifficultyScaling.Health.Keys.Order());
-        Assert.Equal(listed, Export.Loaded.Settings.DifficultyScaling.Damage.Keys.Order());
+        Assert.Equal(listed, Export.Loaded.Settings.DifficultyScaling.Keys.Order());
     }
 
     [Fact]

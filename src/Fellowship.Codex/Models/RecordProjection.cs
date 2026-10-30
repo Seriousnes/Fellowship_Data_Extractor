@@ -158,7 +158,6 @@ public static class RecordProjection
         Intellect = document.Intellect,
         Strength = document.Strength,
         Agility = document.Agility,
-        Scaling = document.Scaling,
         Abilities = Wielded(document.Abilities, view, origin),
         Passives = Wielded(document.Passives, view, origin),
         FoundIn = References(document.FoundIn, view, origin),

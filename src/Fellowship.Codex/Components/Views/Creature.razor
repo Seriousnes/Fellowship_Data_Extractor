@@ -93,7 +93,7 @@
     {
         Phases = [.. (Entity.Abilities ?? []).GroupBy(slot => slot.Phase, StringComparer.Ordinal)];
 
-        var difficulty = Store.Difficulty(Here.Values.GetValueOrDefault(QueryKeys.Key(ReadingParameter.Difficulty)));
+        var difficulty = Store.Difficulty(Here.Values.GetValueOrDefault(QueryKeys.Key(ReadingParameter.Difficulty)), Entity);
 
         Step = Difficulties.At(Store.Settings, difficulty)
             ?? new DifficultyStep(difficulty, string.Empty, difficulty, difficulty.ToString());
@@ -129,12 +129,12 @@
             read.Add(("Health", FellowshipCodex.Magnitude((decimal)health), null, null, null));
         }
 
-        if (Difficulties.HealthScale(Store.Settings, Entity.Scaling, Step.Difficulty) is { } healthScale)
+        if (Difficulties.HealthScale(Store.Settings, Step.Difficulty) is { } healthScale)
         {
             read.Add(("Health scale", FellowshipCodex.Number(healthScale), "x", null, null));
         }
 
-        if (Difficulties.DamageScale(Store.Settings, Entity.Scaling, Step.Difficulty) is { } damageScale)
+        if (Difficulties.DamageScale(Store.Settings, Step.Difficulty) is { } damageScale)
         {
             read.Add(("Damage scale", FellowshipCodex.Number(damageScale), "x", null, null));
         }

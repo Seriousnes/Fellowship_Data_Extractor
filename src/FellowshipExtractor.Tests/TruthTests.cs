@@ -566,10 +566,10 @@ public sealed class TruthTests
     [Fact]
     public void TheMaxDungeonScoreLadderInterpolatesItsCurve()
     {
-        var scores = Export.Loaded.Settings.DifficultyScaling.MaxDungeonScore!;
-        Assert.Equal(140, scores[1]);
-        Assert.Equal(455, scores[21]);
-        Assert.Equal(920, scores[52]);
-        Assert.Equal(19, Export.Loaded.Settings.DifficultyScaling.ModifierAbilityUnlock);
+        var levels = Export.Loaded.Settings.DifficultyScaling;
+        Assert.Equal(140, levels[1].MaxDungeonScore);
+        Assert.Equal(455, levels[21].MaxDungeonScore);
+        Assert.Equal(920, levels[52].MaxDungeonScore);
+        Assert.Equal(19, Export.Loaded.Settings.ModifierAbilityUnlock);
     }
 }

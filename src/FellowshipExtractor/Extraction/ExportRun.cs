@@ -342,10 +342,7 @@ public static class ExportRun
             string.Join(", ", iconless.Select(entry => $"{entry.Key} {entry.Value}")));
         Console.WriteLine(
             $"  {resolver.CreatureStats.Namespaces} creature tuning namespaces, " +
-            $"{resolver.CreatureStats.Healthless} creatures resolving neither health row, " +
-            $"{resolver.CreatureStats.ScaledApart} scaling apart from Default, " +
-            $"{resolver.CreatureStats.Unnamed.Count} scaling namespaces no character names " +
-            $"({string.Join(", ", resolver.CreatureStats.Unnamed)})");
+            $"{resolver.CreatureStats.Healthless} creatures resolving neither health row");
 
         Console.WriteLine(
             $"  {resolver.Leagues.Count} leagues covering difficulty 1 to {resolver.Leagues.Ceiling}, " +

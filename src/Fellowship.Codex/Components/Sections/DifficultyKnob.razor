@@ -53,7 +53,11 @@
 @code {
     [Parameter] public int Difficulty { get; set; }
 
+    [Parameter] public IReadOnlyList<DifficultyStep> Ladder { get; set; } = [];
+
     private int? applied;
+
+    private IReadOnlyList<DifficultyStep>? appliedLadder;
 
     private IReadOnlyList<DifficultyStep> ladder = [];
     private IReadOnlyList<DifficultyStep> steps = [];
@@ -81,11 +85,12 @@
 
     protected override void OnParametersSet()
     {
-        if (Difficulty == applied) return;
+        if (Difficulty == applied && Ladder.SequenceEqual(appliedLadder ?? [])) return;
 
         applied = Difficulty;
+        appliedLadder = Ladder;
 
-        ladder = Difficulties.Ladder(Store.Settings);
+        ladder = Ladder;
 
         leagues =
         [

@@ -8,7 +8,7 @@
         @if (PicksDifficulty)
         {
             <Knob Caption="Difficulty" As="div">
-                <DifficultyKnob Difficulty="Difficulty" />
+                <DifficultyKnob Difficulty="Difficulty" Ladder="Store.Ladder(Here.Entity)" />
             </Knob>
         }
 
@@ -110,7 +110,7 @@
 
     private bool PicksDifficulty => Here.Entity is CreatureDocument || Store.Menacing(Here.Entity) is not null;
 
-    private int Difficulty => Store.Difficulty(Value(ReadingParameter.Difficulty));
+    private int Difficulty => Store.Difficulty(Value(ReadingParameter.Difficulty), Here.Entity);
 
     private string? Value(ReadingParameter knob) => Here.Values.GetValueOrDefault(QueryKeys.Key(knob));
 

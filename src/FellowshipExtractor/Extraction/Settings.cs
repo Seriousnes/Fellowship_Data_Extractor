@@ -48,7 +48,9 @@ public sealed class Settings
 
     public GlyphEntry Glyphs { get; }
 
-    public DifficultyScaling DifficultyScaling { get; }
+    public IReadOnlyDictionary<int, DifficultyLevel> DifficultyScaling { get; }
+
+    public int ModifierAbilityUnlock { get; }
 
     public static readonly MultiTargetDamageFalloff MultiTargetDamageFalloff = new()
     {
@@ -112,11 +114,8 @@ public sealed class Settings
         AbilityTooltip = abilityTooltip.Text;
         var scoring = new DungeonScoring(provider, [.. creatures.Scaling.Health.Keys]);
 
-        DifficultyScaling = creatures.Scaling with
-        {
-            MaxDungeonScore = scoring.MaxDungeonScore,
-            ModifierAbilityUnlock = scoring.ModifierAbilityUnlock,
-        };
+        DifficultyScaling = DifficultyLevels.Named(creatures, scoring, leagues.All);
+        ModifierAbilityUnlock = scoring.ModifierAbilityUnlock;
         Leagues = leagues.All;
         LeagueKinds = leagues.Kinds;
         Items = items.Values with { StatEnchantPower = enchants.Power };
@@ -202,6 +201,7 @@ public sealed class Settings
         DropItemLevels = DropItemLevels,
         Glyphs = Glyphs,
         DifficultyScaling = DifficultyScaling,
+        ModifierAbilityUnlock = ModifierAbilityUnlock,
         MultiTargetDamageFalloff = MultiTargetDamageFalloff,
         LeagueKinds = LeagueKinds,
         Leagues = Leagues,
