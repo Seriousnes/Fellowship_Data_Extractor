@@ -1543,7 +1543,7 @@ public static class DumpAll
             $"bytecode: {files} files from {read} of {packages.Count} packages, {statements} statements");
     }
 
-    private static string Trimmed(string stem)
+    internal static string Trimmed(string stem)
     {
         var safe = Safe(stem);
         if (safe.Length <= MaxFileStem) return safe;

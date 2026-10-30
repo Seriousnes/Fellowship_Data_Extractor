@@ -18,6 +18,8 @@ public sealed class AbilityDocument : EntityDocument
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }
     public double? Cooldown { get; init; }
+    public double? GlobalCooldown { get; init; }
+    public bool? GlobalCooldownScalesWithHaste { get; init; }
     public double? Charges { get; init; }
     public IReadOnlyDictionary<string, double>? ChargesByLevelType { get; init; }
     public IReadOnlyList<TargetCountFalloff>? TargetCountFalloff { get; init; }

@@ -31,6 +31,7 @@ public sealed class EntityResolver
     private const string GrantedEffectsField = "GrantedGameplayEffects";
     private const string AbilityTagsField = "AbilityTags";
     private const string CooldownTagsField = "CooldownTags";
+    private const string CooldownDurationField = "CooldownDuration";
     private const string DynamicDefinitionClass = DynamicItemRuleSets.DefinitionClass;
     private const string SpecificDungeonsField = "DropsInSpecificDungeons";
     private const string CreatureTable = "CRAICharacter";
@@ -49,6 +50,7 @@ public sealed class EntityResolver
     private readonly ConstantsTable _constants;
     private readonly EffectCalculationPresets _presets;
     private readonly CooldownScaling _cooldowns;
+    private readonly GlobalCooldowns _globalCooldowns;
     private AugmentationIndex? _augmentations;
 
     private readonly Dictionary<string, bool> _spreadSources = new(StringComparer.OrdinalIgnoreCase);
@@ -167,6 +169,7 @@ public sealed class EntityResolver
         _constants = new ConstantsTable(provider);
         _presets = new EffectCalculationPresets(provider, _assets);
         _cooldowns = new CooldownScaling(provider, _assets, _constants);
+        _globalCooldowns = new GlobalCooldowns(provider, _constants);
         _multiplyingOps = Reductions.MultiplyingOps(mappings);
 
         IndexAssets();
@@ -1196,7 +1199,8 @@ public sealed class EntityResolver
 
         var charges = Charged(cdo);
 
-        var cooldown = Number(split, "cooldown");
+        var globalCooldown = cdo is null ? null : _globalCooldowns.Of(cdo, assetName);
+        var cooldown = Shown(OwnCooldown(cdo) ?? Number(split, "cooldown"), globalCooldown);
         var timing = cdo is null || cooldown is null ? null : _cooldowns.Of(cdo, charges.Charges);
         var category = Categories.Of(cdo);
 
@@ -1379,6 +1383,8 @@ public sealed class EntityResolver
             ChannelTime = Number(split, "channelTime"),
             ChannelTick = Number(split, "channelTick"),
             Cooldown = cooldown,
+            GlobalCooldown = globalCooldown?.Duration,
+            GlobalCooldownScalesWithHaste = globalCooldown?.ScalesWithHaste,
             Charges = charges.Charges,
             ChargesByLevelType = charges.ByLevelType,
             TargetCountFalloff = Falloffs.Of(cdo),
@@ -2075,6 +2081,21 @@ public sealed class EntityResolver
         }
     }
 
+    private static double? Shown(double? cooldown, GlobalCooldown? globalCooldown) =>
+        cooldown is not { } seconds || seconds <= 0 || seconds < globalCooldown?.Duration ? null : cooldown;
+
+    private double? OwnCooldown(UObject? cdo)
+    {
+        if (cdo is null) return null;
+        if (ClassDefaults.Inherited(cdo, CooldownDurationField, _provider)?.GenericValue is not FScriptStruct { StructType: IPropertyHolder scalable }) return null;
+
+        var row = PropertyWalk.GetStruct(scalable, "Curve") is { } curve ? PropertyWalk.GetString(curve, "RowName") : null;
+
+        return row is null || row.Length == 0 || row == "None"
+            ? PropertyWalk.AsNumber(PropertyWalk.Get(scalable, "Value")?.GenericValue)
+            : _constants.Lookup(row).Record?.Value;
+    }
+
     private static double? Number(SplitNumbers split, string field) =>
         split.ByName.TryGetValue(field, out var value) ? value : null;
 
@@ -2171,6 +2192,8 @@ public sealed class EntityResolver
         MaxTargets = outer.MaxTargets ?? inner.MaxTargets,
         Resource = outer.Resource ?? inner.Resource,
         CastTimeScalesWithHaste = outer.CastTimeScalesWithHaste ?? inner.CastTimeScalesWithHaste,
+        GlobalCooldown = outer.GlobalCooldown ?? inner.GlobalCooldown,
+        GlobalCooldownScalesWithHaste = outer.GlobalCooldownScalesWithHaste ?? inner.GlobalCooldownScalesWithHaste,
         CooldownDurationScalesOff = outer.CooldownDurationScalesOff ?? inner.CooldownDurationScalesOff,
         CooldownTimeRateScalesOff = outer.CooldownTimeRateScalesOff ?? inner.CooldownTimeRateScalesOff,
         CooldownHasteGrantedBy = outer.CooldownHasteGrantedBy ?? inner.CooldownHasteGrantedBy,

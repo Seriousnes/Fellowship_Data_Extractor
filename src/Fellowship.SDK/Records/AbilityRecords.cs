@@ -17,6 +17,8 @@ public sealed record AbilityRecord : EntityRecord
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }
     public double? Cooldown { get; init; }
+    public double? GlobalCooldown { get; init; }
+    public bool? GlobalCooldownScalesWithHaste { get; init; }
     public double? Charges { get; init; }
     public IReadOnlyDictionary<string, double>? ChargesByLevelType { get; init; }
     public IReadOnlyList<TargetCountFalloffRecord>? TargetCountFalloff { get; init; }

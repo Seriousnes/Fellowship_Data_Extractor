@@ -85,6 +85,8 @@ public static class RecordProjection
             ChannelTime = document.ChannelTime,
             ChannelTick = document.ChannelTick,
             Cooldown = document.Cooldown,
+            GlobalCooldown = document.GlobalCooldown,
+            GlobalCooldownScalesWithHaste = document.GlobalCooldownScalesWithHaste,
             Charges = document.Charges,
             ChargesByLevelType = document.ChargesByLevelType,
             TargetCountFalloff = Falloff(document.TargetCountFalloff, view, origin),
