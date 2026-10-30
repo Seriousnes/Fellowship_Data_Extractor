@@ -16,6 +16,11 @@ public static class StringTables
     {
         var byEntry = new Dictionary<(string Table, string Key), string>();
 
+        foreach (var entry in StringTableSources.Read(provider))
+        {
+            byEntry[(entry.Namespace, entry.Key)] = entry.Text;
+        }
+
         foreach (var entry in LocalizedText.Read(provider, LocalizedText.DefaultCulture))
         {
             byEntry[(entry.Namespace, entry.Key)] = entry.Text;
