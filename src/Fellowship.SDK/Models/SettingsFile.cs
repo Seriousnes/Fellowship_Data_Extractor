@@ -68,7 +68,10 @@ public sealed record SettingsFile
 
     public GlyphEntry Glyphs { get; init; } = new(string.Empty, string.Empty, string.Empty, string.Empty, 0);
 
-    public DifficultyScaling DifficultyScaling { get; init; } = new();
+    public IReadOnlyDictionary<int, DifficultyLevel> DifficultyScaling { get; init; } =
+        new Dictionary<int, DifficultyLevel>();
+
+    public int? ModifierAbilityUnlock { get; init; }
 
     public MultiTargetDamageFalloff MultiTargetDamageFalloff { get; init; } = new();
 

@@ -12,26 +12,49 @@ public static class Difficulties
     public const string PrimaryAttribute = "PrimaryAttribute";
 
     public static IReadOnlyList<DifficultyStep> Ladder(SettingsFile settings) =>
-        [.. settings.DifficultyScaling.Health.Keys.Order().Select(difficulty => Step(settings, difficulty))];
+        [.. settings.DifficultyScaling.Keys.Order().Select(difficulty => Step(settings, difficulty))];
+
+    public static IReadOnlyList<DifficultyStep> Ladder(SettingsFile settings, IReadOnlyList<DungeonDocument> dungeons)
+    {
+        var ladder = Ladder(settings);
+
+        if (dungeons.All(dungeon => dungeon.Difficulties is not { Count: > 0 } && dungeon.AvailableForCasual is not true))
+        {
+            return ladder;
+        }
+
+        var casual = settings.Leagues
+            .Where(league => league.Kind == LeagueKind.Casual)
+            .SelectMany(league => league.Difficulties)
+            .ToArray();
+
+        var run = dungeons
+            .SelectMany(dungeon => (dungeon.Difficulties ?? []).Concat(dungeon.AvailableForCasual is true ? casual : []))
+            .ToHashSet();
+
+        return [.. ladder.Where(step => run.Contains(step.Difficulty))];
+    }
 
     public static DifficultyStep? At(SettingsFile settings, int difficulty) =>
-        settings.DifficultyScaling.Health.ContainsKey(difficulty) ? Step(settings, difficulty) : null;
+        settings.DifficultyScaling.ContainsKey(difficulty) ? Step(settings, difficulty) : null;
 
     public static int? Read(string? value, SettingsFile settings) =>
-        int.TryParse(value, out var difficulty) && settings.DifficultyScaling.Health.ContainsKey(difficulty)
+        int.TryParse(value, out var difficulty) && settings.DifficultyScaling.ContainsKey(difficulty)
             ? difficulty
             : null;
 
     private static DifficultyStep Step(SettingsFile settings, int difficulty)
     {
+        var label = settings.DifficultyScaling[difficulty].Label;
+
         if (Covering(settings, difficulty) is not { } league)
         {
-            return new DifficultyStep(difficulty, string.Empty, difficulty, difficulty.ToString());
+            return new DifficultyStep(difficulty, string.Empty, difficulty, label);
         }
 
-        var step = difficulty - league.MinimumDifficulty + 1;
+        var step = league.Difficulties.TakeWhile(listed => listed != difficulty).Count() + 1;
 
-        return new DifficultyStep(difficulty, league.Name, step, $"{league.Name} +{step}");
+        return new DifficultyStep(difficulty, league.Name, step, label);
     }
 
     private static LeagueEntry? Covering(SettingsFile settings, int difficulty)
@@ -41,7 +64,7 @@ public static class Difficulties
         foreach (var league in settings.Leagues)
         {
             if (league.Kind is LeagueKind.Pinnacle or LeagueKind.Casual) continue;
-            if (league.MinimumDifficulty > difficulty) continue;
+            if (!league.Difficulties.Contains(difficulty)) continue;
             if (found is not null && found.MinimumDifficulty >= league.MinimumDifficulty) continue;
 
             found = league;
@@ -50,30 +73,14 @@ public static class Difficulties
         return found;
     }
 
-    public static double? HealthScale(SettingsFile settings, string? scaling, int difficulty) =>
-        Scale(settings, scaling, difficulty, table => table.Health);
+    public static double? HealthScale(SettingsFile settings, int difficulty) =>
+        settings.DifficultyScaling.TryGetValue(difficulty, out var level) ? level.Health : null;
 
-    public static double? DamageScale(SettingsFile settings, string? scaling, int difficulty) =>
-        Scale(settings, scaling, difficulty, table => table.Damage);
-
-    private static double? Scale(
-        SettingsFile settings,
-        string? scaling,
-        int difficulty,
-        Func<DifficultyScaling, IReadOnlyDictionary<int, double>> ladder)
-    {
-        if (scaling is { Length: > 0 } named &&
-            settings.DifficultyScaling.Namespaces.TryGetValue(named, out var byNamespace) &&
-            ladder(byNamespace).TryGetValue(difficulty, out var own))
-        {
-            return own;
-        }
-
-        return ladder(settings.DifficultyScaling).TryGetValue(difficulty, out var shared) ? shared : null;
-    }
+    public static double? DamageScale(SettingsFile settings, int difficulty) =>
+        settings.DifficultyScaling.TryGetValue(difficulty, out var level) ? level.Damage : null;
 
     public static double? Health(CreatureDocument creature, SettingsFile settings, int difficulty) =>
-        creature.Health is { } health && HealthScale(settings, creature.Scaling, difficulty) is { } scale
+        creature.Health is { } health && HealthScale(settings, difficulty) is { } scale
             ? health * scale
             : null;
 
@@ -105,7 +112,7 @@ public static class Difficulties
         int difficulty)
     {
         if (Attribute(owner, coefficient.Attribute) is not { } attribute) return null;
-        if (DamageScale(settings, owner.Scaling, difficulty) is not { } scale) return null;
+        if (DamageScale(settings, difficulty) is not { } scale) return null;
 
         var mean = (decimal)attribute * (decimal)coefficient.Value * (decimal)scale;
         var half = (decimal)(coefficient.Spread ?? 0) / 2m;

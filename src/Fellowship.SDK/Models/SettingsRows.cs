@@ -77,18 +77,17 @@ public sealed record AttunementTreeNode(int UITreeIndex, int AugmentationRowInde
 
 public sealed record AttunementNodeUpgradeCost(int Rank, double Cost, int Currency);
 
-public sealed record DifficultyScaling
+public sealed record DifficultyLevel
 {
-    public IReadOnlyDictionary<int, double> Health { get; init; } = new Dictionary<int, double>();
+    public string Name { get; init; } = string.Empty;
 
-    public IReadOnlyDictionary<int, double> Damage { get; init; } = new Dictionary<int, double>();
+    public string Label { get; init; } = string.Empty;
 
-    public IReadOnlyDictionary<int, double>? MaxDungeonScore { get; init; }
+    public double Health { get; init; }
 
-    public int? ModifierAbilityUnlock { get; init; }
+    public double Damage { get; init; }
 
-    public IReadOnlyDictionary<string, DifficultyScaling> Namespaces { get; init; } =
-        new Dictionary<string, DifficultyScaling>(StringComparer.OrdinalIgnoreCase);
+    public double? MaxDungeonScore { get; init; }
 }
 
 public sealed record LeagueKindEntry(string Name, int Value);

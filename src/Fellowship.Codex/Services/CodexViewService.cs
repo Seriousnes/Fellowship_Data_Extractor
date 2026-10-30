@@ -329,7 +329,7 @@ public sealed class CodexViewService(
 
     private static bool Hidden(EntityDocument document, string property) => document switch
     {
-        CreatureDocument => property is nameof(CreatureDocument.Health) or nameof(CreatureDocument.Scaling)
+        CreatureDocument => property is nameof(CreatureDocument.Health)
             or nameof(CreatureDocument.Armor) or nameof(CreatureDocument.Resist)
             or nameof(CreatureDocument.Intellect) or nameof(CreatureDocument.Strength)
             or nameof(CreatureDocument.Agility),
