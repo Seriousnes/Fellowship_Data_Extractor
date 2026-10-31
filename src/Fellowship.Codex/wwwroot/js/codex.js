@@ -552,26 +552,58 @@ document.addEventListener('keydown', event => {
     box.select();
 });
 
-// The omnibox is prerendered, and the circuit replaces the prerendered input when it starts. Text typed
-// into the prerendered input is held here until the interactive omnibox adopts it.
-const adopted = new WeakSet();
-let carried = null;
+// The omnibox is prerendered, and the circuit replaces the prerendered input when it starts. The
+// interactive input takes the prerendered input's text, caret and focus in the same task as the
+// replacement, so the browser never paints an empty box and no keystroke reaches the page instead.
+let held = null;
+
+const prerendered = box => box instanceof HTMLInputElement && box.id === 'cx-omnibox' && !box.dataset.live;
 
 function hold(box) {
-    if (!(box instanceof HTMLInputElement) || box.id !== 'cx-omnibox' || adopted.has(box)) return;
-    carried = box.value ? { text: box.value, focused: document.activeElement === box } : null;
+    if (!prerendered(box)) return;
+    held = {
+        box,
+        text: box.value,
+        start: box.selectionStart,
+        end: box.selectionEnd,
+        focused: document.activeElement === box,
+    };
 }
 
 hold(document.getElementById('cx-omnibox'));
 
-document.addEventListener('input', event => hold(event.target));
-
-export function adopt(box) {
-    adopted.add(box);
-    const taken = carried;
-    carried = null;
-    return taken;
+for (const kind of ['input', 'focusin', 'keyup', 'pointerup', 'select']) {
+    document.addEventListener(kind, event => hold(event.target));
 }
+
+// Chrome fires focusout on an input while removing it, so the input's focus is kept when it has left
+// the document by the end of the task.
+document.addEventListener('focusout', event => {
+    const box = event.target;
+    if (!prerendered(box)) return;
+
+    queueMicrotask(() => {
+        if (held?.box === box && box.isConnected) held.focused = false;
+    });
+});
+
+new MutationObserver(() => {
+    const box = document.getElementById('cx-omnibox');
+    if (!held || !box?.dataset.live || held.box.isConnected) return;
+
+    const { text, start, end, focused } = held;
+    held = null;
+
+    if (text && box.value !== text) {
+        box.value = text;
+        box.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    if (focused) {
+        box.focus();
+        box.setSelectionRange(start, end);
+    }
+}).observe(document.body, { childList: true, subtree: true });
 
 window.addEventListener('scroll', () => { if (anchored) place(anchored); }, { passive: true, capture: true });
 
