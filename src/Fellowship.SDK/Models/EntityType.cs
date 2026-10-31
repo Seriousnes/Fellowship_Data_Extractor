@@ -24,7 +24,7 @@ public enum EntityType
     Item,
     LegendaryPower,
     LegendaryStat,
-    Modifier,
+    DungeonAffix,
     Mount,
     MountPower,
     RelicPassive,

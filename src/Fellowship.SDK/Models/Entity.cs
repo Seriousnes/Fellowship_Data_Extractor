@@ -349,8 +349,6 @@ public sealed record Entity
 
     public IReadOnlyList<IReadOnlyList<WorldPoint>>? Patrols { get; init; }
 
-    public string? ModifierKind { get; init; }
-
     public string? HeroTitle { get; init; }
 
     public string? HeroColor { get; init; }

@@ -922,7 +922,6 @@ public sealed class EntityResolver
         Description = entity.Description ?? modifier.Description,
         Icon = entity.Icon ?? IconName(modifier.IconPath, icons),
         Placeholders = entity.Placeholders ?? ModifierPlaceholders(modifier),
-        ModifierKind = modifier.Kind,
         MinimumHeroRank = modifier.MinimumHeroRank,
     };
 

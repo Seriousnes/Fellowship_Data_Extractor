@@ -19,6 +19,7 @@ public static class ApiEndpoints
         app.MapGemAbility();
         app.MapItem();
         app.MapLegendaryPower();
+        app.MapDungeonAffix();
         app.MapRelicPassive();
         app.MapMount();
         app.MapRelicPower();

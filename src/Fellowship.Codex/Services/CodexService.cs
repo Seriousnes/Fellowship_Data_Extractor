@@ -234,6 +234,7 @@ public sealed class CodexService : ICodexService
             new Sorting(SortingType.Rank, document => document switch
             {
                 CreatureDocument { Rank: { } rank } => (int)rank,
+                DungeonAffixDocument affix => affix.MinimumHeroRank,
                 _ => DocumentFields.Number(document, nameof(AugmentationDocument.MaxRank)),
             }),
 

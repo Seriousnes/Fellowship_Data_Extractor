@@ -1,6 +1,6 @@
 namespace Fellowship.SDK.Records;
 
-public sealed record ModifierRecord : EntityRecord
+public sealed record DungeonAffixRecord : EntityRecord
 {
     public IReadOnlyList<ResourceGainRecord>? Generates { get; init; }
 
@@ -8,7 +8,7 @@ public sealed record ModifierRecord : EntityRecord
 
     public string? Icon { get; init; }
 
-    public string? Kind { get; init; }
-
     public int? MinimumHeroRank { get; init; }
+
+    public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
 }

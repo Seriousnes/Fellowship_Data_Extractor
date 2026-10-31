@@ -4,7 +4,7 @@ using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 
-public sealed class ModifierTextTests
+public sealed class DungeonAffixTextTests
 {
     private const string ModifierTable = "fellowship/Content/Modifiers/DT_ModifierInfo.DT_ModifierInfo";
     private const string PathfinderRow = "Ascension6";
@@ -12,7 +12,7 @@ public sealed class ModifierTextTests
     private const string DynamicDescriptionField = "DynamicDescription";
 
     [Fact]
-    public void AModifierWhoseDescriptionIsEmptyReadsItsDynamicDescription()
+    public void ADungeonAffixWhoseDescriptionIsEmptyReadsItsDynamicDescription()
     {
         var row = Export.Provider.LoadPackageObject<UDataTable>(ModifierTable).RowMap
             .Single(entry => entry.Key.Text == PathfinderRow).Value;
@@ -21,7 +21,7 @@ public sealed class ModifierTextTests
 
         var dynamic = PropertyWalk.GetString(PropertyWalk.GetStruct(row, DynamicDescriptionField)!, "Text");
         var pathfinder = Export.Loaded.Documents
-            .Single(document => document.Type == EntityType.Modifier && document.Name == "Pathfinder's Guidance")
+            .Single(document => document.Type == EntityType.DungeonAffix && document.Name == "Pathfinder's Guidance")
             .Body;
 
         Assert.Equal(dynamic, pathfinder["description"]?.GetValue<string>());

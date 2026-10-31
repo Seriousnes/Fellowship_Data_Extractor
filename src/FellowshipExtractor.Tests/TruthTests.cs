@@ -273,40 +273,37 @@ public sealed class TruthTests
         Assert.All(filled, document => Assert.Equal(12, document.Body["descriptionsByHero"]!.AsObject().Count));
     }
     [Theory]
-    [InlineData(2, "Sahril's Madness", "Ascension", 2)]
-    [InlineData(14, "Meteor Rain", "Dungeon", 3)]
-    [InlineData(18, "Promoted Enemies", "Implicit", 0)]
-    public void AModifierRowNamesItsKindAndTheRankItAsks(
-        int id, string name, string kind, int minimumHeroRank)
+    [InlineData(2, "Sahril's Madness", 2)]
+    [InlineData(14, "Meteor Rain", 3)]
+    [InlineData(18, "Promoted Enemies", 0)]
+    public void ADungeonAffixRowNamesTheRankItAsks(int id, string name, int minimumHeroRank)
     {
-        var record = Record(EntityType.Modifier, id);
+        var record = Record(EntityType.DungeonAffix, id);
         Assert.Equal(name, (string?)record["name"]);
-        Assert.Equal(kind, (string?)record["kind"]);
         Assert.Equal(minimumHeroRank, (int?)record["minimumHeroRank"]);
     }
     [Fact]
-    public void AModifierRowCarriesTheDescriptionAndIconTheTableStates()
+    public void ADungeonAffixRowCarriesTheDescriptionAndIconTheTableStates()
     {
-        var record = Record(EntityType.Modifier, 2);
+        var record = Record(EntityType.DungeonAffix, 2);
         Assert.Contains("Increased Threat", (string?)record["description"], StringComparison.Ordinal);
         Assert.NotNull((string?)record["icon"]);
     }
     [Theory]
     [InlineData(26)]
     [InlineData(28)]
-    public void AModifierTagNoRowStatesExportsAsAStub(int id)
+    public void ADungeonAffixTagNoRowStatesExportsAsAStub(int id)
     {
-        var record = Record(EntityType.Modifier, id);
+        var record = Record(EntityType.DungeonAffix, id);
         Assert.Null(record["name"]);
-        Assert.Null(record["kind"]);
         Assert.Null(record["description"]);
     }
     [Fact]
-    public void EveryModifierTagButTheThreeBranchesIsWritten()
+    public void EveryDungeonAffixTagButTheThreeBranchesIsWritten()
     {
-        var written = Export.Loaded.Documents.Where(document => document.Type == EntityType.Modifier).ToArray();
+        var written = Export.Loaded.Documents.Where(document => document.Type == EntityType.DungeonAffix).ToArray();
         Assert.Equal(26, written.Length);
-        Assert.Equal(24, written.Count(document => document.Body["kind"] is not null));
+        Assert.Equal(24, written.Count(document => document.Body["name"] is not null));
     }
     [Theory]
     [InlineData(1630, "Talent Points", "Epic")]
