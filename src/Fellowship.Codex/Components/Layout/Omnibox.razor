@@ -1,8 +1,6 @@
 @rendermode InteractiveServer
-@using Microsoft.JSInterop
 @inject ISuggestionService Suggest
 @inject NavigationManager Nav
-@inject IJSRuntime Js
 @implements IDisposable
 
 <div class="@Classes" role="search">
@@ -15,7 +13,7 @@
            aria-label="Search the codex" aria-controls="cx-omnibox-drop" aria-autocomplete="list"
            aria-expanded="@(Open ? "true" : "false")"
            placeholder="Search abilities, talents, items, heroes"
-           autofocus="@Hero" @ref="box"
+           autofocus="@Hero" data-live="@On(RendererInfo.IsInteractive)" @ref="box"
            @bind="typed" @bind:event="oninput" @bind:after="Typing"
            @onkeydown="Key" @onfocus="Focus" @onblur="Blur" />
 
@@ -141,17 +139,7 @@
     {
         if (!first) return;
 
-        await using var codex = await Js.InvokeAsync<IJSObjectReference>("import", "/js/codex.js");
-        var carried = await codex.InvokeAsync<Carried?>("adopt", box);
-
-        if (carried is { } held && held.Text != typed)
-        {
-            typed = held.Text;
-            await Typing();
-            StateHasChanged();
-        }
-
-        if (Hero || carried is { Focused: true }) await box.FocusAsync();
+        if (Hero) await box.FocusAsync();
     }
 
     private async Task Typing()
@@ -250,8 +238,6 @@
         showing = false;
         active = -1;
     }
-
-    private sealed record Carried(string Text, bool Focused);
 
     public void Dispose()
     {
