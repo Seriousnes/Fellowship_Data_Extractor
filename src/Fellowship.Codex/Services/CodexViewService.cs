@@ -393,14 +393,14 @@ public sealed class CodexViewService(
             if (Named(reference.Talent, page) is { } talent && !parts.Contains(talent)) parts.Add(talent);
 
             var shared = references.Values.Any(other =>
-                other.Name != reference.Name && other.Attribute == reference.Attribute && other.Op == reference.Op);
+                other.Name != reference.Name && other.Attribute == reference.Attribute);
 
-            parts.Add(reference is { Attribute: { } attribute, Op: { } op } && !shared
-                ? $"{Spaced(attribute)} {Spaced(op)}"
-                : Spaced(Renamed(reference.Name)));
+            parts.Add(reference.Attribute is { } attribute && !shared ? Spaced(attribute) : Spaced(Renamed(reference.Name)));
 
             var label = string.Join(" / ", parts);
-            var value = Constant(raw);
+            var value = reference.Op is { } op && Numeric(raw) is { } magnitude
+                ? Modifier(op, magnitude, reference.Percent is true)
+                : Constant(raw);
 
             if (listed.Any(other => other.Label == label && other.Value == value)) continue;
 

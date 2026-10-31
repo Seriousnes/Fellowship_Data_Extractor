@@ -98,6 +98,24 @@ public static class CodexView
 
     public static string Number(double value) => FellowshipCodex.Number(value);
 
+    /// <summary>
+    /// A modifier's magnitude as its effect on the attribute: a factor as the percentage it adds or removes, a term as
+    /// a percentage where the game prints one, and the op's kind in brackets.
+    /// </summary>
+    public static string Modifier(string op, double value, bool percent)
+    {
+        if (Fellowship.SDK.Models.ModifierOps.Multiplies(op)) return $"{Percent(Fellowship.SDK.Models.ModifierOps.Factor(op, value) - 1)}% (multiplicative)";
+
+        if (!Fellowship.SDK.Models.ModifierOps.Adds(op)) return $"{Number(value)} (set)";
+
+        var term = Fellowship.SDK.Models.ModifierOps.Term(op, value);
+
+        return percent ? $"{Percent(term)}% (additive)" : $"{Number(term)} (additive)";
+    }
+
+    private static string Percent(double share) =>
+        Math.Round((decimal)share * 100m, 2).Normalize().ToString(CultureInfo.InvariantCulture);
+
     public static string Constant(object? value) => value switch
     {
         null => Absent,

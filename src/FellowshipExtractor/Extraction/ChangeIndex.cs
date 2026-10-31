@@ -101,7 +101,7 @@ public sealed class ChangeIndex
                         continue;
                     }
 
-                    Gated(modifiers, references, tag, new Change(target, modifier.Attribute, op, value));
+                    Gated(modifiers, references, tag, new Change(target, modifier.Attribute, op, value), modifier.Row);
                 }
             }
         }
@@ -137,6 +137,10 @@ public sealed class ChangeIndex
                         {
                             While = record.Condition?.Effects,
                             WhileTarget = record.Condition?.TargetEffects,
+                            Percent = record.Row is { } row && ModifierOps.Adds(op) &&
+                                      modifiers.Percent(row, source.Type!.Value, id)
+                                ? true
+                                : null,
                         });
                     }
                 }
@@ -159,6 +163,8 @@ public sealed class ChangeIndex
 
     public IReadOnlyList<(EntityType Type, int Id)> Holding(string tag) => _modifiers.Holding(tag);
 
+    public bool Percent(string row, EntityType type, int id) => _modifiers.Percent(row, type, id);
+
     public EntityReference? PartOf(Entity ability, DocumentProjection.References references) =>
         _modifiers.PartOf(ability, references);
 
@@ -174,7 +180,8 @@ public sealed class ChangeIndex
             ? sources
             : null;
 
-    private void Gated(ModifierIndex modifiers, DocumentProjection.References references, string tag, Change change)
+    private void Gated(
+        ModifierIndex modifiers, DocumentProjection.References references, string tag, Change change, string? row = null)
     {
         var holding = modifiers.Holding(tag);
 
@@ -190,7 +197,11 @@ public sealed class ChangeIndex
 
         foreach (var (type, id) in holding)
         {
-            if (references.Of(type, id) is { } source) Record(source, change);
+            if (references.Of(type, id) is not { } source) continue;
+
+            Record(source, row is not null && ModifierOps.Adds(change.Op) && modifiers.Percent(row, type, id)
+                ? change with { Percent = true }
+                : change);
         }
     }
 

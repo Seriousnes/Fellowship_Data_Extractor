@@ -91,8 +91,9 @@ public sealed partial class ModifierIndex
     private readonly Dictionary<string, Key> _owners = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Key> _heroes = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _codenames = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, SortedSet<(string Attribute, string Op)>> _modified = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, SortedSet<(string Attribute, string Op, bool Executed)>> _modified = new(StringComparer.Ordinal);
     private readonly HashSet<string> _computed = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _printedPercent = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Key> _assets = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<Key, Entity> _entities = [];
     private readonly Dictionary<string, HashSet<Key>> _granters = new(StringComparer.Ordinal);
@@ -160,10 +161,16 @@ public sealed partial class ModifierIndex
             {
                 if (uses.Any(use => use.StartsWith(RowSinks.SinkUse, StringComparison.Ordinal))) _computed.Add(row);
 
-                foreach (var pair in uses.Select(Applied).OfType<(string, string)>())
+                if (uses.Any(use => use.StartsWith(RowSinks.PrintedUse, StringComparison.Ordinal) &&
+                                    use.Split(';').Contains("percent")))
+                {
+                    _printedPercent.Add(row);
+                }
+
+                foreach (var stated in uses.Select(Applied).OfType<(string, string, bool)>())
                 {
                     if (!_modified.TryGetValue(row, out var held)) _modified[row] = held = [];
-                    held.Add(pair);
+                    held.Add(stated);
                 }
             }
         }
@@ -702,12 +709,16 @@ public sealed partial class ModifierIndex
             owner = parent;
         }
 
+        var modified = Modified(row);
+        var printer = Scoped(row)?.Talent ?? TalentClaiming(row)?.Source ?? self;
+
         return (new TuningReference(Fold(Untalented(remainder)))
         {
             Owner = owner is { } held && held != self ? references.Of(held.Type, held.Id) : null,
             Talent = talent,
-            Attribute = Modified(row)?.Attribute,
-            Op = Modified(row)?.Op,
+            Attribute = modified?.Attribute,
+            Op = modified?.Op,
+            Percent = modified is { Op: var op } && ModifierOps.Adds(op) && Percent(row, printer) ? true : null,
             Value = value,
         }, named);
     }
@@ -715,18 +726,36 @@ public sealed partial class ModifierIndex
     /// <summary>
     /// The one attribute and op every gameplay effect modifier reading <paramref name="row"/> applies it under, for a
     /// row no Blueprint reads. A Blueprint can compute a different magnitude from the row before any modifier applies it.
+    /// An execution multiplying by a stat reads the row as that stat's coefficient, not as a factor on the attribute.
     /// </summary>
     public (string Attribute, string Op)? Modified(string row) =>
-        !_computed.Contains(row) && _modified.TryGetValue(row, out var applied) && applied.Count == 1 ? applied.Min : null;
+        !_computed.Contains(row) && _modified.TryGetValue(row, out var applied) && applied.Count == 1 &&
+        applied.Min is var (attribute, op, executed) && !ModifierTypes.IsCoefficient(attribute, op, executed)
+            ? (attribute, op)
+            : null;
 
-    public static (string Attribute, string Op)? Applied(string use)
+    /// <summary>
+    /// True when the game prints <paramref name="row"/> as a percentage: a tooltip placeholder reading it prints a
+    /// percent, or the description of <paramref name="source"/> prints the row's value times 100 as a percent.
+    /// </summary>
+    private bool Percent(string row, Key? source) =>
+        _printedPercent.Contains(row) ||
+        (source is { } key && _entities.GetValueOrDefault(key)?.Description is { } text &&
+         _sourceRows.GetValueOrDefault(key)?.GetValueOrDefault(row) is { } value and not 0 &&
+         ModifierTypes.PrintsPercent(text, value));
+
+    public bool Percent(string row, EntityType type, int id) => Percent(row, new Key(type, id));
+
+    public static (string Attribute, string Op, bool Executed)? Applied(string use)
     {
         if (!use.StartsWith(RowSinks.AttributeUse, StringComparison.Ordinal)) return null;
 
         var stated = use[RowSinks.AttributeUse.Length..];
         var gate = stated.IndexOf(RowSinks.GateMark, StringComparison.Ordinal);
 
-        return (gate < 0 ? stated : stated[..gate]).Split('|') is [var attribute, var op, ..] ? (attribute, op) : null;
+        return (gate < 0 ? stated : stated[..gate]).Split('|') is [var attribute, var op, var scope, ..]
+            ? (attribute, op, scope == RowSinks.Execution)
+            : null;
     }
 
     private (Key Hero, string Codename)? Hero(string row) =>

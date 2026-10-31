@@ -714,15 +714,20 @@ public static class DocumentProjection
                     var applied = (entity.GatedModifiers?.GetValueOrDefault(gate) ?? [])
                         .Where(modifier => modifier is { Op: not null, Row: { } read } &&
                                            read.EndsWith("." + relative, StringComparison.OrdinalIgnoreCase))
-                        .Select(modifier => (modifier.Attribute, Op: modifier.Op!))
-                        .Distinct()
+                        .Select(modifier => (modifier.Attribute, Op: modifier.Op!, Row: modifier.Row!))
+                        .DistinctBy(modifier => (modifier.Attribute, modifier.Op))
                         .ToArray();
+
+                    var (attribute, op, read) = applied is [var single] ? single : default;
 
                     tuned[relative] = new TuningReference(ModifierIndex.Fold(leaf))
                     {
                         Talent = references.Of(type, id),
-                        Attribute = applied is [var single] ? single.Attribute : null,
-                        Op = applied is [var only] ? only.Op : null,
+                        Attribute = attribute,
+                        Op = op,
+                        Percent = read is not null && ModifierOps.Adds(op) && references.Changes.Percent(read, type, id)
+                            ? true
+                            : null,
                     };
                 }
                 else if (references.Changes.TalentNamed(entity, group, references) is { } talent)

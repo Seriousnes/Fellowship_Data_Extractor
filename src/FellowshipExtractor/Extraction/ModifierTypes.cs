@@ -118,9 +118,20 @@ public static partial class ModifierTypes
         if (HeroNames.LastSegment(candidate.Row).Contains("Percent", StringComparison.OrdinalIgnoreCase)) return true;
         if (candidate.Value is not { } value || candidate.Text is not { Length: > 0 } text) return false;
 
-        return PercentPattern().Matches(text).Any(match =>
-            Near(double.Parse(match.Groups["n"].Value, CultureInfo.InvariantCulture), value * 100));
+        return PrintsPercent(text, value);
     }
+
+    /// <summary>True when <paramref name="text"/> prints <paramref name="value"/> times 100 as a percent.</summary>
+    public static bool PrintsPercent(string text, double value) =>
+        PercentPattern().Matches(text).Any(match =>
+            Near(double.Parse(match.Groups["n"].Value, CultureInfo.InvariantCulture), value * 100));
+
+    /// <summary>
+    /// True when an execution multiplying <paramref name="attribute"/> by the magnitude reads it as a coefficient of
+    /// that attribute. An execution scales damage, healing and critical damage by a factor instead.
+    /// </summary>
+    public static bool IsCoefficient(string attribute, string op, bool executed) =>
+        executed && op is MultiplyAdditive or MultiplyCompound && attribute is not (DamageScale or HealScale or CritMultiplier);
 
     public static ModifierClass? Classify(ModifierCandidate candidate)
     {

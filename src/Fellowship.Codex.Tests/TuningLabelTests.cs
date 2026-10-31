@@ -62,8 +62,30 @@ public class TuningLabelTests(Export export)
 
         var row = Assert.Single(export.View.Tuning(talent, rows));
 
-        Assert.EndsWith("Crit Chance Additive", row.Label);
+        Assert.Equal(("Crit Chance", "20% (additive)"), (row.Label, row.Value));
     }
+
+    [Fact]
+    public void Hammer_Storm_reads_its_strength_rows_as_coefficients()
+    {
+        var ability = Assert.Single(export.Store.Entities.OfType<AbilityDocument>(), ability => ability.Id == 1242);
+
+        Assert.All(
+            ability.Tuning!.Where(entry => entry.Value.Name.EndsWith("StrengthCoefficient", StringComparison.Ordinal)),
+            entry => Assert.Null(entry.Value.Op));
+    }
+
+    [Theory]
+    [InlineData("MultiplyCompound", 1.2, false, "20% (multiplicative)")]
+    [InlineData("Multiplicitive", 0.8, false, "-20% (multiplicative)")]
+    [InlineData("Multiplicitive", 0.2, false, "-80% (multiplicative)")]
+    [InlineData("Division", 0.8, false, "25% (multiplicative)")]
+    [InlineData("Additive", 0.2, true, "20% (additive)")]
+    [InlineData("Additive", 0.07, true, "7% (additive)")]
+    [InlineData("Additive", 15, false, "15 (additive)")]
+    [InlineData("Subtract", 0.5, false, "-0.5 (additive)")]
+    public void A_modifier_value_reads_as_its_effect_on_the_attribute(string op, double value, bool percent, string expected) =>
+        Assert.Equal(expected, CodexView.Modifier(op, value, percent));
 
     [Fact]
     public void Every_tuning_label_on_a_page_names_one_row()

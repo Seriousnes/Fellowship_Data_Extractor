@@ -100,9 +100,11 @@
                 _ => [],
             })
             .Select(change => (Target: Named(change.Target),
-                Text: $"{FellowshipCodex.Spaced(change.Field)} {FellowshipCodex.Spaced(change.Op)} {CodexView.Number(change.Value)}"))
+                Text: $"{Titled(FellowshipCodex.Spaced(change.Field))}: {CodexView.Modifier(change.Op, change.Value, change.Percent is true)}"))
             .DistinctBy(change => (Ui.Name(change.Target.Type, change.Target.Id), change.Text)),
     ];
+
+    private static string Titled(string field) => field.Length == 0 ? field : char.ToUpperInvariant(field[0]) + field[1..];
 
     private Fellowship.SDK.Models.EntityReference Named(Fellowship.SDK.Models.EntityReference target) =>
         Ui.Store.All(target.Type, target.Id) is [AbilityDocument { Name: null, PartOf: { } part }, ..] ? part : target;
