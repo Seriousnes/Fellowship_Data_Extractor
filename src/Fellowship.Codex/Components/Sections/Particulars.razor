@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-@if (Rows.Count > 0 || Falloff.Count > 0 || Schools.Count > 0 || Tables is not null)
+@if (Rows.Count > 0 || Falloff.Count > 0 || Changes.Count > 0 || Schools.Count > 0 || Tables is not null)
 {
     <Panel Head="Details" Class="@(ReferenceEquals(Entity, Here.Entity) ? "cx-entity-details" : null)">
         @if (Rows.Count > 0)
@@ -45,6 +45,21 @@
             </Facts>
         }
 
+        @if (Changes.Count > 0)
+        {
+            <Rule />
+            <SubHead>Changes</SubHead>
+            <Facts>
+                @foreach (var (target, text) in Changes)
+                {
+                    <Fact>
+                        <Head><Ref Entity="target" /></Head>
+                        <ChildContent>@text</ChildContent>
+                    </Fact>
+                }
+            </Facts>
+        }
+
         @if (Schools.Count > 0)
         {
             <Rule />
@@ -77,6 +92,21 @@
 
     private IReadOnlyList<Row> Rows = [];
 
+    private IReadOnlyList<(Fellowship.SDK.Models.EntityReference Target, string Text)> Changes => [
+        .. (Entity switch
+            {
+                TalentDocument talent => talent.Changes ?? [],
+                LegendaryPowerDocument legendary => legendary.Changes ?? [],
+                _ => [],
+            })
+            .Select(change => (Target: Named(change.Target),
+                Text: $"{FellowshipCodex.Spaced(change.Field)} {FellowshipCodex.Spaced(change.Op)} {CodexView.Number(change.Value)}"))
+            .DistinctBy(change => (Ui.Name(change.Target.Type, change.Target.Id), change.Text)),
+    ];
+
+    private Fellowship.SDK.Models.EntityReference Named(Fellowship.SDK.Models.EntityReference target) =>
+        Ui.Store.All(target.Type, target.Id) is [AbilityDocument { Name: null, PartOf: { } part }, ..] ? part : target;
+
     private IReadOnlyList<Fellowship.SDK.Models.TargetCountFalloff> Falloff =>
         DamageFalloff.Source(Entity)?.Entries ?? [];
 
@@ -97,7 +127,7 @@
 
         foreach (var token in tokens)
         {
-            foreach (var tuning in Ui.Tuning(token.Constants))
+            foreach (var tuning in Ui.Tuning(Entity, token.Constants))
             {
                 if (!listed.Add((tuning.Label, tuning.Value))) continue;
 
@@ -114,6 +144,30 @@
             var value = CodexView.Number(spread);
 
             if (listed.Add((label, value))) rows.Add(new Row(label, null, @<text>@value</text>));
+        }
+
+        var constants = Entity switch
+        {
+            TalentDocument talent => talent.Constants,
+            LegendaryPowerDocument legendary => legendary.Constants,
+            _ => null,
+        };
+
+        var read = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+        foreach (var (row, value) in constants ?? new Dictionary<string, double>()) read[row] = value;
+
+        if (Entity is EffectDocument { Talents: { } talents })
+        {
+            foreach (var (group, leaves) in talents)
+            {
+                foreach (var (leaf, value) in leaves) read[$"{group}.{leaf}"] = value;
+            }
+        }
+
+        foreach (var tuning in Ui.Tuning(Entity, read))
+        {
+            if (listed.Add((tuning.Label, tuning.Value))) rows.Add(new Row(tuning.Label, null, @<text>@tuning.Value</text>));
         }
 
         var heroes = Ui.Codex.Facet(FacetType.Hero).Values(Entity).ToArray();

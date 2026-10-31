@@ -50,6 +50,7 @@ public sealed class ChangeIndex
     private readonly Dictionary<string, int> _unprojected = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SortedSet<string>> _ungranted = new(StringComparer.Ordinal);
     private readonly Dictionary<(EntityType Type, int Id), List<Entity>> _targets = [];
+    private readonly ModifierIndex _modifiers = ModifierIndex.None;
     public IReadOnlyDictionary<string, SortedSet<string>> Ungranted => _ungranted;
 
     private ChangeIndex()
@@ -58,6 +59,8 @@ public sealed class ChangeIndex
 
     public ChangeIndex(IReadOnlyList<Entity> entities, ModifierIndex modifiers, DocumentProjection.References references)
     {
+        _modifiers = modifiers;
+
         foreach (var entity in entities)
         {
             if (entity is not { Type: (EntityType.Ability or EntityType.Effect) and var type, NetId: { } id }) continue;
@@ -151,6 +154,19 @@ public sealed class ChangeIndex
 
     public IReadOnlyList<Change>? Of(Entity entity) =>
         entity is { Type: { } type, NetId: { } id } && _changes.TryGetValue((type, id), out var changes) ? changes : null;
+
+    public IReadOnlyDictionary<string, double>? Constants(Entity source) => _modifiers.Rows(source);
+
+    public IReadOnlyList<(EntityType Type, int Id)> Holding(string tag) => _modifiers.Holding(tag);
+
+    public EntityReference? PartOf(Entity ability, DocumentProjection.References references) =>
+        _modifiers.PartOf(ability, references);
+
+    public EntityReference? TalentNamed(Entity context, string name, DocumentProjection.References references) =>
+        _modifiers.TalentNamed(context, name, references);
+
+    public TuningReference? Reference(string row, Entity context, DocumentProjection.References references) =>
+        _modifiers.Resolved(row, context, references);
 
     public IReadOnlyList<EntityReference>? ChangedBy(Entity entity, DocumentProjection.References references) =>
         entity is { Type: { } type, NetId: { } id } && references.Of(type, id) is { } self &&

@@ -53,6 +53,7 @@ public static class DocumentProjection
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
             NamedAfter = references.At(entity.NamedAfter),
+            PartOf = Name(entity) is null ? references.Changes.PartOf(entity, references) : null,
             Description = entity.Description,
             DescriptionsByHero = entity.DescriptionsByHero,
             Detail = entity.Detail,
@@ -84,6 +85,7 @@ public static class DocumentProjection
             ScalesOff = entity.ScalesOff,
             Coefficients = entity.Coefficients,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             Schools = Schools(entity.Tags),
             Heroes = Owning(entity),
             Owner = references.At(entity.Owner),
@@ -171,6 +173,7 @@ public static class DocumentProjection
             Infinite = entity.Infinite,
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             Schools = Schools(entity.Tags) ?? Schools(entity.ApplierTags),
             Modifiers = entity.Modifiers,
             Generates = Generated(entity),
@@ -247,6 +250,7 @@ public static class DocumentProjection
             EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             Icon = entity.Icon,
             Generates = Generated(entity),
             MinimumHeroRank = entity.MinimumHeroRank,
@@ -342,6 +346,7 @@ public static class DocumentProjection
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
         },
 
@@ -353,6 +358,7 @@ public static class DocumentProjection
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Cooldown = entity.Cooldown,
             Duration = entity.Duration,
@@ -363,6 +369,7 @@ public static class DocumentProjection
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
             Changes = references.Changes.Of(entity),
+            Constants = references.Changes.Constants(entity),
         },
 
         EntityType.Glyph => new GlyphDocument
@@ -373,6 +380,7 @@ public static class DocumentProjection
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             MaxRank = entity.AbilityMaxRank,
             Slots = entity.PoolSlots,
@@ -399,6 +407,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             RankRuns = entity.RankRuns,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
@@ -420,6 +429,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             RankRuns = entity.RankRuns,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
@@ -441,6 +451,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             RankRuns = entity.RankRuns,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
@@ -462,6 +473,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             RankRuns = entity.RankRuns,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
@@ -513,6 +525,7 @@ public static class DocumentProjection
             CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             Schools = Schools(entity.Tags),
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
@@ -527,10 +540,12 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
             Changes = references.Changes.Of(entity),
+            Constants = references.Changes.Constants(entity),
         },
 
         EntityType.RelicPassive => new RelicPassiveDocument
@@ -542,6 +557,7 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
             Generates = Generated(entity),
@@ -664,6 +680,52 @@ public static class DocumentProjection
                 .OrderBy(spent => Spends(text ?? string.Empty, spent.Key))
                 .ThenBy(spent => spent.Key, StringComparer.Ordinal)
                 .Select(spent => spent.Value with { Key = spent.Key })];
+
+    private static IReadOnlyDictionary<string, TuningReference>? Tuned(Entity entity, References references)
+    {
+        var tuned = new SortedDictionary<string, TuningReference>(StringComparer.Ordinal);
+
+        var rows = (entity.Placeholders?.Values ?? [])
+            .SelectMany(placeholder => placeholder.Constants?.Keys ?? [])
+            .Concat(references.Changes.Constants(entity)?.Keys ?? []);
+
+        foreach (var row in rows)
+        {
+            if (!tuned.ContainsKey(row) && references.Changes.Reference(row, entity, references) is { } reference)
+            {
+                tuned[row] = reference;
+            }
+        }
+
+        foreach (var (group, leaves) in entity.Talents ?? new Dictionary<string, IReadOnlyDictionary<string, object?>>())
+        {
+            foreach (var leaf in leaves.Keys)
+            {
+                var relative = $"{group}.{leaf}";
+                var row = (entity.Rows?.Keys ?? []).FirstOrDefault(key =>
+                    key.EndsWith("." + relative, StringComparison.OrdinalIgnoreCase));
+
+                if (row is not null && references.Changes.Reference(row, entity, references) is { } reference)
+                {
+                    tuned[relative] = reference;
+                }
+                else if (Gate(entity, group) is { } gate && references.Changes.Holding(gate) is [var (type, id)])
+                {
+                    tuned[relative] = new TuningReference(ModifierIndex.Fold(leaf)) { Talent = references.Of(type, id) };
+                }
+                else if (references.Changes.TalentNamed(entity, group, references) is { } talent)
+                {
+                    tuned[relative] = new TuningReference(ModifierIndex.Fold(leaf)) { Talent = talent };
+                }
+            }
+        }
+
+        return tuned.Count == 0 ? null : tuned;
+    }
+
+    private static string? Gate(Entity entity, string group) =>
+        entity.TalentGates?.GetValueOrDefault(group) ??
+        (entity.GatedModifiers?.Keys ?? []).FirstOrDefault(tag => tag.EndsWith("." + group, StringComparison.Ordinal));
 
     private static string Spends(Entity entity) =>
         string.Join('\n', new[] { entity.Description }.Concat(entity.Detail ?? []).OfType<string>());

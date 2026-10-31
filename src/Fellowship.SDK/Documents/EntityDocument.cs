@@ -12,6 +12,8 @@ public abstract class EntityDocument
     public string? Name { get; init; }
 
     public bool? EnabledInGame { get; init; }
+
+    public IReadOnlyDictionary<string, Models.TuningReference>? Tuning { get; init; }
 }
 
 public static class EntityDocuments

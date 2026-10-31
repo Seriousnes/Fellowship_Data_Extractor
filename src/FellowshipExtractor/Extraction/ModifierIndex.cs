@@ -89,6 +89,8 @@ public sealed partial class ModifierIndex
     private readonly Func<Entity, int?> _partOf;
     private readonly IReadOnlyDictionary<string, double> _healthFractions;
     private readonly Dictionary<string, Key> _owners = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Key> _heroes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _codenames = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Key> _assets = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<Key, Entity> _entities = [];
     private readonly Dictionary<string, HashSet<Key>> _granters = new(StringComparer.Ordinal);
@@ -145,6 +147,11 @@ public sealed partial class ModifierIndex
         foreach (var entity in all)
         {
             _entities.TryAdd(KeyOf(entity), entity);
+            if (entity is { Type: EntityType.Hero, Name: { } hero })
+            {
+                _heroes.TryAdd(HeroNames.LastSegment(hero), KeyOf(entity));
+                if (entity.DisplayName is { } shipped) _codenames.TryAdd(shipped, HeroNames.LastSegment(hero));
+            }
             if (entity.Table is { } table) _byTable.TryAdd((table, entity.NetId!.Value), KeyOf(entity));
         }
 
@@ -573,6 +580,12 @@ public sealed partial class ModifierIndex
         return typed.Count == 0 ? null : [.. typed.Select(record => Record(record, references))];
     }
 
+    public IReadOnlyDictionary<string, double>? Rows(Entity source) =>
+        IsSource(source) && _sourceRows.TryGetValue(KeyOf(source), out var rows) &&
+        rows.Where(row => row.Key.Contains('.')).ToDictionary(StringComparer.Ordinal) is { Count: > 0 } constants
+            ? constants
+            : null;
+
     public IReadOnlyList<EntityReference>? ModifiedBy(Entity entity, DocumentProjection.References references) =>
         entity is { Type: not null, NetId: not null } && _modifiedBy.TryGetValue(KeyOf(entity), out var sources)
             ? [.. sources.Select(source => references.Of(source.Type, source.Id)!)]
@@ -599,13 +612,35 @@ public sealed partial class ModifierIndex
             : null;
 
     public TuningReference Reference(
-        string key, Entity? context, DocumentProjection.References references, object? value = null)
+        string key, Entity? context, DocumentProjection.References references, object? value = null) =>
+        Resolve(key, context, references, value).Reference;
+
+    public TuningReference? Resolved(string key, Entity context, DocumentProjection.References references) =>
+        Resolve(key, context, references, null) is (var reference, true) ? reference : null;
+
+    private (TuningReference Reference, bool Resolved) Resolve(
+        string key, Entity? context, DocumentProjection.References references, object? value)
     {
-        var row = Absolute(key, context?.Tuning);
+        if (key.IndexOf('.') is > 0 and var first && _codenames.TryGetValue(key[..first], out var canonical) &&
+            !_heroes.ContainsKey(key[..first]))
+        {
+            key = canonical + key[first..];
+        }
+
+        var row = Hero(key) is null ? Absolute(key, context?.Tuning) : key;
         var self = context is { Type: { } type, NetId: { } id } ? new Key(type, id) : (Key?)null;
 
         var (scope, owner) = Deepest(row);
         var remainder = scope is null ? TuningNamespace.Relative(row, context?.Tuning) : row[(scope.Length + 1)..];
+        var named = scope is not null || remainder != row || (!row.Contains('.') && !row.Contains('_'));
+
+        if (!named && Hero(row) is var (hero, codename) && row[(codename.Length + 1)..] is var rest &&
+            (!rest.Contains('.') || Untalented(rest.Split('.')[0]).Length == 0))
+        {
+            owner = hero;
+            remainder = rest;
+            named = true;
+        }
 
         EntityReference? talent = null;
 
@@ -616,11 +651,16 @@ public sealed partial class ModifierIndex
             var marker = $"{segment[1..]}{name}.";
             var within = remainder.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
 
-            if (remainder.StartsWith(marker, StringComparison.OrdinalIgnoreCase))
+            if (!named && row.IndexOf(segment + name + ".", StringComparison.OrdinalIgnoreCase) is > 0 and var at)
+            {
+                remainder = found == self ? row[(at + segment.Length)..] : row[(at + segment.Length + name.Length + 1)..];
+                named = true;
+            }
+            else if (found != self && remainder.StartsWith(marker, StringComparison.OrdinalIgnoreCase))
             {
                 remainder = remainder[marker.Length..];
             }
-            else if (within > 0 && remainder[within - 1] == '.')
+            else if (found != self && within > 0 && remainder[within - 1] == '.')
             {
                 remainder = remainder[..(within - 1)] + "." + remainder[(within + marker.Length)..];
             }
@@ -629,19 +669,39 @@ public sealed partial class ModifierIndex
         {
             talent = references.Of(claimer.Type, claimer.Id);
 
-            if (row.StartsWith(claimed + ".", StringComparison.OrdinalIgnoreCase))
+            if ((claimer != self || !named) && row.StartsWith(claimed + ".", StringComparison.OrdinalIgnoreCase))
             {
-                remainder = row[(claimed.Length + 1)..];
+                remainder = claimer == self ? $"{claimed.Split('.')[^1]}.{row[(claimed.Length + 1)..]}" : row[(claimed.Length + 1)..];
+                named = true;
             }
         }
 
-        return new TuningReference(Fold(remainder))
+        if (!named && self is { } source && _sourceRows.TryGetValue(source, out var own) && own.ContainsKey(row))
+        {
+            owner = null;
+            remainder = row[(row.LastIndexOf('.') + 1)..];
+            named = true;
+        }
+
+        if (owner is { } unnamed && _entities.GetValueOrDefault(unnamed)?.DisplayName is null &&
+            _parents.TryGetValue(unnamed, out var parent))
+        {
+            owner = parent;
+        }
+
+        return (new TuningReference(Fold(Untalented(remainder)))
         {
             Owner = owner is { } held && held != self ? references.Of(held.Type, held.Id) : null,
             Talent = talent,
             Value = value,
-        };
+        }, named);
     }
+
+    private (Key Hero, string Codename)? Hero(string row) =>
+        row.IndexOf('.') is > 0 and var dot && _heroes.TryGetValue(row[..dot], out var hero) ? (hero, row[..dot]) : null;
+
+    private static string Untalented(string path) =>
+        string.Join('.', path.Split('.').Where(part => TalentSegments.All(segment => !segment.Trim('.').Equals(part, StringComparison.OrdinalIgnoreCase))));
 
     public TuningReference? Located(string asset, string name, DocumentProjection.References references) =>
         _assets.TryGetValue(asset, out var owner)
@@ -760,6 +820,12 @@ public sealed partial class ModifierIndex
             ? (only, scope)
             : null;
     }
+
+    public EntityReference? TalentNamed(Entity context, string name, DocumentProjection.References references) =>
+        (context.Tuning ?? (context.OwningHeroes is [var hero] ? _codenames.GetValueOrDefault(hero) : null)) is { } scope &&
+        TalentNamed(scope, name) is { } found
+            ? references.Of(found.Type, found.Id)
+            : null;
 
     private Key? TalentNamed(string scope, string name)
     {
