@@ -388,6 +388,26 @@ public sealed record RelicPassiveTooltipRequest
     public bool? Mobile { get; init; }
 }
 
+/// <summary>Tooltip for a dungeon affix.</summary>
+public sealed record DungeonAffixTooltipRequest
+{
+    /// <summary>The entity type whose tooltip this request draws.</summary>
+    public static EntityType Type => EntityType.DungeonAffix;
+
+    /// <summary>Draw the entity's texture beside the card. A card that draws its texture inside ignores it.</summary>
+    [Description(
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
+    /// <summary>
+    /// Wrap the card in the chrome a phone draws it in: a scrim, a close button and a link to its page.
+    /// </summary>
+    [Description(
+        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
+        "and a link to its page.")]
+    public bool? Mobile { get; init; }
+}
+
 /// <summary>Tooltip for a legendary power.</summary>
 public sealed record LegendaryPowerTooltipRequest
 {

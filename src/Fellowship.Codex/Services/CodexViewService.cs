@@ -221,6 +221,7 @@ public sealed class CodexViewService(
             EntityType.GemAbility => Body(new GemAbilityTooltipRequest { ShowIcon = icon }),
             EntityType.Item => Body(new ItemTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.LegendaryPower => Body(new LegendaryPowerTooltipRequest { ShowIcon = icon }),
+            EntityType.DungeonAffix => Body(new DungeonAffixTooltipRequest { ShowIcon = icon }),
             EntityType.RelicPassive => Body(new RelicPassiveTooltipRequest { ShowIcon = icon }),
             EntityType.Mount => Body(new MountTooltipRequest { ShowIcon = icon }),
             EntityType.RelicPower => Body(new RelicPowerTooltipRequest { ShowIcon = icon }),

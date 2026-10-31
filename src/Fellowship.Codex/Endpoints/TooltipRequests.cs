@@ -128,6 +128,9 @@ public static class TooltipRequests
     public static TooltipQuery Read(LegendaryPowerTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error);
 
+    public static TooltipQuery Read(DungeonAffixTooltipRequest? request, out string? error) =>
+        Read(request?.ShowIcon, request?.Mobile, out error);
+
     public static TooltipQuery Read(MountTooltipRequest? request, out string? error) =>
         Read(request?.ShowIcon, request?.Mobile, out error);
 

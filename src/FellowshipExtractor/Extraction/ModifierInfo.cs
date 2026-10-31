@@ -15,8 +15,6 @@ public sealed record Modifier(string Tag)
 
     public string? IconPath { get; init; }
 
-    public string? Kind { get; init; }
-
     public int? MinimumHeroRank { get; init; }
 }
 
@@ -25,8 +23,6 @@ public sealed class ModifierInfo
     public const string RowStructure = "/Script/fellowship.CRModifierInfoDataRow";
     public const string Table = "Modifiers";
 
-    private const string KindEnum = "ModifierType";
-
     private const string TagField = "ModifierID";
     private const string DisplayNameField = "DisplayName";
     private const string DescriptionField = "Description";
@@ -34,7 +30,6 @@ public sealed class ModifierInfo
     private const string DynamicDescriptionField = "DynamicDescription";
     private const string DynamicTextField = "Text";
     private const string IconField = "UIIcon";
-    private const string KindField = "Type";
     private const string MinimumHeroRankField = "MinimumHeroRankRequired";
 
     private readonly Dictionary<string, Modifier> _byTag = new(StringComparer.OrdinalIgnoreCase);
@@ -47,11 +42,6 @@ public sealed class ModifierInfo
 
     public ModifierInfo(AbstractFileProvider provider, IReadOnlyList<FAssetData> assets)
     {
-        var mappings = provider.MappingsContainer?.MappingsForGame
-            ?? throw new InvalidOperationException(
-                $"No mappings are loaded, so nothing states which member of {KindEnum} a modifier's {KindField} " +
-                "names.");
-
         foreach (var objectPath in TableFinder.ByRowStructure(assets, RowStructure))
         {
             if (!provider.TryLoadPackageObject<UDataTable>(
@@ -69,7 +59,6 @@ public sealed class ModifierInfo
                     Description = Written(row, DescriptionField) ?? Dynamic(row, DynamicDescriptionField),
                     Row = row,
                     IconPath = PropertyWalk.GetString(row, IconField),
-                    Kind = EnumOrdinals.Member(mappings, KindEnum, PropertyWalk.GetString(row, KindField)),
                     MinimumHeroRank = PropertyWalk.AsOrdinal(
                         PropertyWalk.Get(row, MinimumHeroRankField)?.GenericValue),
                 };

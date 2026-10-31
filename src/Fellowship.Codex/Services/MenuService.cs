@@ -46,6 +46,7 @@ public sealed class MenuService : IMenuService
                 Tab(EntityType.RelicPower),
                 Tab(EntityType.RelicPassive),
                 Tab(EntityType.LegendaryPower),
+                Tab(EntityType.DungeonAffix),
             ])),
 
             Category(Categories.Items, new MenuSection(null,

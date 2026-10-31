@@ -31,6 +31,7 @@
         EntityType.WeaponPower => typeof(WeaponPowers),
         EntityType.RelicPower => typeof(RelicPowers),
         EntityType.RelicPassive => typeof(RelicPassives),
+        EntityType.DungeonAffix => typeof(DungeonAffixes),
         _ => throw new InvalidOperationException(
             $"{PublicTypes.Label(type.Value)} is not a type the codex lists, so no browse component draws it."),
     };

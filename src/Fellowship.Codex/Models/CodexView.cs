@@ -88,6 +88,7 @@ public static class CodexView
         EffectDocument effect => effect.Placeholders ?? [],
         GemAbilityDocument gem => gem.Placeholders ?? [],
         LegendaryPowerDocument legendary => legendary.Placeholders ?? [],
+        DungeonAffixDocument affix => affix.Placeholders ?? [],
         RelicPassiveDocument passive => passive.Placeholders ?? [],
         TalentDocument talent => talent.Placeholders ?? [],
         AugmentationDocument augmentation => augmentation.Placeholders ?? [],

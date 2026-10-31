@@ -240,7 +240,7 @@ public static class DocumentProjection
             Patrols = entity.Patrols,
         },
 
-        EntityType.Modifier => new ModifierDocument
+        EntityType.DungeonAffix => new DungeonAffixDocument
         {
             Id = entity.NetId!.Value,
             Name = Name(entity),
@@ -248,7 +248,6 @@ public static class DocumentProjection
             Description = entity.Description,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Icon = entity.Icon,
-            Kind = entity.ModifierKind,
             Generates = Generated(entity),
             MinimumHeroRank = entity.MinimumHeroRank,
         },

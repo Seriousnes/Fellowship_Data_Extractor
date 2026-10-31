@@ -28,7 +28,7 @@ public static class RecordProjection
                 From((LegendaryPowerDocument)document, view, origin),
             [EntityType.LegendaryStat] = (document, view, origin) =>
                 From((LegendaryStatDocument)document, view, origin),
-            [EntityType.Modifier] = (document, view, origin) => From((ModifierDocument)document, view, origin),
+            [EntityType.DungeonAffix] = (document, view, origin) => From((DungeonAffixDocument)document, view, origin),
             [EntityType.Mount] = (document, view, origin) => From((MountDocument)document, view, origin),
             [EntityType.MountPower] = (document, view, origin) => From((MountPowerDocument)document, view, origin),
             [EntityType.RelicPower] = (document, view, origin) => From((RelicPowerDocument)document, view, origin),
@@ -391,17 +391,22 @@ public static class RecordProjection
             ScalesOff = Scaling(document.ScalesOff, view),
         };
 
-    public static ModifierRecord From(ModifierDocument document, ICodexViewService view, string origin) => new()
+    public static DungeonAffixRecord From(DungeonAffixDocument document, ICodexViewService view, string origin)
     {
-        Type = EntityType.Modifier,
-        Id = document.Id,
-        Generates = Generated(document.Generates),
-        Name = PublicTypes.NameOf(document),
-        Description = view.PlainText(document.Description, [], []),
-        Icon = Texture(document.Icon, view),
-        Kind = document.Kind,
-        MinimumHeroRank = document.MinimumHeroRank,
-    };
+        var tokens = document.Placeholders ?? [];
+
+        return new DungeonAffixRecord
+        {
+            Type = EntityType.DungeonAffix,
+            Id = document.Id,
+            Generates = Generated(document.Generates),
+            Name = PublicTypes.NameOf(document),
+            Description = view.PlainText(document.Description, tokens, []),
+            Icon = Texture(document.Icon, view),
+            MinimumHeroRank = document.MinimumHeroRank,
+            Placeholders = Tokens(tokens, [], view),
+        };
+    }
 
     public static MountRecord From(MountDocument document, ICodexViewService view, string origin) => new()
     {

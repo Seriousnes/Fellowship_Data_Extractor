@@ -46,6 +46,7 @@ public static class PublicTypes
         (EntityType.RelicPower, "Relic Powers", "relic power", Categories.Spells),
         (EntityType.RelicPassive, "Relic Passives", "relic passive", Categories.Spells),
         (EntityType.LegendaryPower, "Legendary Powers", "legendary power", Categories.Spells),
+        (EntityType.DungeonAffix, "Dungeon Affixes", "dungeon affix", Categories.Spells),
         (EntityType.TalentSlot, "Talent Slots", "talent slot", Categories.Spells),
         (EntityType.MountPower, "Mount Powers", "mount power", Categories.Spells),
         (EntityType.Hero, "Heroes", "hero", Categories.Spells),
@@ -65,7 +66,6 @@ public static class PublicTypes
         (EntityType.ProtectiveEnchant, "Protective Enchants", "protective enchant", Categories.Augmentations),
 
         (EntityType.Dungeon, "Dungeons", "dungeon", Categories.Dungeons),
-        (EntityType.Modifier, "Modifiers", "modifier", Categories.Dungeons),
 
         (EntityType.Creature, "Creatures", "creature", Categories.Npcs),
     ];
@@ -77,7 +77,6 @@ public static class PublicTypes
         EntityType.Hero,
         EntityType.LegendaryStat,
         EntityType.Radiance,
-        EntityType.Modifier,
     ];
 
     private static readonly EntityType[] OwnPage = [EntityType.Hero];
