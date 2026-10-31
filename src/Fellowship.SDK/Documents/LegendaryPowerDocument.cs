@@ -15,4 +15,6 @@ public sealed class LegendaryPowerDocument : EntityDocument
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 
     public IReadOnlyList<Change>? Changes { get; init; }
+
+    public IReadOnlyDictionary<string, double>? Constants { get; init; }
 }

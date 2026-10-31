@@ -84,7 +84,9 @@ public interface ICodexViewService
 
     string? Rarity(EntityDocument document);
 
-    IReadOnlyList<TuningRow> Tuning(IReadOnlyDictionary<string, object?>? rows);
+    IReadOnlyList<TuningRow> Tuning(EntityDocument page, IReadOnlyDictionary<string, object?>? rows);
+
+    string? Named(Fellowship.SDK.Models.EntityReference? reference, EntityDocument page);
 
     IReadOnlyList<TokenReading> Substitutions(EntityDocument document);
 }
@@ -374,70 +376,44 @@ public sealed class CodexViewService(
         return entry is null ? found.ToString() : document is GemDocument ? entry.GemDisplayName : entry.DisplayName;
     }
 
-    public IReadOnlyList<TuningRow> Tuning(IReadOnlyDictionary<string, object?>? rows)
+    public IReadOnlyList<TuningRow> Tuning(EntityDocument page, IReadOnlyDictionary<string, object?>? rows)
     {
-        if (rows is not { Count: > 0 }) return [];
+        if (rows is not { Count: > 0 } || page.Tuning is not { } references) return [];
 
-        var read = rows
-            .Select(row => (Path: Knob(row.Key), Value: Constant(row.Value)))
-            .Where(row => row.Path.Length > 0)
-            .ToList();
+        var listed = new List<TuningRow>(rows.Count);
 
-        var listed = new List<TuningRow>(read.Count);
-
-        foreach (var row in read)
+        foreach (var (key, raw) in rows)
         {
-            var repeats = read.Any(other =>
-                other.Path.Length < row.Path.Length &&
-                row.Path.EndsWith("." + other.Path, StringComparison.Ordinal) &&
-                other.Value == row.Value);
+            if (!references.TryGetValue(key, out var reference) || reference.Name.Length == 0) continue;
 
-            if (repeats) continue;
+            var parts = new List<string>(3);
 
-            var label = Spaced(row.Path);
+            if (Named(reference.Owner, page) is { } owner) parts.Add(owner);
+            if (Named(reference.Talent, page) is { } talent && !parts.Contains(talent)) parts.Add(talent);
 
-            if (listed.Any(other => other.Label == label && other.Value == row.Value)) continue;
+            parts.Add(Spaced(Renamed(reference.Name)));
 
-            listed.Add(new TuningRow(label, row.Value, row.Value == Absent));
+            var label = string.Join(" / ", parts);
+            var value = Constant(raw);
+
+            if (listed.Any(other => other.Label == label && other.Value == value)) continue;
+
+            listed.Add(new TuningRow(label, value, value == Absent));
         }
 
         return listed;
     }
 
+    public string? Named(Fellowship.SDK.Models.EntityReference? reference, EntityDocument page)
+    {
+        if (reference is null || (reference.Type == EntityTypes.TypeOf(page) && reference.Id == page.Id)) return null;
+
+        var name = store.All(reference.Type, reference.Id) is { Count: > 0 } found ? PublicTypes.DisplayNameOf(found[0]) : null;
+
+        return name == page.Name ? null : name;
+    }
+
     private static string Spaced(string knob) => Models.FellowshipCodex.Spaced(knob.Replace('_', ' '));
-
-    private string Knob(string key)
-    {
-        var segments = key.Split('.');
-        var parts = new List<string>(segments.Length);
-
-        for (var at = 0; at < segments.Length; at++)
-        {
-            var segment = segments[at];
-
-            if (NamesAnAsset(segment) || (at == 0 && segment.Contains('_', StringComparison.Ordinal)))
-            {
-                continue;
-            }
-
-            parts.Add(Renamed(segment));
-        }
-
-        return parts.Count > 0 ? string.Join('.', parts) : string.Empty;
-    }
-
-    private static bool NamesAnAsset(string segment)
-    {
-        var underscore = segment.IndexOf('_');
-        if (underscore < 2) return false;
-
-        for (var at = 0; at < underscore; at++)
-        {
-            if (!char.IsUpper(segment[at])) return false;
-        }
-
-        return true;
-    }
 
     private string Renamed(string segment)
     {

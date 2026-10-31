@@ -14,6 +14,8 @@ public sealed class AbilityDocument : EntityDocument
 
     public EntityReference? NamedAfter { get; init; }
 
+    public EntityReference? PartOf { get; init; }
+
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }
