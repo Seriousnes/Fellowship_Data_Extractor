@@ -40,6 +40,7 @@ public static class CodexServices
 
     public static IServiceCollection AddCardServices(this IServiceCollection services)
     {
+        services.AddSingleton<Embeds.CardMarkup>();
         services.AddSingleton<Embeds.TooltipProse>();
         services.AddSingleton<Embeds.CardRenderer>();
 

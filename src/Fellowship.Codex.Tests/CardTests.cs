@@ -57,7 +57,51 @@ public class CardTests(Export export)
         using var bitmap = SKBitmap.Decode(await cards.Render(card, TestContext.Current.CancellationToken));
 
         Assert.Equal(cards.Width, bitmap.Width);
-        Assert.Equal(cards.Height, bitmap.Height);
+        Assert.Equal(cards.Height(card), bitmap.Height);
+    }
+
+    [Fact]
+    public void A_card_is_taller_for_more_text_up_to_the_largest_height()
+    {
+        var card = new CardModel { Name = "Card", Colour = "#FFFFFF", Kind = ["Item"] };
+        var sentence = string.Join(' ', Enumerable.Repeat("Your Weapon Ability generates Spirit Points.", 4));
+
+        var one = cards.Height(card with { Lines = [new CardLine(null, sentence)] });
+        var two = cards.Height(card with { Lines = [new CardLine(null, sentence), new CardLine(null, sentence)] });
+        var many = cards.Height(card with { Lines = [.. Enumerable.Repeat(new CardLine(null, sentence), 40)] });
+
+        Assert.True(one < two);
+        Assert.Equal(CardRenderer.MaxHeight, many, tolerance: 60);
+        Assert.True(many <= CardRenderer.MaxHeight);
+    }
+
+    [Fact]
+    public void Card_markup_keeps_the_text_styles_and_line_breaks()
+    {
+        var markup = services.GetRequiredService<CardMarkup>();
+        var warning = export.Store.Settings.TextStyles["rt.warning"];
+
+        var lines = markup.Lines(
+            "Deals <span class=\"sub\">30%</span> more.\r\n\r\n" +
+            $"<span class=\"rt {TextStyle.CssClass("rt.warning")}\">HEADING</span>\r\nBody text.");
+
+        Assert.Equal(["Deals 30% more.", "HEADING", "Body text."], lines.Select(line => line.Text));
+        Assert.Contains(new CardRun("30%", null, true, false), lines[0].Runs);
+        Assert.Equal(new CardRun("HEADING", "#" + warning.Color, true, warning.Italic), Assert.Single(lines[1].Runs));
+        Assert.False(lines[1].Continues);
+        Assert.True(lines[2].Continues);
+    }
+
+    [Fact]
+    public async Task A_prose_card_colours_the_text_its_tooltip_styles()
+    {
+        var talent = export.Store.Entities.OfType<TalentDocument>()
+            .First(entry => entry.Description?.Contains("<rt.warning>", StringComparison.Ordinal) == true);
+        var warning = "#" + export.Store.Settings.TextStyles["rt.warning"].Color;
+
+        var card = await cards.Card(talent, Query(talent));
+
+        Assert.Contains(card.Lines.SelectMany(line => line.Runs), run => run.Colour == warning);
     }
 
     [Fact]
@@ -74,7 +118,7 @@ public class CardTests(Export export)
         using var drawn = SKBitmap.Decode(await cards.Render(card, TestContext.Current.CancellationToken));
         using var bare = SKBitmap.Decode(await cards.Render(card with { Icon = [] }, TestContext.Current.CancellationToken));
 
-        var centre = cards.Height / 2;
+        var centre = cards.Height(card) / 2;
 
         Assert.NotEqual(bare.GetPixel(centre, centre), drawn.GetPixel(centre, centre));
     }
