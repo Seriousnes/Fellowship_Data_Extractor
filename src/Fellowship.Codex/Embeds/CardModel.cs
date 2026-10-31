@@ -2,8 +2,6 @@ namespace Fellowship.Codex.Embeds;
 
 public sealed record CardModel
 {
-    public const int Rows = 2;
-
     public const string Separator = " · ";
 
     public const string LeadMark = ": ";

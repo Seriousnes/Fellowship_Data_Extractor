@@ -9,7 +9,7 @@ public interface ICardService
 {
     int Width { get; }
 
-    int Height { get; }
+    int Height(CardModel card);
 
     Task<CardModel> Card(EntityDocument document, TooltipQuery query);
 
@@ -22,7 +22,7 @@ public sealed class CardService(IEnumerable<IEntityCard> cards, CardRenderer ren
 
     public int Width => CardRenderer.Width;
 
-    public int Height => CardRenderer.Height;
+    public int Height(CardModel card) => CardRenderer.Height(card);
 
     public Task<CardModel> Card(EntityDocument document, TooltipQuery query) =>
         byType.TryGetValue(EntityTypes.TypeOf(document), out var card)

@@ -5,7 +5,7 @@ using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Embeds;
 
-public sealed class ItemCard(ICodexViewService ui, ITooltipViewService tips) : EntityCard<ItemDocument>(ui)
+public sealed class ItemCard(ICodexViewService ui, ITooltipViewService tips, CardMarkup markup) : EntityCard<ItemDocument>(ui)
 {
     public const string ItemLevel = "Item Level";
 
@@ -43,18 +43,16 @@ public sealed class ItemCard(ICodexViewService ui, ITooltipViewService tips) : E
 
         if (tips.Granted(entity) is { } granted && PublicTypes.DisplayNameOf(granted) is { } name)
         {
-            lines.Add(new CardLine(name, Prose(granted, query, hero) ?? string.Empty));
+            lines.AddRange(markup.Lines(Prose(granted, query, hero) ?? string.Empty, name));
         }
 
-        if (Prose(entity, query, hero) is { } description) lines.Add(new CardLine(null, description));
+        if (Prose(entity, query, hero) is { } description) lines.AddRange(markup.Lines(description));
 
         return Task.FromResult<IReadOnlyList<CardLine>>(lines);
     }
 
     private string? Prose(EntityDocument document, TooltipQuery query, HeroEntry? hero) =>
         DocumentFields.Text(document, nameof(AbilityDocument.Description)) is { } text
-            ? CardText.Plain(
-                tips.Text(text, CodexView.PlaceholdersOf(document), query, hero, FellowshipCodex.Schools(document)).Value,
-                string.Empty)
+            ? tips.Text(text, CodexView.PlaceholdersOf(document), query, hero, FellowshipCodex.Schools(document)).Value
             : null;
 }

@@ -7,7 +7,7 @@ using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Embeds;
 
-public sealed partial class TooltipProse(IFragmentService fragments, IEntityStoreService store)
+public sealed partial class TooltipProse(IFragmentService fragments, IEntityStoreService store, CardMarkup markup)
 {
     public async Task<IReadOnlyList<CardLine>> Lines(EntityDocument document, TooltipQuery query)
     {
@@ -31,10 +31,7 @@ public sealed partial class TooltipProse(IFragmentService fragments, IEntityStor
                 continue;
             }
 
-            if (CardText.Plain(match.Groups["prose"].Value, string.Empty) is { Length: > 0 } line)
-            {
-                lines.Add(new CardLine(null, line));
-            }
+            lines.AddRange(markup.Lines(match.Groups["prose"].Value));
         }
 
         if (lines.Count == 0 && facts.Count > 0) lines.Add(new CardLine(null, string.Join(", ", facts)));

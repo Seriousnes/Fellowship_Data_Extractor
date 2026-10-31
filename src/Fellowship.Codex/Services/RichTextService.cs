@@ -21,6 +21,10 @@ public interface IRichTextService
 
 public sealed class RichTextService(IReadOnlyDictionary<string, TextStyle> styles) : IRichTextService
 {
+    public const string SubstitutionClass = "sub";
+
+    public const string UnresolvedClass = "tok";
+
     private const string CloseTag = "</>";
 
     public IReadOnlyDictionary<string, TextStyle> Styles => styles;
@@ -126,13 +130,13 @@ public sealed class RichTextService(IReadOnlyDictionary<string, TextStyle> style
             }
             else if (value.Resolved)
             {
-                html.Append("<span class=\"sub\"");
+                html.Append("<span class=\"").Append(SubstitutionClass).Append('"');
                 Titled(html, value.Title);
                 html.Append('>').Append(value.Html ?? WebUtility.HtmlEncode(value.Text)).Append("</span>");
             }
             else
             {
-                html.Append("<span class=\"tok\"");
+                html.Append("<span class=\"").Append(UnresolvedClass).Append('"');
                 Titled(html, value.Title);
                 html.Append('>').Append(WebUtility.HtmlEncode(value.Text)).Append("</span>");
             }
