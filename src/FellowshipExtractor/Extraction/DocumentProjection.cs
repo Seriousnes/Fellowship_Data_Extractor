@@ -711,7 +711,19 @@ public static class DocumentProjection
                 }
                 else if (Gate(entity, group) is { } gate && references.Changes.Holding(gate) is [var (type, id)])
                 {
-                    tuned[relative] = new TuningReference(ModifierIndex.Fold(leaf)) { Talent = references.Of(type, id) };
+                    var applied = (entity.GatedModifiers?.GetValueOrDefault(gate) ?? [])
+                        .Where(modifier => modifier is { Op: not null, Row: { } read } &&
+                                           read.EndsWith("." + relative, StringComparison.OrdinalIgnoreCase))
+                        .Select(modifier => (modifier.Attribute, Op: modifier.Op!))
+                        .Distinct()
+                        .ToArray();
+
+                    tuned[relative] = new TuningReference(ModifierIndex.Fold(leaf))
+                    {
+                        Talent = references.Of(type, id),
+                        Attribute = applied is [var single] ? single.Attribute : null,
+                        Op = applied is [var only] ? only.Op : null,
+                    };
                 }
                 else if (references.Changes.TalentNamed(entity, group, references) is { } talent)
                 {

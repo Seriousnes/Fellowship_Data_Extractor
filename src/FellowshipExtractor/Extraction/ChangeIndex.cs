@@ -196,6 +196,12 @@ public sealed class ChangeIndex
 
     private void Record(EntityReference source, Change change)
     {
+        if (ModifierOps.Unchanged(change.Op, change.Value))
+        {
+            Count($"{change.Op} leaving {change.Field} unchanged");
+            return;
+        }
+
         var key = (source.Type, source.Id);
 
         if (!_changes.TryGetValue(key, out var changes)) _changes[key] = changes = [];

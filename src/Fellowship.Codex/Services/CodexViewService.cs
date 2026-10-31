@@ -385,13 +385,19 @@ public sealed class CodexViewService(
         foreach (var (key, raw) in rows)
         {
             if (!references.TryGetValue(key, out var reference) || reference.Name.Length == 0) continue;
+            if (Numeric(raw) is { } number && Fellowship.SDK.Models.ModifierOps.Unchanged(reference.Op, number)) continue;
 
             var parts = new List<string>(3);
 
             if (Named(reference.Owner, page) is { } owner) parts.Add(owner);
             if (Named(reference.Talent, page) is { } talent && !parts.Contains(talent)) parts.Add(talent);
 
-            parts.Add(Spaced(Renamed(reference.Name)));
+            var shared = references.Values.Any(other =>
+                other.Name != reference.Name && other.Attribute == reference.Attribute && other.Op == reference.Op);
+
+            parts.Add(reference is { Attribute: { } attribute, Op: { } op } && !shared
+                ? $"{Spaced(attribute)} {Spaced(op)}"
+                : Spaced(Renamed(reference.Name)));
 
             var label = string.Join(" / ", parts);
             var value = Constant(raw);
@@ -414,6 +420,13 @@ public sealed class CodexViewService(
     }
 
     private static string Spaced(string knob) => Models.FellowshipCodex.Spaced(knob.Replace('_', ' '));
+
+    private static double? Numeric(object? raw) => raw switch
+    {
+        double number => number,
+        JsonElement { ValueKind: JsonValueKind.Number } element => element.GetDouble(),
+        _ => null,
+    };
 
     private string Renamed(string segment)
     {

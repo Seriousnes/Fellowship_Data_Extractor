@@ -91,6 +91,8 @@ public sealed partial class ModifierIndex
     private readonly Dictionary<string, Key> _owners = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Key> _heroes = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _codenames = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, SortedSet<(string Attribute, string Op)>> _modified = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _computed = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Key> _assets = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<Key, Entity> _entities = [];
     private readonly Dictionary<string, HashSet<Key>> _granters = new(StringComparer.Ordinal);
@@ -153,6 +155,17 @@ public sealed partial class ModifierIndex
                 if (entity.DisplayName is { } shipped) _codenames.TryAdd(shipped, HeroNames.LastSegment(hero));
             }
             if (entity.Table is { } table) _byTable.TryAdd((table, entity.NetId!.Value), KeyOf(entity));
+
+            foreach (var (row, uses) in entity.RowUses ?? new Dictionary<string, IReadOnlyList<string>>())
+            {
+                if (uses.Any(use => use.StartsWith(RowSinks.SinkUse, StringComparison.Ordinal))) _computed.Add(row);
+
+                foreach (var pair in uses.Select(Applied).OfType<(string, string)>())
+                {
+                    if (!_modified.TryGetValue(row, out var held)) _modified[row] = held = [];
+                    held.Add(pair);
+                }
+            }
         }
 
         var senders = new Dictionary<string, SortedSet<Key>>(StringComparer.Ordinal);
@@ -693,8 +706,27 @@ public sealed partial class ModifierIndex
         {
             Owner = owner is { } held && held != self ? references.Of(held.Type, held.Id) : null,
             Talent = talent,
+            Attribute = Modified(row)?.Attribute,
+            Op = Modified(row)?.Op,
             Value = value,
         }, named);
+    }
+
+    /// <summary>
+    /// The one attribute and op every gameplay effect modifier reading <paramref name="row"/> applies it under, for a
+    /// row no Blueprint reads. A Blueprint can compute a different magnitude from the row before any modifier applies it.
+    /// </summary>
+    public (string Attribute, string Op)? Modified(string row) =>
+        !_computed.Contains(row) && _modified.TryGetValue(row, out var applied) && applied.Count == 1 ? applied.Min : null;
+
+    public static (string Attribute, string Op)? Applied(string use)
+    {
+        if (!use.StartsWith(RowSinks.AttributeUse, StringComparison.Ordinal)) return null;
+
+        var stated = use[RowSinks.AttributeUse.Length..];
+        var gate = stated.IndexOf(RowSinks.GateMark, StringComparison.Ordinal);
+
+        return (gate < 0 ? stated : stated[..gate]).Split('|') is [var attribute, var op, ..] ? (attribute, op) : null;
     }
 
     private (Key Hero, string Codename)? Hero(string row) =>
