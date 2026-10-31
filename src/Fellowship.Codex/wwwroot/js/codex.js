@@ -552,6 +552,27 @@ document.addEventListener('keydown', event => {
     box.select();
 });
 
+// The omnibox is prerendered, and the circuit replaces the prerendered input when it starts. Text typed
+// into the prerendered input is held here until the interactive omnibox adopts it.
+const adopted = new WeakSet();
+let carried = null;
+
+function hold(box) {
+    if (!(box instanceof HTMLInputElement) || box.id !== 'cx-omnibox' || adopted.has(box)) return;
+    carried = box.value ? { text: box.value, focused: document.activeElement === box } : null;
+}
+
+hold(document.getElementById('cx-omnibox'));
+
+document.addEventListener('input', event => hold(event.target));
+
+export function adopt(box) {
+    adopted.add(box);
+    const taken = carried;
+    carried = null;
+    return taken;
+}
+
 window.addEventListener('scroll', () => { if (anchored) place(anchored); }, { passive: true, capture: true });
 
 window.addEventListener('resize', () => {

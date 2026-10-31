@@ -1,6 +1,8 @@
 @rendermode InteractiveServer
+@using Microsoft.JSInterop
 @inject ISuggestionService Suggest
 @inject NavigationManager Nav
+@inject IJSRuntime Js
 @implements IDisposable
 
 <div class="@Classes" role="search">
@@ -137,7 +139,19 @@
 
     protected override async Task OnAfterRenderAsync(bool first)
     {
-        if (first && Hero) await box.FocusAsync();
+        if (!first) return;
+
+        await using var codex = await Js.InvokeAsync<IJSObjectReference>("import", "/js/codex.js");
+        var carried = await codex.InvokeAsync<Carried?>("adopt", box);
+
+        if (carried is { } held && held.Text != typed)
+        {
+            typed = held.Text;
+            await Typing();
+            StateHasChanged();
+        }
+
+        if (Hero || carried is { Focused: true }) await box.FocusAsync();
     }
 
     private async Task Typing()
@@ -236,6 +250,8 @@
         showing = false;
         active = -1;
     }
+
+    private sealed record Carried(string Text, bool Focused);
 
     public void Dispose()
     {
