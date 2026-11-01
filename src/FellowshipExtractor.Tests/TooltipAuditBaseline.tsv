@@ -115,9 +115,6 @@ talent	672	0	+65%	Missing	The Motherload	Your Chain Lightning deals +65% increas
 talent	678	1	2	Contradicted	Apocalyptic Surge	as 1.5 seconds reduced cast time and grants you 2 stacks of Apocalyptic Surge for 18 seconds, up	castTime Subtract 1.5
 legendary-power	698	1	25%	Contradicted	Bleeding Hearts	Your Heart Splitter ability has 2 Charges and a 25% chance to strike the target 1 additional time.	charges Set 2
 legendary-power	698	3	80%	Missing	Bleeding Hearts	tical Strike chance when striking targets above 80% health.	
-glyph	703	1	+10%	Contradicted	The Wayfarer	Every {} you gain {}, granting you +6% / +10% / +16% / +25% Haste for {}. Each time you use y	Haste Additive 0.06
-glyph	703	2	+16%	Contradicted	The Wayfarer	Every {} you gain {}, granting you +6% / +10% / +16% / +25% Haste for {}. Each time you use your [CO	Haste Additive 0.06
-glyph	703	3	+25%	Contradicted	The Wayfarer	} you gain {}, granting you +6% / +10% / +16% / +25% Haste for {}. Each time you use your [CORE] abi	Haste Additive 0.06
 glyph	703	4	0.2	Missing	The Wayfarer	the time to {}'s next application is reduced by 0.2 to 8 seconds, relative to the cooldown of the [	
 glyph	703	5	8	Missing	The Wayfarer	e to {}'s next application is reduced by 0.2 to 8 seconds, relative to the cooldown of the [CORE]	
 glyph	703	6	0.2	Missing	The Wayfarer	bility used. Abilities with no cooldown provide 0.2 seconds reduction.	
@@ -534,7 +531,6 @@ effect	2088	1	2	Missing	Primed Serrated Blades	s a bleed that deals 103% Strengt
 effect	2088	2	12	Missing	Primed Serrated Blades	deals 103% Strength damage every 2 seconds over 12 seconds.	
 effect	2114	0	10%	Missing	Stone Skin	Applies 10% of exploded enemy health over 6 seconds. Does n	
 effect	2119	0	20%	Missing	Grand Melee	on.    Allies within a large radius of you take 20% reduced magic damage.	
-effect	2141	0	8	Missing	Trait : Focused Haste	Your Haste rating is increased for 8 seconds.	
 effect	2151	0	10	Missing	Latent Resurgence	1 stack of Latent Resurgence up to a maximum of 10 stacks.    When your health dips below 50% all	
 effect	2151	1	50%	Missing	Latent Resurgence	um of 10 stacks.    When your health dips below 50% all stacks of Latent Resurgence are consumed an	
 effect	2152	0	50%	Missing	Latent Resurgence	When your health dips below 50%, all stacks of Latent Resurgence are consumed a	
@@ -618,10 +614,7 @@ effect	3275	1	10	Missing	Grounded Spirit	till, you gain 1 stack of Grounded Spir
 sigil	1	0	60	Missing	Hidden Power	chance to grant you 1 stack of Hidden Power for 60 seconds. When you have 5 stacks, Hidden Power i	
 sigil	1	2	15	Missing	Hidden Power	nsumed and Power Revealed is granted to you for 15 seconds, increasing your Main Stat by 7.2% / 12	
 sigil	1	7	2.6	Missing	Hidden Power	acks while Power Revealed is active on you.    (2.6 PPM)	
-sigil	2	8	10	Contradicted	Inspired Allegiance	onds and grant you and 1 / 2 / 3 / 3 allies 6 / 10 / 13 / 17 Haste rating for 8 seconds.    (1.2 P	HasteRating Additive 6
-sigil	2	9	13	Contradicted	Inspired Allegiance	and grant you and 1 / 2 / 3 / 3 allies 6 / 10 / 13 / 17 Haste rating for 8 seconds.    (1.2 PPM)	HasteRating Additive 6
-sigil	2	10	17	Contradicted	Inspired Allegiance	rant you and 1 / 2 / 3 / 3 allies 6 / 10 / 13 / 17 Haste rating for 8 seconds.    (1.2 PPM)	HasteRating Additive 6
-sigil	2	12	1.2	Contradicted	Inspired Allegiance	/ 10 / 13 / 17 Haste rating for 8 seconds.    (1.2 PPM)	HasteRating Additive 6
+sigil	2	12	1.2	Contradicted	Inspired Allegiance	/ 10 / 13 / 17 Haste rating for 8 seconds.    (1.2 PPM)	HasteRating Additive 6; HasteRating Additive 10; HasteRating Additive 13; HasteRating Additive 17
 sigil	4	5	12	Missing	Seized Opportunity	in 21 / 39 / 57 / 75 Critical Strike rating for 12 seconds.    You can not gain stacks while Seize	
 sigil	5	4	8	Missing	Vengeful Soul	your Main Stat by 3.0% / 5.1% / 7.2% / 9.3% for 8 seconds.    If you are below 50% health when Ve	
 sigil	5	6	370%	Missing	Vengeful Soul	ers, you are also healed for an amount equal to 370% / 630% / 890% / 1150% of your Main Stat over 6	
@@ -650,12 +643,7 @@ aspect	33	11	40%	Missing	Diamond Strike	easing its Damage and Healing to that ta
 aspect	33	13	+35%	Missing	Diamond Strike	5 times.    Diamond Strike gains an additional +35% increased Damage and Healing for every stack of	
 aspect	34	4	800%	Missing	Emerald Judgement	, knocking that enemy into the air and dealing  800% Main Stat damage to them.    Emerald Judgement	
 aspect	35	4	1.3	Missing	Ruby Storm	4.0% / 5.4% / 7.0% of your Current Health.    (1.3 PPM)	
-sigil	42	1	8	Contradicted	Hunter's Focus	Your targeted offensive abilities grant you 4 / 8 / 12 / 16 Haste rating for 8 seconds, stacking	HasteRating Additive 4
-sigil	42	2	12	Contradicted	Hunter's Focus	targeted offensive abilities grant you 4 / 8 / 12 / 16 Haste rating for 8 seconds, stacking up to	HasteRating Additive 4
-sigil	42	3	16	Contradicted	Hunter's Focus	eted offensive abilities grant you 4 / 8 / 12 / 16 Haste rating for 8 seconds, stacking up to 5 ti	HasteRating Additive 4
 sigil	46	0	3	Missing	Patient Soul	Standing still for 3 seconds grants you Patient Soul, increasing you	
-sigil	46	3	22	Contradicted	Patient Soul	Health by 5% and your Expertise rating by 12 / 22 / 32 / 42.    Patient Soul persists for 6 secon	ExpertiseRating Additive 12
-sigil	46	4	32	Contradicted	Patient Soul	th by 5% and your Expertise rating by 12 / 22 / 32 / 42.    Patient Soul persists for 6 seconds af	ExpertiseRating Additive 12
 sigil	46	6	6	Missing	Patient Soul	12 / 22 / 32 / 42.    Patient Soul persists for 6 seconds after you start moving.	
 aspect	47	0	2.5	Missing	Visions of Grandeur	Your Weapon Ability generates 2.5 Spirit Points multiplied by a value equal to yo	
 aspect	47	1	30	Missing	Visions of Grandeur	r Weapon Ability's default cooldown, divided by 30.    Your Weapon Ability's Cooldown is reduced b	

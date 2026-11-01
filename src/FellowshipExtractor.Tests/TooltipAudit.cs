@@ -176,7 +176,7 @@ public static partial class TooltipAudit
                     var label = (held["field"] ?? held["attribute"])?.GetValue<string>() ?? "";
                     var percent = held["percent"]?.GetValue<bool>() == true;
 
-                    foreach (var value in Values(held["value"]))
+                    foreach (var value in Values(held["value"]).Concat(Values(held["ranks"])))
                     {
                         foreach (var reading in ShownBy(op, value, percent)) shown.Add(new Shown(reading, label, op, value));
                         if (op == "Set") constants.Add(value);
@@ -185,7 +185,7 @@ public static partial class TooltipAudit
 
                 foreach (var (key, child) in held)
                 {
-                    if (Skipped.Contains(key) || (op is not null && key == "value")) continue;
+                    if (Skipped.Contains(key) || (op is not null && key is "value" or "ranks")) continue;
                     Walk(child, shown, constants);
                 }
 
