@@ -54,6 +54,8 @@ public sealed class ConfigIni
 
     public string Section { get; }
 
+    public IEnumerable<string> Keys => _bySection.Keys;
+
     public static ConfigIni Read(AbstractFileProvider provider, string path, string section)
     {
         if (!provider.Files.TryGetValue(path, out var file))

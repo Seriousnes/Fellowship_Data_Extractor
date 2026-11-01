@@ -98,6 +98,7 @@ public static class EffectModifiers
                     Value = read.Value,
                     ValueLow = read.Low,
                     ValueHigh = read.High,
+                Ranks = read.Ranks,
                     Coefficient = scaling?.Coefficient,
                     ScalesOff = scaling?.Attribute is { } captured ? [captured] : null,
                     Row = Row(slot.Magnitude, kind),
@@ -147,6 +148,7 @@ public static class EffectModifiers
                 Value = read.Value,
                 ValueLow = read.Low,
                 ValueHigh = read.High,
+                Ranks = read.Ranks,
                 Coefficient = scaling?.Coefficient,
                 ScalesOff = scaling?.Attribute is { } captured ? [captured] : null,
                 Row = Row(magnitude, kind),
@@ -317,6 +319,9 @@ public static class EffectModifiers
             return PropertyWalk.GetStruct(magnitude, ScalableField) is { } scalable &&
                    MagnitudeCalculations.Scalable(scalable, constants) is { } value
                 ? new MagnitudeReading(Math.Round(value, 10), null, null)
+                {
+                    Ranks = MagnitudeCalculations.ScalableRanks(scalable, constants),
+                }
                 : MagnitudeReading.None;
         }
 

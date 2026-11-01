@@ -79,6 +79,8 @@ public sealed record Entity
 
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 
+    public IReadOnlyList<Threshold>? Thresholds { get; init; }
+
     [JsonIgnore]
     public string? Tuning { get; init; }
 
@@ -109,6 +111,10 @@ public sealed record Entity
 
     public int? MaxStacks { get; init; }
 
+    public int? Ticks { get; init; }
+
+    public IReadOnlyList<SetByCallerScaling>? SetByCallerScaling { get; init; }
+
     public bool? Infinite { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
@@ -132,6 +138,14 @@ public sealed record Entity
     public IReadOnlyDictionary<string, double>? NamespaceRows { get; init; }
 
     public IReadOnlyDictionary<string, IReadOnlyList<string>>? GatedAdds { get; init; }
+
+    /// <summary>Effects the entity's graph applies only behind a test of a talent tag, keyed by that tag.</summary>
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, IReadOnlyList<string>>? GatedEffects { get; init; }
+
+    /// <summary>Effects the entity's properties and graph reference, by asset name.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<string>? ReachedEffects { get; init; }
 
     public IReadOnlyList<string>? TestedTags { get; init; }
 
@@ -199,6 +213,14 @@ public sealed record Entity
 
     [JsonIgnore]
     public IReadOnlyList<string>? GrantedAbilityNames { get; init; }
+
+    /// <summary>Asset name of the Blueprint class the entity's class derives from, where that class is a Blueprint.</summary>
+    [JsonIgnore]
+    public string? ParentClassName { get; init; }
+
+    /// <summary>Effect classes the entity's cost, cooldown and charge properties hold, by asset name.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<string>? TimingEffects { get; init; }
 
 
 

@@ -192,9 +192,17 @@ public sealed class ChangeIndex
             if (entity is not { Type: EntityType.Effect, NetId: { } id, TimeRates: { } rates }) continue;
             if (references.Of(EntityType.Effect, id) is not { } effect) continue;
 
-            var talents = references.At(entity.AppliedBy) is { } applier
-                ? granters.GetValueOrDefault((applier.Type, applier.Id)) ?? []
-                : [];
+            List<EntityReference> talents =
+            [
+                .. references.At(entity.AppliedBy) is { } applier
+                    ? granters.GetValueOrDefault((applier.Type, applier.Id)) ?? []
+                    : [],
+            ];
+
+            foreach (var (type, gating) in _modifiers.GatingSources(entity))
+            {
+                if (references.Of(type, gating) is { } talent && !talents.Contains(talent)) talents.Add(talent);
+            }
 
             foreach (var rate in rates)
             {
@@ -236,11 +244,19 @@ public sealed class ChangeIndex
     public EntityReference? PartOf(Entity ability, DocumentProjection.References references) =>
         _modifiers.PartOf(ability, references);
 
+    public IReadOnlyList<EntityReference>? Named(
+        Entity entity, IEnumerable<string>? names, EntityType type, DocumentProjection.References references) =>
+        _modifiers.Named(entity, names, type, references);
+
     public EntityReference? TalentNamed(Entity context, string name, DocumentProjection.References references) =>
         _modifiers.TalentNamed(context, name, references);
 
     public TuningReference? Reference(string row, Entity context, DocumentProjection.References references) =>
         _modifiers.Resolved(row, context, references);
+
+    /// <summary>The row's reference whether or not a namespace names it, for a row the entity's own asset binds.</summary>
+    public TuningReference Referenced(string row, Entity context, DocumentProjection.References references) =>
+        _modifiers.Reference(row, context, references);
 
     public IReadOnlyList<EntityReference>? ChangedBy(Entity entity, DocumentProjection.References references) =>
         entity is { Type: { } type, NetId: { } id } && references.Of(type, id) is { } self &&
@@ -252,6 +268,16 @@ public sealed class ChangeIndex
         ModifierIndex modifiers, DocumentProjection.References references, string tag, Change change, string? row = null)
     {
         var holding = modifiers.Holding(tag);
+
+        foreach (var (type, id) in modifiers.Granting(tag))
+        {
+            if (type == change.Target.Type && id == change.Target.Id) continue;
+            if (references.Of(type, id) is not { } carrier) continue;
+
+            Record(carrier, row is not null && ModifierOps.Adds(change.Op) && modifiers.Percent(row, type, id)
+                ? change with { Percent = true }
+                : change);
+        }
 
         if (holding.Count == 0)
         {
@@ -281,6 +307,8 @@ public sealed class ChangeIndex
             return;
         }
 
+        change = change with { Result = Resulting(change) };
+
         var key = (source.Type, source.Id);
 
         if (!_changes.TryGetValue(key, out var changes)) _changes[key] = changes = [];
@@ -293,6 +321,46 @@ public sealed class ChangeIndex
         if (!_changedBy.TryGetValue(target, out var sources)) _changedBy[target] = sources = [];
         if (!sources.Any(held => held.Type == source.Type && held.Id == source.Id)) sources.Add(source);
     }
+
+    /// <summary>
+    /// The target's value of the changed field once a factor or term applies, where every entity read for the target
+    /// states the same value for the field.
+    /// </summary>
+    private double? Resulting(Change change)
+    {
+        if (!ModifierOps.Multiplies(change.Op) && !ModifierOps.Adds(change.Op)) return null;
+
+        var stated = (_targets.GetValueOrDefault((change.Target.Type, change.Target.Id)) ?? [])
+            .Select(entity => Stated(entity, change.Field))
+            .OfType<double>()
+            .Distinct()
+            .ToArray();
+
+        if (stated is not [var value]) return null;
+
+        var result = ModifierOps.Multiplies(change.Op)
+            ? value * ModifierOps.Factor(change.Op, change.Value)
+            : value + ModifierOps.Term(change.Op, change.Value);
+
+        return Math.Round(result, 3);
+    }
+
+    private static double? Stated(Entity entity, string field) => field switch
+    {
+        _ when field == CooldownField => entity.Cooldown,
+        _ when field == DurationField => entity.Duration,
+        _ when field == ChannelTimeField => entity.ChannelTime,
+        _ when field == Field(nameof(AbilityDocument.CastTime)) => entity.CastTime,
+        _ when field == Field(nameof(AbilityDocument.ChannelTick)) => entity.ChannelTick,
+        _ when field == Field(nameof(AbilityDocument.Period)) => entity.Period,
+        _ when field == Field(nameof(AbilityDocument.Range)) => entity.Range,
+        _ when field == Field(nameof(AbilityDocument.MinRange)) => entity.MinRange,
+        _ when field == Field(nameof(AbilityDocument.Radius)) => entity.Radius,
+        _ when field == Field(nameof(AbilityDocument.Cost)) => entity.Cost,
+        _ when field == Field(nameof(AbilityDocument.Charges)) => entity.Charges,
+        _ when field == Field(nameof(EffectDocument.MaxStacks)) => entity.MaxStacks,
+        _ => null,
+    };
 
     private bool Projectable(SourceChange record)
     {

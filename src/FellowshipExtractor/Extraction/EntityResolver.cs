@@ -51,6 +51,7 @@ public sealed class EntityResolver
     private readonly EffectCalculationPresets _presets;
     private readonly CooldownScaling _cooldowns;
     private readonly GlobalCooldowns _globalCooldowns;
+    private readonly Thresholds _thresholds;
     private AugmentationIndex? _augmentations;
 
     private readonly Dictionary<string, bool> _spreadSources = new(StringComparer.OrdinalIgnoreCase);
@@ -74,6 +75,14 @@ public sealed class EntityResolver
     private const string MountIdField = "MountID";
     private const string MountRarityField = "Rarity";
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _abilityNames = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Ability properties holding the effect classes for its cost, cooldowns and charges.</summary>
+    private static readonly string[] TimingEffectFields =
+    [
+        "CostGameplayEffectClass", "CooldownGameplayEffectClass", "CooldownEffectBaseClass", "PaddingCooldownEffectBaseClass",
+        "GlobalCooldownGameplayEffectClass", "ChargeGameplayEffectClass",
+    ];
 
     public AbilityPresentationIndex Presentation { get; }
     public EffectIconSources EffectIcons { get; }
@@ -170,6 +179,7 @@ public sealed class EntityResolver
         _presets = new EffectCalculationPresets(provider, _assets);
         _cooldowns = new CooldownScaling(provider, _assets, _constants);
         _globalCooldowns = new GlobalCooldowns(provider, _constants);
+        _thresholds = Thresholds.Read(provider, mappings, _constants);
         _multiplyingOps = Reductions.MultiplyingOps(mappings);
 
         IndexAssets();
@@ -179,6 +189,7 @@ public sealed class EntityResolver
         foreach (var tag in _tags)
         {
             if (tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) _effectNames.Add(tag.Name);
+            if (tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase)) _abilityNames.Add(tag.Name);
         }
 
         _augmentationIds = new AugmentationIds(_tags);
@@ -368,6 +379,8 @@ public sealed class EntityResolver
         entity = WithSpentResource(entity, display, tag, cdo);
         entity = WithGeneratedResources(entity);
         entity = WithSuppliedDuration(entity, cdo, tag);
+        entity = WithTicks(entity, cdo, tag);
+        entity = WithSetByCallerScaling(entity, cdo, tag);
 
         if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
         {
@@ -772,6 +785,33 @@ public sealed class EntityResolver
         return entity with { Duration = duration, DurationGates = recovered.Gates.Count == 0 ? entity.DurationGates : recovered.Gates };
     }
 
+    private const string PeriodicOnApplicationField = "bExecutePeriodicEffectOnApplication";
+
+    /// <summary>
+    /// The effect's periodic executions over its duration: one per whole period, and one on application unless the
+    /// effect or a Blueprint parent sets <c>bExecutePeriodicEffectOnApplication</c> false. The engine's default is
+    /// true. Entropic Burst executes 6 times over 9 seconds at 1.5 seconds, and its talent prints 246% for 0.41 a tick.
+    /// </summary>
+    private Entity WithTicks(Entity entity, UObject? cdo, TagRecord tag)
+    {
+        if (cdo is null || !tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) return entity;
+        if (entity is not { Duration: > 0 and var duration, Period: > 0 and var period } || entity.Infinite == true) return entity;
+
+        var onApplication = ClassDefaults.Inherited(cdo, PeriodicOnApplicationField, _provider)?.GenericValue is not false;
+        var ticks = (int)Math.Floor(duration / period + 1e-9) + (onApplication ? 1 : 0);
+
+        return ticks > 0 ? entity with { Ticks = ticks } : entity;
+    }
+
+    private Entity WithSetByCallerScaling(Entity entity, UObject? cdo, TagRecord tag)
+    {
+        if (cdo is null || !tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase)) return entity;
+
+        var scaling = SetByCallerScalings.Of(cdo, _constants, _provider, HeroAttributes.For, Owners.HeroesOf(tag.Name));
+
+        return scaling.Count == 0 ? entity : entity with { SetByCallerScaling = scaling };
+    }
+
     private Entity WithCreature(Entity entity, TagRecord tag, UObject? cdo)
     {
         var attributes = cdo is null
@@ -923,7 +963,15 @@ public sealed class EntityResolver
         Icon = entity.Icon ?? IconName(modifier.IconPath, icons),
         Placeholders = entity.Placeholders ?? ModifierPlaceholders(modifier),
         MinimumHeroRank = modifier.MinimumHeroRank,
+        ReachedEffects = ActorReferences(modifier.ActorPath, _effectNames),
+        GrantedAbilityNames = ActorReferences(modifier.ActorPath, _abilityNames),
     };
+
+    /// <summary>The names in <paramref name="wanted"/> the modifier actor's properties and graph reference.</summary>
+    private IReadOnlyList<string>? ActorReferences(string? actorPath, IReadOnlySet<string> wanted) =>
+        actorPath is null
+            ? null
+            : Empty([.. AppliedEffects.Find(_provider, actorPath, wanted, new Dictionary<string, string>()).Select(found => found.Name)]);
 
     private Dictionary<string, Placeholder>? ModifierPlaceholders(Modifier modifier)
     {
@@ -1097,6 +1145,7 @@ public sealed class EntityResolver
         var gatedReads = new List<GatedRead>(TagGatedReads.Of(cdo));
         var effectBindings = new Dictionary<string, IReadOnlyList<CurveBinding>>(StringComparer.OrdinalIgnoreCase);
         var effectAdds = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        var reachedEffects = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         var uses = new Dictionary<string, SortedSet<string>>(StringComparer.OrdinalIgnoreCase);
         var supplied = new Dictionary<string, string>(StringComparer.Ordinal);
         var ownRows = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1132,6 +1181,7 @@ public sealed class EntityResolver
                 {
                     var effectName = effectClass.EndsWith("_C", StringComparison.Ordinal) ? effectClass[..^2] : effectClass;
 
+                    reachedEffects.Add(effectName);
                     effectBindings.TryAdd(effectName, effect.Constants ?? []);
                     effectAdds.TryAdd(effectName, [.. TagNames.Of(effect.Default).Added.Where(TagNames.IsTalent)]);
                 }
@@ -1205,6 +1255,7 @@ public sealed class EntityResolver
 
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
         var (baseline, talents) = Numbers.SplitTalents(split.Rest);
+        var beside = Beside(split.Rows, tuning, baseline);
 
         var magnitudes = EffectModifiers.Of(cdo, _provider, _constants, _mappings, CapturedBy(assetName));
         ModifiersRead += magnitudes.Modifiers.Count;
@@ -1397,7 +1448,7 @@ public sealed class EntityResolver
             Range = Number(split, "range"),
             MinRange = Number(split, "minRange"),
             Radius = Number(split, "radius"),
-            Duration = Number(split, "duration"),
+            Duration = Number(split, "duration") ?? StatedDuration(cdo),
             Period = Number(split, "period"),
             CastTimeScalesWithHaste = CastTimeScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
@@ -1409,9 +1460,12 @@ public sealed class EntityResolver
             DurationGates = magnitudes.DurationGates.Count == 0 ? null : magnitudes.DurationGates,
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Generates = Empty(Gains.Of(cdo, assetName)),
+            Thresholds = Empty(_thresholds.Of(cdo)),
             Tuning = tuning,
             Declares = Empty(Bound(bindings)),
-            Constants = baseline.Count == 0 ? null : baseline,
+            Constants = baseline.Count + beside.Count == 0
+                ? null
+                : baseline.Concat(beside).ToDictionary(StringComparer.Ordinal),
             ConstantsByRank = Ranked(split.Rows),
             Talents = talents.Count == 0 ? null : Renamed(talents),
             TalentGates = cdo is null ? null : Empty(TalentGates(cdo, talents.Keys)),
@@ -1444,11 +1498,21 @@ public sealed class EntityResolver
                 ? counts
                 : null,
             GrantedAbilityNames = Empty(AbilityLinks.GrantedAbilities(cdo)),
+            ParentClassName = cdo is null ? null : ClassDefaults.ParentName(cdo),
+            TimingEffects = cdo is null
+                ? null
+                : Empty([.. TimingEffectFields
+                    .Select(field => PropertyWalk.AsString(ClassDefaults.Inherited(cdo, field, _provider)?.GenericValue))
+                    .OfType<string>()
+                    .Where(path => path.Contains('/'))
+                    .Select(ClassName)]),
 
             GrantedEffects = cdo is null ? null : Empty([.. ClassPaths(cdo, GrantedEffectsField).Select(ClassName)]),
             TimeRates = cdo is null ? null : Empty(CooldownScaling.TimeRates(cdo, _constants)),
             GatedConstants = GatedConstants(tested, testerBindings, declaredGates, gatedReads, effectBindings),
             GatedAdds = GatedAdds(gatedReads, effectAdds),
+            GatedEffects = GatedEffects(gatedReads, cdo),
+            ReachedEffects = reachedEffects.Count == 0 ? null : [.. reachedEffects],
             GatedModifiers = gated.Count == 0
                 ? null
                 : gated.ToDictionary(
@@ -1671,6 +1735,70 @@ public sealed class EntityResolver
                 StringComparer.Ordinal);
     }
 
+    private const string ConditionalEffectsField = "ConditionalGameplayEffects";
+    private const string ConditionalEffectClassField = "EffectClass";
+    private const string ConditionalSourceTagsField = "RequiredSourceTags";
+
+    /// <summary>
+    /// Effects the asset applies only behind a talent tag: a graph branch testing the tag, or a conditional effect
+    /// requiring the tag on the source.
+    /// </summary>
+    private static IReadOnlyDictionary<string, IReadOnlyList<string>>? GatedEffects(
+        IEnumerable<GatedRead> reads, UObject? cdo)
+    {
+        var effects = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+
+        void Add(string tag, string effect)
+        {
+            if (!TagNames.IsTalent(tag)) return;
+
+            if (!effects.TryGetValue(tag, out var under)) effects[tag] = under = new(StringComparer.OrdinalIgnoreCase);
+            under.Add(effect);
+        }
+
+        foreach (var gate in reads)
+        {
+            if (gate.Effect is { } effect) Add(gate.Tag, effect);
+        }
+
+        var conditional = new Dictionary<string, (string? Effect, string[] Tags)>(StringComparer.Ordinal);
+
+        foreach (var property in cdo is null ? [] : PropertyWalk.Walk(cdo))
+        {
+            if (!property.Path.StartsWith($"{ConditionalEffectsField}[", StringComparison.Ordinal)) continue;
+
+            var close = property.Path.IndexOf(']');
+            if (close < 0 || property.Path.Length <= close + 1) continue;
+
+            var element = property.Path[..(close + 1)];
+            var field = property.Path[(close + 2)..];
+            var held = conditional.GetValueOrDefault(element);
+
+            if (field == ConditionalEffectClassField && PropertyWalk.AsString(property.Value) is { } path)
+            {
+                conditional[element] = (ClassName(path), held.Tags ?? []);
+            }
+            else if (field == ConditionalSourceTagsField)
+            {
+                conditional[element] = (held.Effect, PropertyWalk.AsTags(property.Value) ?? []);
+            }
+        }
+
+        foreach (var (effect, tags) in conditional.Values)
+        {
+            if (effect is null) continue;
+
+            foreach (var tag in tags) Add(tag, effect);
+        }
+
+        return effects.Count == 0
+            ? null
+            : effects.ToDictionary(
+                entry => entry.Key,
+                entry => (IReadOnlyList<string>)[.. entry.Value],
+                StringComparer.Ordinal);
+    }
+
     private static IEnumerable<(string Prefix, string Tag)> DeclaredGates(UObject? asset)
     {
         if (asset is null) yield break;
@@ -1743,6 +1871,33 @@ public sealed class EntityResolver
 
         return count is > 1 ? (int)count : null;
     }
+
+    /// <summary>
+    /// The seconds a timed effect's duration magnitude states as a plain number, with no constants row behind it.
+    /// Murder of Crows lasts 12 seconds this way.
+    /// </summary>
+    private static double? StatedDuration(UObject? cdo)
+    {
+        if (cdo is null ||
+            PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::HasDuration", StringComparison.Ordinal) != true ||
+            PropertyWalk.GetStruct(cdo, DurationMagnitudeField) is not { } magnitude ||
+            magnitude.Properties.Any(property => property.Name.Text != ScalableFloatMagnitudeField) ||
+            PropertyWalk.GetStruct(magnitude, ScalableFloatMagnitudeField) is not { } scalable ||
+            scalable.Properties.Any(property => property.Name.Text != "Value"))
+        {
+            return null;
+        }
+
+        return PropertyWalk.Get(scalable, "Value")?.GenericValue switch
+        {
+            float value and > 0 => Math.Round(value, 4),
+            double value and > 0 => Math.Round(value, 4),
+            _ => null,
+        };
+    }
+
+    private const string DurationMagnitudeField = "DurationMagnitude";
+    private const string ScalableFloatMagnitudeField = "ScalableFloatMagnitude";
 
     private static bool Infinite(UObject? cdo) =>
         cdo is not null &&
@@ -2016,9 +2171,16 @@ public sealed class EntityResolver
     private static IReadOnlyDictionary<string, string>? Empty(Dictionary<string, string> map) =>
         map.Count == 0 ? null : map;
 
+    private readonly SortedSet<string> _talentTagsByName = new(StringComparer.Ordinal);
+
+    /// <summary>Granted talent tags whose namespace is the talent name below a path other than the tag's.</summary>
+    public IReadOnlyCollection<string> TalentTagsByName => _talentTagsByName;
+
     private void SupplementTalent(SplitNumbers split, string tag)
     {
         if (TuningNamespace.ForTalentTag(tag, _constants) is not { } scope) return;
+
+        if (TuningNamespace.ByTalentName(tag, _constants)) _talentTagsByName.Add(tag);
 
         foreach (var record in _constants.AllUnder(scope))
         {
@@ -2037,6 +2199,41 @@ public sealed class EntityResolver
         record.Value is { } declared &&
         bound.TryGetValue(record.Key, out var applied) &&
         applied == declared;
+
+    /// <summary>
+    /// Rows directly under a namespace other than the entity's own that a row it binds sits in, such as the spawned
+    /// turret's <c>Mosse.ProjectileTurret.Duration</c> beside the bound <c>Mosse.ProjectileTurret.FiringPeriod</c>. A
+    /// namespace with a talent segment is the talent's, so its rows are left to the talent.
+    /// </summary>
+    private Dictionary<string, object?> Beside(
+        IReadOnlySet<string> bound,
+        string? tuning,
+        IReadOnlyDictionary<string, object?> baseline)
+    {
+        var beside = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+        var scopes = bound
+            .Where(row => row.LastIndexOf('.') > 0)
+            .Select(row => row[..row.LastIndexOf('.')])
+            .Where(scope => !scope.Equals(tuning, StringComparison.OrdinalIgnoreCase) && _constants.IsNamespace(scope) &&
+                            !scope.Split('.').Any(part => part is "Talent" or "Talents"))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var scope in scopes)
+        {
+            foreach (var record in _constants.DirectlyUnder(scope))
+            {
+                if (bound.Contains(record.Key) || record.Value is not { } value) continue;
+
+                var key = TuningNamespace.Relative(record.Key, tuning);
+                if (baseline.ContainsKey(key)) continue;
+
+                beside.TryAdd(key, record.Values is { Length: > 1 } ranks ? ranks : value);
+            }
+        }
+
+        return beside;
+    }
 
     private void Supplement(SplitNumbers split, string? tuning, IReadOnlyDictionary<string, double> bound)
     {
@@ -2201,6 +2398,8 @@ public sealed class EntityResolver
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
         Coefficients = Union(outer.Coefficients, inner.Coefficients),
         Generates = Union(outer.Generates, inner.Generates),
+        Thresholds = Union(outer.Thresholds, inner.Thresholds),
+        SetByCallerScaling = outer.SetByCallerScaling ?? inner.SetByCallerScaling,
         Tuning = outer.Tuning ?? inner.Tuning,
         Declares = Union(outer.Declares, inner.Declares),
         Placeholders = Union(outer.Placeholders, inner.Placeholders),
@@ -2214,6 +2413,8 @@ public sealed class EntityResolver
         TagRows = Union(outer.TagRows, inner.TagRows),
         NamespaceRows = Union(outer.NamespaceRows, inner.NamespaceRows),
         GatedAdds = Union(outer.GatedAdds, inner.GatedAdds),
+        GatedEffects = Union(outer.GatedEffects, inner.GatedEffects),
+        ReachedEffects = Union(outer.ReachedEffects, inner.ReachedEffects),
         TestedTags = Union(outer.TestedTags, inner.TestedTags),
         AddedTags = Union(outer.AddedTags, inner.AddedTags),
         GatedConstants = Union(outer.GatedConstants, inner.GatedConstants),
@@ -2281,6 +2482,12 @@ public sealed class EntityResolver
 
     private static IReadOnlyList<TargetCountFalloffSource>? Union(
         IReadOnlyList<TargetCountFalloffSource>? first, IReadOnlyList<TargetCountFalloffSource>? second)
+    {
+        if (first is null || second is null) return first ?? second;
+        return [.. first.Concat(second).Distinct()];
+    }
+
+    private static IReadOnlyList<Threshold>? Union(IReadOnlyList<Threshold>? first, IReadOnlyList<Threshold>? second)
     {
         if (first is null || second is null) return first ?? second;
         return [.. first.Concat(second).Distinct()];

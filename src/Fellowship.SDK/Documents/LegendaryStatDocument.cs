@@ -8,4 +8,7 @@ public sealed class LegendaryStatDocument : EntityDocument
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
     public IReadOnlyList<EntityReference>? Grants { get; init; }
+
+    /// <summary>Effects the abilities it grants apply or have as parts.</summary>
+    public IReadOnlyList<EntityReference>? Applies { get; init; }
 }

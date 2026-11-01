@@ -80,6 +80,8 @@ public interface ICodexViewService
     IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Facts(
         EntityDocument document);
 
+    IReadOnlyList<(string Label, IReadOnlyList<Fellowship.SDK.Models.EntityReference> Targets)> Links(EntityDocument document);
+
     (string Href, TooltipLink? Tip)? Addresses(EntityType type, int id, bool showIcon = false);
 
     string? Rarity(EntityDocument document);
@@ -305,6 +307,34 @@ public sealed class CodexViewService(
 
         return facts;
     }
+
+    private static readonly string[] LinkProperties =
+    [
+        nameof(AbilityDocument.Grants), nameof(AbilityDocument.Applies), nameof(AbilityDocument.Parts), nameof(AbilityDocument.PartOf),
+        nameof(EffectDocument.AppliedBy), nameof(AbilityDocument.ParentClass), nameof(AbilityDocument.NamedAfter),
+    ];
+
+    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> LinksByType = new();
+
+    public IReadOnlyList<(string Label, IReadOnlyList<Fellowship.SDK.Models.EntityReference> Targets)> Links(
+        EntityDocument document) =>
+    [
+        .. LinksByType.GetOrAdd(document.GetType(), type =>
+            [
+                .. LinkProperties
+                    .Select(name => type.GetProperty(name, BindingFlags.Public | BindingFlags.Instance))
+                    .OfType<PropertyInfo>(),
+            ])
+            .Select(property => (
+                Label: Models.FellowshipCodex.Spaced(property.Name),
+                Targets: property.GetValue(document) switch
+                {
+                    Fellowship.SDK.Models.EntityReference one => [one],
+                    IReadOnlyList<Fellowship.SDK.Models.EntityReference> many => many,
+                    _ => (IReadOnlyList<Fellowship.SDK.Models.EntityReference>)[],
+                }))
+            .Where(link => link.Targets.Count > 0),
+    ];
 
     public (string Href, TooltipLink? Tip)? Addresses(EntityType type, int id, bool showIcon = false) =>
         store.All(type, id) is { Count: > 0 } readings

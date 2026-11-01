@@ -1,0 +1,290 @@
+type	id	ordinal	number	status	name	context	evidence
+talent	14	0	25%	Missing	Martial Command	While Siegebreaker is active you deal 25% more damage and 50% your damage reduction from	
+talent	26	0	5%	Missing	Bluey's Gambit	your Blue Flutterfly is following you, you take 5% reduced damage.    While your Blue Flutterfly i	
+talent	26	1	5%	Missing	Bluey's Gambit	utterfly is following another player, they take 5% reduced damage.	
+talent	36	2	50%	Missing	Coalescing Frost	ed.    Freezing Torrent critical strikes have a 50% chance to apply 2 stacks of Coalescing Frost.	
+talent	36	3	2	Missing	Coalescing Frost	ent critical strikes have a 50% chance to apply 2 stacks of Coalescing Frost.	
+talent	48	2	2	Missing	Avalanche	to strike the target, and a 9% chance to cause 2 additional Ice Comets to strike the target.	
+talent	56	0	3	Missing	Enlightened Soul	Your Radiant Blast adds 3 seconds to the duration of all your active Rune	
+legendary-power	86	1	20	Missing	Thundering Vortex	1 stack of Thundering Vortex.    Once you have 20 stacks your next Chain Lightning deals 100% mor	
+legendary-power	86	2	100%	Missing	Thundering Vortex	have 20 stacks your next Chain Lightning deals 100% more damage.	
+talent	87	0	30	Missing	Ride the Lightning	Your Thunder Call generates 30 Fury over its duration and grants you +5% Haste	
+talent	89	0	3	Missing	Thunderstruck	Your Chain Lightning bounces 3 additional times.	
+talent	145	1	40%	Missing	Agonizing Blaze	es the damage it deals by 4% up to a maximum of 40% increased damage at 10 stacks. Every tick on th	
+talent	145	2	10	Missing	Agonizing Blaze	y 4% up to a maximum of 40% increased damage at 10 stacks. Every tick on that target increases the	
+talent	162	0	3	Missing	Slow Burn	h time Fire Ball burns enemies up to a total of 3 seconds over its full duration.	
+talent	173	0	15	Missing	Natural Protector	ard and Safe Haven abilities shield players for 15 seconds, absorbing up to 1755% intellect damage	
+talent	206	4	0.5%	Missing	Corrosive Spill	conds.    CREEPING DEATH  Corrosive Spill deals 0.5% increased Poison damage for every 1% Haste you	
+talent	213	0	30%	Missing	Aftershock	at take damage from your Shockwave ability take 30% more damage from you for 5 seconds.	
+talent	219	0	30%	Missing	Second Wind	ghness has reduced an amount of damage equal to 30% of your Maximum Health, you gain 20% increased	
+relic-power	255	0	30%	Missing	Restore Mana	Instantly restore 30% of your maximum mana.    Can be used during Glo	
+weapon-power	348	4	12	Missing	Al'zerac's Shackle	Speed by 65% and their Attack Speed by 40% for 12 seconds.    While Chilled, the afflicted enemie	
+weapon-power	355	1	800%	Contradicted	Chronoshift	d you.    While channeling Chronoshift you gain 800% increased cooldown recovery and are protected b	CooldownRecovery Multiplicitive 8
+weapon-power	359	2	21	Missing	Repository of Frozen Light	ided between all players within 6000 radius for 21 seconds. Each time a player with Frozen Light t	
+legendary-power	389	0	40%	Missing	Razor Crash	ers explosion of metal, dealing damage equal to 40% of the hit that triggered it to the target and	
+legendary-power	389	1	11	Missing	Razor Crash	e hit that triggered it to the target and up to 11 additional nearby enemies.    Razor Shrapnel ap	
+talent	415	2	3	Missing	Shattering Obelisk	takes and pulses it out to nearby enemies up to 3 times, when reaching 65% Health, 30% Health, an	
+talent	446	1	3	Missing	Stone Guard	one Shield's health.    When you have less than 3 stones active, fully replenishing a Stone will	
+legendary-power	447	3	10%	Missing	Everlasting Spirit	you, dealing 35% Agility damage. An additional 10% Agility damage is added for each stack of Seren	
+talent	537	3	25%	Missing	Synchronicity	.    When you are below 50% Chrona you generate 25% more Chrona.	
+legendary-power	579	0	20%	Missing	Fortress in the Sands	lar Shield now also reduces all damage taken by 20%.    Fortress in the Sands  When you take damage	
+talent	580	0	116%	Missing	Vanguard of Vengeance	you automatically counter-attack that enemy for 116% Strength physical damage and gain 0.5% Mana.	
+talent	581	0	2	Missing	Gleaming Strikes	Your Sun Strike applies 2 stacks of Sunstruck to the target.    Your Omni	
+talent	583	0	15%	Missing	Sun's Verdict	Your Brilliant Flare and Brilliant Flash has a 15% chance to grant you Sun's Verdict for 12 second	
+legendary-power	585	2	6	Missing	From the Shadows	on a Shadowy Clone to assault that enemy with a 6 combo point Queen's Fang at 100% Power.	
+legendary-power	585	3	100%	Missing	From the Shadows	that enemy with a 6 combo point Queen's Fang at 100% Power.	
+talent	586	0	0.6	Missing	Sinner's Pride	the cooldown of your Maiden of Death ability by 0.6 seconds.	
+talent	604	0	3%	Missing	Invictus	Cooldown Recovery is increased by 1% for every 3% Haste you have.    Expertise  While Solar Shiel	
+talent	614	1	12	Missing	Erasure	damage, it deals an additional 20% damage over 12 seconds, accumulatively.	
+talent	623	0	10%	Missing	Echoes of Divinity	of Divinity clears additional Stagger equal to 10% of the target's max health over 4 seconds.	
+talent	627	1	30	Missing	Harrowing Ice	ou Harrowing Ice for 12 seconds, stacking up to 30 times.    Bursting Ice gains 3% more damage per	
+talent	627	3	30	Missing	Harrowing Ice	e per stack of Harrowing Ice you have.    After 30 stacks, all Harrowing Ice stacks are consumed a	
+talent	628	0	12%	Missing	Bursting Swallows	Your Frost Swallow hits have a 12% chance to trigger a pulse of Bursting Ice on th	
+talent	649	0	6	Missing	Lingering Rush	eeping Strike's Blood Rally lasts an additional 6 seconds, but its healing is reduced to 4% of yo	
+talent	653	0	4	Missing	Grand Proliferation	Renewal, and Luminous Barrier is cast on up to 4 targets at 120% power, as long as you have 2 Ra	
+talent	653	1	120%	Missing	Grand Proliferation	Luminous Barrier is cast on up to 4 targets at 120% power, as long as you have 2 Radiant Runes to s	
+talent	653	2	2	Missing	Grand Proliferation	to 4 targets at 120% power, as long as you have 2 Radiant Runes to spend.	
+talent	658	0	40%	Missing	Icy Talons	was spent.    Each Talon Strike ice spike deals 40% of Glacial Blast damage.    Each Rising Talons	
+talent	658	1	40%	Missing	Icy Talons	t damage.    Each Rising Talons ice spike deals 40% of Ice Comet damage.    Talon Strike benefits f	
+talent	661	0	25%	Missing	Symbiosis	l triggers an additional tick of its healing at 25% power.    Your Prickly Vines deal 12% more dama	
+talent	667	1	0.5%	Missing	Caustic Wounds	n them.    CREEPING DEATH  Caustic Poison deals 0.5% increased Poison damage for every 1% Haste you	
+talent	669	0	4	Missing	Karmic Dispersion	rred Fate: Mass Relay, causing it to heal up to 4 allies for 50% of any damage it deals.	
+talent	669	1	50%	Missing	Karmic Dispersion	ss Relay, causing it to heal up to 4 allies for 50% of any damage it deals.	
+talent	671	3	+60%	Contradicted	Kill Em All	le Kill Em All is active, your Heavy Strike has +60% Cooldown Acceleration.    Your next Heavy Strik	cooldownAcceleration Additive 1.6
+talent	672	0	+65%	Missing	The Motherload	Your Chain Lightning deals +65% increased damage for each unique enemy other th	
+glyph	703	4	0.2	Missing	The Wayfarer	the time to {}'s next application is reduced by 0.2 to 8 seconds, relative to the cooldown of the [	
+glyph	703	5	8	Missing	The Wayfarer	e to {}'s next application is reduced by 0.2 to 8 seconds, relative to the cooldown of the [CORE]	
+glyph	703	6	0.2	Missing	The Wayfarer	bility used. Abilities with no cooldown provide 0.2 seconds reduction.	
+talent	761	3	6	Missing	Bloodcraze	in a 700 radius around you every 3 seconds for 6 seconds.    The damage of Bloodcraze is increas	
+relic-passive	778	0	0.9	Missing	Dragonbone Dice	Your critical strikes have a chance (0.9 PPM) to increase your Primary Stat by 18% for 1	
+ability	9	0	5	Missing	Binding Ice: Curse	one player is afflicted by an icy curse. After 5 seconds the curse erupts, dealing frost magic d	
+ability	135	1	20%	Missing	Sentinel's Bastion	Every 60 seconds, you gain an absorb equal to 20% Max Health that lasts for 60 seconds.	
+ability	136	1	40%	Missing	Sentinel's Bastion - II	Every 60 seconds, you gain an absorb equal to 40% Max Health that lasts for 60 seconds.	
+ability	152	4	12	Missing	Al'zerac's Shackle	Speed by 65% and their Attack Speed by 40% for 12 seconds.    While Chilled, the afflicted enemie	
+ability	161	0	4	Elsewhere	Nature's Fury	re the forces of nature to bounce between up to 4 enemies, dealing {} nature damage to each one,	ability 13: 4
+ability	161	1	4	Elsewhere	Nature's Fury	dealing {} nature damage to each one, and up to 4 allies, healing each one for {} health.    The	ability 13: 4
+ability	164	2	21	Missing	Repository of Frozen Light	ided between all players within 6000 radius for 21 seconds. Each time a player with Frozen Light t	
+ability	172	0	66%	Missing	Kindling	ime to the target, dealing fire damage equal to 66% / 79% / 92% / 106% of your primary stat every 1	
+ability	172	1	79%	Missing	Kindling	the target, dealing fire damage equal to 66% / 79% / 92% / 106% of your primary stat every 1.5 sec	
+ability	172	2	92%	Missing	Kindling	arget, dealing fire damage equal to 66% / 79% / 92% / 106% of your primary stat every 1.5 seconds o	
+ability	172	3	106%	Missing	Kindling	dealing fire damage equal to 66% / 79% / 92% / 106% of your primary stat every 1.5 seconds over 9 s	
+ability	172	6	66%	Missing	Kindling	Heal over Time to the target, healing them for 66% / 79% / 92% / 106% of your primary stat every 1	
+ability	172	7	79%	Missing	Kindling	over Time to the target, healing them for 66% / 79% / 92% / 106% of your primary stat every 1.5 sec	
+ability	172	8	92%	Missing	Kindling	ime to the target, healing them for 66% / 79% / 92% / 106% of your primary stat every 1.5 seconds o	
+ability	172	9	106%	Missing	Kindling	the target, healing them for 66% / 79% / 92% / 106% of your primary stat every 1.5 seconds over 9 s	
+ability	188	0	30%	Missing	Restore Mana	Instantly restore 30% of your maximum mana.    Can be used during Glo	
+ability	373	0	20%	Missing	Circle of Protection	The enemy takes 20% reduced damage	
+ability	400	0	10	Missing	War Horn	als high damage to anyone within its radius for 10 seconds.	
+ability	821	1	20%	Missing	Tattletale	After 30 sec or when the imp reaches 20% health the imp runs away and towards a nearby d	
+ability	952	0	6	Missing	Coldbrine Curse	andom hero to receive the healing as damage for 6 seconds.	
+ability	979	5	6	Missing	Shockwave	uces the cooldown of your Shields Up ability by 6 seconds.	
+ability	985	1	3.0	Missing	Shield Throw	duces the cooldown of your Shockwave ability by 3.0 seconds.	
+ability	994	2	4	Missing	Soulbrand	bar is displayed to cast this ability on up to 4 targets at 60% power. Requires 2 Radiant Runes.	
+ability	995	1	35%	Missing	Rune of Renewal	effects on that ally to echo for an additional 35% of the initial heal's value.    The bonus heali	
+ability	996	3	4	Missing	Luminous Barrier	bar is displayed to cast this ability on up to 4 targets at 60% power. Requires 2 Radiant Runes.	
+ability	1000	5	+600%	Missing	Avatar of Light	ain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
+ability	1011	0	2	Missing	Frost Ward (Tundra Guard)	Your Frost Ward duration is increased by 2 seconds and while it is active, you heal for 50	
+ability	1011	1	50%	Missing	Frost Ward (Tundra Guard)	2 seconds and while it is active, you heal for 50% of all damage you deal.	
+ability	1027	1	9	Missing	Freezing Torrent	hown as a bar beneath your character. For every 9 Anima you generate, you gain 1 Winter Orb, used	
+ability	1029	1	9	Missing	Frost Bolt	hown as a bar beneath your character. For every 9 Anima you generate, you gain 1 Winter Orb, used	
+ability	1031	2	9	Missing	Bursting Ice	hown as a bar beneath your character. For every 9 Anima you generate, you gain 1 Winter Orb, used	
+ability	1032	2	0.1	Missing	Ice Blitz	on.    The duration of Ice Blitz is extended by 0.1 seconds each time a Frost Swallow hits an enemy	
+ability	1055	0	4	Missing	Fluttercall: Jubilee	Call upon Dream Flutterflies to protect up to 4 players by evenly distributing all health betwe	
+ability	1055	4	+30%	Missing	Fluttercall: Jubilee	t ability you gain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
+ability	1055	6	20	Missing	Fluttercall: Jubilee	granting +30% Haste and +600% Mana Recovery for 20 sec.	
+ability	1079	2	20%	Elsewhere	Fluttercall: Protect	is increased by 50% and all your abilities have 20% reduced mana cost.	effect 1486: 0.8; effect 1486: 1.25
+ability	1090	0	15	Missing	Forbidden Technique	r applies Forbidden Technique to the target for 15 seconds.    Forbidden Technique accumulates 18%	
+ability	1099	0	+20%	Missing	Fighting Techniques	S   Double Palm Strike (CORE ABILITY)  • Grants +20% Magic Damage reduction & +5% Parry for 30 sec.	
+ability	1099	1	+5%	Missing	Fighting Techniques	BILITY)  • Grants +20% Magic Damage reduction & +5% Parry for 30 sec.  Spirited Vortex  (CORE ABILI	
+ability	1099	2	30	Missing	Fighting Techniques	nts +20% Magic Damage reduction & +5% Parry for 30 sec.  Spirited Vortex  (CORE ABILITY)  • Conjur	
+ability	1099	3	+15%	Missing	Fighting Techniques	)  • Conjures a Vortex around you that provides +15% Dodge, deals damage to nearby enemies over 30 s	
+ability	1099	4	30	Missing	Fighting Techniques	+15% Dodge, deals damage to nearby enemies over 30 seconds, reduces their movement speed by 35% fo	
+ability	1099	5	35%	Missing	Fighting Techniques	ver 30 seconds, reduces their movement speed by 35% for 5 seconds and reduces their damage by 10% f	
+ability	1099	6	5	Missing	Fighting Techniques	econds, reduces their movement speed by 35% for 5 seconds and reduces their damage by 10% for 5 s	
+ability	1099	7	10%	Missing	Fighting Techniques	y 35% for 5 seconds and reduces their damage by 10% for 5 seconds.    KICK TECHNIQUES   Rising Stor	
+ability	1099	8	5	Missing	Fighting Techniques	r 5 seconds and reduces their damage by 10% for 5 seconds.    KICK TECHNIQUES   Rising Storm (COR	
+ability	1099	9	2	Missing	Fighting Techniques	ILITY)  • Deals damage to the target and grants 2 Stormfall charges, increasing the damage of you	
+ability	1099	10	2	Missing	Fighting Techniques	all charges, increasing the damage of your next 2 Lashing Stormkicks by 100%.  Lashing Stormkick	
+ability	1099	11	100%	Missing	Fighting Techniques	the damage of your next 2 Lashing Stormkicks by 100%.  Lashing Stormkick (POWER ABILITY)  • Deals da	
+ability	1099	12	50%	Missing	Fighting Techniques	target and nearby enemies nearby. Heals you for 50% of the damage it deals.    FIST TECHNIQUES   Ri	
+ability	1099	13	2	Missing	Fighting Techniques	ILITY)  • Deals damage to the target and grants 2 Earthfall charges, increasing the damage of you	
+ability	1099	14	2	Missing	Fighting Techniques	all charges, increasing the damage of your next 2 Earthfist Barrages by 100%.  Earthfist Barrage	
+ability	1099	15	100%	Missing	Fighting Techniques	the damage of your next 2 Earthfist Barrages by 100%.  Earthfist Barrage (POWER ABILITY)  • Pummels	
+ability	1099	16	50%	Missing	Fighting Techniques	ls target enemy over 1 second and heals you for 50% of the damage it deals.	
+ability	1112	0	4	Missing	Earthfist Barrage	Pummel your target with 4 quick punches, dealing {} physical damage every	
+ability	1115	0	6	Missing	Shatter Earth	e area and leaving an area of quaking earth for 6 seconds that deals {} damage every {} seconds t	
+ability	1116	0	4	Missing	Stagger	's spellcasting and prevent it from casting for 4 sec.   Must interrupt a spell, or it will have	
+ability	1122	1	4	Elsewhere	Stone Shield	in in a wide circle, dealing {} physical damage 4 times to all nearby enemies.    Your armor is i	effect 1565: 4; effect 1566: 4
+ability	1130	0	6	Elsewhere	Brooding Shadows	:  Instantly deal {} poison damage and generate 6 Combo Points. Caustic Poison has +100% Critical	effect 1731: 6
+ability	1130	2	60	Elsewhere	Brooding Shadows	, dealing {} poison damage every {} seconds for 60 seconds. While Seething Poison is active on any	effect 1716: 60
+ability	1130	5	6	Elsewhere	Brooding Shadows	kittering Blades, dealing {} poison damage over 6 seconds. Upon expiration, Volatile Poison erupt	effect 1731: 6
+ability	1130	6	0.5%	Missing	Brooding Shadows	son, Seething Poisons, and Volatile Poison deal 0.5% increased Poison damage for every 1% Haste you	
+ability	1206	2	6	Missing	Maiden of Death	d all combo point generating abilities generate 6 Combo Points.    Additionally, your Energy Gene	
+ability	1208	12	0.5%	Missing	Hemorrhaging Strike	ds    CREEPING DEATH  Hemorrhaging Strike deals 0.5% increased Bleed damage for every 1% Haste you h	
+ability	1214	0	6	Missing	Taunt	aunt target enemy, forcing it to attack you for 6 seconds.    Can be used during Global Cooldown	
+ability	1219	1	6	Missing	Face Breaker (old)	r and deal +400% increased damage.    Generates 6 Fury plus an amount based on the total damage i	
+ability	1228	1	400%	Missing	Culling Strike	0 Fury, increasing the damage it deals by up to 400%. The more Fury it consumes, the higher the dama	
+ability	1242	0	3	Missing	Hammer Storm	Spin with your Hammer up to 3 times, dealing {} physical damage to all nearby	
+ability	1250	0	360	Missing	Furious Cleave	Jumps and spins in air a full 360 degree, striking all enemies in 1000 radius for	
+ability	1254	0	3	Missing	Frog Squad	Your Fire Frogs ability conjures 3 additional frogs.	
+ability	1255	0	4%	Missing	Spontaneous Combustion	tick of Searing Blaze & Engulfing Flames has a 4% chance to have +100% critical strike chance.	
+ability	1257	0	16%	Missing	Flare Up	earing Blaze active on them to flare up, taking 16% of the damage that Infernal Wave dealt to the i	
+ability	1263	0	4	Missing	Scorch	's spellcasting and prevent it from casting for 4 sec.   Must interrupt a spell, or it will have	
+ability	1310	1	11	Missing	Lunarlight Mark	ks of Lunarlight Mark to target enemy and up to 11 additional enemies near your target.    Ability	
+ability	1310	2	25%	Elsewhere	Lunarlight Mark	you deal to enemies with Lunarlight Mark has a 25% chance to trigger Lunarlight Salvo, causing a b	ability 1309: 0.25
+ability	1312	1	25%	Missing	Heartseeker Barrage	Barrage that triggers a Lunarlight Salvo has a 25% chance to cause it to Erupt, dealing {} magic d	
+ability	1317	0	275%	Missing	Deadly Shot (old)	Deals 275% Agility damage to target.    Deadly Shot riccoc	
+ability	1388	1	35%	Missing	Torment of Bael'Aurum	below 20% Health, you are instantly healed for 35% of your maximum health. This can occur once eve	
+ability	1388	2	90	Missing	Torment of Bael'Aurum	your maximum health. This can occur once every 90 seconds.	
+ability	1399	3	211%	Missing	Event Horizon (old)	n combat with you every 2 seconds, each dealing 211% Agility arcane damage.    SPIRIT ABILITY  When	
+ability	1399	5	20	Missing	Event Horizon (old)	ain  Spirit of Heroism, granting +30% Haste for 20 sec.	
+ability	1409	0	112%	Missing	Sanguine Cleave	Striking all enemies in a radius around you for 112% Strength Physical damage.    You are healed for	
+ability	1412	0	210%	Missing	Sanguine Arc	Strike target enemy, dealing 210% Strength Physical damage.    You are healed for	
+ability	1417	0	112%	Missing	Chain Pull	Throw a chained axe at target enemy, dealing 112% Strength Physical damage and pulling them to yo	
+ability	1430	0	128%	Missing	Relentless Rush	elentless Rush are afflicted by a bleed dealing 128% Strength damage over 12 seconds.	
+ability	1433	0	12	Missing	Bloodletter Onslaught	For the next 12 seconds, your health can not drop below 1.    W	
+ability	1515	3	+30%	Missing	Siegebreaker	t ability you gain  Spirit of Heroism, granting +30% Haste for 20 sec.	
+ability	1547	0	30%	Missing	Peacefield	Your Serenity applies a Heal over Time for 30% of the healing done over 9 seconds	
+ability	1555	0	3	Missing	Talon's Edict	Your Cold Snap critical strikes conjure 3 Frost Swalllows to instantly attack your enemie	
+ability	1555	1	15%	Missing	Talon's Edict	our Cold Snap and Freezing Torrent damage has a 15% chance to conjure 1 Frost Swalllow.	
+ability	1558	1	800%	Contradicted	Chronoshift	d you.    While channeling Chronoshift you gain 800% increased cooldown recovery and are protected b	CooldownRecovery Multiplicitive 8
+ability	1568	1	50%	Missing	Crackling Inferno	ce and its critical strikes burn the target for 50% of the damage it dealt over 24 seconds.	
+ability	1574	1	29%	Missing	Soulfrost Torrent	of frost damage in an area around them, dealing 29% Intellect damage for each stack of Coalescing F	
+ability	1583	0	2%	Missing	Corrosive Spill	Each Combo Point you spend has a 2% chance to cause you to coat the ground in front	
+ability	1583	1	5	Missing	Corrosive Spill	ound in front of you with a Corrosive Spill for 5 seconds.    Enemies that stand in Corrosive Spi	
+ability	1583	2	72%	Missing	Corrosive Spill	.    Enemies that stand in Corrosive Spill take 72% Agility poison damage every 1.5 seconds.	
+ability	1584	4	1.5	Missing	Event Horizon	rage reduces the cooldown of Starfall Volley by 1.5 seconds.    SPIRIT ABILITY  When you activate y	
+ability	1587	1	12	Missing	Searing Blaze	ge every {} seconds for 30 seconds    Generates 12 Cinders over its full duration.    CINDERS  For	
+ability	1589	2	6	Missing	From the Shadows	on a Shadowy Clone to assault that enemy with a 6 combo point Queen's Fang at 100% Power.	
+ability	1589	3	100%	Missing	From the Shadows	that enemy with a 6 combo point Queen's Fang at 100% Power.	
+ability	1590	0	5%	Missing	Hemotoxin	Backstab, Widow's Bite, and Auto Attacks have a 5% chance to apply 1 stack of Hemotoxin to the tar	
+ability	1590	4	70%	Missing	Hemotoxin	existing bleed effect erupts, instantly dealing 70% of its full duration damage as poison damage to	
+ability	1613	0	10%	Missing	Razor Shrapnel	Your Shield Throws hits have a 10% chance to trigger an explosion of metal, dealin	
+ability	1613	1	50%	Missing	Razor Shrapnel	an explosion of metal, dealing damage equal to 50% of the Shield Throw hit that triggered the expl	
+ability	1615	0	40%	Missing	Razor Crash	ers explosion of metal, dealing damage equal to 40% of the hit that triggered it to the target and	
+ability	1615	1	11	Missing	Razor Crash	e hit that triggered it to the target and up to 11 additional nearby enemies.    Razor Shrapnel ap	
+ability	1654	0	25%	Missing	Face Breaker	When Face Breaker deals critical strike damage, 25% of the damage dealt is also dealt to enemies ne	
+ability	1842	0	1634%	Missing	(OLD) Brilliant Flash	Heal yourself or targeted ally for 1634% Strength - OR deal 623% Strength damage to targ	
+ability	1842	1	623%	Missing	(OLD) Brilliant Flash	f or targeted ally for 1634% Strength - OR deal 623% Strength damage to target enemy.	
+ability	1853	3	+30%	Missing	Decree of the Sun	t ability you gain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
+ability	1853	4	+600%	Missing	Decree of the Sun	ain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
+ability	1862	0	700	Missing	Solar Blades	magical damage to it and other enemies within a 700 radius.    The main target takes 100% more dama	
+ability	1881	1	+30%	Missing	Epoch Break	t ability you gain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
+ability	1881	3	20	Missing	Epoch Break	granting +30% Haste and +600% Mana Recovery for 20 sec.	
+ability	1927	0	5	Missing	Flash Revision	debt ripples through their being.    Generates 5 Chrona.	
+ability	1964	1	0.5	Missing	Amend Fate	d Fate you gain +100% Cooldown Acceleration for 0.5 seconds.    Generates Mana based on the amount	
+ability	2061	0	30%	Missing	Sledgehammer	Your Skull Crusher causes 30% of the damage it deals to be dealt to enemies n	
+ability	2064	2	2	Missing	Apocalypse: Explosivo	t dealt over 12 seconds.    Your Apocalypse has 2 Charges, and each time you cast Fire Ball the c	
+ability	2064	3	8	Missing	Apocalypse: Explosivo	oldown of your Apocalypse ability is reduced by 8 seconds.	
+ability	2241	0	25%	Missing	Face Breaker	When Face Breaker deals critical strike damage, 25% of the damage dealt is also dealt to enemies ne	
+ability	2243	0	360	Missing	Furious Cleave	Jumps and spins in air a full 360 degree, striking all enemies in 1000 radius for	
+ability	2296	1	6	Missing	Bloodbound Spirit	enemies as it emerges and every 1.5 seconds for 6 seconds, applying Rend to the targets for {} of	
+ability	2296	3	+30%	Missing	Bloodbound Spirit	t ability you gain  Spirit of Heroism, granting +30% Haste for 20 seconds.	
+ability	2298	0	30	Elsewhere	Owed in Blood	an pick up to gain 1 stack of Owed in Blood for 30 seconds, up to maximum of 150 stacks.    Enemie	ability 2286: 30; effect 3231: 30; ability 2297: 30
+effect	29	1	15%	Missing	Stone Skin	reased Max Health and explodes on death dealing 15% of their max health in Physical Damage to all o	
+effect	47	0	4	Missing	Binding Ice	take frost magic damage and you are rooted for 4 seconds.	
+effect	53	0	3	Missing	Curse: Carnage	ng damage equal to 1% of their max health every 3 seconds.	
+effect	66	0	30%	Contradicted	Al'zerac's Shackle: Slow	s movement speed and attack speed is reduced by 30%. It also takes damage every 1.5 seconds.	AttackSpeed MultiplyCompound 0.6
+effect	106	0	40%	Contradicted	Cooldown Recovery Bonus	Cooldown Recovery increased by 40%.	CooldownRecovery Multiplicitive 1.2
+effect	208	0	5%	Missing	Surging Power	eases damage of its non-projectile abilities by 5%. Waves and swirls move 5% faster per stack. Eac	
+effect	208	1	5%	Missing	Surging Power	ojectile abilities by 5%. Waves and swirls move 5% faster per stack. Each Water Orb that reaches t	
+effect	230	0	+50%	Missing	Haste	+50% haste	
+effect	482	0	10%	Missing	Exhuming Corpses	Every time the Carrion collector takes 10% of their max health in damage. A Soulstained Sh	
+effect	569	0	10%	Missing	Mark For Death	10% increased Damage Taken per stack.	
+effect	719	1	30%	Contradicted	Wavestomp: Soggy Breaches	is reduced by 70% and your Haste is reduced by 30%.	Haste Additive -0.5; Haste Additive 0.5
+effect	752	0	20%	Missing	Together Stronk!	Taking 20% reduced damage.	
+effect	792	0	2	Missing	Glory	g for a percentage of your maximum health every 2 seconds.	
+effect	845	0	65%	Missing	Freezing Pool	Movement Speed reduced by 65% and taking Frost Damage.	
+effect	889	0	1.5	Missing	Shattering Barrier	sorbs damage taken.    Deals Frost Damage every 1.5 seconds to nearby enemies.	
+effect	894	0	30%	Contradicted	Enraged	Haste increased by 30%.	Haste Additive 0.35
+effect	899	0	250%	Missing	Freezing Blood	time.    The last tick of Freezing Blood deals 250% increased damage.	
+effect	1108	0	750%	Missing	Vulnerable	The Wardstone is stunned and takes 750% damage from attacks.	
+effect	1112	0	750%	Missing	Vulnerable	The Wardstone is stunned and takes 750% damage from attacks.	
+effect	1177	0	5%	Missing	Enraged	Damage Dealt is increased by 5% for each stack. Stacks are added for every 1% m	
+effect	1178	0	5%	Missing	Enraged	Damage Dealt is increased by 5% for each stack. Stacks are now increasing over	
+effect	1185	0	3	Missing	Seethe	o the corrupted magic deals damage to you every 3 seconds.	
+effect	1214	0	30%	Missing	Second Wind: Build up	ghness has reduced an amount of damage equal to 30% of your maximum health, you gain 20% increased	
+effect	1214	2	8	Missing	Second Wind: Build up	mum health, you gain 20% increased Strength for 8 sec.	
+effect	1239	0	25	Missing	Martial Command	provided by your Toughness.    You are dealing 25 more damage%.	
+effect	1289	0	50%	Missing	Divine Justice	Your next Righteous Blast deals 50% Increased damage.	
+effect	1296	1	25%	Missing	Ruptured Soul	was remaining and trigger an explosion dealing 25% of the damage that was remaining to all nearby	
+effect	1316	0	25%	Missing	Rune of Renewal	ect healing effects on you echo for an addional 25% of the initial heal's value.	
+effect	1439	0	2	Missing	Fluttercall: Jubilee	s evenly distributed throughout the group every 2 seconds.	
+effect	1510	0	0.7%	Missing	Everlasting Spirit	You take 0.7% less damage per stack	
+effect	1570	2	35%	Elsewhere	Spirited Vortex	2 seconds.    The damage causes enemies to have 35% reduced movement speed for 5 seconds.	effect 1568: MoveSpeed Multiplicitive 0.65; effect 1569: MoveSpeed Multiplicitive 0.65
+effect	1731	0	22%	Missing	Volatile Poison	Deals 22% Agility poison damage every 2s over 6 seconds a	
+effect	1731	2	55%	Missing	Volatile Poison	very 2s over 6 seconds and then erupts, dealing 55% Agility damage to the target and nearby enemies	
+effect	1746	0	+150%	Missing	Schism - Skull Crusher	Your next Skull Crusher deals +150% increased damage.	
+effect	1747	0	+150%	Missing	Schism - Hammer Storm	Your next Hammer Storm deals +150% increased damage.	
+effect	1867	0	3	Missing	Celestial Impetus	Your next Celestial Shot applies 3 stacks of Lunarlight Mark to the target.	
+effect	1869	0	40%	Contradicted	Skystrider's Grace	Increases haste by 40% for 20 seconds.	Haste Additive 0.3
+effect	1930	0	12%	Missing	Reaper's Reprieve	Healing for 12% of your maximum health over 18 seconds.	
+effect	1931	0	36%	Missing	Reaper's Reprieve - II	Healing for 36% of your maximum health over 18 seconds.	
+effect	2069	0	+20%	Elsewhere	Widow's Malice	Your next Widow's Bite while grant you +20% Spirit for 10 seconds and generate an additiona	effect 2230: Spirit Additive 0.2
+effect	2070	0	+20%	Elsewhere	Widow's Malice	+20% Spirit and generating an additional 30 energy o	effect 2230: Spirit Additive 0.2
+effect	2073	0	50%	Missing	Lingering Heartseeker	Taking 50% increased damage from Multishot and Celestial S	
+effect	2079	0	1.5	Missing	Grounded Spirit	Every 1.5 seconds you stand still, you gain 1 stack of Gr	
+effect	2088	0	103%	Missing	Primed Serrated Blades	r next Double Strike applies a bleed that deals 103% Strength damage every 2 seconds over 12 seconds	
+effect	2088	1	2	Missing	Primed Serrated Blades	s a bleed that deals 103% Strength damage every 2 seconds over 12 seconds.	
+effect	2088	2	12	Missing	Primed Serrated Blades	deals 103% Strength damage every 2 seconds over 12 seconds.	
+effect	2114	0	10%	Missing	Stone Skin	Applies 10% of exploded enemy health over 6 seconds. Does n	
+effect	2151	0	10	Elsewhere	Latent Resurgence	1 stack of Latent Resurgence up to a maximum of 10 stacks.    When your health dips below 50% all	effect 2152: 10
+effect	2240	0	20%	Missing	Natural Protector	ge.    Damage dealt to the absorb is reduced by 20%.	
+effect	2241	1	308%	Missing	Bloomin' Boomshrooms	to detonate on them, instantly healing them for 308% Intellect each.    When targeting allies in thi	
+effect	2258	0	20%	Missing	Freezing Aura	t moving. Slows movement speed of all heroes by 20%.	
+effect	2262	0	+25%	Contradicted	Drenched in Blood	Your Expertise is increased by +25%	Expertise Additive 0.24
+effect	2267	0	20	Missing	Executioner's Grin	has no cost and deals damage as if it consumed 20 fury.	
+effect	2277	1	600%	Missing	Spirit of Heroism	ed by 30%.    Mana regeneration is increased by 600%.	
+effect	2308	0	+25%	Missing	Icy Flow	Your next Glacial Blast or Ice Comet has +25% increased critical strike chance and 0.5 second	
+effect	2402	0	50%	Missing	Strength of Isilagður	r permanently reduces [Freezing Aura] damage by 50%, but increases Fodir Kaldur's damage dealt by a	
+effect	2402	1	5%	Missing	Strength of Isilagður	Kaldur's damage dealt by all other abilities by 5%.	
+effect	2403	0	50%	Missing	Strength of Eldsupptok	ok permanently reduces [Burning Aura] damage by 50%, but increases Fodir Kaldur's damage dealt by a	
+effect	2403	1	5%	Missing	Strength of Eldsupptok	Kaldur's damage dealt by all other abilities by 5%.	
+effect	2428	0	30%	Missing	Aftershock	Taking 30% extra damage from Helena's attacks	
+effect	2463	0	20%	Missing	Returned Buff	has returned and has reinvigorated itself with 20% increased damage and healing	
+effect	2493	0	50%	Missing	The White Witch's Boon	o the Winter Rune gain a shield absorbing up to 50% of their maximum health that lasts for 60 secon	
+effect	2493	1	60	Missing	The White Witch's Boon	p to 50% of their maximum health that lasts for 60 seconds.    While the shield is active on a pla	
+effect	2493	2	50%	Missing	The White Witch's Boon	hile the shield is active on a player they take 50% reduced damage and are healed over time.	
+effect	2496	1	3	Missing	Lingering Chill	Movement Speed reduced by 30% per stack.    At 3 stacks Lingering Chill erupts, dealing high dam	
+effect	2551	0	40%	Missing	Solar Shield	rbs incoming damage and reduces damage taken by 40%.	
+effect	2645	0	+30%	Missing	Zenith Technique	Skycrash grants you +30% Parry for 5 seconds	
+effect	2645	1	5	Missing	Zenith Technique	Skycrash grants you +30% Parry for 5 seconds	
+effect	2661	0	+25%	Missing	Golden Hour	Your next Omnistrike has +25% increased Critical Strike chance	
+effect	2662	1	600%	Missing	Spirit of Heroism	ed by 30%.    Mana regeneration is increased by 600%.	
+effect	2664	1	40	Missing	Sunstruck	s hit, replenishing 100 Mana plus an additional 40 Mana for each stack beyond the first that is co	
+effect	2733	0	25%	Missing	Synchronicity: Catch Up	25% increased Resource Generation.	
+effect	2739	0	15	Missing	Aura of Deferred Fate	amage is Staggered, causing it to be dealt over 15 seconds.    Total staggered damage is shown on	
+effect	2754	0	20	Missing	Thundering Vortex	Chain Lightning consumes 20 stacks to deal 60% more damage.	
+effect	2754	1	60%	Missing	Thundering Vortex	Chain Lightning consumes 20 stacks to deal 60% more damage.	
+effect	2810	0	20%	Missing	Together Stronk!	Taking 20% reduced damage.	
+effect	2922	0	25%	Missing	Edict of Burden	25% Reduced movement speed	
+effect	2926	0	10%	Missing	Edict of Isolation 	Players deal damage equal to 10% of maximum health to any nearby allies.	
+effect	3027	0	2	Missing	Empowered Seeping Reliquary	empowered.     Stage 1: {} more damage.  Stage 2: {} more damage.  Stage 3: {} more damage and {	
+effect	3028	0	2	Missing	Empowered Crushing Darkness	Stage 1: Projectiles erupt from target.  Stage 2: Damage Increased by 30%.  Stage 3: An addition	
+effect	3028	1	30%	Missing	Empowered Crushing Darkness	rupt from target.  Stage 2: Damage Increased by 30%.  Stage 3: An additional 3 waves of Projectiles	
+effect	3029	0	2	Missing	Empowered Searing Fissure	over time effect to low health targets.  Stage 2: More puddles.  Stage 3: Deals {} more damage.	
+effect	3030	0	30%	Missing	Empowered Seek and Destroy	k and Destroy" is empowered.     Stage 1: Deals 30% more damage.  Stage 2: Applies bleed.  Stage 3:	
+effect	3030	1	2	Missing	Empowered Seek and Destroy	red.     Stage 1: Deals 30% more damage.  Stage 2: Applies bleed.  Stage 3: Charges twice.	
+effect	3138	0	85%	Missing	Harmonic Residual	Your Stone Shield diminishes at 85% of the normal rate when soaking damage.	
+effect	3158	1	4	Missing	Square Hammer	rusher or Hammer Storm grants you +5% Expertise 4 seconds.    All stacks are consumed and the coo	
+effect	3160	1	+60%	Contradicted	Kill Em All	eals 150% more damage.    Your Heavy Strike has +60% Cooldown Acceleration.	cooldownAcceleration Additive 1.6
+effect	3275	0	1.5	Missing	Grounded Spirit	Every 1.5 seconds you stand still, you gain 1 stack of Gr	
+sigil	5	10	6	Missing	Vengeful Soul	0% / 630% / 890% / 1150% of your Main Stat over 6 seconds.    (3.0 PPM)	
+dungeon-affix	2	0	30%	Missing	Sahril's Madness	Enemies receive 30% Increased Threat from Damage Dealers and Healer	
+dungeon-affix	3	0	20%	Missing	Elheryn's Exile	ruptable abilities and Dispellable effects deal 20% more damage.	
+dungeon-affix	13	1	20%	Missing	Malevolent Shade	by enemies by 50% and increasing their Haste by 20% until the shade is killed.    BONUS  Heroes ins	
+dungeon-affix	13	2	85%	Missing	Malevolent Shade	is killed.    BONUS  Heroes instantly replenish 85% Max Health and 50% Max Mana upon defeating the	
+dungeon-affix	15	1	15%	Missing	Stone Skin	NUS  Non-boss enemies explode on death, dealing 15% of their maximum health as physical damage over	
+dungeon-affix	19	0	60	Missing	Shadow Lord's Trial	rd is defeated, heroes gain Shadow's Defeat for 60 seconds, increased all damage dealt by 20% and	
+dungeon-affix	19	1	20%	Missing	Shadow Lord's Trial	t for 60 seconds, increased all damage dealt by 20% and increasing Haste and Movement Speed by 20%.	
+dungeon-affix	19	2	20%	Missing	Shadow Lord's Trial	20% and increasing Haste and Movement Speed by 20%.	
+dungeon-affix	20	0	20	Missing	Ghorn the Avalanche	Defeat Ghorn to gain Ghorn's Boon and gain back 20 seconds to the Dungeon Timer.    Ghorn's Boon	
+dungeon-affix	21	0	60	Missing	Krumbug the Naughty	g to gain Krumbug's Bag of Tricks and gain back 60 seconds to the Dungeon Timer.    Krumbug's Bag	
+dungeon-affix	21	1	10	Missing	Krumbug the Naughty	ou deal damage to any enemy, you have a chance (10 PPM) to release a wind-up mouse to charge at th	
+dungeon-affix	22	0	90	Missing	Eira the White Witch	ra to gain The White Witch's Boon and gain back 90 seconds to the Dungeon Timer.    The White Witc	
+dungeon-affix	22	1	120	Missing	Eira the White Witch	e Witch's Boon  Eira will appear near you every 120 seconds and spawn a Winter Rune on the ground t	
+dungeon-affix	22	2	30	Missing	Eira the White Witch	nter Rune on the ground that persists for up to 30 seconds. When a player steps on the rune, they	
+dungeon-affix	24	1	+480	Missing	Anomalous Orbs	ONUS  Each Anomalous Orb players destroy grants +480 Gem Power to the corresponding color of the Orb	
+dungeon-affix	24	2	45	Missing	Anomalous Orbs	ponding color of the Orb that was destroyed for 45 seconds.	
+talent	8	0	10	Missing	Macabre Stratagem	agem.    Upon use, Macabre Stratagem grants you 10 seconds of Matriarch Macabre.    If used while	
+talent	8	1	10	Missing	Macabre Stratagem	is already active, its duration is extended by 10 seconds.	

@@ -16,6 +16,9 @@ public sealed record Modifier(string Tag)
     public string? IconPath { get; init; }
 
     public int? MinimumHeroRank { get; init; }
+
+    /// <summary>Object path of the actor class the game spawns for the modifier.</summary>
+    public string? ActorPath { get; init; }
 }
 
 public sealed class ModifierInfo
@@ -30,6 +33,7 @@ public sealed class ModifierInfo
     private const string DynamicDescriptionField = "DynamicDescription";
     private const string DynamicTextField = "Text";
     private const string IconField = "UIIcon";
+    private const string ActorField = "ModifierActor";
     private const string MinimumHeroRankField = "MinimumHeroRankRequired";
 
     private readonly Dictionary<string, Modifier> _byTag = new(StringComparer.OrdinalIgnoreCase);
@@ -59,6 +63,7 @@ public sealed class ModifierInfo
                     Description = Written(row, DescriptionField) ?? Dynamic(row, DynamicDescriptionField),
                     Row = row,
                     IconPath = PropertyWalk.GetString(row, IconField),
+                    ActorPath = PropertyWalk.GetString(row, ActorField) is { Length: > 0 } actor ? actor : null,
                     MinimumHeroRank = PropertyWalk.AsOrdinal(
                         PropertyWalk.Get(row, MinimumHeroRankField)?.GenericValue),
                 };
