@@ -79,6 +79,8 @@ public sealed record Entity
 
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 
+    public IReadOnlyList<Threshold>? Thresholds { get; init; }
+
     [JsonIgnore]
     public string? Tuning { get; init; }
 

@@ -31,6 +31,8 @@ public sealed class EffectDocument : EntityDocument
 
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 
+    public IReadOnlyList<Threshold>? Thresholds { get; init; }
+
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
 
     public EntityReference? NameBorrowedFrom { get; init; }

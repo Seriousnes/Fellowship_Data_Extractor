@@ -36,6 +36,8 @@ public sealed class AbilityDocument : EntityDocument
 
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 
+    public IReadOnlyList<Threshold>? Thresholds { get; init; }
+
     public double? Range { get; init; }
     public double? MinRange { get; init; }
     public double? Radius { get; init; }
