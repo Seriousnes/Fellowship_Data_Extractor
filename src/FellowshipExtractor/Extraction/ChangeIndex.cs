@@ -250,6 +250,10 @@ public sealed class ChangeIndex
     public TuningReference? Reference(string row, Entity context, DocumentProjection.References references) =>
         _modifiers.Resolved(row, context, references);
 
+    /// <summary>The row's reference whether or not a namespace names it, for a row the entity's own asset binds.</summary>
+    public TuningReference Referenced(string row, Entity context, DocumentProjection.References references) =>
+        _modifiers.Reference(row, context, references);
+
     public IReadOnlyList<EntityReference>? ChangedBy(Entity entity, DocumentProjection.References references) =>
         entity is { Type: { } type, NetId: { } id } && references.Of(type, id) is { } self &&
         _changedBy.TryGetValue((self.Type, self.Id), out var sources)
