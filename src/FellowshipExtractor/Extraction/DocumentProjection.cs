@@ -80,11 +80,11 @@ public static class DocumentProjection
             NamedAfter = references.At(entity.NamedAfter),
             PartOf = Name(entity) is null ? references.Changes.PartOf(entity, references) : null,
             ParentClass = Parent(entity, EntityType.Ability, references),
-            Applies = references.Links.Applied(references.Of(EntityType.Ability, entity.NetId)) ?? Applied(entity, references),
+            Applies = references.Through(
+                Granted(entity, references),
+                references.Links.Applied(references.Of(EntityType.Ability, entity.NetId)) ?? Applied(entity, references)),
             Parts = references.Links.Parts(references.Of(EntityType.Ability, entity.NetId)),
-            Grants = Distinct(
-                (references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references) ?? [])
-                .Concat(references.Links.Granted(references.Of(EntityType.Ability, entity.NetId)) ?? [])),
+            Grants = Granted(entity, references),
             Description = entity.Description,
             DescriptionsByHero = entity.DescriptionsByHero,
             Detail = entity.Detail,
@@ -221,6 +221,7 @@ public static class DocumentProjection
             Origins = references.Origins(entity),
             AppliedBy = references.At(entity.AppliedBy),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
+            Siblings = references.Links.Siblings(references.Of(EntityType.Effect, entity.NetId)),
             ParentClass = Parent(entity, EntityType.Effect, references),
             Applies = Applied(entity, references),
             Grants = references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references),
@@ -652,23 +653,33 @@ public static class DocumentProjection
 
     /// <summary>
     /// Links an ability's document has from the documents naming it. An effect naming the ability as its applier is
-    /// one the ability applies. An effect or ability part of it, or named after it, is a part. An ability granted by
+    /// one the ability applies. An effect or ability part of it, or named after it, is a part. An unnamed ability
+    /// whose applied effects are all part of one ability is a part of that one. An ability granted by
     /// an effect the ability applies is one it grants.
     /// </summary>
     public static AppliedLinks Links(IEnumerable<Entity> entities, References references, EffectRoles roles)
     {
         var links = new AppliedLinks();
         var grantedBy = new Dictionary<(EntityType Type, int Id), IReadOnlyList<EntityReference>>();
+        var owners = new Dictionary<(EntityType Type, int Id), EntityReference>();
+        var helpers = new List<(EntityReference Ability, IReadOnlyList<EntityReference> Effects)>();
 
         foreach (var entity in entities)
         {
             if (entity is { Type: EntityType.Ability, NetId: { } ability } &&
                 references.Of(EntityType.Ability, ability) is { } self)
             {
-                foreach (var effect in Applied(entity, references) ?? []) links.Apply(self, effect);
+                var applied = Applied(entity, references) ?? [];
+
+                foreach (var effect in applied) links.Apply(self, effect);
 
                 if (references.At(entity.NamedAfter) is { Type: EntityType.Ability } named) links.Part(named, self);
-                if (Name(entity) is null && references.Changes.PartOf(entity, references) is { } whole) links.Part(whole, self);
+
+                if (Name(entity) is null)
+                {
+                    if (references.Changes.PartOf(entity, references) is { } whole) links.Part(whole, self);
+                    else if (applied.Count > 0) helpers.Add((self, applied));
+                }
             }
 
             if (entity is not { Type: EntityType.Effect, NetId: { } id } ||
@@ -677,8 +688,18 @@ public static class DocumentProjection
                 continue;
             }
 
-            if (references.At(entity.AppliedBy) is { Type: EntityType.Ability } applier) links.Apply(applier, reached);
-            if (references.Of(EntityType.Ability, roles.PartOf(entity.Name)) is { } owner) links.Part(owner, reached);
+            if (references.At(entity.AppliedBy) is { Type: EntityType.Ability } applier)
+            {
+                links.Apply(applier, reached);
+                links.Child(applier, reached);
+            }
+
+            if (references.Of(EntityType.Ability, roles.PartOf(entity.Name)) is { } owner)
+            {
+                links.Part(owner, reached);
+                links.Child(owner, reached);
+                owners[(reached.Type, reached.Id)] = owner;
+            }
 
             if (references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references) is { } granted)
             {
@@ -688,8 +709,25 @@ public static class DocumentProjection
 
         links.GrantThroughEffects(grantedBy);
 
+        foreach (var (helper, effects) in helpers)
+        {
+            if (effects.Select(effect => owners.GetValueOrDefault((effect.Type, effect.Id))).ToArray() is { } held &&
+                held.All(owner => owner is not null) &&
+                held.DistinctBy(owner => owner!.Id).ToArray() is [{ } whole] &&
+                whole.Id != helper.Id)
+            {
+                links.Part(whole, helper);
+            }
+        }
+
         return links;
     }
+
+    /// <summary>Abilities the ability grants, its own and those its applied effects grant.</summary>
+    private static IReadOnlyList<EntityReference>? Granted(Entity ability, References references) =>
+        Distinct(
+            (references.Changes.Named(ability, ability.GrantedAbilityNames, EntityType.Ability, references) ?? [])
+            .Concat(references.Links.Granted(references.Of(EntityType.Ability, ability.NetId)) ?? []));
 
     private static IReadOnlyList<EntityReference>? Distinct(IEnumerable<EntityReference> references) =>
         references.DistinctBy(reference => (reference.Type, reference.Id)).ToArray() is { Length: > 0 } distinct

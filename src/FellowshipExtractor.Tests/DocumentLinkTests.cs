@@ -27,6 +27,10 @@ public sealed class DocumentLinkTests
     private const int EnlightenedSoul = 56;
     private const int CoalescingFrost = 36;
     private const int CoalescingFrostEffect = 2306;
+    private const int SpiritedVortexEffect = 1570;
+    private const int SpiritedVortexSlow = 1568;
+    private const int NaturesFury = 161;
+    private const int NaturesFuryHelper = 13;
 
     private const string ReducedAttackSpeed = "ReducedAttackSpeed.AttackSpeedMultiplier";
     private const string MeikoReducedAttackSpeed = "Meiko.DurationalAoeDamageBuff.Talent.ReducedAttackSpeed.AttackSpeedMultiplier";
@@ -58,6 +62,30 @@ public sealed class DocumentLinkTests
             Assert.Equal(TooltipNumberStatus.Linked, slowed.Status);
             Assert.StartsWith($"effect {AlzeracsShackleSlow}:", slowed.Evidence, StringComparison.Ordinal);
         }
+    }
+
+    /// <summary>Spirited Vortex effects 1570 and 1568 are both part of ability 1120, whose 1568 slows by 35%.</summary>
+    [Fact]
+    public void SpiritedVortexSlowsThroughASiblingEffect()
+    {
+        Assert.Contains(SpiritedVortexSlow, Ids(Document(EntityType.Effect, SpiritedVortexEffect)["siblings"]));
+
+        var slowed = Audited("effect", SpiritedVortexEffect, "35%");
+
+        Assert.Equal(TooltipNumberStatus.Linked, slowed.Status);
+    }
+
+    /// <summary>
+    /// Unnamed ability 13 applies effects 81 and 82, both part of Nature's Fury, so it is one of Nature's Fury's parts.
+    /// </summary>
+    [Fact]
+    public void NaturesFuryHasTheUnnamedAbilityApplyingItsEffectsAsAPart()
+    {
+        Assert.Contains(NaturesFuryHelper, Ids(Document(EntityType.Ability, NaturesFury)["parts"]));
+
+        Assert.All(
+            TooltipAudit.Run(Export.Loaded.Documents).Where(found => found.Type == "ability" && found.Id == NaturesFury && found.Number == "4"),
+            found => Assert.Equal(TooltipNumberStatus.Linked, found.Status));
     }
 
     /// <summary>
