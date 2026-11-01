@@ -210,6 +210,10 @@ public sealed record Entity
     [JsonIgnore]
     public IReadOnlyList<string>? GrantedAbilityNames { get; init; }
 
+    /// <summary>Asset name of the Blueprint class the entity's class derives from, where that class is a Blueprint.</summary>
+    [JsonIgnore]
+    public string? ParentClassName { get; init; }
+
 
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, double>>? GatedConstants { get; init; }

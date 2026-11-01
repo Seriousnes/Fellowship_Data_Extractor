@@ -54,6 +54,9 @@ public static class DocumentProjection
             EnabledInGame = entity.EnabledInGame,
             NamedAfter = references.At(entity.NamedAfter),
             PartOf = Name(entity) is null ? references.Changes.PartOf(entity, references) : null,
+            ParentClass = Parent(entity, EntityType.Ability, references),
+            Applies = references.Changes.Named(entity, entity.ReachedEffects, EntityType.Effect, references),
+            Grants = references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references),
             Description = entity.Description,
             DescriptionsByHero = entity.DescriptionsByHero,
             Detail = entity.Detail,
@@ -186,6 +189,9 @@ public static class DocumentProjection
             Owner = references.At(entity.Owner),
             AppliedBy = references.At(entity.AppliedBy),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
+            ParentClass = Parent(entity, EntityType.Effect, references),
+            Applies = references.Changes.Named(entity, entity.ReachedEffects, EntityType.Effect, references),
+            Grants = references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references),
             Role = roles.Role(entity.Name),
             ChangedBy = references.Changes.ChangedBy(entity, references),
             Changes = references.Changes.Of(entity),
@@ -257,6 +263,8 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Generates = Generated(entity),
             MinimumHeroRank = entity.MinimumHeroRank,
+            Applies = references.Changes.Named(entity, entity.ReachedEffects, EntityType.Effect, references),
+            Grants = references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references),
         },
 
         EntityType.Hero => new HeroDocument
@@ -593,6 +601,11 @@ public static class DocumentProjection
 
     public static string? Name(Entity entity) =>
         entity.DisplayName is { } name && ReadsAsWords(name) ? name : null;
+
+    private static EntityReference? Parent(Entity entity, EntityType type, References references) =>
+        references.Changes.Named(entity, entity.ParentClassName is { } parent ? [parent] : null, type, references) is [var only]
+            ? only
+            : null;
 
     private static PrimaryStat? Stat(Entity entity) =>
         entity.PrimaryStat is { } stat ? Enum.Parse<PrimaryStat>(stat) : null;

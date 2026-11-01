@@ -46,6 +46,15 @@ public sealed class EffectDocument : EntityDocument
 
     public EntityReference? PartOf { get; init; }
 
+    /// <summary>The effect whose Blueprint class this effect's class derives from.</summary>
+    public EntityReference? ParentClass { get; init; }
+
+    /// <summary>Effects the effect's properties and graph reference.</summary>
+    public IReadOnlyList<EntityReference>? Applies { get; init; }
+
+    /// <summary>Abilities the effect grants.</summary>
+    public IReadOnlyList<EntityReference>? Grants { get; init; }
+
     public string? Role { get; init; }
 
     public IReadOnlyList<EntityReference>? ChangedBy { get; init; }

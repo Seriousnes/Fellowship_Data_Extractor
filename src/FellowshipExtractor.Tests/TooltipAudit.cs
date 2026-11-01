@@ -49,7 +49,7 @@ public static partial class TooltipAudit
 
     private static readonly HashSet<string> Skipped = new(
         ["id", "target", "while", "whileTarget", "owner", "talent", "appliedBy", "partOf", "changedBy", "nameBorrowedFrom",
-         "textureBorrowedFrom", "grants", "row", "column", "icon", "color", "heroes", "effectTags"],
+         "textureBorrowedFrom", "grants", "applies", "parentClass", "row", "column", "icon", "color", "heroes", "effectTags"],
         StringComparer.Ordinal);
 
     private static readonly HashSet<EntityType> Unaudited =
@@ -141,10 +141,12 @@ public static partial class TooltipAudit
                 var linkedTyped = elsewhere.Where(entry => entry.Typed is { } item && Near(item.Value, number)).ToList();
                 var linkedConstant = elsewhere.Where(entry => entry.Constant is { } value && Reads(value)).ToList();
 
+                var constant = constants.Any(Reads);
+
                 var status = typed.Count > 0 ? TooltipNumberStatus.Typed
-                    : linkedTyped.Count > 0 ? TooltipNumberStatus.Elsewhere
+                    : linkedTyped.Count > 0 ? constant ? TooltipNumberStatus.Constant : TooltipNumberStatus.Elsewhere
                     : contradicting.Count > 0 ? TooltipNumberStatus.Contradicted
-                    : constants.Any(Reads) ? TooltipNumberStatus.Constant
+                    : constant ? TooltipNumberStatus.Constant
                     : linkedConstant.Count > 0 ? TooltipNumberStatus.Elsewhere
                     : TooltipNumberStatus.Missing;
 
@@ -177,6 +179,9 @@ public static partial class TooltipAudit
             ? (type, reference["id"]!.GetValue<int>())
             : null;
 
+    private static IEnumerable<(EntityType, int)> References(JsonNode? node) =>
+        node is JsonArray items ? items.Select(Reference).OfType<(EntityType, int)>() : [];
+
     private static readonly string[] FamilyFields = ["partOf", "namedAfter"];
 
     private static void Index<TKey>(Dictionary<TKey, List<(EntityType, int)>> index, TKey key, (EntityType, int) value)
@@ -188,14 +193,52 @@ public static partial class TooltipAudit
 
     /// <summary>
     /// The entity's family (every document joined to it through partOf or namedAfter, in either direction), the
-    /// abilities a family member grants or is applied by, every effect any of those apply, and the targets of the
-    /// entity's own changes.
+    /// abilities and effects a family member grants, applies, derives its class from or is applied by, the effects a
+    /// granted ability applies, the family of each ability reached, every effect any of those apply, and the targets
+    /// of the entity's own changes.
     /// </summary>
     private static IEnumerable<JsonObject> Linked(
         (EntityType, int) self,
         Dictionary<(EntityType, int), JsonObject> byKey,
         Dictionary<(EntityType, int), List<(EntityType, int)>> family,
         Dictionary<(EntityType, int), List<(EntityType, int)>> appliedBy)
+    {
+        var members = Family(self, family);
+
+        var reached = new HashSet<(EntityType, int)>(members);
+
+        foreach (var member in members)
+        {
+            if (byKey.GetValueOrDefault(member) is not { } body) continue;
+
+            reached.UnionWith(References(body["grants"]));
+            reached.UnionWith(References(body["applies"]));
+
+            if (Reference(body["appliedBy"]) is { } applier) reached.Add(applier);
+            if (Reference(body["parentClass"]) is { } parent) reached.Add(parent);
+        }
+
+        foreach (var holder in reached.ToArray())
+        {
+            if (members.Contains(holder) || holder.Item1 != EntityType.Ability) continue;
+
+            reached.UnionWith(Family(holder, family));
+            reached.UnionWith(References(byKey.GetValueOrDefault(holder)?["applies"]));
+        }
+
+        foreach (var holder in reached.ToArray()) reached.UnionWith(appliedBy.GetValueOrDefault(holder) ?? []);
+
+        foreach (var change in byKey.GetValueOrDefault(self)?["changes"]?.AsArray() ?? [])
+        {
+            if (Reference(change?["target"]) is { } target) reached.Add(target);
+        }
+
+        return reached.Select(key => byKey.GetValueOrDefault(key)).OfType<JsonObject>();
+    }
+
+    /// <summary>Every document joined to <paramref name="self"/> through partOf or namedAfter, in either direction.</summary>
+    private static HashSet<(EntityType, int)> Family(
+        (EntityType, int) self, Dictionary<(EntityType, int), List<(EntityType, int)>> family)
     {
         var members = new HashSet<(EntityType, int)> { self };
         var pending = new Queue<(EntityType, int)>(members);
@@ -208,28 +251,7 @@ public static partial class TooltipAudit
             }
         }
 
-        var reached = new HashSet<(EntityType, int)>(members);
-
-        foreach (var member in members)
-        {
-            if (byKey.GetValueOrDefault(member) is not { } body) continue;
-
-            foreach (var granted in body["grants"]?.AsArray() ?? [])
-            {
-                if (Reference(granted) is { } ability) reached.Add(ability);
-            }
-
-            if (Reference(body["appliedBy"]) is { } applier) reached.Add(applier);
-        }
-
-        foreach (var holder in reached.ToArray()) reached.UnionWith(appliedBy.GetValueOrDefault(holder) ?? []);
-
-        foreach (var change in byKey.GetValueOrDefault(self)?["changes"]?.AsArray() ?? [])
-        {
-            if (Reference(change?["target"]) is { } target) reached.Add(target);
-        }
-
-        return reached.Select(key => byKey.GetValueOrDefault(key)).OfType<JsonObject>();
+        return members;
     }
 
     private static void Walk(JsonNode? node, List<Shown> shown, HashSet<double> constants)

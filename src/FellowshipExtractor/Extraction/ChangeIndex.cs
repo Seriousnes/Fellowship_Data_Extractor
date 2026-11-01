@@ -244,6 +244,10 @@ public sealed class ChangeIndex
     public EntityReference? PartOf(Entity ability, DocumentProjection.References references) =>
         _modifiers.PartOf(ability, references);
 
+    public IReadOnlyList<EntityReference>? Named(
+        Entity entity, IEnumerable<string>? names, EntityType type, DocumentProjection.References references) =>
+        _modifiers.Named(entity, names, type, references);
+
     public EntityReference? TalentNamed(Entity context, string name, DocumentProjection.References references) =>
         _modifiers.TalentNamed(context, name, references);
 
