@@ -19,10 +19,17 @@ public enum TooltipNumberStatus
     Contradicted,
 
     /// <summary>
-    /// Only a linked document has the number, so the entity's own page does not show it. The evidence names the
-    /// document.
+    /// Only a document reached through another document has the number, so the entity's own page does not show it.
+    /// The evidence names the document.
     /// </summary>
     Elsewhere,
+
+    /// <summary>
+    /// A document the entity's own document links has the number: a grant, an applied effect, a part, the ability it
+    /// is part of or applied by, its parent class, its borrowed name or a change target. The evidence names the
+    /// document.
+    /// </summary>
+    Linked,
 
     /// <summary>No linked document has the number.</summary>
     Missing,
@@ -50,7 +57,7 @@ public static partial class TooltipAudit
     private static readonly HashSet<string> Skipped = new(
         ["id", "target", "while", "whileTarget", "owner", "talent", "appliedBy", "partOf", "changedBy", "nameBorrowedFrom",
          "textureBorrowedFrom", "grants", "applies", "parentClass", "row", "column", "icon", "color", "heroes", "effectTags",
-         "ticks", "result", "atMaxStacks", "setByCallerScaling"],
+         "ticks", "result", "atMaxStacks", "setByCallerScaling", "parts"],
         StringComparer.Ordinal);
 
     private static readonly HashSet<EntityType> Unaudited =
@@ -106,6 +113,7 @@ public static partial class TooltipAudit
             var elsewhere = new List<(Shown? Typed, double? Constant, string Source)>();
             var derived = Derived(body);
             var derivedElsewhere = new List<(Shown Derived, string Source)>();
+            var direct = Direct(body);
 
             Walk(body, shown, constants);
 
@@ -168,12 +176,21 @@ public static partial class TooltipAudit
                 if (computed.Count > 0) status = TooltipNumberStatus.Typed;
                 else if (computedElsewhere.Count > 0) status = TooltipNumberStatus.Elsewhere;
 
+                if (status == TooltipNumberStatus.Elsewhere &&
+                    linkedTyped.Select(entry => entry.Source)
+                        .Concat(linkedConstant.Select(entry => entry.Source))
+                        .Concat(computedElsewhere.Select(entry => entry.Source))
+                        .Any(direct.Contains))
+                {
+                    status = TooltipNumberStatus.Linked;
+                }
+
                 var evidence = status switch
                 {
                     TooltipNumberStatus.Contradicted => contradicting.Select(item => $"{item.Label} {item.Op} {Format(item.Raw)}"),
-                    TooltipNumberStatus.Elsewhere when computedElsewhere.Count > 0 =>
+                    TooltipNumberStatus.Elsewhere or TooltipNumberStatus.Linked when computedElsewhere.Count > 0 =>
                         computedElsewhere.Select(entry => $"{entry.Source}: {entry.Derived.Label} {entry.Derived.Op} {Format(entry.Derived.Raw)}"),
-                    TooltipNumberStatus.Elsewhere => linkedTyped.Count > 0
+                    TooltipNumberStatus.Elsewhere or TooltipNumberStatus.Linked => linkedTyped.Count > 0
                         ? linkedTyped.Select(entry => $"{entry.Source}: {entry.Typed!.Label} {entry.Typed.Op} {Format(entry.Typed.Raw)}")
                         : linkedConstant.Select(entry => $"{entry.Source}: {Format(entry.Constant!.Value)}"),
                     _ when computed.Count > 0 => computed.Select(item => $"{item.Label} {item.Op} {Format(item.Raw)}"),
@@ -204,6 +221,29 @@ public static partial class TooltipAudit
         node is JsonArray items ? items.Select(Reference).OfType<(EntityType, int)>() : [];
 
     private static readonly string[] FamilyFields = ["partOf", "namedAfter"];
+
+    private static readonly string[] LinkFields =
+        ["grants", "applies", "parts", "partOf", "appliedBy", "parentClass", "namedAfter", "nameBorrowedFrom"];
+
+    /// <summary>Documents the entity's own link fields and change targets name, as "type id".</summary>
+    private static HashSet<string> Direct(JsonObject body)
+    {
+        var linked = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var field in LinkFields)
+        {
+            var held = body[field] is JsonArray ? References(body[field]) : Reference(body[field]) is { } one ? [one] : [];
+
+            foreach (var (type, id) in held) linked.Add($"{EntityTypes.Slug(type)} {id}");
+        }
+
+        foreach (var change in body["changes"]?.AsArray() ?? [])
+        {
+            if (Reference(change?["target"]) is var (type, id)) linked.Add($"{EntityTypes.Slug(type)} {id}");
+        }
+
+        return linked;
+    }
 
     private static void Index<TKey>(Dictionary<TKey, List<(EntityType, int)>> index, TKey key, (EntityType, int) value)
         where TKey : notnull

@@ -244,9 +244,9 @@ public static class ExportRun
 
         var modifiers = new ModifierIndex(shared, entity => roles.PartOf(entity.Name));
         var changes = new ChangeIndex(shared, modifiers, unchanged);
-        var references = unchanged.With(changes);
-
+        var linked = unchanged.With(changes);
         var marked = SpiritAbilityReferences.Mark(SlottedNames.Mark(powered.Entities, resolver.Owners.Slotted));
+        var references = linked.With(DocumentProjection.Links(marked, linked, roles));
 
         var projected = marked
             .Select(record => (Record: record, Document: DocumentProjection.From(record, references.For(record.PrimaryStat), roles)))

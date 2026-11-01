@@ -19,6 +19,9 @@ public sealed class TalentDocument : EntityDocument
 
     public IReadOnlyList<EntityReference>? Grants { get; init; }
 
+    /// <summary>Effects the abilities it grants apply or have as parts.</summary>
+    public IReadOnlyList<EntityReference>? Applies { get; init; }
+
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 
     public IReadOnlyList<Change>? Changes { get; init; }

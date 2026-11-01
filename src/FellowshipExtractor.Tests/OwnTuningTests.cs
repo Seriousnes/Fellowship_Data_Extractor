@@ -40,7 +40,7 @@ public sealed class OwnTuningTests
     {
         var number = Audit("effect", ToughnessRankOne, "5%");
 
-        Assert.Equal(TooltipNumberStatus.Elsewhere, number.Status);
+        Assert.Equal(TooltipNumberStatus.Linked, number.Status);
         Assert.Contains($"ability {ToughnessMonitor}: 0.05", number.Evidence);
     }
 

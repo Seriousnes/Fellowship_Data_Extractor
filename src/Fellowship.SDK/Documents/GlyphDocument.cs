@@ -21,5 +21,8 @@ public sealed class GlyphDocument : EntityDocument
 
     public IReadOnlyList<EntityReference>? Grants { get; init; }
 
+    /// <summary>Effects the abilities it grants apply or have as parts.</summary>
+    public IReadOnlyList<EntityReference>? Applies { get; init; }
+
     public IReadOnlyDictionary<string, IReadOnlyList<double?>>? Constants { get; init; }
 }

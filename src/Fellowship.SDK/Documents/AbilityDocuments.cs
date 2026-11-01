@@ -22,6 +22,9 @@ public sealed class AbilityDocument : EntityDocument
     /// <summary>Effects the ability's properties and graph reference.</summary>
     public IReadOnlyList<EntityReference>? Applies { get; init; }
 
+    /// <summary>Effects and abilities part of the ability or named after it.</summary>
+    public IReadOnlyList<EntityReference>? Parts { get; init; }
+
     /// <summary>Abilities the ability grants.</summary>
     public IReadOnlyList<EntityReference>? Grants { get; init; }
 

@@ -15,13 +15,26 @@ public static class DocumentProjection
         IReadOnlyDictionary<(EntityType Type, int Id), int>? redirects = null,
         IReadOnlyDictionary<(EntityType Type, int Id, string Stat), string>? namesByStat = null,
         string? stat = null,
-        ChangeIndex? changes = null)
+        ChangeIndex? changes = null,
+        AppliedLinks? links = null)
     {
         public ChangeIndex Changes { get; } = changes ?? ChangeIndex.None;
 
-        public References For(string? primaryStat) => new(types, names, redirects, namesByStat, primaryStat, Changes);
+        public AppliedLinks Links { get; } = links ?? AppliedLinks.None;
 
-        public References With(ChangeIndex index) => new(types, names, redirects, namesByStat, stat, index);
+        public References For(string? primaryStat) => new(types, names, redirects, namesByStat, primaryStat, Changes, Links);
+
+        public References With(ChangeIndex index) => new(types, names, redirects, namesByStat, stat, index, Links);
+
+        public References With(AppliedLinks held) => new(types, names, redirects, namesByStat, stat, Changes, held);
+
+        /// <summary>
+        /// Effects the abilities in <paramref name="granted"/> apply or have as parts, in grant order, after
+        /// <paramref name="own"/>.
+        /// </summary>
+        public IReadOnlyList<EntityReference>? Through(IReadOnlyList<EntityReference>? granted, IReadOnlyList<EntityReference>? own = null) =>
+            Distinct((own ?? []).Concat((granted ?? []).SelectMany(ability =>
+                (Links.Applied(ability) ?? []).Concat((Links.Parts(ability) ?? []).Where(part => part.Type == EntityType.Effect)))));
 
         public EntityReference? At(IconSource? source) =>
             source is null || types(source.Table, source.NetId) is not { } type
@@ -55,8 +68,11 @@ public static class DocumentProjection
             NamedAfter = references.At(entity.NamedAfter),
             PartOf = Name(entity) is null ? references.Changes.PartOf(entity, references) : null,
             ParentClass = Parent(entity, EntityType.Ability, references),
-            Applies = Applied(entity, references),
-            Grants = references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references),
+            Applies = references.Links.Applied(references.Of(EntityType.Ability, entity.NetId)) ?? Applied(entity, references),
+            Parts = references.Links.Parts(references.Of(EntityType.Ability, entity.NetId)),
+            Grants = Distinct(
+                (references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references) ?? [])
+                .Concat(references.Links.Granted(references.Of(EntityType.Ability, entity.NetId)) ?? [])),
             Description = entity.Description,
             DescriptionsByHero = entity.DescriptionsByHero,
             Detail = entity.Detail,
@@ -265,7 +281,9 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Generates = Generated(entity),
             MinimumHeroRank = entity.MinimumHeroRank,
-            Applies = references.Changes.Named(entity, entity.ReachedEffects, EntityType.Effect, references),
+            Applies = references.Through(
+                references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references),
+                references.Changes.Named(entity, entity.ReachedEffects, EntityType.Effect, references)),
             Grants = references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references),
         },
 
@@ -331,6 +349,7 @@ public static class DocumentProjection
             Description = entity.Description,
             Icon = entity.Icon,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
         },
 
@@ -356,6 +375,7 @@ public static class DocumentProjection
             RequiredPower = entity.RequiredGemPower!.Value,
             Replaces = references.Of(EntityType.GemAbility, entity.Replaces),
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
@@ -380,6 +400,7 @@ public static class DocumentProjection
             Cost = entity.Cost,
             TargetCountFalloff = Falloff(entity, references),
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
             Changes = references.Changes.Of(entity),
             Constants = references.Changes.Constants(entity),
@@ -400,6 +421,7 @@ public static class DocumentProjection
             AbilityRank = entity.AbilityRank,
             IconHovered = entity.IconHovered,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Constants = entity.ConstantsByRank,
             Generates = Generated(entity),
         },
@@ -423,6 +445,7 @@ public static class DocumentProjection
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
         },
 
@@ -445,6 +468,7 @@ public static class DocumentProjection
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
         },
 
@@ -467,6 +491,7 @@ public static class DocumentProjection
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
         },
 
@@ -489,6 +514,7 @@ public static class DocumentProjection
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
             PrimaryStat = Stat(entity),
             Stats = entity.EnchantStats,
@@ -513,6 +539,7 @@ public static class DocumentProjection
             Schools = Schools(entity.Tags),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
         },
 
@@ -541,6 +568,7 @@ public static class DocumentProjection
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
         },
 
@@ -556,6 +584,7 @@ public static class DocumentProjection
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
             Changes = references.Changes.Of(entity),
             Constants = references.Changes.Constants(entity),
@@ -573,6 +602,7 @@ public static class DocumentProjection
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
         },
 
@@ -584,6 +614,7 @@ public static class DocumentProjection
             Description = entity.Description,
             ScalesOff = entity.ScalesOff,
             Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
         },
 
         null => throw new InvalidOperationException($"{entity.Name} has no type and should not have been projected."),
@@ -603,6 +634,52 @@ public static class DocumentProjection
 
     public static string? Name(Entity entity) =>
         entity.DisplayName is { } name && ReadsAsWords(name) ? name : null;
+
+    /// <summary>
+    /// Links an ability's document has from the documents naming it. An effect naming the ability as its applier is
+    /// one the ability applies. An effect or ability part of it, or named after it, is a part. An ability granted by
+    /// an effect the ability applies is one it grants.
+    /// </summary>
+    public static AppliedLinks Links(IEnumerable<Entity> entities, References references, EffectRoles roles)
+    {
+        var links = new AppliedLinks();
+        var grantedBy = new Dictionary<(EntityType Type, int Id), IReadOnlyList<EntityReference>>();
+
+        foreach (var entity in entities)
+        {
+            if (entity is { Type: EntityType.Ability, NetId: { } ability } &&
+                references.Of(EntityType.Ability, ability) is { } self)
+            {
+                foreach (var effect in Applied(entity, references) ?? []) links.Apply(self, effect);
+
+                if (references.At(entity.NamedAfter) is { Type: EntityType.Ability } named) links.Part(named, self);
+                if (Name(entity) is null && references.Changes.PartOf(entity, references) is { } whole) links.Part(whole, self);
+            }
+
+            if (entity is not { Type: EntityType.Effect, NetId: { } id } ||
+                references.Of(EntityType.Effect, id) is not { } reached)
+            {
+                continue;
+            }
+
+            if (references.At(entity.AppliedBy) is { Type: EntityType.Ability } applier) links.Apply(applier, reached);
+            if (references.Of(EntityType.Ability, roles.PartOf(entity.Name)) is { } owner) links.Part(owner, reached);
+
+            if (references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references) is { } granted)
+            {
+                grantedBy[(reached.Type, reached.Id)] = granted;
+            }
+        }
+
+        links.GrantThroughEffects(grantedBy);
+
+        return links;
+    }
+
+    private static IReadOnlyList<EntityReference>? Distinct(IEnumerable<EntityReference> references) =>
+        references.DistinctBy(reference => (reference.Type, reference.Id)).ToArray() is { Length: > 0 } distinct
+            ? distinct
+            : null;
 
     /// <summary>Effects the entity references, other than its cost, cooldown and charge effects.</summary>
     private static IReadOnlyList<EntityReference>? Applied(Entity entity, References references) =>

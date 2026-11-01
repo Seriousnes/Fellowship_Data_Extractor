@@ -30,7 +30,7 @@ public sealed class ComputedTotalTests
 
         var maximum = Number("talent", 772, "25%");
 
-        Assert.Equal(TooltipNumberStatus.Elsewhere, maximum.Status);
+        Assert.Equal(TooltipNumberStatus.Linked, maximum.Status);
         Assert.Contains("effect 3211: Spirit Additive x100 stacks 0.25", maximum.Evidence);
     }
 

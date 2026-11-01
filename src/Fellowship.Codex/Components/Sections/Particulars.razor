@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-@if (Rows.Count > 0 || Falloff.Count > 0 || Changes.Count > 0 || Schools.Count > 0 || Tables is not null)
+@if (Rows.Count > 0 || Falloff.Count > 0 || Changes.Count > 0 || Links.Count > 0 || Schools.Count > 0 || Tables is not null)
 {
     <Panel Head="Details" Class="@(ReferenceEquals(Entity, Here.Entity) ? "cx-entity-details" : null)">
         @if (Rows.Count > 0)
@@ -60,6 +60,27 @@
             </Facts>
         }
 
+        @if (Links.Count > 0)
+        {
+            <Rule />
+            <SubHead>Links</SubHead>
+            <Facts>
+                @foreach (var (label, targets) in Links)
+                {
+                    <Fact Label="@label">
+                        @for (var at = 0; at < targets.Count; at++)
+                        {
+                            @if (at > 0)
+                            {
+                                <text>, </text>
+                            }
+                            <Ref Entity="targets[at]" />
+                        }
+                    </Fact>
+                }
+            </Facts>
+        }
+
         @if (Schools.Count > 0)
         {
             <Rule />
@@ -104,6 +125,9 @@
                 Text: $"{Titled(FellowshipCodex.Spaced(change.Field))}: {CodexView.Modifier(change.Op, change.Value, change.Percent is true)}"))
             .DistinctBy(change => (Ui.Name(change.Target.Type, change.Target.Id), change.Text)),
     ];
+
+    private IReadOnlyList<(string Label, IReadOnlyList<Fellowship.SDK.Models.EntityReference> Targets)> Links =>
+        ReferenceEquals(Entity, Here.Entity) ? Ui.Links(Entity) : [];
 
     private static string Titled(string field) => field.Length == 0 ? field : char.ToUpperInvariant(field[0]) + field[1..];
 

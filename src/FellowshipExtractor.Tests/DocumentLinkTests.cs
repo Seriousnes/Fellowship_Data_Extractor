@@ -25,6 +25,8 @@ public sealed class DocumentLinkTests
     private const int SharpenedBlade = 215;
     private const int SharpenedBladeDebuff = 2199;
     private const int EnlightenedSoul = 56;
+    private const int CoalescingFrost = 36;
+    private const int CoalescingFrostEffect = 2306;
 
     private const string ReducedAttackSpeed = "ReducedAttackSpeed.AttackSpeedMultiplier";
     private const string MeikoReducedAttackSpeed = "Meiko.DurationalAoeDamageBuff.Talent.ReducedAttackSpeed.AttackSpeedMultiplier";
@@ -53,9 +55,24 @@ public sealed class DocumentLinkTests
         {
             var slowed = Audited("weapon-power", AlzeracsShackle, number);
 
-            Assert.Equal(TooltipNumberStatus.Elsewhere, slowed.Status);
+            Assert.Equal(TooltipNumberStatus.Linked, slowed.Status);
             Assert.StartsWith($"effect {AlzeracsShackleSlow}:", slowed.Evidence, StringComparison.Ordinal);
         }
+    }
+
+    /// <summary>
+    /// Coalescing Frost grants ability 1575, which applies effect 2306. The effect's 3-second duration is the talent's
+    /// "for 3 seconds".
+    /// </summary>
+    [Fact]
+    public void CoalescingFrostAppliesTheEffectItsGrantedAbilityApplies()
+    {
+        Assert.Contains(CoalescingFrostEffect, Ids(Document(EntityType.Talent, CoalescingFrost)["applies"]));
+
+        var duration = Audited("talent", CoalescingFrost, "3");
+
+        Assert.Equal(TooltipNumberStatus.Linked, duration.Status);
+        Assert.Equal($"effect {CoalescingFrostEffect}: 3", duration.Evidence);
     }
 
     [Fact]
@@ -65,7 +82,7 @@ public sealed class DocumentLinkTests
 
         var duration = Audited("ability", PricklyVine, "27");
 
-        Assert.Equal(TooltipNumberStatus.Elsewhere, duration.Status);
+        Assert.Equal(TooltipNumberStatus.Linked, duration.Status);
         Assert.Equal($"effect {PricklyVineSummon}: 27", duration.Evidence);
     }
 
@@ -76,7 +93,7 @@ public sealed class DocumentLinkTests
 
         var reduction = Audited("dungeon-affix", StormShield, "50%");
 
-        Assert.Equal(TooltipNumberStatus.Elsewhere, reduction.Status);
+        Assert.Equal(TooltipNumberStatus.Linked, reduction.Status);
         Assert.Contains($"effect {StormShieldReduction}: IncomingDamageMultiplier MultiplyCompound 0.5", reduction.Evidence,
             StringComparison.Ordinal);
     }
@@ -90,7 +107,7 @@ public sealed class DocumentLinkTests
 
         var strength = Audited("ability", BloodStrike, "315%");
 
-        Assert.Equal(TooltipNumberStatus.Elsewhere, strength.Status);
+        Assert.Equal(TooltipNumberStatus.Linked, strength.Status);
         Assert.Contains($"ability {RebelliousStrike}: 3.15", strength.Evidence, StringComparison.Ordinal);
     }
 
