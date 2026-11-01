@@ -57,7 +57,7 @@ public static partial class TooltipAudit
     private static readonly HashSet<string> Skipped = new(
         ["id", "target", "while", "whileTarget", "owner", "talent", "appliedBy", "partOf", "changedBy", "nameBorrowedFrom",
          "textureBorrowedFrom", "grants", "applies", "parentClass", "row", "column", "icon", "color", "heroes", "effectTags",
-         "ticks", "result", "atMaxStacks", "setByCallerScaling", "parts"],
+         "ticks", "result", "atMaxStacks", "setByCallerScaling", "parts", "siblings"],
         StringComparer.Ordinal);
 
     private static readonly HashSet<EntityType> Unaudited =
@@ -223,7 +223,7 @@ public static partial class TooltipAudit
     private static readonly string[] FamilyFields = ["partOf", "namedAfter"];
 
     private static readonly string[] LinkFields =
-        ["grants", "applies", "parts", "partOf", "appliedBy", "parentClass", "namedAfter", "nameBorrowedFrom"];
+        ["grants", "applies", "parts", "siblings", "partOf", "appliedBy", "parentClass", "namedAfter", "nameBorrowedFrom"];
 
     /// <summary>Documents the entity's own link fields and change targets name, as "type id".</summary>
     private static HashSet<string> Direct(JsonObject body)

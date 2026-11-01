@@ -2,8 +2,8 @@ type	id	ordinal	number	status	name	context	evidence
 talent	14	0	25%	Missing	Martial Command	While Siegebreaker is active you deal 25% more damage and 50% your damage reduction from	
 talent	26	0	5%	Missing	Bluey's Gambit	your Blue Flutterfly is following you, you take 5% reduced damage.    While your Blue Flutterfly i	
 talent	26	1	5%	Missing	Bluey's Gambit	utterfly is following another player, they take 5% reduced damage.	
-talent	36	2	50%	Missing	Coalescing Frost	ed.    Freezing Torrent critical strikes have a 50% chance to apply 2 stacks of Coalescing Frost.	
-talent	36	3	2	Missing	Coalescing Frost	ent critical strikes have a 50% chance to apply 2 stacks of Coalescing Frost.	
+talent	36	2	50%	Elsewhere	Coalescing Frost	ed.    Freezing Torrent critical strikes have a 50% chance to apply 2 stacks of Coalescing Frost.	effect 2300: 2
+talent	36	3	2	Elsewhere	Coalescing Frost	ent critical strikes have a 50% chance to apply 2 stacks of Coalescing Frost.	effect 2300: 2
 talent	48	2	2	Missing	Avalanche	to strike the target, and a 9% chance to cause 2 additional Ice Comets to strike the target.	
 talent	56	0	3	Missing	Enlightened Soul	Your Radiant Blast adds 3 seconds to the duration of all your active Rune	
 legendary-power	86	1	20	Missing	Thundering Vortex	1 stack of Thundering Vortex.    Once you have 20 stacks your next Chain Lightning deals 100% mor	
@@ -61,8 +61,6 @@ ability	9	0	5	Missing	Binding Ice: Curse	one player is afflicted by an icy curse
 ability	135	1	20%	Missing	Sentinel's Bastion	Every 60 seconds, you gain an absorb equal to 20% Max Health that lasts for 60 seconds.	
 ability	136	1	40%	Missing	Sentinel's Bastion - II	Every 60 seconds, you gain an absorb equal to 40% Max Health that lasts for 60 seconds.	
 ability	152	4	12	Missing	Al'zerac's Shackle	Speed by 65% and their Attack Speed by 40% for 12 seconds.    While Chilled, the afflicted enemie	
-ability	161	0	4	Elsewhere	Nature's Fury	re the forces of nature to bounce between up to 4 enemies, dealing {} nature damage to each one,	ability 13: 4
-ability	161	1	4	Elsewhere	Nature's Fury	dealing {} nature damage to each one, and up to 4 allies, healing each one for {} health.    The	ability 13: 4
 ability	164	2	21	Missing	Repository of Frozen Light	ided between all players within 6000 radius for 21 seconds. Each time a player with Frozen Light t	
 ability	172	0	66%	Missing	Kindling	ime to the target, dealing fire damage equal to 66% / 79% / 92% / 106% of your primary stat every 1	
 ability	172	1	79%	Missing	Kindling	the target, dealing fire damage equal to 66% / 79% / 92% / 106% of your primary stat every 1.5 sec	
@@ -92,7 +90,6 @@ ability	1032	2	0.1	Missing	Ice Blitz	on.    The duration of Ice Blitz is extende
 ability	1055	0	4	Missing	Fluttercall: Jubilee	Call upon Dream Flutterflies to protect up to 4 players by evenly distributing all health betwe	
 ability	1055	4	+30%	Missing	Fluttercall: Jubilee	t ability you gain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
 ability	1055	6	20	Missing	Fluttercall: Jubilee	granting +30% Haste and +600% Mana Recovery for 20 sec.	
-ability	1079	2	20%	Elsewhere	Fluttercall: Protect	is increased by 50% and all your abilities have 20% reduced mana cost.	effect 1486: 0.8; effect 1486: 1.25
 ability	1090	0	15	Missing	Forbidden Technique	r applies Forbidden Technique to the target for 15 seconds.    Forbidden Technique accumulates 18%	
 ability	1099	0	+20%	Missing	Fighting Techniques	S   Double Palm Strike (CORE ABILITY)  • Grants +20% Magic Damage reduction & +5% Parry for 30 sec.	
 ability	1099	1	+5%	Missing	Fighting Techniques	BILITY)  • Grants +20% Magic Damage reduction & +5% Parry for 30 sec.  Spirited Vortex  (CORE ABILI	
@@ -180,7 +177,6 @@ ability	2241	0	25%	Missing	Face Breaker	When Face Breaker deals critical strike 
 ability	2243	0	360	Missing	Furious Cleave	Jumps and spins in air a full 360 degree, striking all enemies in 1000 radius for	
 ability	2296	1	6	Missing	Bloodbound Spirit	enemies as it emerges and every 1.5 seconds for 6 seconds, applying Rend to the targets for {} of	
 ability	2296	3	+30%	Missing	Bloodbound Spirit	t ability you gain  Spirit of Heroism, granting +30% Haste for 20 seconds.	
-ability	2298	0	30	Elsewhere	Owed in Blood	an pick up to gain 1 stack of Owed in Blood for 30 seconds, up to maximum of 150 stacks.    Enemie	ability 2286: 30; effect 3231: 30; ability 2297: 30
 effect	29	1	15%	Missing	Stone Skin	reased Max Health and explodes on death dealing 15% of their max health in Physical Damage to all o	
 effect	47	0	4	Missing	Binding Ice	take frost magic damage and you are rooted for 4 seconds.	
 effect	53	0	3	Missing	Curse: Carnage	ng damage equal to 1% of their max health every 3 seconds.	
@@ -211,7 +207,6 @@ effect	1296	1	25%	Missing	Ruptured Soul	was remaining and trigger an explosion d
 effect	1316	0	25%	Missing	Rune of Renewal	ect healing effects on you echo for an addional 25% of the initial heal's value.	
 effect	1439	0	2	Missing	Fluttercall: Jubilee	s evenly distributed throughout the group every 2 seconds.	
 effect	1510	0	0.7%	Missing	Everlasting Spirit	You take 0.7% less damage per stack	
-effect	1570	2	35%	Elsewhere	Spirited Vortex	2 seconds.    The damage causes enemies to have 35% reduced movement speed for 5 seconds.	effect 1568: MoveSpeed Multiplicitive 0.65; effect 1569: MoveSpeed Multiplicitive 0.65
 effect	1731	0	22%	Missing	Volatile Poison	Deals 22% Agility poison damage every 2s over 6 seconds a	
 effect	1731	2	55%	Missing	Volatile Poison	very 2s over 6 seconds and then erupts, dealing 55% Agility damage to the target and nearby enemies	
 effect	1746	0	+150%	Missing	Schism - Skull Crusher	Your next Skull Crusher deals +150% increased damage.	
@@ -220,15 +215,12 @@ effect	1867	0	3	Missing	Celestial Impetus	Your next Celestial Shot applies 3 sta
 effect	1869	0	40%	Contradicted	Skystrider's Grace	Increases haste by 40% for 20 seconds.	Haste Additive 0.3
 effect	1930	0	12%	Missing	Reaper's Reprieve	Healing for 12% of your maximum health over 18 seconds.	
 effect	1931	0	36%	Missing	Reaper's Reprieve - II	Healing for 36% of your maximum health over 18 seconds.	
-effect	2069	0	+20%	Elsewhere	Widow's Malice	Your next Widow's Bite while grant you +20% Spirit for 10 seconds and generate an additiona	effect 2230: Spirit Additive 0.2
-effect	2070	0	+20%	Elsewhere	Widow's Malice	+20% Spirit and generating an additional 30 energy o	effect 2230: Spirit Additive 0.2
 effect	2073	0	50%	Missing	Lingering Heartseeker	Taking 50% increased damage from Multishot and Celestial S	
 effect	2079	0	1.5	Missing	Grounded Spirit	Every 1.5 seconds you stand still, you gain 1 stack of Gr	
 effect	2088	0	103%	Missing	Primed Serrated Blades	r next Double Strike applies a bleed that deals 103% Strength damage every 2 seconds over 12 seconds	
 effect	2088	1	2	Missing	Primed Serrated Blades	s a bleed that deals 103% Strength damage every 2 seconds over 12 seconds.	
 effect	2088	2	12	Missing	Primed Serrated Blades	deals 103% Strength damage every 2 seconds over 12 seconds.	
 effect	2114	0	10%	Missing	Stone Skin	Applies 10% of exploded enemy health over 6 seconds. Does n	
-effect	2151	0	10	Elsewhere	Latent Resurgence	1 stack of Latent Resurgence up to a maximum of 10 stacks.    When your health dips below 50% all	effect 2152: 10
 effect	2240	0	20%	Missing	Natural Protector	ge.    Damage dealt to the absorb is reduced by 20%.	
 effect	2241	1	308%	Missing	Bloomin' Boomshrooms	to detonate on them, instantly healing them for 308% Intellect each.    When targeting allies in thi	
 effect	2258	0	20%	Missing	Freezing Aura	t moving. Slows movement speed of all heroes by 20%.	

@@ -310,7 +310,7 @@ public sealed class CodexViewService(
 
     private static readonly string[] LinkProperties =
     [
-        nameof(AbilityDocument.Grants), nameof(AbilityDocument.Applies), nameof(AbilityDocument.Parts), nameof(AbilityDocument.PartOf),
+        nameof(AbilityDocument.Grants), nameof(AbilityDocument.Applies), nameof(AbilityDocument.Parts), nameof(EffectDocument.Siblings), nameof(AbilityDocument.PartOf),
         nameof(EffectDocument.AppliedBy), nameof(AbilityDocument.ParentClass), nameof(AbilityDocument.NamedAfter),
     ];
 

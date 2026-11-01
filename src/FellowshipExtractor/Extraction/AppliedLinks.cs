@@ -10,6 +10,8 @@ public sealed class AppliedLinks
     private readonly Dictionary<(EntityType Type, int Id), List<EntityReference>> _applied = [];
     private readonly Dictionary<(EntityType Type, int Id), List<EntityReference>> _parts = [];
     private readonly Dictionary<(EntityType Type, int Id), List<EntityReference>> _granted = [];
+    private readonly Dictionary<(EntityType Type, int Id), List<EntityReference>> _children = [];
+    private readonly Dictionary<(EntityType Type, int Id), List<EntityReference>> _parents = [];
 
     public IReadOnlyList<EntityReference>? Applied(EntityReference? ability) => Of(_applied, ability);
 
@@ -17,9 +19,35 @@ public sealed class AppliedLinks
 
     public IReadOnlyList<EntityReference>? Granted(EntityReference? ability) => Of(_granted, ability);
 
+    /// <summary>Effects applied by or part of the same ability as <paramref name="effect"/>.</summary>
+    public IReadOnlyList<EntityReference>? Siblings(EntityReference? effect)
+    {
+        if (Of(_parents, effect) is not { } parents) return null;
+
+        var siblings = new List<EntityReference>();
+
+        foreach (var parent in parents)
+        {
+            foreach (var child in Of(_children, parent) ?? [])
+            {
+                if ((child.Type, child.Id) == (effect!.Type, effect.Id)) continue;
+                if (!siblings.Any(held => (held.Type, held.Id) == (child.Type, child.Id))) siblings.Add(child);
+            }
+        }
+
+        return siblings.Count > 0 ? siblings : null;
+    }
+
     public void Apply(EntityReference ability, EntityReference effect) => Add(_applied, ability, effect);
 
     public void Part(EntityReference ability, EntityReference part) => Add(_parts, ability, part);
+
+    /// <summary>Records <paramref name="ability"/> as the ability applying <paramref name="effect"/> or holding it as a part.</summary>
+    public void Child(EntityReference ability, EntityReference effect)
+    {
+        Add(_children, ability, effect);
+        Add(_parents, effect, ability);
+    }
 
     /// <summary>Each ability grants the abilities its applied effects grant.</summary>
     public void GrantThroughEffects(IReadOnlyDictionary<(EntityType Type, int Id), IReadOnlyList<EntityReference>> grantedBy)

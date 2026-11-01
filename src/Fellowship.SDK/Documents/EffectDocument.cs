@@ -58,6 +58,9 @@ public sealed class EffectDocument : EntityDocument
     /// <summary>Effects the effect's properties and graph reference.</summary>
     public IReadOnlyList<EntityReference>? Applies { get; init; }
 
+    /// <summary>Effects applied by or part of the same ability as this one.</summary>
+    public IReadOnlyList<EntityReference>? Siblings { get; init; }
+
     /// <summary>Abilities the effect grants.</summary>
     public IReadOnlyList<EntityReference>? Grants { get; init; }
 
