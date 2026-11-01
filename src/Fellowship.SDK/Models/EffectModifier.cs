@@ -15,6 +15,12 @@ public sealed record EffectModifier(string Attribute)
     /// <summary>The value at each rank, from rank 1. A sigil or glyph modifier reading a ranked row has them.</summary>
     public IReadOnlyList<double>? Ranks { get; init; }
 
+    /// <summary>
+    /// The value at the effect's maximum stacks: stacks sum an additive or multiplicitive op's terms, and
+    /// compound a MultiplyCompound factor.
+    /// </summary>
+    public double? AtMaxStacks { get; init; }
+
     public double? ValueLow { get; init; }
 
     public double? ValueHigh { get; init; }

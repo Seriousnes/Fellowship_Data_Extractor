@@ -178,7 +178,7 @@ public static class DocumentProjection
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = Tuned(entity, references),
             Schools = Schools(entity.Tags) ?? Schools(entity.ApplierTags),
-            Modifiers = entity.Modifiers,
+            Modifiers = Stacked(entity.Modifiers, entity.MaxStacks),
             Generates = Generated(entity),
             Thresholds = entity.Thresholds,
             Talents = entity.Talents,
@@ -765,6 +765,28 @@ public static class DocumentProjection
 
         return [.. claimed.Select(Enum.Parse<Hero>).Distinct().Order()];
     }
+
+    /// <summary>
+    /// Each modifier with its value at the effect's maximum stacks. Massacre's Spirit 0.0025 is 0.25 at its 100
+    /// stacks, the 25% its talent prints.
+    /// </summary>
+    private static IReadOnlyList<EffectModifier>? Stacked(IReadOnlyList<EffectModifier>? modifiers, int? maxStacks)
+    {
+        if (modifiers is null || maxStacks is not { } stacks || stacks <= 1) return modifiers;
+
+        return [.. modifiers.Select(modifier => modifier is { Value: { } value, Op: { } op } &&
+                                                 AtStacks(op, value, stacks) is { } total && double.IsFinite(total)
+            ? modifier with { AtMaxStacks = Math.Round(total, 4) }
+            : modifier)];
+    }
+
+    private static double? AtStacks(string op, double value, int stacks) => op switch
+    {
+        "Additive" => value * stacks,
+        "Multiplicitive" => 1 + (value - 1) * stacks,
+        "MultiplyCompound" => Math.Pow(value, stacks),
+        _ => null,
+    };
 
     private static IReadOnlyList<ResourceGain>? Generated(Entity entity) =>
         entity.Generates is { Count: > 0 } gains ? gains : null;

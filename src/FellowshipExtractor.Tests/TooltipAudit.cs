@@ -49,7 +49,7 @@ public static partial class TooltipAudit
 
     private static readonly HashSet<string> Skipped = new(
         ["id", "target", "while", "whileTarget", "owner", "talent", "appliedBy", "partOf", "changedBy", "nameBorrowedFrom",
-         "textureBorrowedFrom", "grants", "row", "column", "icon", "color", "heroes", "effectTags", "ticks", "result",
+         "textureBorrowedFrom", "grants", "row", "column", "icon", "color", "heroes", "effectTags", "ticks", "result", "atMaxStacks",
          "setByCallerScaling"],
         StringComparer.Ordinal);
 
@@ -324,7 +324,7 @@ public static partial class TooltipAudit
                     _ => (double?)null,
                 };
 
-                if (stacked is not { } total) continue;
+                if (stacked is not { } total || !double.IsFinite(total)) continue;
 
                 foreach (var reading in ShownBy(op, total, false)) derived.Add(new Shown(reading, label, $"{op} x{Format(stacks)} stacks", total));
             }

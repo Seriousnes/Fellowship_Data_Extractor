@@ -26,6 +26,7 @@ public sealed class ComputedTotalTests
 
         Assert.Equal(100, effect["maxStacks"]!.GetValue<int>());
         Assert.Equal(0.0025, effect["modifiers"]![0]!["value"]!.GetValue<double>());
+        Assert.Equal(0.25, effect["modifiers"]![0]!["atMaxStacks"]!.GetValue<double>());
 
         var maximum = Number("talent", 772, "25%");
 
