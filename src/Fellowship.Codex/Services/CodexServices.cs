@@ -11,6 +11,8 @@ public static class CodexServices
             s.GetRequiredService<ILogger<EntityStoreService>>()));
         services.AddSingleton<IExportHistoryService>(s =>
             new ExportHistoryService(s.GetRequiredService<ExportHistoryHolder>().History));
+        services.AddSingleton<IPatchNotesService>(s => new PatchNotesService(
+            s.GetRequiredService<ExportHistoryHolder>().History, s.GetRequiredService<IExportHistoryService>()));
         services.AddSingleton<IDesignTokenService>(s =>
             new DesignTokenService(s.GetRequiredService<IEntityStoreService>().Settings));
         services.AddSingleton<IRichTextService>(s =>

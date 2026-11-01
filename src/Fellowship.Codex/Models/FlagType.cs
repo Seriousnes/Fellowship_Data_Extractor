@@ -7,6 +7,9 @@ public enum FlagType
     [Description("Show unobtainable entries")]
     Unobtainable,
 
+    [Description("Show unnamed entities")]
+    Unnamed,
+
     [Description("Has texture")]
     Icon,
 

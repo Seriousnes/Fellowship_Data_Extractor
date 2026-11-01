@@ -16,17 +16,23 @@ public static class DocumentProjection
         IReadOnlyDictionary<(EntityType Type, int Id, string Stat), string>? namesByStat = null,
         string? stat = null,
         ChangeIndex? changes = null,
-        AppliedLinks? links = null)
+        AppliedLinks? links = null,
+        IReadOnlyDictionary<(EntityType Type, int Id), IReadOnlyList<(EntityType Type, int Id)>>? origins = null)
     {
         public ChangeIndex Changes { get; } = changes ?? ChangeIndex.None;
 
         public AppliedLinks Links { get; } = links ?? AppliedLinks.None;
 
-        public References For(string? primaryStat) => new(types, names, redirects, namesByStat, primaryStat, Changes, Links);
+        public References For(string? primaryStat) =>
+            new(types, names, redirects, namesByStat, primaryStat, Changes, Links, origins);
 
-        public References With(ChangeIndex index) => new(types, names, redirects, namesByStat, stat, index, Links);
+        public References With(ChangeIndex index) => new(types, names, redirects, namesByStat, stat, index, Links, origins);
 
-        public References With(AppliedLinks held) => new(types, names, redirects, namesByStat, stat, Changes, held);
+        public References With(AppliedLinks held) => new(types, names, redirects, namesByStat, stat, Changes, held, origins);
+
+        public References With(
+            IReadOnlyDictionary<(EntityType Type, int Id), IReadOnlyList<(EntityType Type, int Id)>> roots) =>
+            new(types, names, redirects, namesByStat, stat, Changes, Links, roots);
 
         /// <summary>
         /// Effects the abilities in <paramref name="granted"/> apply or have as parts, in grant order, after
@@ -35,6 +41,12 @@ public static class DocumentProjection
         public IReadOnlyList<EntityReference>? Through(IReadOnlyList<EntityReference>? granted, IReadOnlyList<EntityReference>? own = null) =>
             Distinct((own ?? []).Concat((granted ?? []).SelectMany(ability =>
                 (Links.Applied(ability) ?? []).Concat((Links.Parts(ability) ?? []).Where(part => part.Type == EntityType.Effect)))));
+
+        public IReadOnlyList<EntityReference>? Origins(Entity entity) =>
+            entity.Type is { } type && entity.NetId is { } id && origins is not null &&
+            origins.TryGetValue((type, id), out var roots)
+                ? [.. roots.Select(root => Of(root.Type, root.Id)!)]
+                : null;
 
         public EntityReference? At(IconSource? source) =>
             source is null || types(source.Table, source.NetId) is not { } type
@@ -110,6 +122,7 @@ public static class DocumentProjection
             Schools = Schools(entity.Tags),
             Heroes = Owning(entity),
             Owner = references.At(entity.Owner),
+            Origins = references.Origins(entity),
             ChangedBy = references.Changes.ChangedBy(entity, references),
         },
 
@@ -205,6 +218,7 @@ public static class DocumentProjection
             TextureBorrowedFrom = references.At(entity.IconInheritedFrom),
             Heroes = Owning(entity),
             Owner = references.At(entity.Owner),
+            Origins = references.Origins(entity),
             AppliedBy = references.At(entity.AppliedBy),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
             ParentClass = Parent(entity, EntityType.Effect, references),
@@ -404,6 +418,7 @@ public static class DocumentProjection
             Generates = Generated(entity),
             Changes = references.Changes.Of(entity),
             Constants = references.Changes.Constants(entity),
+            Origins = references.Origins(entity),
         },
 
         EntityType.Glyph => new GlyphDocument

@@ -71,5 +71,7 @@ public sealed class AbilityDocument : EntityDocument
 
     public EntityReference? Owner { get; init; }
 
+    public IReadOnlyList<EntityReference>? Origins { get; init; }
+
     public IReadOnlyList<EntityReference>? ChangedBy { get; init; }
 }

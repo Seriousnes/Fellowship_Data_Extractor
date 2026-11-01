@@ -252,11 +252,23 @@ public static class ExportRun
             .Select(record => (Record: record, Document: DocumentProjection.From(record, references.For(record.PrimaryStat), roles)))
             .ToArray();
 
-        var unreachable = Reachability.Unreachable(
+        Fellowship.SDK.Documents.EntityDocument[] all =
         [
             .. projected.Select(pair => pair.Document),
             .. projected.Select(pair => DocumentProjection.Implied(pair.Record)).OfType<Fellowship.SDK.Documents.EntityDocument>(),
-        ]);
+        ];
+
+        var unreachable = Reachability.Unreachable(all);
+        var origins = Origins.Of(all);
+        var rooted = references.With(origins);
+
+        Console.WriteLine(
+            $"  {origins.Count(pair => pair.Key.Type != EntityType.TalentSlot)} abilities, effects and talents " +
+            "traced to the hero, creature or other entity they are reached from: " +
+            string.Join(", ", origins
+                .Where(pair => pair.Key.Type != EntityType.TalentSlot)
+                .GroupBy(pair => pair.Key.Type)
+                .Select(group => $"{group.Count()} {group.Key}")));
 
         Console.WriteLine(
             $"  {unreachable.Count} creatures, abilities and effects no enabled source reaches: " +
@@ -265,9 +277,12 @@ public static class ExportRun
         foreach (var (record, document) in projected)
         {
             await target.WriteDocumentAsync(
-                unreachable.Contains((EntityTypes.TypeOf(document), document.Id))
-                    ? DocumentProjection.From(record with { EnabledInGame = false }, references.For(record.PrimaryStat), roles)
-                    : document,
+                DocumentProjection.From(
+                    unreachable.Contains((EntityTypes.TypeOf(document), document.Id))
+                        ? record with { EnabledInGame = false }
+                        : record,
+                    rooted.For(record.PrimaryStat),
+                    roles),
                 default);
             written++;
 
@@ -280,7 +295,8 @@ public static class ExportRun
 
         var chrome = await ChromeTextures.WriteAsync(provider, resolver.Settings, target, default);
 
-        await target.WriteSettingsAsync(resolver.Settings.ToFile(icons.Writer), default);
+        await target.WriteSettingsAsync(
+            resolver.Settings.ToFile(icons.Writer) with { BuildDate = GameBuild.Date(options) }, default);
 
         Console.WriteLine($"\nwrote {written} documents from {resolved.Count} entities across {scanned} tags");
         Console.WriteLine($"  {withText} entities with a display name, {withIcon} with an icon");
