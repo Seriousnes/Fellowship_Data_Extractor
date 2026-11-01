@@ -48,6 +48,10 @@ public sealed class AbilityDocument : EntityDocument
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
+
+    /// <summary>Set-by-caller magnitudes the ability computes as a base plus an amount for each unit counted.</summary>
+    public IReadOnlyList<SetByCallerScaling>? SetByCallerScaling { get; init; }
+
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }
 

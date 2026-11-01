@@ -299,6 +299,8 @@ public sealed class ChangeIndex
             return;
         }
 
+        change = change with { Result = Resulting(change) };
+
         var key = (source.Type, source.Id);
 
         if (!_changes.TryGetValue(key, out var changes)) _changes[key] = changes = [];
@@ -311,6 +313,46 @@ public sealed class ChangeIndex
         if (!_changedBy.TryGetValue(target, out var sources)) _changedBy[target] = sources = [];
         if (!sources.Any(held => held.Type == source.Type && held.Id == source.Id)) sources.Add(source);
     }
+
+    /// <summary>
+    /// The target's value of the changed field once a factor or term applies, where every entity read for the target
+    /// states the same value for the field.
+    /// </summary>
+    private double? Resulting(Change change)
+    {
+        if (!ModifierOps.Multiplies(change.Op) && !ModifierOps.Adds(change.Op)) return null;
+
+        var stated = (_targets.GetValueOrDefault((change.Target.Type, change.Target.Id)) ?? [])
+            .Select(entity => Stated(entity, change.Field))
+            .OfType<double>()
+            .Distinct()
+            .ToArray();
+
+        if (stated is not [var value]) return null;
+
+        var result = ModifierOps.Multiplies(change.Op)
+            ? value * ModifierOps.Factor(change.Op, change.Value)
+            : value + ModifierOps.Term(change.Op, change.Value);
+
+        return Math.Round(result, 3);
+    }
+
+    private static double? Stated(Entity entity, string field) => field switch
+    {
+        _ when field == CooldownField => entity.Cooldown,
+        _ when field == DurationField => entity.Duration,
+        _ when field == ChannelTimeField => entity.ChannelTime,
+        _ when field == Field(nameof(AbilityDocument.CastTime)) => entity.CastTime,
+        _ when field == Field(nameof(AbilityDocument.ChannelTick)) => entity.ChannelTick,
+        _ when field == Field(nameof(AbilityDocument.Period)) => entity.Period,
+        _ when field == Field(nameof(AbilityDocument.Range)) => entity.Range,
+        _ when field == Field(nameof(AbilityDocument.MinRange)) => entity.MinRange,
+        _ when field == Field(nameof(AbilityDocument.Radius)) => entity.Radius,
+        _ when field == Field(nameof(AbilityDocument.Cost)) => entity.Cost,
+        _ when field == Field(nameof(AbilityDocument.Charges)) => entity.Charges,
+        _ when field == Field(nameof(EffectDocument.MaxStacks)) => entity.MaxStacks,
+        _ => null,
+    };
 
     private bool Projectable(SourceChange record)
     {

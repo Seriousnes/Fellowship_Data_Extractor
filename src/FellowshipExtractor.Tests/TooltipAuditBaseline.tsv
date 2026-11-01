@@ -1,7 +1,6 @@
 type	id	ordinal	number	status	name	context	evidence
 talent	14	0	25%	Missing	Martial Command	While Siegebreaker is active you deal 25% more damage and 50% your damage reduction from	
 talent	14	2	+5%	Elsewhere	Martial Command	with all allies.    Your Spirit is increased by +5% and each time you use your Shield Throw abililt	effect 2417: Spirit Additive 0.05
-talent	14	3	2	Contradicted	Martial Command	you use your Shield Throw abililty you generate 2 Spirit Points.	Spirit Additive 0.05
 talent	26	0	5%	Missing	Bluey's Gambit	your Blue Flutterfly is following you, you take 5% reduced damage.    While your Blue Flutterfly i	
 talent	26	1	5%	Missing	Bluey's Gambit	utterfly is following another player, they take 5% reduced damage.	
 talent	36	0	3	Missing	Coalescing Frost	nt infuses the target with Coalescing Frost for 3 seconds. Once it expires, the afflicted enemy r	
@@ -14,7 +13,6 @@ talent	48	2	2	Missing	Avalanche	to strike the target, and a 9% chance to cause 2
 talent	51	0	10%	Elsewhere	Biting Cold	power of your critical strikes is increased by 10%.	effect 1372: CritMultiplier MultiplyCompound 1.1
 talent	56	0	3	Missing	Enlightened Soul	Your Radiant Blast adds 3 seconds to the duration of all your active Rune	
 talent	61	0	20%	Elsewhere	Expansive Mind	t you Expansive Mind, increasing your Spirit by 20% for 12 seconds and replenishing 2% max mana eve	effect 1292: Spirit Additive 0.2
-talent	71	0	25%	Contradicted	Runic Revelations	lbrand, Rune of Renewal & Luminous Barrier have 25% increased duration.	duration Set 30; duration Set 37.5; duration Set 15
 talent	76	0	20%	Elsewhere	Bloodline	second and your movement speed is increased by 20%.    You no longer lose Fury while out of combat	effect 1738: MoveSpeed MultiplyCompound 1.2
 talent	79	1	+1.5%	Elsewhere	Far Beyond Driven	riven for 20 seconds, increasing your Spirit by +1.5%.    Far Beyond Driven stacks up to 5 times.	effect 1744: Spirit Additive 0.015
 talent	85	4	2	Elsewhere	Schism	l +150% increased damage.    You can have up to 2 stacks of each Schism at any one time.	effect 1746: 2; effect 1747: 2
@@ -110,10 +108,8 @@ talent	584	0	30%	Elsewhere	Magic Ward	Magic Ward, reducing all Magic Damage take
 legendary-power	585	2	6	Missing	From the Shadows	on a Shadowy Clone to assault that enemy with a 6 combo point Queen's Fang at 100% Power.	
 legendary-power	585	3	100%	Missing	From the Shadows	that enemy with a 6 combo point Queen's Fang at 100% Power.	
 talent	586	0	0.6	Missing	Sinner's Pride	the cooldown of your Maiden of Death ability by 0.6 seconds.	
-talent	592	0	246%	Missing	Entropic Burst	c Burst on all enemies near the target, dealing 246% Intellect magic damage over 9 seconds to them.	
 talent	604	0	3%	Missing	Invictus	Cooldown Recovery is increased by 1% for every 3% Haste you have.    Expertise  While Solar Shiel	
 talent	614	1	12	Missing	Erasure	damage, it deals an additional 20% damage over 12 seconds, accumulatively.	
-legendary-power	618	0	30	Contradicted	Chrono Trigger	Your Unfolding Doom cooldown is reduced to 30 seconds, but its duration is also reduced to 15	cooldown CooldownMultipliers 0.6667
 legendary-power	619	0	+200%	Elsewhere	Lonesome Song	Oblivion, your Converging Timelines now grants +200% Cooldown Acceleration for 0.5 seconds.	effect 2820: CooldownRecovery Multiplicitive 3
 talent	623	0	10%	Missing	Echoes of Divinity	of Divinity clears additional Stagger equal to 10% of the target's max health over 4 seconds.	
 talent	624	0	+20%	Elsewhere	Hastening Doom	active on an enemy, your Haste is increased by +20%.	effect 2822: Haste Additive 0.2
@@ -174,7 +170,7 @@ talent	761	3	6	Missing	Bloodcraze	in a 700 radius around you every 3 seconds for
 talent	762	0	+30%	Elsewhere	Oathshatter	Your Heart Splitter has +30% increased Critical Strike chance.    When the d	effect 3215: CritChance Additive 0.3
 talent	768	0	+15%	Elsewhere	Crimson strikes	wering your next ability that applies Rend with +15% damage.    Crimson Strikes does not interact wi	effect 3224: DamageScale MultiplyCompound 1.15
 talent	772	0	+0.25%	Elsewhere	Massacre	d that is consumed by your Slaughter grants you +0.25% Spirit for 8 seconds, up to a maximum of 25% Sp	effect 3211: Spirit Additive 0.0025
-talent	772	2	25%	Contradicted	Massacre	+0.25% Spirit for 8 seconds, up to a maximum of 25% Spirit.	Spirit Additive 0.0025
+talent	772	2	25%	Elsewhere	Massacre	+0.25% Spirit for 8 seconds, up to a maximum of 25% Spirit.	effect 3211: Spirit Additive x100 stacks 0.25
 relic-passive	777	0	20%	Elsewhere	Accursed Trophy	m's Absolution, increasing your Primary Stat by 20% for 20 seconds.	effect 3269: Strength MultiplyCompound 1.2; effect 3269: Intellect MultiplyCompound 1.2; effect 3269: Agility MultiplyCompound 1.2
 relic-passive	777	1	20	Elsewhere	Accursed Trophy	lution, increasing your Primary Stat by 20% for 20 seconds.	effect 3269: Strength MultiplyCompound 1.2; effect 3269: Intellect MultiplyCompound 1.2; effect 3269: Agility MultiplyCompound 1.2
 relic-passive	778	0	0.9	Missing	Dragonbone Dice	Your critical strikes have a chance (0.9 PPM) to increase your Primary Stat by 18% for 1	
@@ -237,8 +233,6 @@ ability	186	0	15%	Elsewhere	Sanctuary	Grants 15% Damage Reduction to yourself an
 ability	186	1	15	Elsewhere	Sanctuary	age Reduction to yourself and nearby allies for 15 seconds.    Can be used during Global Cooldown	effect 157: IncomingDamageMultiplier MultiplyCompound 0.85
 ability	188	0	30%	Missing	Restore Mana	Instantly restore 30% of your maximum mana.    Can be used during Glo	
 ability	189	0	40%	Missing	Rejuvenate	Instantly replenish 40% of your maximum health.    Can be used during G	
-ability	190	1	2.75	Missing	(CUT) Elemental Empowerment	+20 Bonus Main Stat. This is increased by 2.75 for every 15 item levels your item has.    Main	
-ability	190	2	15	Missing	(CUT) Elemental Empowerment	Main Stat. This is increased by 2.75 for every 15 item levels your item has.    Main stats are St	
 ability	307	0	2%	Missing	Enrage	Deal 2% more damage for every 1 percent more health tha	
 ability	314	0	2%	Missing	Enrage	Deal 2% more damage for every 1% more health than Slave	
 ability	373	0	20%	Missing	Circle of Protection	The enemy takes 20% reduced damage	
@@ -378,35 +372,15 @@ ability	1130	6	0.5%	Missing	Brooding Shadows	son, Seething Poisons, and Volatile
 ability	1133	0	40%	Elsewhere	Shadow Ward	You take 40% reduced damage for 4 seconds.    Can be used du	effect 1592: IncomingDamageMultiplier MultiplyCompound 0.6
 ability	1200	0	4	Elsewhere	Kick	's spellcasting and prevent it from casting for 4 sec.   Must interrupt a spell, or it will have	effect 1703: 4
 ability	1201	2	+40%	Elsewhere	Queen's Fang	1 Combo Point: +20% damage  2 Combo Points: +40% damage  3 Combo Points: +60% damage  4 Combo Po	effect 1706: Resources Additive -40
-ability	1201	3	3	Missing	Queen's Fang	oint: +20% damage  2 Combo Points: +40% damage  3 Combo Points: +60% damage  4 Combo Points: +80%	
-ability	1201	4	+60%	Missing	Queen's Fang	e  2 Combo Points: +40% damage  3 Combo Points: +60% damage  4 Combo Points: +80% damage  5 Combo Po	
-ability	1201	5	4	Missing	Queen's Fang	ints: +40% damage  3 Combo Points: +60% damage  4 Combo Points: +80% damage  5 Combo Points: +100	
-ability	1201	7	5	Missing	Queen's Fang	ints: +60% damage  4 Combo Points: +80% damage  5 Combo Points: +100% damage  6 Combo Points: +12	
 ability	1201	8	+100%	Elsewhere	Queen's Fang	e  4 Combo Points: +80% damage  5 Combo Points: +100% damage  6 Combo Points: +120% damage	effect 2431: DamageScale MultiplyCompound 2
-ability	1201	9	6	Missing	Queen's Fang	nts: +80% damage  5 Combo Points: +100% damage  6 Combo Points: +120% damage	
-ability	1201	10	+120%	Missing	Queen's Fang	5 Combo Points: +100% damage  6 Combo Points: +120% damage	
 ability	1205	0	50%	Elsewhere	Stalker Step	y or player and increase your movement speed by 50% for 4 seconds.    Stalker Step does not break S	effect 2190: PassiveMoveSpeed MultiplyCompound 1.5
 ability	1205	1	4	Elsewhere	Stalker Step	yer and increase your movement speed by 50% for 4 seconds.    Stalker Step does not break Stealth	effect 2190: 4
 ability	1206	1	20%	Elsewhere	Maiden of Death	For the next 10 seconds, you deal 20% more damage and all combo point generating abil	effect 2194: DamageScale MultiplyCompound 1.2
 ability	1206	2	6	Missing	Maiden of Death	d all combo point generating abilities generate 6 Combo Points.    Additionally, your Energy Gene	
 ability	1206	3	20%	Elsewhere	Maiden of Death	ionally, your Energy Generation is increased by 20% while Maiden of Death is active.    Can be used	effect 2194: DamageScale MultiplyCompound 1.2
-ability	1208	0	12	Missing	Hemorrhaging Strike	d apply a bleed dealing {} every {} seconds for 12 seconds. The bleed's duration is increased per	
 ability	1208	3	18	Elsewhere	Hemorrhaging Strike	.    1 Combo Point: 15 seconds  2 Combo Points: 18 seconds  3 Combo Points: 21 seconds  4 Combo Po	effect 1722: -18
-ability	1208	5	21	Missing	Hemorrhaging Strike	ds  2 Combo Points: 18 seconds  3 Combo Points: 21 seconds  4 Combo Points: 24 seconds  5 Combo Po	
-ability	1208	6	4	Missing	Hemorrhaging Strike	Points: 18 seconds  3 Combo Points: 21 seconds  4 Combo Points: 24 seconds  5 Combo Points: 27 se	
-ability	1208	7	24	Missing	Hemorrhaging Strike	ds  3 Combo Points: 21 seconds  4 Combo Points: 24 seconds  5 Combo Points: 27 seconds  6 Combo Po	
-ability	1208	8	5	Missing	Hemorrhaging Strike	Points: 21 seconds  4 Combo Points: 24 seconds  5 Combo Points: 27 seconds  6 Combo Points: 30 se	
-ability	1208	9	27	Missing	Hemorrhaging Strike	ds  4 Combo Points: 24 seconds  5 Combo Points: 27 seconds  6 Combo Points: 30 seconds    CREEPING	
-ability	1208	10	6	Missing	Hemorrhaging Strike	Points: 24 seconds  5 Combo Points: 27 seconds  6 Combo Points: 30 seconds    CREEPING DEATH  Hem	
-ability	1208	11	30	Missing	Hemorrhaging Strike	ds  5 Combo Points: 27 seconds  6 Combo Points: 30 seconds    CREEPING DEATH  Hemorrhaging Strike	
 ability	1208	12	0.5%	Missing	Hemorrhaging Strike	ds    CREEPING DEATH  Hemorrhaging Strike deals 0.5% increased Bleed damage for every 1% Haste you h	
-ability	1212	3	3	Missing	Arachnid Assault	oint: +20% damage  2 Combo Points: +40% damage  3 Combo Points: +60% damage  4 Combo Points: +80%	
-ability	1212	4	+60%	Missing	Arachnid Assault	e  2 Combo Points: +40% damage  3 Combo Points: +60% damage  4 Combo Points: +80% damage  5 Combo Po	
-ability	1212	5	4	Missing	Arachnid Assault	ints: +40% damage  3 Combo Points: +60% damage  4 Combo Points: +80% damage  5 Combo Points: +100	
-ability	1212	7	5	Missing	Arachnid Assault	ints: +60% damage  4 Combo Points: +80% damage  5 Combo Points: +100% damage  6 Combo Points: +12	
 ability	1212	8	+100%	Elsewhere	Arachnid Assault	e  4 Combo Points: +80% damage  5 Combo Points: +100% damage  6 Combo Points: +120% damage	effect 2430: DamageScale MultiplyCompound 2
-ability	1212	9	6	Missing	Arachnid Assault	nts: +80% damage  5 Combo Points: +100% damage  6 Combo Points: +120% damage	
-ability	1212	10	+120%	Missing	Arachnid Assault	5 Combo Points: +100% damage  6 Combo Points: +120% damage	
 ability	1214	0	6	Missing	Taunt	aunt target enemy, forcing it to attack you for 6 seconds.    Can be used during Global Cooldown	
 ability	1218	0	40%	Elsewhere	Unbreakable Will	You take 40% reduced damage for 4 seconds.    Can be used du	effect 1752: IncomingDamageMultiplier MultiplyCompound 0.6
 ability	1218	1	4	Elsewhere	Unbreakable Will	You take 40% reduced damage for 4 seconds.    Can be used during Global Cooldown	effect 1752: 4
@@ -625,8 +599,8 @@ effect	70	0	100%	Elsewhere	Twilight Skybolt: Eclipse	ses the damage of your next
 effect	95	0	+40%	Missing	Diamond Strike: Amplified	Taking +40% increased damage from your Diamond Strike per s	
 effect	97	0	+40%	Missing	Diamond Strike: Amplified	Taking +40% increased healing from your Diamond Strike per	
 effect	106	0	40%	Contradicted	Cooldown Recovery Bonus	Cooldown Recovery increased by 40%.	CooldownRecovery Multiplicitive 1.2
-effect	161	1	2.75	Missing	Elemental Empowerment	+20 Bonus Main Stat. This is increased by 2.75 for every 15 item levels your item has.	
-effect	161	2	15	Missing	Elemental Empowerment	Main Stat. This is increased by 2.75 for every 15 item levels your item has.	
+effect	161	1	2.75	Elsewhere	Elemental Empowerment	+20 Bonus Main Stat. This is increased by 2.75 for every 15 item levels your item has.	ability 190: PrimaryAttribute per 2.75
+effect	161	2	15	Elsewhere	Elemental Empowerment	Main Stat. This is increased by 2.75 for every 15 item levels your item has.	ability 190: PrimaryAttribute every 15
 effect	208	0	5%	Missing	Surging Power	eases damage of its non-projectile abilities by 5%. Waves and swirls move 5% faster per stack. Eac	
 effect	208	1	5%	Missing	Surging Power	ojectile abilities by 5%. Waves and swirls move 5% faster per stack. Each Water Orb that reaches t	
 effect	230	0	+50%	Missing	Haste	+50% haste	
@@ -850,23 +824,11 @@ sigil	5	1	5.1%	Elsewhere	Vengeful Soul	e a chance to increase your Main Stat by 
 sigil	5	2	7.2%	Elsewhere	Vengeful Soul	nce to increase your Main Stat by 3.0% / 5.1% / 7.2% / 9.3% for 8 seconds.    If you are below 50% h	effect 2163: PrimaryAttributeMultiplier Multiplicitive 1.072
 sigil	5	3	9.3%	Elsewhere	Vengeful Soul	increase your Main Stat by 3.0% / 5.1% / 7.2% / 9.3% for 8 seconds.    If you are below 50% health w	effect 2163: PrimaryAttributeMultiplier Multiplicitive 1.093
 sigil	5	4	8	Missing	Vengeful Soul	your Main Stat by 3.0% / 5.1% / 7.2% / 9.3% for 8 seconds.    If you are below 50% health when Ve	
-sigil	5	6	370%	Missing	Vengeful Soul	ers, you are also healed for an amount equal to 370% / 630% / 890% / 1150% of your Main Stat over 6	
-sigil	5	7	630%	Missing	Vengeful Soul	u are also healed for an amount equal to 370% / 630% / 890% / 1150% of your Main Stat over 6 seconds	
-sigil	5	8	890%	Missing	Vengeful Soul	lso healed for an amount equal to 370% / 630% / 890% / 1150% of your Main Stat over 6 seconds.    (3	
-sigil	5	9	1150%	Missing	Vengeful Soul	led for an amount equal to 370% / 630% / 890% / 1150% of your Main Stat over 6 seconds.    (3.0 PPM)	
 sigil	5	10	6	Missing	Vengeful Soul	0% / 630% / 890% / 1150% of your Main Stat over 6 seconds.    (3.0 PPM)	
 sigil	5	11	3.0	Elsewhere	Vengeful Soul	% / 1150% of your Main Stat over 6 seconds.    (3.0 PPM)	effect 2163: PrimaryAttributeMultiplier Multiplicitive 1.03
 sigil	28	0	2.1	Missing	Kindling	Your Damage Effects have a chance (2.1 PPM) to burn the target, dealing 483% / 882% /	
-sigil	28	1	483%	Missing	Kindling	a chance (2.1 PPM) to burn the target, dealing 483% / 882% / 1281% / 1680% of your Main Stat in fir	
-sigil	28	2	882%	Missing	Kindling	ce (2.1 PPM) to burn the target, dealing 483% / 882% / 1281% / 1680% of your Main Stat in fire damag	
-sigil	28	3	1281%	Missing	Kindling	PPM) to burn the target, dealing 483% / 882% / 1281% / 1680% of your Main Stat in fire damage to the	
-sigil	28	4	1680%	Missing	Kindling	burn the target, dealing 483% / 882% / 1281% / 1680% of your Main Stat in fire damage to them over 9	
 sigil	28	5	9	Missing	Kindling	% of your Main Stat in fire damage to them over 9 seconds.    Your Healing Effects have a chance	
 sigil	28	6	2.1	Missing	Kindling	seconds.    Your Healing Effects have a chance (2.1 PPM) to cauterize the target, healing them for	
-sigil	28	7	483%	Missing	Kindling	PPM) to cauterize the target, healing them for 483% / 882% / 1281% / 1680% of your Main Stat over 9	
-sigil	28	8	882%	Missing	Kindling	o cauterize the target, healing them for 483% / 882% / 1281% / 1680% of your Main Stat over 9 second	
-sigil	28	9	1281%	Missing	Kindling	rize the target, healing them for 483% / 882% / 1281% / 1680% of your Main Stat over 9 seconds.	
-sigil	28	10	1680%	Missing	Kindling	target, healing them for 483% / 882% / 1281% / 1680% of your Main Stat over 9 seconds.	
 sigil	28	11	9	Missing	Kindling	% / 882% / 1281% / 1680% of your Main Stat over 9 seconds.	
 aspect	32	4	3	Missing	Sapphire Aurastone	mage, evenly split between nearby enemies every 3 seconds.    While active, 4.6% / 8.4% / 12% / 1	
 aspect	32	9	3	Missing	Sapphire Aurastone	aling, evenly split between nearby allies every 3 seconds.    Each pulse empties the accumulated	

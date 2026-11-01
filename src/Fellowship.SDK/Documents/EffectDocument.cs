@@ -21,6 +21,12 @@ public sealed class EffectDocument : EntityDocument
 
     public int? MaxStacks { get; init; }
 
+    /// <summary>
+    /// Periodic executions over the duration: one per whole period, and one more on application unless the effect
+    /// declares it does not execute then.
+    /// </summary>
+    public int? Ticks { get; init; }
+
     public bool? Infinite { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }

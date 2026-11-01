@@ -111,6 +111,10 @@ public sealed record Entity
 
     public int? MaxStacks { get; init; }
 
+    public int? Ticks { get; init; }
+
+    public IReadOnlyList<SetByCallerScaling>? SetByCallerScaling { get; init; }
+
     public bool? Infinite { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }

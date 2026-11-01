@@ -370,6 +370,8 @@ public sealed class EntityResolver
         entity = WithSpentResource(entity, display, tag, cdo);
         entity = WithGeneratedResources(entity);
         entity = WithSuppliedDuration(entity, cdo, tag);
+        entity = WithTicks(entity, cdo, tag);
+        entity = WithSetByCallerScaling(entity, cdo, tag);
 
         if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
         {
@@ -772,6 +774,33 @@ public sealed class EntityResolver
         DurationsFromSetByCaller++;
 
         return entity with { Duration = duration, DurationGates = recovered.Gates.Count == 0 ? entity.DurationGates : recovered.Gates };
+    }
+
+    private const string PeriodicOnApplicationField = "bExecutePeriodicEffectOnApplication";
+
+    /// <summary>
+    /// The effect's periodic executions over its duration: one per whole period, and one on application unless the
+    /// effect or a Blueprint parent sets <c>bExecutePeriodicEffectOnApplication</c> false. The engine's default is
+    /// true. Entropic Burst executes 6 times over 9 seconds at 1.5 seconds, and its talent prints 246% for 0.41 a tick.
+    /// </summary>
+    private Entity WithTicks(Entity entity, UObject? cdo, TagRecord tag)
+    {
+        if (cdo is null || !tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) return entity;
+        if (entity is not { Duration: > 0 and var duration, Period: > 0 and var period } || entity.Infinite == true) return entity;
+
+        var onApplication = ClassDefaults.Inherited(cdo, PeriodicOnApplicationField, _provider)?.GenericValue is not false;
+        var ticks = (int)Math.Floor(duration / period + 1e-9) + (onApplication ? 1 : 0);
+
+        return ticks > 0 ? entity with { Ticks = ticks } : entity;
+    }
+
+    private Entity WithSetByCallerScaling(Entity entity, UObject? cdo, TagRecord tag)
+    {
+        if (cdo is null || !tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase)) return entity;
+
+        var scaling = SetByCallerScalings.Of(cdo, _constants, _provider, HeroAttributes.For, Owners.HeroesOf(tag.Name));
+
+        return scaling.Count == 0 ? entity : entity with { SetByCallerScaling = scaling };
     }
 
     private Entity WithCreature(Entity entity, TagRecord tag, UObject? cdo)
@@ -2280,6 +2309,7 @@ public sealed class EntityResolver
         Coefficients = Union(outer.Coefficients, inner.Coefficients),
         Generates = Union(outer.Generates, inner.Generates),
         Thresholds = Union(outer.Thresholds, inner.Thresholds),
+        SetByCallerScaling = outer.SetByCallerScaling ?? inner.SetByCallerScaling,
         Tuning = outer.Tuning ?? inner.Tuning,
         Declares = Union(outer.Declares, inner.Declares),
         Placeholders = Union(outer.Placeholders, inner.Placeholders),

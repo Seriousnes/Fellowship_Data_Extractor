@@ -49,7 +49,8 @@ public static partial class TooltipAudit
 
     private static readonly HashSet<string> Skipped = new(
         ["id", "target", "while", "whileTarget", "owner", "talent", "appliedBy", "partOf", "changedBy", "nameBorrowedFrom",
-         "textureBorrowedFrom", "grants", "row", "column", "icon", "color", "heroes", "effectTags"],
+         "textureBorrowedFrom", "grants", "row", "column", "icon", "color", "heroes", "effectTags", "ticks", "result",
+         "setByCallerScaling"],
         StringComparer.Ordinal);
 
     private static readonly HashSet<EntityType> Unaudited =
@@ -103,6 +104,8 @@ public static partial class TooltipAudit
             var shown = new List<Shown>();
             var constants = new HashSet<double>();
             var elsewhere = new List<(Shown? Typed, double? Constant, string Source)>();
+            var derived = Derived(body);
+            var derivedElsewhere = new List<(Shown Derived, string Source)>();
 
             Walk(body, shown, constants);
 
@@ -117,6 +120,7 @@ public static partial class TooltipAudit
                 Walk(linked, linkedShown, linkedConstants);
                 elsewhere.AddRange(linkedShown.Select(item => ((Shown?)item, (double?)null, source)));
                 elsewhere.AddRange(linkedConstants.Select(value => ((Shown?)null, (double?)value, source)));
+                derivedElsewhere.AddRange(Derived(linked).Select(item => (item, source)));
             }
 
             var ordinal = 0;
@@ -135,8 +139,8 @@ public static partial class TooltipAudit
                 var typed = shown.Where(item => Near(item.Value, number)).ToList();
                 var contradicting = shown
                     .Concat(elsewhere.Select(entry => entry.Typed).OfType<Shown>())
-                    .Where(item => !Near(item.Value, number) && Mentions(window, item.Label) && Measures(unit, item.Label) &&
-                                   SameClause(plain, match.Index, item.Label))
+                    .Where(item => !Near(item.Value, number) && Mentions(window, item.Label) &&
+                                   Measures(unit, item.Label, item.Op) && SameClause(plain, match.Index, item.Label))
                     .ToList();
                 var linkedTyped = elsewhere.Where(entry => entry.Typed is { } item && Near(item.Value, number)).ToList();
                 var linkedConstant = elsewhere.Where(entry => entry.Constant is { } value && Reads(value)).ToList();
@@ -148,12 +152,29 @@ public static partial class TooltipAudit
                     : linkedConstant.Count > 0 ? TooltipNumberStatus.Elsewhere
                     : TooltipNumberStatus.Missing;
 
+                bool Explains(Shown item) =>
+                    Near(item.Value, number) &&
+                    (status == TooltipNumberStatus.Missing || SameClause(plain, match.Index, item.Label));
+
+                var computed = status is TooltipNumberStatus.Missing or TooltipNumberStatus.Contradicted
+                    ? derived.Where(Explains).ToList()
+                    : [];
+                var computedElsewhere = status is TooltipNumberStatus.Missing or TooltipNumberStatus.Contradicted && computed.Count == 0
+                    ? derivedElsewhere.Where(entry => Explains(entry.Derived)).ToList()
+                    : [];
+
+                if (computed.Count > 0) status = TooltipNumberStatus.Typed;
+                else if (computedElsewhere.Count > 0) status = TooltipNumberStatus.Elsewhere;
+
                 var evidence = status switch
                 {
                     TooltipNumberStatus.Contradicted => contradicting.Select(item => $"{item.Label} {item.Op} {Format(item.Raw)}"),
+                    TooltipNumberStatus.Elsewhere when computedElsewhere.Count > 0 =>
+                        computedElsewhere.Select(entry => $"{entry.Source}: {entry.Derived.Label} {entry.Derived.Op} {Format(entry.Derived.Raw)}"),
                     TooltipNumberStatus.Elsewhere => linkedTyped.Count > 0
                         ? linkedTyped.Select(entry => $"{entry.Source}: {entry.Typed!.Label} {entry.Typed.Op} {Format(entry.Typed.Raw)}")
                         : linkedConstant.Select(entry => $"{entry.Source}: {Format(entry.Constant!.Value)}"),
+                    _ when computed.Count > 0 => computed.Select(item => $"{item.Label} {item.Op} {Format(item.Raw)}"),
                     _ => typed.Select(item => $"{item.Label} {item.Op} {Format(item.Raw)}"),
                 };
 
@@ -269,6 +290,148 @@ public static partial class TooltipAudit
         }
     }
 
+    /// <summary>
+    /// Numbers the game computes from one document's own fields: a modifier at the effect's maximum stacks, a rank
+    /// run through its transform, a change's resulting value, a resource gain, a set-by-caller magnitude at each
+    /// count, and a per-tick constant over its group's duration. A product reads only fields of the one document,
+    /// because products across documents match almost any number. A computed number can explain a number nothing
+    /// else does, and never contradicts one.
+    /// </summary>
+    private static List<Shown> Derived(JsonObject body)
+    {
+        var derived = new List<Shown>();
+
+        void Add(double value, string label, string op, double raw)
+        {
+            foreach (var reading in new[] { value, value * 100, (value - 1) * 100 }.Select(Math.Abs).Distinct())
+            {
+                derived.Add(new Shown(reading, label, op, raw));
+            }
+        }
+
+        if (Number(body["maxStacks"]) is { } stacks && stacks > 1)
+        {
+            foreach (var modifier in body["modifiers"]?.AsArray() ?? [])
+            {
+                if (modifier?["op"]?.GetValue<string>() is not { } op || Number(modifier["value"]) is not { } value) continue;
+
+                var label = modifier["attribute"]?.GetValue<string>() ?? "";
+                var stacked = op switch
+                {
+                    "Additive" => value * stacks,
+                    "Multiplicitive" => 1 + (value - 1) * stacks,
+                    "MultiplyCompound" or "Multiply" => Math.Pow(value, stacks),
+                    _ => (double?)null,
+                };
+
+                if (stacked is not { } total) continue;
+
+                foreach (var reading in ShownBy(op, total, false)) derived.Add(new Shown(reading, label, $"{op} x{Format(stacks)} stacks", total));
+            }
+        }
+
+        foreach (var run in body["rankRuns"]?.AsArray() ?? [])
+        {
+            if (run?["transform"]?.GetValue<string>() is not { } transform) continue;
+
+            var ticks = Number(run["ticks"]) ?? 1;
+            var label = run["key"]?.GetValue<string>() ?? "";
+
+            foreach (var value in Values(run["values"]))
+            {
+                var printed = transform switch
+                {
+                    "raw" => value * 100,
+                    "delta" => (value - 1) * 100,
+                    "reduction" => (1 - value) * 100,
+                    "ticks" => value * ticks * 100,
+                    _ => value,
+                };
+
+                derived.Add(new Shown(Math.Abs(printed), label, transform, value));
+            }
+        }
+
+        foreach (var change in body["changes"]?.AsArray() ?? [])
+        {
+            if (Number(change?["result"]) is not { } result) continue;
+
+            derived.Add(new Shown(Math.Abs(result), change!["field"]?.GetValue<string>() ?? "", "result", result));
+        }
+
+        foreach (var gain in body["generates"]?.AsArray() ?? [])
+        {
+            var label = (gain?["resourceName"] ?? gain?["resource"])?.GetValue<string>() ?? "";
+
+            foreach (var amount in new[] { Number(gain?["amount"]), Number(gain?["amountOnCritical"]) }.OfType<double>())
+            {
+                derived.Add(new Shown(Math.Abs(amount), label, "generates", amount));
+            }
+        }
+
+        foreach (var scaling in body["setByCallerScaling"]?.AsArray() ?? [])
+        {
+            var label = scaling?["magnitude"]?.GetValue<string>() is { } magnitude ? magnitude[(magnitude.LastIndexOf('.') + 1)..] : "";
+
+            foreach (var key in new[] { "base", "per", "every" })
+            {
+                if (Number(scaling?[key]) is { } value) derived.Add(new Shown(Math.Abs(value), label, key, value));
+            }
+
+            var count = 0;
+
+            foreach (var value in Values(scaling?["values"]))
+            {
+                derived.Add(new Shown(++count, label, "count", count));
+                Add(value, label, $"at {count}", value);
+            }
+        }
+
+        if (body["constants"] is JsonObject held)
+        {
+            var rows = held
+                .Select(entry => (Key: entry.Key, Value: Number(entry.Value)))
+                .Where(entry => entry.Value is not null)
+                .GroupBy(entry => entry.Key[..Math.Max(0, entry.Key.LastIndexOf('.'))], StringComparer.Ordinal);
+
+            foreach (var group in rows)
+            {
+                double? Leaf(params string[] names) => group
+                    .FirstOrDefault(entry => names.Any(name => entry.Key.EndsWith("." + name, StringComparison.Ordinal)))
+                    .Value;
+
+                if (Leaf("Duration") is not { } duration || Leaf("TickInterval", "TickPeriod", "Period") is not { } period ||
+                    period <= 0)
+                {
+                    continue;
+                }
+
+                var ticks = Math.Floor(duration / period + 1e-9);
+
+                foreach (var (key, value) in group.Where(entry => entry.Key.EndsWith("Coefficient", StringComparison.Ordinal)))
+                {
+                    derived.Add(new Shown(Math.Abs(value!.Value * ticks * 100), key, $"per tick x{Format(ticks)} ticks", value.Value));
+                }
+            }
+        }
+
+        if (Number(body["ticks"]) is { } effectTicks)
+        {
+            foreach (var placeholder in body["placeholders"]?.AsArray() ?? [])
+            {
+                if (Number(placeholder?["coefficient"]) is not { } coefficient) continue;
+
+                var label = placeholder!["attribute"]?.GetValue<string>() ?? "";
+                derived.Add(new Shown(Math.Abs(coefficient * effectTicks * 100), label, $"per tick x{Format(effectTicks)} ticks", coefficient));
+            }
+        }
+
+        return derived;
+    }
+
+    private static double? Number(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue<double>(out var number) ? number : null;
+
     private static IEnumerable<double> Values(JsonNode? node) => node switch
     {
         JsonValue value when value.TryGetValue<double>(out var number) => [number],
@@ -321,13 +484,15 @@ public static partial class TooltipAudit
         new(["duration", "cooldown", "castTime", "channelTime", "channelTick", "period"], StringComparer.Ordinal);
 
     /// <summary>
-    /// True when a number printed in <paramref name="unit"/> can be the value of <paramref name="label"/>. A bare or
-    /// percent number can be any label's. A number in seconds is a timed field's, and a number in any other unit word
-    /// is the label's only where the label names that word, so "1.2 PPM" beside a Haste rating is no Haste rating.
+    /// True when a number printed in <paramref name="unit"/> can be the value of <paramref name="label"/>. A bare
+    /// number can be any label's, and a percent any label's but a timed field a Set op gives in seconds. A number in
+    /// seconds is a timed field's, and a number in any other unit word is the label's only where the label names that
+    /// word, so "1.2 PPM" beside a Haste rating is no Haste rating.
     /// </summary>
-    private static bool Measures(string unit, string label) => unit switch
+    private static bool Measures(string unit, string label, string op) => unit switch
     {
-        "" or "%" => true,
+        "" => true,
+        "%" => op != "Set" || !Timed.Contains(label),
         "second" => Timed.Contains(label),
         _ => CamelBreak().Replace(label, " ").Split(' ').Any(word => word.Equals(unit, StringComparison.OrdinalIgnoreCase)),
     };
