@@ -160,6 +160,14 @@
 
         foreach (var (row, value) in constants ?? new Dictionary<string, double>()) read[row] = value;
 
+        if (Entity is not (TalentDocument or LegendaryPowerDocument))
+        {
+            foreach (var (row, reference) in Entity.Tuning ?? new Dictionary<string, Fellowship.SDK.Models.TuningReference>())
+            {
+                if (reference.Value is not null) read.TryAdd(row, reference.Value);
+            }
+        }
+
         if (Entity is EffectDocument { Talents: { } talents })
         {
             foreach (var (group, leaves) in talents)
