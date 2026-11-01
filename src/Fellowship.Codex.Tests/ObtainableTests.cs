@@ -38,11 +38,27 @@ public sealed class ObtainableTests(Export export)
     }
 
     [Fact]
-    public void Showing_unobtainable_items_lists_every_item()
+    public void Showing_unobtainable_and_unnamed_items_lists_every_item()
+    {
+        var shown = Run(new Dictionary<FlagType, bool> { [FlagType.Unobtainable] = true, [FlagType.Unnamed] = true });
+
+        Assert.Equal(Items.Count, shown.Total);
+    }
+
+    [Fact]
+    public void Showing_unobtainable_items_adds_the_named_items_disabled_in_game()
     {
         var shown = Run(new Dictionary<FlagType, bool> { [FlagType.Unobtainable] = true });
 
-        Assert.Equal(Items.Count, shown.Total);
+        Assert.Equal(Items.Count(item => PublicTypes.DisplayNameOf(item) is not null), shown.Total);
+    }
+
+    [Fact]
+    public void Showing_unnamed_items_adds_the_enabled_items_with_no_name()
+    {
+        var shown = Run(new Dictionary<FlagType, bool> { [FlagType.Unnamed] = true });
+
+        Assert.Equal(Items.Count(item => item.EnabledInGame is not false), shown.Total);
     }
 
     [Fact]

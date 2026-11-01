@@ -160,8 +160,11 @@ public sealed class CodexService : ICodexService
 
         Flags =
         [
-            new Flag(FlagType.Unobtainable, document =>
-                PublicTypes.DisplayNameOf(document) is null || document.EnabledInGame is false)
+            new Flag(FlagType.Unobtainable, document => document.EnabledInGame is false)
+            {
+                Hides = true,
+            },
+            new Flag(FlagType.Unnamed, document => PublicTypes.DisplayNameOf(document) is null)
             {
                 Hides = true,
             },

@@ -18,14 +18,6 @@ public interface IExportHistoryService
 
 public sealed class ExportHistoryService : IExportHistoryService
 {
-    private static readonly string[] Variant =
-    [
-        JsonName(nameof(ItemDocument.ArmorType)),
-        JsonName(nameof(ItemDocument.PrimaryStat)),
-        JsonName(nameof(ItemDocument.Hero)),
-        JsonName(nameof(ItemDocument.Heroes)),
-    ];
-
     private readonly ExportHistory history;
 
     public IReadOnlyList<string> Builds { get; }
@@ -87,18 +79,9 @@ public sealed class ExportHistoryService : IExportHistoryService
         {
             var reading = JsonNode.Parse(line);
 
-            if (Variant.All(field => JsonNode.DeepEquals(Field(reading, field), Field(live, field))))
-            {
-                return reading;
-            }
+            if (DocumentVariants.Same(reading, live)) return reading;
         }
 
         return null;
     }
-
-    private static JsonNode? Field(JsonNode? node, string name) =>
-        node is JsonObject fields && fields.TryGetPropertyValue(name, out var value) ? value : null;
-
-    private static string JsonName(string property) =>
-        EntityDocuments.Options.PropertyNamingPolicy!.ConvertName(property);
 }

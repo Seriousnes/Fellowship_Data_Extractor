@@ -36,27 +36,13 @@ public static class Reachability
 
     public static IReadOnlySet<(EntityType Type, int Id)> Unreachable(IReadOnlyList<EntityDocument> documents)
     {
-        var reachers = new Dictionary<(EntityType, int), HashSet<(EntityType, int)>>();
+        var reachers = Reachers(documents);
         var disabled = new Dictionary<(EntityType, int), bool>();
 
         foreach (var document in documents)
         {
             var key = (EntityTypes.TypeOf(document), document.Id);
             disabled[key] = disabled.GetValueOrDefault(key, true) && document.EnabledInGame is false;
-
-            var body = JsonSerializer.SerializeToNode<EntityDocument>(document, EntityDocuments.Options)!.AsObject();
-
-            foreach (var (field, value) in body)
-            {
-                if (ReachedFrom.Contains(field))
-                {
-                    foreach (var source in References(value)) Link(source, key);
-                }
-                else if (Reaching.Contains(field) && !(Derived.Contains(key.Item1) && field == GrantsField))
-                {
-                    foreach (var target in References(value)) Link(key, target);
-                }
-            }
         }
 
         var enabled = disabled.ToDictionary(pair => pair.Key, pair => !pair.Value);
@@ -80,6 +66,32 @@ public static class Reachability
             .Where(pair => !pair.Value && !disabled[pair.Key])
             .Select(pair => pair.Key)
             .ToHashSet();
+    }
+
+    public static IReadOnlyDictionary<(EntityType Type, int Id), HashSet<(EntityType Type, int Id)>> Reachers(
+        IReadOnlyList<EntityDocument> documents)
+    {
+        var reachers = new Dictionary<(EntityType Type, int Id), HashSet<(EntityType Type, int Id)>>();
+
+        foreach (var document in documents)
+        {
+            var key = (EntityTypes.TypeOf(document), document.Id);
+            var body = JsonSerializer.SerializeToNode<EntityDocument>(document, EntityDocuments.Options)!.AsObject();
+
+            foreach (var (field, value) in body)
+            {
+                if (ReachedFrom.Contains(field))
+                {
+                    foreach (var source in References(value)) Link(source, key);
+                }
+                else if (Reaching.Contains(field) && !(Derived.Contains(key.Item1) && field == GrantsField))
+                {
+                    foreach (var target in References(value)) Link(key, target);
+                }
+            }
+        }
+
+        return reachers;
 
         void Link((EntityType, int) source, (EntityType, int) target)
         {

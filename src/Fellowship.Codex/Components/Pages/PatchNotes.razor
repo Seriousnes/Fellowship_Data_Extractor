@@ -1,0 +1,254 @@
+@page "/patch-notes"
+@page "/patch-notes/{Build}"
+@inject IPatchNotesService Notes
+@inject ICodexViewService Ui
+@inject IRichTextService Text
+@inject NavigationManager Nav
+
+<PageTitle>@Heading - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1 id="@Top">@Heading</h1>
+
+@if (Here is not { } here)
+{
+    <Panel>
+        <Empty Message="No patch notes.">Patch notes compare a build with the build before it, and the codex has one build.</Empty>
+    </Panel>
+}
+else
+{
+    <p class="cx-pn-dates">
+        @Dated(here.Build)
+        <span class="cx-pn-against">compared with build @here.Previous@(Notes.Date(here.Previous) is { } before ? $", {Day(before)}" : null)</span>
+    </p>
+
+    <div class="cx-pn">
+        <Panel As="aside" Class="cx-rail" Aria="Contents" Head="Contents" Collapsible="true">
+            <a class="cx-pn-top-link" href="#@Top">Back to top</a>
+            <ol class="cx-pn-toc">
+                <li><a href="#@BuildsAnchor">Builds</a></li>
+                @foreach (var category in Sections)
+                {
+                    <li>
+                        <details open="@(category.Groups.Count <= OpenGroups)">
+                            <summary>
+                                <a href="#@category.Anchor">@category.Label</a>
+                                <span class="cx-pn-count">@category.Count.ToString("N0")</span>
+                            </summary>
+                            <ol>
+                                @foreach (var group in category.Groups)
+                                {
+                                    <li>
+                                        <a href="#@group.Anchor" style="@Tone(group.Colour)">@group.Label</a>
+                                        <span class="cx-pn-count">@group.Count.ToString("N0")</span>
+                                    </li>
+                                }
+                            </ol>
+                        </details>
+                    </li>
+                }
+            </ol>
+        </Panel>
+
+        <section>
+            <div id="@BuildsAnchor" class="cx-pn-group">
+                <Panel Head="Builds">
+                    <Note>
+                        Each entity listed is new in build @here.Build, or has a value changed from a value in build
+                        @here.Previous. A property build @here.Previous lacks is left out.
+                    </Note>
+                    <div class="cx-roster">
+                        @foreach (var build in Notes.Builds)
+                        {
+                            <a href="@Address(build)" aria-current="@(build == here.Build ? "page" : null)">
+                                <span class="cx-pn-build">@build</span>
+                                @if (Notes.Date(build) is { } date)
+                                {
+                                    <span class="cx-pn-day">@Day(date)</span>
+                                }
+                            </a>
+                        }
+                    </div>
+                </Panel>
+            </div>
+
+            @if (Sections.Count == 0)
+            {
+                <Panel>
+                    <Empty Message="Nothing changed.">No named entity is new in build @here.Build, and no value changed.</Empty>
+                </Panel>
+            }
+
+            @foreach (var category in Sections)
+            {
+                <h2 id="@category.Anchor" class="cx-pn-category">@category.Label</h2>
+
+                @foreach (var group in category.Groups)
+                {
+                    <div id="@group.Anchor" class="cx-pn-group">
+                        <Panel Head="@group.Label" Badge="@group.Count.ToString("N0")">
+                            @foreach (var kind in group.Kinds)
+                            {
+                                @if (kind.Label != group.Label)
+                                {
+                                    <SubHead>@kind.Label</SubHead>
+                                }
+                                <ul class="cx-pn-list">
+                                    @foreach (var entry in kind.Entries)
+                                    {
+                                        <li id="@Anchor(entry.Note)">
+                                            @Entity(entry)
+                                            @if (entry.Note.Fields.Count > 0)
+                                            {
+                                                <dl class="cx-pn-fields">
+                                                    @foreach (var field in entry.Note.Fields)
+                                                    {
+                                                        <dt>@field.Label</dt>
+                                                        <dd>@Value(field)</dd>
+                                                    }
+                                                </dl>
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </Panel>
+                    </div>
+                }
+            }
+        </section>
+    </div>
+
+    <a class="cx-pn-top" href="#@Top" aria-label="Back to top">Top</a>
+}
+
+@code {
+    [Parameter] public string? Build { get; set; }
+
+    public const string Href = "/patch-notes";
+
+    public const string Label = "Patch Notes";
+
+    private const string Top = "pn-top";
+
+    private const string BuildsAnchor = "pn-builds";
+
+    private const int OpenGroups = 12;
+
+    public static string Address(string build) => $"{Href}/{Uri.EscapeDataString(build)}";
+
+    public static string Address(string build, DocumentKey key) => $"{Address(build)}#{Anchor(key)}";
+
+    private BuildNotes? Here;
+
+    private IReadOnlyList<PatchNoteCategory> Sections = [];
+
+    private HashSet<string> anchored = [];
+
+    private string Heading => Here is { } here ? $"{Label}: Build {here.Build}" : Label;
+
+    private IReadOnlyList<(string Label, string? Href)> Trail =>
+        Here is { } here ? [(Label, Href), ($"Build {here.Build}", null)] : [(Label, null)];
+
+    protected override void OnParametersSet()
+    {
+        anchored = new HashSet<string>(StringComparer.Ordinal);
+
+        Here = Build is null
+            ? Notes.Builds is [var newest, ..] ? Notes.Of(newest) : null
+            : Notes.Of(Build);
+
+        if (Build is not null && Here is null)
+        {
+            Nav.NotFound();
+            return;
+        }
+
+        Sections = Here is null ? [] : PatchNoteSections.Of(Here.Notes, Ui);
+    }
+
+    private string Dated(string build) =>
+        Notes.Date(build) is { } date
+            ? $"Build {build}, {Day(date)} {date.UtcDateTime.ToString("HH:mm", CultureInfo.InvariantCulture)} UTC"
+            : $"Build {build}";
+
+    private static string Day(DateTimeOffset date) =>
+        date.UtcDateTime.ToString("d MMM yyyy", CultureInfo.InvariantCulture);
+
+    private static string? Tone(string? colour) => colour is null ? null : $"color:{colour}";
+
+    private static string Anchor(DocumentKey key) => $"{key.Slug}-{key.Id.ToString(CultureInfo.InvariantCulture)}";
+
+    private string? Anchor(PatchNote note) => anchored.Add(Anchor(note.Key)) ? Anchor(note.Key) : null;
+
+    private RenderFragment Entity(PatchNoteEntry entry)
+    {
+        var document = entry.Document;
+        var icon = Ui.Icon(entry.Note.Icon);
+        var linked = document is not null && PublicTypes.IsSearched(document);
+        var tip = document is not null && PublicTypes.IsListed(entry.Type)
+            ? ExportTooltipEndpoint.Address(Here!.Build, entry.Type, entry.Note.Key.Id)
+            : null;
+
+        return @<div class="cx-pn-entity">
+            @if (icon is not null)
+            {
+                <img class="cx-pn-icon" alt="" loading="lazy" src="@icon" />
+            }
+            @if (linked)
+            {
+                <a href="@Ui.Href(document!)" data-tip="@tip" data-tip-request="@(tip is null ? null : Ui.Tip(document!, true).Body)"
+                   style="@Tone(Ui.LinkColour(document!))">@entry.Name</a>
+            }
+            else
+            {
+                <span>@entry.Name</span>
+            }
+            @if (entry.Note.Added)
+            {
+                <span class="cx-pn-new">New</span>
+            }
+        </div>;
+    }
+
+    private RenderFragment Value(PatchNoteField field)
+    {
+        var older = field.Older is null ? null : Text.Plain(field.Older);
+        var newer = field.Newer is null ? null : Text.Plain(field.Newer);
+
+        if (older is null)
+        {
+            return @<span class="cx-pn-value"><ins>@newer</ins> <span class="cx-pn-gone">added</span></span>;
+        }
+
+        if (newer is null)
+        {
+            return @<span class="cx-pn-value"><del>@older</del> <span class="cx-pn-gone">removed</span></span>;
+        }
+
+        if (WordDiff.Reads(older, newer))
+        {
+            var words = WordDiff.Between(older, newer);
+
+            return @<span class="cx-pn-value cx-pn-prose">@foreach (var word in words)
+                {
+                    @switch (word.Change)
+                    {
+                        case WordChange.Removed:
+                            <del>@word.Text</del>
+                            break;
+                        case WordChange.Added:
+                            <ins>@word.Text</ins>
+                            break;
+                        default:
+                            @word.Text
+                            break;
+                    }
+                }</span>;
+        }
+
+        return @<span class="cx-pn-value"><del>@older</del> <span class="cx-pn-arrow" aria-label="to">&rarr;</span> <ins>@newer</ins></span>;
+    }
+}

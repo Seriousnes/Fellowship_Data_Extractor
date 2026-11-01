@@ -27,4 +27,6 @@ public sealed class TalentDocument : EntityDocument
     public IReadOnlyList<Change>? Changes { get; init; }
 
     public IReadOnlyDictionary<string, double>? Constants { get; init; }
+
+    public IReadOnlyList<EntityReference>? Origins { get; init; }
 }

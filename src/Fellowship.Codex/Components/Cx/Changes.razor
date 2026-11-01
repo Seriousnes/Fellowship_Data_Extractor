@@ -1,3 +1,5 @@
+@inject IPatchNotesService Notes
+
 @if (Rows.Count > 1 || Rows is [{ Oldest: false }])
 {
     <Panel Head="Changes">
@@ -10,13 +12,13 @@
                         <span class="cx-change-tip" tabindex="0"
                               data-tip="@ExportTooltipEndpoint.Address(row.Build, Type, Entity.Id)"
                               data-tip-request="@Tip?.Body">
-                            <span class="cx-change-build">@row.Build</span>
+                            @Build(row)
                             <span class="cx-change-note">@row.Note</span>
                         </span>
                     }
                     else
                     {
-                        <span class="cx-change-build">@row.Build</span>
+                        @Build(row)
                         <span class="cx-change-note">@row.Note</span>
                     }
                 </li>
@@ -32,7 +34,14 @@
 
     [Parameter] public TooltipLink? Tip { get; set; }
 
-    private sealed record Row(string Build, string? Note, bool Present, bool Oldest);
+    private sealed record Row(string Build, string? Note, bool Present, bool Oldest, bool Noted = false);
+
+    private DocumentKey Key => new(EntityTypes.Slug(Type), Entity.Id);
+
+    private RenderFragment Build(Row row) =>
+        row.Noted && PublicTypes.DisplayNameOf(Entity) is not null
+            ? @<a class="cx-change-build" href="@PatchNotes.Address(row.Build, Key)">@row.Build</a>
+            : @<span class="cx-change-build">@row.Build</span>;
 
     private EntityType Type => EntityTypes.TypeOf(Entity);
 
@@ -61,14 +70,16 @@
             }
             else if (older is null)
             {
-                rows.Add(new Row(newer.Build, current is null ? "added" : "current · added", true, false));
+                rows.Add(new Row(newer.Build, current is null ? "added" : "current · added", true, false, Noted(newer.Build)));
             }
-            else if (Changed.Between(older, newer.Value).Count > 0)
+            else if (Noted(newer.Build))
             {
-                rows.Add(new Row(newer.Build, current, true, false));
+                rows.Add(new Row(newer.Build, current, true, false, true));
             }
         }
 
         Rows = rows;
     }
+
+    private bool Noted(string build) => Notes.Of(build)?.Has(Key) == true;
 }

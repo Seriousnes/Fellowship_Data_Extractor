@@ -61,6 +61,8 @@ public sealed class EffectDocument : EntityDocument
     /// <summary>Abilities the effect grants.</summary>
     public IReadOnlyList<EntityReference>? Grants { get; init; }
 
+    public IReadOnlyList<EntityReference>? Origins { get; init; }
+
     public string? Role { get; init; }
 
     public IReadOnlyList<EntityReference>? ChangedBy { get; init; }

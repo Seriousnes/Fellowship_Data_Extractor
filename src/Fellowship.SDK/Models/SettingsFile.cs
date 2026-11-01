@@ -30,6 +30,8 @@ public sealed record StatCalculationFile
 
 public sealed record SettingsFile
 {
+    public DateTimeOffset? BuildDate { get; init; }
+
     public IReadOnlyList<HeroEntry> Heroes { get; init; } = [];
 
     public IReadOnlyList<RarityEntry> Rarities { get; init; } = [];
