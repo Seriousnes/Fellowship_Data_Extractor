@@ -14,6 +14,9 @@ public sealed class GemAbilityDocument : EntityDocument
 
     public IReadOnlyList<EntityReference>? Grants { get; init; }
 
+    /// <summary>Effects the abilities it grants apply or have as parts.</summary>
+    public IReadOnlyList<EntityReference>? Applies { get; init; }
+
     public string? Description { get; init; }
     public string? Icon { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }

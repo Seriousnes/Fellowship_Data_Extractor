@@ -19,6 +19,8 @@ public sealed record MagnitudeReading(double? Value, double? Low, double? High)
     public bool HasValue => Value is not null || Low is not null;
 
     public bool ReadsCapture { get; init; }
+
+    public IReadOnlyList<double>? Ranks { get; init; }
 }
 
 public static class MagnitudeCalculations
@@ -238,6 +240,19 @@ public static class MagnitudeCalculations
         if (row is null || row.Length == 0 || row.Equals("None", StringComparison.Ordinal)) return value;
 
         return constants.Lookup(row).Record?.Value is { } resolved ? (value ?? 1) * resolved : null;
+    }
+
+    /// <summary>The scalable float at each rank, where its row has ranks.</summary>
+    public static IReadOnlyList<double>? ScalableRanks(IPropertyHolder scalable, ConstantsTable constants)
+    {
+        var value = PropertyWalk.AsNumber(PropertyWalk.Get(scalable, "Value")?.GenericValue) ?? 1;
+        var row = PropertyWalk.GetStruct(scalable, "Curve") is { } curve
+            ? PropertyWalk.GetString(curve, "RowName")
+            : null;
+
+        return constants.Lookup(row).Record?.Ranks is { } ranks
+            ? [.. ranks.Select(rank => Math.Round(value * rank, 10))]
+            : null;
     }
 
     public static double? Reduce(UObject calculation, ConstantsTable constants) =>

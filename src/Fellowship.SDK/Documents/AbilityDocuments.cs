@@ -16,6 +16,18 @@ public sealed class AbilityDocument : EntityDocument
 
     public EntityReference? PartOf { get; init; }
 
+    /// <summary>The ability whose Blueprint class this ability's class derives from.</summary>
+    public EntityReference? ParentClass { get; init; }
+
+    /// <summary>Effects the ability's properties and graph reference.</summary>
+    public IReadOnlyList<EntityReference>? Applies { get; init; }
+
+    /// <summary>Effects and abilities part of the ability or named after it.</summary>
+    public IReadOnlyList<EntityReference>? Parts { get; init; }
+
+    /// <summary>Abilities the ability grants.</summary>
+    public IReadOnlyList<EntityReference>? Grants { get; init; }
+
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }
@@ -36,6 +48,8 @@ public sealed class AbilityDocument : EntityDocument
 
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 
+    public IReadOnlyList<Threshold>? Thresholds { get; init; }
+
     public double? Range { get; init; }
     public double? MinRange { get; init; }
     public double? Radius { get; init; }
@@ -46,6 +60,10 @@ public sealed class AbilityDocument : EntityDocument
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
+
+    /// <summary>Set-by-caller magnitudes the ability computes as a base plus an amount for each unit counted.</summary>
+    public IReadOnlyList<SetByCallerScaling>? SetByCallerScaling { get; init; }
+
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }
 

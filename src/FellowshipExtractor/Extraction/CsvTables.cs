@@ -15,7 +15,20 @@ public readonly record struct ConstantRecord(
     string[] Raws,
     double?[] Values,
     string[] Columns,
-    string? Comment);
+    string? Comment)
+{
+    /// <summary>
+    /// Value at each rank. A <c>---,1,2,3,4</c> header names the columns as ranks, and a row whose ranks all hold one
+    /// value has none.
+    /// </summary>
+    public double[]? Ranks =>
+        Columns.Length > 1 &&
+        Columns.Select((column, at) => column == (at + 1).ToString(CultureInfo.InvariantCulture)).All(ranked => ranked) &&
+        Values.All(value => value is not null) &&
+        Values.Distinct().Count() > 1
+            ? [.. Values.Select(value => value!.Value)]
+            : null;
+}
 
 public static partial class CsvTables
 {

@@ -21,6 +21,12 @@ public sealed class EffectDocument : EntityDocument
 
     public int? MaxStacks { get; init; }
 
+    /// <summary>
+    /// Periodic executions over the duration: one per whole period, and one more on application unless the effect
+    /// declares it does not execute then.
+    /// </summary>
+    public int? Ticks { get; init; }
+
     public bool? Infinite { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
@@ -30,6 +36,8 @@ public sealed class EffectDocument : EntityDocument
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
 
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
+
+    public IReadOnlyList<Threshold>? Thresholds { get; init; }
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
 
@@ -44,7 +52,18 @@ public sealed class EffectDocument : EntityDocument
 
     public EntityReference? PartOf { get; init; }
 
+    /// <summary>The effect whose Blueprint class this effect's class derives from.</summary>
+    public EntityReference? ParentClass { get; init; }
+
+    /// <summary>Effects the effect's properties and graph reference.</summary>
+    public IReadOnlyList<EntityReference>? Applies { get; init; }
+
+    /// <summary>Abilities the effect grants.</summary>
+    public IReadOnlyList<EntityReference>? Grants { get; init; }
+
     public string? Role { get; init; }
 
     public IReadOnlyList<EntityReference>? ChangedBy { get; init; }
+
+    public IReadOnlyList<Change>? Changes { get; init; }
 }

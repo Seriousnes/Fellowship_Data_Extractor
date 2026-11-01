@@ -10,6 +10,7 @@ public static class ClassDefaults
 {
     private const string DefaultPrefix = "Default__";
     private const string ScriptRoot = "/Script/";
+    private const string ClassSuffix = "_C";
     private const int MaxDepth = 16;
 
     public static FPropertyTagType? Inherited(UObject cdo, string field, AbstractFileProvider provider)
@@ -63,6 +64,18 @@ public static class ClassDefaults
 
             holder = Parent(holder, provider);
         }
+    }
+
+    /// <summary>Asset name of the Blueprint class <paramref name="cdo"/>'s class derives from, without its <c>_C</c>.</summary>
+    public static string? ParentName(UObject cdo)
+    {
+        if (cdo.Class?.Load() is not UStruct type) return null;
+        if (type.SuperStruct?.ResolvedObject is not { } parent) return null;
+        if (parent.GetPathName().StartsWith(ScriptRoot, StringComparison.Ordinal)) return null;
+
+        var name = parent.Name.Text;
+
+        return name.EndsWith(ClassSuffix, StringComparison.Ordinal) ? name[..^ClassSuffix.Length] : name;
     }
 
     private static UObject? Parent(UObject cdo, AbstractFileProvider provider) =>
