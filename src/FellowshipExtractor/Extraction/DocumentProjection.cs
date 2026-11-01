@@ -684,25 +684,50 @@ public static class DocumentProjection
                 .ThenBy(spent => spent.Key, StringComparer.Ordinal)
                 .Select(spent => spent.Value with { Key = spent.Key })];
 
+    /// <summary>
+    /// Every row the entity's placeholders, changes, talent groups and own constants read, with its value where no
+    /// modifier applies it. A row a modifier applies has the attribute and op without the value, so a document shows a
+    /// modifier's value only through the modifier or change applying it. A row of the
+    /// entity's own constants that another entity owns is on that entity's document instead, unless the row sits under
+    /// the entity's own namespace. A row of the entity's own constants that a talent group also reads is under the
+    /// group's name alone, and a row a placeholder reads under a longer key has the attribute and op the group's
+    /// gated modifier applies it under.
+    /// </summary>
     private static IReadOnlyDictionary<string, TuningReference>? Tuned(Entity entity, References references)
     {
         var tuned = new SortedDictionary<string, TuningReference>(StringComparer.Ordinal);
 
         var rows = (entity.Placeholders?.Values ?? [])
-            .SelectMany(placeholder => placeholder.Constants?.Keys ?? [])
-            .Concat(references.Changes.Constants(entity)?.Keys ?? []);
+            .SelectMany(placeholder => placeholder.Constants ?? new Dictionary<string, object?>())
+            .Concat((references.Changes.Constants(entity) ?? new Dictionary<string, double>())
+                .Select(row => KeyValuePair.Create(row.Key, (object?)row.Value)));
 
-        foreach (var row in rows)
+        foreach (var (row, value) in rows)
         {
             if (!tuned.ContainsKey(row) && references.Changes.Reference(row, entity, references) is { } reference)
             {
-                tuned[row] = reference;
+                tuned[row] = reference with { Value = value };
             }
+        }
+
+        var constants = new List<string>();
+
+        foreach (var (row, value) in entity.Constants ?? new Dictionary<string, object?>())
+        {
+            if (value is null || tuned.ContainsKey(row)) continue;
+
+            var own = references.Changes.Reference(row, entity, references) ??
+                      references.Changes.Referenced(row, entity, references);
+
+            if (own.Owner is not null && !Under(entity, row)) continue;
+
+            tuned[row] = own with { Value = value };
+            constants.Add(row);
         }
 
         foreach (var (group, leaves) in entity.Talents ?? new Dictionary<string, IReadOnlyDictionary<string, object?>>())
         {
-            foreach (var leaf in leaves.Keys)
+            foreach (var (leaf, value) in leaves)
             {
                 var relative = $"{group}.{leaf}";
                 var row = (entity.Rows?.Keys ?? []).FirstOrDefault(key =>
@@ -710,7 +735,7 @@ public static class DocumentProjection
 
                 if (row is not null && references.Changes.Reference(row, entity, references) is { } reference)
                 {
-                    tuned[relative] = reference;
+                    tuned[relative] = reference with { Value = value };
                 }
                 else if (Gate(entity, group) is { } gate && references.Changes.Holding(gate) is [var (type, id)])
                 {
@@ -726,6 +751,7 @@ public static class DocumentProjection
                     tuned[relative] = new TuningReference(ModifierIndex.Fold(leaf))
                     {
                         Talent = references.Of(type, id),
+                        Value = value,
                         Attribute = attribute,
                         Op = op,
                         Percent = read is not null && ModifierOps.Adds(op) && references.Changes.Percent(read, type, id)
@@ -735,13 +761,47 @@ public static class DocumentProjection
                 }
                 else if (references.Changes.TalentNamed(entity, group, references) is { } talent)
                 {
-                    tuned[relative] = new TuningReference(ModifierIndex.Fold(leaf)) { Talent = talent };
+                    tuned[relative] = new TuningReference(ModifierIndex.Fold(leaf)) { Talent = talent, Value = value };
                 }
             }
         }
 
+        var grouped = (entity.Talents ?? new Dictionary<string, IReadOnlyDictionary<string, object?>>())
+            .SelectMany(group => group.Value.Keys.Select(leaf => $"{group.Key}.{leaf}"))
+            .Where(tuned.ContainsKey)
+            .ToArray();
+
+        foreach (var row in constants)
+        {
+            if (grouped.Any(relative => relative != row && row.EndsWith("." + relative, StringComparison.OrdinalIgnoreCase)))
+            {
+                tuned.Remove(row);
+            }
+        }
+
+        foreach (var relative in grouped)
+        {
+            if (tuned[relative] is not { Op: not null } applied) continue;
+
+            foreach (var (row, reference) in tuned.Where(entry => entry.Key != relative && entry.Value.Op is null &&
+                         entry.Value.Name == applied.Name &&
+                         entry.Key.EndsWith("." + relative, StringComparison.OrdinalIgnoreCase)).ToArray())
+            {
+                tuned[row] = reference with { Attribute = applied.Attribute, Op = applied.Op, Percent = applied.Percent };
+            }
+        }
+
+        foreach (var (row, reference) in tuned.Where(entry => entry.Value.Op is not null).ToArray())
+        {
+            tuned[row] = reference with { Value = null };
+        }
+
         return tuned.Count == 0 ? null : tuned;
     }
+
+    /// <summary>True when the row sits under the entity's own namespace, which another entity can share.</summary>
+    private static bool Under(Entity entity, string row) =>
+        entity.Tuning is { } scope && entity.Rows?.ContainsKey($"{scope}.{row}") == true;
 
     private static string? Gate(Entity entity, string group) =>
         entity.TalentGates?.GetValueOrDefault(group) ??

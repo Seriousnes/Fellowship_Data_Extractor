@@ -1209,6 +1209,7 @@ public sealed class EntityResolver
 
         var detail = display.Detail.Where(line => line != display.Description).ToArray();
         var (baseline, talents) = Numbers.SplitTalents(split.Rest);
+        var beside = Beside(split.Rows, tuning, baseline);
 
         var magnitudes = EffectModifiers.Of(cdo, _provider, _constants, _mappings, CapturedBy(assetName));
         ModifiersRead += magnitudes.Modifiers.Count;
@@ -1401,7 +1402,7 @@ public sealed class EntityResolver
             Range = Number(split, "range"),
             MinRange = Number(split, "minRange"),
             Radius = Number(split, "radius"),
-            Duration = Number(split, "duration"),
+            Duration = Number(split, "duration") ?? StatedDuration(cdo),
             Period = Number(split, "period"),
             CastTimeScalesWithHaste = CastTimeScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
@@ -1416,7 +1417,9 @@ public sealed class EntityResolver
             Thresholds = Empty(_thresholds.Of(cdo)),
             Tuning = tuning,
             Declares = Empty(Bound(bindings)),
-            Constants = baseline.Count == 0 ? null : baseline,
+            Constants = baseline.Count + beside.Count == 0
+                ? null
+                : baseline.Concat(beside).ToDictionary(StringComparer.Ordinal),
             ConstantsByRank = Ranked(split.Rows),
             Talents = talents.Count == 0 ? null : Renamed(talents),
             TalentGates = cdo is null ? null : Empty(TalentGates(cdo, talents.Keys)),
@@ -1815,6 +1818,33 @@ public sealed class EntityResolver
         return count is > 1 ? (int)count : null;
     }
 
+    /// <summary>
+    /// The seconds a timed effect's duration magnitude states as a plain number, with no constants row behind it.
+    /// Murder of Crows lasts 12 seconds this way.
+    /// </summary>
+    private static double? StatedDuration(UObject? cdo)
+    {
+        if (cdo is null ||
+            PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::HasDuration", StringComparison.Ordinal) != true ||
+            PropertyWalk.GetStruct(cdo, DurationMagnitudeField) is not { } magnitude ||
+            magnitude.Properties.Any(property => property.Name.Text != ScalableFloatMagnitudeField) ||
+            PropertyWalk.GetStruct(magnitude, ScalableFloatMagnitudeField) is not { } scalable ||
+            scalable.Properties.Any(property => property.Name.Text != "Value"))
+        {
+            return null;
+        }
+
+        return PropertyWalk.Get(scalable, "Value")?.GenericValue switch
+        {
+            float value and > 0 => Math.Round(value, 4),
+            double value and > 0 => Math.Round(value, 4),
+            _ => null,
+        };
+    }
+
+    private const string DurationMagnitudeField = "DurationMagnitude";
+    private const string ScalableFloatMagnitudeField = "ScalableFloatMagnitude";
+
     private static bool Infinite(UObject? cdo) =>
         cdo is not null &&
         PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::Infinite", StringComparison.Ordinal) == true;
@@ -2115,6 +2145,41 @@ public sealed class EntityResolver
         record.Value is { } declared &&
         bound.TryGetValue(record.Key, out var applied) &&
         applied == declared;
+
+    /// <summary>
+    /// Rows directly under a namespace other than the entity's own that a row it binds sits in, such as the spawned
+    /// turret's <c>Mosse.ProjectileTurret.Duration</c> beside the bound <c>Mosse.ProjectileTurret.FiringPeriod</c>. A
+    /// namespace with a talent segment is the talent's, so its rows are left to the talent.
+    /// </summary>
+    private Dictionary<string, object?> Beside(
+        IReadOnlySet<string> bound,
+        string? tuning,
+        IReadOnlyDictionary<string, object?> baseline)
+    {
+        var beside = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+        var scopes = bound
+            .Where(row => row.LastIndexOf('.') > 0)
+            .Select(row => row[..row.LastIndexOf('.')])
+            .Where(scope => !scope.Equals(tuning, StringComparison.OrdinalIgnoreCase) && _constants.IsNamespace(scope) &&
+                            !scope.Split('.').Any(part => part is "Talent" or "Talents"))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var scope in scopes)
+        {
+            foreach (var record in _constants.DirectlyUnder(scope))
+            {
+                if (bound.Contains(record.Key) || record.Value is not { } value) continue;
+
+                var key = TuningNamespace.Relative(record.Key, tuning);
+                if (baseline.ContainsKey(key)) continue;
+
+                beside.TryAdd(key, record.Values is { Length: > 1 } ranks ? ranks : value);
+            }
+        }
+
+        return beside;
+    }
 
     private void Supplement(SplitNumbers split, string? tuning, IReadOnlyDictionary<string, double> bound)
     {

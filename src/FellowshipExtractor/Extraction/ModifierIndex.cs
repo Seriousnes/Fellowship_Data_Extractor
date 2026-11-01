@@ -1465,9 +1465,13 @@ public sealed partial class ModifierIndex
                 ? classified with { Type = ModifierType.DurationMultiplier, Value = duration / start }
                 : null;
 
-            if (!Printed(classified, candidate, entity) &&
+            var printsRatio = ratio is not null && Printed(ratio, candidate with { Value = ratio.Value }, entity);
+
+            var printsDuration = Printed(classified, candidate, entity);
+
+            if (!printsDuration &&
                 (change is null || !Printed(change, candidate with { Value = change.Value }, entity)) &&
-                (ratio is null || !Printed(ratio, candidate with { Value = ratio.Value }, entity)))
+                !printsRatio)
             {
                 continue;
             }
@@ -1475,6 +1479,8 @@ public sealed partial class ModifierIndex
             if (typed.Any(held => held.Class.Type == ModifierType.Duration && held.Targets.Contains(effect))) continue;
 
             typed.Add(new Typed(candidate, classified, [effect], null));
+
+            if (printsRatio && !printsDuration) typed.Add(new Typed(candidate with { Value = ratio!.Value }, ratio, [effect], null));
         }
 
         return typed;
