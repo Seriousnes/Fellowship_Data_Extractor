@@ -31,4 +31,8 @@
     <ProjectReference Include="..\Fellowship.SDK\Fellowship.SDK.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="TooltipAuditBaseline.tsv" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
