@@ -18,6 +18,12 @@ public enum TooltipNumberStatus
     /// <summary>A modifier labelled beside the number shows a different number.</summary>
     Contradicted,
 
+    /// <summary>
+    /// Only a linked document has the number, so the entity's own page does not show it. The evidence names the
+    /// document.
+    /// </summary>
+    Elsewhere,
+
     /// <summary>No linked document has the number.</summary>
     Missing,
 }
@@ -96,8 +102,22 @@ public static partial class TooltipAudit
             var plain = Tokens().Replace(Markup().Replace(description, ""), "{}").Replace('\r', ' ').Replace('\n', ' ');
             var shown = new List<Shown>();
             var constants = new HashSet<double>();
+            var elsewhere = new List<(Shown? Typed, double? Constant, string Source)>();
 
-            foreach (var linked in Linked((type, id), byKey, family, appliedBy)) Walk(linked, shown, constants);
+            Walk(body, shown, constants);
+
+            foreach (var linked in Linked((type, id), byKey, family, appliedBy))
+            {
+                if (ReferenceEquals(linked, body)) continue;
+
+                var linkedShown = new List<Shown>();
+                var linkedConstants = new HashSet<double>();
+                var source = $"{linked["$type"]?.GetValue<string>()} {linked["id"]}";
+
+                Walk(linked, linkedShown, linkedConstants);
+                elsewhere.AddRange(linkedShown.Select(item => ((Shown?)item, (double?)null, source)));
+                elsewhere.AddRange(linkedConstants.Select(value => ((Shown?)null, (double?)value, source)));
+            }
 
             var ordinal = 0;
 
@@ -110,27 +130,39 @@ public static partial class TooltipAudit
                 var unit = percent ? "%" : Unit(plain, match.Index + match.Length);
                 var window = plain[Math.Max(0, match.Index - 32)..Math.Min(plain.Length, match.Index + match.Length + 32)];
 
+                bool Reads(double value) => Readings(value, percent).Any(reading => Near(reading, number));
+
                 var typed = shown.Where(item => Near(item.Value, number)).ToList();
                 var contradicting = shown
+                    .Concat(elsewhere.Select(entry => entry.Typed).OfType<Shown>())
                     .Where(item => !Near(item.Value, number) && Mentions(window, item.Label) && Measures(unit, item.Label) &&
                                    SameClause(plain, match.Index, item.Label))
                     .ToList();
+                var linkedTyped = elsewhere.Where(entry => entry.Typed is { } item && Near(item.Value, number)).ToList();
+                var linkedConstant = elsewhere.Where(entry => entry.Constant is { } value && Reads(value)).ToList();
 
                 var status = typed.Count > 0 ? TooltipNumberStatus.Typed
+                    : linkedTyped.Count > 0 ? TooltipNumberStatus.Elsewhere
                     : contradicting.Count > 0 ? TooltipNumberStatus.Contradicted
-                    : constants.Any(value => Readings(value, percent).Any(reading => Near(reading, number)))
-                        ? TooltipNumberStatus.Constant
-                        : TooltipNumberStatus.Missing;
+                    : constants.Any(Reads) ? TooltipNumberStatus.Constant
+                    : linkedConstant.Count > 0 ? TooltipNumberStatus.Elsewhere
+                    : TooltipNumberStatus.Missing;
 
-                var evidence = (status == TooltipNumberStatus.Contradicted ? contradicting : typed)
-                    .Select(item => $"{item.Label} {item.Op} {Format(item.Raw)}")
-                    .Distinct()
-                    .ToArray();
+                var evidence = status switch
+                {
+                    TooltipNumberStatus.Contradicted => contradicting.Select(item => $"{item.Label} {item.Op} {Format(item.Raw)}"),
+                    TooltipNumberStatus.Elsewhere => linkedTyped.Count > 0
+                        ? linkedTyped.Select(entry => $"{entry.Source}: {entry.Typed!.Label} {entry.Typed.Op} {Format(entry.Typed.Raw)}")
+                        : linkedConstant.Select(entry => $"{entry.Source}: {Format(entry.Constant!.Value)}"),
+                    _ => typed.Select(item => $"{item.Label} {item.Op} {Format(item.Raw)}"),
+                };
+
+                evidence = evidence.Distinct().Take(6).ToArray();
 
                 var start = Math.Max(0, match.Index - 48);
                 var context = plain[start..Math.Min(plain.Length, match.Index + match.Length + 48)].Trim();
 
-                found.Add(new TooltipNumber(EntityTypes.Slug(type), id, name, match.Value, status, context, string.Join("; ", evidence))
+                found.Add(new TooltipNumber(EntityTypes.Slug(type), id, name, match.Value, status, context, string.Join("; ", evidence.ToArray()))
                 {
                     Ordinal = ordinal++,
                 });

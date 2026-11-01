@@ -13,7 +13,8 @@ public sealed class TooltipAuditTests
     private static readonly Lazy<IReadOnlyList<TooltipNumber>> Audited = new(() => TooltipAudit.Run(Export.Loaded.Documents));
 
     private static IEnumerable<TooltipNumber> Findings() =>
-        Audited.Value.Where(number => number.Status is TooltipNumberStatus.Contradicted or TooltipNumberStatus.Missing);
+        Audited.Value.Where(number =>
+            number.Status is TooltipNumberStatus.Contradicted or TooltipNumberStatus.Elsewhere or TooltipNumberStatus.Missing);
 
     private static string Line(TooltipNumber number) =>
         $"{number.Key}\t{number.Status}\t{number.Name}\t{number.Context}\t{number.Evidence}";
