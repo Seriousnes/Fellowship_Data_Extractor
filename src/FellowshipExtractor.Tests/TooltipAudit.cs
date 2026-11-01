@@ -69,17 +69,21 @@ public static partial class TooltipAudit
     public static IReadOnlyList<TooltipNumber> Run(IReadOnlyList<(EntityType Type, int Id, string? Name, JsonObject Body)> documents)
     {
         var byKey = new Dictionary<(EntityType, int), JsonObject>();
-        var appliedBy = new Dictionary<(EntityType, int), List<JsonObject>>();
+        var family = new Dictionary<(EntityType, int), List<(EntityType, int)>>();
+        var appliedBy = new Dictionary<(EntityType, int), List<(EntityType, int)>>();
 
         foreach (var (type, id, _, body) in documents)
         {
             byKey.TryAdd((type, id), body);
 
-            if (Reference(body["appliedBy"]) is { } applier)
+            foreach (var field in FamilyFields)
             {
-                if (!appliedBy.TryGetValue(applier, out var applied)) appliedBy[applier] = applied = [];
-                applied.Add(body);
+                if (Reference(body[field]) is not { } kin) continue;
+                Index(family, kin, (type, id));
+                Index(family, (type, id), kin);
             }
+
+            if (Reference(body["appliedBy"]) is { } applier) Index(appliedBy, applier, (type, id));
         }
 
         var found = new List<TooltipNumber>();
@@ -93,7 +97,7 @@ public static partial class TooltipAudit
             var shown = new List<Shown>();
             var constants = new HashSet<double>();
 
-            foreach (var linked in Linked((type, id), body, byKey, appliedBy)) Walk(linked, shown, constants);
+            foreach (var linked in Linked((type, id), byKey, family, appliedBy)) Walk(linked, shown, constants);
 
             var ordinal = 0;
 
@@ -108,7 +112,8 @@ public static partial class TooltipAudit
 
                 var typed = shown.Where(item => Near(item.Value, number)).ToList();
                 var contradicting = shown
-                    .Where(item => !Near(item.Value, number) && Mentions(window, item.Label) && Measures(unit, item.Label))
+                    .Where(item => !Near(item.Value, number) && Mentions(window, item.Label) && Measures(unit, item.Label) &&
+                                   SameClause(plain, match.Index, item.Label))
                     .ToList();
 
                 var status = typed.Count > 0 ? TooltipNumberStatus.Typed
@@ -140,27 +145,59 @@ public static partial class TooltipAudit
             ? (type, reference["id"]!.GetValue<int>())
             : null;
 
-    private static IEnumerable<JsonObject> Linked(
-        (EntityType, int) self, JsonObject body,
-        Dictionary<(EntityType, int), JsonObject> byKey, Dictionary<(EntityType, int), List<JsonObject>> appliedBy)
+    private static readonly string[] FamilyFields = ["partOf", "namedAfter"];
+
+    private static void Index<TKey>(Dictionary<TKey, List<(EntityType, int)>> index, TKey key, (EntityType, int) value)
+        where TKey : notnull
     {
-        var linked = new HashSet<JsonObject>(ReferenceEqualityComparer.Instance) { body };
+        if (!index.TryGetValue(key, out var held)) index[key] = held = [];
+        if (!held.Contains(value)) held.Add(value);
+    }
 
-        linked.UnionWith(appliedBy.GetValueOrDefault(self) ?? []);
+    /// <summary>
+    /// The entity's family (every document joined to it through partOf or namedAfter, in either direction), the
+    /// abilities a family member grants or is applied by, every effect any of those apply, and the targets of the
+    /// entity's own changes.
+    /// </summary>
+    private static IEnumerable<JsonObject> Linked(
+        (EntityType, int) self,
+        Dictionary<(EntityType, int), JsonObject> byKey,
+        Dictionary<(EntityType, int), List<(EntityType, int)>> family,
+        Dictionary<(EntityType, int), List<(EntityType, int)>> appliedBy)
+    {
+        var members = new HashSet<(EntityType, int)> { self };
+        var pending = new Queue<(EntityType, int)>(members);
 
-        foreach (var granted in body["grants"]?.AsArray() ?? [])
+        while (pending.TryDequeue(out var member))
         {
-            if (Reference(granted) is not { } key) continue;
-            if (byKey.GetValueOrDefault(key) is { } ability) linked.Add(ability);
-            linked.UnionWith(appliedBy.GetValueOrDefault(key) ?? []);
+            foreach (var kin in family.GetValueOrDefault(member) ?? [])
+            {
+                if (members.Add(kin)) pending.Enqueue(kin);
+            }
         }
 
-        foreach (var field in (string[])["partOf", "appliedBy"])
+        var reached = new HashSet<(EntityType, int)>(members);
+
+        foreach (var member in members)
         {
-            if (Reference(body[field]) is { } key && byKey.GetValueOrDefault(key) is { } held) linked.Add(held);
+            if (byKey.GetValueOrDefault(member) is not { } body) continue;
+
+            foreach (var granted in body["grants"]?.AsArray() ?? [])
+            {
+                if (Reference(granted) is { } ability) reached.Add(ability);
+            }
+
+            if (Reference(body["appliedBy"]) is { } applier) reached.Add(applier);
         }
 
-        return linked;
+        foreach (var holder in reached.ToArray()) reached.UnionWith(appliedBy.GetValueOrDefault(holder) ?? []);
+
+        foreach (var change in byKey.GetValueOrDefault(self)?["changes"]?.AsArray() ?? [])
+        {
+            if (Reference(change?["target"]) is { } target) reached.Add(target);
+        }
+
+        return reached.Select(key => byKey.GetValueOrDefault(key)).OfType<JsonObject>();
     }
 
     private static void Walk(JsonNode? node, List<Shown> shown, HashSet<double> constants)
@@ -262,6 +299,29 @@ public static partial class TooltipAudit
         "second" => Timed.Contains(label),
         _ => CamelBreak().Replace(label, " ").Split(' ').Any(word => word.Equals(unit, StringComparison.OrdinalIgnoreCase)),
     };
+
+    [GeneratedRegex(@"[,.;:()]|\s(?:and|but|or)\s")]
+    private static partial Regex ClauseBreak();
+
+    /// <summary>
+    /// True when <paramref name="label"/> is in the clause holding the number at <paramref name="at"/>, so "+20% Spirit
+    /// and 2% max mana" gives Spirit to the 20% and not the 2%. A comma, period, semicolon, colon, parenthesis, "and",
+    /// "but" or "or" ends a clause; a decimal point inside a number does not.
+    /// </summary>
+    private static bool SameClause(string text, int at, string label)
+    {
+        var start = 0;
+        var end = text.Length;
+
+        foreach (Match boundary in ClauseBreak().Matches(text))
+        {
+            if (boundary.Value == "." && boundary.Index + 1 < text.Length && char.IsDigit(text[boundary.Index + 1])) continue;
+            if (boundary.Index < at) start = boundary.Index + boundary.Length;
+            else { end = boundary.Index; break; }
+        }
+
+        return text[start..end].Contains(CamelBreak().Replace(label, " "), StringComparison.OrdinalIgnoreCase);
+    }
 
     private static bool Mentions(string window, string label)
     {
