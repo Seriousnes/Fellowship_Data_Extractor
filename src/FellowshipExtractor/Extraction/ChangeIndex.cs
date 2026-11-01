@@ -13,6 +13,10 @@ public sealed class ChangeIndex
     public const string Add = "Add";
     public const string Subtract = "Subtract";
     public const string Multiply = "Multiply";
+    public const string Additive = "Additive";
+
+    /// <summary>The game's name for a TimeRate mod on a cooldown tag.</summary>
+    public const string CooldownAccelerationField = "cooldownAcceleration";
 
     private static string Field(string property) => JsonNamingPolicy.CamelCase.ConvertName(property);
 
@@ -143,6 +147,70 @@ public sealed class ChangeIndex
                                 : null,
                         });
                     }
+                }
+            }
+        }
+
+        Accelerations(entities, references);
+    }
+
+    /// <summary>
+    /// Records each effect's TimeRate mods as cooldown acceleration on every ability cooling down under the mod's tag.
+    /// The change is the effect's own, and also each talent's granting the ability applying the effect, held while
+    /// the effect is.
+    /// </summary>
+    private void Accelerations(IReadOnlyList<Entity> entities, DocumentProjection.References references)
+    {
+        var cooling = new Dictionary<string, List<EntityReference>>(StringComparer.Ordinal);
+        var granters = new Dictionary<(EntityType Type, int Id), List<EntityReference>>();
+
+        foreach (var entity in entities)
+        {
+            if (entity is { Type: EntityType.Ability, NetId: { } ability } && references.Of(EntityType.Ability, ability) is { } cooled)
+            {
+                foreach (var tag in entity.CooldownTags ?? [])
+                {
+                    if (!cooling.TryGetValue(tag, out var under)) cooling[tag] = under = [];
+                    if (!under.Any(held => held.Id == cooled.Id)) under.Add(cooled);
+                }
+            }
+
+            if (entity is not { Type: EntityType.Talent or EntityType.LegendaryPower, NetId: { } id } source) continue;
+            if (references.Of(source.Type!.Value, id) is not { } named) continue;
+
+            foreach (var granted in entity.Granted ?? [])
+            {
+                if (references.At(granted) is not { Type: EntityType.Ability } reached) continue;
+
+                if (!granters.TryGetValue((reached.Type, reached.Id), out var by)) granters[(reached.Type, reached.Id)] = by = [];
+                if (!by.Contains(named)) by.Add(named);
+            }
+        }
+
+        foreach (var entity in entities)
+        {
+            if (entity is not { Type: EntityType.Effect, NetId: { } id, TimeRates: { } rates }) continue;
+            if (references.Of(EntityType.Effect, id) is not { } effect) continue;
+
+            var talents = references.At(entity.AppliedBy) is { } applier
+                ? granters.GetValueOrDefault((applier.Type, applier.Id)) ?? []
+                : [];
+
+            foreach (var rate in rates)
+            {
+                if (!cooling.TryGetValue(rate.Tag, out var targets))
+                {
+                    Count("time rate on a tag no ability cools down under");
+                    continue;
+                }
+
+                foreach (var target in targets)
+                {
+                    var change = new Change(target, CooldownAccelerationField, Additive, rate.Value) { Percent = true };
+
+                    Record(effect, change);
+
+                    foreach (var talent in talents) Record(talent, change with { While = [effect] });
                 }
             }
         }

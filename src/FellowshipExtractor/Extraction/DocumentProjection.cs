@@ -186,6 +186,7 @@ public static class DocumentProjection
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
             Role = roles.Role(entity.Name),
             ChangedBy = references.Changes.ChangedBy(entity, references),
+            Changes = references.Changes.Of(entity),
         },
 
         EntityType.Creature => new CreatureDocument

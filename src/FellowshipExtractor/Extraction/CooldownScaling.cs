@@ -4,6 +4,8 @@ using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Objects.Properties;
 
+using Fellowship.SDK.Models;
+
 namespace FellowshipExtractor.Extraction;
 
 public sealed record CooldownTiming(IReadOnlyList<string>? DurationScalesOff, IReadOnlyList<string>? TimeRateScalesOff);
@@ -20,6 +22,9 @@ public sealed class CooldownScaling
     private const string TimeRate = "ECREffectAttributeType::TimeRate";
     private const string EffectTagField = "EffectTag";
     private const string MagnitudeField = "AttributeMagnitude";
+    private const string CalculationTypeField = "MagnitudeCalculationType";
+    private const string ScalableFloatKind = "EGameplayEffectMagnitudeCalculation::ScalableFloat";
+    private const string ScalableField = "ScalableFloatMagnitude";
     private const string AttributeBasedField = "AttributeBasedMagnitude";
     private const string BackingField = "BackingAttribute";
     private const string CaptureField = "AttributeToCapture";
@@ -183,6 +188,31 @@ public sealed class CooldownScaling
             : [];
 
         return _cooldownTypes[effectClass] = tags;
+    }
+
+    /// <summary>
+    /// The scalable-float TimeRate mods on <paramref name="effect"/>'s components. A mod reading an attribute, a
+    /// calculation class or a set-by-caller magnitude has no value of its own here.
+    /// </summary>
+    public static IReadOnlyList<TimeRateModifier> TimeRates(UObject effect, ConstantsTable constants)
+    {
+        var rates = new List<TimeRateModifier>();
+
+        foreach (var (tag, mod) in TimeRateMods(effect.Owner?.GetExports() ?? [effect]))
+        {
+            if (PropertyWalk.GetStruct(mod, MagnitudeField) is not { } magnitude) continue;
+
+            var kind = PropertyWalk.GetString(magnitude, CalculationTypeField);
+            if (kind is not (null or ScalableFloatKind)) continue;
+
+            if (PropertyWalk.GetStruct(magnitude, ScalableField) is not { } scalable) continue;
+            if (MagnitudeCalculations.Scalable(scalable, constants) is not { } value) continue;
+
+            var rate = new TimeRateModifier(tag, Math.Round(value, 10));
+            if (!rates.Contains(rate)) rates.Add(rate);
+        }
+
+        return rates;
     }
 
     private static Dictionary<string, string> TimeRateAttributes(AbstractFileProvider provider, string package)

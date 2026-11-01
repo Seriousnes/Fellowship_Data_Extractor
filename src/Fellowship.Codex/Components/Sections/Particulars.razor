@@ -97,6 +97,7 @@
             {
                 TalentDocument talent => talent.Changes ?? [],
                 LegendaryPowerDocument legendary => legendary.Changes ?? [],
+                EffectDocument effect => effect.Changes ?? [],
                 _ => [],
             })
             .Select(change => (Target: Named(change.Target),

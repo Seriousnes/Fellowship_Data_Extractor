@@ -47,4 +47,6 @@ public sealed class EffectDocument : EntityDocument
     public string? Role { get; init; }
 
     public IReadOnlyList<EntityReference>? ChangedBy { get; init; }
+
+    public IReadOnlyList<Change>? Changes { get; init; }
 }

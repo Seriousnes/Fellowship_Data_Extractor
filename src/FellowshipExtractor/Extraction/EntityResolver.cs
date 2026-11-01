@@ -1446,6 +1446,7 @@ public sealed class EntityResolver
             GrantedAbilityNames = Empty(AbilityLinks.GrantedAbilities(cdo)),
 
             GrantedEffects = cdo is null ? null : Empty([.. ClassPaths(cdo, GrantedEffectsField).Select(ClassName)]),
+            TimeRates = cdo is null ? null : Empty(CooldownScaling.TimeRates(cdo, _constants)),
             GatedConstants = GatedConstants(tested, testerBindings, declaredGates, gatedReads, effectBindings),
             GatedAdds = GatedAdds(gatedReads, effectAdds),
             GatedModifiers = gated.Count == 0
@@ -2221,6 +2222,7 @@ public sealed class EntityResolver
         OwnRows = Union(outer.OwnRows, inner.OwnRows),
         Replacements = Union(outer.Replacements, inner.Replacements),
         CooldownTerms = outer.CooldownTerms ?? inner.CooldownTerms,
+        TimeRates = outer.TimeRates ?? inner.TimeRates,
         ForeignReads = outer.ForeignReads is null || inner.ForeignReads is null
             ? outer.ForeignReads ?? inner.ForeignReads
             : [.. outer.ForeignReads.Concat(inner.ForeignReads).Distinct()],

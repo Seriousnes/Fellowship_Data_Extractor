@@ -189,6 +189,9 @@ public sealed record Entity
     public IReadOnlyList<CooldownTerm>? CooldownTerms { get; init; }
 
     [JsonIgnore]
+    public IReadOnlyList<TimeRateModifier>? TimeRates { get; init; }
+
+    [JsonIgnore]
     public IReadOnlyList<string>? DurationGates { get; init; }
 
     [JsonIgnore]
@@ -486,6 +489,12 @@ public sealed record CooldownTerm(string Array, double Value)
 {
     public string? Tag { get; init; }
 }
+
+/// <summary>
+/// A TimeRate attribute mod on a gameplay effect. <see cref="Value"/> adds to the rate of every timer under
+/// <see cref="Tag"/>, so 1.6 runs a cooldown under the tag 2.6 times as fast.
+/// </summary>
+public sealed record TimeRateModifier(string Tag, double Value);
 
 public sealed record PlaceholderTerm(string Attribute, double Coefficient);
 
