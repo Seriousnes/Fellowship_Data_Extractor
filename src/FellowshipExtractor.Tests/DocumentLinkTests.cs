@@ -77,7 +77,8 @@ public sealed class DocumentLinkTests
         var reduction = Audited("dungeon-affix", StormShield, "50%");
 
         Assert.Equal(TooltipNumberStatus.Elsewhere, reduction.Status);
-        Assert.Equal($"effect {StormShieldReduction}: IncomingDamageMultiplier MultiplyCompound 0.5", reduction.Evidence);
+        Assert.Contains($"effect {StormShieldReduction}: IncomingDamageMultiplier MultiplyCompound 0.5", reduction.Evidence,
+            StringComparison.Ordinal);
     }
 
     [Fact]

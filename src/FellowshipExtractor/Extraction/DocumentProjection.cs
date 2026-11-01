@@ -814,11 +814,6 @@ public static class DocumentProjection
             }
         }
 
-        foreach (var (row, reference) in tuned.Where(entry => entry.Value.Op is not null).ToArray())
-        {
-            tuned[row] = reference with { Value = null };
-        }
-
         return tuned.Count == 0 ? null : tuned;
     }
 

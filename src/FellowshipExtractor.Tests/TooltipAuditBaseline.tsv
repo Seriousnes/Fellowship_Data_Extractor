@@ -21,13 +21,13 @@ talent	145	1	40%	Missing	Agonizing Blaze	es the damage it deals by 4% up to a ma
 talent	145	2	10	Missing	Agonizing Blaze	y 4% up to a maximum of 40% increased damage at 10 stacks. Every tick on that target increases the	
 talent	162	0	3	Missing	Slow Burn	h time Fire Ball burns enemies up to a total of 3 seconds over its full duration.	
 talent	164	1	30%	Elsewhere	Last Lights	tical strike chance when striking targets below 30% health.	effect 2204: 0.3
-talent	167	2	50%	Elsewhere	Focused Expanse	EMPOWERED MULTISHOT  Your next Multishot has 50% reduced Focus cost and always fires at least 3	effect 2271: 2; effect 2271: 0.5; effect 2010: 1.5
+talent	167	2	50%	Elsewhere	Focused Expanse	EMPOWERED MULTISHOT  Your next Multishot has 50% reduced Focus cost and always fires at least 3	effect 2010: DamageScale MultiplyCompound 1.5
 talent	169	0	3	Elsewhere	Final Crescendo	Every 3 Highwind Arrow casts deals +100% increased dama	ability 1313: 3; effect 1885: 3
 talent	173	0	15	Missing	Natural Protector	ard and Safe Haven abilities shield players for 15 seconds, absorbing up to 1755% intellect damage	
 talent	206	4	0.5%	Missing	Corrosive Spill	conds.    CREEPING DEATH  Corrosive Spill deals 0.5% increased Poison damage for every 1% Haste you	
 talent	213	0	30%	Missing	Aftershock	at take damage from your Shockwave ability take 30% more damage from you for 5 seconds.	
 talent	219	0	30%	Missing	Second Wind	ghness has reduced an amount of damage equal to 30% of your Maximum Health, you gain 20% increased	
-relic-power	252	0	50%	Elsewhere	Bloodrite Fervor	You and nearby allies gain 50% increased Movement Speed for 12 seconds.    Can	effect 156: MoveSpeed Multiplicitive 1.5
+relic-power	252	0	50%	Elsewhere	Bloodrite Fervor	You and nearby allies gain 50% increased Movement Speed for 12 seconds.    Can	ability 185: MoveSpeed Multiplicitive 1.5; effect 156: MoveSpeed Multiplicitive 1.5
 relic-power	255	0	30%	Missing	Restore Mana	Instantly restore 30% of your maximum mana.    Can be used during Glo	
 relic-power	256	0	40%	Elsewhere	Recover Health	Instantly replenish 40% of your maximum health.    Can be used during G	ability 189: 0.4; effect 160: 0.4
 gem-ability	346	0	50%	Elsewhere	Sentinel's Bastion	conds. Damage dealt to the shield is reduced by 50%.	effect 1968: 0.5
@@ -37,7 +37,6 @@ weapon-power	348	2	65%	Elsewhere	Al'zerac's Shackle	Chilling them, reducing thei
 weapon-power	348	3	40%	Elsewhere	Al'zerac's Shackle	Movement Speed by 65% and their Attack Speed by 40% for 12 seconds.    While Chilled, the afflicted	effect 66: AttackSpeed MultiplyCompound 0.6
 weapon-power	348	4	12	Missing	Al'zerac's Shackle	Speed by 65% and their Attack Speed by 40% for 12 seconds.    While Chilled, the afflicted enemie	
 weapon-power	350	3	3	Elsewhere	Twilight Skybolt	have up to 2 stacks. Eclipse stacks reset every 3 casts.    Twilight Skybolt gains Cooldown Accel	effect 70: 3
-weapon-power	351	2	+6%	Elsewhere	Sahril's Wrath	my hit up to a maximum of 5 stacks, grating you +6% additional critical strike chance per stack for	effect 75: CritChance Additive 0.06
 weapon-power	352	1	50%	Elsewhere	Sahril's Aegis	Any damage the shield absorbs is reduced by 50%.    When the shield expires it explodes on to e	effect 77: 0.5
 weapon-power	352	2	1000	Elsewhere	Sahril's Aegis	ield expires it explodes on to enemies within a 1000 radius, dealing {} fire damage to them.    Can	effect 76: 1000
 weapon-power	355	1	800%	Contradicted	Chronoshift	d you.    While channeling Chronoshift you gain 800% increased cooldown recovery and are protected b	CooldownRecovery Multiplicitive 8
@@ -51,7 +50,7 @@ legendary-power	395	2	3	Elsewhere	Harmonizing Refractions	have 50% increased pow
 legendary-power	398	0	2	Elsewhere	Undulating Spirit	Your Winter's Blessing grants you 2 stacks of Undulating Spirits.    Your next abil	effect 2171: 2
 talent	415	2	3	Missing	Shattering Obelisk	takes and pulses it out to nearby enemies up to 3 times, when reaching 65% Health, 30% Health, an	
 relic-power	434	0	15	Elsewhere	Major Invisibility	nearby allies, granting Major Invisiblilty for 15 seconds.    Can only be used out of combat.	ability 1486: 15; effect 2146: 15
-talent	441	1	20	Elsewhere	High Road	p Smash ability hits at least 1 enemy, you gain 20 Fury.	ability 1225: 20; ability 1225: 0.2; effect 1757: 20; effect 1757: 0.2
+talent	441	1	20	Elsewhere	High Road	p Smash ability hits at least 1 enemy, you gain 20 Fury.	ability 1225: MoveSpeed MultiplyCompound 1.2
 talent	442	0	30%	Elsewhere	Maiden's Doom	When you deal damage to enemies with 30% or less health, the damage bonus of Maiden of D	effect 2194: 0.3
 talent	446	1	3	Missing	Stone Guard	one Shield's health.    When you have less than 3 stones active, fully replenishing a Stone will	
 legendary-power	447	3	10%	Missing	Everlasting Spirit	you, dealing 35% Agility damage. An additional 10% Agility damage is added for each stack of Seren	
@@ -98,13 +97,9 @@ talent	772	2	25%	Elsewhere	Massacre	+0.25% Spirit for 8 seconds, up to a maximum
 relic-passive	777	0	20%	Elsewhere	Accursed Trophy	m's Absolution, increasing your Primary Stat by 20% for 20 seconds.	effect 3269: Strength MultiplyCompound 1.2; effect 3269: Intellect MultiplyCompound 1.2; effect 3269: Agility MultiplyCompound 1.2
 relic-passive	777	1	20	Elsewhere	Accursed Trophy	lution, increasing your Primary Stat by 20% for 20 seconds.	effect 3269: Strength MultiplyCompound 1.2; effect 3269: Intellect MultiplyCompound 1.2; effect 3269: Agility MultiplyCompound 1.2
 relic-passive	778	0	0.9	Missing	Dragonbone Dice	Your critical strikes have a chance (0.9 PPM) to increase your Primary Stat by 18% for 1	
-relic-passive	778	1	18%	Elsewhere	Dragonbone Dice	ance (0.9 PPM) to increase your Primary Stat by 18% for 14 seconds.	effect 3268: PrimaryAttributeMultiplier MultiplyCompound 1.18
 relic-passive	780	0	25%	Elsewhere	Covetous Greed	Your Gem Power is increased by 25%.	effect 3271: RubyPower MultiplyCompound 1.25; effect 3271: AmethystPower MultiplyCompound 1.25; effect 3271: TopazPower MultiplyCompound 1.25; effect 3271: EmeraldPower MultiplyCompound 1.25; effect 3271: SapphirePower MultiplyCompound 1.25; effect 3271: DiamondPower MultiplyCompound 1.25
 legendary-stat	790	0	+10%	Elsewhere	Blood of the Undying	+10% Maximum Health	effect 3366: MaxHealth Multiplicitive 1.1
 ability	9	0	5	Missing	Binding Ice: Curse	one player is afflicted by an icy curse. After 5 seconds the curse erupts, dealing frost magic d	
-ability	111	0	20%	Elsewhere	Lightshaper's Ward	Target ally takes 20% reduced damage for 12 seconds.    Can be used d	effect 1342: IncomingDamageMultiplier MultiplyCompound 0.8
-ability	116	0	20%	Elsewhere	Ironleaf Ward	Target ally takes 20% reduced damage for 12 seconds.    Can be used d	effect 1484: IncomingDamageMultiplier MultiplyCompound 0.8
-ability	125	1	65%	Elsewhere	Grappling Arrow	's location and reduces their movement speed by 65% for 8 seconds.    Can be used during Global Coo	effect 1861: MoveSpeed Multiplicitive 0.35
 ability	135	0	60	Elsewhere	Sentinel's Bastion	Every 60 seconds, you gain an absorb equal to 20% Max He	effect 1968: 60
 ability	135	1	20%	Missing	Sentinel's Bastion	Every 60 seconds, you gain an absorb equal to 20% Max Health that lasts for 60 seconds.	
 ability	135	2	60	Elsewhere	Sentinel's Bastion	n absorb equal to 20% Max Health that lasts for 60 seconds.	effect 1968: 60
@@ -114,7 +109,6 @@ ability	136	2	60	Elsewhere	Sentinel's Bastion - II	n absorb equal to 40% Max Hea
 ability	152	2	65%	Elsewhere	Al'zerac's Shackle	Chilling them, reducing their Movement Speed by 65% and their Attack Speed by 40% for 12 seconds.	effect 66: MoveSpeed MultiplyCompound 0.35
 ability	152	4	12	Missing	Al'zerac's Shackle	Speed by 65% and their Attack Speed by 40% for 12 seconds.    While Chilled, the afflicted enemie	
 ability	156	3	3	Elsewhere	Twilight Skybolt	have up to 2 stacks. Eclipse stacks reset every 3 casts.    Twilight Skybolt gains Cooldown Accel	effect 70: 3
-ability	157	2	+6%	Elsewhere	Sahril's Wrath	my hit up to a maximum of 5 stacks, grating you +6% additional critical strike chance per stack for	effect 75: CritChance Additive 0.06
 ability	159	1	50%	Elsewhere	Sahril's Aegis	Any damage the shield absorbs is reduced by 50%.    When the shield expires it explodes on to e	effect 77: 0.5
 ability	159	2	1000	Elsewhere	Sahril's Aegis	ield expires it explodes on to enemies within a 1000 radius, dealing {} fire damage to them.    Can	effect 76: 1000; ability 158: 1000
 ability	161	0	4	Elsewhere	Nature's Fury	re the forces of nature to bounce between up to 4 enemies, dealing {} nature damage to each one,	ability 13: 4
@@ -129,12 +123,9 @@ ability	172	7	79%	Missing	Kindling	over Time to the target, healing them for 66
 ability	172	8	92%	Missing	Kindling	ime to the target, healing them for 66% / 79% / 92% / 106% of your primary stat every 1.5 seconds o	
 ability	172	9	106%	Missing	Kindling	the target, healing them for 66% / 79% / 92% / 106% of your primary stat every 1.5 seconds over 9 s	
 ability	188	0	30%	Missing	Restore Mana	Instantly restore 30% of your maximum mana.    Can be used during Glo	
-ability	307	0	2%	Elsewhere	Enrage	Deal 2% more damage for every 1 percent more health tha	effect 319: DamageScale Multiplicitive 1.02; effect 320: DamageScale Multiplicitive 1.02
-ability	314	0	2%	Elsewhere	Enrage	Deal 2% more damage for every 1% more health than Slave	effect 319: DamageScale Multiplicitive 1.02; effect 320: DamageScale Multiplicitive 1.02
 ability	373	0	20%	Missing	Circle of Protection	The enemy takes 20% reduced damage	
 ability	400	0	10	Missing	War Horn	als high damage to anyone within its radius for 10 seconds.	
 ability	821	1	20%	Missing	Tattletale	After 30 sec or when the imp reaches 20% health the imp runs away and towards a nearby d	
-ability	928	0	10%	Elsewhere	Enrage	Deal 10% more damage for every 1 percent more health tha	effect 1177: DamageScale Multiplicitive 1.1; effect 1178: DamageScale Multiplicitive 1.1
 ability	952	0	6	Missing	Coldbrine Curse	andom hero to receive the healing as damage for 6 seconds.	
 ability	979	5	6	Missing	Shockwave	uces the cooldown of your Shields Up ability by 6 seconds.	
 ability	985	1	3.0	Missing	Shield Throw	duces the cooldown of your Shockwave ability by 3.0 seconds.	
@@ -147,11 +138,9 @@ ability	996	2	5%	Elsewhere	Luminous Barrier	ty for 15 seconds, reducing all dama
 ability	996	3	4	Missing	Luminous Barrier	bar is displayed to cast this ability on up to 4 targets at 60% power. Requires 2 Radiant Runes.	
 ability	1000	5	+600%	Missing	Avatar of Light	ain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
 ability	1001	2	20%	Elsewhere	Runic Proliferation	re empowered, increasing their effectiveness by 20%.    Can be used during Global Cooldown	effect 1334: DamageScale MultiplyCompound 1.2; effect 1334: HealScale MultiplyCompound 1.2
-ability	1003	0	70%	Elsewhere	Levitate	Your movement speed is increased by 70% for 5 seconds and you take 40% reduced Area of	effect 1343: MoveSpeed Multiplicitive 1.7
 ability	1009	0	5	Elsewhere	Flight of the Navir	Summon 5 Frost Swallows to circle above Rime for 20 seco	ability 1675: 5
 ability	1011	0	2	Missing	Frost Ward (Tundra Guard)	Your Frost Ward duration is increased by 2 seconds and while it is active, you heal for 50	
 ability	1011	1	50%	Missing	Frost Ward (Tundra Guard)	2 seconds and while it is active, you heal for 50% of all damage you deal.	
-ability	1015	0	40%	Elsewhere	Frost Ward	You take 40% reduced damage for 4 seconds.    Can be used du	effect 1379: IncomingDamageMultiplier MultiplyCompound 0.6
 ability	1023	0	20	Elsewhere	Wrath of Winter	Invoke the spirits of the frozen tundra for 20 seconds, granting you 1 Winter Orb every 4 seco	effect 1387: DamageScale MultiplyCompound 1.2
 ability	1023	1	4	Elsewhere	Wrath of Winter	for 20 seconds, granting you 1 Winter Orb every 4 seconds. You deal +20% increased damage and you	effect 1387: 4
 ability	1023	2	+20%	Elsewhere	Wrath of Winter	ting you 1 Winter Orb every 4 seconds. You deal +20% increased damage and your Glacial Blast ability	effect 1387: DamageScale MultiplyCompound 1.2
@@ -160,12 +149,10 @@ ability	1027	1	9	Missing	Freezing Torrent	hown as a bar beneath your character. 
 ability	1029	1	9	Missing	Frost Bolt	hown as a bar beneath your character. For every 9 Anima you generate, you gain 1 Winter Orb, used	
 ability	1031	2	9	Missing	Bursting Ice	hown as a bar beneath your character. For every 9 Anima you generate, you gain 1 Winter Orb, used	
 ability	1032	2	0.1	Missing	Ice Blitz	on.    The duration of Ice Blitz is extended by 0.1 seconds each time a Frost Swallow hits an enemy	
-ability	1047	0	20%	Elsewhere	Enfeebling Rootsap	enemy, reducing all damage that enemy deals by 20% for 10 seconds.    Can be used during Global Co	effect 2232: DamageScale MultiplyCompound 0.8
 ability	1055	0	4	Missing	Fluttercall: Jubilee	Call upon Dream Flutterflies to protect up to 4 players by evenly distributing all health betwe	
 ability	1055	4	+30%	Missing	Fluttercall: Jubilee	t ability you gain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
 ability	1055	6	20	Missing	Fluttercall: Jubilee	granting +30% Haste and +600% Mana Recovery for 20 sec.	
 ability	1057	0	27	Elsewhere	Prickly Vine	Summon a Prickly Vine for 27 seconds to continuously fling thorns at target	effect 1440: 27
-ability	1059	1	40%	Elsewhere	Safe Haven	nds, all allies standing within the radius have 40% increased healing taken.	effect 2269: IncomingHealMultiplier MultiplyCompound 1.4
 ability	1061	0	15	Elsewhere	Fluttercall: Restore Life	r {} plus an additional {} every {} seconds for 15 seconds.    All healing done by Fluttercall: Re	effect 1448: 15
 ability	1079	2	20%	Missing	Fluttercall: Protect	is increased by 50% and all your abilities have 20% reduced mana cost.	
 ability	1080	1	20%	Elsewhere	Fluttercall: Embrace	is increased by 50% and all your abilities have 20% reduced mana cost.    While your Blue Flutterfl	effect 1486: 0.8; effect 1486: 1.25
@@ -190,26 +177,22 @@ ability	1099	13	2	Missing	Fighting Techniques	ILITY)  • Deals damage to the ta
 ability	1099	14	2	Missing	Fighting Techniques	all charges, increasing the damage of your next 2 Earthfist Barrages by 100%.  Earthfist Barrage	
 ability	1099	15	100%	Missing	Fighting Techniques	the damage of your next 2 Earthfist Barrages by 100%.  Earthfist Barrage (POWER ABILITY)  • Pummels	
 ability	1099	16	50%	Missing	Fighting Techniques	ls target enemy over 1 second and heals you for 50% of the damage it deals.	
-ability	1105	1	+25%	Elsewhere	Double Palm Strike	ed Strikes for 30 seconds.    SPIRITED STRIKES  +25% Magic Damage Reduction  +5% Parry    Can be use	effect 1534: MagicalIncomingDamageMultiplier MultiplyCompound 0.75
-ability	1105	2	+5%	Elsewhere	Double Palm Strike	SPIRITED STRIKES  +25% Magic Damage Reduction  +5% Parry    Can be used during Global Cooldown	effect 1534: ParryChance Additive 0.05
 ability	1110	2	40%	Elsewhere	Twin Souls: Army of One	my of One is active, the Sibling of Earth takes 40% reduced damage.    SIBLING OF WIND  The Sibling	effect 1547: IncomingDamageMultiplier MultiplyCompound 0.6
 ability	1110	3	40	Elsewhere	Twin Souls: Army of One	teleports to, and strikes, nearby enemies up to 40 times dealing {} damage with each strike.    Ca	effect 1547: IncomingDamageMultiplier MultiplyCompound 0.6
 ability	1112	0	4	Missing	Earthfist Barrage	Pummel your target with 4 quick punches, dealing {} physical damage every	
 ability	1115	0	6	Missing	Shatter Earth	e area and leaving an area of quaking earth for 6 seconds that deals {} damage every {} seconds t	
 ability	1116	0	4	Missing	Stagger	's spellcasting and prevent it from casting for 4 sec.   Must interrupt a spell, or it will have	
-ability	1120	2	35%	Elsewhere	Spirited Vortex	mies that take damage from Spirited Vortex have 35% reduced Movement Speed and 10% reduced Damage f	effect 1568: MoveSpeed Multiplicitive 0.65
+ability	1120	2	35%	Elsewhere	Spirited Vortex	mies that take damage from Spirited Vortex have 35% reduced Movement Speed and 10% reduced Damage f	effect 1568: MoveSpeed Multiplicitive 0.65; effect 1569: MoveSpeed Multiplicitive 0.65
 ability	1122	1	4	Elsewhere	Stone Shield	in in a wide circle, dealing {} physical damage 4 times to all nearby enemies.    Your armor is i	effect 1565: 4; effect 1566: 4
 ability	1128	0	4	Elsewhere	Web Crack	Instantly Stun target enemy for 4 seconds.    Can be used during Global Cooldown.	effect 1583: 4
 ability	1130	0	6	Elsewhere	Brooding Shadows	:  Instantly deal {} poison damage and generate 6 Combo Points. Caustic Poison has +100% Critical	effect 1731: 6
 ability	1130	2	60	Elsewhere	Brooding Shadows	, dealing {} poison damage every {} seconds for 60 seconds. While Seething Poison is active on any	effect 1716: 60
 ability	1130	5	6	Elsewhere	Brooding Shadows	kittering Blades, dealing {} poison damage over 6 seconds. Upon expiration, Volatile Poison erupt	effect 1731: 6
 ability	1130	6	0.5%	Missing	Brooding Shadows	son, Seething Poisons, and Volatile Poison deal 0.5% increased Poison damage for every 1% Haste you	
-ability	1133	0	40%	Elsewhere	Shadow Ward	You take 40% reduced damage for 4 seconds.    Can be used du	effect 1592: IncomingDamageMultiplier MultiplyCompound 0.6
 ability	1206	2	6	Missing	Maiden of Death	d all combo point generating abilities generate 6 Combo Points.    Additionally, your Energy Gene	
 ability	1208	3	18	Elsewhere	Hemorrhaging Strike	.    1 Combo Point: 15 seconds  2 Combo Points: 18 seconds  3 Combo Points: 21 seconds  4 Combo Po	effect 1722: -18
 ability	1208	12	0.5%	Missing	Hemorrhaging Strike	ds    CREEPING DEATH  Hemorrhaging Strike deals 0.5% increased Bleed damage for every 1% Haste you h	
 ability	1214	0	6	Missing	Taunt	aunt target enemy, forcing it to attack you for 6 seconds.    Can be used during Global Cooldown	
-ability	1218	0	40%	Elsewhere	Unbreakable Will	You take 40% reduced damage for 4 seconds.    Can be used du	effect 1752: IncomingDamageMultiplier MultiplyCompound 0.6
 ability	1219	1	6	Missing	Face Breaker (old)	r and deal +400% increased damage.    Generates 6 Fury plus an amount based on the total damage i	
 ability	1228	1	400%	Missing	Culling Strike	0 Fury, increasing the damage it deals by up to 400%. The more Fury it consumes, the higher the dama	
 ability	1242	0	3	Missing	Hammer Storm	Spin with your Hammer up to 3 times, dealing {} physical damage to all nearby	
@@ -217,14 +200,11 @@ ability	1250	0	360	Missing	Furious Cleave	Jumps and spins in air a full 360 degr
 ability	1254	0	3	Missing	Frog Squad	Your Fire Frogs ability conjures 3 additional frogs.	
 ability	1255	0	4%	Missing	Spontaneous Combustion	tick of Searing Blaze & Engulfing Flames has a 4% chance to have +100% critical strike chance.	
 ability	1257	0	16%	Missing	Flare Up	earing Blaze active on them to flare up, taking 16% of the damage that Infernal Wave dealt to the i	
-ability	1258	0	40%	Elsewhere	Flame Ward	You take 40% reduced damage for 4 seconds.    Can be used du	effect 1815: IncomingDamageMultiplier Multiplicitive 0.6
 ability	1263	0	4	Missing	Scorch	's spellcasting and prevent it from casting for 4 sec.   Must interrupt a spell, or it will have	
-ability	1267	0	30%	Elsewhere	Wildfire	over time effects from your hero abilities tick 30% faster for 9 sec.    Can be used during Global	effect 2169: Spirit Additive 0.3; effect 2169: CritChance Additive 0.3
+ability	1267	0	30%	Elsewhere	Wildfire	over time effects from your hero abilities tick 30% faster for 9 sec.    Can be used during Global	effect 1825: CritChance Additive 0.3; effect 1825: Spirit Additive 0.3; effect 2169: Spirit Additive 0.3; effect 2169: CritChance Additive 0.3
 ability	1268	1	12	Elsewhere	Fire Frogs	dditional 100% of the initial damage dealt over 12 seconds.    Fire Frogs' damage over time can no	ability 1532: 12; effect 1826: 12
 ability	1268	2	3	Elsewhere	Fire Frogs	itically strike.    Each Fire Frog will perform 3 attacks before dissipating.	ability 1532: 3; effect 1826: 3
 ability	1301	1	3	Elsewhere	Celestial Shot	g your next Celestial Shot to be Free and apply 3 stacks of Lunarlight Mark to the target.    You	effect 1876: 3
-ability	1302	0	40%	Elsewhere	Celestial Veil	You take 40% reduced damage for 4 seconds.    Can be used du	effect 1866: IncomingDamageMultiplier MultiplyCompound 0.6
-ability	1304	0	+30%	Elsewhere	Skystrider's Grace	You are granted +30% Haste for 20 seconds.    Can be used during Glo	effect 1869: Haste Additive 0.3
 ability	1310	1	11	Missing	Lunarlight Mark	ks of Lunarlight Mark to target enemy and up to 11 additional enemies near your target.    Ability	
 ability	1310	2	25%	Elsewhere	Lunarlight Mark	you deal to enemies with Lunarlight Mark has a 25% chance to trigger Lunarlight Salvo, causing a b	ability 1309: 0.25
 ability	1310	3	50%	Elsewhere	Lunarlight Mark	ing {} magic damage.    Critical Strikes have a 50% chance to trigger Lunarlight Salvo.    Can be u	effect 2074: 2; effect 2074: 1.5; effect 2074: 0.5; ability 1309: 0.5; ability 1309: 2
@@ -239,17 +219,13 @@ ability	1408	1	12	Elsewhere	Exsanguinate	damage taken is instead applied as a bl
 ability	1409	0	112%	Missing	Sanguine Cleave	Striking all enemies in a radius around you for 112% Strength Physical damage.    You are healed for	
 ability	1410	0	315%	Elsewhere	Blood Strike	Strike target enemy, dealing 315% Strength Physical damage.    Generates 50 Pain	ability 1411: 3.15; effect 2029: 3.15
 ability	1412	0	210%	Missing	Sanguine Arc	Strike target enemy, dealing 210% Strength Physical damage.    You are healed for	
-ability	1415	0	30%	Elsewhere	Sanguine Frenzy	zy is active, all damage you take is reduced by 30% and you gain access to alternate abilties.    D	effect 2031: IncomingDamageMultiplier MultiplyCompound 0.7
 ability	1417	0	112%	Missing	Chain Pull	Throw a chained axe at target enemy, dealing 112% Strength Physical damage and pulling them to yo	
-ability	1420	2	50%	Missing	Matriarch Macabre	shadowy clones that both imitate the attack for 50% of your power.    SPIRIT ABILITY  When you acti	
 ability	1430	0	128%	Missing	Relentless Rush	elentless Rush are afflicted by a bleed dealing 128% Strength damage over 12 seconds.	
 ability	1431	2	12	Elsewhere	Wild Throw	hem, dealing 100% strength Physical damage over 12 seconds.    The axes then return to the positio	effect 2055: 12; effect 2056: 12
 ability	1433	0	12	Missing	Bloodletter Onslaught	For the next 12 seconds, your health can not drop below 1.    W	
 ability	1433	2	8%	Elsewhere	Bloodletter Onslaught	plying a bleed to them that deals an additional 8% of all damage you took while it was active over	effect 2061: 8; ability 1432: 8
 ability	1433	3	8	Elsewhere	Bloodletter Onslaught	of all damage you took while it was active over 8 seconds.	effect 2061: 8; ability 1432: 8
 ability	1440	0	50%	Elsewhere	Wildroot Thorns	is deals damage over time and slows movement by 50%	effect 315: MoveSpeed Multiplicitive 0.5; effect 1199: MoveSpeed Multiplicitive 0.5
-ability	1515	1	25%	Elsewhere	Siegebreaker	ubled.    While Siegebreakeris active, you take 25% reduced damage and your Shield Slam, Shield Thr	effect 2192: DamageScale MultiplyCompound 1.25; effect 2224: IncomingDamageMultiplier MultiplyCompound 0.75
-ability	1515	2	25%	Elsewhere	Siegebreaker	Slam, Shield Throw and Shockwave abilities deal 25% increased damage.    SPIRIT ABILITY  When you a	effect 2192: DamageScale MultiplyCompound 1.25; effect 2224: IncomingDamageMultiplier MultiplyCompound 0.75
 ability	1515	3	+30%	Missing	Siegebreaker	t ability you gain  Spirit of Heroism, granting +30% Haste for 20 sec.	
 ability	1547	0	30%	Missing	Peacefield	Your Serenity applies a Heal over Time for 30% of the healing done over 9 seconds	
 ability	1555	0	3	Missing	Talon's Edict	Your Cold Snap critical strikes conjure 3 Frost Swalllows to instantly attack your enemie	
@@ -258,7 +234,6 @@ ability	1558	1	800%	Contradicted	Chronoshift	d you.    While channeling Chronosh
 ability	1568	1	50%	Missing	Crackling Inferno	ce and its critical strikes burn the target for 50% of the damage it dealt over 24 seconds.	
 ability	1574	0	3	Elsewhere	Soulfrost Torrent	nt infuses the target with Coalescing Frost for 3 seconds. Once it expires, the afflicted enemy r	effect 2306: 3
 ability	1574	1	29%	Missing	Soulfrost Torrent	of frost damage in an area around them, dealing 29% Intellect damage for each stack of Coalescing F	
-ability	1576	0	30%	Elsewhere	Burstbolter	Your Frost Bolt damage has a 30% chance to trigger a single pulse of Bursting Ic	effect 1396: 1.3
 ability	1583	0	2%	Missing	Corrosive Spill	Each Combo Point you spend has a 2% chance to cause you to coat the ground in front	
 ability	1583	1	5	Missing	Corrosive Spill	ound in front of you with a Corrosive Spill for 5 seconds.    Enemies that stand in Corrosive Spi	
 ability	1583	2	72%	Missing	Corrosive Spill	.    Enemies that stand in Corrosive Spill take 72% Agility poison damage every 1.5 seconds.	
@@ -280,14 +255,11 @@ ability	1845	2	10	Elsewhere	Sun Strike	your main target for 30 seconds, stacking
 ability	1853	1	50%	Elsewhere	Decree of the Sun	y enemies.    Once the immunity fades, you take 50% reduced damage for another 5 seconds.    During	effect 2558: IncomingDamageMultiplier MultiplyCompound 0.5
 ability	1853	3	+30%	Missing	Decree of the Sun	t ability you gain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
 ability	1853	4	+600%	Missing	Decree of the Sun	ain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
-ability	1855	1	50	Missing	Brilliant Flash	trigger a Spirit Refund. When it does, you gain 50 Mana instantly, in addition to all other effect	
 ability	1862	0	700	Missing	Solar Blades	magical damage to it and other enemies within a 700 radius.    The main target takes 100% more dama	
 ability	1881	1	+30%	Missing	Epoch Break	t ability you gain  Spirit of Heroism, granting +30% Haste and +600% Mana Recovery for 20 sec.	
 ability	1881	3	20	Missing	Epoch Break	granting +30% Haste and +600% Mana Recovery for 20 sec.	
 ability	1927	0	5	Missing	Flash Revision	debt ripples through their being.    Generates 5 Chrona.	
-ability	1952	0	30%	Elsewhere	Obsidian Skin	Grants 30% Damage Reduction to yourself for 9 seconds.	effect 2715: IncomingDamageMultiplier MultiplyCompound 0.7
 ability	1964	1	0.5	Missing	Amend Fate	d Fate you gain +100% Cooldown Acceleration for 0.5 seconds.    Generates Mana based on the amount	
-ability	1969	0	+50%	Elsewhere	Fleeting Hour	lf, and it quickens at your touch, granting you +50% Cooldown Acceleration for 15 seconds.    The co	effect 2744: CooldownRecovery Multiplicitive 1.5
 ability	2061	0	30%	Missing	Sledgehammer	Your Skull Crusher causes 30% of the damage it deals to be dealt to enemies n	
 ability	2064	2	2	Missing	Apocalypse: Explosivo	t dealt over 12 seconds.    Your Apocalypse has 2 Charges, and each time you cast Fire Ball the c	
 ability	2064	3	8	Missing	Apocalypse: Explosivo	oldown of your Apocalypse ability is reduced by 8 seconds.	
@@ -299,8 +271,6 @@ ability	2293	0	18	Elsewhere	Rupture	y open, dealing {} and applying Open Wounds 
 ability	2296	1	6	Missing	Bloodbound Spirit	enemies as it emerges and every 1.5 seconds for 6 seconds, applying Rend to the targets for {} of	
 ability	2296	3	+30%	Missing	Bloodbound Spirit	t ability you gain  Spirit of Heroism, granting +30% Haste for 20 seconds.	
 ability	2298	0	30	Elsewhere	Owed in Blood	an pick up to gain 1 stack of Owed in Blood for 30 seconds, up to maximum of 150 stacks.    Enemie	effect 3231: 30; ability 2297: 30
-ability	2298	1	150	Elsewhere	Owed in Blood	Owed in Blood for 30 seconds, up to maximum of 150 stacks.    Enemies that die with your Rend acti	ability 2280: 1.5; effect 3245: 150; ability 2297: 1.5
-ability	2300	0	40%	Elsewhere	Reckless Abandon	You take 40% reduced damage for 4 seconds.    Can be used du	effect 3247: IncomingDamageMultiplier MultiplyCompound 0.6
 effect	1	0	100%	Elsewhere	Mounted	Movement Speed increased by 100%	ability 3: 2
 effect	29	1	15%	Missing	Stone Skin	reased Max Health and explodes on death dealing 15% of their max health in Physical Damage to all o	
 effect	47	0	4	Missing	Binding Ice	take frost magic damage and you are rooted for 4 seconds.	
@@ -314,16 +284,12 @@ effect	161	2	15	Elsewhere	Elemental Empowerment	Main Stat. This is increased by 
 effect	208	0	5%	Missing	Surging Power	eases damage of its non-projectile abilities by 5%. Waves and swirls move 5% faster per stack. Eac	
 effect	208	1	5%	Missing	Surging Power	ojectile abilities by 5%. Waves and swirls move 5% faster per stack. Each Water Orb that reaches t	
 effect	230	0	+50%	Missing	Haste	+50% haste	
-effect	255	0	50%	Missing	Strength of Isilagður	r permanently reduces [Freezing Aura] damage by 50%, but increases Fodir Kaldur's damage dealt by a	
-effect	255	1	5%	Missing	Strength of Isilagður	Kaldur's damage dealt by all other abilities by 5%.	
-effect	256	0	50%	Missing	Strength of Eldsupptok	ok permanently reduces [Burning Aura] damage by 50%, but increases Fodir Kaldur's damage dealt by a	
-effect	256	1	5%	Missing	Strength of Eldsupptok	Kaldur's damage dealt by all other abilities by 5%.	
 effect	303	0	20%	Elsewhere	Defiled Blood	Increased damage by 20%.	ability 296: 0.2
 effect	421	1	10	Elsewhere	Unholy Pulse	earby enemies by 2% of their maximum health for 10 seconds.	ability 374: 10; effect 422: 10; ability 371: 10
 effect	482	0	10%	Missing	Exhuming Corpses	Every time the Carrion collector takes 10% of their max health in damage. A Soulstained Sh	
 effect	569	0	10%	Missing	Mark For Death	10% increased Damage Taken per stack.	
 effect	702	0	50%	Elsewhere	Severed Soul	to use abilities.  Movement Speed increased by 50%.	ability 589: 1.5; effect 703: 1.5; effect 704: 1.5
-effect	719	1	30%	Contradicted	Wavestomp: Soggy Breaches	is reduced by 70% and your Haste is reduced by 30%.	Haste Additive -0.5
+effect	719	1	30%	Contradicted	Wavestomp: Soggy Breaches	is reduced by 70% and your Haste is reduced by 30%.	Haste Additive -0.5; Haste Additive 0.5
 effect	752	0	20%	Missing	Together Stronk!	Taking 20% reduced damage.	
 effect	792	0	2	Missing	Glory	g for a percentage of your maximum health every 2 seconds.	
 effect	816	0	2	Elsewhere	Fluttercall: Restore Life	Heals you every 2 sec, for 14 sec.	ability 688: 2; effect 818: 2
@@ -354,7 +320,7 @@ effect	1324	0	10	Elsewhere	Cursed Knowledge	This buff will transform into Redemp
 effect	1419	0	3	Elsewhere	Sprouting Nettles	Your next Nettlebolt cast 3 Nettlebolts at once.	ability 1049: 0.03
 effect	1439	0	2	Missing	Fluttercall: Jubilee	s evenly distributed throughout the group every 2 seconds.	
 effect	1510	0	0.7%	Missing	Everlasting Spirit	You take 0.7% less damage per stack	
-effect	1570	2	35%	Elsewhere	Spirited Vortex	2 seconds.    The damage causes enemies to have 35% reduced movement speed for 5 seconds.	effect 1568: MoveSpeed Multiplicitive 0.65
+effect	1570	2	35%	Elsewhere	Spirited Vortex	2 seconds.    The damage causes enemies to have 35% reduced movement speed for 5 seconds.	effect 1568: MoveSpeed Multiplicitive 0.65; effect 1569: MoveSpeed Multiplicitive 0.65
 effect	1570	3	5	Elsewhere	Spirited Vortex	enemies to have 35% reduced movement speed for 5 seconds.	ability 1120: 5; effect 1568: 5; effect 1569: 5; effect 2487: 5
 effect	1731	0	22%	Missing	Volatile Poison	Deals 22% Agility poison damage every 2s over 6 seconds a	
 effect	1731	2	55%	Missing	Volatile Poison	very 2s over 6 seconds and then erupts, dealing 55% Agility damage to the target and nearby enemies	
@@ -365,8 +331,7 @@ effect	1867	0	3	Missing	Celestial Impetus	Your next Celestial Shot applies 3 sta
 effect	1869	0	40%	Contradicted	Skystrider's Grace	Increases haste by 40% for 20 seconds.	Haste Additive 0.3
 effect	1930	0	12%	Missing	Reaper's Reprieve	Healing for 12% of your maximum health over 18 seconds.	
 effect	1931	0	36%	Missing	Reaper's Reprieve - II	Healing for 36% of your maximum health over 18 seconds.	
-effect	2018	0	5%	Elsewhere	Necrotic Venom	amage over time and reduces healing received by 5%.	effect 2017: IncomingHealMultiplier Multiplicitive 0.95
-effect	2039	1	50%	Missing	Matriarch Macabre	two shadowy clones that repeat the ability for 50% of the power.	
+effect	2039	1	50%	Elsewhere	Matriarch Macabre	two shadowy clones that repeat the ability for 50% of the power.	ability 1420: DamageScale MultiplyCompound 0.5
 effect	2054	0	100%	Elsewhere	Relentless Rush	Taking 100% strength damage over 15s	ability 1430: 0.5; ability 1430: 2; ability 1430: 1000; ability 1430: 3000; ability 1430: 300; ability 1430: 5000
 effect	2056	0	150%	Elsewhere	Wild Throw	Bleeds for 150% strength over 18s, ticking every 2s	ability 1431: 1.5
 effect	2059	0	1500	Elsewhere	Bloodletter Onslaught	ying a Y% damage as bleed to all enemies within 1500 over 18s.	ability 1432: 1500
@@ -379,41 +344,34 @@ effect	2088	0	103%	Missing	Primed Serrated Blades	r next Double Strike applies a
 effect	2088	1	2	Missing	Primed Serrated Blades	s a bleed that deals 103% Strength damage every 2 seconds over 12 seconds.	
 effect	2088	2	12	Missing	Primed Serrated Blades	deals 103% Strength damage every 2 seconds over 12 seconds.	
 effect	2114	0	10%	Missing	Stone Skin	Applies 10% of exploded enemy health over 6 seconds. Does n	
-effect	2119	0	20%	Elsewhere	Grand Melee	on.    Allies within a large radius of you take 20% reduced magic damage.	effect 2205: MagicalIncomingDamageMultiplier Multiplicitive 0.8
+effect	2119	0	20%	Elsewhere	Grand Melee	on.    Allies within a large radius of you take 20% reduced magic damage.	ability 1465: MagicalIncomingDamageMultiplier Multiplicitive 0.8; effect 2205: MagicalIncomingDamageMultiplier Multiplicitive 0.8
 effect	2151	0	10	Elsewhere	Latent Resurgence	1 stack of Latent Resurgence up to a maximum of 10 stacks.    When your health dips below 50% all	effect 2152: 10
 effect	2151	1	50%	Elsewhere	Latent Resurgence	um of 10 stacks.    When your health dips below 50% all stacks of Latent Resurgence are consumed an	ability 1488: 0.5
 effect	2152	0	50%	Elsewhere	Latent Resurgence	When your health dips below 50%, all stacks of Latent Resurgence are consumed a	ability 1488: 0.5
 effect	2240	0	20%	Missing	Natural Protector	ge.    Damage dealt to the absorb is reduced by 20%.	
 effect	2241	0	3	Elsewhere	Bloomin' Boomshrooms	on ability can now target allies, sending up to 3 Boomshrooms to detonate on them, instantly heal	ability 1445: 3; ability 1073: 3
 effect	2241	1	308%	Missing	Bloomin' Boomshrooms	to detonate on them, instantly healing them for 308% Intellect each.    When targeting allies in thi	
-effect	2250	0	20%	Elsewhere	Slayer's Mosh	Taking 20% additional damage from your attacks.	effect 3156: IncomingDamageMultiplier MultiplyCompound 1.2; effect 1738: MoveSpeed MultiplyCompound 1.2
-effect	2257	0	20%	Elsewhere	Freezing Aura	t moving. Slows movement speed of all heroes by 20%.	effect 234: MoveSpeed Multiplicitive 0.8
+effect	2257	0	20%	Elsewhere	Freezing Aura	t moving. Slows movement speed of all heroes by 20%.	ability 244: MoveSpeed Multiplicitive 0.8; effect 234: MoveSpeed Multiplicitive 0.8
 effect	2258	0	20%	Missing	Freezing Aura	t moving. Slows movement speed of all heroes by 20%.	
 effect	2262	0	+25%	Contradicted	Drenched in Blood	Your Expertise is increased by +25%	Expertise Additive 0.24
 effect	2267	0	20	Missing	Executioner's Grin	has no cost and deals damage as if it consumed 20 fury.	
 effect	2277	1	600%	Missing	Spirit of Heroism	ed by 30%.    Mana regeneration is increased by 600%.	
 effect	2308	0	+25%	Missing	Icy Flow	Your next Glacial Blast or Ice Comet has +25% increased critical strike chance and 0.5 second	
-effect	2343	0	50%	Missing	Grieving Isilagður	r Kaldur's [Freezing Aura] damage is reduced by 50%.    Increases Fodir Kaldur's damage dealt by al	
-effect	2344	0	50%	Missing	Grieving Eldsupptok	ir Kaldur's [Burning Aura] damage is reduced by 50%.    Increases Fodir Kaldur's damage dealt by al	
 effect	2402	0	50%	Missing	Strength of Isilagður	r permanently reduces [Freezing Aura] damage by 50%, but increases Fodir Kaldur's damage dealt by a	
 effect	2402	1	5%	Missing	Strength of Isilagður	Kaldur's damage dealt by all other abilities by 5%.	
 effect	2403	0	50%	Missing	Strength of Eldsupptok	ok permanently reduces [Burning Aura] damage by 50%, but increases Fodir Kaldur's damage dealt by a	
 effect	2403	1	5%	Missing	Strength of Eldsupptok	Kaldur's damage dealt by all other abilities by 5%.	
 effect	2428	0	30%	Missing	Aftershock	Taking 30% extra damage from Helena's attacks	
-effect	2434	0	100%	Elsewhere	Deadly Scheme	Your next Queen's Fang or Arachnid Assault has 100% Critical Strike chance.	effect 2068: CritChance Additive 1
 effect	2444	0	40%	Elsewhere	Lifelink	Vun'kahr receives 40% of the damage dealt to Slaughtervines and Twist	ability 869: 0.4
 effect	2455	0	20%	Elsewhere	Keelhaul	Reduces incoming healing by 20% per stack. Deals damage over time	ability 1763: 0.2
 effect	2456	0	20%	Elsewhere	Keelhaul	Reduces incoming healing by 20% per stack. Deals damage over time	ability 1763: 0.2
 effect	2463	0	20%	Missing	Returned Buff	has returned and has reinvigorated itself with 20% increased damage and healing	
-effect	2465	0	50%	Elsewhere	Touch of Death	Movement speed is decreased by 50% and deals periodic damage.	effect 2464: MoveSpeed Multiplicitive 0.5
-effect	2478	0	3%	Elsewhere	Lingering Concussion	Dealing 3% reduced damage to you per stack.	effect 2476: IncomingDamageMultiplier MultiplyCompound 0.97
 effect	2493	0	50%	Missing	The White Witch's Boon	o the Winter Rune gain a shield absorbing up to 50% of their maximum health that lasts for 60 secon	
 effect	2493	1	60	Missing	The White Witch's Boon	p to 50% of their maximum health that lasts for 60 seconds.    While the shield is active on a pla	
 effect	2493	2	50%	Missing	The White Witch's Boon	hile the shield is active on a player they take 50% reduced damage and are healed over time.	
 effect	2496	1	3	Missing	Lingering Chill	Movement Speed reduced by 30% per stack.    At 3 stacks Lingering Chill erupts, dealing high dam	
 effect	2551	0	40%	Missing	Solar Shield	rbs incoming damage and reduces damage taken by 40%.	
-effect	2555	0	+20%	Elsewhere	Blinded	+20% cance to be Parried by you.    1 stack of Blind	effect 2554: ParryChance Additive 0.2
-effect	2584	1	12%	Elsewhere	Resonant Fate	es Stagger from an ally, that player is granted 12% Damage Reduction for 15 seconds.	effect 3259: IncomingDamageMultiplier MultiplyCompound 0.88
+effect	2584	1	12%	Elsewhere	Resonant Fate	es Stagger from an ally, that player is granted 12% Damage Reduction for 15 seconds.	ability 1867: IncomingDamageMultiplier MultiplyCompound 0.88; effect 3259: IncomingDamageMultiplier MultiplyCompound 0.88
 effect	2584	2	15	Elsewhere	Resonant Fate	that player is granted 12% Damage Reduction for 15 seconds.	ability 1867: 15; effect 3259: 15
 effect	2645	0	+30%	Missing	Zenith Technique	Skycrash grants you +30% Parry for 5 seconds	
 effect	2645	1	5	Missing	Zenith Technique	Skycrash grants you +30% Parry for 5 seconds	
@@ -422,8 +380,7 @@ effect	2661	0	+25%	Missing	Golden Hour	Your next Omnistrike has +25% increased C
 effect	2662	1	600%	Missing	Spirit of Heroism	ed by 30%.    Mana regeneration is increased by 600%.	
 effect	2664	1	40	Missing	Sunstruck	s hit, replenishing 100 Mana plus an additional 40 Mana for each stack beyond the first that is co	
 effect	2670	0	10%	Elsewhere	Gift of Solace	10% of all damage taken is redirected to Xavian.	effect 2668: Mana Additive -10
-effect	2700	0	50%	Elsewhere	Storm Shield	50% reduced damage taken.	effect 2698: IncomingDamageMultiplier MultiplyCompound 0.5
-effect	2727	0	20%	Elsewhere	Blinding Horizon	Dealing 20% less damage to Xavier	effect 2726: IncomingDamageMultiplier MultiplyCompound 0.8
+effect	2700	0	50%	Elsewhere	Storm Shield	50% reduced damage taken.	ability 1946: IncomingDamageMultiplier MultiplyCompound 0.5; effect 2698: IncomingDamageMultiplier MultiplyCompound 0.5
 effect	2733	0	25%	Missing	Synchronicity: Catch Up	25% increased Resource Generation.	
 effect	2739	0	15	Missing	Aura of Deferred Fate	amage is Staggered, causing it to be dealt over 15 seconds.    Total staggered damage is shown on	
 effect	2754	0	20	Missing	Thundering Vortex	Chain Lightning consumes 20 stacks to deal 60% more damage.	
@@ -431,9 +388,9 @@ effect	2754	1	60%	Missing	Thundering Vortex	Chain Lightning consumes 20 stacks t
 effect	2810	0	20%	Missing	Together Stronk!	Taking 20% reduced damage.	
 effect	2913	0	1.5	Elsewhere	Conduit of Striking Shadows	Strikes players with shadow damage every 1.5 seconds.	ability 2113: 1.5
 effect	2922	0	25%	Missing	Edict of Burden	25% Reduced movement speed	
-effect	2923	0	30%	Elsewhere	Edict of Burden	Reduces the movement speed of nearby players by 30%	effect 2922: MoveSpeed MultiplyCompound 0.7
+effect	2923	0	30%	Elsewhere	Edict of Burden	Reduces the movement speed of nearby players by 30%	ability 2118: MoveSpeed MultiplyCompound 0.7; effect 2922: MoveSpeed MultiplyCompound 0.7
 effect	2926	0	10%	Missing	Edict of Isolation 	Players deal damage equal to 10% of maximum health to any nearby allies.	
-effect	2928	0	20%	Elsewhere	Edict of Frailty	Reduces healing recieved of nearby players by 20%	effect 2927: HealScale Multiplicitive 0.8
+effect	2928	0	20%	Elsewhere	Edict of Frailty	Reduces healing recieved of nearby players by 20%	ability 2120: HealScale Multiplicitive 0.8; effect 2927: HealScale Multiplicitive 0.8
 effect	3027	0	2	Missing	Empowered Seeping Reliquary	empowered.     Stage 1: {} more damage.  Stage 2: {} more damage.  Stage 3: {} more damage and {	
 effect	3028	0	2	Missing	Empowered Crushing Darkness	Stage 1: Projectiles erupt from target.  Stage 2: Damage Increased by 30%.  Stage 3: An addition	
 effect	3028	1	30%	Missing	Empowered Crushing Darkness	rupt from target.  Stage 2: Damage Increased by 30%.  Stage 3: An additional 3 waves of Projectiles	
@@ -441,7 +398,6 @@ effect	3029	0	2	Missing	Empowered Searing Fissure	over time effect to low health
 effect	3030	0	30%	Missing	Empowered Seek and Destroy	k and Destroy" is empowered.     Stage 1: Deals 30% more damage.  Stage 2: Applies bleed.  Stage 3:	
 effect	3030	1	2	Missing	Empowered Seek and Destroy	red.     Stage 1: Deals 30% more damage.  Stage 2: Applies bleed.  Stage 3: Charges twice.	
 effect	3057	0	70%	Elsewhere	Gushing Wound	be removed if your remaining health goes above 70%	ability 2041: 0.7
-effect	3093	0	10%	Elsewhere	Resonant Bulwark	r next Shockwave consumes all stacks, and deals 10% increased damage per stack consumed and stuns t	effect 3092: IncomingDamageMultiplier Multiplicitive 1.1
 effect	3138	0	85%	Missing	Harmonic Residual	Your Stone Shield diminishes at 85% of the normal rate when soaking damage.	
 effect	3158	1	4	Missing	Square Hammer	rusher or Hammer Storm grants you +5% Expertise 4 seconds.    All stacks are consumed and the coo	
 effect	3160	1	+60%	Contradicted	Kill Em All	eals 150% more damage.    Your Heavy Strike has +60% Cooldown Acceleration.	cooldownAcceleration Additive 1.6
@@ -455,7 +411,7 @@ sigil	4	0	20	Elsewhere	Seized Opportunity	Every 20 Critical Strikes you gain 21 
 sigil	4	5	12	Elsewhere	Seized Opportunity	in 21 / 39 / 57 / 75 Critical Strike rating for 12 seconds.    You can not gain stacks while Seize	ability 1461: 12; effect 2110: 12; effect 2111: 12
 sigil	5	4	8	Elsewhere	Vengeful Soul	your Main Stat by 3.0% / 5.1% / 7.2% / 9.3% for 8 seconds.    If you are below 50% health when Ve	ability 1492: 8; effect 2162: 8; effect 2163: 8
 sigil	5	10	6	Missing	Vengeful Soul	0% / 630% / 890% / 1150% of your Main Stat over 6 seconds.    (3.0 PPM)	
-sigil	5	11	3.0	Elsewhere	Vengeful Soul	% / 1150% of your Main Stat over 6 seconds.    (3.0 PPM)	effect 2163: PrimaryAttributeMultiplier Multiplicitive 1.03
+sigil	5	11	3.0	Elsewhere	Vengeful Soul	% / 1150% of your Main Stat over 6 seconds.    (3.0 PPM)	ability 1492: PrimaryAttributeMultiplier Multiplicitive 1.03; effect 2163: PrimaryAttributeMultiplier Multiplicitive 1.03
 sigil	28	0	2.1	Elsewhere	Kindling	Your Damage Effects have a chance (2.1 PPM) to burn the target, dealing 483% / 882% /	ability 172: 2.1
 sigil	28	5	9	Elsewhere	Kindling	% of your Main Stat in fire damage to them over 9 seconds.    Your Healing Effects have a chance	ability 172: 9; effect 103: 9; effect 104: 9
 sigil	28	6	2.1	Elsewhere	Kindling	seconds.    Your Healing Effects have a chance (2.1 PPM) to cauterize the target, healing them for	ability 172: 2.1
@@ -472,7 +428,7 @@ aspect	34	4	800%	Elsewhere	Emerald Judgement	, knocking that enemy into the air 
 aspect	35	4	1.3	Elsewhere	Ruby Storm	4.0% / 5.4% / 7.0% of your Current Health.    (1.3 PPM)	ability 166: 1.3
 sigil	42	5	5	Elsewhere	Hunter's Focus	/ 16 Haste rating for 8 seconds, stacking up to 5 times.    The Haste is lost if you use a target	effect 2141: 5
 sigil	46	0	3	Elsewhere	Patient Soul	Standing still for 3 seconds grants you Patient Soul, increasing you	ability 1487: 3
-sigil	46	1	5%	Elsewhere	Patient Soul	you Patient Soul, increasing your Max Health by 5% and your Expertise rating by 12 / 22 / 32 / 42.	effect 2149: MaxHealth MultiplyCompound 1.05; effect 2150: MaxHealth MultiplyCompound 1.05
+sigil	46	1	5%	Elsewhere	Patient Soul	you Patient Soul, increasing your Max Health by 5% and your Expertise rating by 12 / 22 / 32 / 42.	ability 1487: MaxHealth MultiplyCompound 1.05; effect 2149: MaxHealth MultiplyCompound 1.05; effect 2150: MaxHealth MultiplyCompound 1.05
 sigil	46	6	6	Elsewhere	Patient Soul	12 / 22 / 32 / 42.    Patient Soul persists for 6 seconds after you start moving.	ability 1487: 6
 aspect	47	0	2.5	Elsewhere	Visions of Grandeur	Your Weapon Ability generates 2.5 Spirit Points multiplied by a value equal to yo	ability 1496: 2.5
 aspect	47	1	30	Elsewhere	Visions of Grandeur	r Weapon Ability's default cooldown, divided by 30.    Your Weapon Ability's Cooldown is reduced b	ability 1496: 30
@@ -496,7 +452,7 @@ dungeon-affix	10	1	10%	Elsewhere	Challenge	Non-boss enemies deal 10% more damage
 dungeon-affix	10	2	+10%	Elsewhere	Challenge	more damage and have 10% more health.    BONUS  +10% Spirit	effect 23: Spirit Additive 0.1; effect 24: DifficultyDamageScale MultiplyCompound 1.1; effect 24: DifficultyHealthScale MultiplyCompound 1.1
 dungeon-affix	11	1	3	Elsewhere	Binding Ice	l heroes within the radius and rooting them for 3 seconds.    BONUS  Enemies hit by Binding Ice a	ability 9: 3; effect 48: 3; effect 49: 3; effect 51: 3
 dungeon-affix	11	2	2	Elsewhere	Binding Ice	NUS  Enemies hit by Binding Ice are stunned for 2 seconds. Binding Ice deals 100% increased damag	ability 9: 2; effect 48: 2; effect 49: 2; effect 51: 2
-dungeon-affix	11	3	100%	Elsewhere	Binding Ice	ce are stunned for 2 seconds. Binding Ice deals 100% increased damage against enemies.	ability 9: 1; ability 9: 600; ability 9: 2; effect 48: 2; effect 48: 600; effect 49: 600
+dungeon-affix	11	3	100%	Elsewhere	Binding Ice	ce are stunned for 2 seconds. Binding Ice deals 100% increased damage against enemies.	ability 9: DamageScale MultiplyCompound 2; effect 48: DamageScale MultiplyCompound 2; effect 49: DamageScale MultiplyCompound 2; effect 51: DamageScale MultiplyCompound 2
 dungeon-affix	12	1	+150%	Elsewhere	Empowered Minions	dungeon are empowered, gaining +100% Health and +150% Power.    BONUS  Empowered Minions award triple	effect 46: 1.5
 dungeon-affix	12	2	+20%	Elsewhere	Empowered Minions	upon defeating an Empowered Minion heroes gain +20% Haste and +20% Movement Speed for 40 seconds.	effect 46: SizeScale Multiplicitive 1.2; effect 44: Haste Additive 0.2; effect 44: PassiveMoveSpeed Additive 0.2
 dungeon-affix	12	3	+20%	Elsewhere	Empowered Minions	an Empowered Minion heroes gain +20% Haste and +20% Movement Speed for 40 seconds.	effect 46: SizeScale Multiplicitive 1.2; effect 44: Haste Additive 0.2; effect 44: PassiveMoveSpeed Additive 0.2
@@ -520,16 +476,16 @@ dungeon-affix	22	0	90	Missing	Eira the White Witch	ra to gain The White Witch's 
 dungeon-affix	22	1	120	Missing	Eira the White Witch	e Witch's Boon  Eira will appear near you every 120 seconds and spawn a Winter Rune on the ground t	
 dungeon-affix	22	2	30	Missing	Eira the White Witch	nter Rune on the ground that persists for up to 30 seconds. When a player steps on the rune, they	
 dungeon-affix	22	3	25%	Elsewhere	Eira the White Witch	n the rune, they gain an absorb shield equal to 25% of their maximum health. While the shield is ac	effect 2492: 0.25
-dungeon-affix	22	4	50%	Elsewhere	Eira the White Witch	m health. While the shield is active, they take 50% reduced damage and are slowly healed.    Damage	effect 2492: 0.5
-dungeon-affix	22	5	50%	Elsewhere	Eira the White Witch	ed.    Damage taken by the shield is reduced by 50%.	effect 2492: 0.5
+dungeon-affix	22	4	50%	Elsewhere	Eira the White Witch	m health. While the shield is active, they take 50% reduced damage and are slowly healed.    Damage	effect 2492: IncomingDamageMultiplier MultiplyCompound 0.5
+dungeon-affix	22	5	50%	Elsewhere	Eira the White Witch	ed.    Damage taken by the shield is reduced by 50%.	effect 2492: IncomingDamageMultiplier MultiplyCompound 0.5
 dungeon-affix	24	0	400%	Elsewhere	Anomalous Orbs	pt the cast of Detonate.    Anomalous Orbs take 400% increased damage while not actively casting Det	effect 2711: 4
 dungeon-affix	24	1	+480	Missing	Anomalous Orbs	ONUS  Each Anomalous Orb players destroy grants +480 Gem Power to the corresponding color of the Orb	
 dungeon-affix	24	2	45	Missing	Anomalous Orbs	ponding color of the Orb that was destroyed for 45 seconds.	
 dungeon-affix	25	0	8	Elsewhere	Storm Shield	, players will charge up with red lightning for 8 seconds, after which a massive bolt strikes all	ability 1946: 8; effect 2700: 8
 dungeon-affix	25	1	8	Elsewhere	Storm Shield	all players, dealing lethal damage.    For the 8 seconds that players are charged up, players ar	ability 1946: 8; effect 2700: 8
-dungeon-affix	25	2	50%	Elsewhere	Storm Shield	nted Storm Shield, reducing all damage taken by 50%. In addition, damage is split among other playe	effect 2698: IncomingDamageMultiplier MultiplyCompound 0.5
-dungeon-affix	25	3	20	Elsewhere	Storm Shield	e the massive bolt are granted Storm's Fury for 20 seconds, granting +20% critical strike chance.	effect 2699: CritChance Additive 0.2
-dungeon-affix	25	4	+20%	Elsewhere	Storm Shield	e granted Storm's Fury for 20 seconds, granting +20% critical strike chance.	effect 2699: CritChance Additive 0.2
+dungeon-affix	25	2	50%	Elsewhere	Storm Shield	nted Storm Shield, reducing all damage taken by 50%. In addition, damage is split among other playe	ability 1946: IncomingDamageMultiplier MultiplyCompound 0.5; effect 2698: IncomingDamageMultiplier MultiplyCompound 0.5
+dungeon-affix	25	3	20	Elsewhere	Storm Shield	e the massive bolt are granted Storm's Fury for 20 seconds, granting +20% critical strike chance.	ability 1946: CritChance Additive 0.2; effect 2699: CritChance Additive 0.2
+dungeon-affix	25	4	+20%	Elsewhere	Storm Shield	e granted Storm's Fury for 20 seconds, granting +20% critical strike chance.	ability 1946: CritChance Additive 0.2; effect 2699: CritChance Additive 0.2
 dungeon-affix	27	0	30%	Elsewhere	Truesight	Every 30% of Kill Score, an enemy will drop a Truesight O	ability 2070: 0.3; effect 2841: 0.3; effect 2842: 0.3
 dungeon-affix	27	1	20%	Elsewhere	Truesight	creasing their damage dealt and healing done by 20%.	effect 2843: DamageScale MultiplyCompound 1.2; effect 2843: HealScale MultiplyCompound 1.2
 talent	8	0	10	Missing	Macabre Stratagem	agem.    Upon use, Macabre Stratagem grants you 10 seconds of Matriarch Macabre.    If used while	
