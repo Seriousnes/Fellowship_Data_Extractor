@@ -16,6 +16,15 @@ public sealed class AbilityDocument : EntityDocument
 
     public EntityReference? PartOf { get; init; }
 
+    /// <summary>The ability whose Blueprint class this ability's class derives from.</summary>
+    public EntityReference? ParentClass { get; init; }
+
+    /// <summary>Effects the ability's properties and graph reference.</summary>
+    public IReadOnlyList<EntityReference>? Applies { get; init; }
+
+    /// <summary>Abilities the ability grants.</summary>
+    public IReadOnlyList<EntityReference>? Grants { get; init; }
+
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }

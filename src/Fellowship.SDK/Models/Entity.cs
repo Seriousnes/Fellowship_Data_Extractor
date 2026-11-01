@@ -214,6 +214,14 @@ public sealed record Entity
     [JsonIgnore]
     public IReadOnlyList<string>? GrantedAbilityNames { get; init; }
 
+    /// <summary>Asset name of the Blueprint class the entity's class derives from, where that class is a Blueprint.</summary>
+    [JsonIgnore]
+    public string? ParentClassName { get; init; }
+
+    /// <summary>Effect classes the entity's cost, cooldown and charge properties hold, by asset name.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<string>? TimingEffects { get; init; }
+
 
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, double>>? GatedConstants { get; init; }

@@ -11,6 +11,12 @@ public static class Reachability
     private static readonly string TypeField = Field(nameof(EntityReference.Type));
     private static readonly string IdField = Field(nameof(EntityReference.Id));
 
+    /// <summary>
+    /// The abilities an ability or effect grants do not reach from it: a granted ability's effects name it as their
+    /// applier, so the two would reach each other and stay enabled when no enabled source reaches either.
+    /// </summary>
+    private static readonly string GrantsField = Field(nameof(AbilityDocument.Grants));
+
     private static readonly IReadOnlySet<EntityType> Derived =
         new HashSet<EntityType> { EntityType.Creature, EntityType.Ability, EntityType.Effect };
 
@@ -46,7 +52,7 @@ public static class Reachability
                 {
                     foreach (var source in References(value)) Link(source, key);
                 }
-                else if (Reaching.Contains(field))
+                else if (Reaching.Contains(field) && !(Derived.Contains(key.Item1) && field == GrantsField))
                 {
                     foreach (var target in References(value)) Link(key, target);
                 }

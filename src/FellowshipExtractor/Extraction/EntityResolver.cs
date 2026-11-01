@@ -75,6 +75,14 @@ public sealed class EntityResolver
     private const string MountIdField = "MountID";
     private const string MountRarityField = "Rarity";
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _abilityNames = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Ability properties holding the effect classes for its cost, cooldowns and charges.</summary>
+    private static readonly string[] TimingEffectFields =
+    [
+        "CostGameplayEffectClass", "CooldownGameplayEffectClass", "CooldownEffectBaseClass", "PaddingCooldownEffectBaseClass",
+        "GlobalCooldownGameplayEffectClass", "ChargeGameplayEffectClass",
+    ];
 
     public AbilityPresentationIndex Presentation { get; }
     public EffectIconSources EffectIcons { get; }
@@ -181,6 +189,7 @@ public sealed class EntityResolver
         foreach (var tag in _tags)
         {
             if (tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) _effectNames.Add(tag.Name);
+            if (tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase)) _abilityNames.Add(tag.Name);
         }
 
         _augmentationIds = new AugmentationIds(_tags);
@@ -954,7 +963,15 @@ public sealed class EntityResolver
         Icon = entity.Icon ?? IconName(modifier.IconPath, icons),
         Placeholders = entity.Placeholders ?? ModifierPlaceholders(modifier),
         MinimumHeroRank = modifier.MinimumHeroRank,
+        ReachedEffects = ActorReferences(modifier.ActorPath, _effectNames),
+        GrantedAbilityNames = ActorReferences(modifier.ActorPath, _abilityNames),
     };
+
+    /// <summary>The names in <paramref name="wanted"/> the modifier actor's properties and graph reference.</summary>
+    private IReadOnlyList<string>? ActorReferences(string? actorPath, IReadOnlySet<string> wanted) =>
+        actorPath is null
+            ? null
+            : Empty([.. AppliedEffects.Find(_provider, actorPath, wanted, new Dictionary<string, string>()).Select(found => found.Name)]);
 
     private Dictionary<string, Placeholder>? ModifierPlaceholders(Modifier modifier)
     {
@@ -1481,6 +1498,14 @@ public sealed class EntityResolver
                 ? counts
                 : null,
             GrantedAbilityNames = Empty(AbilityLinks.GrantedAbilities(cdo)),
+            ParentClassName = cdo is null ? null : ClassDefaults.ParentName(cdo),
+            TimingEffects = cdo is null
+                ? null
+                : Empty([.. TimingEffectFields
+                    .Select(field => PropertyWalk.AsString(ClassDefaults.Inherited(cdo, field, _provider)?.GenericValue))
+                    .OfType<string>()
+                    .Where(path => path.Contains('/'))
+                    .Select(ClassName)]),
 
             GrantedEffects = cdo is null ? null : Empty([.. ClassPaths(cdo, GrantedEffectsField).Select(ClassName)]),
             TimeRates = cdo is null ? null : Empty(CooldownScaling.TimeRates(cdo, _constants)),

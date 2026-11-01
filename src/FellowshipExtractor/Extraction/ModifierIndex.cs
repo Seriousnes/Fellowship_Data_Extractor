@@ -721,6 +721,21 @@ public sealed partial class ModifierIndex
             ? [.. sources.Select(source => references.Of(source.Type, source.Id)!)]
             : null;
 
+    /// <summary>The exported entities of <paramref name="type"/> named by <paramref name="names"/>, other than the entity.</summary>
+    public IReadOnlyList<EntityReference>? Named(
+        Entity entity, IEnumerable<string>? names, EntityType type, DocumentProjection.References references)
+    {
+        var self = entity is { Type: not null, NetId: not null } ? KeyOf(entity) : (Key?)null;
+        var found = Keys();
+
+        foreach (var name in names ?? [])
+        {
+            if (_assets.TryGetValue(name, out var key) && key.Type == type && key != self) found.Add(key);
+        }
+
+        return found.Count == 0 ? null : [.. found.Select(key => references.Of(key.Type, key.Id)!)];
+    }
+
     public IReadOnlyList<EntityReference>? Grants(Entity entity, DocumentProjection.References references) =>
         entity is { Type: not null, NetId: not null } && _grants.TryGetValue(KeyOf(entity), out var granted)
             ? [.. granted.Select(target => references.Of(target.Type, target.Id)!)]
@@ -780,7 +795,7 @@ public sealed partial class ModifierIndex
                 remainder = remainder[..(within - 1)] + "." + remainder[(within + marker.Length)..];
             }
         }
-        else if (TalentClaiming(row) is var (claimer, claimed) && remainder.Length > 0)
+        else if (TalentClaiming(row, self) is var (claimer, claimed) && remainder.Length > 0)
         {
             talent = references.Of(claimer.Type, claimer.Id);
 
@@ -805,7 +820,7 @@ public sealed partial class ModifierIndex
         }
 
         var modified = Modified(row);
-        var printer = Scoped(row)?.Talent ?? TalentClaiming(row)?.Source ?? self;
+        var printer = Scoped(row)?.Talent ?? TalentClaiming(row, self)?.Source ?? self;
 
         return (new TuningReference(Fold(Untalented(remainder)))
         {
@@ -1046,19 +1061,42 @@ public sealed partial class ModifierIndex
         return null;
     }
 
-    private (Key Source, string Scope)? TalentClaiming(string row)
+    /// <summary>
+    /// The one source holding <paramref name="row"/>. Among several, the document reading the row when it is one of
+    /// them, else the one owned by the reading document's hero, else the one owned by the hero the row is under.
+    /// </summary>
+    private (Key Source, string Scope)? TalentClaiming(string row, Key? reader)
     {
         var claimers = _sourceRows
             .Where(entry => entry.Value.ContainsKey(row))
             .Select(entry => entry.Key)
             .ToArray();
 
+        var chosen = claimers.Length > 1;
+
+        if (claimers.Length > 1 && reader is { } self && claimers.Contains(self)) claimers = [self];
+
+        if (claimers.Length > 1 && reader is { } held && _entities.GetValueOrDefault(held) is { } document &&
+            (document.OwningHeroes ?? document.Heroes) is { Count: > 0 })
+        {
+            var sharing = claimers.Where(claimer => Codenames(claimer).Intersect(Codenames(held), StringComparer.OrdinalIgnoreCase).Any())
+                .ToArray();
+
+            if (sharing.Length > 0) claimers = sharing;
+        }
+
+        if (claimers.Length > 1 && Hero(row) is var (_, codename))
+        {
+            claimers = [.. claimers.Where(claimer => Codenames(claimer).Contains(codename, StringComparer.OrdinalIgnoreCase))];
+        }
+
         if (claimers is not [var only]) return null;
 
-        var scoped = _sourceRows[only].Keys
+        var talented = _sourceRows[only].Keys
             .Where(key => TalentSegments.Any(segment => key.Contains(segment, StringComparison.OrdinalIgnoreCase)))
-            .Select(key => key.Split('.'))
             .ToArray();
+
+        var scoped = talented.Select(key => key.Split('.')).ToArray();
 
         if (scoped.Length == 0) return null;
 
@@ -1078,10 +1116,20 @@ public sealed partial class ModifierIndex
 
         var scope = string.Join('.', common);
 
-        return TalentSegments.Any(segment => $"{scope}.".Contains(segment, StringComparison.OrdinalIgnoreCase))
-            ? (only, scope)
+        if (TalentSegments.Any(segment => $"{scope}.".Contains(segment, StringComparison.OrdinalIgnoreCase))) return (only, scope);
+
+        // A source holding rows under several talent names claims a row chosen among several holders, or a row under no
+        // talent name, with no scope to drop from the row's name. Another row under a talent name can be another
+        // talent's.
+        return (chosen || TalentScope(row) is null) && talented.Any(key => TalentScope(key) is not null)
+            ? (only, string.Empty)
             : null;
     }
+
+    /// <summary>Codenames of the heroes owning <paramref name="source"/>.</summary>
+    private IEnumerable<string> Codenames(Key source) =>
+        (_entities.GetValueOrDefault(source) is { } entity ? entity.OwningHeroes ?? entity.Heroes ?? [] : [])
+        .Select(hero => _codenames.GetValueOrDefault(hero, hero));
 
     public EntityReference? TalentNamed(Entity context, string name, DocumentProjection.References references) =>
         (context.Tuning ?? (context.OwningHeroes is [var hero] ? _codenames.GetValueOrDefault(hero) : null)) is { } scope &&
