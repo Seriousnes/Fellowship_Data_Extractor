@@ -51,6 +51,7 @@ public sealed class EntityResolver
     private readonly EffectCalculationPresets _presets;
     private readonly CooldownScaling _cooldowns;
     private readonly GlobalCooldowns _globalCooldowns;
+    private readonly Thresholds _thresholds;
     private AugmentationIndex? _augmentations;
 
     private readonly Dictionary<string, bool> _spreadSources = new(StringComparer.OrdinalIgnoreCase);
@@ -170,6 +171,7 @@ public sealed class EntityResolver
         _presets = new EffectCalculationPresets(provider, _assets);
         _cooldowns = new CooldownScaling(provider, _assets, _constants);
         _globalCooldowns = new GlobalCooldowns(provider, _constants);
+        _thresholds = Thresholds.Read(provider, mappings, _constants);
         _multiplyingOps = Reductions.MultiplyingOps(mappings);
 
         IndexAssets();
@@ -1409,6 +1411,7 @@ public sealed class EntityResolver
             DurationGates = magnitudes.DurationGates.Count == 0 ? null : magnitudes.DurationGates,
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Generates = Empty(Gains.Of(cdo, assetName)),
+            Thresholds = Empty(_thresholds.Of(cdo)),
             Tuning = tuning,
             Declares = Empty(Bound(bindings)),
             Constants = baseline.Count == 0 ? null : baseline,
@@ -2201,6 +2204,7 @@ public sealed class EntityResolver
         ScalesOff = Union(outer.ScalesOff, inner.ScalesOff),
         Coefficients = Union(outer.Coefficients, inner.Coefficients),
         Generates = Union(outer.Generates, inner.Generates),
+        Thresholds = Union(outer.Thresholds, inner.Thresholds),
         Tuning = outer.Tuning ?? inner.Tuning,
         Declares = Union(outer.Declares, inner.Declares),
         Placeholders = Union(outer.Placeholders, inner.Placeholders),
@@ -2281,6 +2285,12 @@ public sealed class EntityResolver
 
     private static IReadOnlyList<TargetCountFalloffSource>? Union(
         IReadOnlyList<TargetCountFalloffSource>? first, IReadOnlyList<TargetCountFalloffSource>? second)
+    {
+        if (first is null || second is null) return first ?? second;
+        return [.. first.Concat(second).Distinct()];
+    }
+
+    private static IReadOnlyList<Threshold>? Union(IReadOnlyList<Threshold>? first, IReadOnlyList<Threshold>? second)
     {
         if (first is null || second is null) return first ?? second;
         return [.. first.Concat(second).Distinct()];

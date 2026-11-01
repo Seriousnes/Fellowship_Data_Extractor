@@ -27,7 +27,6 @@ talent	126	4	2	Missing	Resurgent Winds	ent Winds lasts for 15 seconds and stacks
 talent	145	1	40%	Missing	Agonizing Blaze	es the damage it deals by 4% up to a maximum of 40% increased damage at 10 stacks. Every tick on th	
 talent	145	2	10	Missing	Agonizing Blaze	y 4% up to a maximum of 40% increased damage at 10 stacks. Every tick on that target increases the	
 talent	162	0	3	Missing	Slow Burn	h time Fire Ball burns enemies up to a total of 3 seconds over its full duration.	
-talent	164	1	30%	Missing	Last Lights	tical strike chance when striking targets below 30% health.	
 talent	169	0	3	Missing	Final Crescendo	Every 3 Highwind Arrow casts deals +100% increased dama	
 talent	169	2	9	Missing	Final Crescendo	eals +100% increased damage and Ricochets up to 9 times.	
 talent	173	0	15	Missing	Natural Protector	ard and Safe Haven abilities shield players for 15 seconds, absorbing up to 1755% intellect damage	
@@ -98,7 +97,6 @@ talent	623	0	10%	Missing	Echoes of Divinity	of Divinity clears additional Stagge
 talent	627	1	30	Missing	Harrowing Ice	ou Harrowing Ice for 12 seconds, stacking up to 30 times.    Bursting Ice gains 3% more damage per	
 talent	627	3	30	Missing	Harrowing Ice	e per stack of Harrowing Ice you have.    After 30 stacks, all Harrowing Ice stacks are consumed a	
 talent	628	0	12%	Missing	Bursting Swallows	Your Frost Swallow hits have a 12% chance to trigger a pulse of Bursting Ice on th	
-talent	648	0	80%	Missing	Defiance	When you are below 80% health, you gain +5% Block Chance and 20% incre	
 talent	649	0	6	Missing	Lingering Rush	eeping Strike's Blood Rally lasts an additional 6 seconds, but its healing is reduced to 4% of yo	
 talent	653	0	4	Missing	Grand Proliferation	Renewal, and Luminous Barrier is cast on up to 4 targets at 120% power, as long as you have 2 Ra	
 talent	653	1	120%	Missing	Grand Proliferation	Luminous Barrier is cast on up to 4 targets at 120% power, as long as you have 2 Radiant Runes to s	
@@ -121,13 +119,11 @@ glyph	703	3	+25%	Contradicted	The Wayfarer	} you gain {}, granting you +6% / +10
 glyph	703	4	0.2	Missing	The Wayfarer	the time to {}'s next application is reduced by 0.2 to 8 seconds, relative to the cooldown of the [	
 glyph	703	5	8	Missing	The Wayfarer	e to {}'s next application is reduced by 0.2 to 8 seconds, relative to the cooldown of the [CORE]	
 glyph	703	6	0.2	Missing	The Wayfarer	bility used. Abilities with no cooldown provide 0.2 seconds reduction.	
-talent	757	2	30%	Missing	Darkening Hearts	00% Critical Strike chance against targets with 30% health or less.    GRIEVOUS CRITICAL STRIKE  An	
 talent	758	1	12	Missing	Murder of Crows	ture grants you 2 stacks of Murder of Crows for 12 seconds.    Your next ability that applies Rend	
 talent	761	3	6	Missing	Bloodcraze	in a 700 radius around you every 3 seconds for 6 seconds.    The damage of Bloodcraze is increas	
 talent	772	2	25%	Contradicted	Massacre	+0.25% Spirit for 8 seconds, up to a maximum of 25% Spirit.	Spirit Additive 0.0025
 relic-passive	778	0	0.9	Missing	Dragonbone Dice	Your critical strikes have a chance (0.9 PPM) to increase your Primary Stat by 18% for 1	
 relic-passive	779	0	0.8	Contradicted	Undying Heart	Your abilities have a chance (0.8 PPM) to increase your Haste by 25% for 20 secon	Haste Additive 0.25
-relic-passive	782	0	20%	Missing	Gilded Broach	When dipping below 20% Health, you are instantly healed for 40% of you	
 relic-passive	782	1	40%	Missing	Gilded Broach	below 20% Health, you are instantly healed for 40% of your maximum health. This can occur once eve	
 ability	9	0	5	Missing	Binding Ice: Curse	one player is afflicted by an icy curse. After 5 seconds the curse erupts, dealing frost magic d	
 ability	135	1	20%	Missing	Sentinel's Bastion	Every 60 seconds, you gain an absorb equal to 20% Max Health that lasts for 60 seconds.	
@@ -278,7 +274,6 @@ ability	1212	10	+120%	Missing	Arachnid Assault	5 Combo Points: +100% damage  6 C
 ability	1214	0	6	Missing	Taunt	aunt target enemy, forcing it to attack you for 6 seconds.    Can be used during Global Cooldown	
 ability	1219	1	6	Missing	Face Breaker (old)	r and deal +400% increased damage.    Generates 6 Fury plus an amount based on the total damage i	
 ability	1228	1	400%	Missing	Culling Strike	0 Fury, increasing the damage it deals by up to 400%. The more Fury it consumes, the higher the dama	
-ability	1228	2	30%	Missing	Culling Strike	ion  Can only be used against enemies that have 30% or less health.	
 ability	1231	2	+30%	Missing	Raging Tempest	t ability you gain  Spirit of Heroism, granting +30% Haste for 20 sec.    Can be used during Global	
 ability	1233	0	52%	Missing	Focused Wrath	two casts of Skull Crusher or Hammer Storm cost 52% less Fury and deal 10% more damage.    Can be u	
 ability	1233	1	10%	Missing	Focused Wrath	her or Hammer Storm cost 52% less Fury and deal 10% more damage.    Can be used during Global Coold	
@@ -310,7 +305,6 @@ ability	1310	3	50%	Missing	Lunarlight Mark	ing {} magic damage.    Critical Stri
 ability	1312	1	25%	Missing	Heartseeker Barrage	Barrage that triggers a Lunarlight Salvo has a 25% chance to cause it to Erupt, dealing {} magic d	
 ability	1317	0	275%	Missing	Deadly Shot (old)	Deals 275% Agility damage to target.    Deadly Shot riccoc	
 ability	1318	0	3	Missing	Multishot	When your Highwind Arrow Ricochets to at least 3 enemies, you gain 1 charge of Multishot.	
-ability	1388	0	20%	Missing	Torment of Bael'Aurum	When dipping below 20% Health, you are instantly healed for 35% of you	
 ability	1388	1	35%	Missing	Torment of Bael'Aurum	below 20% Health, you are instantly healed for 35% of your maximum health. This can occur once eve	
 ability	1388	2	90	Missing	Torment of Bael'Aurum	your maximum health. This can occur once every 90 seconds.	
 ability	1398	1	3	Missing	Skystrider's Supremacy	SHOT  Empowered Multishots always fire at least 3 arrows regardless of how many targets are in ra	
@@ -536,8 +530,6 @@ effect	2114	0	10%	Missing	Stone Skin	Applies 10% of exploded enemy health over 6
 effect	2119	0	20%	Missing	Grand Melee	on.    Allies within a large radius of you take 20% reduced magic damage.	
 effect	2141	0	8	Missing	Trait : Focused Haste	Your Haste rating is increased for 8 seconds.	
 effect	2151	0	10	Missing	Latent Resurgence	1 stack of Latent Resurgence up to a maximum of 10 stacks.    When your health dips below 50% all	
-effect	2151	1	50%	Missing	Latent Resurgence	um of 10 stacks.    When your health dips below 50% all stacks of Latent Resurgence are consumed an	
-effect	2152	0	50%	Missing	Latent Resurgence	When your health dips below 50%, all stacks of Latent Resurgence are consumed a	
 effect	2157	0	12	Missing	Treasure Hunter's Delight	All damage you take is reduced by {} for 12 seconds.	
 effect	2222	2	9	Missing	Final Cresendo	ls 100% increased damage and Ricochets to up to 9 additional targets.	
 effect	2231	1	+5%	Missing	Pneuma	Taking 10% less damage.    +5% Lifesteal.	
@@ -580,7 +572,6 @@ effect	2584	1	12%	Missing	Resonant Fate	es Stagger from an ally, that player is 
 effect	2584	2	15	Missing	Resonant Fate	that player is granted 12% Damage Reduction for 15 seconds.	
 effect	2645	0	+30%	Missing	Zenith Technique	Skycrash grants you +30% Parry for 5 seconds	
 effect	2645	1	5	Missing	Zenith Technique	Skycrash grants you +30% Parry for 5 seconds	
-effect	2653	0	40%	Missing	Shifting Spectrum	Damage taken while at 40% hp or below is reduced by 20%	
 effect	2655	1	200%	Missing	Light's Oath	At 8 stacks, your next Shining Halo deals 200% more damage	
 effect	2661	0	+25%	Missing	Golden Hour	Your next Omnistrike has +25% increased Critical Strike chance	
 effect	2662	1	600%	Missing	Spirit of Heroism	ed by 30%.    Mana regeneration is increased by 600%.	
@@ -607,7 +598,6 @@ effect	3030	1	2	Missing	Empowered Seek and Destroy	red.     Stage 1: Deals 30% m
 effect	3057	0	70%	Missing	Gushing Wound	be removed if your remaining health goes above 70%	
 effect	3093	0	10%	Missing	Resonant Bulwark	r next Shockwave consumes all stacks, and deals 10% increased damage per stack consumed and stuns t	
 effect	3131	0	25%	Missing	Every Other Flutter	Your next cast of Fluttercall: Restore Life has 25% reduced Mana cost.	
-effect	3133	0	100%	Missing	Saving Grace	healing from Flutterflies taken is increased by 100%.	
 effect	3138	0	85%	Missing	Harmonic Residual	Your Stone Shield diminishes at 85% of the normal rate when soaking damage.	
 effect	3158	1	4	Missing	Square Hammer	rusher or Hammer Storm grants you +5% Expertise 4 seconds.    All stacks are consumed and the coo	
 effect	3160	0	150%	Missing	Kill Em All	Your next Heavy Strike deals 150% more damage.    Your Heavy Strike has +60% Cool	
