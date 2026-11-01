@@ -1097,6 +1097,7 @@ public sealed class EntityResolver
         var gatedReads = new List<GatedRead>(TagGatedReads.Of(cdo));
         var effectBindings = new Dictionary<string, IReadOnlyList<CurveBinding>>(StringComparer.OrdinalIgnoreCase);
         var effectAdds = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        var reachedEffects = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         var uses = new Dictionary<string, SortedSet<string>>(StringComparer.OrdinalIgnoreCase);
         var supplied = new Dictionary<string, string>(StringComparer.Ordinal);
         var ownRows = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1132,6 +1133,7 @@ public sealed class EntityResolver
                 {
                     var effectName = effectClass.EndsWith("_C", StringComparison.Ordinal) ? effectClass[..^2] : effectClass;
 
+                    reachedEffects.Add(effectName);
                     effectBindings.TryAdd(effectName, effect.Constants ?? []);
                     effectAdds.TryAdd(effectName, [.. TagNames.Of(effect.Default).Added.Where(TagNames.IsTalent)]);
                 }
@@ -1449,6 +1451,8 @@ public sealed class EntityResolver
             TimeRates = cdo is null ? null : Empty(CooldownScaling.TimeRates(cdo, _constants)),
             GatedConstants = GatedConstants(tested, testerBindings, declaredGates, gatedReads, effectBindings),
             GatedAdds = GatedAdds(gatedReads, effectAdds),
+            GatedEffects = GatedEffects(gatedReads, cdo),
+            ReachedEffects = reachedEffects.Count == 0 ? null : [.. reachedEffects],
             GatedModifiers = gated.Count == 0
                 ? null
                 : gated.ToDictionary(
@@ -1666,6 +1670,70 @@ public sealed class EntityResolver
         return adds.Count == 0
             ? null
             : adds.ToDictionary(
+                entry => entry.Key,
+                entry => (IReadOnlyList<string>)[.. entry.Value],
+                StringComparer.Ordinal);
+    }
+
+    private const string ConditionalEffectsField = "ConditionalGameplayEffects";
+    private const string ConditionalEffectClassField = "EffectClass";
+    private const string ConditionalSourceTagsField = "RequiredSourceTags";
+
+    /// <summary>
+    /// Effects the asset applies only behind a talent tag: a graph branch testing the tag, or a conditional effect
+    /// requiring the tag on the source.
+    /// </summary>
+    private static IReadOnlyDictionary<string, IReadOnlyList<string>>? GatedEffects(
+        IEnumerable<GatedRead> reads, UObject? cdo)
+    {
+        var effects = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+
+        void Add(string tag, string effect)
+        {
+            if (!TagNames.IsTalent(tag)) return;
+
+            if (!effects.TryGetValue(tag, out var under)) effects[tag] = under = new(StringComparer.OrdinalIgnoreCase);
+            under.Add(effect);
+        }
+
+        foreach (var gate in reads)
+        {
+            if (gate.Effect is { } effect) Add(gate.Tag, effect);
+        }
+
+        var conditional = new Dictionary<string, (string? Effect, string[] Tags)>(StringComparer.Ordinal);
+
+        foreach (var property in cdo is null ? [] : PropertyWalk.Walk(cdo))
+        {
+            if (!property.Path.StartsWith($"{ConditionalEffectsField}[", StringComparison.Ordinal)) continue;
+
+            var close = property.Path.IndexOf(']');
+            if (close < 0 || property.Path.Length <= close + 1) continue;
+
+            var element = property.Path[..(close + 1)];
+            var field = property.Path[(close + 2)..];
+            var held = conditional.GetValueOrDefault(element);
+
+            if (field == ConditionalEffectClassField && PropertyWalk.AsString(property.Value) is { } path)
+            {
+                conditional[element] = (ClassName(path), held.Tags ?? []);
+            }
+            else if (field == ConditionalSourceTagsField)
+            {
+                conditional[element] = (held.Effect, PropertyWalk.AsTags(property.Value) ?? []);
+            }
+        }
+
+        foreach (var (effect, tags) in conditional.Values)
+        {
+            if (effect is null) continue;
+
+            foreach (var tag in tags) Add(tag, effect);
+        }
+
+        return effects.Count == 0
+            ? null
+            : effects.ToDictionary(
                 entry => entry.Key,
                 entry => (IReadOnlyList<string>)[.. entry.Value],
                 StringComparer.Ordinal);
@@ -2016,9 +2084,16 @@ public sealed class EntityResolver
     private static IReadOnlyDictionary<string, string>? Empty(Dictionary<string, string> map) =>
         map.Count == 0 ? null : map;
 
+    private readonly SortedSet<string> _talentTagsByName = new(StringComparer.Ordinal);
+
+    /// <summary>Granted talent tags whose namespace is the talent name below a path other than the tag's.</summary>
+    public IReadOnlyCollection<string> TalentTagsByName => _talentTagsByName;
+
     private void SupplementTalent(SplitNumbers split, string tag)
     {
         if (TuningNamespace.ForTalentTag(tag, _constants) is not { } scope) return;
+
+        if (TuningNamespace.ByTalentName(tag, _constants)) _talentTagsByName.Add(tag);
 
         foreach (var record in _constants.AllUnder(scope))
         {
@@ -2214,6 +2289,8 @@ public sealed class EntityResolver
         TagRows = Union(outer.TagRows, inner.TagRows),
         NamespaceRows = Union(outer.NamespaceRows, inner.NamespaceRows),
         GatedAdds = Union(outer.GatedAdds, inner.GatedAdds),
+        GatedEffects = Union(outer.GatedEffects, inner.GatedEffects),
+        ReachedEffects = Union(outer.ReachedEffects, inner.ReachedEffects),
         TestedTags = Union(outer.TestedTags, inner.TestedTags),
         AddedTags = Union(outer.AddedTags, inner.AddedTags),
         GatedConstants = Union(outer.GatedConstants, inner.GatedConstants),

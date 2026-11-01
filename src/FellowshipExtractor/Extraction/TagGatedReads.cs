@@ -63,7 +63,7 @@ public static class TagGatedReads
             {
                 var tags = new SortedSet<string>(StringComparer.Ordinal);
 
-                Tested(condition, running, tags, 0);
+                Tested(condition, running, tags, cdo, 0);
 
                 if (tags.Count > 0)
                 {
@@ -72,7 +72,7 @@ public static class TagGatedReads
 
                     foreach (var offset in gates.Only(at))
                     {
-                        if (statements.TryGetValue(offset, out var statement)) Reads(statement, own, read, applied, 0);
+                        if (statements.TryGetValue(offset, out var statement)) Reads(statement, own, cdo, read, applied, 0);
                     }
 
                     foreach (var tag in tags)
@@ -91,6 +91,7 @@ public static class TagGatedReads
         KismetExpression? condition,
         IReadOnlyDictionary<string, KismetExpression> locals,
         ISet<string> tags,
+        UObject cdo,
         int depth)
     {
         if (depth > MaxDepth) return;
@@ -99,20 +100,21 @@ public static class TagGatedReads
 
         if (invoked.StartsWith(Both, StringComparison.Ordinal))
         {
-            foreach (var operand in Parameters(called)) Tested(operand, locals, tags, depth + 1);
+            foreach (var operand in Parameters(called)) Tested(operand, locals, tags, cdo, depth + 1);
 
             return;
         }
 
         if (!TagTests.Contains(invoked)) return;
 
-        foreach (var argument in Parameters(called)) Literals(Bare(argument, locals, 0), locals, tags, 0);
+        foreach (var argument in Parameters(called)) Literals(Bare(argument, locals, 0), locals, tags, cdo, 0);
     }
 
     private static void Literals(
         KismetExpression? expression,
         IReadOnlyDictionary<string, KismetExpression> locals,
         ISet<string> tags,
+        UObject cdo,
         int depth)
     {
         if (expression is null || depth > MaxDepth) return;
@@ -124,11 +126,22 @@ public static class TagGatedReads
             return;
         }
 
-        foreach (var child in Children(expression)) Literals(Bare(child, locals, 0), locals, tags, depth + 1);
+        if (expression is EX_InstanceVariable)
+        {
+            if (Held(expression, cdo) is { } tag && TagNames.IsTalent(tag)) tags.Add(tag);
+
+            return;
+        }
+
+        foreach (var child in Children(expression)) Literals(Bare(child, locals, 0), locals, tags, cdo, depth + 1);
     }
 
+    /// <summary>The value the class default object holds in the instance variable, as a tag name or a class path.</summary>
+    private static string? Held(KismetExpression variable, UObject cdo) =>
+        DynamicTextFloats.Name(variable) is { } property ? PropertyWalk.AsString(PropertyWalk.Get(cdo, property)?.GenericValue) : null;
+
     private static void Reads(
-        KismetExpression? expression, string? own, ISet<(string, string?)> read, ISet<string> applied, int depth)
+        KismetExpression? expression, string? own, UObject cdo, ISet<(string, string?)> read, ISet<string> applied, int depth)
     {
         if (expression is null || depth > MaxDepth) return;
 
@@ -136,6 +149,8 @@ public static class TagGatedReads
         {
             var owner = RowSinks.OwnerClass(((EX_InstanceVariable)expression).Variable.New?.ResolvedOwner?.Name);
             read.Add((property, owner == own ? null : owner));
+
+            if (owner == own && Effect(Held(expression, cdo)) is { } effect) applied.Add(effect);
 
             return;
         }
@@ -148,7 +163,19 @@ public static class TagGatedReads
             return;
         }
 
-        foreach (var child in Children(expression)) Reads(child, own, read, applied, depth + 1);
+        foreach (var child in Children(expression)) Reads(child, own, cdo, read, applied, depth + 1);
+    }
+
+    /// <summary>The effect class a class path names, without its generated-class suffix.</summary>
+    private static string? Effect(string? path)
+    {
+        if (path is null || !path.Contains('/')) return null;
+
+        var leaf = path[(path.LastIndexOf('.') + 1)..];
+
+        return leaf.StartsWith(EffectPrefix, StringComparison.Ordinal) && leaf.EndsWith(ClassSuffix, StringComparison.Ordinal)
+            ? leaf[..^ClassSuffix.Length]
+            : null;
     }
 
     private static KismetExpression? Bare(

@@ -302,6 +302,9 @@ public static class ExportRun
         Console.WriteLine(
             $"  {changes.Changes} changes from {changes.Sources} talents and legendary powers to {changes.Targets} " +
             "abilities and effects");
+        Console.WriteLine(
+            $"  {modifiers.ReachedRows} talent rows from the abilities and effects linked to a talent or legendary " +
+            $"power, {modifiers.ScopedRows} under the talent name of one of its rows");
         foreach (var (reason, count) in changes.Unprojected().OrderByDescending(entry => entry.Value))
         {
             Console.WriteLine($"    {count} records not projected: {reason}");
@@ -353,6 +356,9 @@ public static class ExportRun
         Console.WriteLine(
             $"  {resolver.NamespaceSupplied} tuning rows supplied by namespace that no asset names, " +
             $"{resolver.NamespaceCorroborated} named fields an applied effect binds to the value the row declares");
+        Console.WriteLine(
+            $"  {resolver.TalentTagsByName.Count} granted talent tags whose namespace is the talent name below a " +
+            $"path other than the tag's: {string.Join(", ", resolver.TalentTagsByName)}");
         Console.WriteLine(
             $"  {resolver.DeclaredByBlueprint} tokens bound by the ability's ResolveDynamicTextFloat, " +
             $"{resolver.NamedByToken} by the quantity their name states, " +
