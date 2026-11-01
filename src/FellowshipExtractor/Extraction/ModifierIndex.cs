@@ -138,6 +138,13 @@ public sealed partial class ModifierIndex
     private readonly Dictionary<Key, Key> _parents = [];
     private readonly Dictionary<Key, List<(string Attribute, double? Value, double? Coefficient, string Row, bool Scaled)>> _gains = [];
     private readonly Dictionary<(string Table, int NetId), Key> _byTable = [];
+    private readonly Dictionary<string, SortedSet<Key>> _gatedEffects = new(StringComparer.Ordinal);
+    private readonly Dictionary<Key, SortedSet<string>> _gatingTags = [];
+    private readonly Dictionary<string, (Key Talent, string Name, string Segment)?> _scoped = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, HashSet<Key>> _rowHolders = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Links followed past what a talent grants: the effects an ability references, then the abilities an effect grants.</summary>
+    private const int ReachHops = 3;
 
     public ModifierIndex(
         IEnumerable<Entity> entities, Func<Entity, int?>? partOf = null, IReadOnlyDictionary<string, double>? healthFractions = null)
@@ -409,6 +416,94 @@ public sealed partial class ModifierIndex
 
                 rows.TryAdd(row, value);
                 _bound.Add((key, row));
+            }
+        }
+
+        foreach (var entity in all.Where(IsSpell))
+        {
+            foreach (var (tag, effects) in entity.GatedEffects ?? new Dictionary<string, IReadOnlyList<string>>())
+            {
+                foreach (var name in effects)
+                {
+                    if (!_assets.TryGetValue(name, out var effect) || effect.Type != EntityType.Effect) continue;
+
+                    Index(_gatedEffects, tag, effect);
+
+                    if (!_gatingTags.TryGetValue(effect, out var gating)) _gatingTags[effect] = gating = new(StringComparer.Ordinal);
+                    gating.Add(tag);
+                }
+            }
+        }
+
+        var scopeHolders = new Dictionary<string, HashSet<Key>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (source, rows) in _sourceRows)
+        {
+            foreach (var row in rows.Keys)
+            {
+                if (!_rowHolders.TryGetValue(row, out var holding)) _rowHolders[row] = holding = [];
+                holding.Add(source);
+
+                if (TalentScope(row) is not { } scope) continue;
+                if (!scopeHolders.TryGetValue(scope, out var scoping)) scopeHolders[scope] = scoping = [];
+                scoping.Add(source);
+            }
+        }
+
+        foreach (var source in sources)
+        {
+            var key = KeyOf(source);
+            var rows = _sourceRows[key];
+
+            var gated = GatedFor(key);
+
+            foreach (var reached in Reached(source, key, gated))
+            {
+                var entity = _entities[reached];
+                var own = new HashSet<string>(entity.OwnRows ?? [], StringComparer.OrdinalIgnoreCase);
+
+                foreach (var (row, value) in entity.Rows ?? new Dictionary<string, double>())
+                {
+                    var taken = gated.Contains(reached) && own.Contains(row)
+                        ? TalentSegments.Any(segment => row.Contains(segment, StringComparison.OrdinalIgnoreCase))
+                        : Claimable(key, row);
+
+                    if (taken && rows.TryAdd(row, value)) ReachedRows++;
+                }
+            }
+        }
+
+        foreach (var (source, rows) in _sourceRows)
+        {
+            foreach (var row in rows.Keys)
+            {
+                if (!_rowHolders.TryGetValue(row, out var holding)) _rowHolders[row] = holding = [];
+                holding.Add(source);
+            }
+        }
+
+        foreach (var source in sources)
+        {
+            var key = KeyOf(source);
+            var rows = _sourceRows[key];
+
+            var scopes = rows.Keys
+                .Where(row => Claimable(key, row))
+                .Select(TalentScope)
+                .OfType<string>()
+                .Where(scope => scopeHolders.GetValueOrDefault(scope) is not { } holding || holding.All(held => held == key))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var scope in scopes)
+            {
+                foreach (var (row, value) in values)
+                {
+                    if (row.StartsWith($"{scope}.", StringComparison.OrdinalIgnoreCase) && Claimable(key, row) &&
+                        rows.TryAdd(row, value))
+                    {
+                        ScopedRows++;
+                    }
+                }
             }
         }
 
@@ -775,8 +870,114 @@ public sealed partial class ModifierIndex
 
     private static bool IsSource(Entity entity) => entity.Type is EntityType.Talent or EntityType.LegendaryPower;
 
+    /// <summary>Talent rows a source has from the abilities and effects linked to it.</summary>
+    public int ReachedRows { get; private set; }
+
+    /// <summary>Rows a source has under the talent name of one of its rows.</summary>
+    public int ScopedRows { get; private set; }
+
     public IReadOnlyList<(EntityType Type, int Id)> Holding(string tag) =>
         _tagsBySource.TryGetValue(tag, out var sources) ? [.. sources.Select(source => (source.Type, source.Id))] : [];
+
+    /// <summary>Talents and legendary powers holding a tag an ability's graph tests before applying the effect.</summary>
+    public IReadOnlyList<(EntityType Type, int Id)> GatingSources(Entity effect) =>
+        effect is { Type: not null, NetId: not null } && _gatingTags.TryGetValue(KeyOf(effect), out var tags)
+            ? [.. tags.SelectMany(tag => _tagsBySource.GetValueOrDefault(tag) ?? []).Distinct().Select(source => (source.Type, source.Id))]
+            : [];
+
+    /// <summary>Effects granting or adding the tag to the character they are on.</summary>
+    public IReadOnlyList<(EntityType Type, int Id)> Granting(string tag) =>
+        _adders.TryGetValue(tag, out var effects) ? [.. effects.Select(effect => (effect.Type, effect.Id))] : [];
+
+    /// <summary>
+    /// Abilities and effects linked to a talent or legendary power: what it grants, the effects those reference and
+    /// the abilities those effects grant, and the effects an ability applies only behind a tag the source holds.
+    /// </summary>
+    private HashSet<Key> Reached(Entity source, Key key, IReadOnlySet<Key> gated)
+    {
+        var seen = new HashSet<Key>();
+        var frontier = new List<Key>();
+
+        void Visit(Key next)
+        {
+            if (next != key && IsSpell(_entities[next]) && seen.Add(next)) frontier.Add(next);
+        }
+
+        void VisitNamed(string name)
+        {
+            if (_assets.TryGetValue(name, out var named)) Visit(named);
+        }
+
+        foreach (var granted in source.Granted ?? [])
+        {
+            if (_byTable.TryGetValue((granted.Table, granted.NetId), out var ability)) Visit(ability);
+        }
+
+        foreach (var effect in GrantedEffects(source)) Visit(effect);
+
+        foreach (var effect in gated) Visit(effect);
+
+        for (var hop = 0; hop < ReachHops && frontier.Count > 0; hop++)
+        {
+            var current = frontier.ToArray();
+            frontier.Clear();
+
+            foreach (var at in current)
+            {
+                var entity = _entities[at];
+
+                foreach (var effect in entity.ReachedEffects ?? []) VisitNamed(effect);
+                foreach (var ability in entity.GrantedAbilityNames ?? []) VisitNamed(ability);
+            }
+        }
+
+        return seen;
+    }
+
+    /// <summary>Effects an ability or effect applies only behind a tag the source holds.</summary>
+    private HashSet<Key> GatedFor(Key source)
+    {
+        var gated = new HashSet<Key>();
+
+        foreach (var (tag, holders) in _tagsBySource)
+        {
+            if (holders.Contains(source)) gated.UnionWith(_gatedEffects.GetValueOrDefault(tag) ?? []);
+        }
+
+        return gated;
+    }
+
+    /// <summary>
+    /// A row under a talent segment that no tag the source lacks gates, that no other source holds, and whose talent
+    /// name resolves to no other talent or legendary power.
+    /// </summary>
+    private bool Claimable(Key source, string row)
+    {
+        if (!TalentSegments.Any(segment => row.Contains(segment, StringComparison.OrdinalIgnoreCase))) return false;
+        if (Elsewhere(source, row)) return false;
+        if (_rowHolders.GetValueOrDefault(row) is { } holding && !holding.Contains(source)) return false;
+
+        if (!_scoped.TryGetValue(row, out var scoped)) _scoped[row] = scoped = Scoped(row);
+
+        return scoped is not { } named || named.Talent == source;
+    }
+
+    /// <summary>The row's path through the name following its talent segment.</summary>
+    private static string? TalentScope(string row)
+    {
+        foreach (var segment in TalentSegments)
+        {
+            var at = row.IndexOf(segment, StringComparison.OrdinalIgnoreCase);
+            if (at <= 0) continue;
+
+            var after = row[(at + segment.Length)..];
+            var dot = after.IndexOf('.');
+
+            return dot > 0 ? row[..(at + segment.Length + dot)] : null;
+        }
+
+        return null;
+    }
 
     private static SortedSet<Key> Keys() => new(Comparer<Key>.Create(Compare));
 

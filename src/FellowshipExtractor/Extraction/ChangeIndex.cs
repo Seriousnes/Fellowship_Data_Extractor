@@ -192,9 +192,17 @@ public sealed class ChangeIndex
             if (entity is not { Type: EntityType.Effect, NetId: { } id, TimeRates: { } rates }) continue;
             if (references.Of(EntityType.Effect, id) is not { } effect) continue;
 
-            var talents = references.At(entity.AppliedBy) is { } applier
-                ? granters.GetValueOrDefault((applier.Type, applier.Id)) ?? []
-                : [];
+            List<EntityReference> talents =
+            [
+                .. references.At(entity.AppliedBy) is { } applier
+                    ? granters.GetValueOrDefault((applier.Type, applier.Id)) ?? []
+                    : [],
+            ];
+
+            foreach (var (type, gating) in _modifiers.GatingSources(entity))
+            {
+                if (references.Of(type, gating) is { } talent && !talents.Contains(talent)) talents.Add(talent);
+            }
 
             foreach (var rate in rates)
             {
@@ -252,6 +260,16 @@ public sealed class ChangeIndex
         ModifierIndex modifiers, DocumentProjection.References references, string tag, Change change, string? row = null)
     {
         var holding = modifiers.Holding(tag);
+
+        foreach (var (type, id) in modifiers.Granting(tag))
+        {
+            if (type == change.Target.Type && id == change.Target.Id) continue;
+            if (references.Of(type, id) is not { } carrier) continue;
+
+            Record(carrier, row is not null && ModifierOps.Adds(change.Op) && modifiers.Percent(row, type, id)
+                ? change with { Percent = true }
+                : change);
+        }
 
         if (holding.Count == 0)
         {

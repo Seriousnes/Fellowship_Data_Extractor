@@ -63,8 +63,39 @@ public static class TuningNamespace
         if (parts.Length < 2) return null;
 
         var candidate = string.Join('.', [.. parts[..^1], "Talent", parts[^1]]);
-        return constants.IsNamespace(candidate) ? candidate : null;
+        return constants.IsNamespace(candidate) ? candidate : ForTalentName(parts, constants);
     }
+
+    /// <summary>
+    /// The one namespace whose last segment is the talent's name after a <c>Talent</c> segment, and whose path
+    /// before that starts with the tag's ability path. The rows of <c>Talents.Firemage.FireFrogs.FireToad</c> are under
+    /// <c>Firemage.FireFrogs.Ability.Talent.FireToad</c>.
+    /// </summary>
+    private static string? ForTalentName(string[] parts, ConstantsTable constants)
+    {
+        var head = string.Join('.', parts[..^1]);
+
+        var named = constants.NamespacesNamed(TalentSegment, parts[^1])
+            .Where(scope => scope.StartsWith(head, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        return named is [var only] ? only : null;
+    }
+
+    /// <summary>Whether the tag's namespace is the talent name below a path other than the tag's.</summary>
+    public static bool ByTalentName(string tag, ConstantsTable constants)
+    {
+        const string prefix = "Talents.";
+        if (!tag.StartsWith(prefix, StringComparison.Ordinal)) return false;
+
+        var parts = tag[prefix.Length..].Split('.', StringSplitOptions.RemoveEmptyEntries);
+
+        return parts.Length >= 2 &&
+               !constants.IsNamespace(string.Join('.', [.. parts[..^1], TalentSegment, parts[^1]])) &&
+               ForTalentName(parts, constants) is not null;
+    }
+
+    private const string TalentSegment = "Talent";
 
     public static string Relative(string rowName, string? tuningNamespace) =>
         tuningNamespace is not null &&

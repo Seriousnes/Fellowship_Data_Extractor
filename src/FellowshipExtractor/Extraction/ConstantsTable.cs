@@ -7,6 +7,7 @@ public sealed class ConstantsTable
     private readonly Dictionary<string, List<ConstantRecord>> _byKey;
     private readonly HashSet<string> _namespaces = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<ConstantRecord>> _directChildren = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, IReadOnlyList<string>> _named = new(StringComparer.OrdinalIgnoreCase);
 
     public ConstantsTable(AbstractFileProvider provider)
     {
@@ -40,6 +41,20 @@ public sealed class ConstantsTable
     }
 
     public bool IsNamespace(string prefix) => _namespaces.Contains(prefix);
+
+    /// <summary>Every namespace whose last segment is the name and whose segment before it is the given one.</summary>
+    public IReadOnlyList<string> NamespacesNamed(string parent, string name)
+    {
+        var suffix = $".{parent}.{name}";
+
+        if (_named.TryGetValue(suffix, out var named)) return named;
+
+        return _named[suffix] =
+        [
+            .. _namespaces.Where(scope => scope.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                .Order(StringComparer.OrdinalIgnoreCase),
+        ];
+    }
 
     public IReadOnlyList<ConstantRecord> DirectlyUnder(string prefix) =>
         _directChildren.TryGetValue(prefix, out var children) ? children : [];

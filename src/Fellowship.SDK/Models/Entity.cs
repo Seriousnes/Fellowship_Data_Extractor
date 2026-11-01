@@ -135,6 +135,14 @@ public sealed record Entity
 
     public IReadOnlyDictionary<string, IReadOnlyList<string>>? GatedAdds { get; init; }
 
+    /// <summary>Effects the entity's graph applies only behind a test of a talent tag, keyed by that tag.</summary>
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, IReadOnlyList<string>>? GatedEffects { get; init; }
+
+    /// <summary>Effects the entity's properties and graph reference, by asset name.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<string>? ReachedEffects { get; init; }
+
     public IReadOnlyList<string>? TestedTags { get; init; }
 
     public IReadOnlyList<string>? AddedTags { get; init; }
