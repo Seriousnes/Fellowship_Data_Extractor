@@ -795,7 +795,7 @@ public sealed partial class ModifierIndex
                 remainder = remainder[..(within - 1)] + "." + remainder[(within + marker.Length)..];
             }
         }
-        else if (TalentClaiming(row) is var (claimer, claimed) && remainder.Length > 0)
+        else if (TalentClaiming(row, self) is var (claimer, claimed) && remainder.Length > 0)
         {
             talent = references.Of(claimer.Type, claimer.Id);
 
@@ -820,7 +820,7 @@ public sealed partial class ModifierIndex
         }
 
         var modified = Modified(row);
-        var printer = Scoped(row)?.Talent ?? TalentClaiming(row)?.Source ?? self;
+        var printer = Scoped(row)?.Talent ?? TalentClaiming(row, self)?.Source ?? self;
 
         return (new TuningReference(Fold(Untalented(remainder)))
         {
@@ -1061,12 +1061,29 @@ public sealed partial class ModifierIndex
         return null;
     }
 
-    private (Key Source, string Scope)? TalentClaiming(string row)
+    /// <summary>
+    /// The one source holding <paramref name="row"/>. Among several, the document reading the row when it is one of
+    /// them, else the one owned by the reading document's hero, else the one owned by the hero the row is under.
+    /// </summary>
+    private (Key Source, string Scope)? TalentClaiming(string row, Key? reader)
     {
         var claimers = _sourceRows
             .Where(entry => entry.Value.ContainsKey(row))
             .Select(entry => entry.Key)
             .ToArray();
+
+        var chosen = claimers.Length > 1;
+
+        if (claimers.Length > 1 && reader is { } self && claimers.Contains(self)) claimers = [self];
+
+        if (claimers.Length > 1 && reader is { } held && _entities.GetValueOrDefault(held) is { } document &&
+            (document.OwningHeroes ?? document.Heroes) is { Count: > 0 })
+        {
+            var sharing = claimers.Where(claimer => Codenames(claimer).Intersect(Codenames(held), StringComparer.OrdinalIgnoreCase).Any())
+                .ToArray();
+
+            if (sharing.Length > 0) claimers = sharing;
+        }
 
         if (claimers.Length > 1 && Hero(row) is var (_, codename))
         {
@@ -1101,9 +1118,12 @@ public sealed partial class ModifierIndex
 
         if (TalentSegments.Any(segment => $"{scope}.".Contains(segment, StringComparison.OrdinalIgnoreCase))) return (only, scope);
 
-        // A source holding rows under several talent names claims a row under no talent name, with no scope to drop
-        // from the row's name. A row under a talent name can be another talent's.
-        return TalentScope(row) is null && talented.Any(key => TalentScope(key) is not null) ? (only, string.Empty) : null;
+        // A source holding rows under several talent names claims a row chosen among several holders, or a row under no
+        // talent name, with no scope to drop from the row's name. Another row under a talent name can be another
+        // talent's.
+        return (chosen || TalentScope(row) is null) && talented.Any(key => TalentScope(key) is not null)
+            ? (only, string.Empty)
+            : null;
     }
 
     /// <summary>Codenames of the heroes owning <paramref name="source"/>.</summary>

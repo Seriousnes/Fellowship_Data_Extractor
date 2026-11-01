@@ -214,6 +214,10 @@ public sealed record Entity
     [JsonIgnore]
     public string? ParentClassName { get; init; }
 
+    /// <summary>Effect classes the entity's cost, cooldown and charge properties hold, by asset name.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<string>? TimingEffects { get; init; }
+
 
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, double>>? GatedConstants { get; init; }

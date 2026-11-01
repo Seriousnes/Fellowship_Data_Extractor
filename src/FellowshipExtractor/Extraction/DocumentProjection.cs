@@ -55,7 +55,7 @@ public static class DocumentProjection
             NamedAfter = references.At(entity.NamedAfter),
             PartOf = Name(entity) is null ? references.Changes.PartOf(entity, references) : null,
             ParentClass = Parent(entity, EntityType.Ability, references),
-            Applies = references.Changes.Named(entity, entity.ReachedEffects, EntityType.Effect, references),
+            Applies = Applied(entity, references),
             Grants = references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references),
             Description = entity.Description,
             DescriptionsByHero = entity.DescriptionsByHero,
@@ -190,7 +190,7 @@ public static class DocumentProjection
             AppliedBy = references.At(entity.AppliedBy),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
             ParentClass = Parent(entity, EntityType.Effect, references),
-            Applies = references.Changes.Named(entity, entity.ReachedEffects, EntityType.Effect, references),
+            Applies = Applied(entity, references),
             Grants = references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references),
             Role = roles.Role(entity.Name),
             ChangedBy = references.Changes.ChangedBy(entity, references),
@@ -601,6 +601,14 @@ public static class DocumentProjection
 
     public static string? Name(Entity entity) =>
         entity.DisplayName is { } name && ReadsAsWords(name) ? name : null;
+
+    /// <summary>Effects the entity references, other than its cost, cooldown and charge effects.</summary>
+    private static IReadOnlyList<EntityReference>? Applied(Entity entity, References references) =>
+        references.Changes.Named(
+            entity,
+            entity.ReachedEffects?.Except(entity.TimingEffects ?? [], StringComparer.OrdinalIgnoreCase),
+            EntityType.Effect,
+            references);
 
     private static EntityReference? Parent(Entity entity, EntityType type, References references) =>
         references.Changes.Named(entity, entity.ParentClassName is { } parent ? [parent] : null, type, references) is [var only]

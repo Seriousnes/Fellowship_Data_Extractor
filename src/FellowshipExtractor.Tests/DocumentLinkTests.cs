@@ -21,9 +21,13 @@ public sealed class DocumentLinkTests
     private const int SweepingStrike = 981;
     private const int SpiritedVortex = 1091;
     private const int DebilitatingVortex = 97;
+    private const int Enfeebled = 2487;
+    private const int SharpenedBlade = 215;
+    private const int SharpenedBladeDebuff = 2199;
     private const int EnlightenedSoul = 56;
 
     private const string ReducedAttackSpeed = "ReducedAttackSpeed.AttackSpeedMultiplier";
+    private const string MeikoReducedAttackSpeed = "Meiko.DurationalAoeDamageBuff.Talent.ReducedAttackSpeed.AttackSpeedMultiplier";
     private const string TickInterval = "Vigor.SingleTargetChargedHot.TickInterval";
 
     private static JsonObject Document(EntityType type, int id) =>
@@ -89,14 +93,30 @@ public sealed class DocumentLinkTests
         Assert.Contains($"ability {RebelliousStrike}: 3.15", strength.Evidence, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Meiko's ReducedAttackSpeed row is read by Meiko's Spirited Vortex and by Helena's Sweeping Strike, whose
+    /// Sharpened Blade effect applies it. Each document names its own hero's talent.
+    /// </summary>
     [Theory]
-    [InlineData(SweepingStrike)]
-    [InlineData(SpiritedVortex)]
-    public void MeikosReducedAttackSpeedNamesDebilitatingVortex(int ability)
+    [InlineData(EntityType.Ability, SpiritedVortex, DebilitatingVortex)]
+    [InlineData(EntityType.Effect, Enfeebled, DebilitatingVortex)]
+    [InlineData(EntityType.Ability, SweepingStrike, SharpenedBlade)]
+    [InlineData(EntityType.Effect, SharpenedBladeDebuff, SharpenedBlade)]
+    public void ReducedAttackSpeedNamesTheTalentOfTheDocumentsHero(EntityType type, int id, int talent)
     {
-        var row = Document(EntityType.Ability, ability)["tuning"]![ReducedAttackSpeed]!;
+        var row = Document(type, id)["tuning"]![ReducedAttackSpeed]!;
 
-        Assert.Equal(DebilitatingVortex, row["talent"]!["id"]!.GetValue<int>());
+        Assert.Equal(talent, row["talent"]!["id"]!.GetValue<int>());
+    }
+
+    [Theory]
+    [InlineData(DebilitatingVortex)]
+    [InlineData(SharpenedBlade)]
+    public void ATalentHoldingReducedAttackSpeedNamesItself(int talent)
+    {
+        var row = Document(EntityType.Talent, talent)["tuning"]![MeikoReducedAttackSpeed]!;
+
+        Assert.Equal(talent, row["talent"]!["id"]!.GetValue<int>());
     }
 
     [Fact]

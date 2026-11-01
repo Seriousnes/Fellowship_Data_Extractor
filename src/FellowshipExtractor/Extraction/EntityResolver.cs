@@ -77,6 +77,13 @@ public sealed class EntityResolver
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _abilityNames = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Ability properties holding the effect classes for its cost, cooldowns and charges.</summary>
+    private static readonly string[] TimingEffectFields =
+    [
+        "CostGameplayEffectClass", "CooldownGameplayEffectClass", "CooldownEffectBaseClass", "PaddingCooldownEffectBaseClass",
+        "GlobalCooldownGameplayEffectClass", "ChargeGameplayEffectClass",
+    ];
+
     public AbilityPresentationIndex Presentation { get; }
     public EffectIconSources EffectIcons { get; }
     public EffectNameSources EffectNames { get; }
@@ -1460,6 +1467,13 @@ public sealed class EntityResolver
                 : null,
             GrantedAbilityNames = Empty(AbilityLinks.GrantedAbilities(cdo)),
             ParentClassName = cdo is null ? null : ClassDefaults.ParentName(cdo),
+            TimingEffects = cdo is null
+                ? null
+                : Empty([.. TimingEffectFields
+                    .Select(field => PropertyWalk.AsString(ClassDefaults.Inherited(cdo, field, _provider)?.GenericValue))
+                    .OfType<string>()
+                    .Where(path => path.Contains('/'))
+                    .Select(ClassName)]),
 
             GrantedEffects = cdo is null ? null : Empty([.. ClassPaths(cdo, GrantedEffectsField).Select(ClassName)]),
             TimeRates = cdo is null ? null : Empty(CooldownScaling.TimeRates(cdo, _constants)),
