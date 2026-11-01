@@ -61,6 +61,17 @@ public sealed class TooltipAuditTests
     }
 
     [Fact]
+    public void InspiredAllegianceRatesAreNotItsHasteRating()
+    {
+        var rate = Assert.Single(Audited.Value, number => number is { Type: "sigil", Id: 2, Number: "1.2" });
+
+        Assert.NotEqual(TooltipNumberStatus.Contradicted, rate.Status);
+        Assert.All(
+            Audited.Value.Where(number => number is { Type: "sigil", Id: 2 } && number.Context.Contains("Haste rating")),
+            number => Assert.NotEqual(TooltipNumberStatus.Contradicted, number.Status));
+    }
+
+    [Fact]
     public void KillEmAllIsContradictedByItsCooldownAcceleration()
     {
         var number = Assert.Single(Audited.Value, number => number is { Type: "effect", Id: 3160, Number: "+60%" });

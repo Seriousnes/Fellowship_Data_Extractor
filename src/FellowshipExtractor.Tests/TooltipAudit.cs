@@ -108,8 +108,7 @@ public static partial class TooltipAudit
 
                 var typed = shown.Where(item => Near(item.Value, number)).ToList();
                 var contradicting = shown
-                    .Where(item => !Near(item.Value, number) && Mentions(window, item.Label) &&
-                                   !(unit == "second" && item.Label != "duration"))
+                    .Where(item => !Near(item.Value, number) && Mentions(window, item.Label) && Measures(unit, item.Label))
                     .ToList();
 
                 var status = typed.Count > 0 ? TooltipNumberStatus.Typed
@@ -248,6 +247,21 @@ public static partial class TooltipAudit
 
         return word.StartsWith("sec", StringComparison.Ordinal) ? "second" : word.TrimEnd('s');
     }
+
+    private static readonly HashSet<string> Timed =
+        new(["duration", "cooldown", "castTime", "channelTime", "channelTick", "period"], StringComparer.Ordinal);
+
+    /// <summary>
+    /// True when a number printed in <paramref name="unit"/> can be the value of <paramref name="label"/>. A bare or
+    /// percent number can be any label's. A number in seconds is a timed field's, and a number in any other unit word
+    /// is the label's only where the label names that word, so "1.2 PPM" beside a Haste rating is no Haste rating.
+    /// </summary>
+    private static bool Measures(string unit, string label) => unit switch
+    {
+        "" or "%" => true,
+        "second" => Timed.Contains(label),
+        _ => CamelBreak().Replace(label, " ").Split(' ').Any(word => word.Equals(unit, StringComparison.OrdinalIgnoreCase)),
+    };
 
     private static bool Mentions(string window, string label)
     {

@@ -9,13 +9,11 @@ talent	36	3	2	Missing	Coalescing Frost	ent critical strikes have a 50% chance to
 talent	44	4	2	Missing	Icy Flow	ming a stack of Icy Flow.    You can have up to 2 stacks of Icy Flow.	
 talent	48	2	2	Missing	Avalanche	to strike the target, and a 9% chance to cause 2 additional Ice Comets to strike the target.	
 talent	56	0	3	Missing	Enlightened Soul	Your Radiant Blast adds 3 seconds to the duration of all your active Rune	
-talent	61	4	1.2	Contradicted	Expansive Mind	max mana every 3 seconds for the duration.    (1.2 PPM)	duration Set 12
 talent	71	0	25%	Contradicted	Runic Revelations	lbrand, Rune of Renewal & Luminous Barrier have 25% increased duration.	duration Set 30; duration Set 37.5; duration Set 15
 legendary-power	86	1	20	Missing	Thundering Vortex	1 stack of Thundering Vortex.    Once you have 20 stacks your next Chain Lightning deals 100% mor	
 legendary-power	86	2	100%	Missing	Thundering Vortex	have 20 stacks your next Chain Lightning deals 100% more damage.	
 talent	87	0	30	Missing	Ride the Lightning	Your Thunder Call generates 30 Fury over its duration and grants you +5% Haste	
 talent	89	0	3	Missing	Thunderstruck	Your Chain Lightning bounces 3 additional times.	
-talent	98	2	3	Contradicted	Harsh Winds	it grants you +20% dodge chance, stacking up to 3 times.    All stacks of the bonus dodge are con	DodgeChance Additive 0.2
 talent	102	4	+30%	Missing	Warden of the Temple	ased damage and its Dodge Bonus is increased to +30%.	
 talent	110	4	200	Missing	Deadly Scheme	+100% Critical Strike chance.    Note:Mara has 200 max Energy baseline.	
 talent	126	4	2	Missing	Resurgent Winds	ent Winds lasts for 15 seconds and stacks up to 2 times.	
@@ -70,7 +68,7 @@ talent	586	0	0.6	Missing	Sinner's Pride	the cooldown of your Maiden of Death abi
 talent	592	0	246%	Missing	Entropic Burst	c Burst on all enemies near the target, dealing 246% Intellect magic damage over 9 seconds to them.	
 talent	604	0	3%	Missing	Invictus	Cooldown Recovery is increased by 1% for every 3% Haste you have.    Expertise  While Solar Shiel	
 talent	614	1	12	Missing	Erasure	damage, it deals an additional 20% damage over 12 seconds, accumulatively.	
-legendary-power	618	0	30	Contradicted	Chrono Trigger	Your Unfolding Doom cooldown is reduced to 30 seconds, but its duration is also reduced to 15	duration Set 15
+legendary-power	618	0	30	Contradicted	Chrono Trigger	Your Unfolding Doom cooldown is reduced to 30 seconds, but its duration is also reduced to 15	cooldown CooldownMultipliers 0.6667; duration Set 15
 talent	623	0	10%	Missing	Echoes of Divinity	of Divinity clears additional Stagger equal to 10% of the target's max health over 4 seconds.	
 talent	627	1	30	Missing	Harrowing Ice	ou Harrowing Ice for 12 seconds, stacking up to 30 times.    Bursting Ice gains 3% more damage per	
 talent	627	3	30	Missing	Harrowing Ice	e per stack of Harrowing Ice you have.    After 30 stacks, all Harrowing Ice stacks are consumed a	
@@ -87,7 +85,6 @@ talent	669	0	4	Missing	Karmic Dispersion	rred Fate: Mass Relay, causing it to he
 talent	669	1	50%	Missing	Karmic Dispersion	ss Relay, causing it to heal up to 4 allies for 50% of any damage it deals.	
 talent	671	3	+60%	Contradicted	Kill Em All	le Kill Em All is active, your Heavy Strike has +60% Cooldown Acceleration.    Your next Heavy Strik	cooldownAcceleration Additive 1.6
 talent	672	0	+65%	Missing	The Motherload	Your Chain Lightning deals +65% increased damage for each unique enemy other th	
-talent	678	1	2	Contradicted	Apocalyptic Surge	as 1.5 seconds reduced cast time and grants you 2 stacks of Apocalyptic Surge for 18 seconds, up	castTime Subtract 1.5
 legendary-power	698	1	25%	Contradicted	Bleeding Hearts	Your Heart Splitter ability has 2 Charges and a 25% chance to strike the target 1 additional time.	charges Set 2
 legendary-power	698	3	80%	Missing	Bleeding Hearts	tical Strike chance when striking targets above 80% health.	
 glyph	703	4	0.2	Missing	The Wayfarer	the time to {}'s next application is reduced by 0.2 to 8 seconds, relative to the cooldown of the [	
@@ -97,7 +94,7 @@ talent	758	1	12	Missing	Murder of Crows	ture grants you 2 stacks of Murder of Cr
 talent	761	3	6	Missing	Bloodcraze	in a 700 radius around you every 3 seconds for 6 seconds.    The damage of Bloodcraze is increas	
 talent	772	2	25%	Contradicted	Massacre	+0.25% Spirit for 8 seconds, up to a maximum of 25% Spirit.	Spirit Additive 0.0025
 relic-passive	778	0	0.9	Missing	Dragonbone Dice	Your critical strikes have a chance (0.9 PPM) to increase your Primary Stat by 18% for 1	
-relic-passive	779	0	0.8	Contradicted	Undying Heart	Your abilities have a chance (0.8 PPM) to increase your Haste by 25% for 20 secon	Haste Additive 0.25
+relic-passive	779	0	0.8	Missing	Undying Heart	Your abilities have a chance (0.8 PPM) to increase your Haste by 25% for 20 secon	
 relic-passive	782	1	40%	Missing	Gilded Broach	below 20% Health, you are instantly healed for 40% of your maximum health. This can occur once eve	
 ability	9	0	5	Missing	Binding Ice: Curse	one player is afflicted by an icy curse. After 5 seconds the curse erupts, dealing frost magic d	
 ability	135	1	20%	Missing	Sentinel's Bastion	Every 60 seconds, you gain an absorb equal to 20% Max Health that lasts for 60 seconds.	
@@ -569,7 +566,7 @@ effect	3275	1	10	Missing	Grounded Spirit	till, you gain 1 stack of Grounded Spir
 sigil	1	0	60	Missing	Hidden Power	chance to grant you 1 stack of Hidden Power for 60 seconds. When you have 5 stacks, Hidden Power i	
 sigil	1	2	15	Missing	Hidden Power	nsumed and Power Revealed is granted to you for 15 seconds, increasing your Main Stat by 7.2% / 12	
 sigil	1	7	2.6	Missing	Hidden Power	acks while Power Revealed is active on you.    (2.6 PPM)	
-sigil	2	12	1.2	Contradicted	Inspired Allegiance	/ 10 / 13 / 17 Haste rating for 8 seconds.    (1.2 PPM)	HasteRating Additive 6; HasteRating Additive 10; HasteRating Additive 13; HasteRating Additive 17
+sigil	2	12	1.2	Missing	Inspired Allegiance	/ 10 / 13 / 17 Haste rating for 8 seconds.    (1.2 PPM)	
 sigil	4	5	12	Missing	Seized Opportunity	in 21 / 39 / 57 / 75 Critical Strike rating for 12 seconds.    You can not gain stacks while Seize	
 sigil	5	4	8	Missing	Vengeful Soul	your Main Stat by 3.0% / 5.1% / 7.2% / 9.3% for 8 seconds.    If you are below 50% health when Ve	
 sigil	5	6	370%	Missing	Vengeful Soul	ers, you are also healed for an amount equal to 370% / 630% / 890% / 1150% of your Main Stat over 6	
