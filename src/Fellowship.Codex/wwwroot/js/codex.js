@@ -628,20 +628,28 @@ function fetched(tag, attributes) {
 }
 
 function typesetter() {
-    katex ??= Promise.all([
-        fetched('link', { rel: 'stylesheet', href: `${KATEX}katex.min.css`, integrity: KATEX_STYLE }),
-        fetched('script', { src: `${KATEX}katex.min.js`, integrity: KATEX_SCRIPT }),
-    ]).then(() => window.katex).catch(() => (katex = null));
+    katex ??= fetched('script', { src: `${KATEX}katex.min.js`, integrity: KATEX_SCRIPT })
+        .then(() => window.katex)
+        .catch(() => (katex = null));
 
     return katex;
 }
 
-async function typeset() {
-    const formulas = [...document.querySelectorAll('[data-latex]')]
-        .filter(node => node.dataset.latex && !node.querySelector('.katex'));
-    if (formulas.length === 0) return;
+// Enhanced navigation rebuilds <head>, so the stylesheet is re-appended whenever it is gone.
+function styled() {
+    const href = `${KATEX}katex.min.css`;
+    if (document.head.querySelector(`link[href="${href}"]`)) return Promise.resolve();
 
-    const renderer = await typesetter();
+    return fetched('link', { rel: 'stylesheet', href, integrity: KATEX_STYLE }).catch(() => {});
+}
+
+async function typeset() {
+    const nodes = [...document.querySelectorAll('[data-latex]')].filter(node => node.dataset.latex);
+    if (nodes.length === 0) return;
+
+    // An interactive page keeps a typeset node across navigations, so only the stylesheet needs restoring for it.
+    const formulas = nodes.filter(node => !node.querySelector('.katex'));
+    const [renderer] = await Promise.all([formulas.length > 0 ? typesetter() : null, styled()]);
     if (!renderer) return;
 
     for (const node of formulas) {
