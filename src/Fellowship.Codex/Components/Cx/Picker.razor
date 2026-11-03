@@ -1,0 +1,234 @@
+@typeparam TItem
+
+<div class="cx-picker" @onfocusin="Focus" @onfocusout="Blur">
+    <button type="button" class="cx-picker-face" @ref="face"
+            role="combobox" aria-haspopup="listbox" aria-controls="@ListId"
+            aria-label="@Label" aria-expanded="@(showing ? "true" : "false")"
+            @onclick="Toggle" @onkeydown="Pressed">
+        @if (Selected is { } picked)
+        {
+            @if (SelectedTemplate is { } chosen)
+            {
+                @chosen(picked)
+            }
+            else
+            {
+                <span class="cx-nm">@Text(picked)</span>
+                @if (Detail?.Invoke(picked) is { } detail)
+                {
+                    <span class="cx-ty">@detail</span>
+                }
+            }
+        }
+        else
+        {
+            <span class="cx-nm">@Placeholder</span>
+        }
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+    </button>
+
+    @if (showing)
+    {
+        <div class="cx-picker-drop" id="@ListId" role="listbox" aria-label="@Label" @onkeydown="Pressed">
+            <div class="cx-picker-find">
+                <input type="search" autocomplete="off" aria-label="Filter by name or id"
+                       placeholder="Filter by name or id" value="@filter" @ref="find" @oninput="Filter" />
+            </div>
+
+            @for (var at = 0; at < shown.Count; at++)
+            {
+                var item = shown[at];
+                var mine = at;
+
+                <a class="cx-picker-step" role="option" href="@Href(item)"
+                   @key="Key(item)" @ref="rows[Key(item)]"
+                   aria-selected="@(IsSelected(item) ? "true" : "false")"
+                   data-active="@On(active == mine)" @onclick="Shut">
+                    @if (ItemTemplate is { } row)
+                    {
+                        @row(item)
+                    }
+                    else
+                    {
+                        <span class="cx-nm">@Text(item)</span>
+                        @if (Detail?.Invoke(item) is { } detail)
+                        {
+                            <span class="cx-ty">@detail</span>
+                        }
+                    }
+                </a>
+            }
+
+            @if (shown.Count == 0)
+            {
+                <p class="cx-picker-none">@NoMatch @filter.</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>Everything that can be picked, in the order offered.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<TItem> Items { get; set; } = [];
+
+    /// <summary>The item picked, or null for the placeholder.</summary>
+    [Parameter] public TItem? Selected { get; set; }
+
+    /// <summary>The address a row navigates to.</summary>
+    [Parameter, EditorRequired] public Func<TItem, string> Href { get; set; } = _ => string.Empty;
+
+    /// <summary>The item's name, for the default row, the filter and the aria label.</summary>
+    [Parameter, EditorRequired] public Func<TItem, string> Text { get; set; } = _ => string.Empty;
+
+    /// <summary>A short mono text beside the name in the default row, such as the item's type and id.</summary>
+    [Parameter] public Func<TItem, string>? Detail { get; set; }
+
+    /// <summary>The value two items are the same by. It keys the rows and decides which is selected.</summary>
+    [Parameter] public Func<TItem, object> Key { get; set; } = item => item!;
+
+    /// <summary>The row's content, in place of the name and detail.</summary>
+    [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
+
+    /// <summary>The face's content for the picked item, in place of the name and detail.</summary>
+    [Parameter] public RenderFragment<TItem>? SelectedTemplate { get; set; }
+
+    [Parameter] public string Placeholder { get; set; } = "Choose";
+
+    [Parameter] public string Label { get; set; } = "Choose";
+
+    /// <summary>The sentence shown before the filter text when nothing matches it.</summary>
+    [Parameter] public string NoMatch { get; set; } = "Nothing matches";
+
+    [Parameter] public string ListId { get; set; } = "cx-picker-drop";
+
+    private IReadOnlyList<TItem> shown = [];
+
+    private ElementReference face;
+    private ElementReference find;
+
+    private readonly Dictionary<object, ElementReference> rows = [];
+
+    private string filter = string.Empty;
+    private bool showing;
+    private bool revealing;
+    private bool finding;
+    private int active = -1;
+    private int touches;
+
+    private object? selectedKey;
+
+    private bool IsSelected(TItem item) => Selected is { } picked && Key(picked).Equals(Key(item));
+
+    /// <summary>A new selection, as after a row navigates, closes the list.</summary>
+    protected override void OnParametersSet()
+    {
+        var key = Selected is { } picked ? Key(picked) : null;
+
+        if (!Equals(key, selectedKey) && showing) Shut();
+
+        selectedKey = key;
+    }
+
+    private static string? On(bool set) => set ? "on" : null;
+
+    private void Filter(ChangeEventArgs typed)
+    {
+        filter = typed.Value?.ToString() ?? string.Empty;
+        Settle();
+    }
+
+    private void Settle()
+    {
+        shown = [.. Items.Where(Matches)];
+        active = -1;
+    }
+
+    private bool Matches(TItem item)
+    {
+        if (filter.Trim() is not { Length: > 0 } wanted) return true;
+
+        return Text(item).Contains(wanted, StringComparison.OrdinalIgnoreCase) ||
+            (Detail?.Invoke(item)?.Contains(wanted, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private void Shut()
+    {
+        showing = false;
+        rows.Clear();
+    }
+
+    private void Toggle()
+    {
+        touches++;
+
+        if (showing)
+        {
+            Shut();
+            return;
+        }
+
+        showing = true;
+        filter = string.Empty;
+        Settle();
+        finding = true;
+    }
+
+    private void Focus() => touches++;
+
+    private async Task Blur()
+    {
+        var mine = ++touches;
+        await Task.Delay(200);
+
+        if (mine != touches) return;
+
+        Shut();
+        StateHasChanged();
+    }
+
+    private async Task Pressed(KeyboardEventArgs key)
+    {
+        switch (key.Key)
+        {
+            case "Escape":
+                Shut();
+                await face.FocusAsync();
+                return;
+
+            case "ArrowDown" or "ArrowUp" when !showing:
+                Toggle();
+                return;
+
+            case "ArrowDown" when shown.Count > 0:
+                active = active >= shown.Count - 1 ? 0 : active + 1;
+                revealing = true;
+                return;
+
+            case "ArrowUp" when shown.Count > 0:
+                active = active <= 0 ? shown.Count - 1 : active - 1;
+                revealing = true;
+                return;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (finding && showing)
+        {
+            finding = false;
+            await find.FocusAsync();
+            return;
+        }
+
+        if (!revealing) return;
+
+        revealing = false;
+
+        if (!showing || active < 0 || active >= shown.Count) return;
+
+        if (rows.TryGetValue(Key(shown[active]), out var row)) await row.FocusAsync();
+    }
+}

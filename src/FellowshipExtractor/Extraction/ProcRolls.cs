@@ -58,9 +58,12 @@ public sealed class ProcRolls(ConstantsTable constants, AbstractFileProvider pro
         foreach (var body in bodies)
         {
             var locals = Locals(body);
+            var gating = TagGatedReads.Gating(body, cdo);
 
             foreach (var statement in body.ScriptBytecode!)
             {
+                var gates = gating.GetValueOrDefault(statement.StatementIndex);
+
                 foreach (var call in Invocations(statement, 0))
                 {
                     if (RowSinks.Calling(call) != Roll) continue;
@@ -89,6 +92,7 @@ public sealed class ProcRolls(ConstantsTable constants, AbstractFileProvider pro
                         Formula = hasted ? $"{term.Factor}{Times}(1 + {ProcRoll.HasteAttribute})" : term.Text,
                         ScalesOff = hasted ? [.. term.Attributes, ProcRoll.HasteAttribute] : term.Attributes,
                         ScalesWithHaste = hasted,
+                        Gates = gates is { Count: > 0 } ? [.. gates] : null,
                     };
 
                     if (!found.Any(other => Same(other, roll))) found.Add(roll);
@@ -100,7 +104,8 @@ public sealed class ProcRolls(ConstantsTable constants, AbstractFileProvider pro
     }
 
     public static bool Same(ProcRoll first, ProcRoll second) =>
-        first.Row == second.Row && first.Formula == second.Formula && first.ScalesWithHaste == second.ScalesWithHaste;
+        first.Row == second.Row && first.Formula == second.Formula && first.ScalesWithHaste == second.ScalesWithHaste &&
+        (first.Gates ?? []).SequenceEqual(second.Gates ?? [], StringComparer.Ordinal);
 
     private Term? Rendered(
         UObject cdo, IReadOnlyDictionary<string, List<KismetExpression>> locals, KismetExpression? expression, int depth)

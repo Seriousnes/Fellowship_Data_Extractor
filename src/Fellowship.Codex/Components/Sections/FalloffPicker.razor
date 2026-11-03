@@ -3,52 +3,10 @@
 @inject ICodexViewService Ui
 @inject NavigationManager Nav
 
-<div class="cx-picker" @onfocusin="Focus" @onfocusout="Blur">
-    <button type="button" class="cx-picker-face" @ref="face"
-            role="combobox" aria-haspopup="listbox" aria-controls="cx-falloff-drop"
-            aria-label="Ability or talent" aria-expanded="@(showing ? "true" : "false")"
-            @onclick="Toggle" @onkeydown="Pressed">
-        <span class="cx-nm">@(Current is { } picked ? Ui.Name(picked.Document) : "Choose an ability or talent")</span>
-        @if (Current is { } current)
-        {
-            <span class="cx-ty">@Kind(current)</span>
-        }
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round"></path>
-        </svg>
-    </button>
-
-    @if (showing)
-    {
-        <div class="cx-picker-drop" id="cx-falloff-drop" role="listbox" aria-label="Ability or talent"
-             @onkeydown="Pressed">
-            <div class="cx-picker-find">
-                <input type="search" autocomplete="off" aria-label="Filter by name or id"
-                       placeholder="Filter by name or id" value="@filter" @ref="find" @oninput="Filter" />
-            </div>
-
-            @for (var at = 0; at < shown.Count; at++)
-            {
-                var source = shown[at];
-                var mine = at;
-
-                <a class="cx-picker-step" role="option" href="@Href(source)"
-                   @key="(source.Type, source.Document.Id)" @ref="rows[(source.Type, source.Document.Id)]"
-                   aria-selected="@(Picked(source) ? "true" : "false")"
-                   data-active="@On(active == mine)">
-                    <span class="cx-nm">@Ui.Name(source.Document)</span>
-                    <span class="cx-ty">@Kind(source)</span>
-                </a>
-            }
-
-            @if (shown.Count == 0)
-            {
-                <p class="cx-picker-none">No ability or talent with target count falloff matches @filter.</p>
-            }
-        </div>
-    }
-</div>
+<Picker TItem="FalloffSource" Items="offered" Selected="Current" Href="Href" Text="source => Ui.Name(source.Document)"
+        Detail="Kind" Key="source => (source.Type, source.Document.Id)" ListId="cx-falloff-drop"
+        Label="Ability or talent" Placeholder="Choose an ability or talent"
+        NoMatch="No ability or talent with target count falloff matches" />
 
 @code {
     [Parameter] public EntityType? Type { get; set; }
@@ -56,19 +14,6 @@
     [Parameter] public int? Id { get; set; }
 
     private IReadOnlyList<FalloffSource> offered = [];
-    private IReadOnlyList<FalloffSource> shown = [];
-
-    private ElementReference face;
-    private ElementReference find;
-
-    private readonly Dictionary<(EntityType, int), ElementReference> rows = [];
-
-    private string filter = string.Empty;
-    private bool showing;
-    private bool revealing;
-    private bool finding;
-    private int active = -1;
-    private int touches;
 
     private FalloffSource? Current => offered.FirstOrDefault(Picked);
 
@@ -76,8 +21,6 @@
 
     private static string Kind(FalloffSource source) =>
         $"{source.Key} {source.Document.Id.ToString(CultureInfo.InvariantCulture)}";
-
-    private static string? On(bool set) => set ? "on" : null;
 
     private string Href(FalloffSource source) =>
         Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
@@ -88,102 +31,4 @@
         });
 
     protected override void OnInitialized() => offered = DamageFalloff.Sources(Store);
-
-    private void Filter(ChangeEventArgs typed)
-    {
-        filter = typed.Value?.ToString() ?? string.Empty;
-        Settle();
-    }
-
-    private void Settle()
-    {
-        shown = [.. offered.Where(Matches)];
-        active = -1;
-    }
-
-    private bool Matches(FalloffSource source)
-    {
-        if (filter.Trim() is not { Length: > 0 } wanted) return true;
-
-        return Ui.Name(source.Document).Contains(wanted, StringComparison.OrdinalIgnoreCase) ||
-            source.Document.Id.ToString(CultureInfo.InvariantCulture).StartsWith(wanted, StringComparison.Ordinal);
-    }
-
-    private void Shut()
-    {
-        showing = false;
-        rows.Clear();
-    }
-
-    private void Toggle()
-    {
-        touches++;
-
-        if (showing)
-        {
-            Shut();
-            return;
-        }
-
-        showing = true;
-        filter = string.Empty;
-        Settle();
-        finding = true;
-    }
-
-    private void Focus() => touches++;
-
-    private async Task Blur()
-    {
-        var mine = ++touches;
-        await Task.Delay(200);
-
-        if (mine != touches) return;
-
-        Shut();
-        StateHasChanged();
-    }
-
-    private async Task Pressed(KeyboardEventArgs key)
-    {
-        switch (key.Key)
-        {
-            case "Escape":
-                Shut();
-                await face.FocusAsync();
-                return;
-
-            case "ArrowDown" or "ArrowUp" when !showing:
-                Toggle();
-                return;
-
-            case "ArrowDown" when shown.Count > 0:
-                active = active >= shown.Count - 1 ? 0 : active + 1;
-                revealing = true;
-                return;
-
-            case "ArrowUp" when shown.Count > 0:
-                active = active <= 0 ? shown.Count - 1 : active - 1;
-                revealing = true;
-                return;
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool first)
-    {
-        if (finding && showing)
-        {
-            finding = false;
-            await find.FocusAsync();
-            return;
-        }
-
-        if (!revealing) return;
-
-        revealing = false;
-
-        if (!showing || active < 0 || active >= shown.Count) return;
-
-        if (rows.TryGetValue((shown[active].Type, shown[active].Document.Id), out var row)) await row.FocusAsync();
-    }
 }

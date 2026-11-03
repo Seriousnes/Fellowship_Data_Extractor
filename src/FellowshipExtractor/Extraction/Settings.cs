@@ -68,16 +68,13 @@ public sealed class Settings
     public static readonly ProcPerMinuteRoll ProcPerMinuteRoll = new()
     {
         Latex = @"p = \frac{R \cdot t}{60} \cdot \max\left(1,\ \frac{3 \cdot R \cdot d}{60} - 3.5\right)",
-        DisplayText = "Each trigger rolls once against p = R × t ÷ 60 × max(1, 3 × R × d ÷ 60 − 3.5). R is the " +
-                      "rate, t the seconds since the stream's previous roll and d the seconds since its previous " +
-                      "proc, at most 1000. Until the stream's first proc, p is at least R ÷ 8. A hasted rate is the " +
-                      "formula's rate times 1 plus the Haste percentage.",
+        DisplayText = "p = R × t ÷ 60 × max(1, 3 × R × d ÷ 60 − 3.5), at least R ÷ 8 until the first proc",
         Symbols =
         [
-            new("p", "Chance the roll procs."),
-            new("R", "Rate in procs per minute: the roll's formula, times 1 plus the Haste percentage when hasted."),
-            new("t", "Seconds since the stream's previous roll."),
-            new("d", "Seconds since the stream's previous proc, at most 1000."),
+            new("p", "chance to proc on this roll"),
+            new("R", "rate in procs per minute"),
+            new("t", "seconds since the last roll"),
+            new("d", "seconds since the last proc, at most 1000"),
         ],
         HasteAttribute = Fellowship.SDK.Models.ProcRoll.HasteAttribute,
         FirstProcChanceFloorDivisor = 8,

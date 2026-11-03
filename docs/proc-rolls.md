@@ -14,6 +14,10 @@ Each entry has the following fields:
 - **`scalesOff`**: the attributes the formula reads, with `Haste` last where the roll is hasted.
 - **`scalesWithHaste`**: true when the component multiplies the rate by the hero's Haste attribute,
   and the formula ends in `× (1 + Haste)`.
+- **`talent`**: the talent or legendary power holding the tag the Blueprint tests before the roll.
+  A roll with none is baseline. Detonate rolls its charge recovery only behind
+  `Talents.Firemage.PlacedProjectileAoeHasCharges`, so its roll names Reign of Fire, and Reign of
+  Fire's own `procRolls` carries the roll. A roll behind a tag nothing holds is left out.
 
 Dragonbone Dice (relic passive 778) rolls `ArmorSetBonus.PowerBonusOnCrit.PPM × (1 + CritChance)` on
 each critical strike, with Haste off. The Blueprint reads the hero's `CritChance`, adds 1, multiplies

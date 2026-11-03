@@ -115,7 +115,7 @@ public static class DocumentProjection
             Period = entity.Period,
             CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             ScalesOff = entity.ScalesOff,
-            ProcRolls = entity.ProcRolls,
+            ProcRolls = Rolled(entity, references),
             Coefficients = entity.Coefficients,
             SetByCallerScaling = entity.SetByCallerScaling,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
@@ -294,7 +294,7 @@ public static class DocumentProjection
             Description = entity.Description,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = Tuned(entity, references),
-            ProcRolls = entity.ProcRolls,
+            ProcRolls = Rolled(entity, references),
             Icon = entity.Icon,
             Generates = Generated(entity),
             MinimumHeroRank = entity.MinimumHeroRank,
@@ -398,7 +398,7 @@ public static class DocumentProjection
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
-            ProcRolls = entity.ProcRolls,
+            ProcRolls = Rolled(entity, references),
         },
 
         EntityType.Talent => new TalentDocument
@@ -411,7 +411,7 @@ public static class DocumentProjection
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
-            ProcRolls = entity.ProcRolls,
+            ProcRolls = Rolled(entity, references),
             Cooldown = entity.Cooldown,
             Duration = entity.Duration,
             Range = entity.Range,
@@ -558,7 +558,7 @@ public static class DocumentProjection
             CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             Schools = Schools(entity.Tags),
             ScalesOff = entity.ScalesOff,
-            ProcRolls = entity.ProcRolls,
+            ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
             Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
@@ -588,7 +588,7 @@ public static class DocumentProjection
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
-            ProcRolls = entity.ProcRolls,
+            ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
             Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
@@ -605,7 +605,7 @@ public static class DocumentProjection
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
-            ProcRolls = entity.ProcRolls,
+            ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
             Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
@@ -624,7 +624,7 @@ public static class DocumentProjection
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = Tuned(entity, references),
             ScalesOff = entity.ScalesOff,
-            ProcRolls = entity.ProcRolls,
+            ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
             Applies = references.Through(Referenced(entity.Granted, references)),
             Generates = Generated(entity),
@@ -1004,6 +1004,48 @@ public static class DocumentProjection
 
     private static IReadOnlyList<ResourceGain>? Generated(Entity entity) =>
         entity.Generates is { Count: > 0 } gains ? gains : null;
+
+    /// <summary>
+    /// The entity's proc rolls for its document. A roll behind a tag names the talent or legendary power holding the
+    /// tag, and a roll behind a tag nothing holds is left out. A talent or legendary power also carries the rolls
+    /// abilities make only behind a tag it holds.
+    /// </summary>
+    private static IReadOnlyList<ProcRoll>? Rolled(Entity entity, References references)
+    {
+        var rolls = new List<ProcRoll>();
+
+        foreach (var roll in entity.ProcRolls ?? [])
+        {
+            if (roll.Gates is not { Count: > 0 } gates)
+            {
+                rolls.Add(roll);
+                continue;
+            }
+
+            var holders = gates
+                .SelectMany(gate => references.Changes.Holding(gate))
+                .Distinct()
+                .ToArray();
+
+            if (holders.Any(holder => holder.Type == entity.Type && holder.Id == entity.NetId))
+            {
+                rolls.Add(roll with { Gates = null });
+                continue;
+            }
+
+            var talent = holders.Select(holder => references.Of(holder.Type, holder.Id)).OfType<EntityReference>().FirstOrDefault();
+
+            if (talent is not null) rolls.Add(roll with { Gates = null, Talent = talent });
+        }
+
+        foreach (var roll in references.Changes.GatedRolls(entity))
+        {
+            var opened = roll with { Gates = null };
+            if (!rolls.Any(held => ProcRolls.Same(held, opened))) rolls.Add(opened);
+        }
+
+        return rolls.Count == 0 ? null : rolls;
+    }
 
     private static IReadOnlyList<TargetCountFalloff>? Falloff(Entity entity, References references) =>
         entity.TargetCountFalloff?

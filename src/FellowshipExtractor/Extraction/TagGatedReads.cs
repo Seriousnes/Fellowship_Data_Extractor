@@ -45,6 +45,42 @@ public static class TagGatedReads
         return reads;
     }
 
+    /// <summary>
+    /// The tags gating each statement of <paramref name="body"/>: a statement only a branch testing those tags
+    /// reaches, keyed by the statement's offset. A statement every character reaches is absent.
+    /// </summary>
+    public static IReadOnlyDictionary<int, IReadOnlySet<string>> Gating(UStruct body, UObject cdo)
+    {
+        var gating = new Dictionary<int, IReadOnlySet<string>>();
+
+        if (BytecodeGates.Of(body, cdo) is not { } gates) return gating;
+
+        var bytecode = body.ScriptBytecode!;
+        var branches = gates.Branches.ToDictionary(branch => branch.At, branch => branch.Condition);
+        var running = new Dictionary<string, KismetExpression>(StringComparer.Ordinal);
+
+        for (var at = 0; at < bytecode.Length; at++)
+        {
+            if (branches.TryGetValue(at, out var condition))
+            {
+                var tags = new SortedSet<string>(StringComparer.Ordinal);
+
+                Tested(condition, running, tags, cdo, 0);
+
+                foreach (var offset in tags.Count == 0 ? new HashSet<int>() : gates.Only(at))
+                {
+                    gating[offset] = gating.TryGetValue(offset, out var held)
+                        ? new SortedSet<string>(held.Concat(tags), StringComparer.Ordinal)
+                        : tags;
+                }
+            }
+
+            if (Writes(bytecode[at]) is { } assignment) running[assignment.Name] = assignment.Value;
+        }
+
+        return gating;
+    }
+
     private static IEnumerable<GatedRead> Gated(UStruct body, UObject cdo)
     {
         if (BytecodeGates.Of(body, cdo) is not { } gates) yield break;

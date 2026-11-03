@@ -130,6 +130,7 @@ public sealed partial class ModifierIndex
     private readonly Dictionary<Key, Entity> _sources = [];
     private readonly Dictionary<Key, HashSet<string>> _held = [];
     private readonly Dictionary<string, SortedSet<Key>> _tagsBySource = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<ProcRoll>> _gatedRolls = new(StringComparer.Ordinal);
     private readonly Dictionary<Key, SortedSet<Key>> _replacements = [];
     private readonly Dictionary<Key, Key> _replaces = [];
     private readonly Dictionary<Key, SortedSet<Key>> _grantedBy = [];
@@ -277,6 +278,15 @@ public sealed partial class ModifierIndex
             {
                 if (!_uses.TryGetValue(row, out var held)) _uses[row] = held = new(StringComparer.Ordinal);
                 held.UnionWith(uses);
+            }
+
+            foreach (var roll in entity.ProcRolls ?? [])
+            {
+                foreach (var gate in roll.Gates ?? [])
+                {
+                    if (!_gatedRolls.TryGetValue(gate, out var rolls)) _gatedRolls[gate] = rolls = [];
+                    if (!rolls.Any(held => ProcRolls.Same(held, roll))) rolls.Add(roll);
+                }
             }
         }
 
@@ -893,6 +903,21 @@ public sealed partial class ModifierIndex
 
     public IReadOnlyList<(EntityType Type, int Id)> Holding(string tag) =>
         _tagsBySource.TryGetValue(tag, out var sources) ? [.. sources.Select(source => (source.Type, source.Id))] : [];
+
+    /// <summary>The proc rolls abilities make only behind a tag the talent or legendary power holds.</summary>
+    public IReadOnlyList<ProcRoll> GatedRolls(Entity source)
+    {
+        if (!IsSource(source) || !_held.TryGetValue(KeyOf(source), out var held)) return [];
+
+        var found = new List<ProcRoll>();
+
+        foreach (var roll in held.Concat(source.AddedTags ?? []).SelectMany(tag => _gatedRolls.GetValueOrDefault(tag) ?? []))
+        {
+            if (!found.Any(other => ProcRolls.Same(other, roll))) found.Add(roll);
+        }
+
+        return found;
+    }
 
     /// <summary>Talents and legendary powers holding a tag an ability's graph tests before applying the effect.</summary>
     public IReadOnlyList<(EntityType Type, int Id)> GatingSources(Entity effect) =>

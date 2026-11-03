@@ -637,7 +637,8 @@ function typesetter() {
 }
 
 async function typeset() {
-    const formulas = [...document.querySelectorAll('[data-latex]')].filter(node => node.dataset.latex);
+    const formulas = [...document.querySelectorAll('[data-latex]')]
+        .filter(node => node.dataset.latex && !node.querySelector('.katex'));
     if (formulas.length === 0) return;
 
     const renderer = await typesetter();
@@ -661,3 +662,5 @@ if (document.readyState === 'loading') {
 }
 
 window.Blazor?.addEventListener('enhancedload', arrived);
+
+window.codexTypeset = typeset;

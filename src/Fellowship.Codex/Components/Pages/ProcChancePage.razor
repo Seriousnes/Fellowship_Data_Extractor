@@ -1,0 +1,208 @@
+@page "/tools/proc-chance"
+@rendermode InteractiveServer
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+@using Microsoft.JSInterop
+@inject IJSRuntime Js
+
+<PageTitle>Proc chance - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>Proc chance</h1>
+
+@if (Formula.DisplayText.Length > 0)
+{
+    <Panel Head="Formula">
+        <div class="cx-pc-formula" role="img" aria-label="@Formula.DisplayText"
+             data-latex="@Formula.Latex">@Formula.DisplayText</div>
+
+        @if (Formula.Symbols.Count > 0)
+        {
+            <div class="cx-pc-symbols">
+                <Facts>
+                    @foreach (var symbol in Formula.Symbols)
+                    {
+                        <Fact>
+                            <Head><var>@symbol.Symbol</var></Head>
+                            <ChildContent>@symbol.Meaning</ChildContent>
+                        </Fact>
+                    }
+                </Facts>
+            </div>
+        }
+    </Panel>
+}
+
+<Panel Head="Proc">
+    <Picker TItem="ProcRollSource" Items="Sources" Selected="Picked" Href="source => Address(source, 0)"
+            Text="source => Ui.Name(source.Face)" Key="source => (source.Type, source.Face.Id)" ListId="cx-proc-drop"
+            Label="Item, talent or ability" Placeholder="Choose an item, talent or ability"
+            NoMatch="No item, talent or ability with a proc matches">
+        <ItemTemplate Context="source">
+            <Icon Src="@Ui.Icon(source.Face)" Rarity="@Ui.RarityName(source.Face)" Width="PlateWidth" />
+            <span class="cx-nm">@Ui.Name(source.Face)</span>
+            <span class="cx-ty">@Rated(source.Rolls[0])</span>
+        </ItemTemplate>
+        <SelectedTemplate Context="source">
+            <Icon Src="@Ui.Icon(source.Face)" Rarity="@Ui.RarityName(source.Face)" Width="PlateWidth" Lazy="false" />
+            <span class="cx-nm">@Ui.Name(source.Face)</span>
+            <span class="cx-ty">@Rated(source.Rolls[0])</span>
+        </SelectedTemplate>
+    </Picker>
+
+    @if (Picked is { } picked && picked.Rolls.Count > 1)
+    {
+        <div class="cx-pc-entries">
+            <Knob Caption="Roll" As="div">
+                <div class="cx-roster">
+                    @for (var at = 0; at < picked.Rolls.Count; at++)
+                    {
+                        var roll = picked.Rolls[at];
+
+                        <a href="@Address(picked, at)" aria-current="@(at == Chosen ? "page" : null)">
+                            <span class="cx-who">@Leaf(roll)</span>
+                            <span class="cx-pc-at">@Rated(roll)</span>
+                        </a>
+                    }
+                </div>
+            </Knob>
+        </div>
+    }
+</Panel>
+
+@if (Picked is not { } source || Entry is not { } rolled)
+{
+    <Panel>
+        <Empty Message="No proc picked.">Choose one above.</Empty>
+    </Panel>
+}
+else
+{
+    var rate = ProcChance.Rate(rolled, Fraction);
+    var result = rate is { } known ? ProcChance.Roll(known, sinceRoll, sinceProc, beforeFirst, Formula) : null;
+
+    <Panel Head="@Ui.Name(source.Face)">
+        <div class="cx-pc-form">
+            @foreach (var scaled in rolled.ScalesOff)
+            {
+                var name = scaled;
+
+                <Knob Caption="@(Store.StatName(name) + " %")">
+                    <input type="number" min="0" step="any" @bind="percents[name]" @bind:event="oninput" />
+                </Knob>
+            }
+
+            <Knob Caption="Seconds since the last roll">
+                <input type="number" min="0" step="any" @bind="sinceRoll" @bind:event="oninput" />
+            </Knob>
+
+            <Knob Caption="Seconds since the last proc">
+                <input type="number" min="0" step="any" @bind="sinceProc" @bind:event="oninput" />
+            </Knob>
+
+            <Knob Caption="Before the first proc">
+                <input type="checkbox" @bind="beforeFirst" />
+            </Knob>
+        </div>
+
+        <div class="cx-pairs">
+            <Facts>
+                @if (!ReferenceEquals(source.Face, source.Carrier))
+                {
+                    <Fact Label="Proc"><EntityLink Entity="source.Carrier" ShowIcon /></Fact>
+                }
+                <Fact Label="@Leaf(rolled)">@Rated(rolled)</Fact>
+                <Fact Label="Rate">@(result is { } r ? $"{CodexView.Number(r.Rate)} per minute" : "Needs the formula's attributes")</Fact>
+                <Fact Label="Haste">@(rolled.ScalesWithHaste ? "Scales" : "Does not scale")</Fact>
+            </Facts>
+            @if (result is { } chance)
+            {
+                <Facts>
+                    <Fact Label="Base">@Shown(chance.Base)</Fact>
+                    <Fact Label="Drought factor">@CodexView.Number(Math.Round(chance.Drought, 4))</Fact>
+                    @if (chance.Floor is { } floor)
+                    {
+                        <Fact Label="First-proc floor">@Shown(floor)</Fact>
+                    }
+                    <Fact Label="Chance">@Shown(chance.Chance)</Fact>
+                </Facts>
+            }
+        </div>
+    </Panel>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = nameof(ProcParameter.Type))] public string? TypeSlug { get; set; }
+
+    [SupplyParameterFromQuery(Name = nameof(ProcParameter.Id))] public string? Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = nameof(ProcParameter.Entry))] public string? Index { get; set; }
+
+    private const string Page = "/tools/proc-chance";
+
+    private const int PlateWidth = 30;
+
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail = [("Tools", null), ("Proc chance", null)];
+
+    private IReadOnlyList<ProcRollSource> Sources = [];
+
+    private ProcRollSource? Picked;
+
+    private int Chosen;
+
+    private readonly Dictionary<string, double> percents = new(StringComparer.Ordinal);
+
+    private double sinceRoll = 1;
+
+    private double sinceProc = 30;
+
+    private bool beforeFirst;
+
+    private ProcRoll? Entry => Picked is { } picked && Chosen < picked.Rolls.Count ? picked.Rolls[Chosen] : null;
+
+    private ProcPerMinuteRoll Formula => Store.Settings.ProcPerMinuteRoll;
+
+    protected override void OnInitialized() => Sources = ProcChance.Sources(Store);
+
+    /// <summary>The interactive render replaces the typeset formula with its text, so each render typesets again.</summary>
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("codexTypeset");
+        }
+        catch (JSException)
+        {
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        Picked = TypeSlug is { } slug && EntityTypes.TryParse(slug, out var type) && Whole(Id) is { } id
+            ? Sources.FirstOrDefault(source => source.Is(type, id))
+            : null;
+        Chosen = Whole(Index) is { } at && at >= 0 && Picked is { } picked && at < picked.Rolls.Count ? at : 0;
+
+        foreach (var attribute in Entry?.ScalesOff ?? []) percents.TryAdd(attribute, 0);
+    }
+
+    private double Fraction(string attribute) => Math.Max(0, percents.GetValueOrDefault(attribute)) / 100;
+
+    private static int? Whole(string? value) =>
+        int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
+
+    private static string Leaf(ProcRoll roll) => FellowshipCodex.Spaced(roll.Row[(roll.Row.LastIndexOf('.') + 1)..]);
+
+    private string Rated(ProcRoll roll) =>
+        roll.ProcsPerMinute is { } rate
+            ? Ui.ProcFormula(roll).Replace(ProcRoll.Rate, CodexView.Number(rate), StringComparison.Ordinal)
+            : Ui.ProcFormula(roll);
+
+    private static string Shown(double chance) => $"{CodexView.Number(Math.Round(chance * 100, 2))}%";
+
+    private static string Address(ProcRollSource source, int entry) =>
+        $"{Page}?{QueryKeys.Key(ProcParameter.Type)}={source.Key}&{QueryKeys.Key(ProcParameter.Id)}={source.Face.Id}" +
+        (source.Rolls.Count > 1 ? $"&{QueryKeys.Key(ProcParameter.Entry)}={entry}" : string.Empty);
+}

@@ -239,6 +239,8 @@ public sealed class ChangeIndex
 
     public IReadOnlyList<(EntityType Type, int Id)> Holding(string tag) => _modifiers.Holding(tag);
 
+    public IReadOnlyList<ProcRoll> GatedRolls(Entity source) => _modifiers.GatedRolls(source);
+
     public bool Percent(string row, EntityType type, int id) => _modifiers.Percent(row, type, id);
 
     public EntityReference? PartOf(Entity ability, DocumentProjection.References references) =>

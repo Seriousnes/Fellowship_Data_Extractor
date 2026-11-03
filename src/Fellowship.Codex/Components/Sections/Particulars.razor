@@ -52,9 +52,9 @@
             <Facts>
                 @foreach (var roll in Rolls)
                 {
-                    <Fact Label="@FellowshipCodex.Spaced(roll.Row[(roll.Row.LastIndexOf('.') + 1)..])">@Rate(roll)</Fact>
+                    <Fact Label="@RollLabel(roll)">@Rate(roll)</Fact>
                 }
-                <Fact Label="Chance">@Ui.Store.Settings.ProcPerMinuteRoll.DisplayText</Fact>
+                <Fact Label="Chance"><a href="@ProcChanceHref">Proc chance calculator</a></Fact>
             </Facts>
         }
 
@@ -150,18 +150,19 @@
     private IReadOnlyList<Fellowship.SDK.Models.TargetCountFalloff> Falloff =>
         DamageFalloff.Source(Entity)?.Entries ?? [];
 
-    private IReadOnlyList<Fellowship.SDK.Models.ProcRoll> Rolls => (Entity switch
+    private IReadOnlyList<Fellowship.SDK.Models.ProcRoll> Rolls => ProcChance.Rolls(Entity) ?? [];
+
+    private string ProcChanceHref =>
+        $"/tools/proc-chance?{QueryKeys.Key(ProcParameter.Type)}={EntityTypes.Slug(EntityTypes.TypeOf(Entity))}" +
+        $"&{QueryKeys.Key(ProcParameter.Id)}={Entity.Id}";
+
+    /// <summary>The row's leaf, with the talent or legendary power opening the roll where the roll is behind one.</summary>
+    private string RollLabel(Fellowship.SDK.Models.ProcRoll roll)
     {
-        AbilityDocument ability => ability.ProcRolls,
-        RelicPassiveDocument relic => relic.ProcRolls,
-        TalentDocument talent => talent.ProcRolls,
-        LegendaryPowerDocument legendary => legendary.ProcRolls,
-        GemAbilityDocument gem => gem.ProcRolls,
-        DungeonAffixDocument affix => affix.ProcRolls,
-        WeaponPowerDocument weapon => weapon.ProcRolls,
-        RelicPowerDocument power => power.ProcRolls,
-        _ => null,
-    }) ?? [];
+        var leaf = FellowshipCodex.Spaced(roll.Row[(roll.Row.LastIndexOf('.') + 1)..]);
+
+        return roll.Talent is { } talent ? $"{leaf} ({Ui.Name(talent.Type, talent.Id)})" : leaf;
+    }
 
     /// <summary>The roll's formula with the row's value in place of the rate symbol and each attribute in its display name.</summary>
     private string Rate(Fellowship.SDK.Models.ProcRoll roll) =>

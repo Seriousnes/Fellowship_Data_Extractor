@@ -65,6 +65,9 @@ public sealed record ProcRollRecord(string Row, string Formula)
     public IReadOnlyList<string> ScalesOff { get; init; } = [];
 
     public bool ScalesWithHaste { get; init; }
+
+    /// <summary>The talent or legendary power whose tag the roll is behind. A roll with none is baseline.</summary>
+    public RecordReference? Talent { get; init; }
 }
 
 public sealed record AbilityDifficultyRecord(int Difficulty, string Label)

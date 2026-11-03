@@ -27,4 +27,10 @@ public sealed record ProcRoll(string Row)
 
     /// <summary>True when the roll multiplies the rate by 1 plus the hero's Haste percentage.</summary>
     public bool ScalesWithHaste { get; init; }
+
+    /// <summary>The talent or legendary power whose tag the Blueprint tests before the roll. A roll with none is baseline.</summary>
+    public EntityReference? Talent { get; init; }
+
+    /// <summary>The tags the Blueprint tests before the roll. On a document the talent holding them is <see cref="Talent"/>.</summary>
+    public IReadOnlyList<string>? Gates { get; init; }
 }
