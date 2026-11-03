@@ -110,6 +110,8 @@ public sealed class EntityResolver
     public ResourceGains Gains { get; }
 
     public TargetCountFalloffs Falloffs { get; }
+
+    public ProcRolls Rolls { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
@@ -281,6 +283,7 @@ public sealed class EntityResolver
             name => LoadDefaultObject(FindAsset(name)));
 
         Falloffs = new TargetCountFalloffs(provider, mappings, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
+        Rolls = new ProcRolls(_constants, provider);
     }
 
     private string? PrintedName(TagRecord tag, UObject cdo)
@@ -1461,6 +1464,7 @@ public sealed class EntityResolver
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Generates = Empty(Gains.Of(cdo, assetName)),
             Thresholds = Empty(_thresholds.Of(cdo)),
+            ProcRolls = cdo is null ? null : Empty(Rolls.Of(cdo)),
             Tuning = tuning,
             Declares = Empty(Bound(bindings)),
             Constants = baseline.Count + beside.Count == 0
@@ -2400,6 +2404,7 @@ public sealed class EntityResolver
         Generates = Union(outer.Generates, inner.Generates),
         Thresholds = Union(outer.Thresholds, inner.Thresholds),
         SetByCallerScaling = outer.SetByCallerScaling ?? inner.SetByCallerScaling,
+        ProcRolls = Union(outer.ProcRolls, inner.ProcRolls),
         Tuning = outer.Tuning ?? inner.Tuning,
         Declares = Union(outer.Declares, inner.Declares),
         Placeholders = Union(outer.Placeholders, inner.Placeholders),
@@ -2485,6 +2490,19 @@ public sealed class EntityResolver
     {
         if (first is null || second is null) return first ?? second;
         return [.. first.Concat(second).Distinct()];
+    }
+
+    private static IReadOnlyList<ProcRoll>? Union(IReadOnlyList<ProcRoll>? first, IReadOnlyList<ProcRoll>? second)
+    {
+        if (first is null || second is null) return first ?? second;
+
+        var merged = new List<ProcRoll>(first);
+        foreach (var roll in second)
+        {
+            if (!merged.Any(held => ProcRolls.Same(held, roll))) merged.Add(roll);
+        }
+
+        return merged;
     }
 
     private static IReadOnlyList<Threshold>? Union(IReadOnlyList<Threshold>? first, IReadOnlyList<Threshold>? second)

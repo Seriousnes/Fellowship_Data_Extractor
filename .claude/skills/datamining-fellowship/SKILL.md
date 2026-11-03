@@ -166,6 +166,22 @@ is `ECRHeroItemDynamicSlotType`; `CRDynamicHeroItemSlotDefinition.SlotType` is
 definition enum turns Rerollable into RandomStat and silently misprices every item. Resolve an ordinal
 through the struct that holds it, never through the enum whose name reads closest.
 
+Decoded against **26320967**, implemented in `ProcRolls.cs` and the `ProcPerMinuteRoll` text in
+`Settings.cs`, written up in `docs/proc-rolls.md`:
+
+| What | Where |
+| --- | --- |
+| `execRollProcPerMinute`, in `CRRandomStreamComponent`'s native table beside `ControlledRandomBool` | **0x145055FF0**, table entry 0x148C86F08, name literal 0x148C856E0 |
+| `CRRandomStreamComponent::RollProcPerMinute(FGameplayTag ProcTag, float RealProcsPerMinute, bool ScaleWithHaste)` | **0x1452CBD20** |
+| Hasted rate: `rate × Haste`, the owner's `Haste` attribute found by name | `mulss xmm0,xmm8` at 0x1452CBF87, FName at 0x1452CC0DA |
+| Base chance `rate × max(0, t) ÷ 60`, drought factor `max(1, 0.05 × rate × min(d, 1000) − 3.5)` | 0x1452CBFD1 to 0x1452CC00B |
+| First-proc floor `rate ÷ max(FirstProcChanceFloorPPMDivisor, 0.1)` | 0x1452CC049 to 0x1452CC069; divisor at component +0x14D8, default 8.0 stored by the constructor at 0x1452C220F |
+| The roll: `(rand() & 0x7FFF) ÷ 32767`, proc when the chance exceeds it | 0x1452CC011 to 0x1452CC083 |
+| Per-stream state keyed by `ProcTag`: last roll time +0, last proc time +4, procced flag +8 | map at component +0xF8, element stride 0x1C |
+
+The Blueprint side is the rate expression: Dragonbone Dice passes `PPM × (CritChance + 1)` with
+`ScaleWithHaste` false; 21 of the build's 25 calls pass true and the row alone.
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

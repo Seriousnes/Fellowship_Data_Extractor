@@ -65,6 +65,25 @@ public sealed class Settings
         ],
     };
 
+    public static readonly ProcPerMinuteRoll ProcPerMinuteRoll = new()
+    {
+        Latex = @"p = \frac{R \cdot t}{60} \cdot \max\left(1,\ \frac{3 \cdot R \cdot d}{60} - 3.5\right)",
+        DisplayText = "Each trigger rolls once against p = R × t ÷ 60 × max(1, 3 × R × d ÷ 60 − 3.5). R is the " +
+                      "rate, t the seconds since the stream's previous roll and d the seconds since its previous " +
+                      "proc, at most 1000. Until the stream's first proc, p is at least R ÷ 8. A hasted rate is the " +
+                      "formula's rate times 1 plus the Haste percentage.",
+        Symbols =
+        [
+            new("p", "Chance the roll procs."),
+            new("R", "Rate in procs per minute: the roll's formula, times 1 plus the Haste percentage when hasted."),
+            new("t", "Seconds since the stream's previous roll."),
+            new("d", "Seconds since the stream's previous proc, at most 1000."),
+        ],
+        HasteAttribute = Fellowship.SDK.Models.ProcRoll.HasteAttribute,
+        FirstProcChanceFloorDivisor = 8,
+        LongestDrought = 1000,
+    };
+
     public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; }
 
     public IReadOnlyList<LeagueEntry> Leagues { get; }
@@ -203,6 +222,7 @@ public sealed class Settings
         DifficultyScaling = DifficultyScaling,
         ModifierAbilityUnlock = ModifierAbilityUnlock,
         MultiTargetDamageFalloff = MultiTargetDamageFalloff,
+        ProcPerMinuteRoll = ProcPerMinuteRoll,
         LeagueKinds = LeagueKinds,
         Leagues = Leagues,
         AttunementTrees = _attunementTrees.NamedTrees,

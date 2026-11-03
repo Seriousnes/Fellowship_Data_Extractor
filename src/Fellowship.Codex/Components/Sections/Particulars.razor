@@ -45,6 +45,19 @@
             </Facts>
         }
 
+        @if (Rolls.Count > 0)
+        {
+            <Rule />
+            <SubHead>@(Rolls.Count == 1 ? "Proc rate" : "Proc rates")</SubHead>
+            <Facts>
+                @foreach (var roll in Rolls)
+                {
+                    <Fact Label="@FellowshipCodex.Spaced(roll.Row[(roll.Row.LastIndexOf('.') + 1)..])">@Rate(roll)</Fact>
+                }
+                <Fact Label="Chance">@Ui.Store.Settings.ProcPerMinuteRoll.DisplayText</Fact>
+            </Facts>
+        }
+
         @if (Changes.Count > 0)
         {
             <Rule />
@@ -136,6 +149,25 @@
 
     private IReadOnlyList<Fellowship.SDK.Models.TargetCountFalloff> Falloff =>
         DamageFalloff.Source(Entity)?.Entries ?? [];
+
+    private IReadOnlyList<Fellowship.SDK.Models.ProcRoll> Rolls => (Entity switch
+    {
+        AbilityDocument ability => ability.ProcRolls,
+        RelicPassiveDocument relic => relic.ProcRolls,
+        TalentDocument talent => talent.ProcRolls,
+        LegendaryPowerDocument legendary => legendary.ProcRolls,
+        GemAbilityDocument gem => gem.ProcRolls,
+        DungeonAffixDocument affix => affix.ProcRolls,
+        WeaponPowerDocument weapon => weapon.ProcRolls,
+        RelicPowerDocument power => power.ProcRolls,
+        _ => null,
+    }) ?? [];
+
+    /// <summary>The roll's formula with the row's value in place of the rate symbol and each attribute in its display name.</summary>
+    private string Rate(Fellowship.SDK.Models.ProcRoll roll) =>
+        roll.ProcsPerMinute is { } rate
+            ? Ui.ProcFormula(roll).Replace(Fellowship.SDK.Models.ProcRoll.Rate, CodexView.Number(rate), StringComparison.Ordinal)
+            : Ui.ProcFormula(roll);
 
     protected override void OnParametersSet()
     {

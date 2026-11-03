@@ -77,6 +77,8 @@ public sealed record SettingsFile
 
     public MultiTargetDamageFalloff MultiTargetDamageFalloff { get; init; } = new();
 
+    public ProcPerMinuteRoll ProcPerMinuteRoll { get; init; } = new();
+
     public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; init; } = [];
 
     public IReadOnlyList<LeagueEntry> Leagues { get; init; } = [];

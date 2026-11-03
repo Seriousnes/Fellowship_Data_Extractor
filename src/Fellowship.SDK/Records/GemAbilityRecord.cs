@@ -17,5 +17,7 @@ public sealed record GemAbilityRecord : EntityRecord
     public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
+    public IReadOnlyList<ProcRollRecord>? ProcRolls { get; init; }
+
     public GemOverflowRecord? GemOverflow { get; init; }
 }

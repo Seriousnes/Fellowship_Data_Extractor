@@ -117,3 +117,25 @@ public sealed record MultiTargetDamageFalloff
 }
 
 public sealed record FormulaSymbol(string Symbol, string Meaning);
+
+/// <summary>
+/// The chance <c>CRRandomStreamComponent.RollProcPerMinute</c> gives one roll at a rate, as the shipping binary
+/// computes it. A proc roll's rate is its <see cref="ProcRoll.Formula"/>.
+/// </summary>
+public sealed record ProcPerMinuteRoll
+{
+    public string Latex { get; init; } = string.Empty;
+
+    public string DisplayText { get; init; } = string.Empty;
+
+    public IReadOnlyList<FormulaSymbol> Symbols { get; init; } = [];
+
+    /// <summary>The attribute a hasted rate is multiplied by. It holds 1 plus the Haste percentage.</summary>
+    public string HasteAttribute { get; init; } = string.Empty;
+
+    /// <summary>Until a stream's first proc, the chance is at least the rate divided by this.</summary>
+    public double FirstProcChanceFloorDivisor { get; init; }
+
+    /// <summary>The most seconds since the last proc the drought factor counts.</summary>
+    public double LongestDrought { get; init; }
+}

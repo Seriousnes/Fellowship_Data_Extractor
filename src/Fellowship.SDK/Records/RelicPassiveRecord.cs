@@ -9,4 +9,6 @@ public sealed record RelicPassiveRecord : EntityRecord
     public double? Cooldown { get; init; }
     public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
+
+    public IReadOnlyList<ProcRollRecord>? ProcRolls { get; init; }
 }

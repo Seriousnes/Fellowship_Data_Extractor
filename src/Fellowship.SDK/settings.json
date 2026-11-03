@@ -979,6 +979,31 @@
       }
     ]
   },
+  "procPerMinuteRoll": {
+    "latex": "p = \\frac{R \\cdot t}{60} \\cdot \\max\\left(1,\\ \\frac{3 \\cdot R \\cdot d}{60} - 3.5\\right)",
+    "displayText": "Each trigger rolls once against p = R \u00D7 t \u00F7 60 \u00D7 max(1, 3 \u00D7 R \u00D7 d \u00F7 60 \u2212 3.5). R is the rate, t the seconds since the stream\u0027s previous roll and d the seconds since its previous proc, at most 1000. Until the stream\u0027s first proc, p is at least R \u00F7 8. A hasted rate is the formula\u0027s rate times 1 plus the Haste percentage.",
+    "symbols": [
+      {
+        "symbol": "p",
+        "meaning": "Chance the roll procs."
+      },
+      {
+        "symbol": "R",
+        "meaning": "Rate in procs per minute: the roll\u0027s formula, times 1 plus the Haste percentage when hasted."
+      },
+      {
+        "symbol": "t",
+        "meaning": "Seconds since the stream\u0027s previous roll."
+      },
+      {
+        "symbol": "d",
+        "meaning": "Seconds since the stream\u0027s previous proc, at most 1000."
+      }
+    ],
+    "hasteAttribute": "Haste",
+    "firstProcChanceFloorDivisor": 8,
+    "longestDrought": 1000
+  },
   "leagueKinds": [
     {
       "name": "Unknown",

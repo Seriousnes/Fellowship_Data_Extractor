@@ -9,6 +9,8 @@ public sealed record TalentRecord : EntityRecord
     public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
+    public IReadOnlyList<ProcRollRecord>? ProcRolls { get; init; }
+
     public double? Cooldown { get; init; }
     public double? Duration { get; init; }
     public double? Range { get; init; }

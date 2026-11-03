@@ -104,6 +104,7 @@ public static class RecordProjection
             Period = document.Period,
             CastTimeScalesWithHaste = document.CastTimeScalesWithHaste,
             ScalesOff = Scaling(document.ScalesOff, view),
+            ProcRolls = Rolls(document.ProcRolls, view),
             Coefficients = Some(document.Coefficients),
             Placeholders = Tokens(tokens, tags, view),
             Schools = Some(tags),
@@ -273,6 +274,7 @@ public static class RecordProjection
             Icon = Texture(document.Icon, view),
             Placeholders = Tokens(tokens, [], view),
             ScalesOff = Scaling(document.ScalesOff, view),
+            ProcRolls = Rolls(document.ProcRolls, view),
             GemOverflow = Overflow(document, view),
         };
     }
@@ -360,6 +362,7 @@ public static class RecordProjection
             Cooldown = document.Cooldown,
             Placeholders = Tokens(tokens, [], view),
             ScalesOff = Scaling(document.ScalesOff, view),
+            ProcRolls = Rolls(document.ProcRolls, view),
         };
     }
 
@@ -378,6 +381,7 @@ public static class RecordProjection
             Cooldown = document.Cooldown,
             Placeholders = Tokens(tokens, [], view),
             ScalesOff = Scaling(document.ScalesOff, view),
+            ProcRolls = Rolls(document.ProcRolls, view),
         };
     }
 
@@ -405,6 +409,7 @@ public static class RecordProjection
             Icon = Texture(document.Icon, view),
             MinimumHeroRank = document.MinimumHeroRank,
             Placeholders = Tokens(tokens, [], view),
+            ProcRolls = Rolls(document.ProcRolls, view),
         };
     }
 
@@ -453,6 +458,7 @@ public static class RecordProjection
             CastTimeScalesWithHaste = document.CastTimeScalesWithHaste,
             Schools = Some(tags),
             ScalesOff = Scaling(document.ScalesOff, view),
+            ProcRolls = Rolls(document.ProcRolls, view),
         };
     }
 
@@ -470,6 +476,7 @@ public static class RecordProjection
             Icon = Texture(document.Icon, view),
             Placeholders = Tokens(tokens, [], view),
             ScalesOff = Scaling(document.ScalesOff, view),
+            ProcRolls = Rolls(document.ProcRolls, view),
             Cooldown = document.Cooldown,
             Duration = document.Duration,
             Range = document.Range,
@@ -574,6 +581,7 @@ public static class RecordProjection
             Schools = Some(tags),
             Placeholders = Tokens(tokens, tags, view),
             ScalesOff = Scaling(document.ScalesOff, view),
+            ProcRolls = Rolls(document.ProcRolls, view),
         };
     }
 
@@ -586,6 +594,16 @@ public static class RecordProjection
 
     private static IReadOnlyList<string>? Scaling(IReadOnlyList<string>? attributes, ICodexViewService view) =>
         Named(view.Codex.Scaling(attributes));
+
+    private static IReadOnlyList<ProcRollRecord>? Rolls(IReadOnlyList<ProcRoll>? rolls, ICodexViewService view) =>
+        rolls is { Count: > 0 }
+            ? [.. rolls.Select(roll => new ProcRollRecord(roll.Row, view.ProcFormula(roll))
+            {
+                ProcsPerMinute = roll.ProcsPerMinute,
+                ScalesOff = Scaling(roll.ScalesOff, view) ?? [],
+                ScalesWithHaste = roll.ScalesWithHaste,
+            })]
+            : null;
 
     private static IReadOnlyList<string>? Lines(
         IReadOnlyList<string>? detail,

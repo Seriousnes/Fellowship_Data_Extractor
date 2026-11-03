@@ -9,6 +9,9 @@ public sealed class TalentDocument : EntityDocument
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
+    /// <summary>Proc-per-minute rolls the granted abilities make, each with the rate it is made at.</summary>
+    public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
+
     public double? Cooldown { get; init; }
     public double? Duration { get; init; }
     public double? Range { get; init; }

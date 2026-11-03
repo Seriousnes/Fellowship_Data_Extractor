@@ -11,4 +11,6 @@ public sealed record DungeonAffixRecord : EntityRecord
     public int? MinimumHeroRank { get; init; }
 
     public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
+
+    public IReadOnlyList<ProcRollRecord>? ProcRolls { get; init; }
 }

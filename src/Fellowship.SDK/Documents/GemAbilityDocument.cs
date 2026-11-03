@@ -21,4 +21,7 @@ public sealed class GemAbilityDocument : EntityDocument
     public string? Icon { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
+
+    /// <summary>Proc-per-minute rolls the granted abilities make, each with the rate it is made at.</summary>
+    public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
 }

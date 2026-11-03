@@ -17,4 +17,6 @@ public sealed record RelicPowerRecord : EntityRecord
     public bool? CastTimeScalesWithHaste { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
+
+    public IReadOnlyList<ProcRollRecord>? ProcRolls { get; init; }
 }

@@ -438,6 +438,15 @@ public static class ExportRun
         {
             Console.WriteLine($"    {unread}");
         }
+
+        Console.WriteLine(
+            $"  {resolver.Rolls.Calls - resolver.Rolls.Unread.Count} of {resolver.Rolls.Calls} proc-per-minute rolls " +
+            "read a rate as a row and attributes");
+
+        foreach (var unread in resolver.Rolls.Unread.Distinct(StringComparer.Ordinal))
+        {
+            Console.WriteLine($"    {unread}");
+        }
         Console.WriteLine(
             $"  {resolver.SpreadOverrides} coefficient rows banded by the Spread row their effect overrides " +
             $"with, {resolver.SpreadPresetDefaults} by an effect's calculation preset");

@@ -40,6 +40,8 @@ public sealed record AbilityRecord : EntityRecord
     public bool? CastTimeScalesWithHaste { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
+
+    public IReadOnlyList<ProcRollRecord>? ProcRolls { get; init; }
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
     public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }
@@ -49,6 +51,20 @@ public sealed record AbilityRecord : EntityRecord
     public RecordReference? Owner { get; init; }
 
     public AbilityDifficultyRecord? Difficulty { get; init; }
+}
+
+/// <summary>
+/// A proc-per-minute roll with its rate in the attributes' display names.
+/// </summary>
+/// <param name="Row">The tuning row the rate is read from.</param>
+/// <param name="Formula">The rate, in <c>PPM</c> for the row's value and the display names of <see cref="ScalesOff"/>.</param>
+public sealed record ProcRollRecord(string Row, string Formula)
+{
+    public double? ProcsPerMinute { get; init; }
+
+    public IReadOnlyList<string> ScalesOff { get; init; } = [];
+
+    public bool ScalesWithHaste { get; init; }
 }
 
 public sealed record AbilityDifficultyRecord(int Difficulty, string Label)

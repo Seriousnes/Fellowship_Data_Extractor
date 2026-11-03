@@ -90,6 +90,9 @@ public interface ICodexViewService
 
     string? Named(Fellowship.SDK.Models.EntityReference? reference, EntityDocument page);
 
+    /// <summary>The roll's formula with each attribute in its display name.</summary>
+    string ProcFormula(Fellowship.SDK.Models.ProcRoll roll);
+
     IReadOnlyList<TokenReading> Substitutions(EntityDocument document);
 }
 
@@ -438,6 +441,18 @@ public sealed class CodexViewService(
         }
 
         return listed;
+    }
+
+    public string ProcFormula(Fellowship.SDK.Models.ProcRoll roll)
+    {
+        var text = roll.Formula;
+
+        foreach (var attribute in roll.ScalesOff.OrderByDescending(attribute => attribute.Length))
+        {
+            text = text.Replace(attribute, store.StatName(attribute), StringComparison.Ordinal);
+        }
+
+        return text;
     }
 
     public string? Named(Fellowship.SDK.Models.EntityReference? reference, EntityDocument page)

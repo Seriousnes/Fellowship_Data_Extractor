@@ -19,4 +19,7 @@ public sealed class DungeonAffixDocument : EntityDocument
 
     /// <summary>Abilities the affix's modifier actor references.</summary>
     public IReadOnlyList<EntityReference>? Grants { get; init; }
+
+    /// <summary>Proc-per-minute rolls the granted abilities make, each with the rate it is made at.</summary>
+    public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
 }

@@ -115,6 +115,8 @@ public sealed record Entity
 
     public IReadOnlyList<SetByCallerScaling>? SetByCallerScaling { get; init; }
 
+    public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
+
     public bool? Infinite { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }

@@ -23,6 +23,9 @@ public sealed class WeaponPowerDocument : EntityDocument
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
+    /// <summary>Proc-per-minute rolls the granted abilities make, each with the rate it is made at.</summary>
+    public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
+
     public IReadOnlyList<EntityReference>? Grants { get; init; }
 
     /// <summary>Effects the abilities it grants apply or have as parts.</summary>

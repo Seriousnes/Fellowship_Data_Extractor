@@ -22,4 +22,6 @@ public sealed record WeaponPowerRecord : EntityRecord
     public IReadOnlyList<string>? Schools { get; init; }
     public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
+
+    public IReadOnlyList<ProcRollRecord>? ProcRolls { get; init; }
 }
