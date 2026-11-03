@@ -45,6 +45,7 @@ public static class AugmentationPowers
                 Duration = row.Duration ?? power.Duration,
                 ScalesOff = row.ScalesOff ?? power.ScalesOff,
                 Granted = row.Granted ?? power.Granted,
+                ProcRolls = row.ProcRolls ?? power.ProcRolls,
                 Generates = row.Generates ?? power.Generates,
             };
             redirects[(row.Type!.Value, granted)] = row.NetId!.Value;

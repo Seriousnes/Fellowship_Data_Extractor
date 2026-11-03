@@ -14,7 +14,6 @@ talent	145	1	40%	Missing	Agonizing Blaze	es the damage it deals by 4% up to a ma
 talent	145	2	10	Missing	Agonizing Blaze	y 4% up to a maximum of 40% increased damage at 10 stacks. Every tick on that target increases the	
 talent	162	0	3	Missing	Slow Burn	h time Fire Ball burns enemies up to a total of 3 seconds over its full duration.	
 talent	173	0	15	Missing	Natural Protector	ard and Safe Haven abilities shield players for 15 seconds, absorbing up to 1755% intellect damage	
-talent	206	4	0.5%	Missing	Corrosive Spill	conds.    CREEPING DEATH  Corrosive Spill deals 0.5% increased Poison damage for every 1% Haste you	
 talent	213	0	30%	Missing	Aftershock	at take damage from your Shockwave ability take 30% more damage from you for 5 seconds.	
 talent	219	0	30%	Missing	Second Wind	ghness has reduced an amount of damage equal to 30% of your Maximum Health, you gain 20% increased	
 relic-power	255	0	30%	Missing	Restore Mana	Instantly restore 30% of your maximum mana.    Can be used during Glo	
@@ -47,7 +46,6 @@ talent	653	2	2	Missing	Grand Proliferation	to 4 targets at 120% power, as long a
 talent	658	0	40%	Missing	Icy Talons	was spent.    Each Talon Strike ice spike deals 40% of Glacial Blast damage.    Each Rising Talons	
 talent	658	1	40%	Missing	Icy Talons	t damage.    Each Rising Talons ice spike deals 40% of Ice Comet damage.    Talon Strike benefits f	
 talent	661	0	25%	Missing	Symbiosis	l triggers an additional tick of its healing at 25% power.    Your Prickly Vines deal 12% more dama	
-talent	667	1	0.5%	Missing	Caustic Wounds	n them.    CREEPING DEATH  Caustic Poison deals 0.5% increased Poison damage for every 1% Haste you	
 talent	669	0	4	Missing	Karmic Dispersion	rred Fate: Mass Relay, causing it to heal up to 4 allies for 50% of any damage it deals.	
 talent	669	1	50%	Missing	Karmic Dispersion	ss Relay, causing it to heal up to 4 allies for 50% of any damage it deals.	
 talent	671	3	+60%	Contradicted	Kill Em All	le Kill Em All is active, your Heavy Strike has +60% Cooldown Acceleration.    Your next Heavy Strik	cooldownAcceleration Additive 1.6
@@ -115,9 +113,8 @@ ability	1122	1	4	Elsewhere	Stone Shield	in in a wide circle, dealing {} physical
 ability	1130	0	6	Elsewhere	Brooding Shadows	:  Instantly deal {} poison damage and generate 6 Combo Points. Caustic Poison has +100% Critical	effect 1731: 6
 ability	1130	2	60	Elsewhere	Brooding Shadows	, dealing {} poison damage every {} seconds for 60 seconds. While Seething Poison is active on any	effect 1716: 60
 ability	1130	5	6	Elsewhere	Brooding Shadows	kittering Blades, dealing {} poison damage over 6 seconds. Upon expiration, Volatile Poison erupt	effect 1731: 6
-ability	1130	6	0.5%	Missing	Brooding Shadows	son, Seething Poisons, and Volatile Poison deal 0.5% increased Poison damage for every 1% Haste you	
+ability	1130	6	0.5%	Elsewhere	Brooding Shadows	son, Seething Poisons, and Volatile Poison deal 0.5% increased Poison damage for every 1% Haste you	effect 1585: 0.5; effect 1716: 0.5; effect 1731: 0.5; effect 3144: 0.5; effect 1730: 0.5
 ability	1206	2	6	Missing	Maiden of Death	d all combo point generating abilities generate 6 Combo Points.    Additionally, your Energy Gene	
-ability	1208	12	0.5%	Missing	Hemorrhaging Strike	ds    CREEPING DEATH  Hemorrhaging Strike deals 0.5% increased Bleed damage for every 1% Haste you h	
 ability	1214	0	6	Missing	Taunt	aunt target enemy, forcing it to attack you for 6 seconds.    Can be used during Global Cooldown	
 ability	1219	1	6	Missing	Face Breaker (old)	r and deal +400% increased damage.    Generates 6 Fury plus an amount based on the total damage i	
 ability	1228	1	400%	Missing	Culling Strike	0 Fury, increasing the damage it deals by up to 400%. The more Fury it consumes, the higher the dama	

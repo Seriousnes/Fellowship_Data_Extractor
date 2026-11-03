@@ -1,7 +1,7 @@
 # Proc-per-minute rolls
 
-Ability, relic passive, talent, legendary power, gem ability, dungeon affix, relic power and weapon
-power documents carry `procRolls`: one entry for each `CRRandomStreamComponent.RollProcPerMinute`
+Ability, relic passive, talent, legendary power, gem ability, dungeon affix, relic power, weapon
+power, sigil, aspect, enchant and protective enchant documents carry `procRolls`: one entry for each `CRRandomStreamComponent.RollProcPerMinute`
 call in the entity's Blueprint or in the Blueprints of the abilities it grants.
 
 Each entry has the following fields:

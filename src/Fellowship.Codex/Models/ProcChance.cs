@@ -17,8 +17,12 @@ public sealed record ProcRollSource(EntityDocument Face, EntityDocument Carrier,
 
     public string Key => EntityTypes.Slug(Type);
 
+    /// <summary>Other documents carrying the same rolls for the face: an ability the augmentation grants.</summary>
+    public IReadOnlyList<EntityDocument> Others { get; init; } = [];
+
     public bool Is(EntityType type, int id) =>
-        (Type == type && Face.Id == id) || (EntityTypes.TypeOf(Carrier) == type && Carrier.Id == id);
+        (Type == type && Face.Id == id) ||
+        Others.Prepend(Carrier).Any(carrier => EntityTypes.TypeOf(carrier) == type && carrier.Id == id);
 }
 
 /// <summary>One roll's chance at a rate: the base, the drought factor, the first-proc floor and the result.</summary>
@@ -48,6 +52,7 @@ public static class ProcChance
         DungeonAffixDocument affix => affix.ProcRolls,
         WeaponPowerDocument weapon => weapon.ProcRolls,
         RelicPowerDocument power => power.ProcRolls,
+        AugmentationDocument augmentation => augmentation.ProcRolls,
         _ => null,
     };
 
@@ -76,7 +81,11 @@ public static class ProcChance
             foreach (var face in Faces(store, carrier, relics))
             {
                 var source = new ProcRollSource(face, carrier, rolls);
-                if (!sources.Any(other => other.Type == source.Type && other.Face.Id == source.Face.Id)) sources.Add(source);
+                var at = sources.FindIndex(other => other.Type == source.Type && other.Face.Id == source.Face.Id);
+
+                if (at < 0) sources.Add(source);
+                else if (ReferenceEquals(face, carrier)) sources[at] = source with { Others = [.. sources[at].Others, sources[at].Carrier] };
+                else sources[at] = sources[at] with { Others = [.. sources[at].Others, carrier] };
             }
         }
 

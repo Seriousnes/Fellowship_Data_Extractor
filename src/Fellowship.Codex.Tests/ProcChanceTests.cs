@@ -7,6 +7,7 @@ namespace Fellowship.Codex.Tests;
 public class ProcChanceTests(Export export)
 {
     private const int DragonboneDice = 778;
+    private const int RubyStormAbility = 166;
 
     private ProcRollSource Offered(EntityType type, string name) =>
         Assert.Single(ProcChance.Sources(export.Store),
@@ -27,6 +28,21 @@ public class ProcChanceTests(Export export)
 
         Assert.DoesNotContain(ProcChance.Sources(export.Store), source => source.Type == EntityType.RelicPassive);
         Assert.Same(relic.Face, ProcChance.Source(export.Store, EntityType.RelicPassive, DragonboneDice)!.Face);
+    }
+
+    [Fact]
+    public void Ruby_Storm_is_offered_once_as_its_aspect_and_resolves_by_the_aspect_and_the_ability_it_grants()
+    {
+        var aspect = Offered(EntityType.Aspect, "Ruby Storm");
+        var roll = Assert.Single(aspect.Rolls);
+
+        Assert.IsType<AspectDocument>(aspect.Carrier);
+        Assert.Equal("Trait.GemWhirlwind.PPM", roll.Row);
+        Assert.True(roll.ScalesWithHaste);
+        Assert.Same(aspect.Face, ProcChance.Source(export.Store, EntityType.Aspect, aspect.Face.Id)!.Face);
+        Assert.Same(aspect.Face, ProcChance.Source(export.Store, EntityType.Ability, RubyStormAbility)!.Face);
+        Assert.DoesNotContain(ProcChance.Sources(export.Store),
+            source => source.Type == EntityType.Ability && source.Face.Id == RubyStormAbility);
     }
 
     [Fact]

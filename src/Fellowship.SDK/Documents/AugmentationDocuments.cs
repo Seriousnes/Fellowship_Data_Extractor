@@ -21,6 +21,9 @@ public abstract class AugmentationDocument : EntityDocument
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
+    /// <summary>Proc-per-minute rolls in the Blueprints of the abilities it grants.</summary>
+    public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
+
     public IReadOnlyList<EntityReference>? Grants { get; init; }
 
     /// <summary>Effects the abilities it grants apply or have as parts.</summary>

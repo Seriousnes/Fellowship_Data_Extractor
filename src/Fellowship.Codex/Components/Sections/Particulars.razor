@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-@if (Rows.Count > 0 || Falloff.Count > 0 || Changes.Count > 0 || Links.Count > 0 || Schools.Count > 0 || Tables is not null)
+@if (Rows.Count > 0 || Falloff.Count > 0 || Calculations.Count > 0 || Changes.Count > 0 || Links.Count > 0 || Schools.Count > 0 || Tables is not null)
 {
     <Panel Head="Details" Class="@(ReferenceEquals(Entity, Here.Entity) ? "cx-entity-details" : null)">
         @if (Rows.Count > 0)
@@ -41,6 +41,18 @@
                         </Head>
                         <ChildContent>@CodexView.Number(entry.Threshold)</ChildContent>
                     </Fact>
+                }
+            </Facts>
+        }
+
+        @if (Calculations.Count > 0)
+        {
+            <Rule />
+            <SubHead>Calculation modifiers</SubHead>
+            <Facts>
+                @foreach (var modifier in Calculations)
+                {
+                    <Fact Label="@Ui.CalculationTarget(modifier)">@Ui.CalculationFormula(modifier)</Fact>
                 }
             </Facts>
         }
@@ -150,11 +162,22 @@
     private IReadOnlyList<Fellowship.SDK.Models.TargetCountFalloff> Falloff =>
         DamageFalloff.Source(Entity)?.Entries ?? [];
 
+    private IReadOnlyList<Fellowship.SDK.Models.CalculationModifier> Calculations =>
+        Entity is EffectDocument { CalculationModifiers: { } modifiers } ? modifiers : [];
+
     private IReadOnlyList<Fellowship.SDK.Models.ProcRoll> Rolls => ProcChance.Rolls(Entity) ?? [];
 
-    private string ProcChanceHref =>
-        $"/tools/proc-chance?{QueryKeys.Key(ProcParameter.Type)}={EntityTypes.Slug(EntityTypes.TypeOf(Entity))}" +
-        $"&{QueryKeys.Key(ProcParameter.Id)}={Entity.Id}";
+    /// <summary>The calculator at the proc's face: the aspect for an ability the aspect grants, the relic for a relic passive.</summary>
+    private string ProcChanceHref
+    {
+        get
+        {
+            var face = ProcChance.Source(Ui.Store, EntityTypes.TypeOf(Entity), Entity.Id)?.Face ?? Entity;
+
+            return $"/tools/proc-chance?{QueryKeys.Key(ProcParameter.Type)}={EntityTypes.Slug(EntityTypes.TypeOf(face))}" +
+                   $"&{QueryKeys.Key(ProcParameter.Id)}={face.Id}";
+        }
+    }
 
     /// <summary>The row's leaf, with the talent or legendary power opening the roll where the roll is behind one.</summary>
     private string RollLabel(Fellowship.SDK.Models.ProcRoll roll)

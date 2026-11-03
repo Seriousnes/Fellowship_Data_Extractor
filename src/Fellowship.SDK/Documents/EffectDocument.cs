@@ -35,6 +35,9 @@ public sealed class EffectDocument : EntityDocument
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }
 
+    /// <summary>Attribute-based modifiers its executions apply to the attributes they capture.</summary>
+    public IReadOnlyList<CalculationModifier>? CalculationModifiers { get; init; }
+
     public IReadOnlyList<ResourceGain>? Generates { get; init; }
 
     public IReadOnlyList<Threshold>? Thresholds { get; init; }

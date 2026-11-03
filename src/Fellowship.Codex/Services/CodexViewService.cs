@@ -93,6 +93,12 @@ public interface ICodexViewService
     /// <summary>The roll's formula with each attribute in its display name.</summary>
     string ProcFormula(Fellowship.SDK.Models.ProcRoll roll);
 
+    /// <summary>The modifier as its op applied to its magnitude, with the backing attribute in its display name.</summary>
+    string CalculationFormula(Fellowship.SDK.Models.CalculationModifier modifier);
+
+    /// <summary>The attribute or transient aggregator the modifier applies to, in its display name.</summary>
+    string CalculationTarget(Fellowship.SDK.Models.CalculationModifier modifier);
+
     IReadOnlyList<TokenReading> Substitutions(EntityDocument document);
 }
 
@@ -454,6 +460,40 @@ public sealed class CodexViewService(
 
         return text;
     }
+
+    public string CalculationFormula(Fellowship.SDK.Models.CalculationModifier modifier)
+    {
+        var backing = store.StatName(modifier.BackingAttribute);
+        var read = modifier.PreMultiplyAdditiveValue switch
+        {
+            0 => backing,
+            < 0 => $"({backing} − {CodexView.Number(-modifier.PreMultiplyAdditiveValue)})",
+            _ => $"({backing} + {CodexView.Number(modifier.PreMultiplyAdditiveValue)})",
+        };
+        var scaled = modifier.CoefficientCurve is not null
+            ? $"{CodexView.Number(modifier.Coefficient)} × {modifier.Row} × {read}"
+            : modifier.Coefficient == 1 ? read : $"{CodexView.Number(modifier.Coefficient)} × {read}";
+        var magnitude = modifier.PostMultiplyAdditiveValue switch
+        {
+            0 => scaled,
+            < 0 => $"{scaled} − {CodexView.Number(-modifier.PostMultiplyAdditiveValue)}",
+            _ => $"{scaled} + {CodexView.Number(modifier.PostMultiplyAdditiveValue)}",
+        };
+        var whose = modifier.BackingSource == "Target" ? " (target's)" : "";
+
+        return modifier.Op switch
+        {
+            "Multiplicitive" or "MultiplyCompound" => $"× ({magnitude}){whose}",
+            "Division" => $"÷ ({magnitude}){whose}",
+            "Override" => $"= {magnitude}{whose}",
+            _ => $"+ {magnitude}{whose}",
+        };
+    }
+
+    public string CalculationTarget(Fellowship.SDK.Models.CalculationModifier modifier) =>
+        modifier.Attribute is { } attribute
+            ? store.StatName(attribute)
+            : FellowshipCodex.Spaced(modifier.Transient![(modifier.Transient!.LastIndexOf('.') + 1)..]);
 
     public string? Named(Fellowship.SDK.Models.EntityReference? reference, EntityDocument page)
     {

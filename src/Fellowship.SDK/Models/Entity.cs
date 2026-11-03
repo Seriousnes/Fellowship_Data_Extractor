@@ -109,6 +109,8 @@ public sealed record Entity
 
     public bool? TickrateIgnoresHaste { get; init; }
 
+    public IReadOnlyList<CalculationModifier>? CalculationModifiers { get; init; }
+
     public int? MaxStacks { get; init; }
 
     public int? Ticks { get; init; }

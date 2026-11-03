@@ -233,6 +233,7 @@ public static class RecordProjection
             Placeholders = Tokens(tokens, tags, view),
             Schools = Some(tags),
             Modifiers = Some(document.Modifiers),
+            CalculationModifiers = Some(document.CalculationModifiers),
             Talents = document.Talents,
             NameBorrowedFrom = Reference(document.NameBorrowedFrom, view, origin),
             TextureBorrowedFrom = Reference(document.TextureBorrowedFrom, view, origin),
@@ -529,6 +530,7 @@ public static class RecordProjection
             RankRuns = Runs(document.RankRuns),
             Placeholders = Tokens(tokens, [], view),
             ScalesOff = Scaling(document.ScalesOff, view),
+            ProcRolls = Rolls(document.ProcRolls, view, origin),
             Grants = References(document.Grants, view, origin),
         };
     }

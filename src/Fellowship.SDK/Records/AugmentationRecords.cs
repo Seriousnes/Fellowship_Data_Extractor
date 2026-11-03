@@ -19,6 +19,8 @@ public abstract record AugmentationRecord : EntityRecord
     public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
+    public IReadOnlyList<ProcRollRecord>? ProcRolls { get; init; }
+
     public IReadOnlyList<RecordReference>? Grants { get; init; }
 
     public EquippedAugmentationRecord? Equipped { get; init; }
