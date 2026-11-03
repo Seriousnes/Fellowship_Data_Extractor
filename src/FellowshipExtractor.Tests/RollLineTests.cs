@@ -64,6 +64,7 @@ public sealed class RollLineTests
         return StatMagnitudes.For(
             Cloak(),
             Export.Loaded.Settings.StatCalculation,
+            Export.Loaded.Settings.Items,
             new HashSet<string>(["Strength", "Intellect", "Agility"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
             Export.Loaded.Settings.DropItemLevels

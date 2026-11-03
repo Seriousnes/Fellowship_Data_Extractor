@@ -10,7 +10,7 @@ public sealed class PrimarySlotTests
     public void APrimarySlotTakesTheShippedPrimaryMultiplier()
     {
         var settings = Export.Loaded.Settings.StatCalculation;
-        var block = StatRows.Guaranteed(settings);
+        var block = StatRows.Guaranteed(settings, Export.Loaded.Settings.Items);
 
         var stated =
             (decimal)StatRows.BlockTerm(block, stamina: true, onPrimaryPool: true, itemLevel: 2000) /
@@ -28,6 +28,7 @@ public sealed class PrimarySlotTests
                 ],
             },
             settings,
+            Export.Loaded.Settings.Items,
             new HashSet<string>(["Strength"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
             itemLevel: 2000,

@@ -189,7 +189,9 @@ has three of eight fields per block; the rest are real values: `PrimaryWeight` 0
 `SecondaryWeight` 0.3, `StaminaWeight` 0.5, `PrimaryMultiplier` 0.7, `WeightMultiplier` 0.15,
 `StaminaMultiplierItemLevelThreshold` 315, and `SecondaryMultiplier` 0.6 on the base block, 1.5 on the
 fixed block. They are in `StatRows` because no shipped file states them. `SecondaryBaseMultiplier` is
-72 and `PrimaryDivisible` is 15 the same way.
+72 and `PrimaryDivisible` is 15 the same way. The exception is `StaminaMultiplierItemLevelThreshold`:
+`StatRows.StaminaThreshold` reads it from the lowest `TemperStaminaMultiplierAtItemLevel` step in
+`[/Script/fellowship.CRItemSettings]`, which states the same 315.
 
 **A Blueprint function can be named right, wired through config, and never called.**
 `HeroItemStatCalculation`'s `CalcPrimaryStatPoolFromItemLevel` is wired via

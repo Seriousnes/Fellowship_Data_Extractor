@@ -7,7 +7,7 @@ public sealed record StatBlock(
     float PrimaryMultiplier,
     float SecondaryMultiplier,
     float WeightMultiplier,
-    int StaminaMultiplierItemLevelThreshold,
+    int? StaminaMultiplierItemLevelThreshold,
     float StaminaMultiplierAtThreshold);
 
 public static class StatRows
@@ -23,23 +23,28 @@ public static class StatRows
     private const float NativeStaminaWeight = 0.5f;
     private const float NativePrimaryMultiplier = 0.7f;
     private const float NativeWeightMultiplier = 0.15f;
-    private const int NativeStaminaThreshold = 315;
     private const float NativeStaminaAtThreshold = 2f;
 
     private const float NativeBaseSecondaryMultiplier = 0.6f;
 
-    public static StatBlock Block(SlotStatSettings shipped, float nativeSecondaryMultiplier) => new(
+    public static StatBlock Block(
+        SlotStatSettings shipped, ItemSettingsFile items, float nativeSecondaryMultiplier) => new(
         NativePrimaryWeight,
         NativeSecondaryWeight,
         (float?)shipped.StaminaWeight ?? NativeStaminaWeight,
         (float?)shipped.PrimaryMultiplier ?? NativePrimaryMultiplier,
         (float?)shipped.SecondaryMultiplier ?? nativeSecondaryMultiplier,
         (float?)shipped.WeightMultiplier ?? NativeWeightMultiplier,
-        NativeStaminaThreshold,
+        StaminaThreshold(items),
         (float?)shipped.StaminaMultiplierAtThreshold ?? NativeStaminaAtThreshold);
 
-    public static StatBlock Guaranteed(StatCalculationFile calculation) =>
-        Block(calculation.BaseSlot, NativeBaseSecondaryMultiplier);
+    public static StatBlock Guaranteed(StatCalculationFile calculation, ItemSettingsFile items) =>
+        Block(calculation.BaseSlot, items, NativeBaseSecondaryMultiplier);
+
+    public static int? StaminaThreshold(ItemSettingsFile items) =>
+        items.TemperStaminaMultiplierAtItemLevel.Count > 0
+            ? items.TemperStaminaMultiplierAtItemLevel.Min(step => step.ItemLevel)
+            : null;
 
     public static float PrimaryPool(StatCalculationFile calculation, int itemLevel) =>
         MathF.Pow((float)calculation.PrimaryPowerBase, itemLevel / PrimaryDivisible)
@@ -53,7 +58,7 @@ public static class StatRows
     {
         if (stamina)
         {
-            var bonus = itemLevel >= block.StaminaMultiplierItemLevelThreshold
+            var bonus = block.StaminaMultiplierItemLevelThreshold is { } threshold && itemLevel >= threshold
                 ? block.StaminaMultiplierAtThreshold
                 : 1f;
 
@@ -85,11 +90,11 @@ public static class StatRows
         weights.Length == 0 ? 0f : weights[Math.Min(rowOrdinal, weights.Length - 1)];
 
     public static float Magnitude(
-        float pool, float slotStatWeight, float blockTerm, float share, int tempers, bool guaranteed)
+        float pool, float slotStatWeight, float blockTerm, float share, int tempers, float temperMultiplier, bool guaranteed)
     {
         var magnitude = MathF.Max(pool * slotStatWeight * blockTerm * share, 1f);
 
-        return guaranteed ? magnitude + tempers : magnitude;
+        return guaranteed ? magnitude + tempers * temperMultiplier : magnitude;
     }
 
     public static decimal RoundHalfToEven(float value)

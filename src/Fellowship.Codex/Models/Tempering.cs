@@ -19,4 +19,18 @@ public static class Tempering
 
         return ceiling;
     }
+
+    public static float StaminaMultiplier(ItemSettingsFile items, int itemLevel)
+    {
+        var multiplier = (float)items.TemperDefaultStaminaMultiplier;
+
+        foreach (var step in items.TemperStaminaMultiplierAtItemLevel)
+        {
+            if (step.ItemLevel > itemLevel) break;
+
+            multiplier = (float)step.TemperValue;
+        }
+
+        return multiplier;
+    }
 }

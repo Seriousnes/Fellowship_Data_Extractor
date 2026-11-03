@@ -18,6 +18,7 @@ public static class StatMagnitudes
     public static IReadOnlyList<StatLine> For(
         ItemDocument item,
         StatCalculationFile calculation,
+        ItemSettingsFile items,
         IReadOnlySet<string> primaryAttributes,
         RarityEntry? rarity,
         int itemLevel,
@@ -43,8 +44,9 @@ public static class StatMagnitudes
         var secondaryPool = StatRows.SecondaryPool(itemLevel);
 
         var declaredWeights = StatRows.Weights([.. (item.Stats ?? []).Select(slot => slot.Weight)]);
-        var guaranteedBlock = StatRows.Guaranteed(calculation);
+        var guaranteedBlock = StatRows.Guaranteed(calculation, items);
         var tempers = Math.Max(0, query.Upgrades ?? 0);
+        var temperStamina = Tempering.StaminaMultiplier(items, itemLevel);
         var ordinal = 0;
 
         decimal Row(string stat)
@@ -58,6 +60,7 @@ public static class StatMagnitudes
                 StatRows.BlockTerm(guaranteedBlock, stamina, onPrimaryPool, itemLevel),
                 StatRows.Share(declaredWeights, ordinal++),
                 tempers,
+                stamina ? temperStamina : 1f,
                 guaranteed: true);
 
             return StatRows.RoundHalfToEven(magnitude);
