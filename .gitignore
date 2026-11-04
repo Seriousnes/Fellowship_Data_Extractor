@@ -20,3 +20,6 @@ obj/
 /deploy/.env
 *.pubxml
 src/Fellowship.SDK/inputs.sha256
+
+# Written by the deploy job before the image build.
+src/Fellowship.Codex/wwwroot/sitemap.xml

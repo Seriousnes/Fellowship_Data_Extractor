@@ -3,9 +3,19 @@ User-agent: *
 Disallow: /api/
 Disallow: /swagger
 Disallow: /openapi/
+Disallow: /admin
 
-Disallow: /browse?q=
-Disallow: /browse?*&*
-Allow: /browse?type=*&page=*$
+# Search, filter, sort, group and paging links make endless query variants of one page.
+# The sitemap names each page once, without a query.
+Disallow: /*?
+
+# Link previews read a card's query, and the longer rule wins.
+Allow: /og/
+
+# Talent and attunement picks make endless path variants of one tool.
+Disallow: /tools/talents/*/
+Disallow: /tools/attunement-trees/*/
 
 Crawl-delay: 5
+
+Sitemap: https://codex.fellowshipanalyzer.com/sitemap.xml
