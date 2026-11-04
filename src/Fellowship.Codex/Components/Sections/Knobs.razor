@@ -55,7 +55,7 @@
         {
             <Knob Caption="Item level">
                 <input type="number" min="1" max="1000" step="1" data-knob="@QueryKeys.Key(ReadingParameter.ItemLevel)"
-                       value="@(Value(ReadingParameter.ItemLevel) ?? DropItemLevel.ToString())" @onchange="Level" />
+                       value="@(Typed(ReadingParameter.ItemLevel) ?? DropItemLevel.ToString())" @onchange="Level" />
             </Knob>
 
             <Knob Caption="Tempered">
@@ -73,7 +73,8 @@
 
     private Task Turn(ReadingParameter knob, string? value) => OnTurn.InvokeAsync(new KnobTurn(knob, value));
 
-    private Task Wearer(ChangeEventArgs who) => Turn(ReadingParameter.Hero, who.Value?.ToString());
+    private Task Wearer(ChangeEventArgs who) =>
+        Turn(ReadingParameter.Hero, who.Value?.ToString() is { Length: > 0 } name ? name : null);
 
     private Task Rarity(RarityEntry rarity) =>
         Turn(ReadingParameter.Rarity, Chosen(rarity) ? null : rarity.Tier.ToString());
@@ -113,6 +114,10 @@
     private int Difficulty => Store.Difficulty(Value(ReadingParameter.Difficulty), Here.Entity);
 
     private string? Value(ReadingParameter knob) => Here.Values.GetValueOrDefault(QueryKeys.Key(knob));
+
+    /// <summary>The query's text for <paramref name="knob"/>, empty for an emptied box, and null when the query has no such key.</summary>
+    private string? Typed(ReadingParameter knob) =>
+        Value(knob) ?? (Here.Emptied.Contains(QueryKeys.Key(knob)) ? string.Empty : null);
 
     private bool Chosen(RarityEntry rarity) =>
         Value(ReadingParameter.Rarity) is { } value &&

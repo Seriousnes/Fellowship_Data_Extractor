@@ -147,6 +147,8 @@
             Page = Page,
             Id = Id,
             Values = values,
+            Emptied = raw.Where(pair => pair.Value.FirstOrDefault() is { Length: 0 }).Select(pair => pair.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase),
         };
 
         Editable = Entity is ItemDocument item
@@ -190,7 +192,7 @@
                     $"{modifier.Kind.ToString().ToLowerInvariant()}:{modifier.Id}:{modifier.Amount}"))),
         };
 
-        Nav.NavigateTo(Href(key, value), replace: true);
+        Nav.NavigateTo(Href(key, value is { Length: > 0 } ? value : null), replace: true);
     }
 
     protected override async Task OnAfterRenderAsync(bool first)
@@ -219,7 +221,8 @@
         var parameters = new Dictionary<string, StringValues>(raw, StringComparer.OrdinalIgnoreCase);
         var key = QueryKeys.Key(parameter);
 
-        if (string.IsNullOrEmpty(value)) parameters.Remove(key); else parameters[key] = value;
+        // An empty value stays in the query, so an emptied number box prerenders empty too.
+        if (value is null) parameters.Remove(key); else parameters[key] = value;
 
         return QueryHelpers.AddQueryString(Page, parameters);
     }
