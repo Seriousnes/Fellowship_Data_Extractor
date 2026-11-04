@@ -13,7 +13,10 @@ public class UserAgentTests
     [InlineData("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", "Safari", 26, "macOS", false)]
     [InlineData("Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/28.0 Chrome/130.0.0.0 Mobile Safari/537.36", "Samsung Internet", 28, "Android", true)]
     [InlineData("Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)", "Discordbot", 0, "Other", false)]
-    [InlineData("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/600.2.5 (KHTML, like Gecko) Version/8.0.2 Safari/600.2.5 (Applebot/0.1)", "Bot", 0, "macOS", false)]
+    [InlineData("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/600.2.5 (KHTML, like Gecko) Version/8.0.2 Safari/600.2.5 (Applebot/0.1)", "Applebot", 0, "macOS", false)]
+    [InlineData("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)", "GPTBot", 0, "Other", false)]
+    [InlineData("Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.122 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)", "Googlebot", 0, "Android", true)]
+    [InlineData("Mozilla/5.0 (compatible; SomeNewCrawler/1.0)", "Bot", 0, "Other", false)]
     [InlineData("Twitterbot/1.0", "Twitterbot", 0, "Other", false)]
     [InlineData("facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)", "Facebook", 0, "Other", false)]
     [InlineData("curl/8.9.1", "curl", 0, "Other", false)]
@@ -74,7 +77,7 @@ public sealed class UsageStoreTests : IDisposable
         Assert.Equal(2000, row.MaxMilliseconds);
         Assert.Equal(Latency.Bounds.Length, row.P95Bucket);
 
-        var browser = Assert.Single(store.Agents(since, 10));
+        var browser = Assert.Single(store.Clients(since, 10));
 
         Assert.Equal(3, browser.Requests);
         Assert.Equal(1, browser.ServerErrors);
@@ -95,15 +98,15 @@ public sealed class UsageStoreTests : IDisposable
             store.Write(counter.Drain());
         }
 
-        store.Prune(day.AddDays(-1), day.AddDays(2));
-        store.Prune(day.AddDays(-1), day.AddDays(2));
+        store.Prune(day.AddDays(-1), day.AddDays(2), day.AddDays(-1));
+        store.Prune(day.AddDays(-1), day.AddDays(2), day.AddDays(-1));
 
         var row = Assert.Single(store.Routes(day.AddDays(-1), 10));
         Assert.Equal(3, row.Requests);
         Assert.Equal(23, row.MaxMilliseconds);
         Assert.Equal(3, Assert.Single(store.Errors(day.AddDays(-1))).Count);
 
-        store.Prune(day.AddDays(1), day.AddDays(2));
+        store.Prune(day.AddDays(1), day.AddDays(2), day.AddDays(1));
         Assert.Empty(store.Routes(day.AddDays(-1), 10));
     }
 

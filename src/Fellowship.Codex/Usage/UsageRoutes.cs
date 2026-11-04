@@ -50,7 +50,13 @@ public static class UsageRoutes
             return null;
         }
 
-        if (path.StartsWithSegments(Hub)) return new UsageRoute(UsageArea.Circuit, Hub, UsageRoute.None);
+        // The connection request alone is the circuit. Its negotiate and disconnect requests are Other.
+        if (path.StartsWithSegments(Hub, out var rest))
+        {
+            return rest.HasValue && rest != "/"
+                ? new UsageRoute(UsageArea.Other, $"{Hub}{rest}", UsageRoute.None)
+                : new UsageRoute(UsageArea.Circuit, Hub, UsageRoute.None);
+        }
 
         if (path.StartsWithSegments($"/{ApiDocument.Ui}") || path.StartsWithSegments(ApiDocument.Route))
         {

@@ -11,10 +11,19 @@ namespace Fellowship.Codex.Browser.Tests;
 /// The Codex on Kestrel at a free port, reading the newest export in the checkout, and one Chromium.
 /// Each test opens its own browser context.
 /// </summary>
-public sealed class Site : IAsyncLifetime
+public class Site : IAsyncLifetime
 {
-    private readonly WebApplicationFactory<global::Program> host =
-        new WebApplicationFactory<global::Program>().WithWebHostBuilder(web => web.UseEnvironment("Development"));
+    private readonly WebApplicationFactory<global::Program> host;
+
+    public Site() =>
+        host = new WebApplicationFactory<global::Program>().WithWebHostBuilder(web => Configure(web.UseEnvironment("Development")));
+
+    public IServiceProvider Services => host.Services;
+
+    /// <summary>Settings and services a derived site adds to the host.</summary>
+    protected virtual void Configure(IWebHostBuilder web)
+    {
+    }
 
     private IPlaywright? playwright;
 
@@ -43,10 +52,10 @@ public sealed class Site : IAsyncLifetime
         browser = await playwright.Chromium.LaunchAsync();
     }
 
-    public Task<IBrowserContext> NewContextAsync() =>
-        browser!.NewContextAsync(new BrowserNewContextOptions { BaseURL = Root.ToString() });
+    public Task<IBrowserContext> NewContextAsync(IEnumerable<KeyValuePair<string, string>>? headers = null) =>
+        browser!.NewContextAsync(new BrowserNewContextOptions { BaseURL = Root.ToString(), ExtraHTTPHeaders = headers });
 
-    public async ValueTask DisposeAsync()
+    public virtual async ValueTask DisposeAsync()
     {
         if (browser is not null) await browser.DisposeAsync();
 

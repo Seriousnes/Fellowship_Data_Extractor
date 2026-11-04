@@ -5,7 +5,7 @@ using Fellowship.Storage;
 namespace Fellowship.Codex.Usage;
 
 /// <summary>
-/// Writes the counts to SQLite each minute, deletes counts past the retention, and uploads a
+/// Writes the counts to SQLite every ten seconds, deletes counts past the retention, and uploads a
 /// snapshot of the database to storage each day.
 /// </summary>
 public sealed class UsageFlush(
@@ -18,12 +18,15 @@ public sealed class UsageFlush(
 {
     public const string SnapshotName = "usage/usage.db";
 
-    private static readonly TimeSpan Interval = TimeSpan.FromMinutes(1);
+    public static readonly TimeSpan Interval = TimeSpan.FromSeconds(10);
 
     private static readonly TimeSpan SnapshotInterval = TimeSpan.FromDays(1);
 
     // Hourly counts are kept for the 24-hour and 7-day ranges, and the longer ranges read by day.
     private static readonly TimeSpan RollupAge = TimeSpan.FromDays(30);
+
+    // Per-minute counts serve the last-hour chart alone.
+    private static readonly TimeSpan MinuteAge = TimeSpan.FromDays(2);
 
     private DateTimeOffset snapshotted = DateTimeOffset.MinValue;
 
@@ -58,7 +61,7 @@ public sealed class UsageFlush(
 
         try
         {
-            store.Prune(now - TimeSpan.FromDays(settings.RetentionDays), now - RollupAge);
+            store.Prune(now - TimeSpan.FromDays(settings.RetentionDays), now - RollupAge, now - MinuteAge);
             await UploadAsync(cancellationToken);
         }
         catch (Exception failure) when (failure is not OperationCanceledException)

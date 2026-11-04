@@ -7,5 +7,22 @@
   font: inherit; color: var(--gold-bright); text-decoration: underline;
 }
 .cx-admin-out button:hover { color: var(--semantic-negative); }
+.cx-admin-live { margin-left: auto; color: var(--faint); font-variant-numeric: tabular-nums; }
 
-::deep td.cx-mono { font: 12px/1.5 var(--mono); color: var(--core-secondary-100); overflow-wrap: anywhere; }
+/* Chart slots on the sunken surface the validator checked: #3987e5, #d95926, #199e70, #c98500, #d55181. */
+.cx-usage-charts {
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 16px;
+}
+.cx-usage-charts ::deep .cx-panel + .cx-panel { margin-top: 0; }
+@media (min-width: 1100px) {
+  .cx-usage-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.cx-usage-chart {
+  position: relative; height: 280px; padding: 12px;
+  background: var(--sunken); border: 1px solid var(--line);
+}

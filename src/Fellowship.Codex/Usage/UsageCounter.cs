@@ -50,6 +50,8 @@ public readonly record struct AgentKey(long Day, Agent Agent, UsageArea Area, in
 
 public readonly record struct ErrorKey(long Hour, string Category, string Exception);
 
+public readonly record struct MinuteKey(long Minute, ClientKind Kind, UsageArea Area);
+
 public sealed class RequestTally
 {
     public long Count;
@@ -64,9 +66,10 @@ public sealed class RequestTally
 public sealed record UsageBatch(
     IReadOnlyDictionary<RequestKey, RequestTally> Requests,
     IReadOnlyDictionary<AgentKey, long> Agents,
-    IReadOnlyDictionary<ErrorKey, long> Errors)
+    IReadOnlyDictionary<ErrorKey, long> Errors,
+    IReadOnlyDictionary<MinuteKey, long> Minutes)
 {
-    public bool Empty => Requests.Count == 0 && Agents.Count == 0 && Errors.Count == 0;
+    public bool Empty => Requests.Count == 0 && Agents.Count == 0 && Errors.Count == 0 && Minutes.Count == 0;
 }
 
 /// <summary>Request, agent and error counts held in memory until the next flush.</summary>
@@ -78,7 +81,11 @@ public sealed class UsageCounter(TimeProvider time)
 
     private Dictionary<AgentKey, long> agents = [];
 
+    private Dictionary<MinuteKey, long> minutes = [];
+
     private ConcurrentDictionary<ErrorKey, long> errors = new();
+
+    public static long Minute(DateTimeOffset at) => at.ToUnixTimeSeconds() / 60 * 60;
 
     public static long Hour(DateTimeOffset at) => at.ToUnixTimeSeconds() / 3600 * 3600;
 
@@ -89,6 +96,7 @@ public sealed class UsageCounter(TimeProvider time)
         var now = time.GetUtcNow();
         var key = new RequestKey(Hour(now), route.Area, method, route.Route, route.Entity, status, cached);
         var agentKey = new AgentKey(Day(now), agent, route.Area, status / 100);
+        var minuteKey = new MinuteKey(Minute(now), agent.Kind, route.Area);
 
         lock (gate)
         {
@@ -104,6 +112,7 @@ public sealed class UsageCounter(TimeProvider time)
             }
 
             agents[agentKey] = agents.GetValueOrDefault(agentKey) + 1;
+            minutes[minuteKey] = minutes.GetValueOrDefault(minuteKey) + 1;
         }
     }
 
@@ -114,15 +123,17 @@ public sealed class UsageCounter(TimeProvider time)
     {
         Dictionary<RequestKey, RequestTally> drainedRequests;
         Dictionary<AgentKey, long> drainedAgents;
+        Dictionary<MinuteKey, long> drainedMinutes;
 
         lock (gate)
         {
             (drainedRequests, requests) = (requests, []);
             (drainedAgents, agents) = (agents, []);
+            (drainedMinutes, minutes) = (minutes, []);
         }
 
         var drainedErrors = Interlocked.Exchange(ref errors, new ConcurrentDictionary<ErrorKey, long>());
 
-        return new UsageBatch(drainedRequests, drainedAgents, drainedErrors);
+        return new UsageBatch(drainedRequests, drainedAgents, drainedErrors, drainedMinutes);
     }
 }

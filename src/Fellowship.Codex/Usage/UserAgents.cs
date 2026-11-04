@@ -9,10 +9,26 @@ public readonly record struct Agent(string Browser, int Major, string Os, bool M
     public const string Other = "Other";
 
     public static readonly Agent Unknown = new(Other, 0, Other, false);
+
+    public ClientKind Kind => UserAgents.Kind(Browser);
+}
+
+/// <summary>The kind of client a browser family is.</summary>
+public enum ClientKind
+{
+    Browser,
+    Crawler,
+    Preview,
+    Tool,
+    Unknown,
 }
 
 public static class UserAgents
 {
+    public const string Bot = "Bot";
+
+    private const string Safari = "Safari";
+
     // Link-preview fetchers, in the order they are tested. Each names the product in its own header.
     private static readonly (string Token, string Browser)[] Previewers =
     [
@@ -24,8 +40,40 @@ public static class UserAgents
         ("WhatsApp", "WhatsApp"),
         ("redditbot", "Redditbot"),
         ("LinkedInBot", "LinkedInBot"),
+        ("SkypeUriPreview", "Skype"),
+        ("Iframely", "Iframely"),
+        ("Embedly", "Embedly"),
+    ];
+
+    // Search, AI and SEO crawlers that name themselves.
+    private static readonly (string Token, string Browser)[] Crawlers =
+    [
         ("Googlebot", "Googlebot"),
+        ("Google-InspectionTool", "Googlebot"),
+        ("GoogleOther", "GoogleOther"),
         ("bingbot", "Bingbot"),
+        ("GPTBot", "GPTBot"),
+        ("OAI-SearchBot", "OAI-SearchBot"),
+        ("ChatGPT-User", "ChatGPT-User"),
+        ("ClaudeBot", "ClaudeBot"),
+        ("Claude-User", "Claude-User"),
+        ("Claude-SearchBot", "Claude-SearchBot"),
+        ("PerplexityBot", "PerplexityBot"),
+        ("Perplexity-User", "Perplexity-User"),
+        ("meta-externalagent", "Meta"),
+        ("Bytespider", "Bytespider"),
+        ("Amazonbot", "Amazonbot"),
+        ("Applebot", "Applebot"),
+        ("CCBot", "CCBot"),
+        ("YandexBot", "YandexBot"),
+        ("Baiduspider", "Baiduspider"),
+        ("DuckDuckBot", "DuckDuckBot"),
+        ("PetalBot", "PetalBot"),
+        ("AhrefsBot", "AhrefsBot"),
+        ("SemrushBot", "SemrushBot"),
+        ("MJ12bot", "MJ12bot"),
+        ("DotBot", "DotBot"),
+        ("DataForSeoBot", "DataForSeoBot"),
     ];
 
     private static readonly string[] Robots = ["bot", "crawl", "spider", "slurp", "preview"];
@@ -63,6 +111,26 @@ public static class UserAgents
         ("Chrome/", "Chrome"),
     ];
 
+    private static readonly Dictionary<string, ClientKind> Kinds = Families();
+
+    public static ClientKind Kind(string browser) => Kinds.GetValueOrDefault(browser, ClientKind.Unknown);
+
+    private static Dictionary<string, ClientKind> Families()
+    {
+        var kinds = new Dictionary<string, ClientKind>(StringComparer.Ordinal)
+        {
+            [Bot] = ClientKind.Crawler,
+            [Safari] = ClientKind.Browser,
+        };
+
+        foreach (var (_, browser) in Previewers) kinds[browser] = ClientKind.Preview;
+        foreach (var (_, browser) in Crawlers) kinds[browser] = ClientKind.Crawler;
+        foreach (var (_, browser) in Tools) kinds[browser] = ClientKind.Tool;
+        foreach (var (_, browser) in Browsers) kinds[browser] = ClientKind.Browser;
+
+        return kinds;
+    }
+
     public static Agent Classify(string? header)
     {
         if (string.IsNullOrWhiteSpace(header)) return Agent.Unknown;
@@ -75,14 +143,14 @@ public static class UserAgents
             if (header.Contains(token, StringComparison.OrdinalIgnoreCase)) return new Agent(browser, 0, os, mobile);
         }
 
-        foreach (var (token, browser) in Tools)
+        foreach (var (token, browser) in Crawlers.Concat(Tools))
         {
             if (header.Contains(token, StringComparison.OrdinalIgnoreCase)) return new Agent(browser, 0, os, mobile);
         }
 
         foreach (var robot in Robots)
         {
-            if (header.Contains(robot, StringComparison.OrdinalIgnoreCase)) return new Agent("Bot", 0, os, mobile);
+            if (header.Contains(robot, StringComparison.OrdinalIgnoreCase)) return new Agent(Bot, 0, os, mobile);
         }
 
         foreach (var (token, browser) in Browsers)
@@ -92,7 +160,7 @@ public static class UserAgents
 
         if (header.Contains("Safari/", StringComparison.Ordinal))
         {
-            return new Agent("Safari", Version(header, "Version/") ?? 0, os, mobile);
+            return new Agent(Safari, Version(header, "Version/") ?? 0, os, mobile);
         }
 
         return new Agent(Agent.Other, 0, os, mobile);

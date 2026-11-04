@@ -19,11 +19,30 @@ public sealed record RouteUsage(
 
 public sealed record StatusUsage(int Status, long Requests);
 
-public sealed record AgentUsage(
-    UsageArea Area,
-    string Browser, int Major, string Os, bool Mobile, long Requests, long ClientErrors, long ServerErrors);
+/// <summary>Requests of one browser family on one system, by area.</summary>
+public sealed record ClientUsage(
+    string Browser,
+    string Os,
+    bool Mobile,
+    long Pages,
+    long Circuits,
+    long Cards,
+    long Api,
+    long Static,
+    long Requests,
+    long ClientErrors,
+    long ServerErrors)
+{
+    public ClientKind Kind => UserAgents.Kind(Browser);
+}
+
+/// <summary>Requests and errors of one browser version in one area, for a version with an error.</summary>
+public sealed record VersionErrors(
+    UsageArea Area, string Browser, int Major, string Os, long Requests, long ClientErrors, long ServerErrors);
 
 public sealed record DayUsage(long Day, UsageArea Area, long Requests);
+
+public sealed record SeriesPoint(long Bucket, string Series, long Requests);
 
 public sealed record ErrorUsage(string Category, string Exception, long Count);
 
@@ -88,6 +107,13 @@ public sealed class UsageStore
             count INTEGER NOT NULL,
             PRIMARY KEY (hour, category, exception)
         ) WITHOUT ROWID;
+        CREATE TABLE IF NOT EXISTS minutes (
+            minute INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            area TEXT NOT NULL,
+            count INTEGER NOT NULL,
+            PRIMARY KEY (minute, kind, area)
+        ) WITHOUT ROWID;
         """;
 
     private SqliteConnection Open()
@@ -117,8 +143,35 @@ public sealed class UsageStore
         WriteRequests(open, transaction, batch.Requests);
         WriteAgents(open, transaction, batch.Agents);
         WriteErrors(open, transaction, batch.Errors);
+        WriteMinutes(open, transaction, batch.Minutes);
 
         transaction.Commit();
+    }
+
+    private static void WriteMinutes(
+        SqliteConnection open, SqliteTransaction transaction, IReadOnlyDictionary<MinuteKey, long> minutes)
+    {
+        using var command = open.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            INSERT INTO minutes (minute, kind, area, count) VALUES ($minute, $kind, $area, $count)
+            ON CONFLICT DO UPDATE SET count = count + excluded.count;
+            """;
+
+        var minute = command.Parameters.Add("$minute", SqliteType.Integer);
+        var kind = command.Parameters.Add("$kind", SqliteType.Text);
+        var area = command.Parameters.Add("$area", SqliteType.Text);
+        var count = command.Parameters.Add("$count", SqliteType.Integer);
+
+        foreach (var (key, total) in minutes)
+        {
+            minute.Value = key.Minute;
+            kind.Value = key.Kind.ToString();
+            area.Value = key.Area.ToString();
+            count.Value = total;
+            command.ExecuteNonQuery();
+        }
     }
 
     private static void WriteRequests(
@@ -226,7 +279,7 @@ public sealed class UsageStore
     /// Deletes every count older than the cutoff, and merges each hourly count older than the rollup
     /// into one count for its UTC day, so the database grows by day past the rollup.
     /// </summary>
-    public void Prune(DateTimeOffset cutoff, DateTimeOffset rollup)
+    public void Prune(DateTimeOffset cutoff, DateTimeOffset rollup, DateTimeOffset minutes)
     {
         using var open = Open();
         using var transaction = open.BeginTransaction();
@@ -237,6 +290,7 @@ public sealed class UsageStore
             DELETE FROM requests WHERE hour < $cutoff;
             DELETE FROM agents WHERE day < $cutoff;
             DELETE FROM errors WHERE hour < $cutoff;
+            DELETE FROM minutes WHERE minute < $minutes;
 
             CREATE TEMP TABLE rolled_requests AS
                 SELECT hour / 86400 * 86400, area, method, route, entity, status, cached,
@@ -256,6 +310,7 @@ public sealed class UsageStore
             """;
         command.Parameters.AddWithValue("$cutoff", cutoff.ToUnixTimeSeconds());
         command.Parameters.AddWithValue("$rollup", rollup.ToUnixTimeSeconds());
+        command.Parameters.AddWithValue("$minutes", minutes.ToUnixTimeSeconds());
         command.ExecuteNonQuery();
         transaction.Commit();
     }
@@ -315,20 +370,53 @@ public sealed class UsageStore
             since,
             row => new StatusUsage(row.GetInt32(0), row.GetInt64(1)));
 
-    public IReadOnlyList<AgentUsage> Agents(DateTimeOffset since, int limit) =>
+    public IReadOnlyList<ClientUsage> Clients(DateTimeOffset since, int limit) =>
         Read(
             $"""
-            SELECT area, browser, major, os, mobile, sum(count),
+            SELECT browser, os, mobile,
+                   {Area(UsageArea.Page)}, {Area(UsageArea.Circuit)}, {Area(UsageArea.Card)},
+                   {Area(UsageArea.Api)}, {Area(UsageArea.Static)}, sum(count),
                    sum(CASE WHEN status_class = 4 THEN count ELSE 0 END),
                    sum(CASE WHEN status_class = 5 THEN count ELSE 0 END)
             FROM agents WHERE day >= $since
-            GROUP BY area, browser, major, os, mobile ORDER BY sum(count) DESC LIMIT {limit};
+            GROUP BY browser, os, mobile ORDER BY sum(count) DESC LIMIT {limit};
             """,
             UsageCounter.Day(since),
-            row => new AgentUsage(
-                Enum.Parse<UsageArea>(row.GetString(0)),
-                row.GetString(1), row.GetInt32(2), row.GetString(3), row.GetInt32(4) == 1,
-                row.GetInt64(5), row.GetInt64(6), row.GetInt64(7)));
+            row => new ClientUsage(
+                row.GetString(0), row.GetString(1), row.GetInt32(2) == 1,
+                row.GetInt64(3), row.GetInt64(4), row.GetInt64(5), row.GetInt64(6), row.GetInt64(7),
+                row.GetInt64(8), row.GetInt64(9), row.GetInt64(10)));
+
+    public IReadOnlyList<VersionErrors> Versions(DateTimeOffset since) =>
+        Read(
+            """
+            SELECT area, browser, major, os, sum(count),
+                   sum(CASE WHEN status_class = 4 THEN count ELSE 0 END),
+                   sum(CASE WHEN status_class = 5 THEN count ELSE 0 END)
+            FROM agents WHERE day >= $since
+            GROUP BY area, browser, major, os HAVING sum(CASE WHEN status_class >= 4 THEN count ELSE 0 END) > 0
+            ORDER BY 7 DESC, 6 DESC;
+            """,
+            UsageCounter.Day(since),
+            row => new VersionErrors(
+                Enum.Parse<UsageArea>(row.GetString(0)), row.GetString(1), row.GetInt32(2), row.GetString(3),
+                row.GetInt64(4), row.GetInt64(5), row.GetInt64(6)));
+
+    /// <summary>Requests per minute since the given time, by client kind.</summary>
+    public IReadOnlyList<SeriesPoint> Minutes(DateTimeOffset since) =>
+        Read(
+            "SELECT minute, kind, sum(count) FROM minutes WHERE minute >= $since GROUP BY 1, 2 ORDER BY 1;",
+            since,
+            row => new SeriesPoint(row.GetInt64(0), row.GetString(1), row.GetInt64(2)));
+
+    /// <summary>Requests per bucket of the given length since the given time, by area.</summary>
+    public IReadOnlyList<SeriesPoint> Series(DateTimeOffset since, long bucketSeconds) =>
+        Read(
+            $"SELECT hour / {bucketSeconds} * {bucketSeconds}, area, sum(count) FROM requests WHERE hour >= $since GROUP BY 1, 2 ORDER BY 1;",
+            since,
+            row => new SeriesPoint(row.GetInt64(0), row.GetString(1), row.GetInt64(2)));
+
+    private static string Area(UsageArea area) => $"sum(CASE WHEN area = '{area}' THEN count ELSE 0 END)";
 
     public IReadOnlyList<DayUsage> Days(DateTimeOffset since) =>
         Read(
