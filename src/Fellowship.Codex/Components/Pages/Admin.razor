@@ -1,0 +1,205 @@
+@page "/admin"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = Fellowship.Codex.Usage.UsageExtensions.OwnerPolicy)]
+@using System.Security.Claims
+@using Fellowship.Codex.Usage
+@inject IServiceProvider Services
+@inject TimeProvider Time
+
+<PageTitle>Usage - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>Usage</h1>
+
+<Panel>
+    <div class="cx-roster">
+        @foreach (var range in Ranges)
+        {
+            <a href="@($"{UsageRoutes.Admin}?days={range}")" aria-current="@(range == Range ? "page" : null)">
+                @(range == 1 ? "24 hours" : $"{range} days")
+            </a>
+        }
+    </div>
+    <form method="post" action="@UsageExtensions.Logout" class="cx-admin-out">
+        <AntiforgeryToken />
+        Signed in as <span class="cx-who">@Owner</span>.
+        <button type="submit">Sign out</button>
+    </form>
+</Panel>
+
+@if (Store is null)
+{
+    <Panel>
+        <Empty Message="No usage database.">Set @UsageSettings.DatabaseKey to a file path to count requests.</Empty>
+    </Panel>
+}
+else if (Areas.Count == 0)
+{
+    <Panel>
+        <Empty Message="No requests counted.">Counts are written each minute.</Empty>
+    </Panel>
+}
+else
+{
+    <Panel Head="Areas" Badge="@Total.ToString("N0")">
+        <Table Items="Areas">
+            <Columns>
+                <Column Head="Area" Value="row => row.Area" />
+                <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
+                <Column Head="Share" Numeric="true" Value="row => Share(row.Requests, Total)" />
+                <Column Head="Cached" Numeric="true" Value="row => Share(row.Cached, row.Requests)" />
+                <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
+                <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
+            </Columns>
+        </Table>
+    </Panel>
+
+    <Panel Head="Requests by day">
+        <Table Items="Days">
+            <Columns>
+                <Column Head="Day" Value="row => row.Day" />
+                @foreach (var area in DayAreas)
+                {
+                    <Column Head="@area.ToString()" Numeric="true" Value="row => row.Counts.GetValueOrDefault(area).ToString(Count)" />
+                }
+            </Columns>
+        </Table>
+    </Panel>
+
+    <Panel Head="Routes" Badge="@RouteRows.Count.ToString("N0")">
+        <Note>Duration is from the first byte of the request to the end of the response. Circuits have no duration.</Note>
+        <Table Items="RouteRows">
+            <Columns>
+                <Column Head="Area" Value="row => row.Area" />
+                <Column Head="Method" Value="row => row.Method" />
+                <Column Head="Route" Value="row => row.Route" Class="cx-mono" />
+                <Column Head="Type" Value="row => row.Entity" />
+                <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
+                <Column Head="Cached" Numeric="true" Value="row => Share(row.Cached, row.Requests)" />
+                <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
+                <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
+                <Column Head="Mean" Numeric="true" Unit="ms" Value="row => row.MeanMilliseconds.ToString(Duration)" />
+                <Column Head="95th percentile" Numeric="true" Value="row => row.P95Bucket is { } bucket ? Latency.Label(bucket) : null" />
+                <Column Head="Max" Numeric="true" Unit="ms" Value="row => row.MaxMilliseconds.ToString(Duration)" />
+            </Columns>
+        </Table>
+    </Panel>
+
+    <Panel Head="Browsers" Badge="@AgentRows.Count.ToString("N0")">
+        <Note>Browsers are counted by UTC day, so this table covers each whole day the range touches. The Card area lists the link-preview fetchers.</Note>
+        <Table Items="AgentRows">
+            <Columns>
+                <Column Head="Area" Value="row => row.Area" />
+                <Column Head="Browser" Value="row => row.Browser" />
+                <Column Head="Version" Numeric="true" Value="row => row.Major == 0 ? null : row.Major.ToString()" />
+                <Column Head="System" Value="row => row.Os" />
+                <Column Head="Mobile" Value="row => row.Mobile" />
+                <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
+                <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
+                <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
+                <Column Head="5xx rate" Numeric="true" Value="row => Share(row.ServerErrors, row.Requests)" />
+            </Columns>
+        </Table>
+    </Panel>
+
+    <Panel Head="Statuses">
+        <Table Items="Statuses">
+            <Columns>
+                <Column Head="Status" Value="row => row.Status" />
+                <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
+                <Column Head="Share" Numeric="true" Value="row => Share(row.Requests, Total)" />
+            </Columns>
+        </Table>
+    </Panel>
+
+    <Panel Head="Errors" Badge="@ErrorRows.Sum(row => row.Count).ToString("N0")">
+        @if (ErrorRows.Count == 0)
+        {
+            <Empty Message="No errors logged." />
+        }
+        else
+        {
+            <Note>Each error logged at Error level or above, by log category and exception type. This includes errors inside interactive components.</Note>
+            <Table Items="ErrorRows">
+                <Columns>
+                    <Column Head="Category" Value="row => row.Category" Class="cx-mono" />
+                    <Column Head="Exception" Value="row => row.Exception" Class="cx-mono" />
+                    <Column Head="Count" Numeric="true" Value="row => row.Count.ToString(Count)" />
+                </Columns>
+            </Table>
+        }
+    </Panel>
+}
+
+@code {
+    private const string Count = "N0";
+
+    private const string Duration = "N1";
+
+    private const int Limit = 100;
+
+    private static readonly int[] Ranges = [1, 7, 30, 90];
+
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail = [("Usage", null)];
+
+    [CascadingParameter] public HttpContext Http { get; set; } = default!;
+
+    [SupplyParameterFromQuery(Name = "days")] public int? Requested { get; set; }
+
+    private UsageStore? Store;
+
+    private int Range;
+
+    private string? Owner;
+
+    private IReadOnlyList<AreaUsage> Areas = [];
+
+    private long Total;
+
+    private IReadOnlyList<RouteUsage> RouteRows = [];
+
+    private IReadOnlyList<AgentUsage> AgentRows = [];
+
+    private IReadOnlyList<StatusUsage> Statuses = [];
+
+    private IReadOnlyList<ErrorUsage> ErrorRows = [];
+
+    private IReadOnlyList<UsageArea> DayAreas = [];
+
+    private IReadOnlyList<DayRow> Days = [];
+
+    private sealed record DayRow(string Day, IReadOnlyDictionary<UsageArea, long> Counts);
+
+    protected override void OnInitialized()
+    {
+        Owner = Http.User.FindFirstValue(ClaimTypes.Name) ?? Http.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Range = Requested is { } asked && Ranges.Contains(asked) ? asked : Ranges[1];
+        Store = Services.GetService<UsageStore>();
+
+        if (Store is null) return;
+
+        var since = Time.GetUtcNow() - TimeSpan.FromDays(Range);
+
+        Areas = Store.Areas(since);
+        Total = Areas.Sum(area => area.Requests);
+        RouteRows = Store.Routes(since, Limit);
+        AgentRows = Store.Agents(since, Limit);
+        Statuses = Store.Statuses(since);
+        ErrorRows = Store.Errors(since);
+
+        var days = Store.Days(since);
+
+        DayAreas = [.. days.Select(day => day.Area).Distinct().Order()];
+        Days =
+        [
+            .. days.GroupBy(day => day.Day)
+                .OrderByDescending(group => group.Key)
+                .Select(group => new DayRow(
+                    DateTimeOffset.FromUnixTimeSeconds(group.Key).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    group.ToDictionary(day => day.Area, day => day.Requests))),
+        ];
+    }
+
+    private static string Share(long part, long whole) =>
+        whole == 0 ? "–" : (part / (double)whole).ToString("P1", CultureInfo.InvariantCulture);
+}

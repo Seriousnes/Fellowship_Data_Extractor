@@ -115,6 +115,9 @@ jobs:
           REGION: ${{ secrets.AWS_REGION }}
           KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
+          OWNERS: ${{ secrets.ADMIN_GITHUB_IDS }}
         run: |
           umask 077
           {
@@ -123,6 +126,9 @@ jobs:
             printf 'AWS_REGION=%s\n' "$REGION"
             printf 'AWS_ACCESS_KEY_ID=%s\n' "$KEY_ID"
             printf 'AWS_SECRET_ACCESS_KEY=%s\n' "$SECRET"
+            printf 'GitHub__ClientId=%s\n' "$OAUTH_CLIENT_ID"
+            printf 'GitHub__ClientSecret=%s\n' "$OAUTH_CLIENT_SECRET"
+            printf 'GitHub__Owners=%s\n' "$OWNERS"
           } > codex.env
           scp -o BatchMode=yes codex.env deploy/compose.yaml "$REMOTE:$REMOTE_DIR/"
           rm codex.env

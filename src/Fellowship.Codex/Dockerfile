@@ -7,6 +7,7 @@ RUN dotnet publish src/Fellowship.Codex/Fellowship.Codex.csproj -c Release -o /a
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app ./
+RUN mkdir -p /data && chown $APP_UID /data
 EXPOSE 8080
 USER $APP_UID
 ENTRYPOINT ["dotnet", "Fellowship.Codex.dll"]
