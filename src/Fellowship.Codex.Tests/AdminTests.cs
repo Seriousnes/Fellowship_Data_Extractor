@@ -81,22 +81,26 @@ public sealed class Admin : ICollectionFixture<AdminHost>
 public class AdminTests(AdminHost host)
 {
     [Theory]
+    [InlineData("/")]
+    [InlineData("/talent/209/sword-board")]
+    [InlineData("/heroes")]
     [InlineData("/api/catalog")]
     [InlineData("/og/talent/209/sword-board.png")]
     public async Task An_anonymous_request_receives_no_cookie(string path)
     {
         using var response = await host.Client().GetAsync(path, TestContext.Current.CancellationToken);
 
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.False(response.Headers.Contains("Set-Cookie"), string.Join("; ", response.Headers.Where(h => h.Key == "Set-Cookie").SelectMany(h => h.Value)));
     }
 
     [Fact]
-    public async Task An_anonymous_page_receives_no_sign_in_cookie()
+    public async Task The_dashboard_issues_its_antiforgery_cookie_inside_the_admin_area()
     {
-        using var response = await host.Client().GetAsync("/", TestContext.Current.CancellationToken);
-        var cookies = response.Headers.TryGetValues("Set-Cookie", out var set) ? set : [];
+        using var response = await host.Client(AdminHost.Owner).GetAsync(UsageRoutes.Admin, TestContext.Current.CancellationToken);
+        var cookie = Assert.Single(response.Headers.GetValues("Set-Cookie"));
 
-        Assert.DoesNotContain(cookies, cookie => cookie.StartsWith("codex-admin", StringComparison.Ordinal));
+        Assert.Contains($"path={UsageRoutes.Admin}", cookie, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

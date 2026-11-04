@@ -36,6 +36,7 @@ public static class UsageExtensions
 
         services.AddSingleton(settings);
         services.TryAddSingleton(TimeProvider.System);
+        AdminAntiforgery.Register(services);
 
         if (settings.Counting)
         {

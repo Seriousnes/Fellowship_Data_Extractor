@@ -63,7 +63,10 @@ var app = builder.Build();
 
 await app.Services.LoadExportAsync(app.Lifetime.ApplicationStopping);
 
+if (await Sitemap.WriteIfRequestedAsync(app)) return;
+
 app.UseUsage(usage);
+app.UseMiddleware<CrawlerValidators>();
 
 app.MapDefaultEndpoints();
 app.MapOpenApi();
