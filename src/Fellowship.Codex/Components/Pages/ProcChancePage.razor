@@ -81,7 +81,7 @@
 else
 {
     var rate = ProcChance.Rate(rolled, Fraction);
-    var result = rate is { } known ? ProcChance.Roll(known, sinceRoll, sinceProc, beforeFirst, Formula) : null;
+    var result = rate is { } known ? ProcChance.Roll(known, Number(sinceRoll), Number(sinceProc), beforeFirst, Formula) : null;
 
     <Panel Head="@Ui.Name(source.Face)">
         <div class="cx-pc-form">
@@ -140,7 +140,7 @@ else
 
     [SupplyParameterFromQuery(Name = nameof(ProcParameter.Entry))] public string? Index { get; set; }
 
-    private const string Page = "/tools/proc-chance";
+    public const string Page = "/tools/proc-chance";
 
     private const int PlateWidth = 30;
 
@@ -152,11 +152,11 @@ else
 
     private int Chosen;
 
-    private readonly Dictionary<string, double> percents = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> percents = new(StringComparer.Ordinal);
 
-    private double sinceRoll = 1;
+    private string sinceRoll = "1";
 
-    private double sinceProc = 30;
+    private string sinceProc = "30";
 
     private bool beforeFirst;
 
@@ -185,10 +185,17 @@ else
             : null;
         Chosen = Whole(Index) is { } at && at >= 0 && Picked is { } picked && at < picked.Rolls.Count ? at : 0;
 
-        foreach (var attribute in Entry?.ScalesOff ?? []) percents.TryAdd(attribute, 0);
+        foreach (var attribute in Entry?.ScalesOff ?? []) percents.TryAdd(attribute, "0");
     }
 
-    private double Fraction(string attribute) => Math.Max(0, percents.GetValueOrDefault(attribute)) / 100;
+    private double Fraction(string attribute) => Math.Max(0, Number(percents.GetValueOrDefault(attribute))) / 100;
+
+    /// <summary>
+    /// Each input binds the text typed into it, so a render never writes a reformatted number back over that text.
+    /// Empty or unparsable text is 0.
+    /// </summary>
+    private static double Number(string? text) =>
+        double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) ? parsed : 0;
 
     private static int? Whole(string? value) =>
         int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
@@ -202,7 +209,7 @@ else
 
     private static string Shown(double chance) => $"{CodexView.Number(Math.Round(chance * 100, 2))}%";
 
-    private static string Address(ProcRollSource source, int entry) =>
+    public static string Address(ProcRollSource source, int entry) =>
         $"{Page}?{QueryKeys.Key(ProcParameter.Type)}={source.Key}&{QueryKeys.Key(ProcParameter.Id)}={source.Face.Id}" +
         (source.Rolls.Count > 1 ? $"&{QueryKeys.Key(ProcParameter.Entry)}={entry}" : string.Empty);
 }

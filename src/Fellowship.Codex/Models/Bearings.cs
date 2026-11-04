@@ -26,6 +26,9 @@ public sealed record Bearings
 
     public IReadOnlyList<(string Label, string Href)> Related { get; init; } = [];
 
+    /// <summary>Query keys present with an empty value, such as an emptied number box, so the box renders empty on every render.</summary>
+    public IReadOnlySet<string> Emptied { get; init; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
     public IReadOnlyDictionary<string, string> Values { get; init; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }

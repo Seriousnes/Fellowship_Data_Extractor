@@ -1,10 +1,10 @@
-<div class="cx-slider">
+<div class="cx-slider" data-live="@Live">
     <span>@Caption</span>
     <div class="cx-slider-row">
         <input type="range" min="@Min" max="@Max" step="1" value="@Value" aria-label="@Caption"
                data-knob="@QueryKeys.Key(Key)" @onchange="Changed" />
-        <input type="number" min="@Min" max="@Max" step="1" value="@Value" inputmode="numeric"
-               aria-label="@Caption" @onchange="Changed" />
+        <input type="number" min="@Min" max="@Max" step="1" value="@(Text ?? Value.ToString(CultureInfo.InvariantCulture))"
+               inputmode="numeric" aria-label="@Caption" @onchange="Changed" />
     </div>
 </div>
 
@@ -19,7 +19,16 @@
 
     [Parameter] public int Value { get; set; }
 
+    /// <summary>
+    /// The query's text for <see cref="Key"/>, empty for an emptied box, so the number box shows what was typed
+    /// rather than <see cref="Value"/> reformatted.
+    /// </summary>
+    [Parameter] public string? Text { get; set; }
+
     [Parameter] public EventCallback<string?> OnChange { get; set; }
+
+    /// <summary>"on" once the slider renders interactively, so input typed into it reaches the server.</summary>
+    private string? Live => RendererInfo.IsInteractive ? "on" : null;
 
     private Task Changed(ChangeEventArgs change) => OnChange.InvokeAsync(change.Value?.ToString());
 }

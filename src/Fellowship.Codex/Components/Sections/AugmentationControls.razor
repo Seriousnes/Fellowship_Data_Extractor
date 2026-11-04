@@ -22,7 +22,7 @@
             @if (augmentation is EnchantDocument)
             {
                 <Slider Caption="Item level" Key="ReadingParameter.ItemLevel" Min="1" Max="Store.Settings.Items.MaxItemLevel"
-                        Value="AugmentationRanks.Level(Store.Settings, Query)"
+                        Value="AugmentationRanks.Level(Store.Settings, Query)" Text="@Typed(ReadingParameter.ItemLevel)"
                         OnChange="@(value => Turn(ReadingParameter.ItemLevel, value))" />
             }
 
@@ -83,4 +83,8 @@
     private string? Wearing => Here.Reading ?? PerHero;
 
     private string? Value(ReadingParameter knob) => Here.Values.GetValueOrDefault(QueryKeys.Key(knob));
+
+    /// <summary>The query's text for <paramref name="knob"/>, empty for an emptied box, and null when the query has no such key.</summary>
+    private string? Typed(ReadingParameter knob) =>
+        Value(knob) ?? (Here.Emptied.Contains(QueryKeys.Key(knob)) ? string.Empty : null);
 }

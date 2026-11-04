@@ -1,13 +1,13 @@
 @if (As == "div")
 {
-    <div class="cx-knob">
+    <div class="cx-knob" data-live="@Live">
         <span>@Caption</span>
         @ChildContent
     </div>
 }
 else
 {
-    <label class="cx-knob">
+    <label class="cx-knob" data-live="@Live">
         <span>@Caption</span>
         @ChildContent
     </label>
@@ -19,4 +19,7 @@ else
     [Parameter] public string As { get; set; } = "label";
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>"on" once the knob renders interactively, so input typed into it reaches the server.</summary>
+    private string? Live => RendererInfo.IsInteractive ? "on" : null;
 }

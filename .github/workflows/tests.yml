@@ -33,3 +33,24 @@ jobs:
 
       - name: Run the codex tests
         run: dotnet test src/Fellowship.Codex.Tests
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build the browser tests
+        run: dotnet build src/Fellowship.Codex.Browser.Tests
+
+      # The Playwright package has its own Node and CLI. --with-deps adds the system libraries Chromium needs.
+      - name: Install Chromium
+        run: |
+          bin=src/Fellowship.Codex.Browser.Tests/bin/Debug/net10.0/.playwright
+          "$(ls "$bin"/node/*/node)" "$bin/package/cli.js" install --with-deps chromium
+
+      - name: Run the browser tests
+        run: dotnet test src/Fellowship.Codex.Browser.Tests --no-build
