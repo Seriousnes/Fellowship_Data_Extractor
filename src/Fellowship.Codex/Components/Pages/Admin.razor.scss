@@ -1,0 +1,11 @@
+.cx-admin-out {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-top: 12px;
+  font-size: 13px; color: var(--muted);
+}
+.cx-admin-out button {
+  appearance: none; padding: 0; border: 0; background: none; cursor: pointer;
+  font: inherit; color: var(--gold-bright); text-decoration: underline;
+}
+.cx-admin-out button:hover { color: var(--semantic-negative); }
+
+::deep td.cx-mono { font: 12px/1.5 var(--mono); color: var(--core-secondary-100); overflow-wrap: anywhere; }
