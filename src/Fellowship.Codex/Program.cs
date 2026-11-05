@@ -2,6 +2,7 @@ using Fellowship.Codex;
 using Fellowship.Codex.Components;
 using Fellowship.Codex.Endpoints;
 using Fellowship.Codex.Services;
+using Fellowship.Codex.Usage;
 using Fellowship.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -56,9 +57,16 @@ builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
 builder.Services.AddServing();
 
+var usage = builder.AddUsage();
+
 var app = builder.Build();
 
 await app.Services.LoadExportAsync(app.Lifetime.ApplicationStopping);
+
+if (await Sitemap.WriteIfRequestedAsync(app)) return;
+
+app.UseUsage(usage);
+app.UseMiddleware<CrawlerValidators>();
 
 app.MapDefaultEndpoints();
 app.MapOpenApi();
@@ -79,11 +87,14 @@ app.UseSwaggerUI(options =>
     options.DocumentTitle = ApiDocument.Title;
 });
 
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode().ServePages();
 
 app.MapCards();
+app.MapAdmin(usage);
 
 app.MapGroup(string.Empty).Serve().RequireCors(Serving.Origins).MapApiEndpoints();
 

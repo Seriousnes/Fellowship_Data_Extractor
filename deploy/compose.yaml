@@ -10,6 +10,9 @@ services:
       DOTNET_gcServer: "0"
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       ASPNETCORE_URLS: "http://+:8080"
+      Usage__Database: /data/usage.db
+    volumes:
+      - codex-data:/data
     restart: unless-stopped
     mem_limit: 512m
     memswap_limit: 512m
@@ -18,3 +21,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  codex-data:

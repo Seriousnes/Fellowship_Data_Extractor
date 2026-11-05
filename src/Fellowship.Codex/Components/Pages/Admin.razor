@@ -1,0 +1,62 @@
+@page "/admin"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = Fellowship.Codex.Usage.UsageExtensions.OwnerPolicy)]
+@using System.Security.Claims
+@using Fellowship.Codex.Usage
+
+<PageTitle>Usage - Fellowship Codex</PageTitle>
+
+<Crumbs Trail="@Trail" />
+
+<h1>Usage</h1>
+
+<Panel>
+    <div class="cx-roster" id="cx-usage-ranges">
+        @foreach (var range in UsageRanges.Days)
+        {
+            <a href="@($"{UsageRoutes.Admin}?days={range}")" data-days="@range" data-enhance-nav="false"
+               aria-current="@(range == Range ? "page" : null)">@UsageRanges.Label(range)</a>
+        }
+    </div>
+    <form method="post" action="@UsageExtensions.Logout" class="cx-admin-out">
+        <AntiforgeryToken />
+        <span>Signed in as <span class="cx-who">@Owner</span>.</span>
+        <button type="submit">Sign out</button>
+        <span class="cx-admin-live" id="cx-usage-status" aria-live="polite"></span>
+    </form>
+</Panel>
+
+<div class="cx-usage-charts">
+    <Panel Head="Last hour, per minute, by client kind">
+        <div class="cx-usage-chart"><canvas id="cx-usage-live" role="img" aria-label="Requests per minute over the last hour, one line per client kind"></canvas></div>
+    </Panel>
+    <Panel Head="@RangeHead">
+        <div class="cx-usage-chart"><canvas id="cx-usage-range" role="img" aria-label="Requests over the range, one line per area"></canvas></div>
+    </Panel>
+</div>
+
+<div id="cx-usage-report" data-report="@UsageExtensions.Report">
+    <UsageReport Days="Range" />
+</div>
+
+<script src="js/vendor/chart.umd.min.js"></script>
+<script type="module" src="js/usage.js"></script>
+
+@code {
+    private static readonly IReadOnlyList<(string Label, string? Href)> Trail = [("Usage", null)];
+
+    [CascadingParameter] public HttpContext Http { get; set; } = default!;
+
+    [SupplyParameterFromQuery(Name = "days")] public int? Requested { get; set; }
+
+    private int Range;
+
+    private string? Owner;
+
+    private string RangeHead => UsageRanges.Head(Range);
+
+    protected override void OnInitialized()
+    {
+        Owner = Http.User.FindFirstValue(ClaimTypes.Name) ?? Http.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Range = UsageRanges.Pick(Requested);
+    }
+}

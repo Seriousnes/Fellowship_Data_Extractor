@@ -1,0 +1,212 @@
+@using Fellowship.Codex.Usage
+@inject IServiceProvider Services
+@inject TimeProvider Time
+
+<div class="cx-usage-report">
+@if (Store is null)
+{
+    <Panel>
+        <Empty Message="No usage database.">Set @UsageSettings.DatabaseKey to a file path to count requests.</Empty>
+    </Panel>
+}
+else if (Areas.Count == 0)
+{
+    <script type="application/json" id="cx-usage-data">@((MarkupString)ChartJson)</script>
+    <Panel>
+        <Empty Message="No requests counted.">Counts are written every @((int)UsageFlush.Interval.TotalSeconds) seconds.</Empty>
+    </Panel>
+}
+else
+{
+    <script type="application/json" id="cx-usage-data">@((MarkupString)ChartJson)</script>
+
+    <Panel Head="Areas" Badge="@Total.ToString(Count)">
+        <Table Items="Areas">
+            <Columns>
+                <Column Head="Area" Value="row => row.Area" />
+                <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
+                <Column Head="Share" Numeric="true" Value="row => Share(row.Requests, Total)" />
+                <Column Head="Cached" Numeric="true" Value="row => Share(row.Cached, row.Requests)" />
+                <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
+                <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
+            </Columns>
+        </Table>
+    </Panel>
+
+    <Panel Head="Clients" Badge="@Clients.Count.ToString(Count)">
+        <Note>
+            A browser opens a circuit when it loads the site, because the search box is interactive, and keeps
+            it across the pages it navigates to. A client with pages and no circuits runs no scripts, and is a
+            crawler whatever its header names.
+            Clients are counted by UTC day, so this table covers each whole day the range touches.
+        </Note>
+        <Table Items="Clients">
+            <Columns>
+                <Column Head="Kind" Value="row => row.Kind" />
+                <Column Head="Browser" Value="row => row.Browser" />
+                <Column Head="System" Value="row => row.Os" />
+                <Column Head="Mobile" Value="row => row.Mobile" />
+                <Column Head="Pages" Numeric="true" Value="row => row.Pages.ToString(Count)" />
+                <Column Head="Circuits" Numeric="true" Value="row => row.Circuits.ToString(Count)" />
+                <Column Head="Cards" Numeric="true" Value="row => row.Cards.ToString(Count)" />
+                <Column Head="API" Numeric="true" Value="row => row.Api.ToString(Count)" />
+                <Column Head="Static" Numeric="true" Value="row => row.Static.ToString(Count)" />
+                <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
+                <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
+            </Columns>
+        </Table>
+    </Panel>
+
+    <Panel Head="Errors by browser version" Badge="@Versions.Count.ToString(Count)">
+        @if (Versions.Count == 0)
+        {
+            <Empty Message="No browser version had a 4xx or 5xx response." />
+        }
+        else
+        {
+            <Table Items="Versions">
+                <Columns>
+                    <Column Head="Area" Value="row => row.Area" />
+                    <Column Head="Browser" Value="row => row.Browser" />
+                    <Column Head="Version" Numeric="true" Value="row => row.Major == 0 ? null : row.Major.ToString()" />
+                    <Column Head="System" Value="row => row.Os" />
+                    <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
+                    <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
+                    <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
+                    <Column Head="5xx rate" Numeric="true" Value="row => Share(row.ServerErrors, row.Requests)" />
+                </Columns>
+            </Table>
+        }
+    </Panel>
+
+    <Panel Head="Routes" Badge="@RouteRows.Count.ToString(Count)">
+        <Note>Duration runs from the first byte of the request to the end of the response. Circuits have no duration.</Note>
+        <Table Items="RouteRows">
+            <Columns>
+                <Column Head="Area" Value="row => row.Area" />
+                <Column Head="Method" Value="row => row.Method" />
+                <Column Head="Route" Value="row => row.Route" Class="cx-mono" />
+                <Column Head="Type" Value="row => row.Entity" />
+                <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
+                <Column Head="Cached" Numeric="true" Value="row => Share(row.Cached, row.Requests)" />
+                <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
+                <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
+                <Column Head="Mean" Numeric="true" Unit="ms" Value="row => row.MeanMilliseconds.ToString(Duration)" />
+                <Column Head="95th percentile" Numeric="true" Value="row => row.P95Bucket is { } bucket ? Latency.Label(bucket) : null" />
+                <Column Head="Max" Numeric="true" Unit="ms" Value="row => row.MaxMilliseconds.ToString(Duration)" />
+            </Columns>
+        </Table>
+    </Panel>
+
+    <Panel Head="Requests by day">
+        <Table Items="DayRows">
+            <Columns>
+                <Column Head="Day" Value="row => row.Day" />
+                @foreach (var area in DayAreas)
+                {
+                    <Column Head="@area.ToString()" Numeric="true" Value="row => row.Counts.GetValueOrDefault(area).ToString(Count)" />
+                }
+            </Columns>
+        </Table>
+    </Panel>
+
+    <Panel Head="Statuses">
+        <Table Items="Statuses">
+            <Columns>
+                <Column Head="Status" Value="row => row.Status" />
+                <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
+                <Column Head="Share" Numeric="true" Value="row => Share(row.Requests, Total)" />
+            </Columns>
+        </Table>
+    </Panel>
+
+    <Panel Head="Errors" Badge="@ErrorRows.Sum(row => row.Count).ToString(Count)">
+        @if (ErrorRows.Count == 0)
+        {
+            <Empty Message="No errors logged." />
+        }
+        else
+        {
+            <Note>Each event logged at Error level or above, by log category and exception type. This includes errors inside interactive components.</Note>
+            <Table Items="ErrorRows">
+                <Columns>
+                    <Column Head="Category" Value="row => row.Category" Class="cx-mono" />
+                    <Column Head="Exception" Value="row => row.Exception" Class="cx-mono" />
+                    <Column Head="Count" Numeric="true" Value="row => row.Count.ToString(Count)" />
+                </Columns>
+            </Table>
+        }
+    </Panel>
+}
+
+</div>
+
+@code {
+    private const string Count = "N0";
+
+    private const string Duration = "N1";
+
+    private const int Limit = 100;
+
+    /// <summary>Range in days, one of <see cref="UsageRanges.Days" />.</summary>
+    [Parameter] public int Days { get; set; } = UsageRanges.Default;
+
+    private UsageStore? Store;
+
+    private string ChartJson = "{}";
+
+    private IReadOnlyList<AreaUsage> Areas = [];
+
+    private long Total;
+
+    private IReadOnlyList<ClientUsage> Clients = [];
+
+    private IReadOnlyList<VersionErrors> Versions = [];
+
+    private IReadOnlyList<RouteUsage> RouteRows = [];
+
+    private IReadOnlyList<StatusUsage> Statuses = [];
+
+    private IReadOnlyList<ErrorUsage> ErrorRows = [];
+
+    private IReadOnlyList<UsageArea> DayAreas = [];
+
+    private IReadOnlyList<DayRow> DayRows = [];
+
+    private sealed record DayRow(string Day, IReadOnlyDictionary<UsageArea, long> Counts);
+
+    protected override void OnParametersSet()
+    {
+        Store = Services.GetService<UsageStore>();
+
+        if (Store is null) return;
+
+        var range = UsageRanges.Pick(Days);
+        var now = Time.GetUtcNow();
+        var since = now - TimeSpan.FromDays(range);
+
+        ChartJson = UsageRanges.Charts(Store, range, now);
+        Areas = Store.Areas(since);
+        Total = Areas.Sum(area => area.Requests);
+        Clients = Store.Clients(since, Limit);
+        Versions = Store.Versions(since);
+        RouteRows = Store.Routes(since, Limit);
+        Statuses = Store.Statuses(since);
+        ErrorRows = Store.Errors(since);
+
+        var days = Store.Days(since);
+
+        DayAreas = [.. days.Select(day => day.Area).Distinct().Order()];
+        DayRows =
+        [
+            .. days.GroupBy(day => day.Day)
+                .OrderByDescending(group => group.Key)
+                .Select(group => new DayRow(
+                    DateTimeOffset.FromUnixTimeSeconds(group.Key).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    group.ToDictionary(day => day.Area, day => day.Requests))),
+        ];
+    }
+
+    private static string Share(long part, long whole) =>
+        whole == 0 ? "–" : (part / (double)whole).ToString("P1", CultureInfo.InvariantCulture);
+}

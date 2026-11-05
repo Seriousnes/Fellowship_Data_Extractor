@@ -34,6 +34,28 @@ public class DeployWorkflowTests
         Assert.Equal(TextureSizes.Folder, Prefix("TEXTURES"));
     }
 
+    private static readonly string[] Robots =
+        File.ReadAllLines(Path.Combine(Project.Folder, "wwwroot", "robots.txt"));
+
+    private static IEnumerable<string> Rule(string name) =>
+        Robots.Where(line => line.StartsWith($"{name}:", StringComparison.Ordinal)).Select(line => line[(name.Length + 1)..].Trim());
+
+    [Fact]
+    public void The_robots_sitemap_line_names_the_site_the_workflow_writes_the_sitemap_for()
+    {
+        var site = Prefix("SITE");
+
+        Assert.Equal($"{site}/{Sitemap.FileName}", Assert.Single(Rule("Sitemap")));
+        Assert.StartsWith($"{site}/", Prefix("HEALTH_URL"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Robots_keep_crawlers_out_of_the_admin_area_and_let_previews_read_cards()
+    {
+        Assert.Contains(Usage.UsageRoutes.Admin, Rule("Disallow"));
+        Assert.Contains($"/{Cards.Prefix}/", Rule("Allow"));
+    }
+
     [Fact]
     public void The_workflow_publishes_both_files_a_build_folder_carries()
     {
