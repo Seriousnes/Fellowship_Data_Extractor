@@ -104,6 +104,37 @@ public class AdminTests(AdminHost host)
     }
 
     [Fact]
+    public async Task An_owner_downloads_a_readable_copy_of_the_database()
+    {
+        var cancellation = TestContext.Current.CancellationToken;
+
+        using var response = await host.Client(AdminHost.Owner).GetAsync(UsageExtensions.Database, cancellation);
+        var content = await response.Content.ReadAsByteArrayAsync(cancellation);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        Assert.EndsWith(".db", response.Content.Headers.ContentDisposition?.FileName);
+        Assert.Equal("SQLite format 3\0", System.Text.Encoding.ASCII.GetString(content, 0, 16));
+    }
+
+    [Fact]
+    public async Task A_user_other_than_an_owner_cannot_download_the_database()
+    {
+        using var response = await host.Client("1").GetAsync(UsageExtensions.Database, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Clearing_without_an_antiforgery_token_is_refused()
+    {
+        using var form = new FormUrlEncodedContent([new(UsageExtensions.ClearDays, "1")]);
+        using var response = await host.Client(AdminHost.Owner).PostAsync(UsageExtensions.Clear, form, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task An_anonymous_request_for_the_dashboard_is_sent_to_sign_in()
     {
         using var response = await host.Client().GetAsync(UsageRoutes.Admin, TestContext.Current.CancellationToken);

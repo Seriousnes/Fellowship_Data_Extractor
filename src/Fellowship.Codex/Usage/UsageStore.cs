@@ -315,6 +315,29 @@ public sealed class UsageStore
         transaction.Commit();
     }
 
+    /// <summary>Deletes every count older than the cutoff and returns the freed pages to the disk.</summary>
+    public void Clear(DateTimeOffset cutoff)
+    {
+        using var open = Open();
+        using var transaction = open.BeginTransaction();
+        using var command = open.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            DELETE FROM requests WHERE hour < $cutoff;
+            DELETE FROM agents WHERE day < $cutoff;
+            DELETE FROM errors WHERE hour < $cutoff;
+            DELETE FROM minutes WHERE minute < $cutoff;
+            """;
+        command.Parameters.AddWithValue("$cutoff", cutoff.ToUnixTimeSeconds());
+        command.ExecuteNonQuery();
+        transaction.Commit();
+
+        using var vacuum = open.CreateCommand();
+        vacuum.CommandText = "VACUUM;";
+        vacuum.ExecuteNonQuery();
+    }
+
     /// <summary>A consistent copy of the database, written to the given file.</summary>
     public void Snapshot(string file)
     {

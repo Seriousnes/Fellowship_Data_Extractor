@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
 using Fellowship.Codex.Components.Sections;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -22,6 +23,16 @@ public static class UsageExtensions
     public const string Logout = $"{UsageRoutes.Admin}/logout";
 
     public const string Report = $"{UsageRoutes.Admin}/report";
+
+    public const string Database = $"{UsageRoutes.Admin}/database";
+
+    public const string Clear = $"{UsageRoutes.Admin}/clear";
+
+    public const string ClearDays = "days";
+
+    private const string DatabaseType = "application/vnd.sqlite3";
+
+    private const int CopyBuffer = 64 * 1024;
 
     private const string Callback = $"{UsageRoutes.Admin}/signin-github";
 
@@ -116,6 +127,39 @@ public static class UsageExtensions
             .WithMetadata(new RequireAntiforgeryTokenAttribute())
             .ExcludeFromDescription();
 
+        if (settings.Counting) app.MapUsageData();
+
         return app;
+    }
+
+    private static void MapUsageData(this IEndpointRouteBuilder app)
+    {
+        app.MapGet(Database, (UsageStore store, TimeProvider time, HttpContext http) =>
+            {
+                var file = $"{store.Path}.{Guid.NewGuid():N}.copy";
+
+                store.Snapshot(file);
+                http.Response.Headers.CacheControl = "no-store";
+
+                // The copy goes when the response closes this stream.
+                var copy = new FileStream(
+                    file, FileMode.Open, FileAccess.Read, FileShare.Read, CopyBuffer, FileOptions.Asynchronous | FileOptions.DeleteOnClose);
+
+                return Results.File(copy, DatabaseType, $"fellowship-codex-usage-{time.GetUtcNow():yyyy-MM-dd}.db");
+            })
+            .RequireAuthorization(OwnerPolicy)
+            .ExcludeFromDescription();
+
+        app.MapPost(Clear, ([FromForm(Name = ClearDays)] int days, UsageStore store, TimeProvider time) =>
+            {
+                if (days < 1) return Results.BadRequest();
+
+                store.Clear(time.GetUtcNow() - TimeSpan.FromDays(days));
+
+                return Results.LocalRedirect(UsageRoutes.Admin);
+            })
+            .RequireAuthorization(OwnerPolicy)
+            .WithMetadata(new RequireAntiforgeryTokenAttribute())
+            .ExcludeFromDescription();
     }
 }

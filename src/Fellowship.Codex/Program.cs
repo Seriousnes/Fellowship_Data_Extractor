@@ -66,6 +66,7 @@ await app.Services.LoadExportAsync(app.Lifetime.ApplicationStopping);
 if (await Sitemap.WriteIfRequestedAsync(app)) return;
 
 app.UseUsage(usage);
+app.UseMiddleware<CatalogueFilterGate>();
 app.UseMiddleware<CrawlerValidators>();
 
 app.MapDefaultEndpoints();

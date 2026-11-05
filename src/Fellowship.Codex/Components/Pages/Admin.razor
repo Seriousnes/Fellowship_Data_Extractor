@@ -2,6 +2,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = Fellowship.Codex.Usage.UsageExtensions.OwnerPolicy)]
 @using System.Security.Claims
 @using Fellowship.Codex.Usage
+@inject UsageSettings Settings
 
 <PageTitle>Usage - Fellowship Codex</PageTitle>
 
@@ -23,6 +24,18 @@
         <button type="submit">Sign out</button>
         <span class="cx-admin-live" id="cx-usage-status" aria-live="polite"></span>
     </form>
+    @if (Settings.Counting)
+    {
+        <form method="post" action="@UsageExtensions.Clear" class="cx-admin-out" id="cx-usage-clear">
+            <AntiforgeryToken />
+            <a href="@UsageExtensions.Database" data-enhance-nav="false">Download database</a>
+            <label for="cx-usage-older">Clear counts older than</label>
+            <input id="cx-usage-older" type="number" name="@UsageExtensions.ClearDays" min="1" step="1" required
+                   value="@UsageRanges.Days.Max()" />
+            <span>days</span>
+            <button type="submit">Clear</button>
+        </form>
+    }
 </Panel>
 
 <div class="cx-usage-charts">

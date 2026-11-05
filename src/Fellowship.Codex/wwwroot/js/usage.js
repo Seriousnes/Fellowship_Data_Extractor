@@ -3,6 +3,7 @@
 const host = document.getElementById('cx-usage-report');
 const ranges = document.getElementById('cx-usage-ranges');
 const status = document.getElementById('cx-usage-status');
+const clear = document.getElementById('cx-usage-clear');
 const charts = document.querySelector('.cx-usage-charts');
 
 const css = name => getComputedStyle(charts).getPropertyValue(name).trim();
@@ -193,6 +194,12 @@ ranges.addEventListener('click', event => {
     }
 
     refresh();
+});
+
+clear?.addEventListener('submit', event => {
+    const days = clear.querySelector('input[type=number]').value;
+
+    if (!confirm(`Delete every count older than ${days} days? This cannot be undone.`)) event.preventDefault();
 });
 
 document.addEventListener('visibilitychange', () => {
