@@ -160,6 +160,10 @@ Resources:
                 Effect: Allow
                 Action: s3:GetObject
                 Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+              - Sid: PutUsageSnapshot
+                Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${BucketName}/usage/*"
 
   ExtractorUser:
     Type: AWS::IAM::User
