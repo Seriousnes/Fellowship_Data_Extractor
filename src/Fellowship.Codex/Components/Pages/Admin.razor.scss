@@ -1,7 +1,16 @@
+@use "../../Styles/shared" as *;
+
 .cx-admin-out {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-top: 12px;
   font-size: 13px; color: var(--muted);
 }
+.cx-admin-out a { margin-right: 12px; color: var(--gold-bright); }
+.cx-admin-out input {
+  width: 6ch; box-sizing: content-box; appearance: textfield;
+  @include sunken;
+  border-radius: 2px; font: 400 12px/1 var(--sans); padding: 5px 6px;
+}
+.cx-admin-out input:focus { @include edged; }
 .cx-admin-out button {
   appearance: none; padding: 0; border: 0; background: none; cursor: pointer;
   font: inherit; color: var(--gold-bright); text-decoration: underline;

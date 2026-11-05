@@ -68,6 +68,50 @@ public sealed class UsageDashboardTests(UsageSite site)
         page.EvaluateAsync<bool>("id => !!window.Chart?.getChart(id)", canvas);
 
     [Fact]
+    public async Task The_owner_downloads_the_database_and_clears_old_counts_after_confirming()
+    {
+        const string Old = "/api/old-counts";
+
+        var store = site.Services.GetRequiredService<UsageStore>();
+        var since = DateTimeOffset.UtcNow - TimeSpan.FromDays(UsageRanges.Days.Max() + 30);
+        var counter = new UsageCounter(new Earlier(TimeSpan.FromDays(UsageRanges.Days.Max() + 10)));
+
+        counter.Request(new UsageRoute(UsageArea.Api, Old, UsageRoute.None), "GET", 200, false, Agent.Unknown, 1);
+        store.Write(counter.Drain());
+
+        await using var context = await site.NewContextAsync(UsageSite.SignedIn);
+        var page = await context.NewPageAsync();
+
+        await page.GotoAsync(UsageRoutes.Admin);
+
+        var download = await page.RunAndWaitForDownloadAsync(() => page.GetByText("Download database").ClickAsync());
+
+        Assert.EndsWith(".db", download.SuggestedFilename);
+
+        var button = page.Locator("#cx-usage-clear button");
+
+        void Dismiss(object? sender, IDialog dialog) => _ = dialog.DismissAsync();
+
+        page.Dialog += Dismiss;
+        await button.ClickAsync();
+        page.Dialog -= Dismiss;
+
+        Assert.Contains(store.Routes(since, 100), route => route.Route == Old);
+
+        void Accept(object? sender, IDialog dialog) => _ = dialog.AcceptAsync();
+
+        page.Dialog += Accept;
+        await page.RunAndWaitForResponseAsync(() => button.ClickAsync(), $"**{UsageExtensions.Clear}");
+
+        Assert.DoesNotContain(store.Routes(since, 100), route => route.Route == Old);
+    }
+
+    private sealed class Earlier(TimeSpan by) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => base.GetUtcNow() - by;
+    }
+
+    [Fact]
     public async Task The_dashboard_draws_both_charts_and_refreshes_the_report_in_place()
     {
         await using var context = await site.NewContextAsync(UsageSite.SignedIn);

@@ -110,6 +110,30 @@ public sealed class UsageStoreTests : IDisposable
         Assert.Empty(store.Routes(day.AddDays(-1), 10));
     }
 
+    [Fact]
+    public void Clearing_deletes_the_counts_older_than_the_cutoff_and_keeps_the_rest()
+    {
+        var store = new UsageStore(Path.Combine(folder, "usage.db"));
+        var day = new DateTimeOffset(2026, 1, 10, 0, 0, 0, TimeSpan.Zero);
+        var route = new UsageRoute(UsageArea.Api, "/api/catalog", UsageRoute.None);
+
+        foreach (var at in new[] { day, day.AddDays(5) })
+        {
+            var counter = new UsageCounter(new FixedTime(at));
+            counter.Request(route, "GET", 200, false, Agent.Unknown, 1);
+            counter.Error("Category", "System.Exception");
+            store.Write(counter.Drain());
+        }
+
+        store.Clear(day.AddDays(1));
+
+        var since = day.AddDays(-1);
+
+        Assert.Equal(1, Assert.Single(store.Routes(since, 10)).Requests);
+        Assert.Equal(1, Assert.Single(store.Clients(since, 10)).Requests);
+        Assert.Equal(1, Assert.Single(store.Errors(since)).Count);
+    }
+
     [Theory]
     [InlineData("GET", "GET")]
     [InlineData("get", "GET")]
