@@ -7,7 +7,7 @@
 @inject IJSRuntime Js
 
 <Panel>
-    <div class="cx-roster" id="cx-usage-ranges">
+    <div class="cx-roster" id="cx-usage-ranges" data-live="@Live">
         @foreach (var range in UsageRanges.Days)
         {
             <a href="@Address(range)" data-days="@range" data-enhance-nav="false"
@@ -92,6 +92,8 @@
     private int Range;
 
     private int Refreshes;
+
+    private string? Live => RendererInfo.IsInteractive ? "on" : null;
 
     private bool hidden;
 
