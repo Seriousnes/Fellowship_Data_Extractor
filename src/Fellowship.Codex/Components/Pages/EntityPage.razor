@@ -34,6 +34,15 @@
     <h1 class="cx-entity-name"
         style="--cx-name:@Ui.NameColour(Entity);@(Rarity is null ? null : $"--cx-rarity:{Rarity};")color:var(--cx-rarity, var(--cx-name))"><span class="cx-entity-name-icon"><Texture Entity="Entity" Width="TooltipView.SlotWidth" /></span>@Name</h1>
 
+    @if (Entity.EnabledInGame is false)
+    {
+        <Alert Tone="Alert.AlertTone.Danger">Unobtainable in game</Alert>
+    }
+    else if (Entity.NoKnownSource is true)
+    {
+        <Alert Tone="Alert.AlertTone.Warning">No known source</Alert>
+    }
+
     <CascadingValue Value="Here">
         <div class="cx-entity">
             <Craft Slug="@Slug" Id="Id" Page="@Ui.Path(Entity)" Search="@Search" Hero="@Reading" />

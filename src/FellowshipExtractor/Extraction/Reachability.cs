@@ -68,6 +68,33 @@ public static class Reachability
             .ToHashSet();
     }
 
+    /// <summary>
+    /// The granted abilities and effects with no origin, and the abilities and effects only they reach.
+    /// </summary>
+    public static IReadOnlySet<(EntityType Type, int Id)> Sourceless(
+        IReadOnlyList<EntityDocument> documents,
+        IEnumerable<(EntityType Type, int Id)> granted,
+        IReadOnlyDictionary<(EntityType Type, int Id), IReadOnlyList<(EntityType Type, int Id)>> origins)
+    {
+        var reachers = Reachers(documents);
+        var sourceless = granted.Where(key => !origins.ContainsKey(key)).ToHashSet();
+        var changed = true;
+
+        while (changed)
+        {
+            changed = false;
+
+            foreach (var (key, sources) in reachers)
+            {
+                if (!Derived.Contains(key.Type) || origins.ContainsKey(key) || !sources.All(sourceless.Contains)) continue;
+
+                changed |= sourceless.Add(key);
+            }
+        }
+
+        return sourceless;
+    }
+
     public static IReadOnlyDictionary<(EntityType Type, int Id), HashSet<(EntityType Type, int Id)>> Reachers(
         IReadOnlyList<EntityDocument> documents)
     {

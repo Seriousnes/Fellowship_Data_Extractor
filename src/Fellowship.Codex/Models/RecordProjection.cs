@@ -60,7 +60,7 @@ public static class RecordProjection
     }
 
     public static EntityRecord Of(EntityDocument document, ICodexViewService view, string origin) =>
-        Table[EntityTypes.TypeOf(document)](document, view, origin) with { EnabledInGame = document.EnabledInGame };
+        Table[EntityTypes.TypeOf(document)](document, view, origin) with { EnabledInGame = document.EnabledInGame, NoKnownSource = document.NoKnownSource };
 
     public static TRecord Of<TRecord>(EntityDocument document, ICodexViewService view, string origin)
         where TRecord : EntityRecord =>

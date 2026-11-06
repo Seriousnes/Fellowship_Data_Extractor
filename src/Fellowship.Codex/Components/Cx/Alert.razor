@@ -1,0 +1,25 @@
+<p class="cx-alert cx-alert-@Tone.ToString().ToLowerInvariant()" role="status">
+    <svg class="cx-alert-icon" viewBox="0 0 24 24" aria-hidden="true">
+        @if (Tone == AlertTone.Danger)
+        {
+            <path d="M12 1.5a10.5 10.5 0 1 0 0 21 10.5 10.5 0 0 0 0-21Zm-1.3 5h2.6v8h-2.6v-8Zm0 9.5h2.6v2.6h-2.6V16Z" />
+        }
+        else
+        {
+            <path d="M12 2 .8 21.5h22.4L12 2Zm-1.3 7h2.6v6.5h-2.6V9Zm0 8h2.6v2.5h-2.6V17Z" />
+        }
+    </svg>
+    @ChildContent
+</p>
+
+@code {
+    public enum AlertTone
+    {
+        Warning,
+        Danger,
+    }
+
+    [Parameter] public AlertTone Tone { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
