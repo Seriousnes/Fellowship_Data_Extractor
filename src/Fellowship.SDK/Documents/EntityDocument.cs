@@ -13,6 +13,9 @@ public abstract class EntityDocument
 
     public bool? EnabledInGame { get; init; }
 
+    /// <summary>Reached only from an item trait whose category places it on no item.</summary>
+    public bool? NoKnownSource { get; init; }
+
     public IReadOnlyDictionary<string, Models.TuningReference>? Tuning { get; init; }
 }
 

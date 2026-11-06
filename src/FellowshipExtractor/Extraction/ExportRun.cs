@@ -274,13 +274,35 @@ public static class ExportRun
             $"  {unreachable.Count} creatures, abilities and effects no enabled source reaches: " +
             string.Join(", ", unreachable.GroupBy(key => key.Type).Select(group => $"{group.Count()} {group.Key}")));
 
+        var grantedByUnplacedTraits = resolver.AugmentationRows.All
+            .Where(row => string.IsNullOrEmpty(row.CategoryTag) && row.AugmentationPath is not null)
+            .SelectMany(row => resolver.Owners.GrantedBy(AbilityPresentationIndex.AssetName(row.AugmentationPath!)))
+            .Select(AbilityPresentationIndex.AssetName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var sourceless = Reachability.Sourceless(
+            all,
+            marked
+                .Where(record => record.Type is EntityType.Ability or EntityType.Effect &&
+                                 grantedByUnplacedTraits.Contains(record.Name))
+                .Select(record => (record.Type!.Value, record.NetId!.Value)),
+            origins);
+
+        Console.WriteLine(
+            $"  {sourceless.Count} abilities and effects reached only from an item trait with no category: " +
+            string.Join(", ", sourceless.GroupBy(key => key.Type).Select(group => $"{group.Count()} {group.Key}")));
+
         foreach (var (record, document) in projected)
         {
+            var key = (EntityTypes.TypeOf(document), document.Id);
+
             await target.WriteDocumentAsync(
                 DocumentProjection.From(
-                    unreachable.Contains((EntityTypes.TypeOf(document), document.Id))
-                        ? record with { EnabledInGame = false }
-                        : record,
+                    record with
+                    {
+                        EnabledInGame = unreachable.Contains(key) ? false : record.EnabledInGame,
+                        NoKnownSource = sourceless.Contains(key) ? true : null,
+                    },
                     rooted.For(record.PrimaryStat),
                     roles),
                 default);
