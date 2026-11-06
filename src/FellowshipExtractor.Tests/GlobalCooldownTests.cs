@@ -38,10 +38,30 @@ public sealed class GlobalCooldownTests
 
     [Theory]
     [InlineData(171, 15)]
-    [InlineData(554, 1)]
     [InlineData(1410, 12)]
     public void AnAbilitysOwnCooldownDurationOutranksANameMatchedRow(int id, double seconds) =>
         Assert.Equal(seconds, Ability(id)["cooldown"]?.GetValue<double>());
+
+    // These CooldownDuration structs have a RowName with neither a CurveTable nor a RegistryType, so
+    // FScalableFloat::IsValid is false and ApplyCooldown (0x1450D9A4B) starts no cooldown.
+    [Theory]
+    [InlineData(207)]
+    [InlineData(1208)]
+    [InlineData(1242)]
+    public void ARowReachedThroughNeitherATableNorARegistryIsNoCooldown(int id) =>
+        Assert.Null(Ability(id)["cooldown"]);
+
+    // CooldownDuration Value 1 is valid, and the ability has no CooldownTags (0x1450D9A89) and neither effect class
+    // (0x1450D9BE8).
+    [Fact]
+    public void ACooldownDurationWithNoCooldownTagsIsNoCooldown() =>
+        Assert.Null(Ability(554)["cooldown"]);
+
+    // CooldownDuration names the registry AbilityConstants_Gunde. That registry scans the Gunde plugin's
+    // AC_Hero_Gunde.csv (16), and the file of that name under RawDataTables/AbilityConstants has 12.
+    [Fact]
+    public void ARegistryReadsTheCopyOfARowInTheFilesItScans() =>
+        Assert.Equal(16, Ability(1244)["cooldown"]?.GetValue<double>());
 
     [Fact]
     public void AnAbilityClearingItsParentsGlobalCooldownHasNone()

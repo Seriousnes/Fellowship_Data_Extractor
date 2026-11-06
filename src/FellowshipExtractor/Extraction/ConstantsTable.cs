@@ -40,6 +40,12 @@ public sealed class ConstantsTable
         return (list[0], [.. list.Select(r => r.Table)]);
     }
 
+    /// <summary>The row in the first of its files <paramref name="scanned"/> accepts.</summary>
+    public ConstantRecord? In(string rowName, Func<string, bool> scanned) =>
+        _byKey.TryGetValue(rowName, out var list) && list.FindIndex(record => scanned(record.File)) is >= 0 and var at
+            ? list[at]
+            : null;
+
     public bool IsNamespace(string prefix) => _namespaces.Contains(prefix);
 
     /// <summary>Every namespace whose last segment is the name and whose segment before it is the given one.</summary>

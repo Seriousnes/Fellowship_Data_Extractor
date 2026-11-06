@@ -92,7 +92,7 @@ public static class CurveBindings
     private static bool Names(IPropertyHolder holder, string name) =>
         holder.Properties.Any(p => p.Name.Text.Equals(name, StringComparison.Ordinal));
 
-    private static string? RegistryName(IPropertyHolder scalableFloat)
+    public static string? RegistryName(IPropertyHolder scalableFloat)
     {
         if (PropertyWalk.GetStruct(scalableFloat, "RegistryType") is { } registry)
         {

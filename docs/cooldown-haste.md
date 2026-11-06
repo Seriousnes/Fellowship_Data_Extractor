@@ -19,6 +19,30 @@ The documents carry the following fields:
 A cooldown with `Haste` in either list scales with Haste. The list holding it says where Haste enters,
 and the two placements compound differently.
 
+## Whether an ability has a cooldown
+
+`cooldown` is the duration `UCRGameplayAbility::ApplyCooldown` starts for a character holding no talents.
+An ability has one when all of these hold:
+
+1. `CooldownDuration` evaluates above 0. A `Value` the asset omits is the constructor's 0.
+
+   | `Curve.RowName` | `Curve.CurveTable` | `RegistryType` | Result |
+   | --- | --- | --- | --- |
+   | None | | | `Value` |
+   | set | set | | `Value` times the table's row |
+   | set | None | set | `Value` times the row in the files that registry scans |
+   | set | None | None | invalid, so no cooldown |
+
+2. `CooldownTags` holds a tag.
+3. The ability has more than one charge and a `ChargeGameplayEffectClass` with a duration, or it has a
+   `CooldownEffectBaseClass`.
+
+`AC_Hero_Gunde.csv` is under `RawDataTables/AbilityConstants` and in the Gunde plugin, and the copies
+differ. `DR_AbilityConstants` scans the first and `DR_AbilityConstants_Gunde` the second, so `RegistryType`
+decides which row an ability reads.
+
+An ability that declares no `CooldownDuration` states the row directly under its name, when one exists.
+
 ## Timing effect
 
 An ability with more than one charge recharges on its charge effect, and every other ability cools down
