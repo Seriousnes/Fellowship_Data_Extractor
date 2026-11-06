@@ -19,6 +19,13 @@ Each entry has the following fields:
   `Talents.Firemage.PlacedProjectileAoeHasCharges`, so its roll names Reign of Fire, and Reign of
   Fire's own `procRolls` carries the roll. A roll behind a tag nothing holds is left out.
 
+- **`excludedAbilityClasses`**: ability classes whose commit leaves the roll unmade. The Blueprint
+  exits on `ClassIsChildOf` before it rolls.
+- **`excludedAbilityTags`**: ability tags whose commit leaves the roll unmade. The Blueprint exits on
+  `HasTag` before it rolls.
+- **`internalCooldown`**: the seconds the ability's cooldown holds the roll off. The Blueprint exits
+  while `CrGetCooldownTimeRemaining` is above 0.
+
 Dragonbone Dice (relic passive 778) rolls `ArmorSetBonus.PowerBonusOnCrit.PPM × (1 + CritChance)` on
 each critical strike, with Haste off. The Blueprint reads the hero's `CritChance`, adds 1, multiplies
 the row by the sum and passes `ScaleWithHaste` as false. The description's "0.9 PPM" is a string in
@@ -63,3 +70,18 @@ p = R × t ÷ 60 × max(1, 3 × R × d ÷ 60 − 3.5)
 1.5 times the mean interval between procs. Each stream is keyed by the call's `ProcTag` and holds the
 time of its last roll, the time of its last proc and whether it has procced. The hero's `Haste`
 attribute holds 1 plus the Haste percentage, as `docs/cooldown-haste.md` states.
+
+## The gates
+
+A Blueprint can leave before it reaches `RollProcPerMinute`, and an exit there makes no roll, so the
+stream's clocks keep running. Topaz Winds (ability 171) has all three gates on each committed ability:
+
+| Gate | Test | Topaz Winds |
+| --- | --- | --- |
+| Ability class | `ClassIsChildOf` on the committed ability's class | `CRGameplayAbilityTargeting` |
+| Ability tag | `HasTag` on the committed ability's tags | `AbilityType.Skill.Secondary` |
+| Internal cooldown | `CrGetCooldownTimeRemaining` above 0 | 15 seconds |
+
+The internal cooldown starts when the proc commits the ability's cooldown. The roll runs no check
+during the cooldown, so `t` and `d` in the chance both grow through it, and the first roll after the
+cooldown has both at no less than the cooldown. `/tools/proc-chance` starts both at that value.

@@ -182,6 +182,18 @@ Decoded against **26320967**, implemented in `ProcRolls.cs` and the `ProcPerMinu
 The Blueprint side is the rate expression: Dragonbone Dice passes `PPM × (CritChance + 1)` with
 `ScaleWithHaste` false; 21 of the build's 25 calls pass true and the row alone.
 
+Decoded against **26320967**, behind the Cooldown Recovery values in `CommitTriggers.cs`,
+`EffectModifiers.DurationScalingOf` and `MagnitudeCalculations.Formula`:
+
+| What | Where |
+| --- | --- |
+| `WeaponAbilityCooldown` base writer, sets 0 and then the weapon ability's cooldown | **0x14537A060** |
+| Scalable float at ability +0x448, evaluated at ability level | **0x1450E1D40** |
+| `WeaponAbilityCooldown` attribute getter, field +0x208 | **0x145375400** |
+| `AbilityType.Weapon` tag global, literal 0x148D443C0 | **0x14A3CA048** |
+| `GetGameplayEffectStackCount`, exec thunk 0x144F6CFD0 | **0x1452369C0** |
+| `AuthRegisterAbilityTimeWithEffectForOwningAbility`, exec thunk 0x144F2DFB0 | **0x1452593A0** |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

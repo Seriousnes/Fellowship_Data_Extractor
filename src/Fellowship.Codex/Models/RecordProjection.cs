@@ -107,6 +107,7 @@ public static class RecordProjection
             CastTimeScalesWithHaste = document.CastTimeScalesWithHaste,
             ScalesOff = Scaling(document.ScalesOff, view),
             ProcRolls = Rolls(document.ProcRolls, view, origin),
+            CommitTriggers = Commits(document.CommitTriggers, view, origin),
             Coefficients = Some(document.Coefficients),
             Placeholders = Tokens(tokens, tags, view),
             Schools = Some(tags),
@@ -244,6 +245,7 @@ public static class RecordProjection
             Owner = Reference(document.Owner, view, origin),
             AppliedBy = Reference(document.AppliedBy, view, origin),
             LinkedBy = Some(document.LinkedBy)?.Select(link => new EffectLinkRecord(Reference(link.Parent, view, origin)!, link.ApplyTo) { Talent = Reference(link.Talent, view, origin) }).ToArray(),
+            AppliedOnCommitOf = Commits(document.AppliedOnCommitOf, view, origin),
             PartOf = Reference(document.PartOf, view, origin),
             Role = document.Role,
         };
@@ -606,6 +608,20 @@ public static class RecordProjection
     private static IReadOnlyList<string>? Scaling(IReadOnlyList<string>? attributes, ICodexViewService view) =>
         Named(view.Codex.Scaling(attributes));
 
+    private static IReadOnlyList<CommitTriggerRecord>? Commits(IReadOnlyList<CommitTrigger>? triggers, ICodexViewService view, string origin) =>
+        triggers is { Count: > 0 }
+            ? [.. triggers.Select(trigger => new CommitTriggerRecord
+            {
+                Ability = Reference(trigger.Ability, view, origin),
+                Committing = References(trigger.Committing, view, origin),
+                CommittingTag = trigger.CommittingTag,
+                ExcludedTags = trigger.ExcludedTags,
+                Applies = References(trigger.Applies, view, origin),
+                StoppedBy = Reference(trigger.StoppedBy, view, origin),
+                Talent = Reference(trigger.Talent, view, origin),
+            })]
+            : null;
+
     private static IReadOnlyList<ProcRollRecord>? Rolls(IReadOnlyList<ProcRoll>? rolls, ICodexViewService view, string origin) =>
         rolls is { Count: > 0 }
             ? [.. rolls.Select(roll => new ProcRollRecord(roll.Row, view.ProcFormula(roll))
@@ -614,6 +630,9 @@ public static class RecordProjection
                 ScalesOff = Scaling(roll.ScalesOff, view) ?? [],
                 ScalesWithHaste = roll.ScalesWithHaste,
                 Talent = Reference(roll.Talent, view, origin),
+                ExcludedAbilityClasses = roll.ExcludedAbilityClasses,
+                ExcludedAbilityTags = roll.ExcludedAbilityTags,
+                InternalCooldown = roll.InternalCooldown,
             })]
             : null;
 

@@ -123,6 +123,25 @@ public class ProcChanceTests(Export export)
     }
 
     [Fact]
+    public void Topaz_Winds_starts_both_clocks_at_its_internal_cooldown()
+    {
+        var trait = Offered(EntityType.ItemTrait, "Topaz Winds");
+        var roll = Assert.Single(trait.Rolls);
+
+        Assert.Equal(15, roll.InternalCooldown);
+        Assert.Equal((15, 15), ProcChance.Starting(roll));
+    }
+
+    [Fact]
+    public void A_roll_with_no_internal_cooldown_starts_at_the_tool_defaults()
+    {
+        var roll = Assert.Single(Offered(EntityType.Aspect, "Ruby Storm").Rolls);
+
+        Assert.Null(roll.InternalCooldown);
+        Assert.Equal((1, 30), ProcChance.Starting(roll));
+    }
+
+    [Fact]
     public void Before_the_first_proc_the_chance_is_at_least_the_rate_over_eight()
     {
         var settings = export.Store.Settings.ProcPerMinuteRoll;

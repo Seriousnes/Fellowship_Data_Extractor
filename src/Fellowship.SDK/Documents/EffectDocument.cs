@@ -60,6 +60,9 @@ public sealed class EffectDocument : EntityDocument
     /// <summary>Effects applying this one through a linked effect component.</summary>
     public IReadOnlyList<EffectLink>? LinkedBy { get; init; }
 
+    /// <summary>The commit waits applying the effect.</summary>
+    public IReadOnlyList<CommitTrigger>? AppliedOnCommitOf { get; init; }
+
     public EntityReference? PartOf { get; init; }
 
     /// <summary>The effect whose Blueprint class this effect's class derives from.</summary>

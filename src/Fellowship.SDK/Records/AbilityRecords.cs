@@ -44,6 +44,8 @@ public sealed record AbilityRecord : EntityRecord
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
     public IReadOnlyList<ProcRollRecord>? ProcRolls { get; init; }
+
+    public IReadOnlyList<CommitTriggerRecord>? CommitTriggers { get; init; }
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
     public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }
@@ -69,6 +71,29 @@ public sealed record ProcRollRecord(string Row, string Formula)
     public bool ScalesWithHaste { get; init; }
 
     /// <summary>The talent or legendary power whose tag the roll is behind. A roll with none is baseline.</summary>
+    public RecordReference? Talent { get; init; }
+
+    public IReadOnlyList<string>? ExcludedAbilityClasses { get; init; }
+
+    public IReadOnlyList<string>? ExcludedAbilityTags { get; init; }
+
+    public double? InternalCooldown { get; init; }
+}
+
+public sealed record CommitTriggerRecord
+{
+    public RecordReference? Ability { get; init; }
+
+    public IReadOnlyList<RecordReference>? Committing { get; init; }
+
+    public string? CommittingTag { get; init; }
+
+    public IReadOnlyList<string>? ExcludedTags { get; init; }
+
+    public IReadOnlyList<RecordReference>? Applies { get; init; }
+
+    public RecordReference? StoppedBy { get; init; }
+
     public RecordReference? Talent { get; init; }
 }
 

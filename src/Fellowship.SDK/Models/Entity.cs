@@ -322,6 +322,8 @@ public sealed record Entity
 
     public IReadOnlyList<LinkedEffectSource>? LinkedBy { get; init; }
 
+    public IReadOnlyList<CommitTriggerSource>? CommitTriggers { get; init; }
+
     public IReadOnlyList<IconSource>? Granted { get; init; }
 
     public IReadOnlyList<string>? ApplierTags { get; init; }

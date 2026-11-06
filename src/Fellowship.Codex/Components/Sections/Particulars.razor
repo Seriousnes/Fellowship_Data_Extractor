@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-@if (Rows.Count > 0 || Falloff.Count > 0 || Calculations.Count > 0 || Formulas.Count > 0 || LinkedBy.Count > 0 || Changes.Count > 0 || Links.Count > 0 || Schools.Count > 0 || Tables is not null)
+@if (Rows.Count > 0 || Falloff.Count > 0 || Calculations.Count > 0 || Formulas.Count > 0 || Commits.Count > 0 || LinkedBy.Count > 0 || Changes.Count > 0 || Links.Count > 0 || Schools.Count > 0 || Tables is not null)
 {
     <Panel Head="Details" Class="@(ReferenceEquals(Entity, Here.Entity) ? "cx-entity-details" : null)">
         @if (Rows.Count > 0)
@@ -69,6 +69,52 @@
             </Facts>
         }
 
+        @if (Commits.Count > 0)
+        {
+            <Rule />
+            <SubHead>Applied when you use</SubHead>
+            <Facts>
+                @foreach (var commit in Commits)
+                {
+                    <Fact>
+                        <Head>
+                            @if (commit.Committing is { } committing)
+                            {
+                                @for (var at = 0; at < committing.Count; at++)
+                                {
+                                    @if (at > 0)
+                                    {
+                                        <text>, </text>
+                                    }
+                                    <Ref Entity="committing[at]" />
+                                }
+                            }
+                            else
+                            {
+                                @Abilities(commit)
+                            }
+                        </Head>
+                        <ChildContent>
+                            @if (commit.StoppedBy is { } stopper)
+                            {
+                                <text>Stopped by </text>
+                                <Ref Entity="stopper" />
+                            }
+                            else if (commit.Talent is { } talent)
+                            {
+                                <text>With </text>
+                                <Ref Entity="talent" />
+                            }
+                            else
+                            {
+                                <text>Every use</text>
+                            }
+                        </ChildContent>
+                    </Fact>
+                }
+            </Facts>
+        }
+
         @if (LinkedBy.Count > 0)
         {
             <Rule />
@@ -99,6 +145,16 @@
                 @foreach (var roll in Rolls)
                 {
                     <Fact Label="@RollLabel(roll)">@Rate(roll)</Fact>
+
+                    @if (roll.InternalCooldown is { } cooldown)
+                    {
+                        <Fact Label="Internal cooldown" Unit="s">@CodexView.Number(cooldown)</Fact>
+                    }
+
+                    @if (Excluded(roll) is { Length: > 0 } excluded)
+                    {
+                        <Fact Label="Excludes">@excluded</Fact>
+                    }
                 }
                 <Fact Label="Chance"><a href="@ProcChanceHref">Proc chance calculator</a></Fact>
             </Facts>
@@ -204,6 +260,30 @@
 
     private IReadOnlyList<Fellowship.SDK.Models.EffectLink> LinkedBy =>
         Entity is EffectDocument { LinkedBy: { } links } ? links : [];
+
+    private IReadOnlyList<Fellowship.SDK.Models.CommitTrigger> Commits =>
+        Entity is EffectDocument { AppliedOnCommitOf: { } commits } ? commits : [];
+
+    private const string EveryCommit = "Event.CommittedAbility";
+
+    private static string Segment(string tag) => FellowshipCodex.Spaced(tag[(tag.LastIndexOf('.') + 1)..]);
+
+    /// <summary>The abilities a wait's tags stand for, each by its last segment, without the tags it excludes.</summary>
+    private static string Abilities(Fellowship.SDK.Models.CommitTrigger commit)
+    {
+        var named = commit.CommittingTag is null or EveryCommit
+            ? "Any ability"
+            : string.Join(", ", commit.CommittingTag.Split(", ").Select(Segment));
+
+        return commit.ExcludedTags is { Count: > 0 } excluded
+            ? $"{named}, except {string.Join(", ", excluded.Select(Segment))}"
+            : named;
+    }
+
+    /// <summary>The ability classes and tags whose commit leaves the roll unmade, each by its last segment.</summary>
+    private static string Excluded(Fellowship.SDK.Models.ProcRoll roll) =>
+        string.Join(", ", (roll.ExcludedAbilityClasses ?? []).Concat(roll.ExcludedAbilityTags ?? [])
+            .Select(name => FellowshipCodex.Spaced(name[(name.LastIndexOf('.') + 1)..])));
 
     private IReadOnlyList<Fellowship.SDK.Models.ProcRoll> Rolls => ProcChance.Rolls(Entity) ?? [];
 

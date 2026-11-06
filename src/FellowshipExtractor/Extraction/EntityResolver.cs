@@ -112,6 +112,8 @@ public sealed class EntityResolver
     public TargetCountFalloffs Falloffs { get; }
 
     public ProcRolls Rolls { get; }
+
+    public CommitTriggers Commits { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
@@ -284,6 +286,7 @@ public sealed class EntityResolver
 
         Falloffs = new TargetCountFalloffs(provider, mappings, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
         Rolls = new ProcRolls(_constants, provider);
+        Commits = new CommitTriggers(provider, _effectNames, name => Owned(name, EffectTable));
     }
 
     private Dictionary<string, EffectNameSource>? _traitGrantees;
@@ -411,6 +414,11 @@ public sealed class EntityResolver
         entity = WithAssignedModifiers(entity, cdo, tag);
         entity = WithTicks(entity, cdo, tag);
         entity = WithSetByCallerScaling(entity, cdo, tag);
+
+        if (tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase))
+        {
+            entity = entity with { CommitTriggers = Empty(Commits.Of(cdo)) };
+        }
 
         if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
         {
@@ -1554,7 +1562,7 @@ public sealed class EntityResolver
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Generates = Empty(Gains.Of(cdo, assetName)),
             Thresholds = Empty(_thresholds.Of(cdo)),
-            ProcRolls = cdo is null ? null : Empty(Rolls.Of(cdo)),
+            ProcRolls = cdo is null ? null : Empty(Rolls.Of(cdo, cooldown)),
             Tuning = tuning,
             Declares = Empty(Bound(bindings)),
             Constants = baseline.Count + beside.Count == 0

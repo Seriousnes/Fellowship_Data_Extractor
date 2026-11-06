@@ -130,6 +130,8 @@ public sealed partial class ModifierIndex
     private readonly Dictionary<Key, Entity> _sources = [];
     private readonly Dictionary<Key, HashSet<string>> _held = [];
     private readonly Dictionary<string, SortedSet<Key>> _tagsBySource = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, SortedSet<Key>> _taggedAbilities = new(StringComparer.Ordinal);
+    private readonly Dictionary<Key, List<(Entity Ability, CommitTriggerSource Trigger)>> _commits = [];
     private readonly Dictionary<string, List<ProcRoll>> _gatedRolls = new(StringComparer.Ordinal);
     private readonly Dictionary<Key, SortedSet<Key>> _replacements = [];
     private readonly Dictionary<Key, Key> _replaces = [];
@@ -228,6 +230,19 @@ public sealed partial class ModifierIndex
 
             if (entity.Type == EntityType.Ability)
             {
+                foreach (var tag in entity.AbilityTags ?? []) Index(_taggedAbilities, tag, KeyOf(entity));
+
+                foreach (var trigger in entity.CommitTriggers ?? [])
+                {
+                    foreach (var effect in trigger.Effects)
+                    {
+                        var target = new Key(EntityType.Effect, effect.NetId);
+
+                        if (!_commits.TryGetValue(target, out var commits)) _commits[target] = commits = [];
+                        commits.Add((entity, trigger));
+                    }
+                }
+
                 foreach (var tag in entity.CooldownTags ?? []) Index(_cooldownTagged, tag, KeyOf(entity));
                 foreach (var tag in (entity.AddedTags ?? []).Concat(entity.HeldTags ?? []).Concat(entity.LooseTags ?? [])) Index(_stateHolders, tag, KeyOf(entity));
                 foreach (var actor in entity.SpawnedActors ?? []) Index(_spawners, actor, KeyOf(entity));
@@ -900,6 +915,14 @@ public sealed partial class ModifierIndex
 
     /// <summary>Rows a source has under the talent name of one of its rows.</summary>
     public int ScopedRows { get; private set; }
+
+    /// <summary>Abilities whose <c>AbilityTags</c> have the tag.</summary>
+    public IReadOnlyList<int> AbilitiesTagged(string tag) =>
+        _taggedAbilities.TryGetValue(tag, out var abilities) ? [.. abilities.Select(ability => ability.Id)] : [];
+
+    /// <summary>The commit waits applying an effect, with the ability holding each.</summary>
+    public IReadOnlyList<(Entity Ability, CommitTriggerSource Trigger)> CommitsOf(Entity effect) =>
+        effect is { Type: EntityType.Effect, NetId: { } id } ? _commits.GetValueOrDefault(new Key(EntityType.Effect, id)) ?? [] : [];
 
     public IReadOnlyList<(EntityType Type, int Id)> Holding(string tag) =>
         _tagsBySource.TryGetValue(tag, out var sources) ? [.. sources.Select(source => (source.Type, source.Id))] : [];

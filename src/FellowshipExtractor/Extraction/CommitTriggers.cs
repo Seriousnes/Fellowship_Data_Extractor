@@ -1,0 +1,352 @@
+using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Kismet;
+using CUE4Parse.UE4.Objects.UObject;
+
+using Fellowship.SDK.Models;
+
+namespace FellowshipExtractor.Extraction;
+
+/// <summary>
+/// Reads the waits an ability's Blueprint holds on abilities being committed: <c>WaitForAbilityCommit</c>,
+/// <c>WaitForAbilityCommit_Query</c> and a <c>WaitGameplayEvents</c> on <c>Event.CommittedAbility</c>. Each wait binds a
+/// delegate, the delegate's function enters the ubergraph at an offset, and the walk from that offset reaches each
+/// applied effect past the tag tests gating it.
+/// </summary>
+public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<string> effects, Func<string, IconSource?> effectSource)
+{
+    private const string WaitForCommit = "WaitForAbilityCommit";
+    private const string WaitForQuery = "WaitForAbilityCommit_Query";
+    private const string WaitForEvents = "WaitGameplayEvents";
+    private const string CommittedEvent = "Event.CommittedAbility";
+    private const string CommitDelegate = "OnCommit";
+    private const string EventDelegate = "EventReceived";
+    private const string Ubergraph = "ExecuteUbergraph";
+    private const string TagTest = "HasMatchingGameplayTag";
+    private const string Negation = "Not_PreBool";
+    private const string ApplyingCall = "ApplyGameplayEffect";
+    private const string SpecCall = "EffectSpec";
+    private const int RootOffset = 2;
+    private const int AnyTags = 1;
+    private const int NoTags = 3;
+    private const int AllExpressions = 5;
+    private const string NoTag = "None";
+    private const int TagParameter = 1;
+    private const int MaxDepth = 24;
+
+    public int Waits { get; private set; }
+
+    public List<string> Unread { get; } = [];
+
+    /// <summary>A wait's tags, and its offset in the ubergraph once the delegate resolves.</summary>
+    private sealed record Wait(IReadOnlyList<string> Tags, IReadOnlyList<string> Excluded, int Entry);
+
+    public IReadOnlyList<CommitTriggerSource> Of(UObject? cdo)
+    {
+        if (cdo?.Owner is not { } package) return [];
+
+        var bodies = package.GetExports()
+            .OfType<UStruct>()
+            .Where(export => export.ScriptBytecode is { Length: > 0 })
+            .ToArray();
+
+        var found = new List<CommitTriggerSource>();
+
+        foreach (var body in bodies)
+        {
+            BranchPaths? paths = null;
+
+            foreach (var wait in Waited(body, bodies, cdo))
+            {
+                Waits++;
+                found.AddRange(Triggers(wait, paths ??= new BranchPaths(body), cdo));
+            }
+        }
+
+        return found;
+    }
+
+    private IEnumerable<CommitTriggerSource> Triggers(Wait wait, BranchPaths paths, UObject cdo)
+    {
+        var byEffect = new Dictionary<string, (HashSet<string> Stopping, HashSet<string> Required)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (statement, taken) in paths.From(wait.Entry))
+        {
+            foreach (var effect in Applied(statement, paths, cdo))
+            {
+                var stopping = Tested(taken, paths, cdo, held: false);
+                var required = Tested(taken, paths, cdo, held: true);
+
+                if (byEffect.TryGetValue(effect, out var held))
+                {
+                    held.Stopping.IntersectWith(stopping);
+                    held.Required.IntersectWith(required);
+                }
+                else
+                {
+                    byEffect[effect] = (stopping, required);
+                }
+            }
+        }
+
+        var groups = byEffect
+            .Select(entry => (Effect: effectSource(entry.Key), Stopping: Sorted(entry.Value.Stopping), Required: Sorted(entry.Value.Required)))
+            .Where(entry => entry.Effect is not null)
+            .GroupBy(entry => $"{string.Join(',', entry.Stopping)}|{string.Join(',', entry.Required)}", StringComparer.Ordinal)
+            .ToArray();
+
+        if (groups.Length == 0) yield return new CommitTriggerSource(wait.Tags, wait.Excluded, [], [], []);
+
+        foreach (var group in groups)
+        {
+            yield return new CommitTriggerSource(
+                wait.Tags,
+                wait.Excluded,
+                [.. group.Select(entry => entry.Effect!).OrderBy(effect => effect.NetId)],
+                group.First().Stopping,
+                group.First().Required);
+        }
+    }
+
+    private static string[] Sorted(IEnumerable<string> tags) => [.. tags.Order(StringComparer.Ordinal)];
+
+    private static HashSet<string> Tested(IEnumerable<BranchTaken> taken, BranchPaths paths, UObject cdo, bool held)
+    {
+        var tags = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var branch in taken)
+        {
+            var positive = branch.Held;
+            var condition = paths.Value(branch.Condition);
+
+            while (condition is not null && RowSinks.Invoking(condition) is { } inverted && RowSinks.Calling(inverted) == Negation)
+            {
+                positive = !positive;
+                condition = paths.Value(RowSinks.Parameters(inverted).FirstOrDefault());
+            }
+
+            if (condition is null || RowSinks.Invoking(condition) is not { } call || RowSinks.Calling(call) != TagTest) continue;
+            if (positive != held) continue;
+            if (SetByCallerDurations.Tag(RowSinks.Parameters(call).FirstOrDefault(), cdo) is { Length: > 0 } tag) tags.Add(tag);
+        }
+
+        return tags;
+    }
+
+    private IEnumerable<string> Applied(KismetExpression statement, BranchPaths paths, UObject cdo)
+    {
+        foreach (var call in Invocations(statement, 0))
+        {
+            if (RowSinks.Calling(call) is not { } called) continue;
+            if (!called.Contains(ApplyingCall, StringComparison.Ordinal) && !called.Contains(SpecCall, StringComparison.Ordinal)) continue;
+
+            foreach (var parameter in RowSinks.Parameters(call))
+            {
+                if (Effect(paths.Value(parameter), cdo) is { } effect) yield return effect;
+            }
+        }
+    }
+
+    private string? Effect(KismetExpression? expression, UObject cdo)
+    {
+        var path = expression switch
+        {
+            EX_ObjectConst constant => PropertyWalk.AsString(constant.Value),
+            EX_InstanceVariable when DynamicTextFloats.Name(expression) is { } property =>
+                PropertyWalk.AsString(ClassDefaults.Inherited(cdo, property, provider)?.GenericValue),
+            _ => null,
+        };
+
+        if (path is null || !path.Contains('/')) return null;
+
+        var name = AbilityPresentationIndex.AssetName(path);
+
+        if (name.EndsWith("_C", StringComparison.Ordinal)) name = name[..^2];
+
+        return effects.Contains(name) ? name : null;
+    }
+
+    private IEnumerable<Wait> Waited(UStruct body, IReadOnlyList<UStruct> bodies, UObject cdo)
+    {
+        var statements = body.ScriptBytecode!;
+
+        for (var at = 0; at < statements.Length; at++)
+        {
+            if (statements[at] is not EX_LetObj { Variable: { } variable, Assignment: { } assigned }) continue;
+            if (RowSinks.Invoking(assigned) is not { } call || RowSinks.Calling(call) is not { } called) continue;
+            if (called is not (WaitForCommit or WaitForQuery or WaitForEvents)) continue;
+
+            var parameter = RowSinks.Parameters(call).ElementAtOrDefault(TagParameter);
+            var (tags, excluded) = called == WaitForQuery ? Queried(parameter) : (Named(parameter), []);
+
+            if (called == WaitForEvents)
+            {
+                if (!tags.Contains(CommittedEvent, StringComparer.Ordinal)) continue;
+
+                tags = [CommittedEvent];
+            }
+
+            var delegated = called == WaitForEvents ? EventDelegate : CommitDelegate;
+
+            if (Entry(statements, at, DynamicTextFloats.Name(variable), delegated, bodies) is { } entry)
+            {
+                yield return new Wait(tags, excluded, entry);
+            }
+            else
+            {
+                Unread.Add($"{cdo.Owner?.Name}:{body.Name} offset {statements[at].StatementIndex} binds no delegate the reader can follow");
+            }
+        }
+    }
+
+    /// <summary>The ubergraph offset of the function bound to the wait's delegate.</summary>
+    private static int? Entry(KismetExpression[] statements, int wait, string? task, string name, IReadOnlyList<UStruct> bodies)
+    {
+        for (var at = wait + 1; at < statements.Length; at++)
+        {
+            if (statements[at] is not EX_AddMulticastDelegate { Delegate: EX_Context bound, DelegateToAdd: { } added }) continue;
+            if (DynamicTextFloats.Name(bound.ObjectExpression) != task) continue;
+            if (DynamicTextFloats.Name(bound.ContextExpression) != name) continue;
+
+            var local = DynamicTextFloats.Name(added);
+
+            for (var back = at - 1; back > wait; back--)
+            {
+                if (statements[back] is not EX_BindDelegate delegated || DynamicTextFloats.Name(delegated.Delegate) != local) continue;
+
+                var function = delegated.FunctionName.Text;
+
+                return bodies.FirstOrDefault(body => body.Name.Equals(function, StringComparison.Ordinal)) is { } handler
+                    ? handler.ScriptBytecode!.Select(UbergraphOffset).FirstOrDefault(offset => offset is not null)
+                    : null;
+            }
+        }
+
+        return null;
+    }
+
+    public static int? UbergraphOffset(KismetExpression statement) =>
+        RowSinks.Invoking(statement) is { } call &&
+        RowSinks.Calling(call)?.StartsWith(Ubergraph, StringComparison.Ordinal) is true &&
+        RowSinks.Parameters(call).FirstOrDefault() is EX_IntConst offset
+            ? offset.Value
+            : null;
+
+    /// <summary>
+    /// The tags of a tag query, from its token stream: a version, a flag for a root expression, then expressions. A tag
+    /// expression is its type, a count and that many indices into the tag dictionary. An expression of expressions is
+    /// its type, a count and those expressions. The build has any-of, and all-of an any-of and a none-of. Its
+    /// description text is blank on some queries, so the stream is the source.
+    /// </summary>
+    private (string[] Tags, string[] Excluded) Queried(KismetExpression? query)
+    {
+        if (query is EX_StructConst { Properties: var properties } &&
+            properties.OfType<EX_ArrayConst>().ToArray() is [var dictionary, var stream])
+        {
+            var tags = TagElements(dictionary);
+
+            if (tags.Length == 0) return ([], []);
+
+            var tokens = stream.Elements.OfType<EX_ByteConst>().Select(token => (int)token.Value).ToArray();
+            var at = RootOffset;
+
+            if (tokens.Length > at && tokens[at] == AllExpressions)
+            {
+                var count = tokens[at + 1];
+                (string[] Any, string[] None) both = ([], []);
+
+                at += 2;
+
+                for (var read = 0; read < count; read++)
+                {
+                    if (TagExpression(tokens, ref at, tags) is not var (type, named)) return Unreadable(query);
+
+                    if (type == AnyTags) both.Any = named;
+                    else if (type == NoTags) both.None = named;
+                    else return Unreadable(query);
+                }
+
+                return both;
+            }
+
+            if (TagExpression(tokens, ref at, tags) is (AnyTags, var any)) return (any, []);
+        }
+
+        return Unreadable(query);
+    }
+
+    private (string[], string[]) Unreadable(KismetExpression query)
+    {
+        Unread.Add($"tag query not read: {string.Join(", ", Named(query))}");
+
+        return ([], []);
+    }
+
+    private static string[] TagElements(EX_ArrayConst dictionary) =>
+        [.. dictionary.Elements.Select(element => Named(element).FirstOrDefault() ?? string.Empty)];
+
+    private static (int Type, string[] Tags)? TagExpression(int[] tokens, ref int at, string[] tags)
+    {
+        if (at + 1 >= tokens.Length) return null;
+
+        var type = tokens[at];
+        var count = tokens[at + 1];
+
+        if (type is not (AnyTags or NoTags) || at + 2 + count > tokens.Length) return null;
+
+        var named = tokens[(at + 2)..(at + 2 + count)].Select(index => tags[index]).ToArray();
+
+        at += 2 + count;
+
+        return (type, named);
+    }
+
+    private static string[] Named(KismetExpression? expression)
+    {
+        var names = new List<string>();
+
+        Collect(expression, names, 0);
+
+        return [.. names.Where(name => name.Length > 0 && name != NoTag).Distinct(StringComparer.Ordinal)];
+    }
+
+    private static void Collect(KismetExpression? expression, List<string> names, int depth)
+    {
+        if (depth > MaxDepth) return;
+
+        switch (expression)
+        {
+            case EX_NameConst name:
+                names.Add(name.Value.Text);
+                break;
+            case EX_StructConst constant:
+                foreach (var property in constant.Properties) Collect(property, names, depth + 1);
+                break;
+            case EX_ArrayConst array:
+                foreach (var element in array.Elements) Collect(element, names, depth + 1);
+                break;
+        }
+    }
+
+    private static IEnumerable<KismetExpression> Invocations(KismetExpression? expression, int depth)
+    {
+        if (expression is null || depth > MaxDepth) yield break;
+
+        if (RowSinks.Invoking(expression) is { } call)
+        {
+            yield return call;
+
+            foreach (var parameter in RowSinks.Parameters(call))
+            {
+                foreach (var nested in Invocations(parameter, depth + 1)) yield return nested;
+            }
+
+            yield break;
+        }
+
+        foreach (var child in RowSinks.Children(expression))
+        {
+            foreach (var nested in Invocations(child, depth + 1)) yield return nested;
+        }
+    }
+}

@@ -8,7 +8,7 @@ public sealed class ProcChanceInputTests(Site site)
     /// <summary>A proc rolling at a known rate with every attribute at 0, so the chance moves with the seconds typed.</summary>
     private ProcRollSource Steady =>
         ProcChance.Sources(site.Store).First(source =>
-            ProcChance.Rate(source.Rolls[0], _ => 0) is > 0 && source.Rolls[0].ScalesOff.Count == 0);
+            ProcChance.Rate(source.Rolls[0], _ => 0) is > 0 && source.Rolls[0] is { ScalesOff.Count: 0, InternalCooldown: null });
 
     private static async Task<string> ChanceAtAsync(ProcChancePage tool, string seconds)
     {
@@ -18,6 +18,17 @@ public sealed class ProcChanceInputTests(Site site)
         await Assertions.Expect(tool.Chance).Not.ToHaveTextAsync(before ?? string.Empty);
 
         return (await tool.Chance.TextContentAsync())!;
+    }
+
+    [Fact]
+    public async Task A_roll_with_an_internal_cooldown_opens_with_both_clocks_at_it()
+    {
+        await using var context = await site.NewContextAsync();
+        var tool = new ProcChancePage(await context.NewPageAsync());
+        await tool.OpenAsync(ProcChance.Sources(site.Store).First(source => source.Rolls[0].InternalCooldown == 15));
+
+        Assert.Equal("15", await tool.SinceLastRoll.ValueAsync());
+        Assert.Equal("15", await tool.SinceLastProc.ValueAsync());
     }
 
     [Fact]

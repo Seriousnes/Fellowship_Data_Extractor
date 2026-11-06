@@ -119,6 +119,7 @@ public static class DocumentProjection
             CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
+            CommitTriggers = Triggers(entity, references),
             Coefficients = entity.Coefficients,
             SetByCallerScaling = entity.SetByCallerScaling,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
@@ -227,6 +228,7 @@ public static class DocumentProjection
             Origins = references.Origins(entity),
             AppliedBy = references.At(entity.AppliedBy),
             LinkedBy = Linked(entity, references),
+            AppliedOnCommitOf = Commits(entity, references),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
             Siblings = references.Links.Siblings(references.Of(EntityType.Effect, entity.NetId)),
             ParentClass = Parent(entity, EntityType.Effect, references),
@@ -1080,6 +1082,59 @@ public static class DocumentProjection
 
         return rolls.Count == 0 ? null : rolls;
     }
+
+    private const string AbilityTypeTagPrefix = "AbilityType.";
+    private const string EventTagPrefix = "Event.";
+
+    /// <summary>A wait's abilities, or its tags where they stand for abilities at large or name none.</summary>
+    private static CommitTrigger Trigger(CommitTriggerSource source, References references)
+    {
+        var broad = source.Tags.Any(tag =>
+            tag.StartsWith(AbilityTypeTagPrefix, StringComparison.Ordinal) || tag.StartsWith(EventTagPrefix, StringComparison.Ordinal));
+
+        var holders = broad ? [] : source.Tags.Select(tag => references.Changes.AbilitiesTagged(tag)).ToArray();
+
+        int[] committing = [.. holders.SelectMany(ids => ids).Distinct().Order()];
+
+        EntityReference? Single(IReadOnlyList<string> tags) => tags
+            .SelectMany(tag => references.Changes.Holding(tag))
+            .Select(holder => references.Of(holder.Type, holder.Id))
+            .OfType<EntityReference>()
+            .FirstOrDefault();
+
+        var stoppedBy = Single(source.Stopping);
+        var talent = Single(source.Required);
+
+        return new CommitTrigger
+        {
+            Committing = committing.Length == 0
+                ? null
+                : [.. committing.Select(id => references.Of(EntityType.Ability, id)).OfType<EntityReference>()],
+            CommittingTag = committing.Length == 0 && source.Tags.Count > 0 ? string.Join(", ", source.Tags) : null,
+            ExcludedTags = source.Excluded.Count > 0 ? source.Excluded : null,
+            Applies = source.Effects.Count == 0 ? null : [.. source.Effects.Select(references.At).OfType<EntityReference>()],
+            StoppedBy = stoppedBy,
+            Talent = talent,
+            StoppedByTags = stoppedBy is null && source.Stopping.Count > 0 ? source.Stopping : null,
+            RequiredTags = talent is null && source.Required.Count > 0 ? source.Required : null,
+        };
+    }
+
+    private static IReadOnlyList<CommitTrigger>? Triggers(Entity entity, References references) =>
+        entity.CommitTriggers is { Count: > 0 } triggers
+            ? [.. triggers.Select(trigger => Trigger(trigger, references))]
+            : null;
+
+    private static IReadOnlyList<CommitTrigger>? Commits(Entity entity, References references) =>
+        references.Changes.CommitsOf(entity) is { Count: > 0 } commits
+            ? [
+                .. commits.Select(commit => Trigger(commit.Trigger, references) with
+                {
+                    Ability = references.Of(EntityType.Ability, commit.Ability.NetId),
+                    Applies = null,
+                }),
+            ]
+            : null;
 
     /// <summary>A link names the talent holding a tag it needs, as a proc roll does.</summary>
     private static IReadOnlyList<EffectLink>? Linked(Entity entity, References references)

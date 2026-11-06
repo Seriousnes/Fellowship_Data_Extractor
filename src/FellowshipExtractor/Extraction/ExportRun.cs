@@ -442,6 +442,13 @@ public static class ExportRun
             $"  {resolver.Rolls.Calls - resolver.Rolls.Unread.Count} of {resolver.Rolls.Calls} proc-per-minute rolls " +
             "read a rate as a row and attributes");
 
+        Console.WriteLine($"  {resolver.Commits.Waits} commit waits read");
+
+        foreach (var unread in resolver.Commits.Unread.Distinct(StringComparer.Ordinal))
+        {
+            Console.WriteLine($"  commit wait unread: {unread}");
+        }
+
         foreach (var unread in resolver.Rolls.Unread.Distinct(StringComparer.Ordinal))
         {
             Console.WriteLine($"    {unread}");

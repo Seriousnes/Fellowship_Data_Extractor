@@ -46,6 +46,8 @@ public sealed record EffectRecord : EntityRecord
 
     public IReadOnlyList<EffectLinkRecord>? LinkedBy { get; init; }
 
+    public IReadOnlyList<CommitTriggerRecord>? AppliedOnCommitOf { get; init; }
+
     public RecordReference? PartOf { get; init; }
 
     public string? Role { get; init; }
