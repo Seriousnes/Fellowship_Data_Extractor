@@ -70,3 +70,10 @@ The solution is `src/FellowshipExtractor.slnx`, and the repository root has none
 A running `Fellowship.Codex`, `testhost` or `FellowshipExtractor` holds its `bin` folder (MSB3021,
 MSB3027). Stop the one you started before a build or an export. An export that ends in `user-mapped section
 open` on an `output/ui` texture has a process holding that file: close it and run the export again.
+
+## No explanatory filler in the UI
+
+Do not add a `<Note>` or any paragraph that explains how the data works under a panel ("One id,
+several items. The name follows the armour type..."). The panel's heading and contents speak for
+themselves. Text in the UI is limited to data, labels, and instructions a user needs to operate a
+control.
