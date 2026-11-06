@@ -1,0 +1,184 @@
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@using Fellowship.Codex.Usage
+@using Microsoft.JSInterop
+@inject UsageSettings Settings
+@inject TimeProvider Time
+@inject IJSRuntime Js
+
+<Panel>
+    <div class="cx-roster" id="cx-usage-ranges">
+        @foreach (var range in UsageRanges.Days)
+        {
+            <a href="@Address(range)" data-days="@range" data-enhance-nav="false"
+               aria-current="@(range == Range ? "page" : null)"
+               @onclick="() => ShowAsync(range)" @onclick:preventDefault>@UsageRanges.Label(range)</a>
+        }
+    </div>
+    <form method="post" action="@UsageExtensions.Logout" class="cx-admin-out">
+        <input type="hidden" name="@TokenName" value="@Token" />
+        <span>Signed in as <span class="cx-who">@Owner</span>.</span>
+        <button type="submit">Sign out</button>
+        <span class="cx-admin-live" id="cx-usage-status" aria-live="polite"></span>
+    </form>
+    @if (Settings.Counting)
+    {
+        <form method="post" action="@UsageExtensions.Clear" class="cx-admin-out" id="cx-usage-clear">
+            <input type="hidden" name="@TokenName" value="@Token" />
+            <a href="@UsageExtensions.Database" data-enhance-nav="false">Download database</a>
+            <label for="cx-usage-older">Clear counts older than</label>
+            <input id="cx-usage-older" type="number" name="@UsageExtensions.ClearDays" min="1" step="1" required
+                   value="@UsageRanges.Days.Max()" />
+            <span>days</span>
+            <button type="submit">Clear</button>
+        </form>
+    }
+</Panel>
+
+<div class="cx-usage-charts">
+    <Panel Head="Last hour, per minute, by client kind">
+        <div class="cx-usage-chart"><canvas id="cx-usage-live" role="img" aria-label="Requests per minute over the last hour, one line per client kind"></canvas></div>
+    </Panel>
+    <Panel Head="@UsageRanges.Head(Range)">
+        <div class="cx-usage-chart"><canvas id="cx-usage-range" role="img" aria-label="Requests over the range, one line per area"></canvas></div>
+    </Panel>
+    <Panel Head="@UsageRanges.ErrorsHead(Range)">
+        <div class="cx-usage-chart"><canvas id="cx-usage-errors" role="img" aria-label="4xx and 5xx responses over the range"></canvas></div>
+    </Panel>
+    <Panel Head="Last 24 hours, 5xx per minute, by reason">
+        <div class="cx-usage-chart"><canvas id="cx-usage-failures" role="img" aria-label="5xx responses per minute over the last 24 hours, one line per reason"></canvas></div>
+    </Panel>
+    <Panel Head="Last 24 hours, peak per minute">
+        <div class="cx-usage-chart"><canvas id="cx-usage-load" role="img" aria-label="Peak requests running and queued, thread pool queue and processor use per minute over the last 24 hours"></canvas></div>
+    </Panel>
+    <Panel Head="Last 24 hours, peak memory per minute, MiB">
+        <div class="cx-usage-chart"><canvas id="cx-usage-memory" role="img" aria-label="Peak working set and heap per minute over the last 24 hours"></canvas></div>
+    </Panel>
+</div>
+
+<div id="cx-usage-report">
+    <UsageReport Days="Range" Refresh="Refreshes" />
+</div>
+
+@code {
+    private const string Module = "./js/usage.js";
+
+    /// <summary>Range in days at page load.</summary>
+    [Parameter] public int Days { get; set; } = UsageRanges.Default;
+
+    [Parameter] public string? Owner { get; set; }
+
+    /// <summary>Form field name of the antiforgery token.</summary>
+    [Parameter] public string? TokenName { get; set; }
+
+    /// <summary>
+    /// Antiforgery token of the sign-out and clear forms. The circuit has no request in the admin area
+    /// to issue one, so the page passes in the token from its own request.
+    /// </summary>
+    [Parameter] public string? Token { get; set; }
+
+    /// <summary>
+    /// Expiry of the sign-in cookie. The cookie path excludes the circuit's connection, so the circuit
+    /// cannot read the cookie, and the dashboard stops refreshing at this time.
+    /// </summary>
+    [Parameter] public DateTimeOffset? Expires { get; set; }
+
+    private readonly CancellationTokenSource stopping = new();
+
+    private IJSObjectReference? usage;
+
+    private DotNetObjectReference<UsageDashboard>? self;
+
+    private int Range;
+
+    private int Refreshes;
+
+    private bool hidden;
+
+    protected override void OnInitialized() => Range = UsageRanges.Pick(Days);
+
+    /// <summary>Each render has new chart and grid data in the document, so each render draws it.</summary>
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        try
+        {
+            if (first)
+            {
+                self = DotNetObjectReference.Create(this);
+                usage = await Js.InvokeAsync<IJSObjectReference>("import", stopping.Token, Module);
+                await usage.InvokeVoidAsync("watch", stopping.Token, self);
+
+                if (Settings.Counting) _ = RefreshAsync();
+            }
+
+            if (usage is not null) await usage.InvokeVoidAsync("render", stopping.Token);
+        }
+        catch (Exception failure) when (failure is JSDisconnectedException or OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        using var timer = new PeriodicTimer(UsageFlush.Interval, Time);
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(stopping.Token))
+            {
+                if (Expires <= Time.GetUtcNow())
+                {
+                    await usage!.InvokeVoidAsync("ended", stopping.Token);
+                    return;
+                }
+
+                if (!hidden) await InvokeAsync(Redraw);
+            }
+        }
+        catch (Exception failure) when (failure is JSDisconnectedException or OperationCanceledException)
+        {
+        }
+    }
+
+    private void Redraw()
+    {
+        Refreshes++;
+        StateHasChanged();
+    }
+
+    /// <summary>The browser reports the tab shown or hidden. A hidden tab refreshes nothing.</summary>
+    [JSInvokable]
+    public void Seen(bool visible)
+    {
+        hidden = !visible;
+
+        if (visible) Redraw();
+    }
+
+    private async Task ShowAsync(int range)
+    {
+        Range = range;
+        Refreshes++;
+
+        await Js.InvokeVoidAsync("history.replaceState", stopping.Token, null, string.Empty, Address(range));
+    }
+
+    private static string Address(int range) => $"{UsageRoutes.Admin}?days={range}";
+
+    public async ValueTask DisposeAsync()
+    {
+        await stopping.CancelAsync();
+        stopping.Dispose();
+        self?.Dispose();
+
+        if (usage is null) return;
+
+        try
+        {
+            await usage.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+}
