@@ -42,7 +42,7 @@ public sealed class UsageChartTests : IDisposable
         counter.Request(new UsageRoute(UsageArea.Circuit, "/_blazor", UsageRoute.None), "GET", 101, false, chrome, null);
         store.Write(counter.Drain());
 
-        var row = Assert.Single(store.Clients(DateTimeOffset.UtcNow - TimeSpan.FromDays(1), 10));
+        var row = Assert.Single(store.Clients(DateTimeOffset.UtcNow - TimeSpan.FromDays(1)));
 
         Assert.Equal((2L, 1L, 3L), (row.Pages, row.Circuits, row.Requests));
         Assert.Equal(ClientKind.Browser, row.Kind);

@@ -96,19 +96,77 @@ public sealed class UsageDashboardTests(UsageSite site)
         await button.ClickAsync();
         page.Dialog -= Dismiss;
 
-        Assert.Contains(store.Routes(since, 100), route => route.Route == Old);
+        Assert.Contains(store.Routes(since), route => route.Route == Old);
 
         void Accept(object? sender, IDialog dialog) => _ = dialog.AcceptAsync();
 
         page.Dialog += Accept;
         await page.RunAndWaitForResponseAsync(() => button.ClickAsync(), $"**{UsageExtensions.Clear}");
 
-        Assert.DoesNotContain(store.Routes(since, 100), route => route.Route == Old);
+        Assert.DoesNotContain(store.Routes(since), route => route.Route == Old);
     }
 
     private sealed class Earlier(TimeSpan by) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => base.GetUtcNow() - by;
+    }
+
+    [Fact]
+    public async Task A_grid_draws_the_rows_in_view_sorts_by_number_and_keeps_its_filter_across_a_refresh()
+    {
+        const int Rows = 5000;
+
+        var failed = site.Services.GetRequiredService<Ring<FailedRequest>>();
+        var counter = site.Services.GetRequiredService<UsageCounter>();
+        var route = new UsageRoute(UsageArea.Page, "/{slug}", UsageRoute.None);
+
+        foreach (var at in Enumerable.Range(1, Rows))
+        {
+            failed.Add(new FailedRequest(
+                DateTimeOffset.UtcNow, FailureReason.Rejected, 503, "GET", UsageArea.Page, route.Route, $"/items?page={at}",
+                Agent.Unknown, "abcd1234", at, null));
+        }
+
+        counter.Failure(route, "GET", 503, FailureReason.Rejected, Agent.Unknown);
+        counter.Request(route, "GET", 503, false, Agent.Unknown, 1);
+        site.Services.GetRequiredService<UsageStore>().Write(counter.Drain());
+
+        await using var context = await site.NewContextAsync(UsageSite.SignedIn);
+        var page = await context.NewPageAsync();
+
+        await page.SetViewportSizeAsync(1400, 1000);
+        await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
+
+        var grid = page.Locator("[data-grid='failed']");
+        var rows = grid.Locator("tr.cx-grid-row");
+
+        await Assertions.Expect(rows.First).ToBeVisibleAsync();
+        Assert.InRange(await rows.CountAsync(), 1, 100);
+
+        await grid.GetByRole(AriaRole.Button, new() { Name = "Duration" }).ClickAsync();
+        await Assertions.Expect(rows.First.Locator("td").Nth(11)).ToContainTextAsync("5,000.0");
+
+        await grid.Locator(".cx-grid-scroll").EvaluateAsync("node => { node.scrollTop = node.scrollHeight; }");
+        await Assertions.Expect(rows.Last.Locator("td").Nth(11)).ToContainTextAsync("1.0");
+
+        var filter = grid.GetByLabel("Filter Address");
+
+        await filter.PressSequentiallyAsync("page=4999");
+        await Assertions.Expect(rows).ToHaveCountAsync(1);
+        await Assertions.Expect(grid.Locator(".cx-grid-foot")).ToContainTextAsync("1 of 5,000 rows");
+
+        var before = await page.Locator("#cx-usage-status").TextContentAsync();
+
+        await Assertions.Expect(page.Locator("#cx-usage-status")).Not.ToHaveTextAsync(before!, new() { Timeout = 20_000 });
+        await Assertions.Expect(filter).ToHaveValueAsync("page=4999");
+        await Assertions.Expect(filter).ToBeFocusedAsync();
+        await Assertions.Expect(rows).ToHaveCountAsync(1);
+
+        if (Environment.GetEnvironmentVariable("CODEX_SCREENSHOT") is { Length: > 0 } shot)
+        {
+            await filter.FillAsync(string.Empty);
+            await page.ScreenshotAsync(new PageScreenshotOptions { Path = shot, FullPage = true });
+        }
     }
 
     [Fact]

@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.RateLimiting;
 
+using Fellowship.Codex.Usage;
+
 namespace Fellowship.Codex;
 
 public static class Serving
@@ -13,18 +15,18 @@ public static class Serving
 
     public const string Origins = "origins";
 
-    private const int PermitLimit = 8;
-
-    private const int QueueLimit = 32;
-
     private const long SizeLimit = 64L * 1024 * 1024;
 
     private static readonly TimeSpan Lifetime = TimeSpan.FromDays(365);
 
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
+    public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
 
     public static IServiceCollection AddServing(this IServiceCollection services)
     {
+        var load = new RequestLoad();
+
+        services.AddSingleton(load);
+
         services.AddOutputCache(options =>
         {
             options.SizeLimit = SizeLimit;
@@ -45,18 +47,26 @@ public static class Serving
         {
             options.RejectionStatusCode = StatusCodes.Status503ServiceUnavailable;
 
-            options.AddConcurrencyLimiter(Policy, limiter =>
+            options.OnRejected = (context, _) =>
             {
-                limiter.PermitLimit = PermitLimit;
-                limiter.QueueLimit = QueueLimit;
-                limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-            });
+                FailureTag.Mark(context.HttpContext, FailureReason.Rejected);
+
+                return ValueTask.CompletedTask;
+            };
+
+            options.AddPolicy(Policy, _ => RateLimitPartition.Get(Policy, _ => load.Open()));
         });
 
         services.AddRequestTimeouts(options => options.AddPolicy(Policy, new RequestTimeoutPolicy
         {
             Timeout = Timeout,
             TimeoutStatusCode = StatusCodes.Status503ServiceUnavailable,
+            WriteTimeoutResponse = http =>
+            {
+                FailureTag.Mark(http, FailureReason.TimedOut);
+
+                return Task.CompletedTask;
+            },
         }));
 
         return services;
@@ -73,7 +83,7 @@ public static class Serving
 
     public static IEndpointConventionBuilder ServePages(this IEndpointConventionBuilder builder)
     {
-        var pages = new ExceptBlazorHub(builder);
+        var pages = new PublicPages(builder);
 
         pages.RequireRateLimiting(Policy);
         pages.WithRequestTimeout(Policy);
@@ -112,14 +122,17 @@ public static class Serving
             ValueTask.CompletedTask;
     }
 
-    private sealed class ExceptBlazorHub(IEndpointConventionBuilder endpoints) : IEndpointConventionBuilder
+    // The dashboard takes no limiter permit, because the owner opens it while the limiter rejects.
+    private sealed class PublicPages(IEndpointConventionBuilder endpoints) : IEndpointConventionBuilder
     {
         private const string BlazorHub = "_blazor";
+
+        private static readonly string Admin = UsageRoutes.Admin.TrimStart('/');
 
         public void Add(Action<EndpointBuilder> convention) =>
             endpoints.Add(endpoint =>
             {
-                if (Hub(endpoint)) return;
+                if (Exempt(endpoint)) return;
 
                 convention(endpoint);
             });
@@ -127,13 +140,50 @@ public static class Serving
         public void Finally(Action<EndpointBuilder> convention) =>
             endpoints.Finally(endpoint =>
             {
-                if (Hub(endpoint)) return;
+                if (Exempt(endpoint)) return;
 
                 convention(endpoint);
             });
 
-        private static bool Hub(EndpointBuilder endpoint) =>
+        private static bool Exempt(EndpointBuilder endpoint) =>
             endpoint is RouteEndpointBuilder route &&
-            route.RoutePattern.RawText?.TrimStart('/').StartsWith(BlazorHub, StringComparison.OrdinalIgnoreCase) is true;
+            route.RoutePattern.RawText?.TrimStart('/') is { } path &&
+            (path.StartsWith(BlazorHub, StringComparison.OrdinalIgnoreCase) ||
+             path.StartsWith(Admin, StringComparison.OrdinalIgnoreCase));
+    }
+}
+
+/// <summary>
+/// The limiter every served request shares. The rate limiter middleware disposes an idle limiter and
+/// asks for a new one, so this holds the latest.
+/// </summary>
+public sealed class RequestLoad
+{
+    public const int PermitLimit = 8;
+
+    public const int QueueLimit = 32;
+
+    private ConcurrencyLimiter? limiter;
+
+    public RateLimiter Open() => limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+    {
+        PermitLimit = PermitLimit,
+        QueueLimit = QueueLimit,
+        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+    });
+
+    /// <summary>Requests running and queued now. A disposed limiter was idle, so it has neither.</summary>
+    public (int Running, int Queued) Now()
+    {
+        try
+        {
+            return limiter?.GetStatistics() is { } statistics
+                ? ((int)(PermitLimit - statistics.CurrentAvailablePermits), (int)statistics.CurrentQueuedCount)
+                : (0, 0);
+        }
+        catch (ObjectDisposedException)
+        {
+            return (0, 0);
+        }
     }
 }

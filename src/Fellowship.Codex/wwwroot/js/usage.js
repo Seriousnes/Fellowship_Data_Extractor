@@ -1,4 +1,6 @@
-// Usage dashboard: draws the two charts from the report's JSON and refreshes the report in place.
+// Usage dashboard: draws the charts from the report's JSON and refreshes the report in place.
+
+import { mount, swap } from './grid.js';
 
 const host = document.getElementById('cx-usage-report');
 const ranges = document.getElementById('cx-usage-ranges');
@@ -19,6 +21,8 @@ const formats = { minute: clock, hour: hourly, day: daily };
 
 let timer = 0;
 let drawn = {};
+
+const grids = new Map();
 
 function data() {
     const node = host.querySelector('#cx-usage-data');
@@ -135,6 +139,12 @@ function legend(chart) {
     chart.options.plugins.legend.display = chart.data.datasets.length > 1;
 }
 
+function heading(id, text) {
+    const head = document.getElementById(id).closest('.cx-panel')?.querySelector('.cx-panel-head');
+
+    if (head) head.textContent = text;
+}
+
 function render() {
     const current = data();
 
@@ -142,9 +152,13 @@ function render() {
 
     draw('cx-usage-live', current.live, 'minute');
     draw('cx-usage-range', current.range, current.range.unit);
+    draw('cx-usage-errors', current.errors, current.errors.unit);
+    draw('cx-usage-failures', current.failures, 'minute');
+    draw('cx-usage-load', current.load, 'minute');
+    draw('cx-usage-memory', current.memory, 'minute');
 
-    const head = document.getElementById('cx-usage-range').closest('.cx-panel')?.querySelector('.cx-panel-head');
-    if (head) head.textContent = current.range.head;
+    heading('cx-usage-range', current.range.head);
+    heading('cx-usage-errors', current.errors.head);
 
     status.textContent = `Updated ${stamp.format(new Date(current.generated * 1000))}`;
     schedule(current.interval);
@@ -172,7 +186,7 @@ async function refresh() {
 
         if (!response.ok) throw new Error(`${response.status}`);
 
-        host.innerHTML = await response.text();
+        swap(host, await response.text(), grids);
         render();
     } catch (failure) {
         status.textContent = `Refresh failed (${failure.message}). Retrying.`;
@@ -207,4 +221,5 @@ document.addEventListener('visibilitychange', () => {
 });
 
 Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+mount(host, grids);
 render();

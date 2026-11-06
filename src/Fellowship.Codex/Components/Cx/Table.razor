@@ -1,4 +1,5 @@
 @typeparam T
+@implements IColumnSet<T>
 @attribute [CascadingTypeParameter(nameof(T))]
 
 <CascadingValue Value="this" IsFixed="true">@Columns</CascadingValue>

@@ -30,6 +30,8 @@ public static class UsageExtensions
 
     public const string ClearDays = "days";
 
+    public const int FailedRequestCapacity = 10_000;
+
     private const string DatabaseType = "application/vnd.sqlite3";
 
     private const int CopyBuffer = 64 * 1024;
@@ -53,6 +55,10 @@ public static class UsageExtensions
         {
             services.AddSingleton<UsageCounter>();
             services.AddSingleton(new UsageStore(settings.Database!));
+            services.AddSingleton(new Ring<FailedRequest>(FailedRequestCapacity));
+            services.AddSingleton<ClientTags>();
+            services.AddSingleton<RecentLogs>();
+            services.AddSingleton<ServerWatch>();
             services.AddHostedService<UsageFlush>();
             services.AddSingleton<ILoggerProvider, ErrorCounting>();
             services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(settings.Keys!));

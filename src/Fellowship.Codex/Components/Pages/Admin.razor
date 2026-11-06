@@ -45,6 +45,18 @@
     <Panel Head="@RangeHead">
         <div class="cx-usage-chart"><canvas id="cx-usage-range" role="img" aria-label="Requests over the range, one line per area"></canvas></div>
     </Panel>
+    <Panel Head="@ErrorsHead">
+        <div class="cx-usage-chart"><canvas id="cx-usage-errors" role="img" aria-label="4xx and 5xx responses over the range"></canvas></div>
+    </Panel>
+    <Panel Head="Last 24 hours, 5xx per minute, by reason">
+        <div class="cx-usage-chart"><canvas id="cx-usage-failures" role="img" aria-label="5xx responses per minute over the last 24 hours, one line per reason"></canvas></div>
+    </Panel>
+    <Panel Head="Last 24 hours, peak per minute">
+        <div class="cx-usage-chart"><canvas id="cx-usage-load" role="img" aria-label="Peak requests running and queued, thread pool queue and processor use per minute over the last 24 hours"></canvas></div>
+    </Panel>
+    <Panel Head="Last 24 hours, peak memory per minute, MiB">
+        <div class="cx-usage-chart"><canvas id="cx-usage-memory" role="img" aria-label="Peak working set and heap per minute over the last 24 hours"></canvas></div>
+    </Panel>
 </div>
 
 <div id="cx-usage-report" data-report="@UsageExtensions.Report">
@@ -66,6 +78,8 @@
     private string? Owner;
 
     private string RangeHead => UsageRanges.Head(Range);
+
+    private string ErrorsHead => UsageRanges.ErrorsHead(Range);
 
     protected override void OnInitialized()
     {

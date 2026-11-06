@@ -46,6 +46,13 @@ public sealed record SeriesPoint(long Bucket, string Series, long Requests);
 
 public sealed record ErrorUsage(string Category, string Exception, long Count);
 
+/// <summary>5xx responses of one cause, route and client family.</summary>
+public sealed record FailureUsage(
+    FailureReason Reason, int Status, UsageArea Area, string Method, string Route, string Entity, string Browser, string Os, long Count)
+{
+    public ClientKind Kind => UserAgents.Kind(Browser);
+}
+
 /// <summary>The SQLite database of usage counts.</summary>
 public sealed class UsageStore
 {
@@ -114,6 +121,35 @@ public sealed class UsageStore
             count INTEGER NOT NULL,
             PRIMARY KEY (minute, kind, area)
         ) WITHOUT ROWID;
+        CREATE TABLE IF NOT EXISTS failures (
+            hour INTEGER NOT NULL,
+            reason TEXT NOT NULL,
+            status INTEGER NOT NULL,
+            area TEXT NOT NULL,
+            method TEXT NOT NULL,
+            route TEXT NOT NULL,
+            entity TEXT NOT NULL,
+            browser TEXT NOT NULL,
+            os TEXT NOT NULL,
+            count INTEGER NOT NULL,
+            PRIMARY KEY (hour, reason, status, area, method, route, entity, browser, os)
+        ) WITHOUT ROWID;
+        CREATE TABLE IF NOT EXISTS failure_minutes (
+            minute INTEGER NOT NULL,
+            reason TEXT NOT NULL,
+            count INTEGER NOT NULL,
+            PRIMARY KEY (minute, reason)
+        ) WITHOUT ROWID;
+        CREATE TABLE IF NOT EXISTS samples (
+            minute INTEGER NOT NULL PRIMARY KEY,
+            running INTEGER NOT NULL,
+            queued INTEGER NOT NULL,
+            pool_queue INTEGER NOT NULL,
+            circuits INTEGER NOT NULL,
+            processor REAL NOT NULL,
+            memory INTEGER NOT NULL,
+            heap INTEGER NOT NULL
+        ) WITHOUT ROWID;
         """;
 
     private SqliteConnection Open()
@@ -144,8 +180,83 @@ public sealed class UsageStore
         WriteAgents(open, transaction, batch.Agents);
         WriteErrors(open, transaction, batch.Errors);
         WriteMinutes(open, transaction, batch.Minutes);
+        WriteFailures(open, transaction, batch.Failures);
+        WriteFailureMinutes(open, transaction, batch.FailureMinutes);
 
         transaction.Commit();
+    }
+
+    public void Write(ServerSample sample)
+    {
+        using var open = Open();
+        using var command = open.CreateCommand();
+        command.CommandText =
+            """
+            INSERT OR REPLACE INTO samples (minute, running, queued, pool_queue, circuits, processor, memory, heap)
+            VALUES ($minute, $running, $queued, $pool, $circuits, $processor, $memory, $heap);
+            """;
+        command.Parameters.AddWithValue("$minute", sample.Minute);
+        command.Parameters.AddWithValue("$running", sample.Running);
+        command.Parameters.AddWithValue("$queued", sample.Queued);
+        command.Parameters.AddWithValue("$pool", sample.PoolQueue);
+        command.Parameters.AddWithValue("$circuits", sample.Circuits);
+        command.Parameters.AddWithValue("$processor", sample.Processor);
+        command.Parameters.AddWithValue("$memory", sample.Memory);
+        command.Parameters.AddWithValue("$heap", sample.Heap);
+        command.ExecuteNonQuery();
+    }
+
+    private static void WriteFailures(
+        SqliteConnection open, SqliteTransaction transaction, IReadOnlyDictionary<FailureKey, long> failures)
+    {
+        using var command = open.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            INSERT INTO failures (hour, reason, status, area, method, route, entity, browser, os, count)
+            VALUES ($hour, $reason, $status, $area, $method, $route, $entity, $browser, $os, $count)
+            ON CONFLICT DO UPDATE SET count = count + excluded.count;
+            """;
+
+        string[] names = ["$hour", "$reason", "$status", "$area", "$method", "$route", "$entity", "$browser", "$os", "$count"];
+        var parameters = names.Select(name => command.Parameters.Add(new SqliteParameter { ParameterName = name })).ToArray();
+
+        foreach (var (key, total) in failures)
+        {
+            object[] values =
+            [
+                key.Hour, key.Reason.ToString(), key.Status, key.Area.ToString(), key.Method, key.Route, key.Entity,
+                key.Browser, key.Os, total,
+            ];
+
+            for (var at = 0; at < values.Length; at++) parameters[at].Value = values[at];
+
+            command.ExecuteNonQuery();
+        }
+    }
+
+    private static void WriteFailureMinutes(
+        SqliteConnection open, SqliteTransaction transaction, IReadOnlyDictionary<FailureMinuteKey, long> minutes)
+    {
+        using var command = open.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            INSERT INTO failure_minutes (minute, reason, count) VALUES ($minute, $reason, $count)
+            ON CONFLICT DO UPDATE SET count = count + excluded.count;
+            """;
+
+        var minute = command.Parameters.Add("$minute", SqliteType.Integer);
+        var reason = command.Parameters.Add("$reason", SqliteType.Text);
+        var count = command.Parameters.Add("$count", SqliteType.Integer);
+
+        foreach (var (key, total) in minutes)
+        {
+            minute.Value = key.Minute;
+            reason.Value = key.Reason.ToString();
+            count.Value = total;
+            command.ExecuteNonQuery();
+        }
     }
 
     private static void WriteMinutes(
@@ -291,6 +402,9 @@ public sealed class UsageStore
             DELETE FROM agents WHERE day < $cutoff;
             DELETE FROM errors WHERE hour < $cutoff;
             DELETE FROM minutes WHERE minute < $minutes;
+            DELETE FROM failures WHERE hour < $cutoff;
+            DELETE FROM failure_minutes WHERE minute < $minutes;
+            DELETE FROM samples WHERE minute < $minutes;
 
             CREATE TEMP TABLE rolled_requests AS
                 SELECT hour / 86400 * 86400, area, method, route, entity, status, cached,
@@ -307,6 +421,13 @@ public sealed class UsageStore
             DELETE FROM errors WHERE hour < $rollup;
             INSERT INTO errors SELECT * FROM rolled_errors;
             DROP TABLE rolled_errors;
+
+            CREATE TEMP TABLE rolled_failures AS
+                SELECT hour / 86400 * 86400, reason, status, area, method, route, entity, browser, os, sum(count)
+                FROM failures WHERE hour < $rollup GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9;
+            DELETE FROM failures WHERE hour < $rollup;
+            INSERT INTO failures SELECT * FROM rolled_failures;
+            DROP TABLE rolled_failures;
             """;
         command.Parameters.AddWithValue("$cutoff", cutoff.ToUnixTimeSeconds());
         command.Parameters.AddWithValue("$rollup", rollup.ToUnixTimeSeconds());
@@ -328,6 +449,9 @@ public sealed class UsageStore
             DELETE FROM agents WHERE day < $cutoff;
             DELETE FROM errors WHERE hour < $cutoff;
             DELETE FROM minutes WHERE minute < $cutoff;
+            DELETE FROM failures WHERE hour < $cutoff;
+            DELETE FROM failure_minutes WHERE minute < $cutoff;
+            DELETE FROM samples WHERE minute < $cutoff;
             """;
         command.Parameters.AddWithValue("$cutoff", cutoff.ToUnixTimeSeconds());
         command.ExecuteNonQuery();
@@ -362,7 +486,7 @@ public sealed class UsageStore
             since,
             row => new AreaUsage(Enum.Parse<UsageArea>(row.GetString(0)), row.GetInt64(1), row.GetInt64(2), row.GetInt64(3), row.GetInt64(4)));
 
-    public IReadOnlyList<RouteUsage> Routes(DateTimeOffset since, int limit) =>
+    public IReadOnlyList<RouteUsage> Routes(DateTimeOffset since) =>
         Read(
             $"""
             SELECT area, method, route, entity, sum(count),
@@ -372,7 +496,7 @@ public sealed class UsageStore
                    sum(sum_ms), max(max_ms),
                    {string.Join(", ", Enumerable.Range(0, Latency.Count).Select(bucket => $"sum(b{bucket})"))}
             FROM requests WHERE hour >= $since
-            GROUP BY area, method, route, entity ORDER BY sum(count) DESC LIMIT {limit};
+            GROUP BY area, method, route, entity ORDER BY sum(count) DESC;
             """,
             since,
             row =>
@@ -393,7 +517,7 @@ public sealed class UsageStore
             since,
             row => new StatusUsage(row.GetInt32(0), row.GetInt64(1)));
 
-    public IReadOnlyList<ClientUsage> Clients(DateTimeOffset since, int limit) =>
+    public IReadOnlyList<ClientUsage> Clients(DateTimeOffset since) =>
         Read(
             $"""
             SELECT browser, os, mobile,
@@ -402,7 +526,7 @@ public sealed class UsageStore
                    sum(CASE WHEN status_class = 4 THEN count ELSE 0 END),
                    sum(CASE WHEN status_class = 5 THEN count ELSE 0 END)
             FROM agents WHERE day >= $since
-            GROUP BY browser, os, mobile ORDER BY sum(count) DESC LIMIT {limit};
+            GROUP BY browser, os, mobile ORDER BY sum(count) DESC;
             """,
             UsageCounter.Day(since),
             row => new ClientUsage(
@@ -438,6 +562,44 @@ public sealed class UsageStore
             $"SELECT hour / {bucketSeconds} * {bucketSeconds}, area, sum(count) FROM requests WHERE hour >= $since GROUP BY 1, 2 ORDER BY 1;",
             since,
             row => new SeriesPoint(row.GetInt64(0), row.GetString(1), row.GetInt64(2)));
+
+    /// <summary>4xx and 5xx responses per bucket of the given length since the given time.</summary>
+    public IReadOnlyList<SeriesPoint> ErrorSeries(DateTimeOffset since, long bucketSeconds) =>
+        Read(
+            $"""
+            SELECT hour / {bucketSeconds} * {bucketSeconds},
+                   CASE WHEN status >= 500 THEN '{UsageRanges.ServerErrors}' ELSE '{UsageRanges.ClientErrors}' END,
+                   sum(count)
+            FROM requests WHERE hour >= $since AND status >= 400 GROUP BY 1, 2 ORDER BY 1;
+            """,
+            since,
+            row => new SeriesPoint(row.GetInt64(0), row.GetString(1), row.GetInt64(2)));
+
+    /// <summary>5xx responses per minute since the given time, by reason.</summary>
+    public IReadOnlyList<SeriesPoint> FailureMinutes(DateTimeOffset since) =>
+        Read(
+            "SELECT minute, reason, sum(count) FROM failure_minutes WHERE minute >= $since GROUP BY 1, 2 ORDER BY 1;",
+            since,
+            row => new SeriesPoint(row.GetInt64(0), row.GetString(1), row.GetInt64(2)));
+
+    public IReadOnlyList<FailureUsage> Failures(DateTimeOffset since) =>
+        Read(
+            """
+            SELECT reason, status, area, method, route, entity, browser, os, sum(count)
+            FROM failures WHERE hour >= $since
+            GROUP BY 1, 2, 3, 4, 5, 6, 7, 8 ORDER BY 9 DESC;
+            """,
+            since,
+            row => new FailureUsage(
+                Enum.Parse<FailureReason>(row.GetString(0)), row.GetInt32(1), Enum.Parse<UsageArea>(row.GetString(2)),
+                row.GetString(3), row.GetString(4), row.GetString(5), row.GetString(6), row.GetString(7), row.GetInt64(8)));
+
+    public IReadOnlyList<ServerSample> Samples(DateTimeOffset since) =>
+        Read(
+            "SELECT minute, running, queued, pool_queue, circuits, processor, memory, heap FROM samples WHERE minute >= $since ORDER BY minute;",
+            since,
+            row => new ServerSample(
+                row.GetInt64(0), row.GetInt32(1), row.GetInt32(2), row.GetInt32(3), row.GetInt32(4), row.GetDouble(5), row.GetInt64(6), row.GetInt64(7)));
 
     private static string Area(UsageArea area) => $"sum(CASE WHEN area = '{area}' THEN count ELSE 0 END)";
 
