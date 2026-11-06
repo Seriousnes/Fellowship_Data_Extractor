@@ -43,8 +43,10 @@ public static class DocumentProjection
                 (Links.Applied(ability) ?? []).Concat((Links.Parts(ability) ?? []).Where(part => part.Type == EntityType.Effect)))));
 
         public IReadOnlyList<EntityReference>? Origins(Entity entity) =>
-            entity.Type is { } type && entity.NetId is { } id && origins is not null &&
-            origins.TryGetValue((type, id), out var roots)
+            entity.Type is { } type && entity.NetId is { } id ? Origins(type, id) : null;
+
+        public IReadOnlyList<EntityReference>? Origins(EntityType type, int id) =>
+            origins is not null && origins.TryGetValue((type, id), out var roots)
                 ? [.. roots.Select(root => Of(root.Type, root.Id)!)]
                 : null;
 
@@ -650,7 +652,7 @@ public static class DocumentProjection
     };
 #pragma warning restore CS8524
 
-    public static EntityDocument? Implied(Entity entity) =>
+    public static EntityDocument? Implied(Entity entity, References? references = null) =>
         entity is { Type: EntityType.TalentSlot, SlotBorneTalent: true }
             ? new TalentDocument
             {
@@ -658,6 +660,7 @@ public static class DocumentProjection
                 Name = Name(entity),
                 Description = entity.Description,
                 Icon = entity.Icon,
+                Origins = references?.Origins(EntityType.Talent, entity.NetId!.Value),
             }
             : null;
 

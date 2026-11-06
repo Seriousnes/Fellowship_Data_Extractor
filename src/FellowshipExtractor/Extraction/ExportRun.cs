@@ -263,10 +263,9 @@ public static class ExportRun
         var rooted = references.With(origins);
 
         Console.WriteLine(
-            $"  {origins.Count(pair => pair.Key.Type != EntityType.TalentSlot)} abilities, effects and talents " +
+            $"  {origins.Count} abilities, effects and talents " +
             "traced to the hero, creature or other entity they are reached from: " +
             string.Join(", ", origins
-                .Where(pair => pair.Key.Type != EntityType.TalentSlot)
                 .GroupBy(pair => pair.Key.Type)
                 .Select(group => $"{group.Count()} {group.Key}")));
 
@@ -286,7 +285,7 @@ public static class ExportRun
                 default);
             written++;
 
-            if (DocumentProjection.Implied(record) is { } implied)
+            if (DocumentProjection.Implied(record, rooted.For(record.PrimaryStat)) is { } implied)
             {
                 await target.WriteDocumentAsync(implied, default);
                 written++;
