@@ -22,6 +22,16 @@
 
 .cx-entity-name-icon { display: none; }
 
+@media (min-width: 1180px) {
+  .cx-entity-paired { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; }
+
+  .cx-entity-paired ::deep .cx-craft-tip { grid-row: 1 / 3; }
+
+  .cx-entity-paired .cx-entity-side { grid-column: 3; grid-row: 1; }
+
+  .cx-entity-paired ::deep .cx-entity-details { grid-column: 2 / -1; grid-row: 2; }
+}
+
 @media (max-width: 860px) {
   .cx-entity { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
 

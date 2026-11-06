@@ -5,25 +5,37 @@
 {
     var badge = $"{Named.Count} {(Named.Count == 1 ? "version" : "versions")}";
     <Panel Head="@Head" Badge="@badge">
-        @if (Here.Entity is not AugmentationDocument)
+        @if (Here.Entity is ItemDocument)
         {
             <Note>
                 One id, several @(Here.Noun)s. The name follows the armour type, the primary stat slot
                 holds whatever the wearer's own stat is, and the texture is their armour set, so each hero
-                below is handed the version named over them.
+                below has their own version.
             </Note>
+            <HeroPicker Heroes="@Wearers.Keys.ToArray()" Current="@Here.Reading" Href="@(hero => Ui.Href(Wearers[hero], hero))" />
         }
-        @foreach (var version in Named)
+        else
         {
-            <Rule />
-            <SubHead Colour="@(version.OnScreen ? "var(--gold-bright)" : null)">
-                @version.Name
-                @if (version.Discriminator is { } pair)
-                {
-                    <CountBadge Text="@pair" />
-                }
-            </SubHead>
-            <HeroPicker Heroes="@version.Heroes" Current="@Here.Reading" Href="@(hero => Ui.Href(version.Reading, hero))" />
+            @if (Here.Entity is not AugmentationDocument)
+            {
+                <Note>
+                    One id, several @(Here.Noun)s. The name follows the armour type, the primary stat slot
+                    holds whatever the wearer's own stat is, and the texture is their armour set, so each hero
+                    below is handed the version named over them.
+                </Note>
+            }
+            @foreach (var version in Named)
+            {
+                <Rule />
+                <SubHead Colour="@(version.OnScreen ? "var(--gold-bright)" : null)">
+                    @version.Name
+                    @if (version.Discriminator is { } pair)
+                    {
+                        <CountBadge Text="@pair" />
+                    }
+                </SubHead>
+                <HeroPicker Heroes="@version.Heroes" Current="@Here.Reading" Href="@(hero => Ui.Href(version.Reading, hero))" />
+            }
         }
     </Panel>
 }
@@ -36,7 +48,18 @@
     private sealed record Version(
         EntityDocument Reading, string Name, string? Discriminator, IReadOnlyList<string> Heroes, bool OnScreen);
 
-    protected override void OnParametersSet() => Named = Split();
+    private SortedDictionary<string, EntityDocument> Wearers = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override void OnParametersSet()
+    {
+        Named = Split();
+        Wearers = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var version in Named)
+        {
+            foreach (var hero in version.Heroes) Wearers.TryAdd(hero, version.Reading);
+        }
+    }
 
     private IReadOnlyList<Version> Split() =>
         Here.Readings.Count < 2
@@ -51,14 +74,14 @@
                     version.Key.Name,
                     Discriminator(version.Key.ArmorType, version.Key.PrimaryStat),
                     [.. version
-                        .SelectMany(Wearers)
+                        .SelectMany(Wearing)
                         .Distinct(StringComparer.Ordinal)
                         .OrderBy(hero => hero, StringComparer.OrdinalIgnoreCase)],
                     version.Any(reading => reading == Here.Entity)))];
 
     private string Head => Here.Entity is AugmentationDocument ? "Versions" : $"Who can use this {Here.Noun}";
 
-    private IEnumerable<string> Wearers(EntityDocument reading) =>
+    private IEnumerable<string> Wearing(EntityDocument reading) =>
         reading is AugmentationDocument
             ? Store.Settings.Heroes.Where(hero => EntityStore.Reads(reading, hero)).Select(hero => hero.Name)
             : Ui.Codex.Facet(FacetType.Hero).Values(reading);

@@ -1,0 +1,65 @@
+@using Fellowship.SDK.Models
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+
+@if (Pools.Count > 0)
+{
+    <Panel Head="Location / Source">
+        @foreach (var pool in Pools)
+        {
+            <details class="cx-item-source" open="@(Pools.Count == 1)">
+                <summary>
+                    @if (Dungeon(pool.Source) is { } dungeon)
+                    {
+                        <EntityLink Entity="dungeon" Class="cx-nm" />
+                    }
+                    else
+                    {
+                        <span class="cx-item-source-name">@pool.Source.Name</span>
+                    }
+                    <Chip>@pool.Source.Kind</Chip>
+                    @if (pool.Source.Category is { } category)
+                    {
+                        <Chip>@category</Chip>
+                    }
+                    <CountBadge Text="@Count(pool.Items.Count)" />
+                </summary>
+
+                <Table Items="pool.Items">
+                    <Columns>
+                        <Column Head="" Class="cx-texture">
+                            <Content Context="row"><Texture Entity="row" /></Content>
+                        </Column>
+                        <Column Head="Name">
+                            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+                        </Column>
+                        <Column Head="ILvl" Numeric Value="row => row.ItemLevel" />
+                        <Column Head="Slot" Value="row => row.Slot" />
+                    </Columns>
+                </Table>
+            </details>
+        }
+    </Panel>
+}
+
+@code {
+    [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
+
+    [CascadingParameter] private Bearings Here { get; set; } = new();
+
+    private IReadOnlyList<Pool> Pools = [];
+
+    private sealed record Pool(ItemSource Source, IReadOnlyList<ItemDocument> Items);
+
+    protected override void OnParametersSet() =>
+        Pools =
+        [
+            .. ((Entity as ItemDocument)?.Sources ?? [])
+                .Select(source => new Pool(source, ItemPools.Of(Ui.Codex, Store, source, Here.Reading))),
+        ];
+
+    private EntityDocument? Dungeon(ItemSource source) =>
+        source.Dungeon is { } dungeon ? Store.All(dungeon.Type, dungeon.Id).FirstOrDefault() : null;
+
+    private static string Count(int items) => $"{items} {(items == 1 ? "item" : "items")}";
+}
