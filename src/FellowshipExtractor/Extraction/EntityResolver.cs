@@ -382,6 +382,7 @@ public sealed class EntityResolver
         entity = WithSpentResource(entity, display, tag, cdo);
         entity = WithGeneratedResources(entity);
         entity = WithSuppliedDuration(entity, cdo, tag);
+        entity = WithAssignedModifiers(entity, cdo, tag);
         entity = WithTicks(entity, cdo, tag);
         entity = WithSetByCallerScaling(entity, cdo, tag);
 
@@ -786,6 +787,39 @@ public sealed class EntityResolver
         DurationsFromSetByCaller++;
 
         return entity with { Duration = duration, DurationGates = recovered.Gates.Count == 0 ? entity.DurationGates : recovered.Gates };
+    }
+
+    public int ModifiersFromSetByCaller { get; private set; }
+
+    /// <summary>
+    /// A declared modifier taking its value from a set-by-caller tag has the value its applying ability assigns. Topaz
+    /// Winds assigns <c>SetByCaller.CooldownRecovery</c> from a row at each rank.
+    /// </summary>
+    private Entity WithAssignedModifiers(Entity entity, UObject? cdo, TagRecord tag)
+    {
+        if (cdo is null || entity.Modifiers is not { Count: > 0 } modifiers) return entity;
+        if (!tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) return entity;
+
+        var slots = EffectModifiers.Uses(cdo, _mappings).Where(slot => !slot.Executed).ToArray();
+        if (!slots.Any(slot => slot.SetByCallerTag is not null)) return entity;
+
+        var applier = Owners.ApplierOf(tag.Name);
+        if (applier is null or AbilityOwners.Contested) return entity;
+        if (LoadDefaultObject(FindAsset(applier)) is not { } ability) return entity;
+
+        EffectModifier[] filled = [.. modifiers];
+
+        for (var at = 0; at < Math.Min(slots.Length, filled.Length); at++)
+        {
+            if (slots[at] is not { SetByCallerTag: { } supplied } slot || filled[at].Attribute != slot.Attribute) continue;
+            if (filled[at].Value is not null || filled[at].Coefficient is not null) continue;
+            if (SetByCallerScalings.Assigned(ability, supplied, tag.Name, _constants, _provider) is not [var value, ..] ranks) continue;
+
+            filled[at] = filled[at] with { Value = value, Ranks = ranks.Count > 1 ? ranks : null };
+            ModifiersFromSetByCaller++;
+        }
+
+        return entity with { Modifiers = filled };
     }
 
     private const string PeriodicOnApplicationField = "bExecutePeriodicEffectOnApplication";
@@ -1452,6 +1486,7 @@ public sealed class EntityResolver
             MinRange = Number(split, "minRange"),
             Radius = Number(split, "radius"),
             Duration = Number(split, "duration") ?? StatedDuration(cdo),
+            DurationScaling = EffectModifiers.DurationScalingOf(cdo, _constants, _mappings),
             Period = Number(split, "period"),
             CastTimeScalesWithHaste = CastTimeScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
@@ -1878,27 +1913,23 @@ public sealed class EntityResolver
     }
 
     /// <summary>
-    /// The seconds a timed effect's duration magnitude states as a plain number, with no constants row behind it.
-    /// Murder of Crows lasts 12 seconds this way.
+    /// The seconds a timed effect's duration magnitude states as a scalable float: a plain number, or a row. Murder of
+    /// Crows lasts 12 seconds as a number, and Topaz Winds reads 15 from
+    /// <c>Trait.GemCooldownRecoveryOnAbilityProc.Cooldown</c>. Any other magnitude kind has the scalable float at its
+    /// default, so a magnitude holding more than the scalable float states no duration here.
     /// </summary>
-    private static double? StatedDuration(UObject? cdo)
+    private double? StatedDuration(UObject? cdo)
     {
         if (cdo is null ||
             PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::HasDuration", StringComparison.Ordinal) != true ||
             PropertyWalk.GetStruct(cdo, DurationMagnitudeField) is not { } magnitude ||
             magnitude.Properties.Any(property => property.Name.Text != ScalableFloatMagnitudeField) ||
-            PropertyWalk.GetStruct(magnitude, ScalableFloatMagnitudeField) is not { } scalable ||
-            scalable.Properties.Any(property => property.Name.Text != "Value"))
+            PropertyWalk.GetStruct(magnitude, ScalableFloatMagnitudeField) is not { } scalable)
         {
             return null;
         }
 
-        return PropertyWalk.Get(scalable, "Value")?.GenericValue switch
-        {
-            float value and > 0 => Math.Round(value, 4),
-            double value and > 0 => Math.Round(value, 4),
-            _ => null,
-        };
+        return MagnitudeCalculations.Scalable(scalable, _constants) is > 0 and var seconds ? Math.Round(seconds, 4) : null;
     }
 
     private const string DurationMagnitudeField = "DurationMagnitude";

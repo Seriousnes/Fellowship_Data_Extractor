@@ -200,6 +200,7 @@ public static class DocumentProjection
             EffectTags = entity.EffectTags,
             Icon = entity.Icon,
             Duration = entity.Duration,
+            DurationScaling = entity.DurationScaling,
             Period = entity.Period,
             Cooldown = entity.Cooldown,
             Range = entity.Range,

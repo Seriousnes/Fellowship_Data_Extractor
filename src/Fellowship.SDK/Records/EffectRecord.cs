@@ -12,6 +12,7 @@ public sealed record EffectRecord : EntityRecord
     public string? Icon { get; init; }
 
     public double? Duration { get; init; }
+    public DurationScaling? DurationScaling { get; init; }
     public double? Period { get; init; }
     public double? Cooldown { get; init; }
     public double? Range { get; init; }

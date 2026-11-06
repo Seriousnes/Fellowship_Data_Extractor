@@ -11,6 +11,10 @@ public sealed class EffectDocument : EntityDocument
     public IReadOnlyList<string>? EffectTags { get; init; }
 
     public double? Duration { get; init; }
+
+    /// <summary>The attribute the duration is a share of, where no one number states it.</summary>
+    public DurationScaling? DurationScaling { get; init; }
+
     public double? Period { get; init; }
     public double? Cooldown { get; init; }
     public double? Range { get; init; }

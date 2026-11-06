@@ -1,5 +1,6 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
 
@@ -19,6 +20,7 @@ public static class SetByCallerScalings
     private const string Assignment = "AssignTagSetByCallerMagnitude";
     private const string ScalableRead = "GetScalableFloat";
     private const string AttributeRead = "GetFloatAttribute";
+    private const string RankedRead = "WithAbilityLevel";
     private const string SourceLevel = "SourceLevel";
     private const string AbilityLevel = "AbilityLevel";
     private const string TagStruct = "GameplayTag";
@@ -86,6 +88,56 @@ public static class SetByCallerScalings
         return found;
     }
 
+    /// <summary>
+    /// The value at each rank <paramref name="ability"/> assigns <paramref name="tag"/> on specs of
+    /// <paramref name="effect"/>. An attribute multiplied by a row of 0 at every rank leaves the value, so Topaz Winds
+    /// reads <c>CooldownRecovery × (TopazPower × OverCapPerGemPower + 1)</c> as the row alone. A value still scaling
+    /// with an attribute or a count at some rank, or assignments disagreeing, gives none.
+    /// </summary>
+    public static IReadOnlyList<double>? Assigned(
+        UObject ability, string tag, string effect, ConstantsTable constants, AbstractFileProvider provider)
+    {
+        if (ability.Owner is not { } package) return null;
+
+        var bodies = package.GetExports()
+            .OfType<UStruct>()
+            .Where(export => export.ScriptBytecode is { Length: > 0 })
+            .ToArray();
+
+        var scope = new Scope(ability, bodies, constants, provider);
+        var magnitudes = new List<(UStruct Body, KismetExpression Magnitude)>();
+
+        foreach (var body in bodies)
+        {
+            foreach (var call in body.ScriptBytecode!.SelectMany(statement => Calls(statement, 0)))
+            {
+                if (RowSinks.Calling(call) != Assignment) continue;
+
+                var parameters = RowSinks.Parameters(call);
+
+                if (SetByCallerDurations.Tag(parameters.ElementAtOrDefault(1), ability) != tag) continue;
+                if (!effect.Equals(scope.Applied(body, parameters.FirstOrDefault()), StringComparison.OrdinalIgnoreCase)) continue;
+                if (parameters.ElementAtOrDefault(MagnitudeParameter) is not { } magnitude) continue;
+
+                magnitudes.Add((body, magnitude));
+            }
+        }
+
+        if (magnitudes.Count == 0) return null;
+
+        IReadOnlyList<double>? agreed = null;
+
+        foreach (var (body, magnitude) in magnitudes)
+        {
+            if (scope.Ranked(body, magnitude) is not { } ranks) return null;
+            if (agreed is not null && !agreed.SequenceEqual(ranks)) return null;
+
+            agreed = ranks;
+        }
+
+        return agreed;
+    }
+
     private static readonly ScalingComparer Comparer = new();
 
     private sealed class ScalingComparer : IEqualityComparer<SetByCallerScaling>
@@ -125,6 +177,52 @@ public static class SetByCallerScalings
         private readonly Dictionary<UStruct, Dictionary<string, List<KismetExpression>>> _locals = [];
         private readonly Dictionary<string, List<(UStruct Body, KismetExpression Value)>> _members = Members(bodies);
 
+        /// <summary>The rank being read, set only while <see cref="Ranked"/> runs.</summary>
+        private int? _rank;
+
+        private int _ranks;
+
+        public string? Applied(UStruct body, KismetExpression? spec) =>
+            SetByCallerDurations.Spec(spec, Locals(body), cdo, 0, []);
+
+        /// <summary>The constant the expression evaluates to at each rank of the rows it reads.</summary>
+        public IReadOnlyList<double>? Ranked(UStruct body, KismetExpression expression)
+        {
+            var values = new List<double>();
+
+            _ranks = 1;
+
+            for (_rank = 0; _rank < _ranks; _rank++)
+            {
+                if (Evaluate(body, expression, 0) is not { Slope: 0 } linear)
+                {
+                    _rank = null;
+                    return null;
+                }
+
+                values.Add(Math.Round(linear.Constant, 10));
+            }
+
+            _rank = null;
+
+            return values.Distinct().Count() == 1 ? [values[0]] : values;
+        }
+
+        private double? Read(UStruct body, string called, KismetExpression? reading)
+        {
+            if (_rank is { } rank && called.Contains(RankedRead, StringComparison.Ordinal) &&
+                DynamicTextFloats.Name(reading) is { } property &&
+                ClassDefaults.Inherited(cdo, property, provider)?.GenericValue is FScriptStruct { StructType: IPropertyHolder scalable } &&
+                MagnitudeCalculations.ScalableRanks(scalable, constants) is { Count: > 0 } ranks)
+            {
+                _ranks = Math.Max(_ranks, ranks.Count);
+
+                return ranks[Math.Min(rank, ranks.Count - 1)];
+            }
+
+            return new BareStateWalk(body, cdo, constants, null).Reading(reading);
+        }
+
         public Linear? Evaluate(UStruct body, KismetExpression? expression, int depth)
         {
             if (expression is null || depth > MaxDepth) return null;
@@ -155,9 +253,12 @@ public static class SetByCallerScalings
 
             if (called.StartsWith(ScalableRead, StringComparison.Ordinal))
             {
-                return new BareStateWalk(body, cdo, constants, null).Reading(parameters.FirstOrDefault()) is { } read
-                    ? Constant(read)
-                    : null;
+                return Read(body, called, parameters.FirstOrDefault()) is { } read ? Constant(read) : null;
+            }
+
+            if (_rank is not null && called.StartsWith(AttributeRead, StringComparison.Ordinal))
+            {
+                return new Linear(0, 1, new Unknown(body, call), 1);
             }
 
             if (called is "GetSourceLevel" or "GetAbilityLevel")
@@ -178,6 +279,7 @@ public static class SetByCallerScalings
 
             if (called.StartsWith("Multiply_", StringComparison.Ordinal))
             {
+                if (_rank is not null && (left is { Unknown: null, Constant: 0 } || right is { Unknown: null, Constant: 0 })) return Constant(0);
                 if (left.Unknown is null && left.Slope == 0) return Scaled(right, left.Constant);
                 if (right.Unknown is null && right.Slope == 0) return Scaled(left, right.Constant);
                 return null;

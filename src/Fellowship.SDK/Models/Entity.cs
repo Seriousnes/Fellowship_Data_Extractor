@@ -91,6 +91,8 @@ public sealed record Entity
     public double? MinRange { get; init; }
     public double? Radius { get; init; }
     public double? Duration { get; init; }
+
+    public DurationScaling? DurationScaling { get; init; }
     public double? Period { get; init; }
 
     public bool? CastTimeScalesWithHaste { get; init; }

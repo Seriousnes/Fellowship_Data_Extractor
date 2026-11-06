@@ -221,6 +221,7 @@ public static class RecordProjection
             Description = view.PlainText(document.Description, tokens, tags),
             Icon = Texture(document.Icon, view),
             Duration = document.Duration,
+            DurationScaling = document.DurationScaling,
             Period = document.Period,
             Cooldown = document.Cooldown,
             Range = document.Range,
