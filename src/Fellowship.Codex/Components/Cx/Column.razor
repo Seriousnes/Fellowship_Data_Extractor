@@ -2,7 +2,7 @@
 @implements IDisposable
 
 @code {
-    [CascadingParameter] public Table<T> Table { get; set; } = default!;
+    [CascadingParameter] public IColumnSet<T> Table { get; set; } = default!;
 
     [Parameter, EditorRequired] public string Head { get; set; } = string.Empty;
 
@@ -17,6 +17,21 @@
     [Parameter] public bool Numeric { get; set; }
 
     [Parameter] public string? Class { get; set; }
+
+    /// <summary>Numeric format string of a <see cref="Grid{T}" /> cell.</summary>
+    [Parameter] public string? Format { get; set; }
+
+    /// <summary>Number a <see cref="Grid{T}" /> sorts this column by, where the cell text is no number.</summary>
+    [Parameter] public Func<T, object?>? Sort { get; set; }
+
+    /// <summary>The <see cref="Grid{T}" /> cell is a time, drawn in the viewer's zone.</summary>
+    [Parameter] public bool Time { get; set; }
+
+    /// <summary>The <see cref="Grid{T}" /> footer sums this column over the rows the filters leave.</summary>
+    [Parameter] public bool Total { get; set; }
+
+    /// <summary>The <see cref="Grid{T}" /> shows this column in the row's details alone.</summary>
+    [Parameter] public bool Hidden { get; set; }
 
     protected override void OnInitialized() => Table.Add(this);
 

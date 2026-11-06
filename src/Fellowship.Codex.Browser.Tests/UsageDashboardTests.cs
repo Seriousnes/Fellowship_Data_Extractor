@@ -64,6 +64,16 @@ public sealed class Usage : ICollectionFixture<UsageSite>
 [Collection(Usage.Name)]
 public sealed class UsageDashboardTests(UsageSite site)
 {
+    /// <summary>
+    /// Waits for the circuit's render of the dashboard. That render replaces the prerendered dashboard, and
+    /// a scroll in the prerendered page is lost with it.
+    /// </summary>
+    private static async Task LiveAsync(IPage page)
+    {
+        await Assertions.Expect(page.Locator("#cx-usage-ranges[data-live=on]")).ToBeAttachedAsync();
+        await Assertions.Expect(page.Locator("#cx-usage-status")).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
+    }
+
     private static Task<bool> DrawnAsync(IPage page, string canvas) =>
         page.EvaluateAsync<bool>("id => !!window.Chart?.getChart(id)", canvas);
 
@@ -83,6 +93,7 @@ public sealed class UsageDashboardTests(UsageSite site)
         var page = await context.NewPageAsync();
 
         await page.GotoAsync(UsageRoutes.Admin);
+        await LiveAsync(page);
 
         var download = await page.RunAndWaitForDownloadAsync(() => page.GetByText("Download database").ClickAsync());
 
@@ -96,19 +107,158 @@ public sealed class UsageDashboardTests(UsageSite site)
         await button.ClickAsync();
         page.Dialog -= Dismiss;
 
-        Assert.Contains(store.Routes(since, 100), route => route.Route == Old);
+        Assert.Contains(store.Routes(since), route => route.Route == Old);
 
         void Accept(object? sender, IDialog dialog) => _ = dialog.AcceptAsync();
 
         page.Dialog += Accept;
         await page.RunAndWaitForResponseAsync(() => button.ClickAsync(), $"**{UsageExtensions.Clear}");
 
-        Assert.DoesNotContain(store.Routes(since, 100), route => route.Route == Old);
+        Assert.DoesNotContain(store.Routes(since), route => route.Route == Old);
     }
 
     private sealed class Earlier(TimeSpan by) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => base.GetUtcNow() - by;
+    }
+
+    [Fact]
+    public async Task A_grid_draws_the_rows_in_view_sorts_by_number_and_keeps_its_filter_across_a_refresh()
+    {
+        const int Rows = 5000;
+
+        var failed = site.Services.GetRequiredService<Ring<FailedRequest>>();
+        var counter = site.Services.GetRequiredService<UsageCounter>();
+        var route = new UsageRoute(UsageArea.Page, "/{slug}", UsageRoute.None);
+
+        foreach (var at in Enumerable.Range(1, Rows))
+        {
+            failed.Add(new FailedRequest(
+                DateTimeOffset.UtcNow, FailureReason.Rejected, 503, "GET", UsageArea.Page, route.Route, $"/items?page={at}",
+                Agent.Unknown, "abcd1234", at, null));
+        }
+
+        counter.Failure(route, "GET", 503, FailureReason.Rejected, Agent.Unknown);
+        counter.Request(route, "GET", 503, false, Agent.Unknown, 1);
+        site.Services.GetRequiredService<UsageStore>().Write(counter.Drain());
+
+        await using var context = await site.NewContextAsync(UsageSite.SignedIn);
+        var page = await context.NewPageAsync();
+
+        await page.SetViewportSizeAsync(1400, 1000);
+        await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
+        await LiveAsync(page);
+
+        var grid = page.Locator("[data-grid='failed']");
+        var rows = grid.Locator("tr.cx-grid-row");
+
+        await Assertions.Expect(rows.First).ToBeVisibleAsync();
+        Assert.InRange(await rows.CountAsync(), 1, 100);
+
+        await grid.GetByRole(AriaRole.Button, new() { Name = "Duration" }).ClickAsync();
+        await Assertions.Expect(rows.First.Locator("td").Nth(11)).ToContainTextAsync("5,000.0");
+
+        await grid.Locator(".cx-grid-scroll").EvaluateAsync("node => { node.scrollTop = node.scrollHeight; }");
+        await Assertions.Expect(rows.Last.Locator("td").Nth(11)).ToContainTextAsync("1.0");
+
+        var filter = grid.GetByLabel("Filter Address");
+
+        await filter.PressSequentiallyAsync("page=4999");
+        await Assertions.Expect(rows).ToHaveCountAsync(1);
+        await Assertions.Expect(grid.Locator(".cx-grid-foot")).ToContainTextAsync("1 of 5,000 rows");
+
+        var before = await page.Locator("#cx-usage-status").TextContentAsync();
+
+        await Assertions.Expect(page.Locator("#cx-usage-status")).Not.ToHaveTextAsync(before!, new() { Timeout = 20_000 });
+        await Assertions.Expect(filter).ToHaveValueAsync("page=4999");
+        await Assertions.Expect(filter).ToBeFocusedAsync();
+        await Assertions.Expect(rows).ToHaveCountAsync(1);
+
+        if (Environment.GetEnvironmentVariable("CODEX_SCREENSHOT") is { Length: > 0 } shot)
+        {
+            await filter.FillAsync(string.Empty);
+            await page.ScreenshotAsync(new PageScreenshotOptions { Path = shot, FullPage = true });
+        }
+    }
+
+    [Fact]
+    public async Task Sign_out_posts_its_antiforgery_token_from_the_interactive_form()
+    {
+        await using var context = await site.NewContextAsync(UsageSite.SignedIn);
+        var page = await context.NewPageAsync();
+
+        await page.GotoAsync(UsageRoutes.Admin);
+        await LiveAsync(page);
+
+        var response = await page.RunAndWaitForResponseAsync(
+            () => page.GetByRole(AriaRole.Button, new() { Name = "Sign out" }).ClickAsync(), $"**{UsageExtensions.Logout}");
+
+        Assert.Equal(302, response.Status);
+    }
+
+    [Theory]
+    [InlineData(0.5)]
+    [InlineData(1.0)]
+    public async Task A_refresh_leaves_the_page_at_its_scroll_position(double depth)
+    {
+        await using var context = await site.NewContextAsync(UsageSite.SignedIn);
+        var page = await context.NewPageAsync();
+
+        foreach (var path in new[] { "/", "/api/catalog", "/heroes" }) await page.GotoAsync(path);
+
+        site.Services.GetRequiredService<UsageStore>().Write(site.Services.GetRequiredService<UsageCounter>().Drain());
+
+        await page.SetViewportSizeAsync(1400, 800);
+        await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
+        await LiveAsync(page);
+
+        var status = page.Locator("#cx-usage-status");
+
+        var before = await page.EvaluateAsync<double>(
+            """
+            depth => {
+                window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * depth);
+                window.cxLowest = scrollY;
+                addEventListener('scroll', () => { window.cxLowest = Math.min(window.cxLowest, scrollY); }, { capture: true, passive: true });
+                return scrollY;
+            }
+            """, depth);
+
+        Assert.True(before > 0);
+
+        var updated = await status.TextContentAsync();
+
+        await Assertions.Expect(status).Not.ToHaveTextAsync(updated!, new() { Timeout = 20_000 });
+
+        Assert.Equal(before, await page.EvaluateAsync<double>("() => scrollY"));
+        Assert.Equal(before, await page.EvaluateAsync<double>("() => window.cxLowest"));
+    }
+
+    [Theory]
+    [InlineData(0.5)]
+    [InlineData(1.0)]
+    public async Task A_reload_returns_to_its_scroll_position(double depth)
+    {
+        const double Tolerance = 40;
+
+        await using var context = await site.NewContextAsync(UsageSite.SignedIn);
+        var page = await context.NewPageAsync();
+
+        foreach (var path in new[] { "/", "/api/catalog", "/heroes" }) await page.GotoAsync(path);
+
+        site.Services.GetRequiredService<UsageStore>().Write(site.Services.GetRequiredService<UsageCounter>().Drain());
+
+        await page.SetViewportSizeAsync(1400, 800);
+        await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
+        await LiveAsync(page);
+
+        var before = await page.EvaluateAsync<double>(
+            "depth => { window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * depth); return scrollY; }", depth);
+
+        await page.ReloadAsync();
+        await LiveAsync(page);
+
+        Assert.InRange(await page.EvaluateAsync<double>("() => scrollY"), before - Tolerance, before + Tolerance);
     }
 
     [Fact]
@@ -123,9 +273,9 @@ public sealed class UsageDashboardTests(UsageSite site)
 
         await page.SetViewportSizeAsync(1400, 1000);
         await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
+        await LiveAsync(page);
 
         var status = page.Locator("#cx-usage-status");
-        await Assertions.Expect(status).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
 
         Assert.True(await DrawnAsync(page, "cx-usage-live"));
         Assert.True(await DrawnAsync(page, "cx-usage-range"));

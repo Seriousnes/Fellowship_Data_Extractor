@@ -375,7 +375,7 @@ public sealed class CodexViewService(
 
     private static readonly HashSet<string> Excluded = new(StringComparer.Ordinal)
     {
-        nameof(EntityDocument.Id), nameof(EntityDocument.Name),
+        nameof(EntityDocument.Id), nameof(EntityDocument.Name), nameof(EntityDocument.NoKnownSource),
         nameof(AbilityDocument.Description), nameof(ItemDocument.Icon), nameof(RadianceDocument.OverflowDescription),
         nameof(DungeonDocument.Background),
     };

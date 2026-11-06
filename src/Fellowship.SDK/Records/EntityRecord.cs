@@ -16,6 +16,9 @@ public abstract record EntityRecord
     public required string Name { get; init; }
 
     public bool? EnabledInGame { get; init; }
+
+    /// <summary>Reached only from an item trait whose category places it on no item.</summary>
+    public bool? NoKnownSource { get; init; }
 }
 
 public static class EntityRecords

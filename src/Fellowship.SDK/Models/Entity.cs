@@ -65,6 +65,8 @@ public sealed record Entity
 
     public bool? EnabledInGame { get; init; }
 
+    public bool? NoKnownSource { get; init; }
+
     public double? CastTime { get; init; }
     public double? ChannelTime { get; init; }
     public double? ChannelTick { get; init; }

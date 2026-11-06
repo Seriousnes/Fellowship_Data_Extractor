@@ -9,6 +9,22 @@ public static class UsageRanges
 
     public const int Default = 7;
 
+    public const string ClientErrors = "4xx";
+
+    public const string ServerErrors = "5xx";
+
+    public const string Running = "Running";
+
+    public const string Queued = "Queued";
+
+    public const string PoolQueue = "Thread pool queue";
+
+    public const string Processor = "Processor %";
+
+    public const string WorkingSet = "Working set";
+
+    public const string Heap = "Heap";
+
     private const long Minute = 60;
 
     private const long Hour = 3600;
@@ -16,6 +32,10 @@ public static class UsageRanges
     private const long Day = 86400;
 
     private const int LiveMinutes = 60;
+
+    private const int DayMinutes = 1440;
+
+    private const long Mebibyte = 1024 * 1024;
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -30,8 +50,12 @@ public static class UsageRanges
 
     public static string Head(int days) => $"{Label(days)}, per {Unit(days)}, by area";
 
+    public static string ErrorsHead(int days) => $"{Label(days)}, errors per {Unit(days)}";
+
     // The ordinal of each series fixes its colour slot, so a series keeps its colour whatever else is drawn.
     private static readonly string[] Kinds = Enum.GetNames<ClientKind>();
+
+    private static readonly string[] Reasons = Enum.GetNames<FailureReason>();
 
     public static readonly UsageArea[] ChartAreas = [UsageArea.Page, UsageArea.Api, UsageArea.Card, UsageArea.Circuit];
 
@@ -44,24 +68,50 @@ public static class UsageRanges
 
     public static string Charts(UsageStore store, int days, DateTimeOffset now)
     {
-        var liveStart = UsageCounter.Minute(now) - (LiveMinutes - 1) * Minute;
+        var thisMinute = UsageCounter.Minute(now);
+        var liveStart = thisMinute - (LiveMinutes - 1) * Minute;
         var live = Chart(
             store.Minutes(DateTimeOffset.FromUnixTimeSeconds(liveStart)),
-            liveStart, UsageCounter.Minute(now), Minute, Kinds, point => point.Series);
+            liveStart, thisMinute, Minute, Kinds, point => point.Series);
 
         var bucket = Bucket(days);
         var since = now - TimeSpan.FromDays(days);
         var rangeStart = since.ToUnixTimeSeconds() / bucket * bucket;
-        var range = Chart(
-            store.Series(since, bucket),
-            rangeStart, now.ToUnixTimeSeconds() / bucket * bucket, bucket, Areas, point => ChartArea(point.Series));
+        var rangeEnd = now.ToUnixTimeSeconds() / bucket * bucket;
+        var range = Chart(store.Series(since, bucket), rangeStart, rangeEnd, bucket, Areas, point => ChartArea(point.Series));
+        var errors = Chart(
+            store.ErrorSeries(since, bucket), rangeStart, rangeEnd, bucket, [ClientErrors, ServerErrors], point => point.Series);
+
+        var dayStart = thisMinute - (DayMinutes - 1) * Minute;
+        var day = DateTimeOffset.FromUnixTimeSeconds(dayStart);
+        var failures = Chart(store.FailureMinutes(day), dayStart, thisMinute, Minute, Reasons, point => point.Series);
+        var samples = store.Samples(day);
+        var load = Chart(
+            [.. samples.SelectMany(sample => new SeriesPoint[]
+            {
+                new(sample.Minute, Running, sample.Running),
+                new(sample.Minute, Queued, sample.Queued),
+                new(sample.Minute, PoolQueue, sample.PoolQueue),
+                new(sample.Minute, Processor, (long)Math.Round(sample.Processor)),
+            })],
+            dayStart, thisMinute, Minute, [Running, Queued, PoolQueue, Processor], point => point.Series);
+        var memory = Chart(
+            [.. samples.SelectMany(sample => new SeriesPoint[]
+            {
+                new(sample.Minute, WorkingSet, sample.Memory / Mebibyte),
+                new(sample.Minute, Heap, sample.Heap / Mebibyte),
+            })],
+            dayStart, thisMinute, Minute, [WorkingSet, Heap], point => point.Series);
 
         return JsonSerializer.Serialize(new
         {
-            interval = (int)UsageFlush.Interval.TotalSeconds,
             generated = now.ToUnixTimeSeconds(),
             live,
-            range = new { range.Labels, range.Series, unit = Unit(days), head = Head(days) },
+            range = new { range.Labels, range.Series, unit = Unit(days) },
+            errors = new { errors.Labels, errors.Series, unit = Unit(days) },
+            failures,
+            load,
+            memory,
         }, Json);
     }
 

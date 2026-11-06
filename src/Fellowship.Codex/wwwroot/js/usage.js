@@ -1,12 +1,11 @@
-// Usage dashboard: draws the two charts from the report's JSON and refreshes the report in place.
+// Usage dashboard: draws the charts and grids from the JSON each render of the report writes.
 
-const host = document.getElementById('cx-usage-report');
-const ranges = document.getElementById('cx-usage-ranges');
-const status = document.getElementById('cx-usage-status');
-const clear = document.getElementById('cx-usage-clear');
-const charts = document.querySelector('.cx-usage-charts');
+import { mount } from './grid.js';
 
-const css = name => getComputedStyle(charts).getPropertyValue(name).trim();
+const host = () => document.getElementById('cx-usage-report');
+const status = () => document.getElementById('cx-usage-status');
+
+const css = name => getComputedStyle(document.querySelector('.cx-usage-charts')).getPropertyValue(name).trim();
 
 const compact = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 });
 const whole = new Intl.NumberFormat();
@@ -17,11 +16,13 @@ const stamp = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-d
 
 const formats = { minute: clock, hour: hourly, day: daily };
 
-let timer = 0;
-let drawn = {};
+let dashboard = null;
+
+const drawn = {};
+const grids = new Map();
 
 function data() {
-    const node = host.querySelector('#cx-usage-data');
+    const node = host()?.querySelector('#cx-usage-data');
 
     try {
         return node ? JSON.parse(node.textContent) : null;
@@ -102,7 +103,8 @@ function draw(id, chart, unit) {
     const format = formats[unit] ?? clock;
     const labels = chart.labels.map(at => format.format(new Date(at * 1000)));
 
-    if (!drawn[id]) {
+    if (drawn[id]?.canvas !== canvas) {
+        drawn[id]?.destroy();
         drawn[id] = new Chart(canvas, {
             type: 'line',
             data: { labels, datasets: chart.series.map(dataset) },
@@ -135,76 +137,51 @@ function legend(chart) {
     chart.options.plugins.legend.display = chart.data.datasets.length > 1;
 }
 
-function render() {
+export function render() {
     const current = data();
 
     if (!current) return;
 
+    mount(host(), grids);
     draw('cx-usage-live', current.live, 'minute');
     draw('cx-usage-range', current.range, current.range.unit);
+    draw('cx-usage-errors', current.errors, current.errors.unit);
+    draw('cx-usage-failures', current.failures, 'minute');
+    draw('cx-usage-load', current.load, 'minute');
+    draw('cx-usage-memory', current.memory, 'minute');
 
-    const head = document.getElementById('cx-usage-range').closest('.cx-panel')?.querySelector('.cx-panel-head');
-    if (head) head.textContent = current.range.head;
-
-    status.textContent = `Updated ${stamp.format(new Date(current.generated * 1000))}`;
-    schedule(current.interval);
+    status().textContent = `Updated ${stamp.format(new Date(current.generated * 1000))}`;
 }
 
-function schedule(seconds) {
-    clearTimeout(timer);
-    timer = setTimeout(refresh, Math.max(5, seconds) * 1000);
+// The component that receives the tab's visibility.
+export function watch(component) {
+    dashboard = component;
 }
 
-async function refresh() {
-    if (document.hidden) return;
-
-    const days = new URLSearchParams(location.search).get('days');
-    const url = days ? `${host.dataset.report}?days=${encodeURIComponent(days)}` : host.dataset.report;
-
-    try {
-        const response = await fetch(url, { headers: { accept: 'text/html' }, redirect: 'manual', cache: 'no-store' });
-
-        if (response.type === 'opaqueredirect' || response.status === 401 || response.status === 403) {
-            clearTimeout(timer);
-            status.textContent = 'Signed out. Reload the page to sign in.';
-            return;
-        }
-
-        if (!response.ok) throw new Error(`${response.status}`);
-
-        host.innerHTML = await response.text();
-        render();
-    } catch (failure) {
-        status.textContent = `Refresh failed (${failure.message}). Retrying.`;
-        schedule(data()?.interval ?? 10);
-    }
+export function ended() {
+    status().textContent = 'Signed out. Reload the page to sign in.';
 }
 
-ranges.addEventListener('click', event => {
-    const link = event.target.closest('a[data-days]');
+// The circuit replaces the prerendered form when it starts, so this listens on the document.
+document.addEventListener('submit', event => {
+    const form = event.target;
 
-    if (!link) return;
+    if (form.id !== 'cx-usage-clear') return;
 
-    event.preventDefault();
-    history.replaceState(null, '', link.href);
-
-    for (const each of ranges.querySelectorAll('a[data-days]')) {
-        if (each === link) each.setAttribute('aria-current', 'page');
-        else each.removeAttribute('aria-current');
-    }
-
-    refresh();
-});
-
-clear?.addEventListener('submit', event => {
-    const days = clear.querySelector('input[type=number]').value;
+    const days = form.querySelector('input[type=number]').value;
 
     if (!confirm(`Delete every count older than ${days} days? This cannot be undone.`)) event.preventDefault();
 });
 
 document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) refresh();
+    dashboard?.invokeMethodAsync('Seen', !document.hidden).catch(() => {});
 });
 
 Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
 render();
+
+// The circuit replaces the prerendered dashboard when it starts. Drawing it again in the same task
+// keeps the page at full height through the replacement, so the browser never clamps the scroll.
+const page = host()?.parentElement;
+
+if (page) new MutationObserver(render).observe(page, { childList: true });

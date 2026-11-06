@@ -6,10 +6,8 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
-using Fellowship.Codex.Components.Sections;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Fellowship.Codex.Usage;
@@ -22,13 +20,13 @@ public static class UsageExtensions
 
     public const string Logout = $"{UsageRoutes.Admin}/logout";
 
-    public const string Report = $"{UsageRoutes.Admin}/report";
-
     public const string Database = $"{UsageRoutes.Admin}/database";
 
     public const string Clear = $"{UsageRoutes.Admin}/clear";
 
     public const string ClearDays = "days";
+
+    public const int FailedRequestCapacity = 10_000;
 
     private const string DatabaseType = "application/vnd.sqlite3";
 
@@ -53,6 +51,10 @@ public static class UsageExtensions
         {
             services.AddSingleton<UsageCounter>();
             services.AddSingleton(new UsageStore(settings.Database!));
+            services.AddSingleton(new Ring<FailedRequest>(FailedRequestCapacity));
+            services.AddSingleton<ClientTags>();
+            services.AddSingleton<RecentLogs>();
+            services.AddSingleton<ServerWatch>();
             services.AddHostedService<UsageFlush>();
             services.AddSingleton<ILoggerProvider, ErrorCounting>();
             services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(settings.Keys!));
@@ -105,17 +107,6 @@ public static class UsageExtensions
         app.MapGet(Login, (HttpContext http) => settings.SignIn
                 ? Results.Challenge(new AuthenticationProperties { RedirectUri = UsageRoutes.Admin }, [GitHubAuthenticationDefaults.AuthenticationScheme])
                 : Results.NotFound())
-            .ExcludeFromDescription();
-
-        // The report body alone, which the dashboard fetches to refresh in place.
-        app.MapGet(Report, (int? days, HttpContext http) =>
-            {
-                http.Response.Headers.CacheControl = "no-store";
-
-                return new RazorComponentResult<UsageReport>(
-                    new Dictionary<string, object?> { [nameof(UsageReport.Days)] = UsageRanges.Pick(days) });
-            })
-            .RequireAuthorization(OwnerPolicy)
             .ExcludeFromDescription();
 
         app.MapPost(Logout, async (HttpContext http) =>

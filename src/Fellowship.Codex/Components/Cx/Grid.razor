@@ -1,0 +1,80 @@
+@using System.Text.Json
+@typeparam T
+@implements IColumnSet<T>
+@attribute [CascadingTypeParameter(nameof(T))]
+
+<CascadingValue Value="this" IsFixed="true">@Columns</CascadingValue>
+
+@* The render owns the script and js/grid.js owns the children of the root, so a render never meets a node it did not write. *@
+<CascadingValue Value="this" IsFixed="true">
+    <script type="application/json">@((MarkupString)Payload())</script>
+    <div class="cx-grid" data-grid="@Id" aria-label="@Label"></div>
+</CascadingValue>
+
+@code {
+    private const string Blank = "–";
+
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+
+    /// <summary>Name that keeps a grid's filters, sort and scroll position across a refresh of its rows.</summary>
+    [Parameter, EditorRequired] public string Id { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public IEnumerable<T> Items { get; set; } = [];
+
+    [Parameter] public RenderFragment? Columns { get; set; }
+
+    private readonly List<Column<T>> columns = [];
+
+    public void Add(Column<T> column)
+    {
+        if (!columns.Contains(column)) columns.Add(column);
+    }
+
+    public void Remove(Column<T> column) => columns.Remove(column);
+
+    // Script text is encoded by the serializer's default escaper, so a value cannot close the element.
+    private string Payload()
+    {
+        var items = Items as IReadOnlyList<T> ?? [.. Items];
+
+        return JsonSerializer.Serialize(new
+        {
+            columns = columns.Select(column => new
+            {
+                head = column.Head,
+                numeric = column.Numeric,
+                mono = column.Class == "cx-mono",
+                unit = column.Unit,
+                time = column.Time,
+                total = column.Total,
+                hidden = column.Hidden,
+                keys = Keyed(column) ? items.Select(item => Key(column, item)).ToArray() : null,
+            }),
+            rows = items.Select(item => columns.Select(column => Text(column, item)).ToArray()),
+        }, Json);
+    }
+
+    private static bool Keyed(Column<T> column) => column.Numeric || column.Time || column.Sort is not null;
+
+    private static double? Key(Column<T> column, T item) =>
+        (column.Sort ?? column.Value)?.Invoke(item) switch
+        {
+            null => null,
+            DateTimeOffset time => time.ToUnixTimeMilliseconds(),
+            IConvertible number and not string and not bool and not Enum => Convert.ToDouble(number, CultureInfo.InvariantCulture),
+            _ => null,
+        };
+
+    private static string? Text(Column<T> column, T item) =>
+        column.Time
+            ? null
+            : column.Value?.Invoke(item) switch
+            {
+                null => Blank,
+                bool flag => flag ? "Yes" : "No",
+                IFormattable number and not Enum => number.ToString(column.Format, CultureInfo.InvariantCulture),
+                var value => value.ToString(),
+            };
+}

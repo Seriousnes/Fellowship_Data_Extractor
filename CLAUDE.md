@@ -61,3 +61,12 @@ The whole of `output/` is tracked, so a fresh clone has the documents and the te
 test reads them from the checkout. `mappings/fellowship-<build>.usmap` from a `--usmap` run is
 tracked too, so a fresh clone reads the containers with no regeneration.
 `ResolvedMappingsFile` picks the highest build present, and `FELLOWSHIP_USMAP` names one outright.
+
+## Building
+
+The solution is `src/FellowshipExtractor.slnx`, and the repository root has none. `dotnet build` and
+`dotnet test` at the root end in MSB1003, so name the solution or a project.
+
+A running `Fellowship.Codex`, `testhost` or `FellowshipExtractor` holds its `bin` folder (MSB3021,
+MSB3027). Stop the one you started before a build or an export. An export that ends in `user-mapped section
+open` on an `output/ui` texture has a process holding that file: close it and run the export again.

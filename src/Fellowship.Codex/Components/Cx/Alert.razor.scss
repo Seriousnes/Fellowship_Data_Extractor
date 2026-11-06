@@ -1,0 +1,18 @@
+.cx-alert {
+  display: flex; align-items: center; gap: 8px;
+  margin: 12px 0 18px; padding: 10px 14px;
+  border: 1px solid currentColor; border-left-width: 4px; border-radius: 4px;
+  font-size: 16px; font-weight: 700;
+}
+
+.cx-alert-icon { flex: 0 0 auto; width: 20px; height: 20px; fill: currentColor; fill-rule: evenodd; }
+
+.cx-alert-danger {
+  color: var(--semantic-negative-600);
+  background: color-mix(in srgb, var(--semantic-negative-600) 12%, transparent);
+}
+
+.cx-alert-warning {
+  color: var(--semantic-leader);
+  background: color-mix(in srgb, var(--semantic-leader) 12%, transparent);
+}

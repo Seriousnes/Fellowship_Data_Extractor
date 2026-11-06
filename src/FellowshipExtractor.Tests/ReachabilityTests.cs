@@ -75,4 +75,29 @@ public sealed class ReachabilityTests
         Assert.NotEmpty(owned);
         Assert.All(owned, row => Assert.False(Enabled(row.Body)));
     }
+
+    [Theory]
+    [InlineData(EntityType.Ability, 171)]
+    [InlineData(EntityType.Effect, 102)]
+    public void Topaz_Winds_has_its_item_trait_as_its_source(EntityType type, int id)
+    {
+        var body = Rows.Single(row => row.Type == type && row.Id == id).Body;
+        var origin = Assert.Single(body["origins"]!.AsArray())!;
+
+        Assert.Equal("item-trait", origin["type"]!.GetValue<string>());
+        Assert.Equal(30, origin["id"]!.GetValue<int>());
+        Assert.Null(body["noKnownSource"]);
+    }
+
+    [Fact]
+    public void An_entity_with_an_origin_has_a_known_source() =>
+        Assert.All(
+            Rows.Where(row => row.Body["origins"] is not null),
+            row => Assert.Null(row.Body["noKnownSource"]));
+
+    [Fact]
+    public void Only_abilities_and_effects_have_no_known_source() =>
+        Assert.All(
+            Rows.Where(row => row.Body["noKnownSource"] is not null),
+            row => Assert.Contains(row.Type, (EntityType[])[EntityType.Ability, EntityType.Effect]));
 }
