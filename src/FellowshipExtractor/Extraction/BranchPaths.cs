@@ -65,7 +65,9 @@ public sealed class BranchPaths
     public IEnumerable<(KismetExpression Statement, ImmutableList<BranchTaken> Taken)> From(int entry, Func<KismetExpression, bool> relevant)
     {
         ImmutableList<BranchTaken> Taking(ImmutableList<BranchTaken> taken, KismetExpression condition, bool held) =>
-            relevant(condition) ? taken.Add(new BranchTaken(condition, held)) : taken;
+            relevant(condition) && !taken.Any(branch => branch.Held == held && branch.Condition.StatementIndex == condition.StatementIndex)
+                ? taken.Add(new BranchTaken(condition, held))
+                : taken;
 
         if (!_indexOf.TryGetValue(entry, out var root)) yield break;
 
