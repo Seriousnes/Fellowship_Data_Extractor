@@ -9,134 +9,245 @@
         <Empty Message="No usage database.">Set @UsageSettings.DatabaseKey to a file path to count requests.</Empty>
     </Panel>
 }
-else if (Areas.Count == 0)
-{
-    <script type="application/json" id="cx-usage-data">@((MarkupString)ChartJson)</script>
-    <Panel>
-        <Empty Message="No requests counted.">Counts are written every @((int)UsageFlush.Interval.TotalSeconds) seconds.</Empty>
-    </Panel>
-}
 else
 {
     <script type="application/json" id="cx-usage-data">@((MarkupString)ChartJson)</script>
 
-    <Panel Head="Areas" Badge="@Total.ToString(Count)">
-        <Table Items="Areas">
-            <Columns>
-                <Column Head="Area" Value="row => row.Area" />
-                <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
-                <Column Head="Share" Numeric="true" Value="row => Share(row.Requests, Total)" />
-                <Column Head="Cached" Numeric="true" Value="row => Share(row.Cached, row.Requests)" />
-                <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
-                <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
-            </Columns>
-        </Table>
+    <Panel Head="Server">
+        <div class="cx-usage-server">
+            <Facts>
+                <Fact Label="Started">@Reading!.Started.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) UTC</Fact>
+                <Fact Label="Uptime">@Uptime</Fact>
+                <Fact Label="Runtime">@System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription</Fact>
+                <Fact Label="Processors">@Environment.ProcessorCount.ToString(Count)</Fact>
+                <Fact Label="Processor use" Unit="%">@Reading.Processor.ToString(Duration, CultureInfo.InvariantCulture)</Fact>
+            </Facts>
+            <Facts>
+                <Fact Label="Requests running">@Reading.Running of @RequestLoad.PermitLimit</Fact>
+                <Fact Label="Requests queued">@Reading.Queued of @RequestLoad.QueueLimit</Fact>
+                <Fact Label="Open circuits">@Reading.Circuits.ToString(Count)</Fact>
+                <Fact Label="Threads">@Reading.Threads.ToString(Count)</Fact>
+                <Fact Label="Thread pool">@Reading.PoolThreads.ToString(Count) threads, @Reading.PoolQueue.ToString(Count) queued</Fact>
+            </Facts>
+            <Facts>
+                <Fact Label="Working set" Unit="MiB">@Mebibytes(Reading.Memory) of @Mebibytes(Reading.MemoryLimit)</Fact>
+                <Fact Label="Heap" Unit="MiB">@Mebibytes(Reading.Heap)</Fact>
+                <Fact Label="Full collections">@Reading.FullCollections.ToString(Count)</Fact>
+                <Fact Label="Usage database" Unit="MiB">@Mebibytes(DatabaseBytes)</Fact>
+                <Fact Label="Free disk" Unit="MiB">@Mebibytes(FreeBytes)</Fact>
+            </Facts>
+        </div>
     </Panel>
 
-    <Panel Head="Clients" Badge="@Clients.Count.ToString(Count)">
+    <Panel Head="5xx by cause" Badge="@FailureRows.Sum(row => row.Count).ToString(Count)">
         <Note>
-            A browser opens a circuit when it loads the site, because the search box is interactive, and keeps
-            it across the pages it navigates to. A client with pages and no circuits runs no scripts, and is a
-            crawler whatever its header names.
-            Clients are counted by UTC day, so this table covers each whole day the range touches.
+            Rejected: @RequestLoad.PermitLimit requests were running and @RequestLoad.QueueLimit were queued.
+            TimedOut: a request ran for @((int)Serving.Timeout.TotalSeconds) seconds. Both return 503.
+            Exception: the request threw. Other: a 5xx with neither tag.
         </Note>
-        <Table Items="Clients">
-            <Columns>
-                <Column Head="Kind" Value="row => row.Kind" />
-                <Column Head="Browser" Value="row => row.Browser" />
-                <Column Head="System" Value="row => row.Os" />
-                <Column Head="Mobile" Value="row => row.Mobile" />
-                <Column Head="Pages" Numeric="true" Value="row => row.Pages.ToString(Count)" />
-                <Column Head="Circuits" Numeric="true" Value="row => row.Circuits.ToString(Count)" />
-                <Column Head="Cards" Numeric="true" Value="row => row.Cards.ToString(Count)" />
-                <Column Head="API" Numeric="true" Value="row => row.Api.ToString(Count)" />
-                <Column Head="Static" Numeric="true" Value="row => row.Static.ToString(Count)" />
-                <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
-                <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
-            </Columns>
-        </Table>
-    </Panel>
-
-    <Panel Head="Errors by browser version" Badge="@Versions.Count.ToString(Count)">
-        @if (Versions.Count == 0)
+        @if (FailureRows.Count == 0)
         {
-            <Empty Message="No browser version had a 4xx or 5xx response." />
+            <Empty Message="No 5xx responses recorded by cause." />
         }
         else
         {
-            <Table Items="Versions">
+            <Grid Id="failures" Label="5xx responses by cause" Items="FailureRows">
+                <Columns>
+                    <Column Head="Reason" Value="row => row.Reason" />
+                    <Column Head="Status" Value="row => row.Status" />
+                    <Column Head="Area" Value="row => row.Area" />
+                    <Column Head="Method" Value="row => row.Method" />
+                    <Column Head="Route" Value="row => row.Route" Class="cx-mono" />
+                    <Column Head="Type" Value="row => row.Entity" />
+                    <Column Head="Kind" Value="row => row.Kind" />
+                    <Column Head="Browser" Value="row => row.Browser" />
+                    <Column Head="System" Value="row => row.Os" />
+                    <Column Head="Count" Numeric="true" Total="true" Format="@Count" Value="row => row.Count" />
+                </Columns>
+            </Grid>
+        }
+    </Panel>
+
+    <Panel Head="Failed requests" Badge="@FailedRows.Count.ToString(Count)">
+        <Note>
+            The newest @UsageExtensions.FailedRequestCapacity.ToString(Count) 5xx responses since the server started, held in memory.
+            Client is a hash of the address with a salt replaced each UTC day, so one client has one value for a day.
+        </Note>
+        @if (FailedRows.Count == 0)
+        {
+            <Empty Message="No failed requests in this range." />
+        }
+        else
+        {
+            <Grid Id="failed" Label="Failed requests" Items="FailedRows">
+                <Columns>
+                    <Column Head="Time" Time="true" Value="row => row.At" />
+                    <Column Head="Reason" Value="row => row.Reason" />
+                    <Column Head="Status" Value="row => row.Status" />
+                    <Column Head="Method" Value="row => row.Method" />
+                    <Column Head="Address" Value="row => row.Address" Class="cx-mono" />
+                    <Column Head="Route" Value="row => row.Route" Class="cx-mono" />
+                    <Column Head="Kind" Value="row => row.Agent.Kind" />
+                    <Column Head="Browser" Value="row => row.Agent.Browser" />
+                    <Column Head="Version" Numeric="true" Value="row => row.Agent.Major == 0 ? null : row.Agent.Major" />
+                    <Column Head="System" Value="row => row.Agent.Os" />
+                    <Column Head="Client" Value="row => row.Client" Class="cx-mono" />
+                    <Column Head="Duration" Numeric="true" Unit="ms" Format="@Duration" Value="row => row.Milliseconds" />
+                    <Column Head="Exception" Hidden="true" Value="row => row.Exception" />
+                </Columns>
+            </Grid>
+        }
+    </Panel>
+
+    <Panel Head="Log" Badge="@LogRows.Count.ToString(Count)">
+        <Note>Warning and higher events since the server started, held in memory. Select a row for the full message and exception.</Note>
+        @if (LogRows.Count == 0)
+        {
+            <Empty Message="No warnings logged since the server started." />
+        }
+        else
+        {
+            <Grid Id="logs" Label="Log events" Items="LogRows">
+                <Columns>
+                    <Column Head="Last" Time="true" Value="row => row.Last" />
+                    <Column Head="First" Time="true" Value="row => row.First" />
+                    <Column Head="Level" Value="row => row.Level" />
+                    <Column Head="Count" Numeric="true" Total="true" Format="@Count" Value="row => row.Count" />
+                    <Column Head="Category" Value="row => row.Category" Class="cx-mono" />
+                    <Column Head="Message" Value="row => row.Message" Class="cx-mono" />
+                    <Column Head="Event" Hidden="true" Value="row => row.Event" />
+                    <Column Head="Exception" Hidden="true" Value="row => row.Exception" />
+                </Columns>
+            </Grid>
+        }
+    </Panel>
+
+    @if (Areas.Count == 0)
+    {
+        <Panel>
+            <Empty Message="No requests counted.">Counts are written every @((int)UsageFlush.Interval.TotalSeconds) seconds.</Empty>
+        </Panel>
+    }
+    else
+    {
+        <Panel Head="Areas" Badge="@Total.ToString(Count)">
+            <Grid Id="areas" Label="Areas" Items="Areas">
                 <Columns>
                     <Column Head="Area" Value="row => row.Area" />
-                    <Column Head="Browser" Value="row => row.Browser" />
-                    <Column Head="Version" Numeric="true" Value="row => row.Major == 0 ? null : row.Major.ToString()" />
-                    <Column Head="System" Value="row => row.Os" />
-                    <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
-                    <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
-                    <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
-                    <Column Head="5xx rate" Numeric="true" Value="row => Share(row.ServerErrors, row.Requests)" />
+                    <Column Head="Requests" Numeric="true" Total="true" Format="@Count" Value="row => row.Requests" />
+                    <Column Head="Share" Numeric="true" Format="@Ratio" Value="row => Share(row.Requests, Total)" />
+                    <Column Head="Cached" Numeric="true" Format="@Ratio" Value="row => Share(row.Cached, row.Requests)" />
+                    <Column Head="4xx" Numeric="true" Total="true" Format="@Count" Value="row => row.ClientErrors" />
+                    <Column Head="5xx" Numeric="true" Total="true" Format="@Count" Value="row => row.ServerErrors" />
                 </Columns>
-            </Table>
-        }
-    </Panel>
+            </Grid>
+        </Panel>
 
-    <Panel Head="Routes" Badge="@RouteRows.Count.ToString(Count)">
-        <Note>Duration runs from the first byte of the request to the end of the response. Circuits have no duration.</Note>
-        <Table Items="RouteRows">
-            <Columns>
-                <Column Head="Area" Value="row => row.Area" />
-                <Column Head="Method" Value="row => row.Method" />
-                <Column Head="Route" Value="row => row.Route" Class="cx-mono" />
-                <Column Head="Type" Value="row => row.Entity" />
-                <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
-                <Column Head="Cached" Numeric="true" Value="row => Share(row.Cached, row.Requests)" />
-                <Column Head="4xx" Numeric="true" Value="row => row.ClientErrors.ToString(Count)" />
-                <Column Head="5xx" Numeric="true" Value="row => row.ServerErrors.ToString(Count)" />
-                <Column Head="Mean" Numeric="true" Unit="ms" Value="row => row.MeanMilliseconds.ToString(Duration)" />
-                <Column Head="95th percentile" Numeric="true" Value="row => row.P95Bucket is { } bucket ? Latency.Label(bucket) : null" />
-                <Column Head="Max" Numeric="true" Unit="ms" Value="row => row.MaxMilliseconds.ToString(Duration)" />
-            </Columns>
-        </Table>
-    </Panel>
-
-    <Panel Head="Requests by day">
-        <Table Items="DayRows">
-            <Columns>
-                <Column Head="Day" Value="row => row.Day" />
-                @foreach (var area in DayAreas)
-                {
-                    <Column Head="@area.ToString()" Numeric="true" Value="row => row.Counts.GetValueOrDefault(area).ToString(Count)" />
-                }
-            </Columns>
-        </Table>
-    </Panel>
-
-    <Panel Head="Statuses">
-        <Table Items="Statuses">
-            <Columns>
-                <Column Head="Status" Value="row => row.Status" />
-                <Column Head="Requests" Numeric="true" Value="row => row.Requests.ToString(Count)" />
-                <Column Head="Share" Numeric="true" Value="row => Share(row.Requests, Total)" />
-            </Columns>
-        </Table>
-    </Panel>
-
-    <Panel Head="Errors" Badge="@ErrorRows.Sum(row => row.Count).ToString(Count)">
-        @if (ErrorRows.Count == 0)
-        {
-            <Empty Message="No errors logged." />
-        }
-        else
-        {
-            <Note>Each event logged at Error level or above, by log category and exception type. This includes errors inside interactive components.</Note>
-            <Table Items="ErrorRows">
+        <Panel Head="Clients" Badge="@Clients.Count.ToString(Count)">
+            <Note>
+                A browser opens a circuit when it loads the site, because the search box is interactive, and keeps
+                it across the pages it navigates to. A client with pages and no circuits runs no scripts, and is a
+                crawler whatever its header names.
+                Clients are counted by UTC day, so this table covers each whole day the range touches.
+            </Note>
+            <Grid Id="clients" Label="Clients" Items="Clients">
                 <Columns>
-                    <Column Head="Category" Value="row => row.Category" Class="cx-mono" />
-                    <Column Head="Exception" Value="row => row.Exception" Class="cx-mono" />
-                    <Column Head="Count" Numeric="true" Value="row => row.Count.ToString(Count)" />
+                    <Column Head="Kind" Value="row => row.Kind" />
+                    <Column Head="Browser" Value="row => row.Browser" />
+                    <Column Head="System" Value="row => row.Os" />
+                    <Column Head="Mobile" Value="row => row.Mobile" />
+                    <Column Head="Pages" Numeric="true" Total="true" Format="@Count" Value="row => row.Pages" />
+                    <Column Head="Circuits" Numeric="true" Total="true" Format="@Count" Value="row => row.Circuits" />
+                    <Column Head="Cards" Numeric="true" Total="true" Format="@Count" Value="row => row.Cards" />
+                    <Column Head="API" Numeric="true" Total="true" Format="@Count" Value="row => row.Api" />
+                    <Column Head="Static" Numeric="true" Total="true" Format="@Count" Value="row => row.Static" />
+                    <Column Head="4xx" Numeric="true" Total="true" Format="@Count" Value="row => row.ClientErrors" />
+                    <Column Head="5xx" Numeric="true" Total="true" Format="@Count" Value="row => row.ServerErrors" />
                 </Columns>
-            </Table>
-        }
-    </Panel>
+            </Grid>
+        </Panel>
+
+        <Panel Head="Errors by browser version" Badge="@Versions.Count.ToString(Count)">
+            @if (Versions.Count == 0)
+            {
+                <Empty Message="No browser version had a 4xx or 5xx response." />
+            }
+            else
+            {
+                <Grid Id="versions" Label="Errors by browser version" Items="Versions">
+                    <Columns>
+                        <Column Head="Area" Value="row => row.Area" />
+                        <Column Head="Browser" Value="row => row.Browser" />
+                        <Column Head="Version" Numeric="true" Value="row => row.Major == 0 ? null : row.Major" />
+                        <Column Head="System" Value="row => row.Os" />
+                        <Column Head="Requests" Numeric="true" Total="true" Format="@Count" Value="row => row.Requests" />
+                        <Column Head="4xx" Numeric="true" Total="true" Format="@Count" Value="row => row.ClientErrors" />
+                        <Column Head="5xx" Numeric="true" Total="true" Format="@Count" Value="row => row.ServerErrors" />
+                        <Column Head="5xx rate" Numeric="true" Format="@Ratio" Value="row => Share(row.ServerErrors, row.Requests)" />
+                    </Columns>
+                </Grid>
+            }
+        </Panel>
+
+        <Panel Head="Routes" Badge="@RouteRows.Count.ToString(Count)">
+            <Note>Duration runs from the first byte of the request to the end of the response. Circuits have no duration.</Note>
+            <Grid Id="routes" Label="Routes" Items="RouteRows">
+                <Columns>
+                    <Column Head="Area" Value="row => row.Area" />
+                    <Column Head="Method" Value="row => row.Method" />
+                    <Column Head="Route" Value="row => row.Route" Class="cx-mono" />
+                    <Column Head="Type" Value="row => row.Entity" />
+                    <Column Head="Requests" Numeric="true" Total="true" Format="@Count" Value="row => row.Requests" />
+                    <Column Head="Cached" Numeric="true" Format="@Ratio" Value="row => Share(row.Cached, row.Requests)" />
+                    <Column Head="4xx" Numeric="true" Total="true" Format="@Count" Value="row => row.ClientErrors" />
+                    <Column Head="5xx" Numeric="true" Total="true" Format="@Count" Value="row => row.ServerErrors" />
+                    <Column Head="Mean" Numeric="true" Unit="ms" Format="@Duration" Value="row => row.MeanMilliseconds" />
+                    <Column Head="95th percentile" Numeric="true" Sort="row => row.P95Bucket" Value="row => row.P95Bucket is { } bucket ? Latency.Label(bucket) : null" />
+                    <Column Head="Max" Numeric="true" Unit="ms" Format="@Duration" Value="row => row.MaxMilliseconds" />
+                </Columns>
+            </Grid>
+        </Panel>
+
+        <Panel Head="Requests by day">
+            <Grid Id="days" Label="Requests by day" Items="DayRows">
+                <Columns>
+                    <Column Head="Day" Value="row => row.Day" />
+                    @foreach (var area in DayAreas)
+                    {
+                        <Column Head="@area.ToString()" Numeric="true" Total="true" Format="@Count" Value="row => row.Counts.GetValueOrDefault(area)" />
+                    }
+                </Columns>
+            </Grid>
+        </Panel>
+
+        <Panel Head="Statuses">
+            <Grid Id="statuses" Label="Statuses" Items="Statuses">
+                <Columns>
+                    <Column Head="Status" Value="row => row.Status" />
+                    <Column Head="Requests" Numeric="true" Total="true" Format="@Count" Value="row => row.Requests" />
+                    <Column Head="Share" Numeric="true" Format="@Ratio" Value="row => Share(row.Requests, Total)" />
+                </Columns>
+            </Grid>
+        </Panel>
+
+        <Panel Head="Errors" Badge="@ErrorRows.Sum(row => row.Count).ToString(Count)">
+            @if (ErrorRows.Count == 0)
+            {
+                <Empty Message="No errors logged." />
+            }
+            else
+            {
+                <Note>Each event logged at Error level or above, by log category and exception type. This includes errors inside interactive components.</Note>
+                <Grid Id="errors" Label="Errors" Items="ErrorRows">
+                    <Columns>
+                        <Column Head="Category" Value="row => row.Category" Class="cx-mono" />
+                        <Column Head="Exception" Value="row => row.Exception" Class="cx-mono" />
+                        <Column Head="Count" Numeric="true" Total="true" Format="@Count" Value="row => row.Count" />
+                    </Columns>
+                </Grid>
+            }
+        </Panel>
+    }
 }
 
 </div>
@@ -146,7 +257,9 @@ else
 
     private const string Duration = "N1";
 
-    private const int Limit = 100;
+    private const string Ratio = "P1";
+
+    private const double Mebibyte = 1024 * 1024;
 
     /// <summary>Range in days, one of <see cref="UsageRanges.Days" />.</summary>
     [Parameter] public int Days { get; set; } = UsageRanges.Default;
@@ -154,6 +267,14 @@ else
     private UsageStore? Store;
 
     private string ChartJson = "{}";
+
+    private ServerReading? Reading;
+
+    private string Uptime = string.Empty;
+
+    private long DatabaseBytes;
+
+    private long FreeBytes;
 
     private IReadOnlyList<AreaUsage> Areas = [];
 
@@ -168,6 +289,12 @@ else
     private IReadOnlyList<StatusUsage> Statuses = [];
 
     private IReadOnlyList<ErrorUsage> ErrorRows = [];
+
+    private IReadOnlyList<FailureUsage> FailureRows = [];
+
+    private IReadOnlyList<FailedRequest> FailedRows = [];
+
+    private IReadOnlyList<LogEvent> LogRows = [];
 
     private IReadOnlyList<UsageArea> DayAreas = [];
 
@@ -186,13 +313,20 @@ else
         var since = now - TimeSpan.FromDays(range);
 
         ChartJson = UsageRanges.Charts(Store, range, now);
+        Reading = Services.GetRequiredService<ServerWatch>().Read();
+        Uptime = (now - Reading.Started).ToString(@"d\d\ hh\:mm\:ss", CultureInfo.InvariantCulture);
+        DatabaseBytes = new FileInfo(Store.Path).Length;
+        FreeBytes = new DriveInfo(Path.GetDirectoryName(Path.GetFullPath(Store.Path))!).AvailableFreeSpace;
         Areas = Store.Areas(since);
         Total = Areas.Sum(area => area.Requests);
-        Clients = Store.Clients(since, Limit);
+        Clients = Store.Clients(since);
         Versions = Store.Versions(since);
-        RouteRows = Store.Routes(since, Limit);
+        RouteRows = Store.Routes(since);
         Statuses = Store.Statuses(since);
         ErrorRows = Store.Errors(since);
+        FailureRows = Store.Failures(since);
+        FailedRows = [.. Services.GetRequiredService<Ring<FailedRequest>>().Newest().Where(row => row.At >= since)];
+        LogRows = Services.GetRequiredService<RecentLogs>().Newest();
 
         var days = Store.Days(since);
 
@@ -207,6 +341,7 @@ else
         ];
     }
 
-    private static string Share(long part, long whole) =>
-        whole == 0 ? "–" : (part / (double)whole).ToString("P1", CultureInfo.InvariantCulture);
+    private static double? Share(long part, long whole) => whole == 0 ? null : part / (double)whole;
+
+    private static string Mebibytes(long bytes) => (bytes / Mebibyte).ToString(Count, CultureInfo.InvariantCulture);
 }

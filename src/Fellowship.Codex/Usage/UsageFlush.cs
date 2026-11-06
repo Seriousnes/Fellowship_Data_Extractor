@@ -7,6 +7,7 @@ public sealed class UsageFlush(
     UsageCounter counter,
     UsageStore store,
     UsageSettings settings,
+    ServerWatch server,
     TimeProvider time,
     ILogger<UsageFlush> logger) : BackgroundService
 {
@@ -17,7 +18,7 @@ public sealed class UsageFlush(
     // Hourly counts are kept for the 24-hour and 7-day ranges, and the longer ranges read by day.
     private static readonly TimeSpan RollupAge = TimeSpan.FromDays(30);
 
-    // Per-minute counts serve the last-hour chart alone.
+    // Per-minute rows serve the last-hour and last-day charts alone.
     private static readonly TimeSpan MinuteAge = TimeSpan.FromDays(2);
 
     private DateTimeOffset pruned = DateTimeOffset.MinValue;
@@ -44,6 +45,7 @@ public sealed class UsageFlush(
     private void Tick()
     {
         Flush();
+        Sample();
 
         var now = time.GetUtcNow();
 
@@ -58,6 +60,18 @@ public sealed class UsageFlush(
         catch (Exception failure)
         {
             logger.LogWarning(failure, "Pruning the usage counts failed.");
+        }
+    }
+
+    private void Sample()
+    {
+        try
+        {
+            if (server.Tick() is { } finished) store.Write(finished);
+        }
+        catch (Exception failure)
+        {
+            logger.LogWarning(failure, "Writing the server sample failed.");
         }
     }
 

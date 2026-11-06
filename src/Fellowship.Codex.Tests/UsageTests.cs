@@ -70,14 +70,14 @@ public sealed class UsageStoreTests : IDisposable
         store.Write(counter.Drain());
 
         var since = time.GetUtcNow() - TimeSpan.FromDays(1);
-        var row = Assert.Single(store.Routes(since, 10));
+        var row = Assert.Single(store.Routes(since));
 
         Assert.Equal(3, row.Requests);
         Assert.Equal(1, row.ServerErrors);
         Assert.Equal(2000, row.MaxMilliseconds);
         Assert.Equal(Latency.Bounds.Length, row.P95Bucket);
 
-        var browser = Assert.Single(store.Clients(since, 10));
+        var browser = Assert.Single(store.Clients(since));
 
         Assert.Equal(3, browser.Requests);
         Assert.Equal(1, browser.ServerErrors);
@@ -101,13 +101,13 @@ public sealed class UsageStoreTests : IDisposable
         store.Prune(day.AddDays(-1), day.AddDays(2), day.AddDays(-1));
         store.Prune(day.AddDays(-1), day.AddDays(2), day.AddDays(-1));
 
-        var row = Assert.Single(store.Routes(day.AddDays(-1), 10));
+        var row = Assert.Single(store.Routes(day.AddDays(-1)));
         Assert.Equal(3, row.Requests);
         Assert.Equal(23, row.MaxMilliseconds);
         Assert.Equal(3, Assert.Single(store.Errors(day.AddDays(-1))).Count);
 
         store.Prune(day.AddDays(1), day.AddDays(2), day.AddDays(1));
-        Assert.Empty(store.Routes(day.AddDays(-1), 10));
+        Assert.Empty(store.Routes(day.AddDays(-1)));
     }
 
     [Fact]
@@ -129,8 +129,8 @@ public sealed class UsageStoreTests : IDisposable
 
         var since = day.AddDays(-1);
 
-        Assert.Equal(1, Assert.Single(store.Routes(since, 10)).Requests);
-        Assert.Equal(1, Assert.Single(store.Clients(since, 10)).Requests);
+        Assert.Equal(1, Assert.Single(store.Routes(since)).Requests);
+        Assert.Equal(1, Assert.Single(store.Clients(since)).Requests);
         Assert.Equal(1, Assert.Single(store.Errors(since)).Count);
     }
 
