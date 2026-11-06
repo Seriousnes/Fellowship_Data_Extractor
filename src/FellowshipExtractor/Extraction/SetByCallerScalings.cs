@@ -21,6 +21,7 @@ public static class SetByCallerScalings
     private const string ScalableRead = "GetScalableFloat";
     private const string AttributeRead = "GetFloatAttribute";
     private const string RankedRead = "WithAbilityLevel";
+    private const string RuntimeUpdate = "SetActiveEffectMagnitude";
     private const string SourceLevel = "SourceLevel";
     private const string AbilityLevel = "AbilityLevel";
     private const string TagStruct = "GameplayTag";
@@ -92,7 +93,8 @@ public static class SetByCallerScalings
     /// The value at each rank <paramref name="ability"/> assigns <paramref name="tag"/> on specs of
     /// <paramref name="effect"/>. An attribute multiplied by a row of 0 at every rank leaves the value, so Topaz Winds
     /// reads <c>CooldownRecovery × (TopazPower × OverCapPerGemPower + 1)</c> as the row alone. A value still scaling
-    /// with an attribute or a count at some rank, or assignments disagreeing, gives none.
+    /// with an attribute or a count at some rank, assignments disagreeing, or a Blueprint updating the tag on the
+    /// active effect, gives none: Martial Command assigns 1 and then updates the tag from Toughness.
     /// </summary>
     public static IReadOnlyList<double>? Assigned(
         UObject ability, string tag, string effect, ConstantsTable constants, AbstractFileProvider provider)
@@ -111,6 +113,12 @@ public static class SetByCallerScalings
         {
             foreach (var call in body.ScriptBytecode!.SelectMany(statement => Calls(statement, 0)))
             {
+                if (RowSinks.Calling(call)?.StartsWith(RuntimeUpdate, StringComparison.Ordinal) is true &&
+                    RowSinks.Parameters(call).Any(parameter => SetByCallerDurations.Tag(parameter, ability) == tag))
+                {
+                    return null;
+                }
+
                 if (RowSinks.Calling(call) != Assignment) continue;
 
                 var parameters = RowSinks.Parameters(call);

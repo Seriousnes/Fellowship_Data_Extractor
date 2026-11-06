@@ -10,7 +10,7 @@ namespace FellowshipExtractor.Extraction;
 
 /// <summary>
 /// Reads the waits an ability's Blueprint holds on abilities being committed: <c>WaitForAbilityCommit</c>,
-/// <c>WaitForAbilityCommit_Query</c> and a <c>WaitGameplayEvents</c> on <c>Event.CommittedAbility</c>. Each wait binds a
+/// <c>WaitForAbilityCommit_Query</c>, and <c>WaitGameplayEvent</c> or <c>WaitGameplayEvents</c> on <c>Event.CommittedAbility</c>. Each wait binds a
 /// delegate, the delegate's function enters the ubergraph at an offset, and the walk from that offset reaches each
 /// applied effect past the tag tests gating it.
 /// </summary>
@@ -19,6 +19,7 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
     private const string WaitForCommit = "WaitForAbilityCommit";
     private const string WaitForQuery = "WaitForAbilityCommit_Query";
     private const string WaitForEvents = "WaitGameplayEvents";
+    private const string WaitForEvent = "WaitGameplayEvent";
     private const string CommittedEvent = "Event.CommittedAbility";
     private const string CommitDelegate = "OnCommit";
     private const string EventDelegate = "EventReceived";
@@ -74,7 +75,7 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
     {
         var byEffect = new Dictionary<string, (HashSet<string> Stopping, HashSet<string> Required)>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var (statement, taken) in paths.From(wait.Entry))
+        foreach (var (statement, taken) in paths.From(wait.Entry, condition => Test(condition, paths).Call is not null))
         {
             foreach (var effect in Applied(statement, paths, cdo))
             {
@@ -92,6 +93,8 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
                 }
             }
         }
+
+        if (paths.Truncated) Unread.Add($"{cdo.Owner?.Name} has more paths from offset {wait.Entry} than the walk follows");
 
         var groups = byEffect
             .Select(entry => (Effect: effectSource(entry.Key), Stopping: Sorted(entry.Value.Stopping), Required: Sorted(entry.Value.Required)))
@@ -115,23 +118,32 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
 
     private static string[] Sorted(IEnumerable<string> tags) => [.. tags.Order(StringComparer.Ordinal)];
 
+    /// <summary>The tag test a condition comes to through any negation, and whether the test holds when the condition does.</summary>
+    private static (KismetExpression? Call, bool Positive) Test(KismetExpression? condition, BranchPaths paths)
+    {
+        var positive = true;
+        var value = paths.Value(condition);
+
+        while (value is not null && RowSinks.Invoking(value) is { } inverted && RowSinks.Calling(inverted) == Negation)
+        {
+            positive = !positive;
+            value = paths.Value(RowSinks.Parameters(inverted).FirstOrDefault());
+        }
+
+        return value is not null && RowSinks.Invoking(value) is { } call && RowSinks.Calling(call) == TagTest
+            ? (call, positive)
+            : (null, positive);
+    }
+
     private static HashSet<string> Tested(IEnumerable<BranchTaken> taken, BranchPaths paths, UObject cdo, bool held)
     {
         var tags = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var branch in taken)
         {
-            var positive = branch.Held;
-            var condition = paths.Value(branch.Condition);
+            var (call, positive) = Test(branch.Condition, paths);
 
-            while (condition is not null && RowSinks.Invoking(condition) is { } inverted && RowSinks.Calling(inverted) == Negation)
-            {
-                positive = !positive;
-                condition = paths.Value(RowSinks.Parameters(inverted).FirstOrDefault());
-            }
-
-            if (condition is null || RowSinks.Invoking(condition) is not { } call || RowSinks.Calling(call) != TagTest) continue;
-            if (positive != held) continue;
+            if (call is null || (positive == branch.Held) != held) continue;
             if (SetByCallerDurations.Tag(RowSinks.Parameters(call).FirstOrDefault(), cdo) is { Length: > 0 } tag) tags.Add(tag);
         }
 
@@ -179,19 +191,19 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
         {
             if (statements[at] is not EX_LetObj { Variable: { } variable, Assignment: { } assigned }) continue;
             if (RowSinks.Invoking(assigned) is not { } call || RowSinks.Calling(call) is not { } called) continue;
-            if (called is not (WaitForCommit or WaitForQuery or WaitForEvents)) continue;
+            if (called is not (WaitForCommit or WaitForQuery or WaitForEvents or WaitForEvent)) continue;
 
             var parameter = RowSinks.Parameters(call).ElementAtOrDefault(TagParameter);
             var (tags, all, excluded) = called == WaitForQuery ? Queried(parameter, cdo) : (Named(parameter), false, []);
 
-            if (called == WaitForEvents)
+            if (called is WaitForEvents or WaitForEvent)
             {
                 if (!tags.Contains(CommittedEvent, StringComparer.Ordinal)) continue;
 
                 tags = [CommittedEvent];
             }
 
-            var delegated = called == WaitForEvents ? EventDelegate : CommitDelegate;
+            var delegated = called is WaitForEvents or WaitForEvent ? EventDelegate : CommitDelegate;
 
             if (Entry(statements, at, DynamicTextFloats.Name(variable), delegated, bodies) is { } entry)
             {

@@ -58,14 +58,16 @@ public sealed class ProcRolls(ConstantsTable constants, AbstractFileProvider pro
     /// The tests every path to the roll passes on the side that leaves the ability unmatched: <c>ClassIsChildOf</c> and
     /// <c>HasTag</c> on the committed ability, and <c>CrGetCooldownTimeRemaining</c> above 0.
     /// </summary>
-    private static RollExits Exits(UStruct body, KismetExpression statement, IReadOnlyList<int> entries)
+    private RollExits Exits(UStruct body, KismetExpression statement, IReadOnlyList<int> entries)
     {
         var paths = new BranchPaths(body);
         var reached = entries
-            .SelectMany(paths.From)
+            .SelectMany(entry => paths.From(entry, condition => Gate(paths.Value(condition), paths)))
             .Where(step => step.Statement.StatementIndex == statement.StatementIndex)
             .Select(step => step.Taken.Where(branch => !branch.Held).Select(branch => paths.Value(branch.Condition)).ToArray())
             .ToArray();
+
+        if (paths.Truncated) Unread.Add($"{body.Owner?.Name}:{body.Name} has more paths to a roll than the walk follows");
 
         if (reached.Length == 0) return NoExits;
 
@@ -79,6 +81,9 @@ public sealed class ProcRolls(ConstantsTable constants, AbstractFileProvider pro
 
         return new RollExits(All(ExcludedClass), All(ExcludedTag), All(condition => OnCooldown(condition, paths) ? Cooldown : null).Length > 0);
     }
+
+    private static bool Gate(KismetExpression? condition, BranchPaths paths) =>
+        ExcludedClass(condition) is not null || ExcludedTag(condition) is not null || OnCooldown(condition, paths);
 
     private static string? ExcludedClass(KismetExpression? condition) =>
         Called(condition, ClassTest) is { } call &&

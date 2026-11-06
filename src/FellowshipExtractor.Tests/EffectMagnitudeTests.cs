@@ -9,6 +9,7 @@ namespace FellowshipExtractor.Tests;
 public sealed class EffectMagnitudeTests
 {
     private const int TopazWinds = 102;
+    private const int MartialCommand = 1240;
     private const int CooldownRecoveryBonus = 106;
     private const int MartialInitiative = 2174;
     private const int InvictusSelfBuff = 2719;
@@ -44,6 +45,10 @@ public sealed class EffectMagnitudeTests
         Assert.Equal(coefficients, Numbers(scaling["coefficients"]));
         Assert.Null(Effect(id)["duration"]);
     }
+
+    [Fact]
+    public void AValueTheAbilityUpdatesAtRuntimeStaysOpen() =>
+        Assert.Null(Modifier(MartialCommand)["value"]);
 
     [Fact]
     public void CooldownRecoveryBonusKeepsItsModifierValue() =>

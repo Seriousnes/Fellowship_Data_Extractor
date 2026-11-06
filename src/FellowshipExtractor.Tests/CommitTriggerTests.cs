@@ -67,6 +67,12 @@ public sealed class CommitTriggerTests
         Assert.Equal([ArmsBuff], Ids(trigger["applies"]));
     }
 
+    [Theory]
+    [InlineData(TopazWinds)]
+    [InlineData(166)]
+    public void ACommitEventWaitIsATrigger(int ability) =>
+        Assert.Contains(Triggers(ability), trigger => trigger!["committingTag"]?.GetValue<string>() == "Event.CommittedAbility");
+
     [Fact]
     public void AQueryHeldInAVariableResolvesToItsAbilities() =>
         Assert.NotEmpty(Ids(Assert.Single(Triggers(2216))!["committing"]));

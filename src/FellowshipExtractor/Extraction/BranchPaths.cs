@@ -11,7 +11,8 @@ public sealed record BranchTaken(KismetExpression Condition, bool Held);
 
 /// <summary>
 /// The paths through a compiled body from an entry offset, each statement with the branches taken to reach it. The
-/// walk follows jumps, both sides of a branch and the execution flow stack a sequence node pushes.
+/// walk follows jumps, both sides of a branch and the execution flow stack a sequence node pushes. Only the branches
+/// the caller names as relevant tell two paths apart, so paths differing in other branches join.
 /// </summary>
 public sealed class BranchPaths
 {
@@ -21,6 +22,9 @@ public sealed class BranchPaths
     private readonly KismetExpression[] _bytecode;
     private readonly Dictionary<int, int> _indexOf = [];
     private readonly Dictionary<string, List<KismetExpression>> _locals = new(StringComparer.Ordinal);
+
+    /// <summary>True once a walk stops at the state cap, so its paths are a subset.</summary>
+    public bool Truncated { get; private set; }
 
     public BranchPaths(UStruct body)
     {
@@ -58,8 +62,11 @@ public sealed class BranchPaths
             : expression;
     }
 
-    public IEnumerable<(KismetExpression Statement, ImmutableList<BranchTaken> Taken)> From(int entry)
+    public IEnumerable<(KismetExpression Statement, ImmutableList<BranchTaken> Taken)> From(int entry, Func<KismetExpression, bool> relevant)
     {
+        ImmutableList<BranchTaken> Taking(ImmutableList<BranchTaken> taken, KismetExpression condition, bool held) =>
+            relevant(condition) ? taken.Add(new BranchTaken(condition, held)) : taken;
+
         if (!_indexOf.TryGetValue(entry, out var root)) yield break;
 
         var visited = new HashSet<(int, string, string)>();
@@ -84,18 +91,21 @@ public sealed class BranchPaths
             switch (statement)
             {
                 case EX_PushExecutionFlow push:
-                    pending.Push((at + 1, flow.Push(Offset((int)push.PushingAddress)), taken));
+                    var address = Offset((int)push.PushingAddress);
+
+                    // A loop back past a sequence node pushes the same address again, so the stack would grow without end.
+                    pending.Push((at + 1, flow.Contains(address) ? flow : flow.Push(address), taken));
                     break;
                 case EX_PopExecutionFlow:
                     if (!flow.IsEmpty) pending.Push((flow.Peek(), flow.Pop(), taken));
                     break;
                 case EX_PopExecutionFlowIfNot branch:
-                    pending.Push((at + 1, flow, taken.Add(new BranchTaken(branch.BooleanExpression, true))));
-                    if (!flow.IsEmpty) pending.Push((flow.Peek(), flow.Pop(), taken.Add(new BranchTaken(branch.BooleanExpression, false))));
+                    pending.Push((at + 1, flow, Taking(taken, branch.BooleanExpression, true)));
+                    if (!flow.IsEmpty) pending.Push((flow.Peek(), flow.Pop(), Taking(taken, branch.BooleanExpression, false)));
                     break;
                 case EX_JumpIfNot branch:
-                    pending.Push((Offset((int)branch.CodeOffset), flow, taken.Add(new BranchTaken(branch.BooleanExpression, false))));
-                    pending.Push((at + 1, flow, taken.Add(new BranchTaken(branch.BooleanExpression, true))));
+                    pending.Push((Offset((int)branch.CodeOffset), flow, Taking(taken, branch.BooleanExpression, false)));
+                    pending.Push((at + 1, flow, Taking(taken, branch.BooleanExpression, true)));
                     break;
                 case EX_Jump jump:
                     pending.Push((Offset((int)jump.CodeOffset), flow, taken));
@@ -107,6 +117,8 @@ public sealed class BranchPaths
                     break;
             }
         }
+
+        if (pending.Count > 0) Truncated = true;
     }
 
     private int Offset(int offset) => _indexOf.GetValueOrDefault(offset, -1);
