@@ -6,10 +6,8 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
-using Fellowship.Codex.Components.Sections;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Fellowship.Codex.Usage;
@@ -21,8 +19,6 @@ public static class UsageExtensions
     public const string Login = $"{UsageRoutes.Admin}/login";
 
     public const string Logout = $"{UsageRoutes.Admin}/logout";
-
-    public const string Report = $"{UsageRoutes.Admin}/report";
 
     public const string Database = $"{UsageRoutes.Admin}/database";
 
@@ -111,17 +107,6 @@ public static class UsageExtensions
         app.MapGet(Login, (HttpContext http) => settings.SignIn
                 ? Results.Challenge(new AuthenticationProperties { RedirectUri = UsageRoutes.Admin }, [GitHubAuthenticationDefaults.AuthenticationScheme])
                 : Results.NotFound())
-            .ExcludeFromDescription();
-
-        // The report body alone, which the dashboard fetches to refresh in place.
-        app.MapGet(Report, (int? days, HttpContext http) =>
-            {
-                http.Response.Headers.CacheControl = "no-store";
-
-                return new RazorComponentResult<UsageReport>(
-                    new Dictionary<string, object?> { [nameof(UsageReport.Days)] = UsageRanges.Pick(days) });
-            })
-            .RequireAuthorization(OwnerPolicy)
             .ExcludeFromDescription();
 
         app.MapPost(Logout, async (HttpContext http) =>

@@ -2,7 +2,9 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = Fellowship.Codex.Usage.UsageExtensions.OwnerPolicy)]
 @using System.Security.Claims
 @using Fellowship.Codex.Usage
-@inject UsageSettings Settings
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Components.Forms
+@inject AntiforgeryStateProvider Antiforgery
 
 <PageTitle>Usage - Fellowship Codex</PageTitle>
 
@@ -10,58 +12,7 @@
 
 <h1>Usage</h1>
 
-<Panel>
-    <div class="cx-roster" id="cx-usage-ranges">
-        @foreach (var range in UsageRanges.Days)
-        {
-            <a href="@($"{UsageRoutes.Admin}?days={range}")" data-days="@range" data-enhance-nav="false"
-               aria-current="@(range == Range ? "page" : null)">@UsageRanges.Label(range)</a>
-        }
-    </div>
-    <form method="post" action="@UsageExtensions.Logout" class="cx-admin-out">
-        <AntiforgeryToken />
-        <span>Signed in as <span class="cx-who">@Owner</span>.</span>
-        <button type="submit">Sign out</button>
-        <span class="cx-admin-live" id="cx-usage-status" aria-live="polite"></span>
-    </form>
-    @if (Settings.Counting)
-    {
-        <form method="post" action="@UsageExtensions.Clear" class="cx-admin-out" id="cx-usage-clear">
-            <AntiforgeryToken />
-            <a href="@UsageExtensions.Database" data-enhance-nav="false">Download database</a>
-            <label for="cx-usage-older">Clear counts older than</label>
-            <input id="cx-usage-older" type="number" name="@UsageExtensions.ClearDays" min="1" step="1" required
-                   value="@UsageRanges.Days.Max()" />
-            <span>days</span>
-            <button type="submit">Clear</button>
-        </form>
-    }
-</Panel>
-
-<div class="cx-usage-charts">
-    <Panel Head="Last hour, per minute, by client kind">
-        <div class="cx-usage-chart"><canvas id="cx-usage-live" role="img" aria-label="Requests per minute over the last hour, one line per client kind"></canvas></div>
-    </Panel>
-    <Panel Head="@RangeHead">
-        <div class="cx-usage-chart"><canvas id="cx-usage-range" role="img" aria-label="Requests over the range, one line per area"></canvas></div>
-    </Panel>
-    <Panel Head="@ErrorsHead">
-        <div class="cx-usage-chart"><canvas id="cx-usage-errors" role="img" aria-label="4xx and 5xx responses over the range"></canvas></div>
-    </Panel>
-    <Panel Head="Last 24 hours, 5xx per minute, by reason">
-        <div class="cx-usage-chart"><canvas id="cx-usage-failures" role="img" aria-label="5xx responses per minute over the last 24 hours, one line per reason"></canvas></div>
-    </Panel>
-    <Panel Head="Last 24 hours, peak per minute">
-        <div class="cx-usage-chart"><canvas id="cx-usage-load" role="img" aria-label="Peak requests running and queued, thread pool queue and processor use per minute over the last 24 hours"></canvas></div>
-    </Panel>
-    <Panel Head="Last 24 hours, peak memory per minute, MiB">
-        <div class="cx-usage-chart"><canvas id="cx-usage-memory" role="img" aria-label="Peak working set and heap per minute over the last 24 hours"></canvas></div>
-    </Panel>
-</div>
-
-<div id="cx-usage-report" data-report="@UsageExtensions.Report">
-    <UsageReport Days="Range" />
-</div>
+<UsageDashboard Days="UsageRanges.Pick(Requested)" Owner="@Owner" TokenName="@Token?.FormFieldName" Token="@Token?.Value" Expires="Expires" />
 
 <script src="js/vendor/chart.umd.min.js"></script>
 <script type="module" src="js/usage.js"></script>
@@ -73,17 +24,16 @@
 
     [SupplyParameterFromQuery(Name = "days")] public int? Requested { get; set; }
 
-    private int Range;
-
     private string? Owner;
 
-    private string RangeHead => UsageRanges.Head(Range);
+    private AntiforgeryRequestToken? Token;
 
-    private string ErrorsHead => UsageRanges.ErrorsHead(Range);
+    private DateTimeOffset? Expires;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Owner = Http.User.FindFirstValue(ClaimTypes.Name) ?? Http.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        Range = UsageRanges.Pick(Requested);
+        Token = Antiforgery.GetAntiforgeryToken();
+        Expires = (await Http.AuthenticateAsync()).Properties?.ExpiresUtc;
     }
 }

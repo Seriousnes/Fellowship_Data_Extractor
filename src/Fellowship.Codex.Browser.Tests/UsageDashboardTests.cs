@@ -170,6 +170,90 @@ public sealed class UsageDashboardTests(UsageSite site)
     }
 
     [Fact]
+    public async Task Sign_out_posts_its_antiforgery_token_from_the_interactive_form()
+    {
+        await using var context = await site.NewContextAsync(UsageSite.SignedIn);
+        var page = await context.NewPageAsync();
+
+        await page.GotoAsync(UsageRoutes.Admin);
+        await Assertions.Expect(page.Locator("#cx-usage-status")).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
+
+        var response = await page.RunAndWaitForResponseAsync(
+            () => page.GetByRole(AriaRole.Button, new() { Name = "Sign out" }).ClickAsync(), $"**{UsageExtensions.Logout}");
+
+        Assert.Equal(302, response.Status);
+    }
+
+    [Theory]
+    [InlineData(0.5)]
+    [InlineData(1.0)]
+    public async Task A_refresh_leaves_the_page_at_its_scroll_position(double depth)
+    {
+        await using var context = await site.NewContextAsync(UsageSite.SignedIn);
+        var page = await context.NewPageAsync();
+
+        foreach (var path in new[] { "/", "/api/catalog", "/heroes" }) await page.GotoAsync(path);
+
+        site.Services.GetRequiredService<UsageStore>().Write(site.Services.GetRequiredService<UsageCounter>().Drain());
+
+        await page.SetViewportSizeAsync(1400, 800);
+        await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
+
+        var status = page.Locator("#cx-usage-status");
+
+        await Assertions.Expect(status).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
+
+        var before = await page.EvaluateAsync<double>(
+            """
+            depth => {
+                window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * depth);
+                window.cxLowest = scrollY;
+                addEventListener('scroll', () => { window.cxLowest = Math.min(window.cxLowest, scrollY); }, { capture: true, passive: true });
+                return scrollY;
+            }
+            """, depth);
+
+        Assert.True(before > 0);
+
+        var updated = await status.TextContentAsync();
+
+        await Assertions.Expect(status).Not.ToHaveTextAsync(updated!, new() { Timeout = 20_000 });
+
+        Assert.Equal(before, await page.EvaluateAsync<double>("() => scrollY"));
+        Assert.Equal(before, await page.EvaluateAsync<double>("() => window.cxLowest"));
+    }
+
+    [Theory]
+    [InlineData(0.5)]
+    [InlineData(1.0)]
+    public async Task A_reload_returns_to_its_scroll_position(double depth)
+    {
+        const double Tolerance = 40;
+
+        await using var context = await site.NewContextAsync(UsageSite.SignedIn);
+        var page = await context.NewPageAsync();
+
+        foreach (var path in new[] { "/", "/api/catalog", "/heroes" }) await page.GotoAsync(path);
+
+        site.Services.GetRequiredService<UsageStore>().Write(site.Services.GetRequiredService<UsageCounter>().Drain());
+
+        await page.SetViewportSizeAsync(1400, 800);
+        await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
+
+        var status = page.Locator("#cx-usage-status");
+
+        await Assertions.Expect(status).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
+
+        var before = await page.EvaluateAsync<double>(
+            "depth => { window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * depth); return scrollY; }", depth);
+
+        await page.ReloadAsync();
+        await Assertions.Expect(status).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
+
+        Assert.InRange(await page.EvaluateAsync<double>("() => scrollY"), before - Tolerance, before + Tolerance);
+    }
+
+    [Fact]
     public async Task The_dashboard_draws_both_charts_and_refreshes_the_report_in_place()
     {
         await using var context = await site.NewContextAsync(UsageSite.SignedIn);

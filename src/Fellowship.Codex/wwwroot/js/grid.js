@@ -20,9 +20,7 @@ function element(tag, properties, ...children) {
     return node;
 }
 
-function read(root) {
-    return JSON.parse(root.querySelector('script[type="application/json"]').textContent);
-}
+const payload = root => root.previousElementSibling.textContent;
 
 // A column's filter: `!text` excludes, a comparison reads the cell's number, and any other text is a substring.
 function matcher(query, keyed) {
@@ -64,7 +62,7 @@ function ascending(left, right) {
 }
 
 export class Grid {
-    constructor(root) {
+    constructor(root, text) {
         this.root = root;
         this.columns = [];
         this.rows = [];
@@ -73,17 +71,45 @@ export class Grid {
         this.sort = null;
         this.drawn = '';
         this.selected = null;
+        this.offset = [0, 0];
+        this.held = null;
 
-        this.adopt(read(root));
+        this.adopt(text);
         this.build();
         this.apply();
     }
 
-    // Takes the payload of a placeholder the refreshed report holds.
-    update(placeholder) {
+    // A new root is from the circuit's first render, or a render that added the grid again. The filters and sort move to it.
+    move(root) {
+        this.root = root;
+        root.replaceChildren(this.scroll, this.foot, this.detail);
+    }
+
+    // Leaving the document clears the scroll offset and the focus, so both come from what was last recorded.
+    settle() {
+        [this.scroll.scrollTop, this.scroll.scrollLeft] = this.offset;
+
+        if (this.held) {
+            const { input, start, end } = this.held;
+
+            input.focus({ preventScroll: true });
+            input.setSelectionRange(start, end);
+        }
+
+        this.drawn = '';
+        this.paint();
+    }
+
+    hold({ target }) {
+        if (target instanceof HTMLInputElement) {
+            this.held = { input: target, start: target.selectionStart, end: target.selectionEnd };
+        }
+    }
+
+    update(text) {
         const before = this.visible;
 
-        this.adopt(read(placeholder));
+        this.adopt(text);
 
         if (before.map(column => column.head).join() === this.visible.map(column => column.head).join()) {
             this.visible.forEach((column, at) => Object.assign(column, {
@@ -100,11 +126,14 @@ export class Grid {
         this.apply();
     }
 
-    adopt(payload) {
-        this.columns = payload.columns.map((column, index) => ({ ...column, index }));
+    adopt(text) {
+        const { columns, rows } = JSON.parse(text);
+
+        this.text = text;
+        this.columns = columns.map((column, index) => ({ ...column, index }));
         this.visible = this.columns.filter(column => !column.hidden);
 
-        this.rows = payload.rows.map((cells, at) => {
+        this.rows = rows.map((cells, at) => {
             const keys = this.columns.map(column => column.keys?.[at] ?? null);
             const texts = cells.map((cell, index) =>
                 this.columns[index].time && keys[index] !== null ? stamp.format(new Date(keys[index])) : cell);
@@ -126,7 +155,20 @@ export class Grid {
         this.head.append(this.headings(), this.inputs());
         this.size();
 
-        this.scroll.addEventListener('scroll', () => this.paint(), { passive: true });
+        this.scroll.addEventListener('scroll', () => {
+            this.offset = [this.scroll.scrollTop, this.scroll.scrollLeft];
+            this.paint();
+        }, { passive: true });
+
+        for (const kind of ['focusin', 'input', 'keyup', 'pointerup']) {
+            this.head.addEventListener(kind, event => this.hold(event));
+        }
+
+        // Chrome fires focusout on an input while removing it, so focus is kept for an input that left the document.
+        this.head.addEventListener('focusout', ({ target }) => queueMicrotask(() => {
+            if (target.isConnected && document.activeElement !== target) this.held = null;
+        }));
+
         this.body.addEventListener('click', event => this.open(event.target.closest('tr.cx-grid-row')));
         this.body.addEventListener('keydown', event => {
             if (event.key === 'Enter') this.open(event.target.closest('tr.cx-grid-row'));
@@ -322,53 +364,29 @@ export class Grid {
         this.detail.hidden = false;
     }
 
-    // Moving the root out of the document clears its scroll offset.
-    keep() {
-        return { top: this.scroll.scrollTop, left: this.scroll.scrollLeft };
-    }
-
-    restore({ top, left }) {
-        this.scroll.scrollTop = top;
-        this.scroll.scrollLeft = left;
-        this.drawn = '';
-        this.paint();
-    }
 }
 
-// Replaces the content of a host with refreshed markup, and keeps each live grid in place of its placeholder.
-export function swap(host, markup, grids) {
-    const next = element('template');
-    const active = document.activeElement;
-    const typing = active instanceof HTMLInputElement && host.contains(active);
-    const caret = typing ? [active.selectionStart, active.selectionEnd] : null;
-    const kept = new Map([...grids].map(([id, grid]) => [id, grid.keep()]));
-
-    next.innerHTML = markup;
-
-    for (const placeholder of next.content.querySelectorAll('[data-grid]')) {
-        const live = grids.get(placeholder.dataset.grid);
-
-        if (!live) continue;
-
-        live.update(placeholder);
-        placeholder.replaceWith(live.root);
-    }
-
-    host.replaceChildren(next.content);
-    mount(host, grids);
-
-    for (const [id, position] of kept) {
-        if (host.contains(grids.get(id).root)) grids.get(id).restore(position);
-    }
-
-    if (typing && host.contains(active)) {
-        active.focus({ preventScroll: true });
-        active.setSelectionRange(...caret);
-    }
-}
-
+// Draws each grid in a host, and hands a live grid the rows of its latest render.
 export function mount(host, grids) {
-    for (const root of host.querySelectorAll('[data-grid]')) {
-        if (!grids.has(root.dataset.grid)) grids.set(root.dataset.grid, new Grid(root));
+    const roots = [...host.querySelectorAll('[data-grid]')];
+
+    // Every grid moves before anything reads layout, because the page is short until the last one is back.
+    const moved = roots.filter(root => {
+        const live = grids.get(root.dataset.grid);
+
+        if (!live || live.root === root) return false;
+
+        live.move(root);
+        return true;
+    });
+
+    for (const root of roots) {
+        const live = grids.get(root.dataset.grid);
+        const text = payload(root);
+
+        if (!live) grids.set(root.dataset.grid, new Grid(root, text));
+        else if (live.text !== text) live.update(text);
     }
+
+    for (const root of moved) grids.get(root.dataset.grid).settle();
 }

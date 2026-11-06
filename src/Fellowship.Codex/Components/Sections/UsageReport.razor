@@ -264,6 +264,9 @@ else
     /// <summary>Range in days, one of <see cref="UsageRanges.Days" />.</summary>
     [Parameter] public int Days { get; set; } = UsageRanges.Default;
 
+    /// <summary>Count of refreshes. A new value reads the report again.</summary>
+    [Parameter] public int Refresh { get; set; }
+
     private UsageStore? Store;
 
     private string ChartJson = "{}";

@@ -5,10 +5,10 @@
 
 <CascadingValue Value="this" IsFixed="true">@Columns</CascadingValue>
 
+@* The render owns the script and js/grid.js owns the children of the root, so a render never meets a node it did not write. *@
 <CascadingValue Value="this" IsFixed="true">
-    <div class="cx-grid" data-grid="@Id" aria-label="@Label">
-        <script type="application/json">@((MarkupString)Payload())</script>
-    </div>
+    <script type="application/json">@((MarkupString)Payload())</script>
+    <div class="cx-grid" data-grid="@Id" aria-label="@Label"></div>
 </CascadingValue>
 
 @code {

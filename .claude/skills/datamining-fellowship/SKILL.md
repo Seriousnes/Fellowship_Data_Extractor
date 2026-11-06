@@ -5,8 +5,7 @@ description: Use when a Fellowship tooltip number is wrong or missing, when a va
 
 # Datamining Fellowship
 
-The general method is the `datamining-unreal-builds` skill. The asset-level data model, the tag join
-and the export contract are `extracting-fellowship-data`.
+The asset-level data model, the tag join and the export contract are `extracting-fellowship-data`.
 
 **The failure this prevents:** fitting a formula to screenshots. It cost a full session here. Three
 independent mistakes cancelled to within 1 per cent on ratings and 12 per cent on Stamina, so only one

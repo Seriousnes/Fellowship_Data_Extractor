@@ -105,11 +105,10 @@ public static class UsageRanges
 
         return JsonSerializer.Serialize(new
         {
-            interval = (int)UsageFlush.Interval.TotalSeconds,
             generated = now.ToUnixTimeSeconds(),
             live,
-            range = new { range.Labels, range.Series, unit = Unit(days), head = Head(days) },
-            errors = new { errors.Labels, errors.Series, unit = Unit(days), head = ErrorsHead(days) },
+            range = new { range.Labels, range.Series, unit = Unit(days) },
+            errors = new { errors.Labels, errors.Series, unit = Unit(days) },
             failures,
             load,
             memory,

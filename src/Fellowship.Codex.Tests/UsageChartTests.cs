@@ -74,15 +74,7 @@ public sealed class UsageChartTests : IDisposable
 public class AdminReportTests(AdminHost host)
 {
     [Fact]
-    public async Task An_anonymous_request_for_the_report_is_refused()
-    {
-        using var response = await host.Client().GetAsync(UsageExtensions.Report, TestContext.Current.CancellationToken);
-
-        Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task An_owner_receives_the_report_with_its_chart_data()
+    public async Task An_owner_receives_the_dashboard_with_its_chart_data()
     {
         var cancellation = TestContext.Current.CancellationToken;
         var client = host.Client(AdminHost.Owner);
@@ -91,13 +83,12 @@ public class AdminReportTests(AdminHost host)
         host.Factory.Services.GetRequiredService<UsageStore>()
             .Write(host.Factory.Services.GetRequiredService<UsageCounter>().Drain());
 
-        using var response = await client.GetAsync($"{UsageExtensions.Report}?days=30", cancellation);
+        using var response = await client.GetAsync($"{UsageRoutes.Admin}?days=30", cancellation);
         var body = await response.Content.ReadAsStringAsync(cancellation);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.True(response.Headers.CacheControl?.NoStore);
         Assert.Contains("id=\"cx-usage-data\"", body);
         Assert.Contains("\"unit\":\"day\"", body);
-        Assert.DoesNotContain("<html", body);
     }
 }
