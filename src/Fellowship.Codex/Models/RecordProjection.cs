@@ -615,6 +615,7 @@ public static class RecordProjection
                 Ability = Reference(trigger.Ability, view, origin),
                 Committing = References(trigger.Committing, view, origin),
                 CommittingTag = trigger.CommittingTag,
+                CommittingHoldsAll = trigger.CommittingHoldsAll,
                 ExcludedTags = trigger.ExcludedTags,
                 Applies = References(trigger.Applies, view, origin),
                 StoppedBy = Reference(trigger.StoppedBy, view, origin),

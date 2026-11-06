@@ -88,6 +88,8 @@ public sealed record CommitTriggerRecord
 
     public string? CommittingTag { get; init; }
 
+    public bool? CommittingHoldsAll { get; init; }
+
     public IReadOnlyList<string>? ExcludedTags { get; init; }
 
     public IReadOnlyList<RecordReference>? Applies { get; init; }

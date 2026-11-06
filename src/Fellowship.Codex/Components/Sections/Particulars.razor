@@ -89,9 +89,9 @@
                                     <Ref Entity="committing[at]" />
                                 }
                             }
-                            else
+                            @if (Abilities(commit) is { Length: > 0 } named)
                             {
-                                @Abilities(commit)
+                                @(commit.Committing is null ? named : $", {named}")
                             }
                         </Head>
                         <ChildContent>
@@ -271,9 +271,12 @@
     /// <summary>The abilities a wait's tags stand for, each by its last segment, without the tags it excludes.</summary>
     private static string Abilities(Fellowship.SDK.Models.CommitTrigger commit)
     {
-        var named = commit.CommittingTag is null or EveryCommit
-            ? "Any ability"
-            : string.Join(", ", commit.CommittingTag.Split(", ").Select(Segment));
+        var named = commit.CommittingTag switch
+        {
+            null when commit.Committing is not null => string.Empty,
+            null or EveryCommit => "Any ability",
+            var tags => string.Join(commit.CommittingHoldsAll is true ? " and " : ", ", tags.Split(", ").Select(tag => $"{Segment(tag)} abilities")),
+        };
 
         return commit.ExcludedTags is { Count: > 0 } excluded
             ? $"{named}, except {string.Join(", ", excluded.Select(Segment))}"

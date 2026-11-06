@@ -8,7 +8,7 @@ public sealed class ProcChanceInputTests(Site site)
     /// <summary>A proc rolling at a known rate with every attribute at 0, so the chance moves with the seconds typed.</summary>
     private ProcRollSource Steady =>
         ProcChance.Sources(site.Store).First(source =>
-            ProcChance.Rate(source.Rolls[0], _ => 0) is > 0 && source.Rolls[0] is { ScalesOff.Count: 0, InternalCooldown: null });
+            ProcChance.Rate(source.Rolls[0], _ => 0) is > 0 && source.Rolls[0].ScalesOff.Count == 0);
 
     private static async Task<string> ChanceAtAsync(ProcChancePage tool, string seconds)
     {
@@ -38,7 +38,7 @@ public sealed class ProcChanceInputTests(Site site)
         var tool = new ProcChancePage(await context.NewPageAsync());
         await tool.OpenAsync(Steady);
 
-        var atOne = (await tool.Chance.TextContentAsync())!;
+        var atOne = await ChanceAtAsync(tool, "1");
         var atZero = await ChanceAtAsync(tool, "0");
         var atFour = await ChanceAtAsync(tool, "4");
         Assert.NotEqual(atOne, atFour);

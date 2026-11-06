@@ -68,6 +68,19 @@ public sealed class CommitTriggerTests
     }
 
     [Fact]
+    public void AQueryHeldInAVariableResolvesToItsAbilities() =>
+        Assert.NotEmpty(Ids(Assert.Single(Triggers(2216))!["committing"]));
+
+    [Fact]
+    public void AnAllOfQueryStatesThatTheAbilityHoldsEveryTag()
+    {
+        var trigger = Assert.Single(Triggers(1481))!;
+
+        Assert.True(trigger["committingHoldsAll"]!.GetValue<bool>());
+        Assert.NotEmpty(trigger["excludedTags"]!.AsArray());
+    }
+
+    [Fact]
     public void TheEffectStatesEveryWaitApplyingIt()
     {
         var commits = Document(EntityType.Effect, ConvergingBuff)["appliedOnCommitOf"]!.AsArray();

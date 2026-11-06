@@ -1,5 +1,6 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
 
@@ -26,8 +27,11 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
     private const string Negation = "Not_PreBool";
     private const string ApplyingCall = "ApplyGameplayEffect";
     private const string SpecCall = "EffectSpec";
+    private const string DictionaryField = "TagDictionary";
+    private const string TokenStreamField = "QueryTokenStream";
     private const int RootOffset = 2;
     private const int AnyTags = 1;
+    private const int AllTags = 2;
     private const int NoTags = 3;
     private const int AllExpressions = 5;
     private const string NoTag = "None";
@@ -39,7 +43,7 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
     public List<string> Unread { get; } = [];
 
     /// <summary>A wait's tags, and its offset in the ubergraph once the delegate resolves.</summary>
-    private sealed record Wait(IReadOnlyList<string> Tags, IReadOnlyList<string> Excluded, int Entry);
+    private sealed record Wait(IReadOnlyList<string> Tags, bool AllTags, IReadOnlyList<string> Excluded, int Entry);
 
     public IReadOnlyList<CommitTriggerSource> Of(UObject? cdo)
     {
@@ -95,12 +99,13 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
             .GroupBy(entry => $"{string.Join(',', entry.Stopping)}|{string.Join(',', entry.Required)}", StringComparer.Ordinal)
             .ToArray();
 
-        if (groups.Length == 0) yield return new CommitTriggerSource(wait.Tags, wait.Excluded, [], [], []);
+        if (groups.Length == 0) yield return new CommitTriggerSource(wait.Tags, wait.AllTags, wait.Excluded, [], [], []);
 
         foreach (var group in groups)
         {
             yield return new CommitTriggerSource(
                 wait.Tags,
+                wait.AllTags,
                 wait.Excluded,
                 [.. group.Select(entry => entry.Effect!).OrderBy(effect => effect.NetId)],
                 group.First().Stopping,
@@ -177,7 +182,7 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
             if (called is not (WaitForCommit or WaitForQuery or WaitForEvents)) continue;
 
             var parameter = RowSinks.Parameters(call).ElementAtOrDefault(TagParameter);
-            var (tags, excluded) = called == WaitForQuery ? Queried(parameter) : (Named(parameter), []);
+            var (tags, all, excluded) = called == WaitForQuery ? Queried(parameter, cdo) : (Named(parameter), false, []);
 
             if (called == WaitForEvents)
             {
@@ -190,7 +195,7 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
 
             if (Entry(statements, at, DynamicTextFloats.Name(variable), delegated, bodies) is { } entry)
             {
-                yield return new Wait(tags, excluded, entry);
+                yield return new Wait(tags, all, excluded, entry);
             }
             else
             {
@@ -235,51 +240,66 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
     /// <summary>
     /// The tags of a tag query, from its token stream: a version, a flag for a root expression, then expressions. A tag
     /// expression is its type, a count and that many indices into the tag dictionary. An expression of expressions is
-    /// its type, a count and those expressions. The build has any-of, and all-of an any-of and a none-of. Its
-    /// description text is blank on some queries, so the stream is the source.
+    /// its type, a count and those expressions. The build has any-of, and all-of an any-of or all-of and a none-of. A Blueprint
+    /// passes the query as a literal or as a variable holding it on the default object.
     /// </summary>
-    private (string[] Tags, string[] Excluded) Queried(KismetExpression? query)
+    private (string[] Tags, bool AllTags, string[] Excluded) Queried(KismetExpression? query, UObject cdo)
     {
         if (query is EX_StructConst { Properties: var properties } &&
             properties.OfType<EX_ArrayConst>().ToArray() is [var dictionary, var stream])
         {
-            var tags = TagElements(dictionary);
-
-            if (tags.Length == 0) return ([], []);
-
-            var tokens = stream.Elements.OfType<EX_ByteConst>().Select(token => (int)token.Value).ToArray();
-            var at = RootOffset;
-
-            if (tokens.Length > at && tokens[at] == AllExpressions)
-            {
-                var count = tokens[at + 1];
-                (string[] Any, string[] None) both = ([], []);
-
-                at += 2;
-
-                for (var read = 0; read < count; read++)
-                {
-                    if (TagExpression(tokens, ref at, tags) is not var (type, named)) return Unreadable(query);
-
-                    if (type == AnyTags) both.Any = named;
-                    else if (type == NoTags) both.None = named;
-                    else return Unreadable(query);
-                }
-
-                return both;
-            }
-
-            if (TagExpression(tokens, ref at, tags) is (AnyTags, var any)) return (any, []);
+            return Decoded(TagElements(dictionary), [.. stream.Elements.OfType<EX_ByteConst>().Select(token => (int)token.Value)]);
         }
 
-        return Unreadable(query);
+        if (query is EX_InstanceVariable && DynamicTextFloats.Name(query) is { } property &&
+            ClassDefaults.Inherited(cdo, property, provider)?.GenericValue is FScriptStruct { StructType: IPropertyHolder held } &&
+            PropertyWalk.Get(held, DictionaryField)?.GenericValue is UScriptArray named &&
+            PropertyWalk.Get(held, TokenStreamField)?.GenericValue is UScriptArray tokens)
+        {
+            return Decoded(
+                [.. named.Properties.Select(tag => PropertyWalk.AsString(tag?.GenericValue) ?? string.Empty)],
+                [.. tokens.Properties.Select(token => (int)(PropertyWalk.AsNumber(token?.GenericValue) ?? 0))]);
+        }
+
+        Unread.Add($"{cdo.Owner?.Name} passes a tag query the reader cannot find");
+
+        return ([], false, []);
     }
 
-    private (string[], string[]) Unreadable(KismetExpression query)
+    private (string[] Tags, bool AllTags, string[] Excluded) Decoded(string[] tags, int[] tokens)
     {
-        Unread.Add($"tag query not read: {string.Join(", ", Named(query))}");
+        if (tags.Length == 0) return ([], false, []);
 
-        return ([], []);
+        var at = RootOffset;
+
+        if (tokens.Length > at + 1 && tokens[at] == AllExpressions)
+        {
+            var count = tokens[at + 1];
+            (string[] Named, bool All, string[] None) both = ([], false, []);
+
+            at += 2;
+
+            for (var read = 0; read < count; read++)
+            {
+                if (TagExpression(tokens, ref at, tags) is not var (type, named))
+                {
+                    Unread.Add($"tag query not read: {string.Join(", ", tags)}");
+
+                    return ([], false, []);
+                }
+
+                if (type == NoTags) both.None = named;
+                else both = (named, type == AllTags && named.Length > 1, both.None);
+            }
+
+            return both;
+        }
+
+        if (TagExpression(tokens, ref at, tags) is { } root && root.Type != NoTags) return (root.Tags, root.Type == AllTags && root.Tags.Length > 1, []);
+
+        Unread.Add($"tag query not read: {string.Join(", ", tags)}");
+
+        return ([], false, []);
     }
 
     private static string[] TagElements(EX_ArrayConst dictionary) =>
@@ -292,7 +312,7 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
         var type = tokens[at];
         var count = tokens[at + 1];
 
-        if (type is not (AnyTags or NoTags) || at + 2 + count > tokens.Length) return null;
+        if (type is not (AnyTags or AllTags or NoTags) || at + 2 + count > tokens.Length) return null;
 
         var named = tokens[(at + 2)..(at + 2 + count)].Select(index => tags[index]).ToArray();
 

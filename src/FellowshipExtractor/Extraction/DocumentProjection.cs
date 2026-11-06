@@ -1089,12 +1089,15 @@ public static class DocumentProjection
     /// <summary>A wait's abilities, or its tags where they stand for abilities at large or name none.</summary>
     private static CommitTrigger Trigger(CommitTriggerSource source, References references)
     {
-        var broad = source.Tags.Any(tag =>
-            tag.StartsWith(AbilityTypeTagPrefix, StringComparison.Ordinal) || tag.StartsWith(EventTagPrefix, StringComparison.Ordinal));
+        bool Broad(string tag) =>
+            tag.StartsWith(AbilityTypeTagPrefix, StringComparison.Ordinal) || tag.StartsWith(EventTagPrefix, StringComparison.Ordinal);
 
-        var holders = broad ? [] : source.Tags.Select(tag => references.Changes.AbilitiesTagged(tag)).ToArray();
+        int[] committing =
+        [
+            .. source.Tags.Where(tag => !Broad(tag)).SelectMany(tag => references.Changes.AbilitiesTagged(tag)).Distinct().Order(),
+        ];
 
-        int[] committing = [.. holders.SelectMany(ids => ids).Distinct().Order()];
+        var unresolved = source.Tags.Where(tag => Broad(tag) || references.Changes.AbilitiesTagged(tag).Count == 0).ToArray();
 
         EntityReference? Single(IReadOnlyList<string> tags) => tags
             .SelectMany(tag => references.Changes.Holding(tag))
@@ -1109,8 +1112,9 @@ public static class DocumentProjection
         {
             Committing = committing.Length == 0
                 ? null
-                : [.. committing.Select(id => references.Of(EntityType.Ability, id)).OfType<EntityReference>()],
-            CommittingTag = committing.Length == 0 && source.Tags.Count > 0 ? string.Join(", ", source.Tags) : null,
+                : [.. committing.Select(id => references.Of(EntityType.Ability, id)).OfType<EntityReference>().Distinct()],
+            CommittingTag = unresolved.Length > 0 ? string.Join(", ", unresolved) : null,
+            CommittingHoldsAll = source.AllTags ? true : null,
             ExcludedTags = source.Excluded.Count > 0 ? source.Excluded : null,
             Applies = source.Effects.Count == 0 ? null : [.. source.Effects.Select(references.At).OfType<EntityReference>()],
             StoppedBy = stoppedBy,
