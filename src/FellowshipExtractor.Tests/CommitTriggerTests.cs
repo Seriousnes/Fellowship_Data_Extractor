@@ -73,6 +73,28 @@ public sealed class CommitTriggerTests
     public void ACommitEventWaitIsATrigger(int ability) =>
         Assert.Contains(Triggers(ability), trigger => trigger!["committingTag"]?.GetValue<string>() == "Event.CommittedAbility");
 
+    [Theory]
+    [InlineData(1215, new[] { 1746, 1747 })]
+    [InlineData(1491, new[] { 2158, 2159, 2160, 2161 })]
+    public void AnEffectHeldInAMapGivesEveryElement(int ability, int[] effects) =>
+        Assert.Equal(effects, Ids(Assert.Single(Triggers(ability))!["applies"]));
+
+    [Fact]
+    public void AnEffectAppliedThroughAnOwnFunctionIsReached() =>
+        Assert.Contains(Triggers(169), trigger => trigger!["applies"] is not null);
+
+    [Fact]
+    public void AnEffectAppliedWhenAWaitOnTheCommittedAbilityEndsIsReached() =>
+        Assert.Contains(Triggers(1533), trigger => trigger!["applies"] is not null);
+
+    [Fact]
+    public void AGraphLoopingPastItsWaitIsWalkedToTheEffect() =>
+        Assert.Equal([2112], Ids(Assert.Single(Triggers(1462))!["applies"]));
+
+    [Fact]
+    public void TheMapHeldEffectStatesItsWait() =>
+        Assert.Equal(1215, Document(EntityType.Effect, 1746)["appliedOnCommitOf"]![0]!["ability"]!["id"]!.GetValue<int>());
+
     [Fact]
     public void AQueryHeldInAVariableResolvesToItsAbilities() =>
         Assert.NotEmpty(Ids(Assert.Single(Triggers(2216))!["committing"]));

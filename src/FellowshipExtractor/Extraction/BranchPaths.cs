@@ -18,10 +18,15 @@ public sealed class BranchPaths
 {
     private const int MaxStates = 40000;
     private const int MaxDepth = 16;
+    private const int ContainerParameter = 0;
+    private const int ElementParameter = 2;
+
+    private static readonly string?[] ContainerReads = ["Map_Find", "Array_Get"];
 
     private readonly KismetExpression[] _bytecode;
     private readonly Dictionary<int, int> _indexOf = [];
     private readonly Dictionary<string, List<KismetExpression>> _locals = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<KismetExpression>> _containers = new(StringComparer.Ordinal);
 
     /// <summary>True once a walk stops at the state cap, so its paths are a subset.</summary>
     public bool Truncated { get; private set; }
@@ -33,6 +38,18 @@ public sealed class BranchPaths
         for (var at = 0; at < _bytecode.Length; at++)
         {
             _indexOf[_bytecode[at].StatementIndex] = at;
+
+            foreach (var call in CommitTriggers.Invocations(_bytecode[at], 0))
+            {
+                if (!ContainerReads.Contains(RowSinks.Calling(call))) continue;
+
+                var parameters = RowSinks.Parameters(call);
+
+                if (parameters.Count <= ElementParameter || DynamicTextFloats.Name(parameters[ElementParameter]) is not { } element) continue;
+
+                if (!_containers.TryGetValue(element, out var read)) _containers[element] = read = [];
+                read.Add(parameters[ContainerParameter]);
+            }
 
             var (variable, value) = _bytecode[at] switch
             {
@@ -61,6 +78,12 @@ public sealed class BranchPaths
             ? Value(assigned, depth + 1)
             : expression;
     }
+
+    /// <summary>The maps and arrays a local was read from.</summary>
+    public IReadOnlyList<KismetExpression> Containers(KismetExpression? local) =>
+        local is EX_LocalVariable or EX_LocalOutVariable && DynamicTextFloats.Name(local) is { } name && _containers.TryGetValue(name, out var read)
+            ? read
+            : [];
 
     public IEnumerable<(KismetExpression Statement, ImmutableList<BranchTaken> Taken)> From(int entry, Func<KismetExpression, bool> relevant)
     {

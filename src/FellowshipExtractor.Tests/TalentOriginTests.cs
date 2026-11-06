@@ -37,6 +37,20 @@ public sealed class TalentOriginTests
         Talent = new EntityReference(EntityType.Talent, talent, null),
     };
 
+    /// <summary>A slot naming an ability, because the walk judges abilities and leaves talents alone.</summary>
+    private static TalentSlotDocument Reaching(Hero hero, int ability, bool? enabled) => new()
+    {
+        Id = 1,
+        EnabledInGame = enabled,
+        Hero = hero,
+        Row = 1,
+        Column = 1,
+        Cost = 1,
+        Talent = new EntityReference(EntityType.Ability, ability, null),
+    };
+
+    private static readonly EntityDocument[] Reached = [new AbilityDocument { Id = 100 }, new AbilityDocument { Id = 200 }];
+
     [Fact]
     public void InvictusBelongsToXavian()
     {
@@ -81,12 +95,20 @@ public sealed class TalentOriginTests
     [Fact]
     public void SlotsSharingAnIdAreJudgedTheSameInEitherOrder()
     {
-        var first = Slot(1, Hero.Xavian, 100, enabled: false);
-        var second = Slot(1, Hero.Aeona, 200, enabled: null);
+        var disabled = Reaching(Hero.Xavian, 100, enabled: false);
+        var enabled = Reaching(Hero.Aeona, 200, enabled: null);
 
-        Assert.Equal(
-            Reachability.Unreachable([first, second]).Order(),
-            Reachability.Unreachable([second, first]).Order());
+        Assert.Empty(Reachability.Unreachable([disabled, enabled, .. Reached]));
+        Assert.Empty(Reachability.Unreachable([enabled, disabled, .. Reached]));
+    }
+
+    [Fact]
+    public void SlotsSharingAnIdAndAllDisabledReachNothing()
+    {
+        var unreachable = Reachability.Unreachable(
+            [Reaching(Hero.Xavian, 100, enabled: false), Reaching(Hero.Aeona, 200, enabled: false), .. Reached]);
+
+        Assert.Equal([(EntityType.Ability, 100), (EntityType.Ability, 200)], unreachable.Order());
     }
 
     [Fact]

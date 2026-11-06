@@ -1,6 +1,7 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.Assets.Objects.Properties;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
 
@@ -28,6 +29,7 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
     private const string Negation = "Not_PreBool";
     private const string ApplyingCall = "ApplyGameplayEffect";
     private const string SpecCall = "EffectSpec";
+    private const string MakingCall = "MakeEffectSpec";
     private const string DictionaryField = "TagDictionary";
     private const string TokenStreamField = "QueryTokenStream";
     private const int RootOffset = 2;
@@ -46,6 +48,24 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
     /// <summary>A wait's tags, and its offset in the ubergraph once the delegate resolves.</summary>
     private sealed record Wait(IReadOnlyList<string> Tags, bool AllTags, IReadOnlyList<string> Excluded, int Entry);
 
+    /// <summary>An effect a walk reaches past its tag tests. A null effect is a spec applied with its maker out of reach.</summary>
+    private sealed record Reach(string? Effect, HashSet<string> Stopping, HashSet<string> Required);
+
+    /// <summary>The bodies of one Blueprint, with the paths and reaches read from them.</summary>
+    private sealed class Walk(IReadOnlyList<UStruct> bodies, UObject cdo)
+    {
+        private readonly Dictionary<string, BranchPaths> _paths = new(StringComparer.Ordinal);
+
+        public IReadOnlyList<UStruct> Bodies => bodies;
+
+        public UObject Cdo => cdo;
+
+        public Dictionary<(string Body, int Entry), List<Reach>> Reached { get; } = [];
+
+        public BranchPaths PathsOf(UStruct body) =>
+            _paths.TryGetValue(body.Name, out var known) ? known : _paths[body.Name] = new BranchPaths(body);
+    }
+
     public IReadOnlyList<CommitTriggerSource> Of(UObject? cdo)
     {
         if (cdo?.Owner is not { } package) return [];
@@ -55,46 +75,48 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
             .Where(export => export.ScriptBytecode is { Length: > 0 })
             .ToArray();
 
+        var walk = new Walk(bodies, cdo);
         var found = new List<CommitTriggerSource>();
 
         foreach (var body in bodies)
         {
-            BranchPaths? paths = null;
-
             foreach (var wait in Waited(body, bodies, cdo))
             {
                 Waits++;
-                found.AddRange(Triggers(wait, paths ??= new BranchPaths(body), cdo));
+                found.AddRange(Triggers(wait, UbergraphOf(bodies) ?? body, walk));
             }
         }
 
         return found;
     }
 
-    private IEnumerable<CommitTriggerSource> Triggers(Wait wait, BranchPaths paths, UObject cdo)
+    private static UStruct? UbergraphOf(IReadOnlyList<UStruct> bodies) =>
+        bodies.FirstOrDefault(body => body.Name.StartsWith(Ubergraph, StringComparison.Ordinal));
+
+    private IEnumerable<CommitTriggerSource> Triggers(Wait wait, UStruct body, Walk walk)
     {
         var byEffect = new Dictionary<string, (HashSet<string> Stopping, HashSet<string> Required)>(StringComparer.OrdinalIgnoreCase);
+        var reached = Reached(body, wait.Entry, walk).ToArray();
 
-        foreach (var (statement, taken) in paths.From(wait.Entry, condition => Test(condition, paths).Call is not null))
+        foreach (var (effect, stopping, required) in reached)
         {
-            foreach (var effect in Applied(statement, paths, cdo))
-            {
-                var stopping = Tested(taken, paths, cdo, held: false);
-                var required = Tested(taken, paths, cdo, held: true);
+            if (effect is null) continue;
 
-                if (byEffect.TryGetValue(effect, out var held))
-                {
-                    held.Stopping.IntersectWith(stopping);
-                    held.Required.IntersectWith(required);
-                }
-                else
-                {
-                    byEffect[effect] = (stopping, required);
-                }
+            if (byEffect.TryGetValue(effect, out var held))
+            {
+                held.Stopping.IntersectWith(stopping);
+                held.Required.IntersectWith(required);
+            }
+            else
+            {
+                byEffect[effect] = ([.. stopping], [.. required]);
             }
         }
 
-        if (paths.Truncated) Unread.Add($"{cdo.Owner?.Name} has more paths from offset {wait.Entry} than the walk follows");
+        if (byEffect.Count == 0 && reached.Length > 0)
+        {
+            Unread.Add($"{walk.Cdo.Owner?.Name} applies a spec from offset {wait.Entry} with no maker on the path");
+        }
 
         var groups = byEffect
             .Select(entry => (Effect: effectSource(entry.Key), Stopping: Sorted(entry.Value.Stopping), Required: Sorted(entry.Value.Required)))
@@ -113,6 +135,67 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
                 [.. group.Select(entry => entry.Effect!).OrderBy(effect => effect.NetId)],
                 group.First().Stopping,
                 group.First().Required);
+        }
+    }
+
+    /// <summary>
+    /// The effects a body applies from an entry offset, through the Blueprint's own functions and events. A function
+    /// entered twice gives its first reading, so a cycle of calls ends.
+    /// </summary>
+    private List<Reach> Reached(UStruct body, int entry, Walk walk)
+    {
+        if (walk.Reached.TryGetValue((body.Name, entry), out var known)) return known;
+
+        var found = walk.Reached[(body.Name, entry)] = [];
+        var paths = walk.PathsOf(body);
+
+        foreach (var (statement, taken) in paths.From(entry, condition => Test(condition, paths).Call is not null))
+        {
+            var applied = Applied(statement, paths, walk.Cdo).ToArray();
+            var called = Called(statement, walk).SelectMany(call => Reached(call.Body, call.Entry, walk).ToArray()).ToArray();
+
+            if (applied.Length == 0 && called.Length == 0) continue;
+
+            var stopping = Tested(taken, paths, walk.Cdo, held: false);
+            var required = Tested(taken, paths, walk.Cdo, held: true);
+
+            found.AddRange(applied.Select(effect => new Reach(effect, stopping, required)));
+            found.AddRange(called.Select(reach => new Reach(reach.Effect, [.. stopping, .. reach.Stopping], [.. required, .. reach.Required])));
+        }
+
+        if (paths.Truncated) Unread.Add($"{walk.Cdo.Owner?.Name} has more paths from offset {entry} than the walk follows");
+
+        return found;
+    }
+
+    /// <summary>The Blueprint's own functions a statement calls, and the ubergraph offsets its events enter.</summary>
+    private static IEnumerable<(UStruct Body, int Entry)> Called(KismetExpression statement, Walk walk)
+    {
+        // A delegate bound past a commit runs on that commit, as with a wait on the ability ending. A further commit wait
+        // is a trigger of its own.
+        if (statement is EX_BindDelegate { FunctionName.Text: var bound } &&
+            !bound.StartsWith(CommitDelegate, StringComparison.Ordinal) &&
+            !bound.StartsWith(EventDelegate, StringComparison.Ordinal) &&
+            walk.Bodies.FirstOrDefault(body => body.Name.Equals(bound, StringComparison.Ordinal)) is { } delegated)
+        {
+            yield return (delegated, delegated.ScriptBytecode![0].StatementIndex);
+        }
+
+        foreach (var call in Invocations(statement, 0))
+        {
+            if (call is not (EX_LocalFinalFunction or EX_LocalVirtualFunction) || RowSinks.Calling(call) is not { } called) continue;
+
+            if (UbergraphOffset(call) is { } offset)
+            {
+                if (UbergraphOf(walk.Bodies) is { } ubergraph) yield return (ubergraph, offset);
+
+                continue;
+            }
+
+            if (walk.Bodies.FirstOrDefault(body => body.Name.Equals(called, StringComparison.Ordinal)) is { } function)
+            {
+                yield return (function, function.ScriptBytecode![0].StatementIndex);
+            }
         }
     }
 
@@ -150,30 +233,65 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
         return tags;
     }
 
-    private IEnumerable<string> Applied(KismetExpression statement, BranchPaths paths, UObject cdo)
+    private IEnumerable<string?> Applied(KismetExpression statement, BranchPaths paths, UObject cdo)
     {
         foreach (var call in Invocations(statement, 0))
         {
             if (RowSinks.Calling(call) is not { } called) continue;
             if (!called.Contains(ApplyingCall, StringComparison.Ordinal) && !called.Contains(SpecCall, StringComparison.Ordinal)) continue;
 
-            foreach (var parameter in RowSinks.Parameters(call))
+            var named = RowSinks.Parameters(call).SelectMany(parameter => Effects(parameter, paths, cdo)).ToArray();
+
+            foreach (var effect in named) yield return effect;
+
+            if (named.Length > 0) continue;
+
+            if (called.Contains(ApplyingCall, StringComparison.Ordinal) && called.Contains(SpecCall, StringComparison.Ordinal))
             {
-                if (Effect(paths.Value(parameter), cdo) is { } effect) yield return effect;
+                yield return null;
+            }
+            else if (called.Contains(ApplyingCall, StringComparison.Ordinal) || called.Contains(MakingCall, StringComparison.Ordinal))
+            {
+                Unread.Add($"{cdo.Owner?.Name} offset {statement.StatementIndex} calls {called} on an effect the reader cannot find");
             }
         }
     }
 
-    private string? Effect(KismetExpression? expression, UObject cdo)
+    /// <summary>The effects an argument names: a class, or each element of the map or array a local was read from.</summary>
+    private IEnumerable<string> Effects(KismetExpression? parameter, BranchPaths paths, UObject cdo)
     {
-        var path = expression switch
-        {
-            EX_ObjectConst constant => PropertyWalk.AsString(constant.Value),
-            EX_InstanceVariable when DynamicTextFloats.Name(expression) is { } property =>
-                PropertyWalk.AsString(ClassDefaults.Inherited(cdo, property, provider)?.GenericValue),
-            _ => null,
-        };
+        var value = paths.Value(parameter);
 
+        if (Effect(value, cdo) is { } effect) yield return effect;
+
+        foreach (var container in paths.Containers(value))
+        {
+            if (paths.Value(container) is not EX_InstanceVariable variable || DynamicTextFloats.Name(variable) is not { } property) continue;
+
+            IEnumerable<FPropertyTagType?> elements = ClassDefaults.Inherited(cdo, property, provider)?.GenericValue switch
+            {
+                UScriptMap map => map.Properties.Values,
+                UScriptArray array => array.Properties,
+                _ => [],
+            };
+
+            foreach (var element in elements)
+            {
+                if (EffectNamed(PropertyWalk.AsString(element?.GenericValue)) is { } held) yield return held;
+            }
+        }
+    }
+
+    private string? Effect(KismetExpression? expression, UObject cdo) => EffectNamed(expression switch
+    {
+        EX_ObjectConst constant => PropertyWalk.AsString(constant.Value),
+        EX_InstanceVariable when DynamicTextFloats.Name(expression) is { } property =>
+            PropertyWalk.AsString(ClassDefaults.Inherited(cdo, property, provider)?.GenericValue),
+        _ => null,
+    });
+
+    private string? EffectNamed(string? path)
+    {
         if (path is null || !path.Contains('/')) return null;
 
         var name = AbilityPresentationIndex.AssetName(path);
@@ -360,7 +478,7 @@ public sealed class CommitTriggers(AbstractFileProvider provider, IReadOnlySet<s
         }
     }
 
-    private static IEnumerable<KismetExpression> Invocations(KismetExpression? expression, int depth)
+    internal static IEnumerable<KismetExpression> Invocations(KismetExpression? expression, int depth)
     {
         if (expression is null || depth > MaxDepth) yield break;
 
