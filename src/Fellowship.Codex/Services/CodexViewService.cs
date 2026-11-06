@@ -244,6 +244,7 @@ public sealed class CodexViewService(
             EntityType.Talent => Body(new TalentTooltipRequest { ShowIcon = icon }),
             EntityType.Enchant => Body(new EnchantTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.Sigil => Body(new SigilTooltipRequest { ShowIcon = icon }),
+            EntityType.ItemTrait => Body(new ItemTraitTooltipRequest { ShowIcon = icon }),
             EntityType.Aspect => Body(new AspectTooltipRequest { ShowIcon = icon }),
             EntityType.ProtectiveEnchant => Body(new ProtectiveEnchantTooltipRequest { ShowIcon = icon }),
             EntityType.WeaponPower => Body(new WeaponPowerTooltipRequest { ShowIcon = icon, Hero = hero }),

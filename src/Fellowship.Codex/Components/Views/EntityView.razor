@@ -42,7 +42,7 @@
 
         Schools = [.. schools.Select(school => (school, Filter(school)))];
 
-        NameSource = Borrowed((Entity as EffectDocument)?.NameBorrowedFrom);
+        NameSource = Borrowed((Entity as EffectDocument)?.NameBorrowedFrom ?? (Entity as AbilityDocument)?.NameBorrowedFrom);
         TextureSource = Borrowed((Entity as EffectDocument)?.TextureBorrowedFrom);
     }
 

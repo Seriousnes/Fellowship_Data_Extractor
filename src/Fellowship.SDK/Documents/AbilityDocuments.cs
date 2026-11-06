@@ -12,6 +12,8 @@ public sealed class AbilityDocument : EntityDocument
     public AbilityCategory? Category { get; init; }
 
 
+    public EntityReference? NameBorrowedFrom { get; init; }
+
     public EntityReference? NamedAfter { get; init; }
 
     public EntityReference? PartOf { get; init; }

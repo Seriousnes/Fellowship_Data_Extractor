@@ -38,6 +38,7 @@ public static class RecordProjection
             [EntityType.TalentSlot] = (document, view, origin) => From((TalentSlotDocument)document, view, origin),
             [EntityType.Enchant] = (document, view, origin) => From((EnchantDocument)document, view, origin),
             [EntityType.Sigil] = (document, view, origin) => From((SigilDocument)document, view, origin),
+            [EntityType.ItemTrait] = (document, view, origin) => From((ItemTraitDocument)document, view, origin),
             [EntityType.Aspect] = (document, view, origin) => From((AspectDocument)document, view, origin),
             [EntityType.ProtectiveEnchant] = (document, view, origin) => From((ProtectiveEnchantDocument)document, view, origin),
             [EntityType.WeaponPower] = (document, view, origin) => From((WeaponPowerDocument)document, view, origin),
@@ -73,6 +74,7 @@ public static class RecordProjection
 
         return new AbilityRecord
         {
+            NameBorrowedFrom = Reference(document.NameBorrowedFrom, view, origin),
             Type = EntityType.Ability,
             Id = document.Id,
             Generates = Generated(document.Generates),
@@ -540,6 +542,11 @@ public static class RecordProjection
     public static SigilRecord From(SigilDocument document, ICodexViewService view, string origin) =>
         (SigilRecord)Augmentation(
             new SigilRecord { Type = EntityType.Sigil, Id = document.Id, Name = PublicTypes.NameOf(document) },
+            document, view, origin);
+
+    public static ItemTraitRecord From(ItemTraitDocument document, ICodexViewService view, string origin) =>
+        (ItemTraitRecord)Augmentation(
+            new ItemTraitRecord { Type = EntityType.ItemTrait, Id = document.Id, Name = PublicTypes.NameOf(document), Rollable = document.Rollable },
             document, view, origin);
 
     public static AspectRecord From(AspectDocument document, ICodexViewService view, string origin) =>

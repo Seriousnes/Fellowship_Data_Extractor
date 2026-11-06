@@ -286,6 +286,32 @@ public sealed class EntityResolver
         Rolls = new ProcRolls(_constants, provider);
     }
 
+    private Dictionary<string, EffectNameSource>? _traitGrantees;
+
+    /// <summary>The item trait each ability with no name of its own is granted by, where the row has no category.</summary>
+    private Dictionary<string, EffectNameSource> TraitGrantees => _traitGrantees ??= ReadTraitGrantees();
+
+    private Dictionary<string, EffectNameSource> ReadTraitGrantees()
+    {
+        var grantees = new Dictionary<string, EffectNameSource>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (name, row) in AugmentationRows.ByTag)
+        {
+            if (row is not { CategoryTag: null, AugmentationPath: { } path }) continue;
+            if (FindTag(AugmentationRows.Table, name) is not { } tag) continue;
+
+            var augmentation = AbilityPresentationIndex.AssetName(path);
+            var origin = new IconSource(AugmentationRows.Table, tag.NetId, name);
+
+            foreach (var granted in Owners.GrantedBy(augmentation.EndsWith("_C", StringComparison.Ordinal) ? augmentation[..^2] : augmentation))
+            {
+                grantees.TryAdd(granted, new EffectNameSource(row.DisplayName, origin));
+            }
+        }
+
+        return grantees;
+    }
+
     private string? PrintedName(TagRecord tag, UObject cdo)
     {
         if (tag.Table.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase))
@@ -492,6 +518,11 @@ public sealed class EntityResolver
             else if (EffectNames.Disagrees(tag.Name))
             {
                 NamesContested++;
+            }
+            else if (TraitGrantees.GetValueOrDefault(tag.Name) is { } trait)
+            {
+                entity = entity with { DisplayName = trait.DisplayName, NameInheritedFrom = trait.Origin };
+                NamesInherited++;
             }
         }
 

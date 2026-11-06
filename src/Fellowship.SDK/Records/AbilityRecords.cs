@@ -6,6 +6,8 @@ public sealed record AbilityRecord : EntityRecord
 {
     public IReadOnlyList<ResourceGainRecord>? Generates { get; init; }
 
+    public RecordReference? NameBorrowedFrom { get; init; }
+
 
     public string? Description { get; init; }
     public IReadOnlyList<string>? Detail { get; init; }

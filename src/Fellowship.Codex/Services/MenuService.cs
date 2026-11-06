@@ -68,6 +68,7 @@ public sealed class MenuService : IMenuService
                 Tab(EntityType.Aspect),
                 Tab(EntityType.Enchant),
                 Tab(EntityType.ProtectiveEnchant),
+                Tab(EntityType.ItemTrait),
             ])),
 
             Category(Categories.Dungeons),

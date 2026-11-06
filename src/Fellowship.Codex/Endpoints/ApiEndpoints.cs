@@ -25,6 +25,7 @@ public static class ApiEndpoints
         app.MapRelicPower();
         app.MapTalent();
         app.MapSigil();
+        app.MapItemTrait();
         app.MapAspect();
         app.MapProtectiveEnchant();
         app.MapWeaponPower();
