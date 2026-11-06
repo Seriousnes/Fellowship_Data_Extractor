@@ -28,6 +28,11 @@ public sealed class ProcRolls(ConstantsTable constants, AbstractFileProvider pro
     private const string ValueField = "Value";
     private const string NoRow = "None";
     private const string Times = " × ";
+    private const string ClassTest = "ClassIsChildOf";
+    private const string AbilityTagTest = "HasTag";
+    private const string CooldownTest = "Greater_DoubleDouble";
+    private const string CooldownRead = "CrGetCooldownTimeRemaining";
+    private const string Cooldown = "Cooldown";
     private const int RateParameter = 1;
     private const int HasteParameter = 2;
     private const int MaxDepth = 24;
@@ -44,7 +49,67 @@ public sealed class ProcRolls(ConstantsTable constants, AbstractFileProvider pro
         public string Factor => Sum ? $"({Text})" : Text;
     }
 
-    public IReadOnlyList<ProcRoll> Of(UObject? cdo)
+    /// <summary>The exits a Blueprint takes before a roll.</summary>
+    private sealed record RollExits(IReadOnlyList<string> Classes, IReadOnlyList<string> Tags, bool OnCooldown);
+
+    private static readonly RollExits NoExits = new([], [], false);
+
+    /// <summary>
+    /// The tests every path to the roll passes on the side that leaves the ability unmatched: <c>ClassIsChildOf</c> and
+    /// <c>HasTag</c> on the committed ability, and <c>CrGetCooldownTimeRemaining</c> above 0.
+    /// </summary>
+    private RollExits Exits(UStruct body, KismetExpression statement, IReadOnlyList<int> entries)
+    {
+        var paths = new BranchPaths(body);
+        var reached = entries
+            .SelectMany(entry => paths.From(entry, condition => Gate(paths.Value(condition), paths)))
+            .Where(step => step.Statement.StatementIndex == statement.StatementIndex)
+            .Select(step => step.Taken.Where(branch => !branch.Held).Select(branch => paths.Value(branch.Condition)).ToArray())
+            .ToArray();
+
+        if (paths.Truncated) Unread.Add($"{body.Owner?.Name}:{body.Name} has more paths to a roll than the walk follows");
+
+        if (reached.Length == 0) return NoExits;
+
+        string[] All(Func<KismetExpression?, string?> reading) =>
+            [
+                .. reached
+                    .Select(conditions => conditions.Select(reading).OfType<string>())
+                    .Aggregate((held, next) => held.Intersect(next, StringComparer.Ordinal))
+                    .Distinct(StringComparer.Ordinal),
+            ];
+
+        return new RollExits(All(ExcludedClass), All(ExcludedTag), All(condition => OnCooldown(condition, paths) ? Cooldown : null).Length > 0);
+    }
+
+    private static bool Gate(KismetExpression? condition, BranchPaths paths) =>
+        ExcludedClass(condition) is not null || ExcludedTag(condition) is not null || OnCooldown(condition, paths);
+
+    private static string? ExcludedClass(KismetExpression? condition) =>
+        Called(condition, ClassTest) is { } call &&
+        RowSinks.Parameters(call).ElementAtOrDefault(1) is EX_ObjectConst { Value: { } type } &&
+        PropertyWalk.AsString(type) is { } path
+            ? path[(path.LastIndexOfAny(['.', '/']) + 1)..]
+            : null;
+
+    private static string? ExcludedTag(KismetExpression? condition) =>
+        Called(condition, AbilityTagTest) is { } call &&
+        RowSinks.Parameters(call).ElementAtOrDefault(1) is EX_StructConst tag
+            ? tag.Properties.OfType<EX_NameConst>().FirstOrDefault()?.Value.Text
+            : null;
+
+    private static bool OnCooldown(KismetExpression? condition, BranchPaths paths) =>
+        Called(condition, CooldownTest) is { } call &&
+        Called(paths.Value(RowSinks.Parameters(call).FirstOrDefault()), CooldownRead) is not null &&
+        RowSinks.Parameters(call).ElementAtOrDefault(1) is EX_DoubleConst { Value: 0 };
+
+    private static KismetExpression? Called(KismetExpression? expression, string function) =>
+        RowSinks.Invoking(expression) is { } call && RowSinks.Calling(call) == function ? call : null;
+
+    private static int[] Entries(IEnumerable<UStruct> bodies) =>
+        [.. bodies.SelectMany(body => body.ScriptBytecode!).Select(CommitTriggers.UbergraphOffset).OfType<int>().Distinct()];
+
+    public IReadOnlyList<ProcRoll> Of(UObject? cdo, double? cooldown = null)
     {
         if (cdo?.Owner is not { } package) return [];
 
@@ -53,6 +118,7 @@ public sealed class ProcRolls(ConstantsTable constants, AbstractFileProvider pro
             .Where(export => export.ScriptBytecode is { Length: > 0 })
             .ToArray();
 
+        var entries = Entries(bodies);
         var found = new List<ProcRoll>();
 
         foreach (var body in bodies)
@@ -85,9 +151,13 @@ public sealed class ProcRolls(ConstantsTable constants, AbstractFileProvider pro
                     }
 
                     var hasted = hasteFlag is EX_True;
+                    var exits = Exits(body, statement, entries);
 
                     var roll = new ProcRoll(row)
                     {
+                        ExcludedAbilityClasses = exits.Classes.Count > 0 ? exits.Classes : null,
+                        ExcludedAbilityTags = exits.Tags.Count > 0 ? exits.Tags : null,
+                        InternalCooldown = exits.OnCooldown ? cooldown : null,
                         ProcsPerMinute = term.Value,
                         Formula = hasted ? $"{term.Factor}{Times}(1 + {ProcRoll.HasteAttribute})" : term.Text,
                         ScalesOff = hasted ? [.. term.Attributes, ProcRoll.HasteAttribute] : term.Attributes,

@@ -12,6 +12,7 @@ public sealed record EffectRecord : EntityRecord
     public string? Icon { get; init; }
 
     public double? Duration { get; init; }
+    public DurationScaling? DurationScaling { get; init; }
     public double? Period { get; init; }
     public double? Cooldown { get; init; }
     public double? Range { get; init; }
@@ -43,7 +44,16 @@ public sealed record EffectRecord : EntityRecord
 
     public RecordReference? AppliedBy { get; init; }
 
+    public IReadOnlyList<EffectLinkRecord>? LinkedBy { get; init; }
+
+    public IReadOnlyList<CommitTriggerRecord>? AppliedOnCommitOf { get; init; }
+
     public RecordReference? PartOf { get; init; }
 
     public string? Role { get; init; }
+}
+
+public sealed record EffectLinkRecord(RecordReference Parent, string ApplyTo)
+{
+    public RecordReference? Talent { get; init; }
 }

@@ -93,6 +93,8 @@ public sealed record Entity
     public double? MinRange { get; init; }
     public double? Radius { get; init; }
     public double? Duration { get; init; }
+
+    public DurationScaling? DurationScaling { get; init; }
     public double? Period { get; init; }
 
     public bool? CastTimeScalesWithHaste { get; init; }
@@ -319,6 +321,10 @@ public sealed record Entity
     public IconSource? Owner { get; init; }
 
     public IconSource? AppliedBy { get; init; }
+
+    public IReadOnlyList<LinkedEffectSource>? LinkedBy { get; init; }
+
+    public IReadOnlyList<CommitTriggerSource>? CommitTriggers { get; init; }
 
     public IReadOnlyList<IconSource>? Granted { get; init; }
 

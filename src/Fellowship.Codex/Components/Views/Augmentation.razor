@@ -1,4 +1,11 @@
-<EntityView Entity="Entity" />
+<EntityView Entity="Entity">
+    @if (Entity is ItemTraitDocument { Rollable: false })
+    {
+        <Panel Head="Availability">
+            <Note>Does not roll on items</Note>
+        </Panel>
+    }
+</EntityView>
 
 @code {
     [Parameter, EditorRequired] public AugmentationDocument Entity { get; set; } = default!;

@@ -144,6 +144,9 @@ public static class TooltipRequests
     public static TooltipQuery Read(SigilTooltipRequest? request, out string? error) =>
         Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error);
 
+    public static TooltipQuery Read(ItemTraitTooltipRequest? request, out string? error) =>
+        Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error);
+
     public static TooltipQuery Read(AspectTooltipRequest? request, out string? error) =>
         Augmented(request?.ShowIcon, request?.Mobile, request?.State, request?.RankSources, out error);
 

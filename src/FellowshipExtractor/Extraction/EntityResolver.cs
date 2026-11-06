@@ -112,6 +112,8 @@ public sealed class EntityResolver
     public TargetCountFalloffs Falloffs { get; }
 
     public ProcRolls Rolls { get; }
+
+    public CommitTriggers Commits { get; }
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
@@ -284,6 +286,33 @@ public sealed class EntityResolver
 
         Falloffs = new TargetCountFalloffs(provider, mappings, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
         Rolls = new ProcRolls(_constants, provider);
+        Commits = new CommitTriggers(provider, _effectNames, name => Owned(name, EffectTable));
+    }
+
+    private Dictionary<string, EffectNameSource>? _traitGrantees;
+
+    /// <summary>The item trait each ability with no name of its own is granted by, where the row has no category.</summary>
+    private Dictionary<string, EffectNameSource> TraitGrantees => _traitGrantees ??= ReadTraitGrantees();
+
+    private Dictionary<string, EffectNameSource> ReadTraitGrantees()
+    {
+        var grantees = new Dictionary<string, EffectNameSource>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (name, row) in AugmentationRows.ByTag)
+        {
+            if (row is not { CategoryTag: null, AugmentationPath: { } path }) continue;
+            if (FindTag(AugmentationRows.Table, name) is not { } tag) continue;
+
+            var augmentation = AbilityPresentationIndex.AssetName(path);
+            var origin = new IconSource(AugmentationRows.Table, tag.NetId, name);
+
+            foreach (var granted in Owners.GrantedBy(augmentation.EndsWith("_C", StringComparison.Ordinal) ? augmentation[..^2] : augmentation))
+            {
+                grantees.TryAdd(granted, new EffectNameSource(row.DisplayName, origin));
+            }
+        }
+
+        return grantees;
     }
 
     private string? PrintedName(TagRecord tag, UObject cdo)
@@ -382,8 +411,14 @@ public sealed class EntityResolver
         entity = WithSpentResource(entity, display, tag, cdo);
         entity = WithGeneratedResources(entity);
         entity = WithSuppliedDuration(entity, cdo, tag);
+        entity = WithAssignedModifiers(entity, cdo, tag);
         entity = WithTicks(entity, cdo, tag);
         entity = WithSetByCallerScaling(entity, cdo, tag);
+
+        if (tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase))
+        {
+            entity = entity with { CommitTriggers = Empty(Commits.Of(cdo)) };
+        }
 
         if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
         {
@@ -491,6 +526,11 @@ public sealed class EntityResolver
             else if (EffectNames.Disagrees(tag.Name))
             {
                 NamesContested++;
+            }
+            else if (TraitGrantees.GetValueOrDefault(tag.Name) is { } trait)
+            {
+                entity = entity with { DisplayName = trait.DisplayName, NameInheritedFrom = trait.Origin };
+                NamesInherited++;
             }
         }
 
@@ -686,16 +726,39 @@ public sealed class EntityResolver
             : null;
 
         var appliedBy = Owned(applier, AbilityTable);
+        var linked = Links(tag);
 
-        if (claimed.Length == 0 && owner is null && appliedBy is null) return entity;
+        if (claimed.Length == 0 && owner is null && appliedBy is null && linked is null) return entity;
 
         return entity with
         {
             OwningHeroes = Empty(claimed),
             Owner = owner,
-            AppliedBy = appliedBy,
+            AppliedBy = applier is null ? Owned(Owners.LinkParentOf(tag.Name), EffectTable) : appliedBy,
             ApplierTags = appliedBy is null ? null : Empty(Owners.AbilityTagsOf(applier!)),
+            LinkedBy = linked,
         };
+    }
+
+    private IReadOnlyList<LinkedEffectSource>? Links(TagRecord tag)
+    {
+        if (!tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) return null;
+
+        var links = new List<LinkedEffectSource>();
+
+        foreach (var link in Owners.LinksOf(tag.Name))
+        {
+            if (Owned(link.Parent, EffectTable) is not { } parent) continue;
+
+            links.Add(new LinkedEffectSource(parent, link.ApplyTo)
+            {
+                RequiredSourceTags = Empty(link.RequiredSourceTags),
+                RequiredTargetTags = Empty(link.RequiredTargetTags),
+                BannedSourceTags = Empty(link.BannedSourceTags),
+            });
+        }
+
+        return Empty(links);
     }
 
     public int SpentResourcesResolved { get; private set; }
@@ -786,6 +849,39 @@ public sealed class EntityResolver
         DurationsFromSetByCaller++;
 
         return entity with { Duration = duration, DurationGates = recovered.Gates.Count == 0 ? entity.DurationGates : recovered.Gates };
+    }
+
+    public int ModifiersFromSetByCaller { get; private set; }
+
+    /// <summary>
+    /// A declared modifier taking its value from a set-by-caller tag has the value its applying ability assigns. Topaz
+    /// Winds assigns <c>SetByCaller.CooldownRecovery</c> from a row at each rank.
+    /// </summary>
+    private Entity WithAssignedModifiers(Entity entity, UObject? cdo, TagRecord tag)
+    {
+        if (cdo is null || entity.Modifiers is not { Count: > 0 } modifiers) return entity;
+        if (!tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) return entity;
+
+        var slots = EffectModifiers.Uses(cdo, _mappings).Where(slot => !slot.Executed).ToArray();
+        if (!slots.Any(slot => slot.SetByCallerTag is not null)) return entity;
+
+        var applier = Owners.ApplierOf(tag.Name);
+        if (applier is null or AbilityOwners.Contested) return entity;
+        if (LoadDefaultObject(FindAsset(applier)) is not { } ability) return entity;
+
+        EffectModifier[] filled = [.. modifiers];
+
+        for (var at = 0; at < Math.Min(slots.Length, filled.Length); at++)
+        {
+            if (slots[at] is not { SetByCallerTag: { } supplied } slot || filled[at].Attribute != slot.Attribute) continue;
+            if (filled[at].Value is not null || filled[at].Coefficient is not null) continue;
+            if (SetByCallerScalings.Assigned(ability, supplied, tag.Name, _constants, _provider) is not [var value, ..] ranks) continue;
+
+            filled[at] = filled[at] with { Value = value, Ranks = ranks.Count > 1 ? ranks : null };
+            ModifiersFromSetByCaller++;
+        }
+
+        return entity with { Modifiers = filled };
     }
 
     private const string PeriodicOnApplicationField = "bExecutePeriodicEffectOnApplication";
@@ -1452,6 +1548,7 @@ public sealed class EntityResolver
             MinRange = Number(split, "minRange"),
             Radius = Number(split, "radius"),
             Duration = Number(split, "duration") ?? StatedDuration(cdo),
+            DurationScaling = EffectModifiers.DurationScalingOf(cdo, _constants, _mappings),
             Period = Number(split, "period"),
             CastTimeScalesWithHaste = CastTimeScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
@@ -1465,7 +1562,7 @@ public sealed class EntityResolver
             Placeholders = placeholders.Count == 0 ? null : placeholders,
             Generates = Empty(Gains.Of(cdo, assetName)),
             Thresholds = Empty(_thresholds.Of(cdo)),
-            ProcRolls = cdo is null ? null : Empty(Rolls.Of(cdo)),
+            ProcRolls = cdo is null ? null : Empty(Rolls.Of(cdo, cooldown)),
             Tuning = tuning,
             Declares = Empty(Bound(bindings)),
             Constants = baseline.Count + beside.Count == 0
@@ -1878,27 +1975,23 @@ public sealed class EntityResolver
     }
 
     /// <summary>
-    /// The seconds a timed effect's duration magnitude states as a plain number, with no constants row behind it.
-    /// Murder of Crows lasts 12 seconds this way.
+    /// The seconds a timed effect's duration magnitude states as a scalable float: a plain number, or a row. Murder of
+    /// Crows lasts 12 seconds as a number, and Topaz Winds reads 15 from
+    /// <c>Trait.GemCooldownRecoveryOnAbilityProc.Cooldown</c>. Any other magnitude kind has the scalable float at its
+    /// default, so a magnitude holding more than the scalable float states no duration here.
     /// </summary>
-    private static double? StatedDuration(UObject? cdo)
+    private double? StatedDuration(UObject? cdo)
     {
         if (cdo is null ||
             PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::HasDuration", StringComparison.Ordinal) != true ||
             PropertyWalk.GetStruct(cdo, DurationMagnitudeField) is not { } magnitude ||
             magnitude.Properties.Any(property => property.Name.Text != ScalableFloatMagnitudeField) ||
-            PropertyWalk.GetStruct(magnitude, ScalableFloatMagnitudeField) is not { } scalable ||
-            scalable.Properties.Any(property => property.Name.Text != "Value"))
+            PropertyWalk.GetStruct(magnitude, ScalableFloatMagnitudeField) is not { } scalable)
         {
             return null;
         }
 
-        return PropertyWalk.Get(scalable, "Value")?.GenericValue switch
-        {
-            float value and > 0 => Math.Round(value, 4),
-            double value and > 0 => Math.Round(value, 4),
-            _ => null,
-        };
+        return MagnitudeCalculations.Scalable(scalable, _constants) is > 0 and var seconds ? Math.Round(seconds, 4) : null;
     }
 
     private const string DurationMagnitudeField = "DurationMagnitude";

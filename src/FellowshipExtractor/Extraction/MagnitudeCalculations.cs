@@ -23,6 +23,9 @@ public sealed record MagnitudeReading(double? Value, double? Low, double? High)
     public IReadOnlyList<double>? Ranks { get; init; }
 }
 
+/// <summary>A custom calculation's magnitude written out over what it captures.</summary>
+public sealed record CalculationFormula(double Coefficient, IReadOnlyList<string> Attributes, string Text);
+
 public static class MagnitudeCalculations
 {
     private const string Function = "CalculateBaseMagnitude";
@@ -208,6 +211,138 @@ public static class MagnitudeCalculations
 
         return new MagnitudeReading(
             null, Folded(custom, range.Low, constants), Folded(custom, range.High, constants));
+    }
+
+    /// <summary>
+    /// The magnitude of a custom calculation whose <c>CalculateBaseMagnitude</c> runs one straight line of arithmetic
+    /// over captured attributes, the effect's stack count and numbers. The magnitude is
+    /// <c>Coefficient × (calculation + PreMultiplyAdditiveValue) + PostMultiplyAdditiveValue</c>, so
+    /// <c>GMMC_Shared_InverseStackCountHasteMultiplier</c>'s <c>(Haste - 1) / Stacks + 1</c> loses its 1 to a
+    /// PreMultiplyAdditiveValue of -1.
+    /// </summary>
+    public static CalculationFormula? Formula(IPropertyHolder magnitude, AbstractFileProvider provider, ConstantsTable constants)
+    {
+        if (PropertyWalk.GetStruct(magnitude, CustomField) is not { } custom) return null;
+        if (PropertyWalk.GetString(custom, ClassField) is not { } classPath) return null;
+        if (Calculation(provider, classPath) is not { } calculation) return null;
+        if (BareStateWalk.Compiled(calculation, Function)?.ScriptBytecode is not { Length: > 0 } statements) return null;
+        if (statements.Any(statement => statement is EX_JumpIfNot or EX_Jump or EX_ComputedJump)) return null;
+
+        var locals = new Dictionary<string, KismetExpression>(StringComparer.Ordinal);
+
+        foreach (var statement in statements)
+        {
+            if (statement is EX_Let { Variable: { } variable, Assignment: { } value } &&
+                DynamicTextFloats.Name(variable) is { } local)
+            {
+                locals[local] = value;
+            }
+        }
+
+        var returned = statements.OfType<EX_Return>().Select(statement => statement.ReturnExpression).FirstOrDefault();
+        var attributes = new List<string>();
+
+        if (Term(returned, locals, Declared(calculation, provider), attributes, 0) is not { Text: not null } term) return null;
+
+        var coefficient = Math.Round(Scaled(custom, "Coefficient", 1, constants), 10);
+
+        var added = term with
+        {
+            Addend = Math.Round(term.Addend + Scaled(custom, "PreMultiplyAdditiveValue", 0, constants), 10),
+        };
+
+        var scaled = coefficient == 1
+            ? added.Written
+            : $"{Number(coefficient)}{Times}{added.Factor}";
+
+        var post = Scaled(custom, "PostMultiplyAdditiveValue", 0, constants);
+
+        return new CalculationFormula(
+            coefficient,
+            [.. attributes.Distinct(StringComparer.Ordinal)],
+            post == 0 ? scaled : $"{scaled}{Signed(post)}");
+    }
+
+    private const string Times = " × ";
+    private const string StackCountRead = "GetGameplayEffectStackCount";
+
+    /// <summary>A sum of <see cref="Text"/> and a number. A null <see cref="Text"/> is the number alone.</summary>
+    private sealed record FormulaTerm(string? Text, double Addend, bool Sum)
+    {
+        public string Written => Text is null ? Number(Addend) : Addend == 0 ? Text : $"{Text}{Signed(Addend)}";
+
+        public string Factor => Text is not null && (Sum || Addend != 0) ? $"({Written})" : Written;
+    }
+
+    private static string Number(double value) => value.ToString("0.##########", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string Signed(double value) => value < 0 ? $" - {Number(-value)}" : $" + {Number(value)}";
+
+    private static FormulaTerm? Term(
+        KismetExpression? expression,
+        IReadOnlyDictionary<string, KismetExpression> locals,
+        string?[] declared,
+        List<string> attributes,
+        int depth)
+    {
+        if (expression is null || depth > 24) return null;
+
+        FormulaTerm? Next(KismetExpression? inner) => Term(inner, locals, declared, attributes, depth + 1);
+
+        switch (expression)
+        {
+            case EX_DoubleConst value: return new FormulaTerm(null, value.Value, false);
+            case EX_FloatConst value: return new FormulaTerm(null, value.Value, false);
+            case EX_IntConst value: return new FormulaTerm(null, value.Value, false);
+            case EX_Cast cast: return Next(cast.Target);
+            case EX_LocalVariable or EX_LocalOutVariable:
+                return DynamicTextFloats.Name(expression) is { } local && locals.TryGetValue(local, out var assigned)
+                    ? Next(assigned)
+                    : null;
+            case EX_CallMath call:
+                return Called(call);
+            default:
+                return null;
+        }
+
+        FormulaTerm? Called(EX_CallMath call)
+        {
+            var name = call.StackNode.Name;
+
+            if (name == CaptureRead)
+            {
+                if (call.Parameters.ElementAtOrDefault(1) is not EX_ArrayGetByRef { ArrayIndex: EX_IntConst index }) return null;
+                if (declared.ElementAtOrDefault(index.Value) is not { } attribute) return null;
+
+                attributes.Add(attribute);
+
+                return new FormulaTerm(attribute, 0, false);
+            }
+
+            if (name == StackCountRead) return new FormulaTerm(Fellowship.SDK.Models.EffectModifier.Stacks, 0, false);
+            if (name.StartsWith("Conv_", StringComparison.Ordinal)) return Next(call.Parameters.FirstOrDefault());
+            if (call.Parameters.Length != 2 || Next(call.Parameters[0]) is not { } left || Next(call.Parameters[1]) is not { } right) return null;
+
+            if (name.StartsWith("Add_", StringComparison.Ordinal)) return Added(left, right, 1);
+            if (name.StartsWith("Subtract_", StringComparison.Ordinal)) return Added(left, right, -1);
+            if (name.StartsWith("Multiply_", StringComparison.Ordinal)) return new FormulaTerm($"{left.Factor}{Times}{right.Factor}", 0, false);
+            if (name.StartsWith("Divide_", StringComparison.Ordinal)) return new FormulaTerm($"{left.Factor} / {right.Factor}", 0, false);
+
+            return null;
+        }
+    }
+
+    private static FormulaTerm Added(FormulaTerm left, FormulaTerm right, int sign)
+    {
+        var addend = left.Addend + sign * right.Addend;
+
+        return (left.Text, right.Text) switch
+        {
+            (null, null) => new FormulaTerm(null, addend, false),
+            (_, null) => left with { Addend = addend },
+            (null, _) when sign > 0 => right with { Addend = addend },
+            _ => new FormulaTerm($"{left.Text}{(sign > 0 ? " + " : " - ")}{right.Text}", addend, true),
+        };
     }
 
     private static double Folded(IPropertyHolder custom, double computed, ConstantsTable constants) =>

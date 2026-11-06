@@ -35,6 +35,7 @@ public enum EntityType
     Aspect,
     ProtectiveEnchant,
     WeaponPower,
+    ItemTrait,
 }
 
 public static class AugmentationTypes
@@ -48,7 +49,7 @@ public static class AugmentationTypes
             ["ItemTrait.TraitCategory.StatEnchant"] = EntityType.Enchant,
         };
 
-    public static IReadOnlyList<EntityType> All { get; } = [.. ByCategory.Values];
+    public static IReadOnlyList<EntityType> All { get; } = [.. ByCategory.Values, EntityType.ItemTrait];
 
     public static bool Is(EntityType type) => All.Contains(type);
 }

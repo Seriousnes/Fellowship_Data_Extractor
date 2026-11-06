@@ -358,7 +358,7 @@ public sealed class TooltipViewService(
                 type switch
                 {
                     EntityType.Enchant => TooltipView.Plus(AugmentationRanks.RowValue(store.Settings, level)),
-                    EntityType.Sigil or EntityType.Aspect or EntityType.ProtectiveEnchant => null,
+                    EntityType.Sigil or EntityType.ItemTrait or EntityType.Aspect or EntityType.ProtectiveEnchant => null,
                     EntityType.Glyph => TooltipView.GlyphRowValue,
                     _ => TooltipView.Plus(modifier.Amount),
                 })

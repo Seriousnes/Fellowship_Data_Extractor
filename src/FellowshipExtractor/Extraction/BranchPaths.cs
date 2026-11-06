@@ -1,0 +1,150 @@
+using System.Collections.Immutable;
+
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Kismet;
+using CUE4Parse.UE4.Objects.UObject;
+
+namespace FellowshipExtractor.Extraction;
+
+/// <summary>One branch on a path, with the side the path took.</summary>
+public sealed record BranchTaken(KismetExpression Condition, bool Held);
+
+/// <summary>
+/// The paths through a compiled body from an entry offset, each statement with the branches taken to reach it. The
+/// walk follows jumps, both sides of a branch and the execution flow stack a sequence node pushes. Only the branches
+/// the caller names as relevant tell two paths apart, so paths differing in other branches join.
+/// </summary>
+public sealed class BranchPaths
+{
+    private const int MaxStates = 40000;
+    private const int MaxDepth = 16;
+    private const int ContainerParameter = 0;
+    private const int ElementParameter = 2;
+
+    private static readonly string?[] ContainerReads = ["Map_Find", "Array_Get"];
+
+    private readonly KismetExpression[] _bytecode;
+    private readonly Dictionary<int, int> _indexOf = [];
+    private readonly Dictionary<string, List<KismetExpression>> _locals = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<KismetExpression>> _containers = new(StringComparer.Ordinal);
+
+    /// <summary>True once a walk stops at the state cap, so its paths are a subset.</summary>
+    public bool Truncated { get; private set; }
+
+    public BranchPaths(UStruct body)
+    {
+        _bytecode = body.ScriptBytecode ?? [];
+
+        for (var at = 0; at < _bytecode.Length; at++)
+        {
+            _indexOf[_bytecode[at].StatementIndex] = at;
+
+            foreach (var call in CommitTriggers.Invocations(_bytecode[at], 0))
+            {
+                if (!ContainerReads.Contains(RowSinks.Calling(call))) continue;
+
+                var parameters = RowSinks.Parameters(call);
+
+                if (parameters.Count <= ElementParameter || DynamicTextFloats.Name(parameters[ElementParameter]) is not { } element) continue;
+
+                if (!_containers.TryGetValue(element, out var read)) _containers[element] = read = [];
+                read.Add(parameters[ContainerParameter]);
+            }
+
+            var (variable, value) = _bytecode[at] switch
+            {
+                EX_Let { Variable: { } assigned, Assignment: { } to } => (assigned, to),
+                EX_LetObj { Variable: { } assigned, Assignment: { } to } => (assigned, to),
+                EX_LetBool { Variable: { } assigned, Assignment: { } to } => (assigned, to),
+                _ => (null, null),
+            };
+
+            if (variable is null || DynamicTextFloats.Name(variable) is not { } local) continue;
+
+            if (!_locals.TryGetValue(local, out var values)) _locals[local] = values = [];
+            values.Add(value!);
+        }
+    }
+
+    /// <summary>The value a local holds where one assignment gives it, through casts.</summary>
+    public KismetExpression? Value(KismetExpression? expression, int depth = 0)
+    {
+        if (expression is null || depth > MaxDepth) return expression;
+        if (expression is EX_Cast cast) return Value(cast.Target, depth + 1);
+
+        return expression is EX_LocalVariable or EX_LocalOutVariable &&
+               DynamicTextFloats.Name(expression) is { } local &&
+               _locals.GetValueOrDefault(local) is [var assigned]
+            ? Value(assigned, depth + 1)
+            : expression;
+    }
+
+    /// <summary>The maps and arrays a local was read from.</summary>
+    public IReadOnlyList<KismetExpression> Containers(KismetExpression? local) =>
+        local is EX_LocalVariable or EX_LocalOutVariable && DynamicTextFloats.Name(local) is { } name && _containers.TryGetValue(name, out var read)
+            ? read
+            : [];
+
+    public IEnumerable<(KismetExpression Statement, ImmutableList<BranchTaken> Taken)> From(int entry, Func<KismetExpression, bool> relevant)
+    {
+        ImmutableList<BranchTaken> Taking(ImmutableList<BranchTaken> taken, KismetExpression condition, bool held) =>
+            relevant(condition) && !taken.Any(branch => branch.Held == held && branch.Condition.StatementIndex == condition.StatementIndex)
+                ? taken.Add(new BranchTaken(condition, held))
+                : taken;
+
+        if (!_indexOf.TryGetValue(entry, out var root)) yield break;
+
+        var visited = new HashSet<(int, string, string)>();
+        var pending = new Stack<(int At, ImmutableStack<int> Flow, ImmutableList<BranchTaken> Taken)>();
+
+        pending.Push((root, ImmutableStack<int>.Empty, []));
+
+        while (pending.Count > 0 && visited.Count < MaxStates)
+        {
+            var (at, flow, taken) = pending.Pop();
+
+            if (at < 0 || at >= _bytecode.Length) continue;
+
+            var key = (at, string.Join(',', flow), string.Join(',', taken.Select(branch => $"{branch.Condition.StatementIndex}:{branch.Held}")));
+
+            if (!visited.Add(key)) continue;
+
+            var statement = _bytecode[at];
+
+            yield return (statement, taken);
+
+            switch (statement)
+            {
+                case EX_PushExecutionFlow push:
+                    var address = Offset((int)push.PushingAddress);
+
+                    // A loop back past a sequence node pushes the same address again, so the stack would grow without end.
+                    pending.Push((at + 1, flow.Contains(address) ? flow : flow.Push(address), taken));
+                    break;
+                case EX_PopExecutionFlow:
+                    if (!flow.IsEmpty) pending.Push((flow.Peek(), flow.Pop(), taken));
+                    break;
+                case EX_PopExecutionFlowIfNot branch:
+                    pending.Push((at + 1, flow, Taking(taken, branch.BooleanExpression, true)));
+                    if (!flow.IsEmpty) pending.Push((flow.Peek(), flow.Pop(), Taking(taken, branch.BooleanExpression, false)));
+                    break;
+                case EX_JumpIfNot branch:
+                    pending.Push((Offset((int)branch.CodeOffset), flow, Taking(taken, branch.BooleanExpression, false)));
+                    pending.Push((at + 1, flow, Taking(taken, branch.BooleanExpression, true)));
+                    break;
+                case EX_Jump jump:
+                    pending.Push((Offset((int)jump.CodeOffset), flow, taken));
+                    break;
+                case EX_Return or EX_EndOfScript or EX_ComputedJump:
+                    break;
+                default:
+                    pending.Push((at + 1, flow, taken));
+                    break;
+            }
+        }
+
+        if (pending.Count > 0) Truncated = true;
+    }
+
+    private int Offset(int offset) => _indexOf.GetValueOrDefault(offset, -1);
+}

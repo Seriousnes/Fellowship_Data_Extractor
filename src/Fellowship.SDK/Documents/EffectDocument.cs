@@ -11,6 +11,10 @@ public sealed class EffectDocument : EntityDocument
     public IReadOnlyList<string>? EffectTags { get; init; }
 
     public double? Duration { get; init; }
+
+    /// <summary>The attribute the duration is a share of, where no one number states it.</summary>
+    public DurationScaling? DurationScaling { get; init; }
+
     public double? Period { get; init; }
     public double? Cooldown { get; init; }
     public double? Range { get; init; }
@@ -52,6 +56,12 @@ public sealed class EffectDocument : EntityDocument
     public EntityReference? Owner { get; init; }
 
     public EntityReference? AppliedBy { get; init; }
+
+    /// <summary>Effects applying this one through a linked effect component.</summary>
+    public IReadOnlyList<EffectLink>? LinkedBy { get; init; }
+
+    /// <summary>The commit waits applying the effect.</summary>
+    public IReadOnlyList<CommitTrigger>? AppliedOnCommitOf { get; init; }
 
     public EntityReference? PartOf { get; init; }
 

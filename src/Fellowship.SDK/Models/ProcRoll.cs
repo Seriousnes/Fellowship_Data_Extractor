@@ -33,4 +33,13 @@ public sealed record ProcRoll(string Row)
 
     /// <summary>The tags the Blueprint tests before the roll. On a document the talent holding them is <see cref="Talent"/>.</summary>
     public IReadOnlyList<string>? Gates { get; init; }
+
+    /// <summary>Ability classes whose commit leaves the roll unmade. The Blueprint tests the class before it rolls.</summary>
+    public IReadOnlyList<string>? ExcludedAbilityClasses { get; init; }
+
+    /// <summary>Ability tags whose commit leaves the roll unmade. The Blueprint tests the tag before it rolls.</summary>
+    public IReadOnlyList<string>? ExcludedAbilityTags { get; init; }
+
+    /// <summary>The seconds after a proc in which the Blueprint makes no roll, because the ability is on cooldown.</summary>
+    public double? InternalCooldown { get; init; }
 }

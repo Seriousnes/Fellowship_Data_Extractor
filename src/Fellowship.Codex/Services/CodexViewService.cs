@@ -96,6 +96,9 @@ public interface ICodexViewService
     /// <summary>The modifier as its op applied to its magnitude, with the backing attribute in its display name.</summary>
     string CalculationFormula(Fellowship.SDK.Models.CalculationModifier modifier);
 
+    /// <summary>The modifier's formula with each attribute in its display name.</summary>
+    string ModifierFormula(Fellowship.SDK.Models.EffectModifier modifier);
+
     /// <summary>The attribute or transient aggregator the modifier applies to, in its display name.</summary>
     string CalculationTarget(Fellowship.SDK.Models.CalculationModifier modifier);
 
@@ -241,6 +244,7 @@ public sealed class CodexViewService(
             EntityType.Talent => Body(new TalentTooltipRequest { ShowIcon = icon }),
             EntityType.Enchant => Body(new EnchantTooltipRequest { ShowIcon = icon, Hero = hero }),
             EntityType.Sigil => Body(new SigilTooltipRequest { ShowIcon = icon }),
+            EntityType.ItemTrait => Body(new ItemTraitTooltipRequest { ShowIcon = icon }),
             EntityType.Aspect => Body(new AspectTooltipRequest { ShowIcon = icon }),
             EntityType.ProtectiveEnchant => Body(new ProtectiveEnchantTooltipRequest { ShowIcon = icon }),
             EntityType.WeaponPower => Body(new WeaponPowerTooltipRequest { ShowIcon = icon, Hero = hero }),
@@ -312,6 +316,13 @@ public sealed class CodexViewService(
             if (text.Length == 0) continue;
 
             facts.Add((Models.FellowshipCodex.Spaced(property.Name), text, Unit(property.Name), null, null));
+        }
+
+        if (document is EffectDocument { DurationScaling: { } scaling })
+        {
+            var shares = string.Join(" / ", scaling.Coefficients.Select(share => $"{Number(Math.Round(share * 100, 10))}%"));
+
+            facts.Add(("Duration", $"{shares} of {scaling.Attribute}", null, null, null));
         }
 
         return facts;
@@ -454,6 +465,18 @@ public sealed class CodexViewService(
         var text = roll.Formula;
 
         foreach (var attribute in roll.ScalesOff.OrderByDescending(attribute => attribute.Length))
+        {
+            text = text.Replace(attribute, store.StatName(attribute), StringComparison.Ordinal);
+        }
+
+        return text;
+    }
+
+    public string ModifierFormula(Fellowship.SDK.Models.EffectModifier modifier)
+    {
+        var text = modifier.Formula ?? string.Empty;
+
+        foreach (var attribute in (modifier.ScalesOff ?? []).OrderByDescending(attribute => attribute.Length))
         {
             text = text.Replace(attribute, store.StatName(attribute), StringComparison.Ordinal);
         }

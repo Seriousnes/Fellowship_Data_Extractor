@@ -34,6 +34,13 @@ public abstract class AugmentationDocument : EntityDocument
 
 public sealed class SigilDocument : AugmentationDocument;
 
+/// <summary>A trait with no category, which the item generator leaves out of its pools.</summary>
+public sealed class ItemTraitDocument : AugmentationDocument
+{
+    /// <summary>True when the item generator can roll the trait: its chance is above 0 and it has a category.</summary>
+    public bool Rollable { get; init; }
+}
+
 public sealed class AspectDocument : AugmentationDocument;
 
 public sealed class ProtectiveEnchantDocument : AugmentationDocument;

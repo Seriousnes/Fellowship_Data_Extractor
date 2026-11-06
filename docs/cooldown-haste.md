@@ -78,6 +78,9 @@ the tag they remove, and `CombinedTags + Removed - Added` gives the parent's tag
 `EffectLogic.System`, `EffectLogic.TimeRateInfluencedByCooldownRecovery` and
 `EffectLogic.TimeRateInfluencedByHaste`.
 
+`GE_GlobalCooldown` and `GE_Hero_Shared_PaddingCooldown` have only `EffectLogic.System`, so Cooldown
+Recovery leaves out both: the global cooldown and the padding after an ability run at their own rate.
+
 ## Haste placement
 
 `GE_Shared_Cooldown_HasteScale` divides the duration by Haste once, when the cooldown starts:

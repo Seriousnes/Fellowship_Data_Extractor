@@ -41,6 +41,15 @@ public static class ProcChance
     private const double LeastDivisor = 0.1;
     private const string Times = " × (1 + ";
     private const string Close = ")";
+    private const double DefaultSinceRoll = 1;
+    private const double DefaultSinceProc = 30;
+
+    /// <summary>
+    /// The seconds since the last roll and the last proc a roll starts at. The Blueprint makes no roll during its
+    /// internal cooldown, so both reach the cooldown before the next roll can happen.
+    /// </summary>
+    public static (double SinceRoll, double SinceProc) Starting(ProcRoll roll) =>
+        roll.InternalCooldown is { } cooldown ? (cooldown, cooldown) : (DefaultSinceRoll, DefaultSinceProc);
 
     public static IReadOnlyList<ProcRoll>? Rolls(EntityDocument document) => document switch
     {

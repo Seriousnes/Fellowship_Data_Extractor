@@ -81,7 +81,7 @@ public sealed class AugmentationRows
         {
             var description = PropertyWalk.GetText(row, DescriptionField);
             var runs = RankRuns.For(description, scopes.TryGetValue(tag, out var scope) ? scope : []);
-            var categoryTag = PropertyWalk.GetString(row, CategoryField);
+            var categoryTag = PropertyWalk.GetString(row, CategoryField) is { Length: > 0 } category ? category : null;
 
             TotalRuns += runs?.Count ?? 0;
             BoundRuns += runs?.Count(run => run.Key is not null) ?? 0;
@@ -123,6 +123,8 @@ public sealed class AugmentationRows
     public int MaxRank => _byTag.Values.Max(augmentation => augmentation.MaxRank ?? 0);
 
     public IEnumerable<AugmentationRow> All => _byTag.Values;
+
+    public IReadOnlyDictionary<string, AugmentationRow> ByTag => _byTag;
 
     public AugmentationRow? ForAugmentation(int netId) => _byAugmentation.GetValueOrDefault(netId);
 

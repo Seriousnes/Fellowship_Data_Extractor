@@ -79,8 +79,15 @@ public sealed class ReachabilityTests
     [Theory]
     [InlineData(EntityType.Ability, 171)]
     [InlineData(EntityType.Effect, 102)]
-    public void Topaz_Winds_has_no_known_source(EntityType type, int id) =>
-        Assert.True(Rows.Single(row => row.Type == type && row.Id == id).Body["noKnownSource"]?.GetValue<bool>());
+    public void Topaz_Winds_has_its_item_trait_as_its_source(EntityType type, int id)
+    {
+        var body = Rows.Single(row => row.Type == type && row.Id == id).Body;
+        var origin = Assert.Single(body["origins"]!.AsArray())!;
+
+        Assert.Equal("item-trait", origin["type"]!.GetValue<string>());
+        Assert.Equal(30, origin["id"]!.GetValue<int>());
+        Assert.Null(body["noKnownSource"]);
+    }
 
     [Fact]
     public void An_entity_with_an_origin_has_a_known_source() =>

@@ -64,6 +64,7 @@ public static class PublicTypes
         (EntityType.Aspect, "Aspects", "aspect", Categories.Augmentations),
         (EntityType.Enchant, "Enchants", "enchant", Categories.Augmentations),
         (EntityType.ProtectiveEnchant, "Protective Enchants", "protective enchant", Categories.Augmentations),
+        (EntityType.ItemTrait, "Item Traits", "item trait", Categories.Augmentations),
 
         (EntityType.Dungeon, "Dungeons", "dungeon", Categories.Dungeons),
 
