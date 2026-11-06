@@ -241,6 +241,7 @@ public static class RecordProjection
             Heroes = Some(document.Heroes),
             Owner = Reference(document.Owner, view, origin),
             AppliedBy = Reference(document.AppliedBy, view, origin),
+            LinkedBy = Some(document.LinkedBy)?.Select(link => new EffectLinkRecord(Reference(link.Parent, view, origin)!, link.ApplyTo) { Talent = Reference(link.Talent, view, origin) }).ToArray(),
             PartOf = Reference(document.PartOf, view, origin),
             Role = document.Role,
         };

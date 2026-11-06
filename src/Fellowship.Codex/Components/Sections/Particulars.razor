@@ -1,6 +1,6 @@
 @inject ICodexViewService Ui
 
-@if (Rows.Count > 0 || Falloff.Count > 0 || Calculations.Count > 0 || Formulas.Count > 0 || Changes.Count > 0 || Links.Count > 0 || Schools.Count > 0 || Tables is not null)
+@if (Rows.Count > 0 || Falloff.Count > 0 || Calculations.Count > 0 || Formulas.Count > 0 || LinkedBy.Count > 0 || Changes.Count > 0 || Links.Count > 0 || Schools.Count > 0 || Tables is not null)
 {
     <Panel Head="Details" Class="@(ReferenceEquals(Entity, Here.Entity) ? "cx-entity-details" : null)">
         @if (Rows.Count > 0)
@@ -65,6 +65,28 @@
                 @foreach (var modifier in Formulas)
                 {
                     <Fact Label="@Ui.Store.StatName(modifier.Attribute)">@Ui.ModifierFormula(modifier)</Fact>
+                }
+            </Facts>
+        }
+
+        @if (LinkedBy.Count > 0)
+        {
+            <Rule />
+            <SubHead>Applied through</SubHead>
+            <Facts>
+                @foreach (var link in LinkedBy)
+                {
+                    <Fact>
+                        <Head><Ref Entity="link.Parent" /></Head>
+                        <ChildContent>
+                            @(link.ApplyTo == "Source" ? "Caster" : "Target")
+                            @if (link.Talent is { } talent)
+                            {
+                                <text>, with </text>
+                                <Ref Entity="talent" />
+                            }
+                        </ChildContent>
+                    </Fact>
                 }
             </Facts>
         }
@@ -179,6 +201,9 @@
 
     private IReadOnlyList<Fellowship.SDK.Models.EffectModifier> Formulas =>
         Entity is EffectDocument { Modifiers: { } modifiers } ? [.. modifiers.Where(modifier => modifier.Formula is not null)] : [];
+
+    private IReadOnlyList<Fellowship.SDK.Models.EffectLink> LinkedBy =>
+        Entity is EffectDocument { LinkedBy: { } links } ? links : [];
 
     private IReadOnlyList<Fellowship.SDK.Models.ProcRoll> Rolls => ProcChance.Rolls(Entity) ?? [];
 

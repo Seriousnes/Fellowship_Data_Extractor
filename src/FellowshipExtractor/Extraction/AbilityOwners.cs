@@ -75,6 +75,8 @@ public sealed class AbilityOwners
 
     private readonly Dictionary<string, string> _outsiders = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _appliers = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _linkParents = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<LinkedEffect>> _linked = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<string, IReadOnlyList<string>> _applierTags =
         new(StringComparer.OrdinalIgnoreCase);
@@ -133,6 +135,7 @@ public sealed class AbilityOwners
         SeedMounts(wanted);
         Propagate(wanted);
         SeedAppliers(tags);
+        SeedLinks(tags);
     }
 
     public IReadOnlyList<string> HeroesOf(string name) =>
@@ -144,6 +147,12 @@ public sealed class AbilityOwners
         _slots.TryGetValue(creature, out var slots) ? slots : [];
 
     public string? ApplierOf(string name) => _appliers.GetValueOrDefault(name);
+
+    /// <summary>The effects applying this one through a linked effect component.</summary>
+    public IReadOnlyList<LinkedEffect> LinksOf(string name) => _linked.GetValueOrDefault(name, []);
+
+    /// <summary>The one effect linking this one, or <see cref="Contested"/> where several do.</summary>
+    public string? LinkParentOf(string name) => _linkParents.GetValueOrDefault(name);
 
     public IReadOnlyList<string> AbilityTagsOf(string ability) => _applierTags.GetValueOrDefault(ability, []);
 
@@ -455,6 +464,30 @@ public sealed class AbilityOwners
         }
 
         foreach (var (name, owner) in bySpawnedActor) _appliers.TryAdd(name, owner);
+    }
+
+    private void SeedLinks(IReadOnlyList<TagRecord> tags)
+    {
+        var effects = tags
+            .Where(tag => tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
+            .Select(tag => tag.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var parent in effects)
+        {
+            if (!_byName.TryGetValue(parent, out var asset)) continue;
+            if (!_provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(asset.ObjectPath), out var package)) continue;
+
+            foreach (var link in LinkedEffects.Of(package, parent, _mappings))
+            {
+                if (!effects.Contains(link.Child)) continue;
+
+                if (!_linked.TryGetValue(link.Child, out var links)) _linked[link.Child] = links = [];
+                links.Add(link);
+
+                Owns(_linkParents, link.Child, parent, effects);
+            }
+        }
     }
 
     private IReadOnlyList<string> SpawnedPaths(string objectPath) =>

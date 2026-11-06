@@ -320,6 +320,8 @@ public sealed record Entity
 
     public IconSource? AppliedBy { get; init; }
 
+    public IReadOnlyList<LinkedEffectSource>? LinkedBy { get; init; }
+
     public IReadOnlyList<IconSource>? Granted { get; init; }
 
     public IReadOnlyList<string>? ApplierTags { get; init; }

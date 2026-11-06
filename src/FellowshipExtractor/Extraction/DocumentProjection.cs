@@ -225,6 +225,7 @@ public static class DocumentProjection
             Owner = references.At(entity.Owner),
             Origins = references.Origins(entity),
             AppliedBy = references.At(entity.AppliedBy),
+            LinkedBy = Linked(entity, references),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
             Siblings = references.Links.Siblings(references.Of(EntityType.Effect, entity.NetId)),
             ParentClass = Parent(entity, EntityType.Effect, references),
@@ -1054,6 +1055,35 @@ public static class DocumentProjection
         }
 
         return rolls.Count == 0 ? null : rolls;
+    }
+
+    /// <summary>A link names the talent holding a tag it needs, as a proc roll does.</summary>
+    private static IReadOnlyList<EffectLink>? Linked(Entity entity, References references)
+    {
+        if (entity.LinkedBy is not { Count: > 0 } links) return null;
+
+        var linked = new List<EffectLink>();
+
+        foreach (var link in links)
+        {
+            if (references.At(link.Parent) is not { } parent) continue;
+
+            var talent = (link.RequiredSourceTags ?? [])
+                .SelectMany(tag => references.Changes.Holding(tag))
+                .Select(holder => references.Of(holder.Type, holder.Id))
+                .OfType<EntityReference>()
+                .FirstOrDefault();
+
+            linked.Add(new EffectLink(parent, link.ApplyTo)
+            {
+                Talent = talent,
+                RequiredSourceTags = talent is null ? link.RequiredSourceTags : null,
+                RequiredTargetTags = link.RequiredTargetTags,
+                BannedSourceTags = link.BannedSourceTags,
+            });
+        }
+
+        return linked.Count == 0 ? null : linked;
     }
 
     private static IReadOnlyList<TargetCountFalloff>? Falloff(Entity entity, References references) =>

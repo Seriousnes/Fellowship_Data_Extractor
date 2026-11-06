@@ -687,16 +687,39 @@ public sealed class EntityResolver
             : null;
 
         var appliedBy = Owned(applier, AbilityTable);
+        var linked = Links(tag);
 
-        if (claimed.Length == 0 && owner is null && appliedBy is null) return entity;
+        if (claimed.Length == 0 && owner is null && appliedBy is null && linked is null) return entity;
 
         return entity with
         {
             OwningHeroes = Empty(claimed),
             Owner = owner,
-            AppliedBy = appliedBy,
+            AppliedBy = applier is null ? Owned(Owners.LinkParentOf(tag.Name), EffectTable) : appliedBy,
             ApplierTags = appliedBy is null ? null : Empty(Owners.AbilityTagsOf(applier!)),
+            LinkedBy = linked,
         };
+    }
+
+    private IReadOnlyList<LinkedEffectSource>? Links(TagRecord tag)
+    {
+        if (!tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) return null;
+
+        var links = new List<LinkedEffectSource>();
+
+        foreach (var link in Owners.LinksOf(tag.Name))
+        {
+            if (Owned(link.Parent, EffectTable) is not { } parent) continue;
+
+            links.Add(new LinkedEffectSource(parent, link.ApplyTo)
+            {
+                RequiredSourceTags = Empty(link.RequiredSourceTags),
+                RequiredTargetTags = Empty(link.RequiredTargetTags),
+                BannedSourceTags = Empty(link.BannedSourceTags),
+            });
+        }
+
+        return Empty(links);
     }
 
     public int SpentResourcesResolved { get; private set; }

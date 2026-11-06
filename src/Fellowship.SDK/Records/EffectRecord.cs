@@ -44,7 +44,14 @@ public sealed record EffectRecord : EntityRecord
 
     public RecordReference? AppliedBy { get; init; }
 
+    public IReadOnlyList<EffectLinkRecord>? LinkedBy { get; init; }
+
     public RecordReference? PartOf { get; init; }
 
     public string? Role { get; init; }
+}
+
+public sealed record EffectLinkRecord(RecordReference Parent, string ApplyTo)
+{
+    public RecordReference? Talent { get; init; }
 }
