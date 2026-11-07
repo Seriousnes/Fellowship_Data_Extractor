@@ -2,7 +2,13 @@ using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Models;
 
-public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResults results, string where)
+/// <param name="where">
+/// The address every link starts from. It may carry a query of its own, which each link keeps ahead of the
+/// browse parameters.
+/// </param>
+/// <param name="pinned">Facets the page fixes, so the rail offers neither their values nor a grouping by them.</param>
+public sealed class BrowseView(
+    ICodexService codex, CodexQuery query, CodexResults results, string where, IReadOnlySet<FacetType>? pinned = null)
 {
     public ICodexService Codex => codex;
 
@@ -10,23 +16,23 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
 
     public CodexResults Results => results;
 
-    public string Toggle(FacetType facet, string value) => where + query.Toggled(facet, value).ToQueryString();
+    public string Toggle(FacetType facet, string value) => At(query.Toggled(facet, value).ToQueryString());
 
-    public string Choose(FacetType facet, string? value) => where + query.WithFacet(facet, value).ToQueryString();
+    public string Choose(FacetType facet, string? value) => At(query.WithFacet(facet, value).ToQueryString());
 
-    public string State(FlagType flag, bool? wanted) => where + query.WithFlag(flag, wanted).ToQueryString();
+    public string State(FlagType flag, bool? wanted) => At(query.WithFlag(flag, wanted).ToQueryString());
 
-    public string OfType(EntityType? type) => where + query.WithType(type).ToQueryString();
+    public string OfType(EntityType? type) => At(query.WithType(type).ToQueryString());
 
-    public string GroupBy(FacetType? group) => where + query.WithGroup(group).ToQueryString();
+    public string GroupBy(FacetType? group) => At(query.WithGroup(group).ToQueryString());
 
-    public string PageLink(int page) => where + query.ToQueryString(page: page);
+    public string PageLink(int page) => At(query.ToQueryString(page: page));
 
     public string SortLink(SortColumn column) =>
-        where + query.WithSort(column, descending: query.Sort == column && !query.Descending).ToQueryString();
+        At(query.WithSort(column, descending: query.Sort == column && !query.Descending).ToQueryString());
 
     public string SortBy(SortColumn column) =>
-        where + query.WithSort(column, descending: false).ToQueryString();
+        At(query.WithSort(column, descending: false).ToQueryString());
 
     public string? SortState(SortColumn column) =>
         query.Sort != column ? null : query.Descending ? "descending" : "ascending";
@@ -34,11 +40,16 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
     public string Where => where;
 
     public string Bare =>
-        query.Text is null ? where : where + "?q=" + Uri.EscapeDataString(query.Text);
+        query.Text is null ? where : At("?q=" + Uri.EscapeDataString(query.Text));
+
+    private string At(string browsed) =>
+        browsed.Length == 0 || !where.Contains('?', StringComparison.Ordinal) ? where + browsed : where + "&" + browsed[1..];
 
     public IReadOnlyList<FacetCount> Rail =>
     [
-        .. results.Facets.Where(facet => facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Type)),
+        .. results.Facets.Where(facet =>
+            pinned?.Contains(facet.Type) is not true &&
+            (facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Type))),
     ];
 
     public IReadOnlyList<FacetCount> Primary => [.. Rail.Where(facet => facet.Facet.Primary)];
@@ -64,7 +75,7 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
     public bool? Answer(FlagType flag) =>
         query.Flags.TryGetValue(flag, out var wanted) ? wanted : null;
 
-    public string Unbound(MeasureType measure) => where + query.WithoutRange(measure).ToQueryString();
+    public string Unbound(MeasureType measure) => At(query.WithoutRange(measure).ToQueryString());
 
     public IReadOnlyList<Measure> Ranges =>
     [
@@ -99,7 +110,7 @@ public sealed class BrowseView(ICodexService codex, CodexQuery query, CodexResul
 
             foreach (var type in query.Types)
             {
-                chips.Add((Models.FellowshipCodex.Label(type), where + query.Toggled(type).ToQueryString()));
+                chips.Add((Models.FellowshipCodex.Label(type), At(query.Toggled(type).ToQueryString())));
             }
 
             foreach (var (key, values) in query.Selections)

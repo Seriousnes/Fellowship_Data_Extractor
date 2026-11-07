@@ -20,6 +20,10 @@
 .cx-entity ::deep .cx-craft-side:empty,
 .cx-entity-side:empty { display: none; }
 
+.cx-entity:has(.cx-entity-gallery) { grid-template-columns: auto minmax(0, 1fr) auto; }
+
+.cx-entity ::deep .cx-entity-gallery { grid-column: 3; grid-row: 1 / 4; margin-top: 0; }
+
 .cx-entity-name-icon { display: none; }
 
 @media (min-width: 1180px) {
@@ -41,6 +45,10 @@
   .cx-entity ::deep .cx-entity-details { grid-column: 1; grid-row: auto; }
 
   .cx-entity ::deep .cx-entity-details { margin-top: 16px; }
+
+  .cx-entity:has(.cx-entity-gallery) { grid-template-columns: minmax(0, 1fr); }
+
+  .cx-entity ::deep .cx-entity-gallery { grid-column: 1; grid-row: auto; margin-top: 16px; }
 
   .cx-entity-name { display: flex; align-items: center; gap: 12px; }
 
