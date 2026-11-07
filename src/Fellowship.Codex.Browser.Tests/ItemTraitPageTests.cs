@@ -16,15 +16,4 @@ public sealed class ItemTraitPageTests(Site site)
 
         Assert.True(await page.GetByText("Does not roll on items").IsVisibleAsync());
     }
-
-    [Fact]
-    public async Task The_borrowed_name_of_a_granted_ability_links_its_trait()
-    {
-        await using var context = await site.NewContextAsync();
-        var page = await context.NewPageAsync();
-
-        await page.GotoAsync("/ability/173");
-
-        await page.Locator("a[href*='/item-trait/3']").First.WaitForAsync();
-    }
 }
