@@ -46,7 +46,7 @@ A fact outside those dumps needs a reader of its own. That is a standing approva
 
 ## Reading the shipping binary
 
-`C:\Program Files (x86)\Steam\steamapps\common\Fellowship\fellowship\Binaries\Win64\fellowship-Win64-Shipping.exe`,
+`<install>/fellowship/Binaries/Win64/fellowship-Win64-Shipping.exe` (`ExtractorOptions.ShippingExe`),
 177 MB, stripped, one monolithic image. **Static parsing only. Never launch the game, attach a
 debugger, or go near EasyAntiCheat.**
 

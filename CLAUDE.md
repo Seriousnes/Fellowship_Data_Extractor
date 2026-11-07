@@ -31,8 +31,9 @@ With no destination named the run writes `output/` in one pass: the documents un
 build before it, and `src/Fellowship.SDK/settings.json`, the source generator's input for the enums
 the documents are read against. `dotnet run --project src/FellowshipExtractor -- patch-notes` writes
 the patch notes alone and needs no game install. The export run needs no variables set,
-because the committed `mappings/` has the usmap. It does need the Steam install, for the paks and the
-appmanifest naming the build. The first run against a clean `bin/` downloads Oodle.
+because the committed `mappings/` has the usmap. It does need the game install, for the paks and the
+appmanifest naming the build. The install is found in the Steam libraries; `FELLOWSHIP_INSTALL` or
+`--install <path>` names it outright. The first run against a clean `bin/` downloads Oodle.
 
 ## The export folder is named for the build
 
@@ -45,12 +46,12 @@ export out of `output/` globs `output/export-*` and takes the highest build with
 
 ## The user-scope MCP server reads the main checkout
 
-The user-scope `fellowship-codex` server runs `G:/mcp/Fellowship/Fellowship.Codex.Mcp.exe --export
-G:/source/Fellowship_Data_Extractor/output`. It reads the highest build in the main checkout's
+The user-scope `fellowship-codex` server runs the binary `deploy/mcp/publish.ps1` publishes, with
+`--export <main checkout>/output`. It reads the highest build in the main checkout's
 `output/`, and every 15 seconds checks that folder again. A new highest build, or a rewritten
 `entities.jsonl` or `settings.json`, loads once two checks in a row agree, and a load that fails
 leaves the previous export in place. An `--export` or `FELLOWSHIP_EXPORT` that names one export
-folder outright is never swapped. `deploy/mcp/publish.ps1` republishes the binary to `G:/mcp/Fellowship`, and
+folder outright is never swapped. `deploy/mcp/publish.ps1 -Destination <folder>` republishes the binary to that folder, and
 renames each file a running server holds open to `*.replaced`, so a publish succeeds while sessions
 run. The next publish deletes the `*.replaced` files no server still holds.
 
