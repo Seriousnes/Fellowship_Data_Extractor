@@ -116,6 +116,10 @@ else
                 <Fact Label="@Leaf(rolled)">@Rated(rolled)</Fact>
                 <Fact Label="Rate">@(result is { } r ? $"{CodexView.Number(r.Rate)} per minute" : "Needs the formula's attributes")</Fact>
                 <Fact Label="Haste">@(rolled.ScalesWithHaste ? "Scales" : "Does not scale")</Fact>
+                @if (rolled.InternalCooldown is { } cooldown)
+                {
+                    <Fact Label="Internal cooldown" Unit="s">@CodexView.Number(cooldown)</Fact>
+                }
             </Facts>
             @if (result is { } chance)
             {
@@ -154,9 +158,11 @@ else
 
     private readonly Dictionary<string, string> percents = new(StringComparer.Ordinal);
 
-    private string sinceRoll = "1";
+    private ProcRoll? started;
 
-    private string sinceProc = "30";
+    private string sinceRoll = string.Empty;
+
+    private string sinceProc = string.Empty;
 
     private bool beforeFirst;
 
@@ -186,6 +192,16 @@ else
         Chosen = Whole(Index) is { } at && at >= 0 && Picked is { } picked && at < picked.Rolls.Count ? at : 0;
 
         foreach (var attribute in Entry?.ScalesOff ?? []) percents.TryAdd(attribute, "0");
+
+        if (Entry is { } entry && !ReferenceEquals(entry, started))
+        {
+            started = entry;
+
+            var (roll, proc) = ProcChance.Starting(entry);
+
+            sinceRoll = CodexView.Number(roll);
+            sinceProc = CodexView.Number(proc);
+        }
     }
 
     private double Fraction(string attribute) => Math.Max(0, Number(percents.GetValueOrDefault(attribute))) / 100;

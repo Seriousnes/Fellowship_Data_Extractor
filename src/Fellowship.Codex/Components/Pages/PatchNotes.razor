@@ -14,7 +14,7 @@
 @if (Here is not { } here)
 {
     <Panel>
-        <Empty Message="No patch notes.">Patch notes compare a build with the build before it, and the codex has one build.</Empty>
+        <Empty Message="No patch notes." />
     </Panel>
 }
 else
@@ -55,10 +55,6 @@ else
         <section>
             <div id="@BuildsAnchor" class="cx-pn-group">
                 <Panel Head="Builds">
-                    <Note>
-                        Each entity listed is new in build @here.Build, or has a value changed from a value in build
-                        @here.Previous. A property build @here.Previous lacks is left out.
-                    </Note>
                     <div class="cx-roster">
                         @foreach (var build in Notes.Builds)
                         {
@@ -77,7 +73,7 @@ else
             @if (Sections.Count == 0)
             {
                 <Panel>
-                    <Empty Message="Nothing changed.">No named entity is new in build @here.Build, and no value changed.</Empty>
+                    <Empty Message="Nothing changed." />
                 </Panel>
             }
 

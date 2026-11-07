@@ -43,8 +43,10 @@ public static class DocumentProjection
                 (Links.Applied(ability) ?? []).Concat((Links.Parts(ability) ?? []).Where(part => part.Type == EntityType.Effect)))));
 
         public IReadOnlyList<EntityReference>? Origins(Entity entity) =>
-            entity.Type is { } type && entity.NetId is { } id && origins is not null &&
-            origins.TryGetValue((type, id), out var roots)
+            entity.Type is { } type && entity.NetId is { } id ? Origins(type, id) : null;
+
+        public IReadOnlyList<EntityReference>? Origins(EntityType type, int id) =>
+            origins is not null && origins.TryGetValue((type, id), out var roots)
                 ? [.. roots.Select(root => Of(root.Type, root.Id)!)]
                 : null;
 
@@ -79,6 +81,7 @@ public static class DocumentProjection
             EnabledInGame = entity.EnabledInGame,
             NoKnownSource = entity.NoKnownSource,
             NamedAfter = references.At(entity.NamedAfter),
+            NameBorrowedFrom = references.At(entity.NameInheritedFrom),
             PartOf = Name(entity) is null ? references.Changes.PartOf(entity, references) : null,
             ParentClass = Parent(entity, EntityType.Ability, references),
             Applies = references.Through(
@@ -117,6 +120,7 @@ public static class DocumentProjection
             CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
+            CommitTriggers = Triggers(entity, references),
             Coefficients = entity.Coefficients,
             SetByCallerScaling = entity.SetByCallerScaling,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
@@ -200,6 +204,7 @@ public static class DocumentProjection
             EffectTags = entity.EffectTags,
             Icon = entity.Icon,
             Duration = entity.Duration,
+            DurationScaling = entity.DurationScaling,
             Period = entity.Period,
             Cooldown = entity.Cooldown,
             Range = entity.Range,
@@ -224,6 +229,8 @@ public static class DocumentProjection
             Owner = references.At(entity.Owner),
             Origins = references.Origins(entity),
             AppliedBy = references.At(entity.AppliedBy),
+            LinkedBy = Linked(entity, references),
+            AppliedOnCommitOf = Commits(entity, references),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
             Siblings = references.Links.Siblings(references.Of(EntityType.Effect, entity.NetId)),
             ParentClass = Parent(entity, EntityType.Effect, references),
@@ -473,6 +480,29 @@ public static class DocumentProjection
             Generates = Generated(entity),
         },
 
+        EntityType.ItemTrait => new ItemTraitDocument
+        {
+            Id = entity.NetId!.Value,
+            Name = Name(entity),
+            EnabledInGame = entity.EnabledInGame,
+            MaxRank = entity.MaxRank,
+            RandomChance = entity.RandomChance,
+            Rollable = entity is { RandomChance: > 0, AugmentationCategoryTag: not null },
+            Description = entity.Description,
+            DescriptionsByHero = entity.DescriptionsByHero,
+            Icon = entity.Icon,
+            Cooldown = entity.Cooldown,
+            Duration = entity.Duration,
+            RankRuns = entity.RankRuns,
+            Placeholders = Spent(Spends(entity), entity.Placeholders),
+            Tuning = Tuned(entity, references),
+            ScalesOff = entity.ScalesOff,
+            ProcRolls = Rolled(entity, references),
+            Grants = Referenced(entity.Granted, references),
+            Applies = references.Through(Referenced(entity.Granted, references)),
+            Generates = Generated(entity),
+        },
+
         EntityType.Aspect => new AspectDocument
         {
             Id = entity.NetId!.Value,
@@ -652,7 +682,7 @@ public static class DocumentProjection
     };
 #pragma warning restore CS8524
 
-    public static EntityDocument? Implied(Entity entity) =>
+    public static EntityDocument? Implied(Entity entity, References? references = null) =>
         entity is { Type: EntityType.TalentSlot, SlotBorneTalent: true }
             ? new TalentDocument
             {
@@ -660,6 +690,7 @@ public static class DocumentProjection
                 Name = Name(entity),
                 Description = entity.Description,
                 Icon = entity.Icon,
+                Origins = references?.Origins(EntityType.Talent, entity.NetId!.Value),
             }
             : null;
 
@@ -1052,6 +1083,92 @@ public static class DocumentProjection
         }
 
         return rolls.Count == 0 ? null : rolls;
+    }
+
+    private const string AbilityTypeTagPrefix = "AbilityType.";
+    private const string EventTagPrefix = "Event.";
+
+    /// <summary>A wait's abilities, or its tags where they stand for abilities at large or name none.</summary>
+    private static CommitTrigger Trigger(CommitTriggerSource source, References references)
+    {
+        bool Broad(string tag) =>
+            tag.StartsWith(AbilityTypeTagPrefix, StringComparison.Ordinal) || tag.StartsWith(EventTagPrefix, StringComparison.Ordinal);
+
+        int[] committing =
+        [
+            .. source.Tags.Where(tag => !Broad(tag)).SelectMany(tag => references.Changes.AbilitiesTagged(tag)).Distinct().Order(),
+        ];
+
+        var unresolved = source.Tags.Where(tag => Broad(tag) || references.Changes.AbilitiesTagged(tag).Count == 0).ToArray();
+
+        EntityReference? Single(IReadOnlyList<string> tags) => tags
+            .SelectMany(tag => references.Changes.Holding(tag))
+            .Select(holder => references.Of(holder.Type, holder.Id))
+            .OfType<EntityReference>()
+            .FirstOrDefault();
+
+        var stoppedBy = Single(source.Stopping);
+        var talent = Single(source.Required);
+
+        return new CommitTrigger
+        {
+            Committing = committing.Length == 0
+                ? null
+                : [.. committing.Select(id => references.Of(EntityType.Ability, id)).OfType<EntityReference>().Distinct()],
+            CommittingTag = unresolved.Length > 0 ? string.Join(", ", unresolved) : null,
+            CommittingHoldsAll = source.AllTags ? true : null,
+            ExcludedTags = source.Excluded.Count > 0 ? source.Excluded : null,
+            Applies = source.Effects.Count == 0 ? null : [.. source.Effects.Select(references.At).OfType<EntityReference>()],
+            StoppedBy = stoppedBy,
+            Talent = talent,
+            StoppedByTags = stoppedBy is null && source.Stopping.Count > 0 ? source.Stopping : null,
+            RequiredTags = talent is null && source.Required.Count > 0 ? source.Required : null,
+        };
+    }
+
+    private static IReadOnlyList<CommitTrigger>? Triggers(Entity entity, References references) =>
+        entity.CommitTriggers is { Count: > 0 } triggers
+            ? [.. triggers.Select(trigger => Trigger(trigger, references))]
+            : null;
+
+    private static IReadOnlyList<CommitTrigger>? Commits(Entity entity, References references) =>
+        references.Changes.CommitsOf(entity) is { Count: > 0 } commits
+            ? [
+                .. commits.Select(commit => Trigger(commit.Trigger, references) with
+                {
+                    Ability = references.Of(EntityType.Ability, commit.Ability.NetId),
+                    Applies = null,
+                }),
+            ]
+            : null;
+
+    /// <summary>A link names the talent holding a tag it needs, as a proc roll does.</summary>
+    private static IReadOnlyList<EffectLink>? Linked(Entity entity, References references)
+    {
+        if (entity.LinkedBy is not { Count: > 0 } links) return null;
+
+        var linked = new List<EffectLink>();
+
+        foreach (var link in links)
+        {
+            if (references.At(link.Parent) is not { } parent) continue;
+
+            var talent = (link.RequiredSourceTags ?? [])
+                .SelectMany(tag => references.Changes.Holding(tag))
+                .Select(holder => references.Of(holder.Type, holder.Id))
+                .OfType<EntityReference>()
+                .FirstOrDefault();
+
+            linked.Add(new EffectLink(parent, link.ApplyTo)
+            {
+                Talent = talent,
+                RequiredSourceTags = talent is null ? link.RequiredSourceTags : null,
+                RequiredTargetTags = link.RequiredTargetTags,
+                BannedSourceTags = link.BannedSourceTags,
+            });
+        }
+
+        return linked.Count == 0 ? null : linked;
     }
 
     private static IReadOnlyList<TargetCountFalloff>? Falloff(Entity entity, References references) =>

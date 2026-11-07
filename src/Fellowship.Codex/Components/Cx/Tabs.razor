@@ -1,0 +1,7 @@
+<nav class="cx-tabs" aria-label="@Aria">@ChildContent</nav>
+
+@code {
+    [Parameter] public string? Aria { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

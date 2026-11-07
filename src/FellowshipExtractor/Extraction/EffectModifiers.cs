@@ -90,6 +90,8 @@ public static class EffectModifiers
                 ? Captured(slot.Magnitude, constants)
                 : null;
 
+            var computed = custom && !read.HasValue ? MagnitudeCalculations.Formula(slot.Magnitude, provider, constants) : null;
+
             if (Emits(slot, read, scaling))
             {
                 modifiers.Add(new EffectModifier(slot.Attribute)
@@ -99,8 +101,9 @@ public static class EffectModifiers
                     ValueLow = read.Low,
                     ValueHigh = read.High,
                 Ranks = read.Ranks,
-                    Coefficient = scaling?.Coefficient,
-                    ScalesOff = scaling?.Attribute is { } captured ? [captured] : null,
+                    Coefficient = scaling?.Coefficient ?? computed?.Coefficient,
+                    ScalesOff = scaling?.Attribute is { } captured ? [captured] : computed?.Attributes,
+                    Formula = computed?.Text,
                     Row = Row(slot.Magnitude, kind),
                 });
             }
@@ -165,6 +168,24 @@ public static class EffectModifiers
             entry => entry.Key,
             entry => (IReadOnlyList<EffectModifier>)entry.Value,
             StringComparer.Ordinal);
+    }
+
+    /// <summary>The attribute and coefficients of a duration magnitude of the attribute-based kind.</summary>
+    public static DurationScaling? DurationScalingOf(UObject? cdo, ConstantsTable constants, TypeMappings mappings)
+    {
+        if (cdo is null || PropertyWalk.GetStruct(cdo, DurationField) is not { } duration) return null;
+
+        var kind = EnumOrdinals.Member(mappings, KindEnum, PropertyWalk.GetString(duration, CalculationTypeField));
+
+        if (!AttributeBased.Equals(kind, StringComparison.Ordinal)) return null;
+        if (Captured(duration, constants) is not { Attribute: { } attribute, Coefficient: { } coefficient }) return null;
+
+        var ranks = PropertyWalk.GetStruct(duration, AttributeBasedField) is { } based &&
+                    PropertyWalk.GetStruct(based, CoefficientField) is { } scalable
+            ? MagnitudeCalculations.ScalableRanks(scalable, constants)
+            : null;
+
+        return new DurationScaling(attribute, ranks ?? [coefficient]);
     }
 
     public static IEnumerable<SlotUse> Uses(UObject? effect, TypeMappings mappings)

@@ -263,10 +263,9 @@ public static class ExportRun
         var rooted = references.With(origins);
 
         Console.WriteLine(
-            $"  {origins.Count(pair => pair.Key.Type != EntityType.TalentSlot)} abilities, effects and talents " +
+            $"  {origins.Count} abilities, effects and talents " +
             "traced to the hero, creature or other entity they are reached from: " +
             string.Join(", ", origins
-                .Where(pair => pair.Key.Type != EntityType.TalentSlot)
                 .GroupBy(pair => pair.Key.Type)
                 .Select(group => $"{group.Count()} {group.Key}")));
 
@@ -308,7 +307,7 @@ public static class ExportRun
                 default);
             written++;
 
-            if (DocumentProjection.Implied(record) is { } implied)
+            if (DocumentProjection.Implied(record, rooted.For(record.PrimaryStat)) is { } implied)
             {
                 await target.WriteDocumentAsync(implied, default);
                 written++;
@@ -464,6 +463,13 @@ public static class ExportRun
         Console.WriteLine(
             $"  {resolver.Rolls.Calls - resolver.Rolls.Unread.Count} of {resolver.Rolls.Calls} proc-per-minute rolls " +
             "read a rate as a row and attributes");
+
+        Console.WriteLine($"  {resolver.Commits.Waits} commit waits read");
+
+        foreach (var unread in resolver.Commits.Unread.Distinct(StringComparer.Ordinal))
+        {
+            Console.WriteLine($"  commit wait unread: {unread}");
+        }
 
         foreach (var unread in resolver.Rolls.Unread.Distinct(StringComparer.Ordinal))
         {

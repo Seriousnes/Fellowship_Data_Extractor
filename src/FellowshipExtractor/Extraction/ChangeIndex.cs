@@ -239,6 +239,10 @@ public sealed class ChangeIndex
 
     public IReadOnlyList<(EntityType Type, int Id)> Holding(string tag) => _modifiers.Holding(tag);
 
+    public IReadOnlyList<int> AbilitiesTagged(string tag) => _modifiers.AbilitiesTagged(tag);
+
+    public IReadOnlyList<(Entity Ability, CommitTriggerSource Trigger)> CommitsOf(Entity effect) => _modifiers.CommitsOf(effect);
+
     public IReadOnlyList<ProcRoll> GatedRolls(Entity source) => _modifiers.GatedRolls(source);
 
     public bool Percent(string row, EntityType type, int id) => _modifiers.Percent(row, type, id);

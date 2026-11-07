@@ -6,7 +6,7 @@ namespace FellowshipExtractor.Extraction;
 public static class Origins
 {
     private static readonly IReadOnlySet<EntityType> Held =
-        new HashSet<EntityType> { EntityType.Ability, EntityType.Effect, EntityType.Talent, EntityType.TalentSlot };
+        new HashSet<EntityType> { EntityType.Ability, EntityType.Effect, EntityType.Talent };
 
     public static IReadOnlyDictionary<(EntityType Type, int Id), IReadOnlyList<(EntityType Type, int Id)>> Of(
         IReadOnlyList<EntityDocument> documents)
@@ -22,10 +22,15 @@ public static class Origins
             .GroupBy(hero => hero.Name!, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => (EntityType.Hero, group.First().Id), StringComparer.OrdinalIgnoreCase);
 
+        // Talent-slot ids repeat for each hero, so a talent reads its hero from the slots naming it, never by slot id.
+        var slotted = documents
+            .OfType<TalentSlotDocument>()
+            .ToLookup(slot => (slot.Talent.Type, slot.Talent.Id), slot => slot.Hero);
+
         var resolved = new Dictionary<(EntityType Type, int Id), IReadOnlyList<(EntityType Type, int Id)>>();
         var visiting = new HashSet<(EntityType Type, int Id)>();
 
-        foreach (var key in byKey.Keys.Where(key => Held.Contains(key.Type) && key.Type != EntityType.TalentSlot))
+        foreach (var key in byKey.Keys.Where(key => Held.Contains(key.Type)))
         {
             if (Roots(key) is { Count: > 0 } roots) resolved[key] = roots;
         }
@@ -42,10 +47,15 @@ public static class Origins
 
             IReadOnlyList<(EntityType Type, int Id)> found = document switch
             {
-                TalentSlotDocument slot => Hero(slot.Hero),
                 AbilityDocument { Heroes: [_, ..] owners } => [.. owners.SelectMany(Hero)],
                 EffectDocument { Heroes: [_, ..] owners } => [.. owners.SelectMany(Hero)],
-                _ => [.. reachers.GetValueOrDefault(key, []).SelectMany(Roots)],
+                _ =>
+                [
+                    .. slotted[key].SelectMany(Hero),
+                    .. reachers.GetValueOrDefault(key, [])
+                        .Where(reacher => reacher.Type != EntityType.TalentSlot)
+                        .SelectMany(Roots),
+                ],
             };
 
             visiting.Remove(key);

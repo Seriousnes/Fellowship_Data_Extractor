@@ -12,6 +12,8 @@ public sealed class AbilityDocument : EntityDocument
     public AbilityCategory? Category { get; init; }
 
 
+    public EntityReference? NameBorrowedFrom { get; init; }
+
     public EntityReference? NamedAfter { get; init; }
 
     public EntityReference? PartOf { get; init; }
@@ -66,6 +68,9 @@ public sealed class AbilityDocument : EntityDocument
 
     /// <summary>Proc-per-minute rolls the ability makes, each with the rate it is made at.</summary>
     public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
+
+    /// <summary>The waits the Blueprint holds on abilities being committed.</summary>
+    public IReadOnlyList<CommitTrigger>? CommitTriggers { get; init; }
 
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }

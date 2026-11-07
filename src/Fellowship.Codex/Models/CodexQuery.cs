@@ -291,6 +291,18 @@ public sealed record CodexQuery
     public CodexQuery WithoutRange(MeasureType measure) =>
         this with { Ranges = Ranges.Where(range => range.Key != measure).ToDictionary(), Page = 1 };
 
+    /// <summary>This query with no type and no choice of <paramref name="facet"/>, the part of it a page that fixes them leaves to the reader.</summary>
+    public CodexQuery Unpinned(FacetType facet) =>
+        this with { Types = [], Selections = Selections.Where(pair => pair.Key != facet).ToDictionary() };
+
+    /// <summary>This query narrowed to <paramref name="type"/> and to <paramref name="value"/> of <paramref name="facet"/>, keeping its page.</summary>
+    public CodexQuery Pinned(EntityType type, FacetType facet, string value) =>
+        this with
+        {
+            Types = [type],
+            Selections = new Dictionary<FacetType, IReadOnlyList<string>>(Selections) { [facet] = [value] },
+        };
+
     public CodexQuery WithSort(SortColumn sort, bool descending) => this with { Sort = sort, Descending = descending, Page = 1 };
 
     public CodexQuery WithGroup(FacetType? group) => this with { Group = group, Page = 1 };

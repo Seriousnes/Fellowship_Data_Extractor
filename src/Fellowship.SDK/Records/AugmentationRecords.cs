@@ -41,6 +41,11 @@ public sealed record EquippedAugmentationRecord
 
 public sealed record SigilRecord : AugmentationRecord;
 
+public sealed record ItemTraitRecord : AugmentationRecord
+{
+    public bool Rollable { get; init; }
+}
+
 public sealed record AspectRecord : AugmentationRecord;
 
 public sealed record ProtectiveEnchantRecord : AugmentationRecord;

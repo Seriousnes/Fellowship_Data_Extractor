@@ -75,22 +75,21 @@ public sealed class TypeResolver(
 
         if (tag.Table.Equals(AugmentationRows.Table, StringComparison.OrdinalIgnoreCase))
         {
-            return entity.AugmentationCategoryTag is { } category && AugmentationTypes.ByCategory.TryGetValue(category, out var type)
-                ? type
-                : null;
+            return augmentations.ForTag(tag.Name) is { } row ? Categorized(row.CategoryTag) : null;
         }
 
         return Tables.TryGetValue(tag.Table, out var table) ? table : null;
     }
 
+    /// <summary>A row with no category is an item trait, however the generator treats it.</summary>
+    private static EntityType? Categorized(string? category) =>
+        category is null ? EntityType.ItemTrait : AugmentationTypes.ByCategory.TryGetValue(category, out var type) ? type : null;
+
     private EntityType? Augmentation(TagRecord tag, Entity entity, string? packageName)
     {
         if (talents.ForAugmentation(tag.Name) is not null) return EntityType.Talent;
         if (entity.GemNode is not null || gems.ForAugmentation(tag.Name) is not null) return EntityType.GemAbility;
-        if (augmentations.ForAugmentation(tag.NetId) is { CategoryTag: { } category })
-        {
-            return AugmentationTypes.ByCategory.TryGetValue(category, out var granting) ? granting : null;
-        }
+        if (augmentations.ForAugmentation(tag.NetId) is { } row) return Categorized(row.CategoryTag);
 
         foreach (var (folder, type) in Folders)
         {

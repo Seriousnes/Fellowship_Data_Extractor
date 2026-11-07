@@ -4,6 +4,9 @@ namespace Fellowship.SDK.Models;
 
 public sealed record EffectModifier(string Attribute)
 {
+    /// <summary>The symbol <see cref="Formula"/> gives the effect's stack count.</summary>
+    public const string Stacks = "Stacks";
+
     [JsonIgnore]
     public string? Row { get; init; }
 
@@ -29,14 +32,20 @@ public sealed record EffectModifier(string Attribute)
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
+    /// <summary>
+    /// The magnitude a custom calculation computes, in the attributes of <see cref="ScalesOff"/> and
+    /// <see cref="Stacks"/>, where it has no one value.
+    /// </summary>
+    public string? Formula { get; init; }
+
     public bool Equals(EffectModifier? other) =>
         other is not null &&
         Attribute == other.Attribute && Row == other.Row && Op == other.Op && Value == other.Value &&
-        ValueLow == other.ValueLow && ValueHigh == other.ValueHigh && Coefficient == other.Coefficient &&
+        ValueLow == other.ValueLow && ValueHigh == other.ValueHigh && Coefficient == other.Coefficient && Formula == other.Formula &&
         Same(Ranks, other.Ranks) && Same(ScalesOff, other.ScalesOff);
 
     public override int GetHashCode() =>
-        HashCode.Combine(Attribute, Row, Op, Value, ValueLow, ValueHigh, Coefficient, Ranks?.Count);
+        HashCode.Combine(Attribute, Row, Op, Value, ValueLow, ValueHigh, Coefficient, Formula);
 
     private static bool Same<T>(IReadOnlyList<T>? first, IReadOnlyList<T>? second) =>
         first is null ? second is null : second is not null && first.SequenceEqual(second);

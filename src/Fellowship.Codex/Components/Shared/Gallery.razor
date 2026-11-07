@@ -1,0 +1,75 @@
+@using System.Globalization
+
+@if (Slides.Count > 0)
+{
+    <div class="cx-gallery @Class">
+        <button type="button" class="cx-gallery-stack" data-gallery-open aria-haspopup="dialog"
+                aria-label="@($"Open {Label}")">
+            @for (var behind = Math.Min(Slides.Count, Layers + 1) - 1; behind > 0; behind--)
+            {
+                <img class="cx-gallery-layer" data-depth="@behind" alt="" loading="lazy" src="@Slides[behind].Source" />
+            }
+            <img class="cx-gallery-top" alt="" loading="lazy" src="@Slides[0].Source" />
+            <span class="cx-gallery-count">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <rect x="2" y="3.5" width="12" height="9" rx="1.5" />
+                    <path d="m2.5 11 3.5-3.5 3 3 2-2 2.5 2.5" />
+                </svg>
+                @Slides.Count
+            </span>
+        </button>
+        <p class="cx-gallery-names">@string.Join(" · ", Slides.Select(slide => slide.Name))</p>
+
+        <dialog class="cx-gallery-dialog" aria-label="@Label">
+            <div class="cx-gallery-body">
+                <header class="cx-gallery-head">
+                    <h2 data-gallery-title>@Slides[0].Name</h2>
+                    @if (Slides.Count > 1)
+                    {
+                        <span class="cx-gallery-at" data-gallery-at>1 / @Slides.Count</span>
+                    }
+                    <button type="button" class="cx-gallery-close" data-gallery-close aria-label="Close">&times;</button>
+                </header>
+
+                <div class="cx-gallery-stage">
+                    @for (var index = 0; index < Slides.Count; index++)
+                    {
+                        var slide = Slides[index];
+
+                        <figure class="cx-gallery-slide" data-gallery-slide data-name="@slide.Name" hidden="@(index > 0)"
+                                style="@Shape(slide)">
+                            <img alt="@slide.Name" loading="lazy" src="@slide.Source" />
+                            @slide.Overlay
+                        </figure>
+                    }
+
+                    @if (Slides.Count > 1)
+                    {
+                        <button type="button" class="cx-gallery-turn" data-gallery-turn="-1" aria-label="Previous image">
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>
+                        </button>
+                        <button type="button" class="cx-gallery-turn" data-gallery-turn="1" aria-label="Next image">
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>
+                        </button>
+                    }
+                </div>
+            </div>
+        </dialog>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<GallerySlide> Slides { get; set; } = [];
+
+    /// <summary>What the dialog is named for assistive technology, such as "Wraithtide Vault images".</summary>
+    [Parameter] public string Label { get; set; } = "gallery";
+
+    [Parameter] public string? Class { get; set; }
+
+    private const int Layers = 2;
+
+    private static string? Shape(GallerySlide slide) =>
+        slide.Aspect is { } aspect
+            ? string.Create(CultureInfo.InvariantCulture, $"--cx-aspect:{aspect:0.####}")
+            : null;
+}

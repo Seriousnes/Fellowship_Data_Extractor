@@ -117,7 +117,7 @@ public static class SetByCallerDurations
         foreach (var child in Children(expression)) Assignments(child, tag, applier, calls, depth + 1);
     }
 
-    private static string? Spec(
+    public static string? Spec(
         KismetExpression? expression,
         IReadOnlyDictionary<string, List<KismetExpression>> locals,
         UObject applier,
@@ -153,7 +153,7 @@ public static class SetByCallerDurations
         return name.EndsWith("_C", StringComparison.Ordinal) ? name[..^2] : name;
     }
 
-    private static string? Tag(KismetExpression? expression, UObject applier)
+    public static string? Tag(KismetExpression? expression, UObject applier)
     {
         if (expression is EX_StructConst { Struct.Name: TagStruct } inline)
         {

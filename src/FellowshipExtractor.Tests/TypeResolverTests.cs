@@ -3,7 +3,7 @@ namespace FellowshipExtractor.Tests;
 public sealed class TypeResolverTests
 {
     [Fact]
-    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(26, Enum.GetValues<EntityType>().Length);
+    public void TheTypeSetIsTheOneTheSpecNames() => Assert.Equal(27, Enum.GetValues<EntityType>().Length);
 
     [Theory]
     [InlineData(EntityType.Item, "item")]
@@ -40,6 +40,7 @@ public sealed class TypeResolverTests
     [InlineData(EntityType.CompanionPet, 14)]
     [InlineData(EntityType.Radiance, 6)]
     [InlineData(EntityType.LegendaryStat, 3)]
+    [InlineData(EntityType.ItemTrait, 4)]
     public void TheCorpusHoldsTheseCounts(EntityType type, int expected) =>
         Assert.Equal(expected, Export.Loaded.Documents.Count(d => d.Type == type));
 

@@ -38,6 +38,7 @@ public static class RecordProjection
             [EntityType.TalentSlot] = (document, view, origin) => From((TalentSlotDocument)document, view, origin),
             [EntityType.Enchant] = (document, view, origin) => From((EnchantDocument)document, view, origin),
             [EntityType.Sigil] = (document, view, origin) => From((SigilDocument)document, view, origin),
+            [EntityType.ItemTrait] = (document, view, origin) => From((ItemTraitDocument)document, view, origin),
             [EntityType.Aspect] = (document, view, origin) => From((AspectDocument)document, view, origin),
             [EntityType.ProtectiveEnchant] = (document, view, origin) => From((ProtectiveEnchantDocument)document, view, origin),
             [EntityType.WeaponPower] = (document, view, origin) => From((WeaponPowerDocument)document, view, origin),
@@ -73,6 +74,7 @@ public static class RecordProjection
 
         return new AbilityRecord
         {
+            NameBorrowedFrom = Reference(document.NameBorrowedFrom, view, origin),
             Type = EntityType.Ability,
             Id = document.Id,
             Generates = Generated(document.Generates),
@@ -105,6 +107,7 @@ public static class RecordProjection
             CastTimeScalesWithHaste = document.CastTimeScalesWithHaste,
             ScalesOff = Scaling(document.ScalesOff, view),
             ProcRolls = Rolls(document.ProcRolls, view, origin),
+            CommitTriggers = Commits(document.CommitTriggers, view, origin),
             Coefficients = Some(document.Coefficients),
             Placeholders = Tokens(tokens, tags, view),
             Schools = Some(tags),
@@ -221,6 +224,7 @@ public static class RecordProjection
             Description = view.PlainText(document.Description, tokens, tags),
             Icon = Texture(document.Icon, view),
             Duration = document.Duration,
+            DurationScaling = document.DurationScaling,
             Period = document.Period,
             Cooldown = document.Cooldown,
             Range = document.Range,
@@ -240,6 +244,8 @@ public static class RecordProjection
             Heroes = Some(document.Heroes),
             Owner = Reference(document.Owner, view, origin),
             AppliedBy = Reference(document.AppliedBy, view, origin),
+            LinkedBy = Some(document.LinkedBy)?.Select(link => new EffectLinkRecord(Reference(link.Parent, view, origin)!, link.ApplyTo) { Talent = Reference(link.Talent, view, origin) }).ToArray(),
+            AppliedOnCommitOf = Commits(document.AppliedOnCommitOf, view, origin),
             PartOf = Reference(document.PartOf, view, origin),
             Role = document.Role,
         };
@@ -540,6 +546,11 @@ public static class RecordProjection
             new SigilRecord { Type = EntityType.Sigil, Id = document.Id, Name = PublicTypes.NameOf(document) },
             document, view, origin);
 
+    public static ItemTraitRecord From(ItemTraitDocument document, ICodexViewService view, string origin) =>
+        (ItemTraitRecord)Augmentation(
+            new ItemTraitRecord { Type = EntityType.ItemTrait, Id = document.Id, Name = PublicTypes.NameOf(document), Rollable = document.Rollable },
+            document, view, origin);
+
     public static AspectRecord From(AspectDocument document, ICodexViewService view, string origin) =>
         (AspectRecord)Augmentation(
             new AspectRecord { Type = EntityType.Aspect, Id = document.Id, Name = PublicTypes.NameOf(document) },
@@ -597,6 +608,21 @@ public static class RecordProjection
     private static IReadOnlyList<string>? Scaling(IReadOnlyList<string>? attributes, ICodexViewService view) =>
         Named(view.Codex.Scaling(attributes));
 
+    private static IReadOnlyList<CommitTriggerRecord>? Commits(IReadOnlyList<CommitTrigger>? triggers, ICodexViewService view, string origin) =>
+        triggers is { Count: > 0 }
+            ? [.. triggers.Select(trigger => new CommitTriggerRecord
+            {
+                Ability = Reference(trigger.Ability, view, origin),
+                Committing = References(trigger.Committing, view, origin),
+                CommittingTag = trigger.CommittingTag,
+                CommittingHoldsAll = trigger.CommittingHoldsAll,
+                ExcludedTags = trigger.ExcludedTags,
+                Applies = References(trigger.Applies, view, origin),
+                StoppedBy = Reference(trigger.StoppedBy, view, origin),
+                Talent = Reference(trigger.Talent, view, origin),
+            })]
+            : null;
+
     private static IReadOnlyList<ProcRollRecord>? Rolls(IReadOnlyList<ProcRoll>? rolls, ICodexViewService view, string origin) =>
         rolls is { Count: > 0 }
             ? [.. rolls.Select(roll => new ProcRollRecord(roll.Row, view.ProcFormula(roll))
@@ -605,6 +631,9 @@ public static class RecordProjection
                 ScalesOff = Scaling(roll.ScalesOff, view) ?? [],
                 ScalesWithHaste = roll.ScalesWithHaste,
                 Talent = Reference(roll.Talent, view, origin),
+                ExcludedAbilityClasses = roll.ExcludedAbilityClasses,
+                ExcludedAbilityTags = roll.ExcludedAbilityTags,
+                InternalCooldown = roll.InternalCooldown,
             })]
             : null;
 

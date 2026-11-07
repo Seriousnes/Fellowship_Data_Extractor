@@ -520,6 +520,29 @@ public sealed record SigilTooltipRequest
     public string? RankSources { get; init; }
 }
 
+public sealed record ItemTraitTooltipRequest
+{
+    public static EntityType Type => EntityType.ItemTrait;
+
+    [Description(
+        "True when the entity's texture is to be drawn beside the card. A card that draws its texture inside ignores it.")]
+    public bool? ShowIcon { get; init; }
+
+    [Description(
+        "True when the card is to come wrapped in the chrome a phone draws it in: a scrim, a close button " +
+        "and a link to its page.")]
+    public bool? Mobile { get; init; }
+
+    [Description("The state to draw the node at: selected, available or unavailable.")]
+    public string? State { get; init; }
+
+    [Description(
+        "The gear slots of the equipped items carrying the item trait, comma separated, each an item type such as " +
+        "Head or Necklace. Each adds one rank. None stated reads as one " +
+        "item in the first gear slot that can carry it.")]
+    public string? RankSources { get; init; }
+}
+
 public sealed record AspectTooltipRequest
 {
     public static EntityType Type => EntityType.Aspect;

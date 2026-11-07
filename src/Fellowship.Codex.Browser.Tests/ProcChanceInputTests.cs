@@ -21,13 +21,24 @@ public sealed class ProcChanceInputTests(Site site)
     }
 
     [Fact]
+    public async Task A_roll_with_an_internal_cooldown_opens_with_both_clocks_at_it()
+    {
+        await using var context = await site.NewContextAsync();
+        var tool = new ProcChancePage(await context.NewPageAsync());
+        await tool.OpenAsync(ProcChance.Sources(site.Store).First(source => source.Rolls[0].InternalCooldown == 15));
+
+        Assert.Equal("15", await tool.SinceLastRoll.ValueAsync());
+        Assert.Equal("15", await tool.SinceLastProc.ValueAsync());
+    }
+
+    [Fact]
     public async Task Backspacing_the_seconds_since_the_last_roll_leaves_the_box_empty_and_the_chance_at_zero_seconds()
     {
         await using var context = await site.NewContextAsync();
         var tool = new ProcChancePage(await context.NewPageAsync());
         await tool.OpenAsync(Steady);
 
-        var atOne = (await tool.Chance.TextContentAsync())!;
+        var atOne = await ChanceAtAsync(tool, "1");
         var atZero = await ChanceAtAsync(tool, "0");
         var atFour = await ChanceAtAsync(tool, "4");
         Assert.NotEqual(atOne, atFour);

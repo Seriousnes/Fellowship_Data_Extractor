@@ -1,0 +1,13 @@
+@use "../../Styles/shared" as *;
+
+.cx-tabs {
+  display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 12px;
+}
+.cx-tabs ::deep .cx-tab {
+  display: inline-flex; align-items: baseline; gap: 7px; white-space: nowrap;
+  padding: 9px 13px; font-size: 13px; color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+.cx-tabs ::deep .cx-tab:hover { color: var(--ink); text-decoration: none; }
+.cx-tabs ::deep .cx-tab[aria-current] { color: var(--gold-bright); border-bottom-color: var(--gold); font-weight: 600; }
+

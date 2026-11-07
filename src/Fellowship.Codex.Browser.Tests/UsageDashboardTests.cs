@@ -64,6 +64,16 @@ public sealed class Usage : ICollectionFixture<UsageSite>
 [Collection(Usage.Name)]
 public sealed class UsageDashboardTests(UsageSite site)
 {
+    /// <summary>
+    /// Waits for the circuit's render of the dashboard. That render replaces the prerendered dashboard, and
+    /// a scroll in the prerendered page is lost with it.
+    /// </summary>
+    private static async Task LiveAsync(IPage page)
+    {
+        await Assertions.Expect(page.Locator("#cx-usage-ranges[data-live=on]")).ToBeAttachedAsync();
+        await Assertions.Expect(page.Locator("#cx-usage-status")).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
+    }
+
     private static Task<bool> DrawnAsync(IPage page, string canvas) =>
         page.EvaluateAsync<bool>("id => !!window.Chart?.getChart(id)", canvas);
 
@@ -83,6 +93,7 @@ public sealed class UsageDashboardTests(UsageSite site)
         var page = await context.NewPageAsync();
 
         await page.GotoAsync(UsageRoutes.Admin);
+        await LiveAsync(page);
 
         var download = await page.RunAndWaitForDownloadAsync(() => page.GetByText("Download database").ClickAsync());
 
@@ -136,6 +147,7 @@ public sealed class UsageDashboardTests(UsageSite site)
 
         await page.SetViewportSizeAsync(1400, 1000);
         await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
+        await LiveAsync(page);
 
         var grid = page.Locator("[data-grid='failed']");
         var rows = grid.Locator("tr.cx-grid-row");
@@ -176,7 +188,7 @@ public sealed class UsageDashboardTests(UsageSite site)
         var page = await context.NewPageAsync();
 
         await page.GotoAsync(UsageRoutes.Admin);
-        await Assertions.Expect(page.Locator("#cx-usage-status")).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
+        await LiveAsync(page);
 
         var response = await page.RunAndWaitForResponseAsync(
             () => page.GetByRole(AriaRole.Button, new() { Name = "Sign out" }).ClickAsync(), $"**{UsageExtensions.Logout}");
@@ -198,10 +210,9 @@ public sealed class UsageDashboardTests(UsageSite site)
 
         await page.SetViewportSizeAsync(1400, 800);
         await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
+        await LiveAsync(page);
 
         var status = page.Locator("#cx-usage-status");
-
-        await Assertions.Expect(status).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
 
         var before = await page.EvaluateAsync<double>(
             """
@@ -239,16 +250,13 @@ public sealed class UsageDashboardTests(UsageSite site)
 
         await page.SetViewportSizeAsync(1400, 800);
         await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
-
-        var status = page.Locator("#cx-usage-status");
-
-        await Assertions.Expect(status).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
+        await LiveAsync(page);
 
         var before = await page.EvaluateAsync<double>(
             "depth => { window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * depth); return scrollY; }", depth);
 
         await page.ReloadAsync();
-        await Assertions.Expect(status).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
+        await LiveAsync(page);
 
         Assert.InRange(await page.EvaluateAsync<double>("() => scrollY"), before - Tolerance, before + Tolerance);
     }
@@ -265,9 +273,9 @@ public sealed class UsageDashboardTests(UsageSite site)
 
         await page.SetViewportSizeAsync(1400, 1000);
         await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
+        await LiveAsync(page);
 
         var status = page.Locator("#cx-usage-status");
-        await Assertions.Expect(status).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^Updated "));
 
         Assert.True(await DrawnAsync(page, "cx-usage-live"));
         Assert.True(await DrawnAsync(page, "cx-usage-range"));

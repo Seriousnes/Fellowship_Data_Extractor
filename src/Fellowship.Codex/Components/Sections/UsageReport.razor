@@ -40,11 +40,6 @@ else
     </Panel>
 
     <Panel Head="5xx by cause" Badge="@FailureRows.Sum(row => row.Count).ToString(Count)">
-        <Note>
-            Rejected: @RequestLoad.PermitLimit requests were running and @RequestLoad.QueueLimit were queued.
-            TimedOut: a request ran for @((int)Serving.Timeout.TotalSeconds) seconds. Both return 503.
-            Exception: the request threw. Other: a 5xx with neither tag.
-        </Note>
         @if (FailureRows.Count == 0)
         {
             <Empty Message="No 5xx responses recorded by cause." />
@@ -69,10 +64,6 @@ else
     </Panel>
 
     <Panel Head="Failed requests" Badge="@FailedRows.Count.ToString(Count)">
-        <Note>
-            The newest @UsageExtensions.FailedRequestCapacity.ToString(Count) 5xx responses since the server started, held in memory.
-            Client is a hash of the address with a salt replaced each UTC day, so one client has one value for a day.
-        </Note>
         @if (FailedRows.Count == 0)
         {
             <Empty Message="No failed requests in this range." />
@@ -100,7 +91,6 @@ else
     </Panel>
 
     <Panel Head="Log" Badge="@LogRows.Count.ToString(Count)">
-        <Note>Warning and higher events since the server started, held in memory. Select a row for the full message and exception.</Note>
         @if (LogRows.Count == 0)
         {
             <Empty Message="No warnings logged since the server started." />
@@ -125,7 +115,7 @@ else
     @if (Areas.Count == 0)
     {
         <Panel>
-            <Empty Message="No requests counted.">Counts are written every @((int)UsageFlush.Interval.TotalSeconds) seconds.</Empty>
+            <Empty Message="No requests counted." />
         </Panel>
     }
     else
@@ -144,12 +134,6 @@ else
         </Panel>
 
         <Panel Head="Clients" Badge="@Clients.Count.ToString(Count)">
-            <Note>
-                A browser opens a circuit when it loads the site, because the search box is interactive, and keeps
-                it across the pages it navigates to. A client with pages and no circuits runs no scripts, and is a
-                crawler whatever its header names.
-                Clients are counted by UTC day, so this table covers each whole day the range touches.
-            </Note>
             <Grid Id="clients" Label="Clients" Items="Clients">
                 <Columns>
                     <Column Head="Kind" Value="row => row.Kind" />
@@ -190,7 +174,6 @@ else
         </Panel>
 
         <Panel Head="Routes" Badge="@RouteRows.Count.ToString(Count)">
-            <Note>Duration runs from the first byte of the request to the end of the response. Circuits have no duration.</Note>
             <Grid Id="routes" Label="Routes" Items="RouteRows">
                 <Columns>
                     <Column Head="Area" Value="row => row.Area" />
@@ -237,7 +220,6 @@ else
             }
             else
             {
-                <Note>Each event logged at Error level or above, by log category and exception type. This includes errors inside interactive components.</Note>
                 <Grid Id="errors" Label="Errors" Items="ErrorRows">
                     <Columns>
                         <Column Head="Category" Value="row => row.Category" Class="cx-mono" />
