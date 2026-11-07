@@ -1,5 +1,6 @@
 using System.Text;
 
+using Fellowship.SDK.Documents;
 using Fellowship.Storage;
 
 namespace Fellowship.Codex.Services;
@@ -24,12 +25,20 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
             ?? throw ExportReader.Missing(ExportReader.EntitiesName);
 
         var older = new Dictionary<string, ExportVersion>(StringComparer.Ordinal);
+        var notes = new Dictionary<string, IReadOnlyList<PatchNote>>(StringComparer.Ordinal);
 
-        foreach (var build in builds.Skip(1))
+        foreach (var build in builds)
         {
+            if (await TextAsync(build, PatchNotesFile.FileName, cancellationToken) is { } written)
+            {
+                notes[build] = PatchNotesFile.Read(written);
+            }
+
+            if (build == latest) continue;
+
             older[build] = new ExportVersion(
                 build,
-                ExportReader.Group(ExportReader.Lines(
+                ExportLines.Group(Encoding.UTF8.GetBytes(
                     await TextAsync(build, ExportReader.EntitiesName, cancellationToken) ?? string.Empty)),
                 await TextAsync(build, ExportReader.SettingsName, cancellationToken) ?? string.Empty);
         }
@@ -38,7 +47,8 @@ public sealed class StorageExportSource(IStorage storage) : IExportSource
             latest,
             new ExportSnapshot(settings, ExportReader.ReadEntities(ExportReader.Lines(entities))),
             new ExportFiles(Encoding.UTF8.GetBytes(entities), Encoding.UTF8.GetBytes(settingsText)),
-            older);
+            older,
+            notes);
     }
 
     public static IReadOnlyList<string> Builds(IReadOnlyDictionary<string, HashSet<string>> byFolder) =>

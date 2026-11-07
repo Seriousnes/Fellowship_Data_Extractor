@@ -29,6 +29,12 @@ public class DeployWorkflowTests
     }
 
     [Fact]
+    public void The_workflow_publishes_each_builds_patch_notes()
+    {
+        Assert.Contains($"$EXPORTS/$build/{PatchNotesFile.FileName}", File.ReadAllText(Workflow));
+    }
+
+    [Fact]
     public void The_workflow_publishes_the_textures_under_the_folder_a_texture_name_composes_with()
     {
         Assert.Equal(TextureSizes.Folder, Prefix("TEXTURES"));

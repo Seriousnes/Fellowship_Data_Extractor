@@ -68,8 +68,11 @@ public sealed class ServerWatch(RequestLoad load, TimeProvider time)
     private static long? ContainerLimit() =>
         File.Exists(ContainerLimitFile) && long.TryParse(File.ReadAllText(ContainerLimitFile), out var limit) ? limit : null;
 
-    /// <summary>Takes a measure. Returns the finished minute's peaks when this measure opens a new minute.</summary>
-    public ServerSample? Tick()
+    /// <summary>
+    /// Takes a measure. Returns the running minute's peaks, after the finished minute's when this
+    /// measure opens a new minute.
+    /// </summary>
+    public IReadOnlyList<ServerSample> Tick()
     {
         var now = time.GetUtcNow();
         var total = Environment.CpuUsage.TotalTime;
@@ -100,7 +103,7 @@ public sealed class ServerWatch(RequestLoad load, TimeProvider time)
                 Math.Max(current?.Memory ?? 0, reading.Memory),
                 Math.Max(current?.Heap ?? 0, reading.Heap));
 
-            return finished;
+            return finished is null ? [peak] : [finished, peak];
         }
     }
 }

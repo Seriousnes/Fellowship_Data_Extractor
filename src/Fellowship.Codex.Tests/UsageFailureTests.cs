@@ -99,6 +99,56 @@ public sealed class FailureStoreTests : IDisposable
     }
 
     [Fact]
+    public void A_minute_keeps_its_peak_across_writes_and_processes()
+    {
+        var store = Store();
+        var minute = new DateTimeOffset(2026, 1, 10, 0, 0, 0, TimeSpan.Zero);
+
+        store.Write(new ServerSample(minute.ToUnixTimeSeconds(), 1, 2, 3, 4, 5, 500, 300));
+        store.Write(new ServerSample(minute.ToUnixTimeSeconds(), 0, 0, 0, 0, 60, 280, 200));
+
+        var sample = Assert.Single(store.Samples(minute));
+
+        Assert.Equal(500, sample.Memory);
+        Assert.Equal(300, sample.Heap);
+        Assert.Equal(60, sample.Processor);
+    }
+
+    [Fact]
+    public void A_start_records_its_last_write_and_its_clean_stop()
+    {
+        var store = Store();
+        var day = new DateTimeOffset(2026, 1, 10, 0, 0, 0, TimeSpan.Zero);
+        var killed = day.ToUnixTimeSeconds();
+        var stopped = killed + 100;
+
+        store.Started(killed);
+        store.Seen(killed, killed + 10);
+        store.Started(stopped);
+        store.Stopped(stopped, stopped + 20);
+
+        var starts = store.Starts(day);
+
+        Assert.Equal(2, starts.Count);
+        Assert.Equal(stopped + 20, starts[0].Stopped?.ToUnixTimeSeconds());
+        Assert.Null(starts[1].Stopped);
+        Assert.Equal(killed + 10, starts[1].Seen.ToUnixTimeSeconds());
+    }
+
+    [Fact]
+    public void Clearing_deletes_starts_past_the_cutoff()
+    {
+        var store = Store();
+        var day = new DateTimeOffset(2026, 1, 10, 0, 0, 0, TimeSpan.Zero);
+
+        store.Started(day.ToUnixTimeSeconds());
+        store.Started(day.AddDays(5).ToUnixTimeSeconds());
+        store.Clear(day.AddDays(1));
+
+        Assert.Single(store.Starts(day.AddDays(-1)));
+    }
+
+    [Fact]
     public void Errors_are_charted_per_bucket_by_status_class()
     {
         var store = Store();

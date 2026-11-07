@@ -20,6 +20,41 @@ public sealed class OutputFormatTests
         "QueueEndpoint=http://localhost:10511/devstoreaccount1;" +
         "TableEndpoint=http://localhost:10512/devstoreaccount1";
 
+    [Fact]
+    public async Task Each_build_but_the_oldest_has_patch_notes_against_the_build_before_it()
+    {
+        var output = Directory.CreateTempSubdirectory().FullName;
+
+        try
+        {
+            foreach (var (build, slot) in new[] { ("999", "Back"), ("1000", "Back"), ("1001", "Chest") })
+            {
+                var folder = Directory.CreateDirectory(Path.Combine(output, ExportFolders.Name(build))).FullName;
+
+                await File.WriteAllTextAsync(
+                    Path.Combine(folder, ExportLayout.EntitiesFile),
+                    $$"""{"$type":"item","id":5224,"name":"Sword","slot":"{{slot}}"}""" + "\n",
+                    CancellationToken.None);
+            }
+
+            await PatchNoteWriter.WriteAsync(output, CancellationToken.None);
+
+            string Notes(string build) => Path.Combine(output, ExportFolders.Name(build), PatchNotesFile.FileName);
+
+            Assert.False(File.Exists(Notes("999")));
+            Assert.Empty(PatchNotesFile.Read(await File.ReadAllTextAsync(Notes("1000"), CancellationToken.None)));
+
+            var note = Assert.Single(PatchNotesFile.Read(await File.ReadAllTextAsync(Notes("1001"), CancellationToken.None)));
+
+            Assert.Equal(new DocumentKey("item", 5224), note.Key);
+            Assert.Equal(new PatchNoteField("Slot", "Back", "Chest"), Assert.Single(note.Fields));
+        }
+        finally
+        {
+            Directory.Delete(output, recursive: true);
+        }
+    }
+
     private sealed class ClosingTarget(bool fails) : IExportTarget
     {
         public bool Disposed { get; private set; }

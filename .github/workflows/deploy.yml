@@ -48,6 +48,10 @@ jobs:
               --content-type application/x-ndjson --cache-control no-cache --only-show-errors
             aws s3 cp "${folder}settings.json" "s3://$BUCKET/$EXPORTS/$build/settings.json" \
               --content-type application/json --cache-control no-cache --only-show-errors
+            if [ -f "${folder}patch-notes.jsonl" ]; then
+              aws s3 cp "${folder}patch-notes.jsonl" "s3://$BUCKET/$EXPORTS/$build/patch-notes.jsonl" \
+                --content-type application/x-ndjson --cache-control no-cache --only-show-errors
+            fi
             published=$((published + 1))
             echo "Published $build to s3://$BUCKET/$EXPORTS/$build/."
           done

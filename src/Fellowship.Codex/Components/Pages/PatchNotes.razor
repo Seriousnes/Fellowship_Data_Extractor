@@ -1,3 +1,5 @@
+@using System.Text
+@using System.Text.Encodings.Web
 @page "/patch-notes"
 @page "/patch-notes/{Build}"
 @inject IPatchNotesService Notes
@@ -91,24 +93,7 @@ else
                                 {
                                     <SubHead>@kind.Label</SubHead>
                                 }
-                                <ul class="cx-pn-list">
-                                    @foreach (var entry in kind.Entries)
-                                    {
-                                        <li id="@Anchor(entry.Note)">
-                                            @Entity(entry)
-                                            @if (entry.Note.Fields.Count > 0)
-                                            {
-                                                <dl class="cx-pn-fields">
-                                                    @foreach (var field in entry.Note.Fields)
-                                                    {
-                                                        <dt>@field.Label</dt>
-                                                        <dd>@Value(field)</dd>
-                                                    }
-                                                </dl>
-                                            }
-                                        </li>
-                                    }
-                                </ul>
+                                <ul class="cx-pn-list">@Entries(kind)</ul>
                             }
                         </Panel>
                     </div>
@@ -179,7 +164,44 @@ else
 
     private string? Anchor(PatchNote note) => anchored.Add(Anchor(note.Key)) ? Anchor(note.Key) : null;
 
-    private RenderFragment Entity(PatchNoteEntry entry)
+    // A build can note thousands of entities, and their render tree frames alone exhaust the heap, so
+    // each list is one markup frame.
+    private MarkupString Entries(PatchNoteKind kind)
+    {
+        var html = new StringBuilder();
+
+        foreach (var entry in kind.Entries)
+        {
+            html.Append("<li").Append(Attribute("id", Anchor(entry.Note))).Append('>');
+
+            Entity(html, entry);
+
+            if (entry.Note.Fields.Count > 0)
+            {
+                html.Append("<dl class=\"cx-pn-fields\">");
+
+                foreach (var field in entry.Note.Fields)
+                {
+                    html.Append("<dt>").Append(Encoded(field.Label)).Append("</dt><dd>");
+                    Value(html, field);
+                    html.Append("</dd>");
+                }
+
+                html.Append("</dl>");
+            }
+
+            html.Append("</li>");
+        }
+
+        return new MarkupString(html.ToString());
+    }
+
+    private static string Encoded(string? text) => text is null ? string.Empty : HtmlEncoder.Default.Encode(text);
+
+    private static string Attribute(string name, string? value) =>
+        value is null ? string.Empty : $" {name}=\"{Encoded(value)}\"";
+
+    private void Entity(StringBuilder html, PatchNoteEntry entry)
     {
         var document = entry.Document;
         var icon = Ui.Icon(entry.Note.Icon);
@@ -188,63 +210,63 @@ else
             ? ExportTooltipEndpoint.Address(Here!.Build, entry.Type, entry.Note.Key.Id)
             : null;
 
-        return @<div class="cx-pn-entity">
-            @if (icon is not null)
-            {
-                <img class="cx-pn-icon" alt="" loading="lazy" src="@icon" />
-            }
-            @if (linked)
-            {
-                <a href="@Ui.Href(document!)" data-tip="@tip" data-tip-request="@(tip is null ? null : Ui.Tip(document!, true).Body)"
-                   style="@Tone(Ui.LinkColour(document!))">@entry.Name</a>
-            }
-            else
-            {
-                <span>@entry.Name</span>
-            }
-            @if (entry.Note.Added)
-            {
-                <span class="cx-pn-new">New</span>
-            }
-        </div>;
+        html.Append("<div class=\"cx-pn-entity\">");
+
+        if (icon is not null)
+        {
+            html.Append("<img class=\"cx-pn-icon\" alt=\"\" loading=\"lazy\"").Append(Attribute("src", icon)).Append(" />");
+        }
+
+        if (linked)
+        {
+            html.Append("<a").Append(Attribute("href", Ui.Href(document!)))
+                .Append(Attribute("data-tip", tip))
+                .Append(Attribute("data-tip-request", tip is null ? null : Ui.Tip(document!, true).Body))
+                .Append(Attribute("style", Tone(Ui.LinkColour(document!))))
+                .Append('>').Append(Encoded(entry.Name)).Append("</a>");
+        }
+        else
+        {
+            html.Append("<span>").Append(Encoded(entry.Name)).Append("</span>");
+        }
+
+        if (entry.Note.Added) html.Append("<span class=\"cx-pn-new\">New</span>");
+
+        html.Append("</div>");
     }
 
-    private RenderFragment Value(PatchNoteField field)
+    private void Value(StringBuilder html, PatchNoteField field)
     {
         var older = field.Older is null ? null : Text.Plain(field.Older);
         var newer = field.Newer is null ? null : Text.Plain(field.Newer);
 
         if (older is null)
         {
-            return @<span class="cx-pn-value"><ins>@newer</ins> <span class="cx-pn-gone">added</span></span>;
+            html.Append($"<span class=\"cx-pn-value\"><ins>{Encoded(newer)}</ins> <span class=\"cx-pn-gone\">added</span></span>");
         }
-
-        if (newer is null)
+        else if (newer is null)
         {
-            return @<span class="cx-pn-value"><del>@older</del> <span class="cx-pn-gone">removed</span></span>;
+            html.Append($"<span class=\"cx-pn-value\"><del>{Encoded(older)}</del> <span class=\"cx-pn-gone\">removed</span></span>");
         }
-
-        if (WordDiff.Reads(older, newer))
+        else if (WordDiff.Reads(older, newer))
         {
-            var words = WordDiff.Between(older, newer);
+            html.Append("<span class=\"cx-pn-value cx-pn-prose\">");
 
-            return @<span class="cx-pn-value cx-pn-prose">@foreach (var word in words)
+            foreach (var word in WordDiff.Between(older, newer))
+            {
+                html.Append(word.Change switch
                 {
-                    @switch (word.Change)
-                    {
-                        case WordChange.Removed:
-                            <del>@word.Text</del>
-                            break;
-                        case WordChange.Added:
-                            <ins>@word.Text</ins>
-                            break;
-                        default:
-                            @word.Text
-                            break;
-                    }
-                }</span>;
-        }
+                    WordChange.Removed => $"<del>{Encoded(word.Text)}</del>",
+                    WordChange.Added => $"<ins>{Encoded(word.Text)}</ins>",
+                    _ => Encoded(word.Text),
+                });
+            }
 
-        return @<span class="cx-pn-value"><del>@older</del> <span class="cx-pn-arrow" aria-label="to">&rarr;</span> <ins>@newer</ins></span>;
+            html.Append("</span>");
+        }
+        else
+        {
+            html.Append($"<span class=\"cx-pn-value\"><del>{Encoded(older)}</del> <span class=\"cx-pn-arrow\" aria-label=\"to\">&rarr;</span> <ins>{Encoded(newer)}</ins></span>");
+        }
     }
 }

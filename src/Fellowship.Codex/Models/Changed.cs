@@ -1,5 +1,7 @@
 using System.Text.Json.Nodes;
 
+using Fellowship.SDK.Documents;
+
 namespace Fellowship.Codex.Models;
 
 public readonly record struct ChangedLeaf(string Path, string? Older, string? Newer);
@@ -40,10 +42,7 @@ public static class Changed
         ];
     }
 
-    public static string Text(JsonNode? node) =>
-        node is JsonValue value && value.TryGetValue<string>(out var text)
-            ? text
-            : node?.ToJsonString() ?? "null";
+    public static string Text(JsonNode? node) => PatchNoteDiff.Text(node);
 
     private static void Walk(string path, JsonNode? node, List<(string, string)> found)
     {

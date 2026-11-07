@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
-using System.Text;
 
-using Fellowship.Codex.Models;
+using Fellowship.SDK.Documents;
 
 namespace Fellowship.Codex.Services;
 
@@ -21,15 +20,12 @@ public interface IPatchNotesService
     DateTimeOffset? Date(string build);
 }
 
+/// <summary>Each build's patch notes, read with the export.</summary>
 public sealed class PatchNotesService : IPatchNotesService
 {
     private readonly ExportHistory history;
 
-    private readonly Lazy<IReadOnlyDictionary<DocumentKey, IReadOnlyList<string>>> latest;
-
-    private readonly ConcurrentDictionary<string, Lazy<BuildNotes>> notes = new(StringComparer.Ordinal);
-
-    private readonly IReadOnlyList<string> every;
+    private readonly IReadOnlyDictionary<string, BuildNotes> notes;
 
     private readonly ConcurrentDictionary<string, DateTimeOffset?> dates = new(StringComparer.Ordinal);
 
@@ -39,25 +35,19 @@ public sealed class PatchNotesService : IPatchNotesService
     {
         this.history = history;
 
-        every = builds.Builds;
+        var every = builds.Builds;
+
         Builds = [.. every.SkipLast(1)];
 
-        latest = new(() => ExportReader.Group(ExportReader.Lines(Encoding.UTF8.GetString(history.Files.Entities.Span))));
+        notes = every.Zip(every.Skip(1))
+            .Where(pair => history.Notes.ContainsKey(pair.First))
+            .ToDictionary(
+                pair => pair.First,
+                pair => new BuildNotes(pair.First, pair.Second, history.Notes[pair.First]),
+                StringComparer.Ordinal);
     }
 
-    public BuildNotes? Of(string build)
-    {
-        var at = Position(build);
-
-        if (at < 0 || at + 1 >= every.Count) return null;
-
-        return notes.GetOrAdd(every[at], named => new Lazy<BuildNotes>(() =>
-        {
-            var previous = every[at + 1];
-
-            return new BuildNotes(named, previous, PatchNoteDiff.Between(Documents(previous), Documents(named)));
-        })).Value;
-    }
+    public BuildNotes? Of(string build) => notes.GetValueOrDefault(build);
 
     public DateTimeOffset? Date(string build) =>
         dates.GetOrAdd(build, named => named == history.Latest
@@ -75,17 +65,4 @@ public sealed class PatchNotesService : IPatchNotesService
             return null;
         }
     }
-
-    private int Position(string build)
-    {
-        for (var at = 0; at < every.Count; at++)
-        {
-            if (string.Equals(every[at], build, StringComparison.Ordinal)) return at;
-        }
-
-        return -1;
-    }
-
-    private IReadOnlyDictionary<DocumentKey, IReadOnlyList<string>> Documents(string build) =>
-        build == history.Latest ? latest.Value : history.Older[build].Documents;
 }

@@ -40,7 +40,7 @@ public class HistoryTests
 
             Assert.Equal("1000", beneath.Build);
             Assert.Equal(Settings, beneath.Settings);
-            Assert.Equal([Older], beneath.Documents[new DocumentKey("item", 5224)]);
+            Assert.Equal([Older], ExportText.Read(beneath.Documents[new DocumentKey("item", 5224)]));
         }
         finally
         {
@@ -120,9 +120,9 @@ public class HistoryTests
     [Fact]
     public void A_line_carrying_no_type_or_id_joins_no_key()
     {
-        var grouped = ExportReader.Group([Older, "{}", "not json at all", string.Empty, Newer]);
+        var grouped = ExportText.Group([Older, "{}", "not json at all", string.Empty, Newer]);
 
         Assert.Equal(2, Assert.Single(grouped).Value.Count);
-        Assert.Equal([Older, Newer], grouped[new DocumentKey("item", 5224)]);
+        Assert.Equal([Older, Newer], ExportText.Read(grouped[new DocumentKey("item", 5224)]));
     }
 }

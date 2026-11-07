@@ -1,12 +1,6 @@
 using System.Text.Json.Nodes;
 
-using Fellowship.Codex.Services;
-
-namespace Fellowship.Codex.Models;
-
-public sealed record PatchNoteField(string Label, string? Older, string? Newer);
-
-public sealed record PatchNote(DocumentKey Key, string? Name, string? Icon, bool Added, IReadOnlyList<PatchNoteField> Fields);
+namespace Fellowship.SDK.Documents;
 
 public static class PatchNoteDiff
 {
@@ -17,12 +11,12 @@ public static class PatchNoteDiff
     private static readonly HashSet<string> NoShape = [];
 
     public static IReadOnlyList<PatchNote> Between(
-        IReadOnlyDictionary<DocumentKey, IReadOnlyList<string>> older,
-        IReadOnlyDictionary<DocumentKey, IReadOnlyList<string>> newer)
+        IReadOnlyDictionary<DocumentKey, IReadOnlyList<ReadOnlyMemory<byte>>> older,
+        IReadOnlyDictionary<DocumentKey, IReadOnlyList<ReadOnlyMemory<byte>>> newer)
     {
         var readings = newer.ToDictionary(
             entry => entry.Key,
-            entry => (IReadOnlyList<JsonNode?>)[.. entry.Value.Select(line => JsonNode.Parse(line))]);
+            entry => (IReadOnlyList<JsonNode?>)[.. entry.Value.Select(line => JsonNode.Parse(line.Span))]);
 
         var shapes = Shapes(readings);
         var notes = new List<PatchNote>();
@@ -30,7 +24,7 @@ public static class PatchNoteDiff
         foreach (var (key, now) in readings)
         {
             IReadOnlyList<JsonNode?> was = older.TryGetValue(key, out var lines)
-                ? [.. lines.Select(line => JsonNode.Parse(line))]
+                ? [.. lines.Select(line => JsonNode.Parse(line.Span))]
                 : [];
 
             var shape = shapes.GetValueOrDefault(key.Slug) ?? NoShape;
@@ -274,9 +268,30 @@ public static class PatchNoteDiff
     private static string Named(string name) =>
         name.Contains('.') || name.Length == 0
             ? name
-            : FellowshipCodex.Spaced(char.ToUpperInvariant(name[0]) + name[1..]);
+            : Spaced(char.ToUpperInvariant(name[0]) + name[1..]);
 
     private static string Listed(JsonArray values) => string.Join(", ", values.Select(Text));
 
-    private static string Text(JsonNode? node) => Changed.Text(node);
+    public static string Text(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue<string>(out var text)
+            ? text
+            : node?.ToJsonString() ?? "null";
+
+    public static string Spaced(string value)
+    {
+        var text = string.Join(" / ", value.Split('.'));
+        var spaced = new System.Text.StringBuilder(text.Length + 8);
+
+        for (var at = 0; at < text.Length; at++)
+        {
+            if (at > 0 && char.IsUpper(text[at]) && (char.IsLower(text[at - 1]) || char.IsDigit(text[at - 1])))
+            {
+                spaced.Append(' ');
+            }
+
+            spaced.Append(text[at]);
+        }
+
+        return spaced.ToString();
+    }
 }

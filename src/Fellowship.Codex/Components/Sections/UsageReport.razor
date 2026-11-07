@@ -39,6 +39,23 @@ else
         </div>
     </Panel>
 
+    <Panel Head="Process starts" Badge="@StartRows.Count.ToString(Count)">
+        @if (StartRows.Count == 0)
+        {
+            <Empty Message="No process starts recorded in this range." />
+        }
+        else
+        {
+            <Grid Id="starts" Label="Process starts" Items="StartRows">
+                <Columns>
+                    <Column Head="Started" Time="true" Value="row => row.Started" />
+                    <Column Head="Last seen" Time="true" Value="row => row.Seen" />
+                    <Column Head="Ended" Value="row => Ending(row)" />
+                </Columns>
+            </Grid>
+        }
+    </Panel>
+
     <Panel Head="5xx by cause" Badge="@FailureRows.Sum(row => row.Count).ToString(Count)">
         @if (FailureRows.Count == 0)
         {
@@ -279,6 +296,8 @@ else
 
     private IReadOnlyList<FailedRequest> FailedRows = [];
 
+    private IReadOnlyList<ProcessStart> StartRows = [];
+
     private IReadOnlyList<LogEvent> LogRows = [];
 
     private IReadOnlyList<UsageArea> DayAreas = [];
@@ -310,6 +329,7 @@ else
         Statuses = Store.Statuses(since);
         ErrorRows = Store.Errors(since);
         FailureRows = Store.Failures(since);
+        StartRows = Store.Starts(since);
         FailedRows = [.. Services.GetRequiredService<Ring<FailedRequest>>().Newest().Where(row => row.At >= since)];
         LogRows = Services.GetRequiredService<RecentLogs>().Newest();
 
@@ -325,6 +345,12 @@ else
                     group.ToDictionary(day => day.Area, day => day.Requests))),
         ];
     }
+
+    // The newest row is this process, which has no stop and is running.
+    private string Ending(ProcessStart row) =>
+        row.Stopped is not null ? "Stopped"
+        : ReferenceEquals(row, StartRows[0]) ? "Running"
+        : "Killed";
 
     private static double? Share(long part, long whole) => whole == 0 ? null : part / (double)whole;
 

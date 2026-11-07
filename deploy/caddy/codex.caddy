@@ -1,3 +1,23 @@
 codex.fellowshipanalyzer.com {
 	reverse_proxy 127.0.0.1:5280
+
+	log {
+		output file /var/log/caddy/codex.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+		format filter {
+			wrap json
+			fields {
+				request>remote_ip ip_mask {
+					ipv4 24
+					ipv6 48
+				}
+				request>client_ip ip_mask {
+					ipv4 24
+					ipv6 48
+				}
+			}
+		}
+	}
 }

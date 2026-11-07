@@ -6,11 +6,9 @@ namespace Fellowship.Codex.Services;
 
 public sealed record ExportSnapshot(SettingsFile Settings, IReadOnlyList<EntityDocument> Entities);
 
-public readonly record struct DocumentKey(string Slug, int Id);
-
 public sealed record ExportVersion(
     string Build,
-    IReadOnlyDictionary<DocumentKey, IReadOnlyList<string>> Documents,
+    IReadOnlyDictionary<DocumentKey, IReadOnlyList<ReadOnlyMemory<byte>>> Documents,
     string Settings);
 
 public sealed record ExportFiles(ReadOnlyMemory<byte> Entities, ReadOnlyMemory<byte> Settings);
@@ -19,7 +17,8 @@ public sealed record ExportHistory(
     string Latest,
     ExportSnapshot Snapshot,
     ExportFiles Files,
-    IReadOnlyDictionary<string, ExportVersion> Older);
+    IReadOnlyDictionary<string, ExportVersion> Older,
+    IReadOnlyDictionary<string, IReadOnlyList<PatchNote>> Notes);
 
 public interface IExportSource
 {
@@ -48,9 +47,6 @@ public static class ExportReader
     public const string SettingsName = "settings.json";
 
     private static readonly JsonSerializerOptions Options = EntityDocuments.Options;
-
-    private static readonly string IdName =
-        Options.PropertyNamingPolicy!.ConvertName(nameof(EntityDocument.Id));
 
     public static string Data(string name) => $"{DataFolder}/{name}";
 
@@ -85,43 +81,6 @@ public static class ExportReader
         }
 
         return documents;
-    }
-
-    public static IReadOnlyDictionary<DocumentKey, IReadOnlyList<string>> Group(IEnumerable<string> lines)
-    {
-        var grouped = new Dictionary<DocumentKey, List<string>>();
-
-        foreach (var line in lines)
-        {
-            if (line.Length == 0) continue;
-            if (Key(line) is not { } key) continue;
-
-            if (!grouped.TryGetValue(key, out var group)) grouped[key] = group = [];
-
-            group.Add(line);
-        }
-
-        return grouped.ToDictionary(entry => entry.Key, entry => (IReadOnlyList<string>)entry.Value);
-    }
-
-    private static DocumentKey? Key(string line)
-    {
-        try
-        {
-            using var reading = JsonDocument.Parse(line);
-
-            return reading.RootElement is { ValueKind: JsonValueKind.Object } root &&
-                root.TryGetProperty(EntityDocuments.Discriminator, out var slug) &&
-                slug.ValueKind == JsonValueKind.String &&
-                root.TryGetProperty(IdName, out var id) &&
-                id.TryGetInt32(out var number)
-                ? new DocumentKey(slug.GetString()!, number)
-                : null;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
     }
 
     public static IEnumerable<string> Lines(string text)

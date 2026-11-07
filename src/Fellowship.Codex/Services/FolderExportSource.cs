@@ -1,3 +1,5 @@
+using Fellowship.SDK.Documents;
+
 namespace Fellowship.Codex.Services;
 
 public sealed class FolderExportSource(string folder) : IExportSource
@@ -68,6 +70,22 @@ public sealed class FolderExportSource(string folder) : IExportSource
         var lines = await LinesAsync(ExportReader.EntitiesName, cancellationToken);
 
         var here = new DirectoryInfo(Path.GetFullPath(Folder));
+        var older = await OlderAsync(here, cancellationToken);
+        var notes = new Dictionary<string, IReadOnlyList<PatchNote>>(StringComparer.Ordinal);
+
+        var folders = older.Keys
+            .Select(build => Path.Combine(here.Parent!.FullName, ExportFolders.Name(build)))
+            .Prepend(here.FullName);
+
+        foreach (var folder in folders)
+        {
+            var file = Path.Combine(folder, PatchNotesFile.FileName);
+
+            if (File.Exists(file))
+            {
+                notes[ExportFolders.Id(Path.GetFileName(folder))] = PatchNotesFile.Read(await File.ReadAllTextAsync(file, cancellationToken));
+            }
+        }
 
         return new ExportHistory(
             ExportFolders.Id(here.Name),
@@ -75,7 +93,8 @@ public sealed class FolderExportSource(string folder) : IExportSource
             new ExportFiles(
                 await File.ReadAllBytesAsync(Path.Combine(Folder, ExportReader.EntitiesName), cancellationToken),
                 await File.ReadAllBytesAsync(Path.Combine(Folder, ExportReader.SettingsName), cancellationToken)),
-            await OlderAsync(here, cancellationToken));
+            older,
+            notes);
     }
 
     private static async Task<IReadOnlyDictionary<string, ExportVersion>> OlderAsync(
@@ -97,7 +116,7 @@ public sealed class FolderExportSource(string folder) : IExportSource
 
             older[id] = new ExportVersion(
                 id,
-                ExportReader.Group(await File.ReadAllLinesAsync(
+                ExportLines.Group(await File.ReadAllBytesAsync(
                     Path.Combine(sibling.FullName, ExportReader.EntitiesName),
                     cancellationToken)),
                 await File.ReadAllTextAsync(

@@ -1,0 +1,99 @@
+{"key":{"slug":"talent","id":71},"name":"Runic Revelations","icon":"T_Nhance_RPG_Icons_CorruptionKnowledge","added":false,"fields":[{"label":"Changes \u203A Target","newer":"Soulbrand"},{"label":"Changes \u203A Field","newer":"duration"},{"label":"Changes \u203A Op","newer":"Multiply"},{"label":"Changes \u203A Value","newer":"1.25"},{"label":"Changes \u203A Result","newer":"30"},{"label":"Changes \u203A Target","newer":"Rune of Renewal"},{"label":"Changes \u203A Field","newer":"duration"},{"label":"Changes \u203A Op","newer":"Multiply"},{"label":"Changes \u203A Value","newer":"1.25"},{"label":"Changes \u203A Result","newer":"37.5"},{"label":"Changes \u203A Target","newer":"Luminous Barrier"},{"label":"Changes \u203A Field","newer":"duration"},{"label":"Changes \u203A Op","newer":"Multiply"},{"label":"Changes \u203A Value","newer":"1.25"},{"label":"Changes \u203A Result","newer":"15"}]}
+{"key":{"slug":"talent","id":103},"name":"Earthbourne","icon":"T_Nhance_RPG_Tech_24","added":false,"fields":[{"label":"Changes 1 \u203A Target","older":"Shatter Earth"},{"label":"Changes 1 \u203A Field","older":"cooldown"},{"label":"Changes 1 \u203A Op","older":"CooldownPostAdditives"},{"label":"Changes 1 \u203A Value","older":"-0"}]}
+{"key":{"slug":"talent","id":104},"name":"Forbidden Technique","icon":"Meiko_AbilityIcon_04","added":false,"fields":[{"label":"Changes \u203A Target","newer":"Forbidden Technique"},{"label":"Changes \u203A Field","newer":"duration"},{"label":"Changes \u203A Op","newer":"Set"},{"label":"Changes \u203A Value","newer":"18"}]}
+{"key":{"slug":"talent","id":415},"name":"Shattering Obelisk","icon":"T_Meiko_TauntTotem","added":false,"fields":[{"label":"Changes \u203A Target","newer":"Twin Souls: Bulwark"},{"label":"Changes \u203A Field","newer":"duration"},{"label":"Changes \u203A Op","newer":"Multiply"},{"label":"Changes \u203A Value","newer":"1.5"},{"label":"Changes \u203A Result","newer":"30"}]}
+{"key":{"slug":"legendary-power","id":516},"name":"Astronomer\u0027s Hail","added":false,"fields":[{"label":"Changes 1 \u203A Target","older":"Starfall Volley"},{"label":"Changes 1 \u203A Field","older":"DamageScale"},{"label":"Changes 1 \u203A Op","older":"MultiplyCompound"},{"label":"Changes 1 \u203A Value","older":"1"},{"label":"Changes 2 \u203A Target","older":"Starfall Volley"},{"label":"Changes 2 \u203A Field","older":"DamageScale"},{"label":"Changes 2 \u203A Op","older":"MultiplyCompound"},{"label":"Changes 2 \u203A Value","older":"1"}]}
+{"key":{"slug":"talent","id":578},"name":"Golden Hour","icon":"T_Sune_Omnistrike","added":false,"fields":[{"label":"Changes 2 \u203A Target","older":"Omnistrike"},{"label":"Changes 2 \u203A Field","older":"CritChance"},{"label":"Changes 2 \u203A Op","older":"Additive"},{"label":"Changes 2 \u203A Value","older":"0"},{"label":"Changes 4 \u203A Target","older":"Omnistrike"},{"label":"Changes 4 \u203A Field","older":"CritChance"},{"label":"Changes 4 \u203A Op","older":"Additive"},{"label":"Changes 4 \u203A Value","older":"0"}]}
+{"key":{"slug":"legendary-power","id":615},"name":"Explosivo","icon":"Firemage_Apocalypse","added":false,"fields":[{"label":"Changes 1 \u203A Target","older":"Apocalypse"},{"label":"Changes 1 \u203A Field","older":"DamageScale"},{"label":"Changes 1 \u203A Op","older":"MultiplyCompound"},{"label":"Changes 1 \u203A Value","older":"1"},{"label":"Changes 2 \u203A Target","older":"Apocalypse"},{"label":"Changes 2 \u203A Field","older":"DamageScale"},{"label":"Changes 2 \u203A Op","older":"MultiplyCompound"},{"label":"Changes 2 \u203A Value","older":"1"}]}
+{"key":{"slug":"talent","id":671},"name":"Kill Em All","icon":"Berserker6","added":false,"fields":[{"label":"Changes \u203A Target","newer":"Heavy Strike"},{"label":"Changes \u203A Field","newer":"cooldownAcceleration"},{"label":"Changes \u203A Op","newer":"Additive"},{"label":"Changes \u203A Value","newer":"1.6"},{"label":"Changes \u203A While 1","newer":"Kill Em All"},{"label":"Changes \u203A Percent","newer":"true"}]}
+{"key":{"slug":"talent","id":672},"name":"The Motherload","icon":"T_Nhance_RPG_Icons_SoulGrave","added":false,"fields":[{"label":"Changes 1 \u203A Field","older":"DamageScale"},{"label":"Changes 1 \u203A Op","older":"MultiplyCompound"},{"label":"Changes 1 \u203A Value","older":"1"},{"label":"Changes 2 \u203A Target","older":"Chain Lightning"},{"label":"Changes 2 \u203A Field","older":"DamageScale"},{"label":"Changes 2 \u203A Op","older":"MultiplyCompound"},{"label":"Changes 2 \u203A Value","older":"1"}]}
+{"key":{"slug":"talent","id":764},"name":"Bloodbath","icon":"T_Nhance_RPG_BloodCombat_22","added":false,"fields":[{"label":"Changes \u203A Target","newer":"Reign in Blood"},{"label":"Changes \u203A Field","newer":"cooldownAcceleration"},{"label":"Changes \u203A Op","newer":"Additive"},{"label":"Changes \u203A Value","newer":"2"},{"label":"Changes \u203A While 1","newer":"Bloodbath"},{"label":"Changes \u203A Percent","newer":"true"}]}
+{"key":{"slug":"ability","id":109},"name":"Radiant Blast","icon":"T_Vigor_Cone","added":false,"fields":[{"label":"Changed By","newer":"Avatar of Light"},{"label":"Changed By","newer":"Beacon in the Dark"}]}
+{"key":{"slug":"ability","id":985},"name":"Shield Throw","icon":"T_Warmaster_Shieldthrow","added":false,"fields":[{"label":"Changed By","newer":"Skull Cracker"},{"label":"Changed By","newer":"The Best Defense"}]}
+{"key":{"slug":"ability","id":992},"name":"Dawnbreaker Orb","icon":"T_Vigor_DawnSphere","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
+{"key":{"slug":"ability","id":994},"name":"Soulbrand","icon":"T_Vigor_Soulbrand","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
+{"key":{"slug":"ability","id":995},"name":"Rune of Renewal","icon":"T_Vigor_Rune","added":false,"fields":[{"label":"Changed By","newer":"Harmonizing Refractions"},{"label":"Changed By","newer":"Runic Proliferation"}]}
+{"key":{"slug":"ability","id":999},"name":"Rune of Renewal","added":false,"fields":[{"label":"Changed By","newer":"Beacon in the Dark"},{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
+{"key":{"slug":"ability","id":1031},"name":"Bursting Ice","icon":"T_Rime_CastedDebuffAOEdamage","added":false,"fields":[{"label":"Changed By","newer":"Freezing Torrent"}]}
+{"key":{"slug":"ability","id":1100},"name":"Earth Fist","icon":"Meiko_AbilityIcon_03","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"}]}
+{"key":{"slug":"ability","id":1103},"name":"Rising Storm","icon":"Meiko_AbilityIcon_05","added":false,"fields":[{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"ability","id":1104},"name":"Rising Earth","icon":"Meiko_AbilityIcon_06","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"},{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"ability","id":1105},"name":"Double Palm Strike","icon":"Meiko_AbilityIcon_04","added":false,"fields":[{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"ability","id":1106},"name":"Lashing Stormkick","icon":"Meiko_AbilityIcon_08","added":false,"fields":[{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"ability","id":1107},"name":"Stone Stomp","icon":"Meiko_AbilityIcon_11","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"}]}
+{"key":{"slug":"ability","id":1112},"name":"Earthfist Barrage","icon":"Meiko_AbilityIcon_09","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"},{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"ability","id":1115},"name":"Shatter Earth","icon":"T_Meiko_SlamStun","added":false,"fields":[{"label":"Changed By","older":"Earthbourne"},{"label":"Changed By","newer":"Rumbling Stone"}]}
+{"key":{"slug":"ability","id":1120},"name":"Spirited Vortex","icon":"Meiko_AbilityIcon_07","added":false,"fields":[{"label":"Changed By","newer":"Harsh Winds"},{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"ability","id":1121},"name":"Stone Shield","icon":"T_Meiko_StoneShield","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"}]}
+{"key":{"slug":"ability","id":1201},"name":"Queen\u0027s Fang","icon":"Mara_SingleTargetFinisher","added":false,"fields":[{"label":"Changed By","newer":"Deadly Scheme: Active"},{"label":"Changed By","newer":"Assassin\u0027s Guile"},{"label":"Changed By","newer":"Malevolence: Queen\u0027s Fang"}]}
+{"key":{"slug":"ability","id":1212},"name":"Arachnid Assault","icon":"Mara_SpiderAOE","added":false,"fields":[{"label":"Changed By","newer":"Deadly Scheme: Active"},{"label":"Changed By","newer":"Assassin\u0027s Guile"},{"label":"Changed By","newer":"Malevolence: Arachnid Assault"}]}
+{"key":{"slug":"ability","id":1219},"name":"Face Breaker (old)","icon":"T_Ink_Facebreaker","added":false,"fields":[{"label":"Changed By","newer":"Flash of Anger"}]}
+{"key":{"slug":"ability","id":1228},"name":"Culling Strike","icon":"T_Ink_Cullingstrike","added":false,"fields":[{"label":"Changed By","newer":"Focused Wrath"}]}
+{"key":{"slug":"ability","id":1236},"added":false,"fields":[{"label":"Changed By","older":"The Motherload"}]}
+{"key":{"slug":"ability","id":1239},"name":"Heavy Strike","icon":"T_Ink_TimerAbility","added":false,"fields":[{"label":"Changed By","newer":"Kill Em All"}]}
+{"key":{"slug":"ability","id":1260},"name":"Fire Ball","icon":"Firemage_Inferno","added":false,"fields":[{"label":"Changed By","newer":"Reign of Fire"},{"label":"Changed By","newer":"Reign of Fire"}]}
+{"key":{"slug":"ability","id":1563},"name":"Meticulous Runesmith","icon":"T_LightPortal","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
+{"key":{"slug":"ability","id":1565},"name":"Fire Ball","icon":"Firemage_Inferno","added":false,"fields":[{"label":"Changed By","newer":"Reign of Fire"},{"label":"Changed By","newer":"Reign of Fire"}]}
+{"key":{"slug":"ability","id":1863},"name":"Omnistrike","icon":"T_Sune_Omnistrike","added":false,"fields":[{"label":"Changed By 1","older":"Golden Hour"}]}
+{"key":{"slug":"ability","id":1929},"name":"Heavy Strike","icon":"T_Ink_TimerAbility","added":false,"fields":[{"label":"Changed By","newer":"Kill Em All"}]}
+{"key":{"slug":"effect","id":1284},"name":"Shield Throw","icon":"T_Warmaster_Shieldthrow","added":false,"fields":[{"label":"Changed By","newer":"Skull Cracker"},{"label":"Changed By","newer":"The Best Defense"}]}
+{"key":{"slug":"effect","id":1310},"added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
+{"key":{"slug":"effect","id":1311},"name":"Dawnbreaker Orb","icon":"T_Vigor_DawnSphere","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
+{"key":{"slug":"effect","id":1315},"name":"Soulbrand","icon":"T_Vigor_Soulbrand","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
+{"key":{"slug":"effect","id":1319},"name":"Rune of Renewal","icon":"T_Vigor_Rune","added":false,"fields":[{"label":"Changed By","newer":"Harmonizing Refractions"},{"label":"Changed By","newer":"Runic Proliferation"}]}
+{"key":{"slug":"effect","id":1336},"added":false,"fields":[{"label":"Changed By","newer":"Beacon in the Dark"}]}
+{"key":{"slug":"effect","id":1337},"name":"Radiant Blast","icon":"T_Vigor_Cone","added":false,"fields":[{"label":"Changed By","newer":"Avatar of Light"},{"label":"Changed By","newer":"Beacon in the Dark"}]}
+{"key":{"slug":"effect","id":1524},"name":"Earth Fist","icon":"Meiko_AbilityIcon_03","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"}]}
+{"key":{"slug":"effect","id":1531},"name":"Rising Storm","icon":"Meiko_AbilityIcon_05","added":false,"fields":[{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"effect","id":1533},"name":"Rising Earth","icon":"Meiko_AbilityIcon_06","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"},{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"effect","id":1535},"name":"Double Palm Strike","icon":"Meiko_AbilityIcon_04","added":false,"fields":[{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"effect","id":1537},"name":"Lashing Stormkick","icon":"Meiko_AbilityIcon_08","added":false,"fields":[{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"effect","id":1542},"name":"Stone Stomp","icon":"Meiko_AbilityIcon_11","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"}]}
+{"key":{"slug":"effect","id":1552},"name":"Earthfist Barrage","icon":"Meiko_AbilityIcon_09","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"},{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"effect","id":1557},"name":"Shatter Earth","icon":"T_Meiko_SlamStun","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"}]}
+{"key":{"slug":"effect","id":1569},"name":"Spirited Vortex","icon":"Meiko_AbilityIcon_07","added":false,"fields":[{"label":"Changed By","newer":"Harsh Winds"},{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"effect","id":1572},"name":"Stone Shield","icon":"T_Meiko_StoneShield","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"}]}
+{"key":{"slug":"effect","id":1705},"name":"Queen\u0027s Fang","icon":"Mara_SingleTargetFinisher","added":false,"fields":[{"label":"Changed By","newer":"Deadly Scheme: Active"},{"label":"Changed By","newer":"Assassin\u0027s Guile"},{"label":"Changed By","newer":"Malevolence: Queen\u0027s Fang"}]}
+{"key":{"slug":"effect","id":1728},"name":"Arachnid Assault","icon":"Mara_SpiderAOE","added":false,"fields":[{"label":"Changed By","newer":"Deadly Scheme: Active"},{"label":"Changed By","newer":"Assassin\u0027s Guile"},{"label":"Changed By","newer":"Malevolence: Arachnid Assault"}]}
+{"key":{"slug":"effect","id":1762},"name":"Culling Strike","icon":"T_Ink_Cullingstrike","added":false,"fields":[{"label":"Changed By","newer":"Focused Wrath"}]}
+{"key":{"slug":"effect","id":1774},"name":"Chain Lightning","added":false,"fields":[{"label":"Changed By","older":"The Motherload"}]}
+{"key":{"slug":"effect","id":1776},"name":"Heavy Strike","icon":"T_Ink_TimerAbility","added":false,"fields":[{"label":"Changed By","newer":"Kill Em All"}]}
+{"key":{"slug":"effect","id":1779},"name":"Heavy Strike","icon":"T_Ink_TimerAbility","added":false,"fields":[{"label":"Changed By","newer":"Kill Em All"}]}
+{"key":{"slug":"effect","id":1833},"name":"Apocalypse","icon":"Firemage_Apocalypse","added":false,"fields":[{"label":"Changed By 1","older":"Explosivo"}]}
+{"key":{"slug":"effect","id":1862},"name":"Starfall Volley","icon":"Bowguy_Rain","added":false,"fields":[{"label":"Changed By 1","older":"Astronomer\u0027s Hail"}]}
+{"key":{"slug":"effect","id":2010},"name":"Multishot","icon":"Bowguy_Multishot","added":false,"fields":[{"label":"Changed By","newer":"Skystrider\u0027s Supremacy"}]}
+{"key":{"slug":"effect","id":2334},"added":false,"fields":[{"label":"Enabled In Game","older":"false"}]}
+{"key":{"slug":"effect","id":2335},"name":"Earthfist Barrage","icon":"Meiko_AbilityIcon_09","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"},{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"effect","id":2432},"name":"Soulbrand: Remnant","icon":"T_Vigor_Soulbrand","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
+{"key":{"slug":"effect","id":2577},"name":"Omnistrike","icon":"T_Sune_Omnistrike","added":false,"fields":[{"label":"Changed By 1","older":"Golden Hour"}]}
+{"key":{"slug":"effect","id":2755},"name":"Heavy Strike","icon":"T_Ink_TimerAbility","added":false,"fields":[{"label":"Changed By","newer":"Kill Em All"}]}
+{"key":{"slug":"item-trait","id":3},"name":"Inspired Arms","icon":"Tex_SpellBook06_93","added":true,"fields":[]}
+{"key":{"slug":"item-trait","id":30},"name":"Topaz Winds","icon":"Tex_y_12_layered","added":true,"fields":[]}
+{"key":{"slug":"item-trait","id":43},"name":"Navigator\u0027s Intuition","icon":"Tex_SpellBook03_42","added":true,"fields":[]}
+{"key":{"slug":"item-trait","id":50},"name":"Heroic Brand","icon":"Tex_SpellBook01_25","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":2},"name":"Sahril\u0027s Madness","icon":"T_Ascension_Aggro","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":3},"name":"Elheryn\u0027s Exile","icon":"T_Icon_Frost_134","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":4},"name":"Vayr\u0027s Legacy","icon":"T_Icon_Unholy_202","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":5},"name":"Asha\u0027s Dilemma","icon":"T_Icon_Energy_104","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":6},"name":"Asha\u0027s Regret","icon":"T_Nhance_RPG_Icons_ArcaneMask","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":8},"name":"Blood Shards","icon":"T_BloodEye","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":9},"name":"Carnage","icon":"T_Nhance_RPG_Icons_BloodRitual","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":10},"name":"Challenge","icon":"Tex_SpellBook06_83","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":11},"name":"Binding Ice","icon":"T_Nhance_RPG_Icons_FrozenStep","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":12},"name":"Empowered Minions","icon":"T_Nhance_RPG_Gold_01","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":13},"name":"Malevolent Shade","icon":"T_EnragedSpirit","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":14},"name":"Meteor Rain","icon":"T_Nhance_RPG_Fire_36","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":15},"name":"Stone Skin","icon":"T_Nhance_RPG_Icons_EarthWall","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":16},"name":"Ultimatum","icon":"T_Nhance_RPG_Icons_ShadowRoar","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":18},"name":"Promoted Enemies","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":19},"name":"Shadow Lord\u0027s Trial","icon":"T_Madness","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":20},"name":"Ghorn the Avalanche","icon":"T_Modifier_FrostGiant","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":21},"name":"Krumbug the Naughty","icon":"T_Modifier_WinterTrickster","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":22},"name":"Eira the White Witch","icon":"T_Modifier_WinterWitch","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":23},"name":"Pathfinder\u0027s Guidance","icon":"T_Icon_Tech_35","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":24},"name":"Anomalous Orbs","icon":"T_Nhance_RPG_Tech_17","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":25},"name":"Storm Shield","icon":"T_Nhance_RPG_Shadow_43","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":26},"added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":27},"name":"Truesight","icon":"T_Heskyr_Truesight_icon_01","added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":28},"added":true,"fields":[]}
+{"key":{"slug":"dungeon-affix","id":29},"name":"Adventure Mode: {Rank}","icon":"Tex_SpellBook08_07","added":true,"fields":[]}

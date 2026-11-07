@@ -1,7 +1,9 @@
 namespace Fellowship.Codex.Usage;
 
 /// <summary>
-/// Writes the counts to SQLite every ten seconds, and deletes counts past the retention each day.
+/// Writes the counts and the running minute's server peaks to SQLite every ten seconds, and deletes
+/// counts past the retention each day. A killed process loses ten seconds at most. Each start is a row,
+/// and a clean stop closes it, so a row with no stop and no process alive is a killed process.
 /// </summary>
 public sealed class UsageFlush(
     UsageCounter counter,
@@ -23,6 +25,15 @@ public sealed class UsageFlush(
 
     private DateTimeOffset pruned = DateTimeOffset.MinValue;
 
+    private readonly long started = time.GetUtcNow().ToUnixTimeSeconds();
+
+    public override Task StartAsync(CancellationToken cancellationToken)
+    {
+        store.Started(started);
+
+        return base.StartAsync(cancellationToken);
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(Interval, time);
@@ -40,6 +51,7 @@ public sealed class UsageFlush(
     {
         await base.StopAsync(cancellationToken);
         Flush();
+        store.Stopped(started, time.GetUtcNow().ToUnixTimeSeconds());
     }
 
     private void Tick()
@@ -67,7 +79,9 @@ public sealed class UsageFlush(
     {
         try
         {
-            if (server.Tick() is { } finished) store.Write(finished);
+            foreach (var sample in server.Tick()) store.Write(sample);
+
+            store.Seen(started, time.GetUtcNow().ToUnixTimeSeconds());
         }
         catch (Exception failure)
         {

@@ -47,7 +47,7 @@ public class CrawlerValidatorTests(AdminHost host)
     }
 
     [Fact]
-    public async Task A_crawler_with_a_validator_from_another_start_receives_the_page()
+    public async Task A_crawler_with_a_validator_from_another_image_or_export_receives_the_page()
     {
         using var response = await GetAsync(Page, Googlebot, headers => headers.IfNoneMatch.Add(new EntityTagHeaderValue("\"0\"", true)));
 
@@ -105,6 +105,21 @@ public class SitemapTests(AdminHost host)
 
             Assert.True(response.StatusCode == HttpStatusCode.OK, $"{path} answered {(int)response.StatusCode}.");
         }
+    }
+
+    [Fact]
+    public async Task A_patch_notes_page_has_each_notes_anchor_and_fields()
+    {
+        var notes = host.Factory.Services.GetRequiredService<IPatchNotesService>();
+
+        var (build, note) = notes.Builds
+            .SelectMany(named => notes.Of(named)!.Notes.Select(found => (named, found)))
+            .First(pair => pair.found.Fields.Count > 0);
+
+        var page = await host.Client().GetStringAsync($"/patch-notes/{build}", TestContext.Current.CancellationToken);
+
+        Assert.Contains($"<li id=\"{note.Key.Slug}-{note.Key.Id}\"", page);
+        Assert.Contains("<dl class=\"cx-pn-fields\">", page);
     }
 
     [Fact]

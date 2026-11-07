@@ -1,0 +1,241 @@
+{"key":{"slug":"gem-ability","id":276},"name":"Mystic\u0027s Intuition","icon":"T_Icon_Frost_120","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":277},"name":"Mystic\u0027s Intuition - II","icon":"T_Icon_Frost_120","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":278},"name":"Champion\u0027s Heart","icon":"T_Icon_BloodCombat_132","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":279},"name":"Champion\u0027s Heart - II","icon":"T_Icon_BloodCombat_132","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":280},"name":"Thief\u0027s Alacrity","icon":"T_Nhance_RPG_Gold_15","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":281},"name":"Thief\u0027s Alacrity - II","icon":"T_Nhance_RPG_Gold_15","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":282},"name":"Vanguard\u0027s Resolve","icon":"T_Icon_Fel_07","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":283},"name":"Vanguard\u0027s Resolve - II","icon":"T_Icon_Fel_07","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":284},"name":"Berserker\u0027s Zeal","icon":"T_Icon_Shadow_140","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":285},"name":"Berserker\u0027s Zeal - II","icon":"T_Icon_Shadow_140","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":286},"name":"Oracle\u0027s Foresight","icon":"T_Icon_Energy_124","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":287},"name":"Oracle\u0027s Foresight - II","icon":"T_Icon_Energy_124","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":290},"name":"Blessing of the Artisan","icon":"T_Nhance_RPG_Arcane_21","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":291},"name":"Blessing of the Artisan - II","icon":"T_Nhance_RPG_Arcane_21","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":292},"name":"Ancient\u0027s Wisdom","icon":"T_Nhance_RPG_Arcane_36","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":293},"name":"Ancient\u0027s Wisdom - II","icon":"T_Nhance_RPG_Arcane_36","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":294},"name":"Ancestral Surge","icon":"T_Icon_Energy_130","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":295},"name":"Ancestral Surge - II","icon":"T_Icon_Energy_130","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":296},"name":"Might of the Minotaur","icon":"T_Nhance_RPG_Icons_InfernalMadness","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":297},"name":"Might of the Minotaur - II","icon":"T_Nhance_RPG_Icons_InfernalMadness","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":298},"name":"Stoic\u0027s Teachings","icon":"Tex_SpellBook01_34","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":299},"name":"Stoic\u0027s Teachings - II","icon":"Tex_SpellBook01_34","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":300},"name":"Titan\u0027s Blood","icon":"T_BloodDrop","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":301},"name":"Titan\u0027s Blood - II","icon":"T_BloodDrop","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":302},"name":"Tranquil Resolve","icon":"Tex_SpellBook01_59","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":303},"name":"Tranquil Resolve - II","icon":"Tex_SpellBook01_59","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":304},"name":"Resonating Soul","icon":"T_Nhance_RPG_Energy_17","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":305},"name":"Resonating Soul - II","icon":"T_Nhance_RPG_Energy_17","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":306},"name":"Reaper\u0027s Reprieve","icon":"T_Nhance_RPG_Icons_ArcaneSmoke","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":307},"name":"Reaper\u0027s Reprieve - II","icon":"T_Nhance_RPG_Icons_ArcaneSmoke","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":308},"name":"Blessing of the Prophet","icon":"T_Nhance_RPG_Energy_29","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":309},"name":"Blessing of the Prophet - II","icon":"T_Nhance_RPG_Energy_29","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":310},"name":"Unyielding Vitality","icon":"T_Icon_BloodCombat_137","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":311},"name":"Unyielding Vitality - II","icon":"T_Icon_BloodCombat_137","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":316},"name":"Blessing of the Virtuoso","icon":"Tex_SpellBook01_11","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":317},"name":"Blessing of the Virtuoso - II","icon":"Tex_SpellBook01_11","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":318},"name":"Adrenaline Rush","icon":"T_Nhance_RPG_Icons_HolyArrow","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":319},"name":"Adrenaline Rush - II","icon":"T_Nhance_RPG_Icons_HolyArrow","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":320},"name":"Feline Grace","icon":"Tex_SpellBook06_01","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":321},"name":"Feline Grace - II","icon":"Tex_SpellBook06_01","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":322},"name":"First Strike","icon":"T_Icon_Nature_205","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":323},"name":"First Strike - II","icon":"T_Icon_Nature_205","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":328},"name":"Tactician\u0027s Accumen","icon":"T_Nhance_RPG_Icons_NatureAmbush","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":329},"name":"Tactician\u0027s Accumen - II","icon":"T_Nhance_RPG_Icons_NatureAmbush","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":330},"name":"Blessing of the Conqueror","icon":"T_Nhance_RPG_Icons_BloodHide","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":331},"name":"Blessing of the Conqueror - II","icon":"T_Nhance_RPG_Icons_BloodHide","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":332},"name":"Killer Instinct","icon":"T_Nhance_RPG_Icons_ShadowRaise","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":333},"name":"Killer Instinct - II","icon":"T_Nhance_RPG_Icons_ShadowRaise","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":334},"name":"Blessing of the Deathdealer","icon":"T_Nhance_RPG_Icons_ShadowRoar","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":335},"name":"Blessing of the Deathdealer - II","icon":"T_Nhance_RPG_Icons_ShadowRoar","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":338},"name":"Harmonious Soul","icon":"T_Nhance_RPG_Arcane_19","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":339},"name":"Harmonious Soul - II","icon":"T_Nhance_RPG_Arcane_19","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":342},"name":"Blessing of the Commander","icon":"T_Icon_Fel_02","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":343},"name":"Blessing of the Commander - II","icon":"T_Icon_Fel_02","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":344},"name":"Rogue\u0027s Resurgence","icon":"T_Icon_Gold_135","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":345},"name":"Rogue\u0027s Resurgence - II","icon":"T_Icon_Gold_135","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":346},"name":"Sentinel\u0027s Bastion","icon":"T_Nhance_RPG_Icons_SpiritAmulet_SentinelBastion","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":347},"name":"Sentinel\u0027s Bastion - II","icon":"T_Nhance_RPG_Icons_SpiritAmulet_SentinelBastion","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":531},"name":"Sealed Fate","icon":"T_Icon_Shadow_121","added":true,"fields":[]}
+{"key":{"slug":"gem-ability","id":532},"name":"Sealed Fate - II","icon":"T_Icon_Shadow_121","added":true,"fields":[]}
+{"key":{"slug":"glyph","id":700},"name":"The Trickster","icon":"T_Icons_BlessingRuneIcon_Unallocated_02","added":true,"fields":[]}
+{"key":{"slug":"glyph","id":701},"name":"The Sinister","icon":"T_Icons_BlessingRuneIcon_Unallocated_05","added":true,"fields":[]}
+{"key":{"slug":"glyph","id":703},"name":"The Wayfarer","icon":"T_Icons_BlessingRuneIcon_Unallocated_012","added":true,"fields":[]}
+{"key":{"slug":"glyph","id":704},"name":"The Subduer","icon":"T_Icons_BlessingRuneIcon_Unallocated_03","added":true,"fields":[]}
+{"key":{"slug":"glyph","id":705},"name":"The Monarch","icon":"T_Icons_BlessingRuneIcon_Unallocated_011","added":true,"fields":[]}
+{"key":{"slug":"glyph","id":706},"name":"The Mystic","icon":"T_Icons_BlessingRuneIcon_Unallocated_010","added":true,"fields":[]}
+{"key":{"slug":"glyph","id":709},"name":"The Philosopher","icon":"T_Icons_BlessingRuneIcon_Unallocated_08","added":true,"fields":[]}
+{"key":{"slug":"glyph","id":712},"name":"The Vehement","icon":"T_Icons_BlessingRuneIcon_Unallocated_06","added":true,"fields":[]}
+{"key":{"slug":"legendary-stat","id":790},"name":"Blood of the Undying","added":true,"fields":[]}
+{"key":{"slug":"ability","id":111},"name":"Lightshaper\u0027s Ward","icon":"T_Vigor_Ward","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":116},"name":"Ironleaf Ward","icon":"T_Mosse_DR","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":973},"name":"Iron Wall","icon":"T_Warmaster_IronWall","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":975},"name":"Hold the Line","icon":"T_WM_HoldTheLine","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1001},"name":"Runic Proliferation","icon":"T_Vigor_HealRune","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1009},"name":"Flight of the Navir","icon":"T_Rime_BirdCD","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1026},"name":"Winter\u0027s Blessing","icon":"T_Rime_HealingBuff","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1032},"name":"Ice Blitz","icon":"T_Nhance_RPG_Icons_IcySpikes","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1059},"name":"Safe Haven","icon":"T_Mosse_LinkCD","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1082},"name":"Twin Souls: Bulwark","icon":"T_Meiko_TauntTotem","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1115},"name":"Shatter Earth","icon":"T_Meiko_SlamStun","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1206},"name":"Maiden of Death","icon":"Mara_Maiden","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1233},"name":"Focused Wrath","icon":"T_Ink_FocusedWrath","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1235},"name":"Thunder Call","icon":"T_Ink_Selfbuff","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1267},"name":"Wildfire","icon":"Firemage_Wildfire","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1273},"name":"Apocalypse","icon":"Firemage_Apocalypse","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1304},"name":"Skystrider\u0027s Grace","icon":"Bowguy_HasteBuff","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1310},"name":"Lunarlight Mark","icon":"Bowguy_Mark","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1398},"name":"Skystrider\u0027s Supremacy","icon":"Bowguy_Supremacy","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1468},"name":"Final Stratagem","icon":"Mara_Strategem","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1623},"name":"Pyromania","icon":"Firemage_Pyromania","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1861},"name":"Omega Reprieval","icon":"T_Sune_OmegaReprieval","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1890},"name":"Unfolding Doom","icon":"T_Lisa_StrandsofTime","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":1969},"name":"Fleeting Hour","icon":"T_Lisa_TimeBuff","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":2233},"name":"Macabre Stratagem","icon":"T_Nhance_RPG_Shadow_16","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":2292},"name":"Slaughter","icon":"T_Gunde_Slaughter","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"ability","id":2295},"name":"Reign in Blood","icon":"T_Gunde_HPDrain","added":false,"fields":[{"label":"Cooldown Acceleration Granted By","older":"The Monarch"},{"label":"Cooldown Acceleration Granted By","newer":"The Monarch"}]}
+{"key":{"slug":"effect","id":88},"name":"Brave Machinations","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"trait-power","newer":"aspect"},{"label":"Name Borrowed From \u203A Id","older":"362","newer":"48"}]}
+{"key":{"slug":"effect","id":89},"name":"Heart of Stone","added":false,"fields":[{"label":"Name Borrowed From","older":"Heart of Stone"}]}
+{"key":{"slug":"effect","id":1901},"name":"Mystic\u0027s Intuition","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1902},"name":"Mystic\u0027s Intuition - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1903},"name":"Champion\u0027s Heart","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1904},"name":"Champion\u0027s Heart - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1905},"name":"Thief\u0027s Alacrity","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1906},"name":"Thief\u0027s Alacrity - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1907},"name":"Vanguard\u0027s Resolve","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1908},"name":"Vanguard\u0027s Resolve - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1909},"name":"Berserker\u0027s Zeal","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1910},"name":"Berserker\u0027s Zeal - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1911},"name":"Oracle\u0027s Foresight","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1912},"name":"Oracle\u0027s Foresight - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1915},"name":"Blessing of the Artisan","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1916},"name":"Blessing of the Artisan - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1917},"name":"Ancient\u0027s Wisdom","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1918},"name":"Ancient\u0027s Wisdom - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1923},"name":"Stoic\u0027s Teachings","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1924},"name":"Stoic\u0027s Teachings - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1925},"name":"Titan\u0027s Blood","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1926},"name":"Titan\u0027s Blood - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1941},"name":"Feline Grace","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1942},"name":"Feline Grace - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1949},"name":"Tactician\u0027s Accumen","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1950},"name":"Tactician\u0027s Accumen - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1953},"name":"Killer Instinct","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1954},"name":"Killer Instinct - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1955},"name":"Blessing of the Deathdealer","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1956},"name":"Blessing of the Deathdealer - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1963},"name":"Blessing of the Commander","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":1964},"name":"Blessing of the Commander - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":2077},"name":"Willful Momentum","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"trait-power","newer":"sigil"},{"label":"Name Borrowed From \u203A Id","older":"371","newer":"39"}]}
+{"key":{"slug":"effect","id":2138},"name":"Heroic Brand","added":false,"fields":[{"label":"Name Borrowed From","older":"Heroic Brand"}]}
+{"key":{"slug":"effect","id":2482},"name":"Sealed Fate","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":2483},"name":"Sealed Fate - II","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"gem-trait","newer":"gem-ability"}]}
+{"key":{"slug":"effect","id":2851},"name":"The Shadow","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"trait-power","newer":"protective-enchant"},{"label":"Name Borrowed From \u203A Id","older":"683","newer":"54"},{"label":"Name Borrowed From \u203A Name","older":"The Gryphon","newer":"The Shadow"}]}
+{"key":{"slug":"effect","id":2852},"name":"The Oak","icon":"T_Perk_Oak","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"trait-power","newer":"protective-enchant"},{"label":"Name Borrowed From \u203A Id","older":"684","newer":"62"},{"label":"Texture Borrowed From \u203A Type","older":"trait-power","newer":"protective-enchant"},{"label":"Texture Borrowed From \u203A Id","older":"684","newer":"62"}]}
+{"key":{"slug":"effect","id":2853},"name":"The Lake","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"trait-power","newer":"protective-enchant"},{"label":"Name Borrowed From \u203A Id","older":"685","newer":"56"}]}
+{"key":{"slug":"effect","id":3186},"name":"The Monarch","icon":"T_Icons_BlessingRuneIcon_Unallocated_011","added":false,"fields":[{"label":"Name Borrowed From \u203A Type","older":"blessing","newer":"glyph"},{"label":"Texture Borrowed From \u203A Type","older":"blessing","newer":"glyph"}]}
+{"key":{"slug":"effect","id":3358},"name":"Valkyrie\u0027s Might","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3358},"name":"Centaur\u0027s Guile","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3358},"name":"Unicorn\u0027s Cunning","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3359},"name":"Ogre\u0027s Might","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3359},"name":"Vampire\u0027s Guile","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3359},"name":"Sphinx\u0027s Cunning","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3360},"name":"Behemoth\u0027s Might","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3360},"name":"Huldra\u0027s Guile","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3360},"name":"Undine\u0027s Cunning","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3361},"name":"Revenant\u0027s Might","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3361},"name":"Wraith\u0027s Guile","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3361},"name":"Banshee\u0027s Cunning","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3362},"name":"Griffin\u0027s Might","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3362},"name":"Strix\u0027s Guile","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3362},"name":"Salamander\u0027s Cunning","added":true,"fields":[]}
+{"key":{"slug":"effect","id":3363},"added":false,"fields":[{"label":"Scales Off","older":"CritRating, ExpertiseRating, PrimaryAttributeFlatBonus","newer":"CritRating, ExpertiseRating"},{"label":"Modifiers 1 \u203A Attribute","older":"PrimaryAttributeFlatBonus"},{"label":"Modifiers 1 \u203A Op","older":"Additive"}]}
+{"key":{"slug":"effect","id":3366},"name":"Blood of the Undying","added":true,"fields":[]}
+{"key":{"slug":"radiance","id":21},"name":"Amethyst","icon":"icon_system_star_rounded","added":true,"fields":[]}
+{"key":{"slug":"radiance","id":26},"name":"Diamond","icon":"icon_system_star_rounded","added":true,"fields":[]}
+{"key":{"slug":"radiance","id":31},"name":"Emerald","icon":"icon_system_star_rounded","added":true,"fields":[]}
+{"key":{"slug":"radiance","id":37},"name":"Ruby","icon":"icon_system_star_rounded","added":true,"fields":[]}
+{"key":{"slug":"radiance","id":42},"name":"Sapphire","icon":"icon_system_star_rounded","added":true,"fields":[]}
+{"key":{"slug":"radiance","id":47},"name":"Topaz","icon":"icon_system_star_rounded","added":true,"fields":[]}
+{"key":{"slug":"item","id":5898},"name":"Timeweaver Dress","icon":"Icon_Lisa_Prog01_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Pyromancer Robe","icon":"Icon_Firemage_FmCloth_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Harbinger of Winter Furs","icon":"Icon_Rime_ArcticOwl_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Hungering Blade Hauberk","icon":"Icon_Mara_Shadowblade_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Twinsoul Tunic","icon":"Icon_Meiko_CmLeather_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Daughter of the Forest Tunic","icon":"Icon_Mosse_PetalMetal_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Northlander\u0027s Harness","icon":"Icon_Gunde_Prog01_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Skystrider Hauberk","icon":"Icon_Bowguy_AngelicHawk_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Lightshaper Vestments","icon":"Icon_Vigor_DrPlate_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Stormlord Harness","icon":"Icon_Ink_Beastslayer_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Warmaster Breastplate","icon":"Icon_Warmaster_FkPlate_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5898},"name":"Light of Azamir Breastplate","icon":"Icon_Sune_Prog01_Chest_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Timeweaver Helm","icon":"Icon_Lisa_Prog01_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Pyromancer Helm","icon":"Icon_Firemage_FmCloth_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Harbinger of Winter Helm","icon":"Icon_Rime_ArcticOwl_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Hungering Blade Helm","icon":"Icon_Mara_Shadowblade_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Twinsoul Helm","icon":"Icon_Meiko_CmLeather_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Daughter of the Forest Helm","icon":"Icon_Mosse_PetalMetal_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Northlander\u0027s Helm","icon":"Icon_Gunde_Prog01_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Skystrider Helm","icon":"Icon_Bowguy_AngelicHawk_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Lightshaper Helm","icon":"Icon_Vigor_DrPlate_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Stormlord Helm","icon":"Icon_Ink_Beastslayer_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Warmaster Helm","icon":"Icon_Warmaster_FkPlate_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5899},"name":"Helm of the First King","icon":"Icon_Sune_Prog01_Head_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Timeweaver Leggings","icon":"Icon_Lisa_Prog01_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Pyromancer Codpiece","icon":"Icon_Firemage_FmCloth_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Harbinger of Winter Leggings","icon":"Icon_Rime_ArcticOwl_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Hungering Blade Leggings","icon":"Icon_Mara_Shadowblade_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Twinsoul Leggings","icon":"Icon_Meiko_CmLeather_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Daughter of the Forest Leggings","icon":"Icon_Mosse_PetalMetal_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Northlander\u0027s Wraps","icon":"Icon_Gunde_Prog01_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Skystrider Leggings","icon":"Icon_Bowguy_AngelicHawk_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Lightshaper Leggings","icon":"Icon_Vigor_DrPlate_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Stormlord Wraps","icon":"Icon_Ink_Beastslayer_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Warmaster Greaves","icon":"Icon_Warmaster_FkPlate_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"item","id":5900},"name":"Light of Azamir Greaves","icon":"Icon_Sune_Prog01_Waist_R2_T0-legendary","added":false,"fields":[{"label":"Legendary Stats","newer":"Blood of the Undying"}]}
+{"key":{"slug":"currency","id":6199},"icon":"T_Nhance_RPG_Shadow_26","added":true,"fields":[]}
+{"key":{"slug":"sigil","id":1},"name":"Hidden Power","icon":"Tex_SpellBook01_89","added":true,"fields":[]}
+{"key":{"slug":"sigil","id":2},"name":"Inspired Allegiance","icon":"Tex_b_26_layered","added":true,"fields":[]}
+{"key":{"slug":"sigil","id":4},"name":"Seized Opportunity","icon":"Tex_violet_27","added":true,"fields":[]}
+{"key":{"slug":"sigil","id":5},"name":"Vengeful Soul","icon":"Berserker16","added":true,"fields":[]}
+{"key":{"slug":"sigil","id":28},"name":"Kindling","icon":"T_Nhance_RPG_Gold_10","added":true,"fields":[]}
+{"key":{"slug":"aspect","id":31},"name":"Amethyst Splinters","icon":"Tex_SpellBook07_83","added":true,"fields":[]}
+{"key":{"slug":"aspect","id":32},"name":"Sapphire Aurastone","icon":"T_Nhance_RPG_Frost_27","added":true,"fields":[]}
+{"key":{"slug":"aspect","id":33},"name":"Diamond Strike","icon":"T_Nhance_RPG_Arcane_27","added":true,"fields":[]}
+{"key":{"slug":"aspect","id":34},"name":"Emerald Judgement","icon":"T_Nhance_RPG_Icons_NatureStaff","added":true,"fields":[]}
+{"key":{"slug":"aspect","id":35},"name":"Ruby Storm","icon":"T_Nhance_RPG_Fire_57","added":true,"fields":[]}
+{"key":{"slug":"sigil","id":39},"name":"Willful Momentum","icon":"T_Nhance_RPG_Icons_SpiritFire","added":true,"fields":[]}
+{"key":{"slug":"sigil","id":42},"name":"Hunter\u0027s Focus","icon":"Tex_SpellBook01_82","added":true,"fields":[]}
+{"key":{"slug":"sigil","id":46},"name":"Patient Soul","icon":"Tex_SpellBook06_99","added":true,"fields":[]}
+{"key":{"slug":"aspect","id":47},"name":"Visions of Grandeur","icon":"Tex_SpellBook06_08","added":true,"fields":[]}
+{"key":{"slug":"aspect","id":48},"name":"Brave Machinations","icon":"Tex_violet_4","added":true,"fields":[]}
+{"key":{"slug":"aspect","id":51},"name":"Martial Initiative","icon":"Guardian5","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":52},"name":"The Beetle","icon":"Tex_WitchCraftIcons_75_b","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":53},"name":"The Mountain","icon":"Tex_artifact_14_b","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":54},"name":"The Shadow","icon":"T_Icon_Shadow_119","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":55},"name":"The Dune","icon":"T_Perk_Dune","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":56},"name":"The Lake","icon":"T_Perk_River","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":57},"name":"The Viper","icon":"T_Nhance_RPG_Icons_NatureVision","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":58},"name":"The Stag","icon":"T_Perk_stag","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":59},"name":"The Tower","icon":"Tex_mage_tower","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":61},"name":"The Dragon","icon":"Dragonknight3","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":62},"name":"The Oak","icon":"T_Perk_Oak","added":true,"fields":[]}
+{"key":{"slug":"protective-enchant","id":63},"name":"The Wolf","icon":"T_Perk_Wolf","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":65},"name":"Jotunn\u0027s Might","icon":"T_Nhance_RPG_Gold_16","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":65},"name":"Wyvern\u0027s Guile","icon":"T_Nhance_RPG_Gold_16","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":65},"name":"Chimera\u0027s Cunning","icon":"T_Nhance_RPG_Gold_16","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":66},"name":"Griffin\u0027s Might","icon":"Bowguy_HasteBuff","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":66},"name":"Strix\u0027s Guile","icon":"Bowguy_HasteBuff","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":66},"name":"Salamander\u0027s Cunning","icon":"Bowguy_HasteBuff","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":67},"name":"Revenant\u0027s Might","icon":"T_Nhance_RPG_Icons_EvilSouls","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":67},"name":"Wraith\u0027s Guile","icon":"T_Nhance_RPG_Icons_EvilSouls","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":67},"name":"Banshee\u0027s Cunning","icon":"T_Nhance_RPG_Icons_EvilSouls","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":68},"name":"Behemoth\u0027s Might","icon":"T_Nhance_RPG_Icons_NatureVision_Purple","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":68},"name":"Huldra\u0027s Guile","icon":"T_Nhance_RPG_Icons_NatureVision_Purple","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":68},"name":"Undine\u0027s Cunning","icon":"T_Nhance_RPG_Icons_NatureVision_Purple","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":69},"name":"Ogre\u0027s Might","icon":"T_Nhance_RPG_BloodCombat_22","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":69},"name":"Vampire\u0027s Guile","icon":"T_Nhance_RPG_BloodCombat_22","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":69},"name":"Sphinx\u0027s Cunning","icon":"T_Nhance_RPG_BloodCombat_22","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":70},"name":"Valkyrie\u0027s Might","icon":"T_Nhance_RPG_Icons_Poison","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":70},"name":"Centaur\u0027s Guile","icon":"T_Nhance_RPG_Icons_Poison","added":true,"fields":[]}
+{"key":{"slug":"enchant","id":70},"name":"Unicorn\u0027s Cunning","icon":"T_Nhance_RPG_Icons_Poison","added":true,"fields":[]}

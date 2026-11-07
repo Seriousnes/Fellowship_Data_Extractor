@@ -1,0 +1,342 @@
+{"key":{"slug":"ability","id":526},"name":"Dreadwater Bolt","icon":"T_Nhance_RPG_Icons_IceWaterBlast","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":554},"name":"Attack","icon":"Tex_axe_06_bg","added":false,"fields":[{"label":"Cooldown","older":"2.5","newer":"1"}]}
+{"key":{"slug":"ability","id":630},"name":"Charged Bolt","icon":"T_Nhance_RPG_Energy_14","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":741},"name":"Ice Bolt","icon":"T_IceSpear","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":832},"name":"Shadow Bolt","icon":"T_Nhance_RPG_Shadow_03","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":887},"name":"Toxic Spores","icon":"T_NatureSpikes_Demonic","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":1000},"name":"Avatar of Light","icon":"T_Vigor_Spirit","added":false,"fields":[{"label":"Cooldown","older":"0"},{"label":"Cooldown Duration Scales Off","older":"CooldownReduction"},{"label":"Cooldown Time Rate Scales Off","older":"CooldownRecovery"}]}
+{"key":{"slug":"ability","id":1113},"added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":1229},"name":"Skull Crusher","icon":"T_Ink_Skullcrusher","added":false,"fields":[{"label":"Cooldown","older":"1"}]}
+{"key":{"slug":"ability","id":1552},"added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":1667},"name":"Necrotic Bolt","icon":"T_Nhance_RPG_Shadow_03","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":1992},"name":"Orc Bolt","icon":"icon_item_sword","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":2000},"name":"Goblin Bolt","icon":"icon_item_sword","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":2166},"name":"Hollow Bolt","icon":"T_Nhance_RPG_Icons_UnholyBolt","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":2336},"name":"Spiritual Surge","icon":"T_Nhance_RPG_Icons_EvilSouls","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"ability","id":2354},"name":"Wicked Bolt","icon":"T_Nhance_RPG_Icons_EmbraceTheLife","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":621},"name":"Dreadwater Bolt","icon":"T_Nhance_RPG_Icons_IceWaterBlast","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":756},"name":"Charged Bolt","icon":"T_Nhance_RPG_Energy_14","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":897},"name":"Ice Bolt","icon":"T_IceSpear","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":1016},"name":"Shadow Bolt","icon":"T_Nhance_RPG_Shadow_03","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":1097},"name":"Toxic Spores","icon":"T_NatureSpikes_Demonic","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":1332},"added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":1333},"name":"Avatar of Light","icon":"T_Vigor_Spirit","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":2440},"name":"Necrotic Bolt","icon":"T_Nhance_RPG_Shadow_03","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":2791},"name":"Orc Bolt","icon":"icon_item_sword","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":2800},"name":"Goblin Bolt","icon":"icon_item_sword","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":3012},"name":"Hollow Bolt","icon":"T_Nhance_RPG_Icons_UnholyBolt","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":3289},"name":"Spiritual Surge","icon":"T_Nhance_RPG_Icons_EvilSouls","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"effect","id":3302},"name":"Wicked Bolt","icon":"T_Nhance_RPG_Icons_EmbraceTheLife","added":false,"fields":[{"label":"Cooldown","older":"0"}]}
+{"key":{"slug":"currency","id":2},"name":"Unstable Mithril","icon":"T_IngotIcon_Common","added":true,"fields":[]}
+{"key":{"slug":"currency","id":6},"name":"Legend\u0027s Godstone","icon":"T_GodstoneIcon_Epic","added":true,"fields":[]}
+{"key":{"slug":"currency","id":7},"name":"Imbued Mithril","icon":"T_IngotIcon_Imbued","added":true,"fields":[]}
+{"key":{"slug":"currency","id":8},"name":"Imbued Aether","icon":"T_Currency_ImbuedAether","added":true,"fields":[]}
+{"key":{"slug":"currency","id":9},"name":"Arcane Mithril","icon":"T_IngotIcon_Arcane","added":true,"fields":[]}
+{"key":{"slug":"currency","id":10},"name":"Arcane Aether","icon":"T_Currency_PureAether","added":true,"fields":[]}
+{"key":{"slug":"currency","id":12},"name":"Divine Mithril","icon":"icon_item_bottle","added":true,"fields":[]}
+{"key":{"slug":"currency","id":16},"name":"Hero\u0027s Godstone","icon":"T_GodstoneIcon_Rare","added":true,"fields":[]}
+{"key":{"slug":"currency","id":17},"icon":"icon_system_star_rounded","added":true,"fields":[]}
+{"key":{"slug":"currency","id":1773},"name":"Supplies","icon":"Currency_supplies","added":true,"fields":[]}
+{"key":{"slug":"currency","id":4119},"icon":"T_Icons_Generic_Placeholder","added":true,"fields":[]}
+{"key":{"slug":"currency","id":4120},"icon":"T_Icons_Generic_Placeholder","added":true,"fields":[]}
+{"key":{"slug":"currency","id":4121},"icon":"T_Icons_Generic_Placeholder","added":true,"fields":[]}
+{"key":{"slug":"currency","id":4651},"name":"Warm Wishes","icon":"T_Currency_Winter_01","added":true,"fields":[]}
+{"key":{"slug":"currency","id":5121},"name":"Epic Souldust","icon":"T_DustCurrency_Epic","added":true,"fields":[]}
+{"key":{"slug":"currency","id":5123},"name":"Rare Souldust","icon":"T_DustCurrency_Rare","added":true,"fields":[]}
+{"key":{"slug":"item","id":5801},"name":"Overgrowth Cloak","icon":"Icon_Cloak01_MF_Back_R2_T1-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5805},"name":"Whispering Shroud","icon":"Icon_Cloak01_MF_Back_R2_T1-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5809},"name":"Pilgrim\u0027s Shroud","icon":"Icon_Cloak01_MF_Back_R2_T1-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5810},"name":"Webwoven Mantle","icon":"Icon_Cloak01_MF_Back_R2_T1-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5816},"name":"Chickenize","icon":"T_Relic_Chicken","added":false,"fields":[{"label":"Sources 2","older":"A Champion\u0027s Fit"}]}
+{"key":{"slug":"item","id":5820},"name":"Group Invisibility","icon":"T_OrbofShadow","added":false,"fields":[{"label":"Sources 2","older":"Bedazzled"}]}
+{"key":{"slug":"item","id":5822},"name":"Interrupt Healer","icon":"T_CurseWeak","added":false,"fields":[{"label":"Sources 2","older":"Tribute for a Hero"}]}
+{"key":{"slug":"item","id":5823},"name":"Mana Potion","icon":"T_Relic_Mana","added":false,"fields":[{"label":"Sources 2","older":"Fellowship"}]}
+{"key":{"slug":"item","id":5824},"name":"Move Speed","icon":"T_Relic_Drums","added":false,"fields":[{"label":"Sources 2","older":"Eternity Awaits"}]}
+{"key":{"slug":"item","id":5825},"name":"Portal","icon":"T_Relic_Portal","added":false,"fields":[{"label":"Sources 2","older":"A Weapon Worthy of a Hero"}]}
+{"key":{"slug":"item","id":5826},"name":"Webbed Robe","icon":"Icon_Lisa_Prog01_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5826},"name":"Tribal Hauberk","icon":"Icon_Mara_Shadowblade_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5826},"name":"Stormfury Harness","icon":"Icon_Bowguy_AngelicHawk_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5826},"name":"Venom Pitted Chestpiece","icon":"Icon_Warmaster_FkPlate_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5830},"name":"Snowmelt Robe","icon":"Icon_Lisa_Prog01_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5830},"name":"Reed Cuirass","icon":"Icon_Mara_Shadowblade_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5830},"name":"Studded Sternum","icon":"Icon_Bowguy_AngelicHawk_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5830},"name":"Crystal Hauberk","icon":"Icon_Warmaster_FkPlate_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5832},"name":"Chillweave Robes","icon":"Icon_Lisa_Prog01_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5832},"name":"Gem-Studded Harness","icon":"Icon_Mara_Shadowblade_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5832},"name":"Claymail Hauberk","icon":"Icon_Bowguy_AngelicHawk_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5832},"name":"Meteor Plate","icon":"Icon_Warmaster_FkPlate_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5837},"name":"Academy Vestments","icon":"Icon_Lisa_Prog01_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5837},"name":"Harness of the Raven","icon":"Icon_Mara_Shadowblade_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5837},"name":"Chainmail of the Eclipse","icon":"Icon_Bowguy_AngelicHawk_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5837},"name":"Guardian\u0027s Bulwark","icon":"Icon_Warmaster_FkPlate_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5838},"name":"Regalia of Hubris","icon":"Icon_Lisa_Prog01_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5838},"name":"Deathadder Jerkin","icon":"Icon_Mara_Shadowblade_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5838},"name":"Coinbanded Hauberk","icon":"Icon_Bowguy_AngelicHawk_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5838},"name":"Dwarven Plate","icon":"Icon_Warmaster_FkPlate_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5839},"name":"Spellwoven Robes","icon":"Icon_Lisa_Prog01_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5839},"name":"Berserker\u0027s Straps","icon":"Icon_Mara_Shadowblade_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5839},"name":"Hussar\u0027s Hauberk","icon":"Icon_Bowguy_AngelicHawk_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5839},"name":"Sunforged Plate","icon":"Icon_Warmaster_FkPlate_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5841},"name":"Embalmer\u0027s Scapular","icon":"Icon_Lisa_Prog01_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5841},"name":"Blooming Vestments","icon":"Icon_Mara_Shadowblade_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5841},"name":"Drakehunter\u0027s Scalemail","icon":"Icon_Bowguy_AngelicHawk_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5841},"name":"Tectonic Plate","icon":"Icon_Warmaster_FkPlate_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5845},"name":"Mender\u0027s Doublet","icon":"Icon_Lisa_Prog01_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5845},"name":"Winged Jerkin","icon":"Icon_Mara_Shadowblade_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5845},"name":"Bear Pelt Wraps","icon":"Icon_Bowguy_AngelicHawk_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5845},"name":"Gallant Cuirass","icon":"Icon_Warmaster_FkPlate_Chest_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5852},"name":"Moonlace Slippers","icon":"Icon_Lisa_Prog01_Feet_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5852},"name":"Treads of Silent Night","icon":"Icon_Mara_Shadowblade_Feet_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5852},"name":"Gale Treads","icon":"Icon_Bowguy_AngelicHawk_Feet_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5852},"name":"Battlefield Striders","icon":"Icon_Warmaster_FkPlate_Feet_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5859},"name":"Scholarly Moccasins","icon":"Icon_Lisa_Prog01_Feet_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5859},"name":"Destined Bindings","icon":"Icon_Mara_Shadowblade_Feet_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5859},"name":"Thundering Greaves","icon":"Icon_Bowguy_AngelicHawk_Feet_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5859},"name":"Defender\u0027s Stance","icon":"Icon_Warmaster_FkPlate_Feet_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5861},"name":"Vinewoven Gloves","icon":"Icon_Lisa_Prog01_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5861},"name":"Coralwoven Grips","icon":"Icon_Mara_Shadowblade_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5861},"name":"Arachnid Gauntlets","icon":"Icon_Bowguy_AngelicHawk_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5861},"name":"Abyssal Grips","icon":"Icon_Warmaster_FkPlate_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5863},"name":"Ebbing Palmwraps","icon":"Icon_Lisa_Prog01_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5863},"name":"Barklaced Gloves","icon":"Icon_Mara_Shadowblade_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5863},"name":"Serrated Wargrips","icon":"Icon_Bowguy_AngelicHawk_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5863},"name":"Gorestained Steelgloves","icon":"Icon_Warmaster_FkPlate_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5865},"name":"Gloves of Elemental Binding","icon":"Icon_Lisa_Prog01_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5865},"name":"Coldhide Wraps","icon":"Icon_Mara_Shadowblade_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5865},"name":"Starfall Gauntlets","icon":"Icon_Bowguy_AngelicHawk_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5865},"name":"Ironsilk Battlegloves","icon":"Icon_Warmaster_FkPlate_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5866},"name":"Hands of Fate","icon":"Icon_Lisa_Prog01_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5866},"name":"Grips of Bullybashing","icon":"Icon_Mara_Shadowblade_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5866},"name":"Grasps of Nightfall","icon":"Icon_Bowguy_AngelicHawk_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5866},"name":"Tidal Gauntlets","icon":"Icon_Warmaster_FkPlate_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5867},"name":"Velvet Bindings","icon":"Icon_Lisa_Prog01_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5867},"name":"Monestary Handwraps","icon":"Icon_Mara_Shadowblade_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5867},"name":"Griffon\u0027s Talons","icon":"Icon_Bowguy_AngelicHawk_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5867},"name":"Divine Fists","icon":"Icon_Warmaster_FkPlate_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5871},"name":"Erudite Gloves","icon":"Icon_Lisa_Prog01_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5871},"name":"Centimane Gloves","icon":"Icon_Mara_Shadowblade_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5871},"name":"Runic Gauntlets","icon":"Icon_Bowguy_AngelicHawk_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5871},"name":"Tungsten Gauntlets","icon":"Icon_Warmaster_FkPlate_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5875},"name":"Flametouched Mitts","icon":"Icon_Lisa_Prog01_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5875},"name":"Thieves\u0027 Pocket Pickers","icon":"Icon_Mara_Shadowblade_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5875},"name":"Forsaken Handguards","icon":"Icon_Bowguy_AngelicHawk_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5875},"name":"Righteous Fists","icon":"Icon_Warmaster_FkPlate_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5876},"name":"Moonlace Palmwraps","icon":"Icon_Lisa_Prog01_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5876},"name":"Bardic Grips","icon":"Icon_Mara_Shadowblade_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5876},"name":"Burntsteel Wargrips","icon":"Icon_Bowguy_AngelicHawk_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5876},"name":"Frostbite Handguards","icon":"Icon_Warmaster_FkPlate_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5877},"name":"Mothscale Fingerwraps","icon":"Icon_Lisa_Prog01_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5877},"name":"Four-Finger Gloves","icon":"Icon_Mara_Shadowblade_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5877},"name":"Drawstring Grips","icon":"Icon_Bowguy_AngelicHawk_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5877},"name":"Shieldbearer\u0027s Wargrips","icon":"Icon_Warmaster_FkPlate_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5878},"name":"Lorekeeper\u0027s Bindings","icon":"Icon_Lisa_Prog01_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5878},"name":"Bloodgutter Thumbguard","icon":"Icon_Mara_Shadowblade_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5878},"name":"Bismuth Gauntlets","icon":"Icon_Bowguy_AngelicHawk_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5878},"name":"Lightbearer\u0027s Handguards","icon":"Icon_Warmaster_FkPlate_Hands_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5884},"name":"Icicled Circlet","icon":"Icon_Lisa_Prog01_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5884},"name":"Elkfur Ushanka","icon":"Icon_Mara_Shadowblade_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5884},"name":"Highwinter Helm","icon":"Icon_Bowguy_AngelicHawk_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5884},"name":"Oathsworn Visor","icon":"Icon_Warmaster_FkPlate_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5886},"name":"Gossamer Headwrap","icon":"Icon_Lisa_Prog01_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5886},"name":"Nappa Skullcap","icon":"Icon_Mara_Shadowblade_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5886},"name":"Riptide Coronet","icon":"Icon_Bowguy_AngelicHawk_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5886},"name":"Bloodpolished Warhelm","icon":"Icon_Warmaster_FkPlate_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5890},"name":"Runestitched Cowl","icon":"Icon_Lisa_Prog01_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5890},"name":"Shadowstitched Hood","icon":"Icon_Mara_Shadowblade_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5890},"name":"Drakescale Coif","icon":"Icon_Bowguy_AngelicHawk_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5890},"name":"Lionsmane Helmet","icon":"Icon_Warmaster_FkPlate_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5895},"name":"Illusionist\u0027s Veil","icon":"Icon_Lisa_Prog01_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5895},"name":"Wildwarden Faceguard","icon":"Icon_Mara_Shadowblade_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5895},"name":"Chitinous Faceguard","icon":"Icon_Bowguy_AngelicHawk_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5895},"name":"Bastion Headguard","icon":"Icon_Warmaster_FkPlate_Head_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5919},"name":"Orb of Sanguine Restoration","icon":"Tex_orb_09_b","added":false,"fields":[{"label":"Sources 1","older":"Any dungeon"}]}
+{"key":{"slug":"item","id":5921},"name":"Orb of Hidden Riches","icon":"Tex_elementl_earth__b_01","added":false,"fields":[{"label":"Sources","newer":"Scryer\u0027s Peak"}]}
+{"key":{"slug":"item","id":5926},"name":"Orb of Inner Seas","icon":"Tex_element_water__b_01","added":false,"fields":[{"label":"Sources","newer":"Scryer\u0027s Peak"}]}
+{"key":{"slug":"item","id":5933},"name":"Gilded Druidic Ring","icon":"Tex_TrophyIcons_72_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5940},"name":"Gemmed Band of Violet Fire","icon":"Tex_TrophyIcons_06_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5948},"name":"Dusklight Amice","icon":"Icon_Lisa_Prog01_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5948},"name":"Toadskin Mantle","icon":"Icon_Mara_Shadowblade_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5948},"name":"Moonlight Mantle","icon":"Icon_Bowguy_AngelicHawk_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5948},"name":"Eldrin Shoulderplates","icon":"Icon_Warmaster_FkPlate_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5951},"name":"Runestitched Shoulderwraps","icon":"Icon_Lisa_Prog01_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5951},"name":"Mantle of Winds","icon":"Icon_Mara_Shadowblade_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5951},"name":"Wyrmscale Shoulderguards","icon":"Icon_Bowguy_AngelicHawk_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5951},"name":"Blessed Pauldrons","icon":"Icon_Warmaster_FkPlate_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5955},"name":"Manawoven Shouldercloth","icon":"Icon_Lisa_Prog01_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5955},"name":"Shifting Spaulders","icon":"Icon_Mara_Shadowblade_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5955},"name":"Ironhide Shoulderguards","icon":"Icon_Bowguy_AngelicHawk_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5955},"name":"Demonforged Pauldrons","icon":"Icon_Warmaster_FkPlate_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5957},"name":"Spellbinder\u0027s Mantle","icon":"Icon_Lisa_Prog01_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5957},"name":"Dueling Spaulders","icon":"Icon_Mara_Shadowblade_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5957},"name":"Mantle of Starlight","icon":"Icon_Bowguy_AngelicHawk_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5957},"name":"Blackguard Shoulderplates","icon":"Icon_Warmaster_FkPlate_Shoulders_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5961},"name":"Fancy Pantaloons","icon":"Icon_Lisa_Prog01_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5961},"name":"Sailcloth Leggings","icon":"Icon_Mara_Shadowblade_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5961},"name":"Chained Legplates","icon":"Icon_Bowguy_AngelicHawk_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5961},"name":"Legplates of Draconic Might","icon":"Icon_Warmaster_FkPlate_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5963},"name":"Scribe\u0027s Leggings","icon":"Icon_Lisa_Prog01_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5963},"name":"Recruit\u0027s Tassets","icon":"Icon_Mara_Shadowblade_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5963},"name":"Outrunner\u0027s Leggings","icon":"Icon_Bowguy_AngelicHawk_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5963},"name":"Justicar\u0027s Ancient Legplates","icon":"Icon_Warmaster_FkPlate_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5965},"name":"Elemental Hide Leggings","icon":"Icon_Lisa_Prog01_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5965},"name":"Festeringhide Leggings","icon":"Icon_Mara_Shadowblade_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5965},"name":"Stormstruck Legplates","icon":"Icon_Bowguy_AngelicHawk_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5965},"name":"Prayer-etched Cuisses","icon":"Icon_Warmaster_FkPlate_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5966},"name":"Unusual Leggings","icon":"Icon_Lisa_Prog01_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5966},"name":"Bullhide Pants","icon":"Icon_Mara_Shadowblade_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5966},"name":"Bonebuckled Pants","icon":"Icon_Bowguy_AngelicHawk_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5966},"name":"Insignia Faulds","icon":"Icon_Warmaster_FkPlate_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5971},"name":"Flamelicked Coattails","icon":"Icon_Lisa_Prog01_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5971},"name":"Poisoner\u0027s Waistwrap","icon":"Icon_Mara_Shadowblade_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5971},"name":"Pillars of the Hunt","icon":"Icon_Bowguy_AngelicHawk_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5971},"name":"Wyrmscale Legplates","icon":"Icon_Warmaster_FkPlate_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5972},"name":"Intimidating Tights","icon":"Icon_Lisa_Prog01_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5972},"name":"Cannibal Legwraps","icon":"Icon_Mara_Shadowblade_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5972},"name":"Deathward Legwraps","icon":"Icon_Bowguy_AngelicHawk_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5972},"name":"Legionnaire\u0027s Legguards","icon":"Icon_Warmaster_FkPlate_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5975},"name":"Sarong of Eternity","icon":"Icon_Lisa_Prog01_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5975},"name":"Brawler\u0027s Leggings","icon":"Icon_Mara_Shadowblade_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5975},"name":"Marching Legguards","icon":"Icon_Bowguy_AngelicHawk_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5975},"name":"Paladin\u0027s Legguards","icon":"Icon_Warmaster_FkPlate_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5979},"name":"Shaman\u0027s Waistwrap","icon":"Icon_Lisa_Prog01_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5979},"name":"Raptorhide Waistwrap","icon":"Icon_Mara_Shadowblade_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5979},"name":"Fjordstrider Leggings","icon":"Icon_Bowguy_AngelicHawk_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5979},"name":"Earthquake Leggings","icon":"Icon_Warmaster_FkPlate_Waist_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5980},"name":"Void-touched Bow","icon":"Icon_Bowguy_Weapon_VoidMadness_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5980},"name":"Void-touched Daggers","icon":"Icon_Mara_Weapon_VoidMadness_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5980},"name":"Elheryn\u0027s Guiding Sandglass","icon":"Icon_Lisa_Weapon_Arcane_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5980},"name":"Void-touched Pillar","icon":"Icon_Ardeos_Weapon_VoidMadness_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5980},"name":"Void-touched Conduit","icon":"Icon_Rime_Weapon_VoidMadness_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5980},"name":"Elheryn\u0027s Cache","icon":"Icon_Mosse_DwarvenFire_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5980},"name":"Forbidden Tome of Arcanistry","icon":"Icon_Vigour_Weapon_DwarvenFire_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5980},"name":"Voidbringer\u0027s Renders","icon":"Icon_Gunde_Weapon_Madness_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5980},"name":"Void-touched Hammer","icon":"Icon_Tariq_Weapon_VoidMadness_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5982},"name":"Arc of the Everliving","icon":"Icon_Bowguy_Weapon_WildNature_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5982},"name":"Sahril\u0027s Vengeance","icon":"Icon_Mara_Weapon_DwarvenFire_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5982},"name":"The Sand of Seasons","icon":"Icon_Lisa_Weapon_WildNature_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5982},"name":"Branch of the Everliving","icon":"Icon_Ardeos_Weapon_WildNature_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5982},"name":"Sickle of Faelight Gardens","icon":"Icon_Mosse_WildNature_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5982},"name":"History of the Faelight Gardens","icon":"Icon_Vigour_Weapon_WildNature_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5982},"name":"Forgefather\u0027s Axes","icon":"Icon_Gunde_Weapon_DwarvenFire_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5982},"name":"Sahril\u0027s Reckoning","icon":"Icon_Tariq_Weapon_DwarvenFire_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5983},"name":"Zeraleth\u0027s Claws","icon":"Icon_Meiko_BloodVampire_Weapon_R2_T0-heroic","added":false,"fields":[{"label":"Sources","newer":"Scryer\u0027s Peak"}]}
+{"key":{"slug":"item","id":5983},"name":"Zeraleth\u0027s Arms","icon":"Icon_Warmaster_Weapon_BloodVampire_Weapon_R2_T0-heroic","added":false,"fields":[{"label":"Sources","newer":"Scryer\u0027s Peak"}]}
+{"key":{"slug":"item","id":5983},"name":"Zaraleth\u0027s Mournfang","icon":"Icon_Sune_Weapon_Zaraleth_Weapon_R2_T0-heroic","added":false,"fields":[{"label":"Sources","newer":"Scryer\u0027s Peak"}]}
+{"key":{"slug":"item","id":5984},"name":"Asha\u0027s Chronoshift Bow","icon":"Icon_Bowguy_Weapon_ArcaneTime_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5984},"name":"Fateful Blades","icon":"Icon_Mara_Weapon_ArcaneTime_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5984},"name":"The Devourer\u2019s Hour","icon":"Icon_Lisa_Weapon_Zaraleths_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5984},"name":"Asha\u0027s Chronoshift Spire","icon":"Icon_Ardeos_Weapon_ArcaneTime_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5984},"name":"Zeraleth\u0027s Scythe","icon":"Icon_Mosse_BloodVampire_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5984},"name":"Zeraleth\u0027s Compendium","icon":"Icon_Vigour_Weapon_BloodVampire_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5984},"name":"Fateful Cleavers","icon":"Icon_Gunde_Weapon_ArcaneTime_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5984},"name":"Fateful Basher","icon":"Icon_Tariq_Weapon_ArcaneTime_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5986},"name":"Frozen Longbow of An\u0027zhyr","icon":"Icon_Bowguy_Weapon_FrostDragon_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5986},"name":"Wildstone Shards","icon":"Icon_Mara_Weapon_WildNature_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5986},"name":"Fragments of Frozen Time","icon":"Icon_Lisa_Weapon_FrostDragon_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5986},"name":"Frozen Staff of An\u0027zhyr","icon":"Icon_Ardeos_Weapon_FrostDragon_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5986},"name":"Void-touched Conduit","icon":"Icon_Rime_Weapon_FrostDragon_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5986},"name":"Iceshaper\u0027s Brand","icon":"Icon_Mosse_FrostDrake_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5986},"name":"Ancient Iceshaper\u0027s Tome","icon":"Icon_Vigour_Weapon_FrostDrake_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5986},"name":"Rootbinder\u0027s Choppers","icon":"Icon_Gunde_Weapon_WildNature_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5986},"name":"Wildstone Crusher","icon":"Icon_Tariq_Weapon_WildNature_Weapon_R2_T0-heroic","added":true,"fields":[]}
+{"key":{"slug":"item","id":5987},"name":"Darkfrost Talons","icon":"Icon_Meiko_FrostDragon_Weapon_R2_T0-heroic","added":false,"fields":[{"label":"Sources","newer":"Scryer\u0027s Peak"}]}
+{"key":{"slug":"item","id":5987},"name":"Darkfrost Arms","icon":"Icon_Warmaster_Weapon_FrostDragon_Weapon_R2_T0-heroic","added":false,"fields":[{"label":"Sources","newer":"Scryer\u0027s Peak"}]}
+{"key":{"slug":"item","id":5987},"name":"Darkfrost Drakecarver","icon":"Icon_Sune_Weapon_FrostDragon_Weapon_R2_T0-heroic","added":false,"fields":[{"label":"Sources","newer":"Scryer\u0027s Peak"}]}
+{"key":{"slug":"item","id":5990},"name":"Dawnbloom Wraps","icon":"Tex_rg_brs_b_01","added":true,"fields":[]}
+{"key":{"slug":"item","id":5990},"name":"Bracers of the Hidden Valley","icon":"Tex_rg_brs_b_01","added":true,"fields":[]}
+{"key":{"slug":"item","id":5990},"name":"Goblin Belt Bracers","icon":"Tex_rg_brs_b_01","added":true,"fields":[]}
+{"key":{"slug":"item","id":5990},"name":"Malachite Bands","icon":"Tex_rg_brs_b_01","added":true,"fields":[]}
+{"key":{"slug":"item","id":5991},"name":"Oracle Wristwraps","icon":"Tex_bracers_8_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5991},"name":"Bracers of Hatred","icon":"Tex_bracers_8_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5991},"name":"Infernal Bracers","icon":"Tex_bracers_8_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5991},"name":"Justicar\u0027s Marks of Duty","icon":"Tex_bracers_8_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5994},"name":"Hiisi Bands","icon":"Tex_archi_brs_01_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5994},"name":"Ivoried Wristbands","icon":"Tex_archi_brs_01_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5994},"name":"Soulshade Armguards","icon":"Tex_archi_brs_01_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5994},"name":"Crusader Wristguards","icon":"Tex_archi_brs_01_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5995},"name":"Goblin\u0027s Girdle","icon":"Tex_nnj_br_01_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5995},"name":"Barbarian Wristwraps","icon":"Tex_nnj_br_01_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5995},"name":"Charred Armguards","icon":"Tex_nnj_br_01_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":5995},"name":"Field Marshal\u0027s Cuffs","icon":"Tex_nnj_br_01_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":6001},"name":"Wraps of Boundless Arcana","icon":"Tex_mgg_brs_b_01","added":true,"fields":[]}
+{"key":{"slug":"item","id":6001},"name":"Guiding Wristwraps","icon":"Tex_mgg_brs_b_01","added":true,"fields":[]}
+{"key":{"slug":"item","id":6001},"name":"Channeling Chains","icon":"Tex_mgg_brs_b_01","added":true,"fields":[]}
+{"key":{"slug":"item","id":6001},"name":"Wristguards of Holy Purpose","icon":"Tex_mgg_brs_b_01","added":true,"fields":[]}
+{"key":{"slug":"item","id":6002},"name":"Winter Armwraps","icon":"Tex_bracers_10_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":6002},"name":"Jade Bracelet","icon":"Tex_bracers_10_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":6002},"name":"Archer\u0027s Sleeves","icon":"Tex_bracers_10_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":6002},"name":"Unbreakable Warbracers","icon":"Tex_bracers_10_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":6003},"name":"Golembinder\u0027s Bands","icon":"Tex_Crimson_bsc_bg","added":true,"fields":[]}
+{"key":{"slug":"item","id":6003},"name":"Marrow Leather Wraps","icon":"Tex_Crimson_bsc_bg","added":true,"fields":[]}
+{"key":{"slug":"item","id":6003},"name":"Copper Chaincuffs","icon":"Tex_Crimson_bsc_bg","added":true,"fields":[]}
+{"key":{"slug":"item","id":6003},"name":"Venerable Bracers","icon":"Tex_Crimson_bsc_bg","added":true,"fields":[]}
+{"key":{"slug":"item","id":6008},"name":"Wristwraps of Patience","icon":"Tex_bracers_18_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":6008},"name":"Warrior Armbands","icon":"Tex_bracers_18_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":6008},"name":"Demontooth Bracelet","icon":"Tex_bracers_18_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":6008},"name":"Bracelet of the Mountains","icon":"Tex_bracers_18_b","added":true,"fields":[]}
+{"key":{"slug":"item","id":6037},"name":"Brother","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6038},"name":"Archer","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6039},"name":"Starfallen","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6040},"name":"Lunarlight Huntsman","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6043},"name":"Starcher","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6044},"name":"Student","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6045},"name":"Firestarter","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6046},"name":"Inferno","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6047},"name":"Destroyer","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6051},"name":"Pyrophibian","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6052},"name":"Sentinel","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6053},"name":"Berserker","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6054},"name":"Crow","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6055},"name":"Lord of Crows","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6059},"name":"Caw-rrupted","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6060},"name":"Initiate","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6061},"name":"Beastslayer","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6062},"name":"Avenger","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6063},"name":"Stormsworn","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6067},"name":"Facebreaker","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6068},"name":"Magister","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6069},"name":"Chronomancer","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6070},"name":"Moment Maiden","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6071},"name":"Goddess","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6075},"name":"Time Traveler","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6076},"name":"Noble","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6077},"name":"Assassin","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6078},"name":"Noble","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6079},"name":"Assassin","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6083},"name":"Worst Nightmara","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6084},"name":"Disciple","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6085},"name":"Monk","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6086},"name":"Guardian","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6087},"name":"Master","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6091},"name":"Meiko","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6092},"name":"Kick Puncher","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6093},"name":"Punch Kicker","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6094},"name":"Nymph","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6095},"name":"Fawn","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6096},"name":"Sylvan","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6097},"name":"Faewarden","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6101},"name":"Flutterfairy","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6102},"name":"Haste Connoisseur","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6103},"name":"Furry Friend","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6104},"name":"Hermit","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6105},"name":"Watershaper","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6106},"name":"Frostwitch","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6107},"name":"Winter Queen","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6111},"name":"Frost-class Healer","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6112},"name":"Heir","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6113},"name":"Prince","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6114},"name":"Crownbearer","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6115},"name":"King of Azamir","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6119},"name":"Sir Parry","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6120},"name":"Apprentice","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6121},"name":"Scribe","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6122},"name":"Scholar","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6123},"name":"Illuminator","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from his past as your own.","newer":"Show your respect of {heroName} by wearing a title from his past as your own."}]}
+{"key":{"slug":"item","id":6127},"name":"Short \u0026 Stout","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6128},"name":"Recruit","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6129},"name":"Veteran","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6130},"name":"Captain","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6131},"name":"Commander","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a title from her past as your own.","newer":"Show your respect of {heroName} by wearing a title from her past as your own."}]}
+{"key":{"slug":"item","id":6135},"name":"30yd Sprint Champion","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6136},"name":"Sword \u0026 Bored","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}
+{"key":{"slug":"item","id":6137},"name":"Frontline Screamer","icon":"T_Icons_Customization_Item_Icon","added":false,"fields":[{"label":"Description","older":"Show your mastery of {heroName} by wearing a this silly title.","newer":"Show the softer side of {heroName} by wearing this silly title."}]}

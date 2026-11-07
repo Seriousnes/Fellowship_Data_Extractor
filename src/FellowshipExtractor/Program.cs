@@ -6,6 +6,7 @@ using FellowshipExtractor.Extraction;
 using FellowshipExtractor.Output;
 using FellowshipExtractor.Usmap;
 
+using Fellowship.SDK.Documents;
 using Fellowship.Storage;
 
 ReadFailureLog.EnableIfRequested();
@@ -77,10 +78,17 @@ switch (command)
             await ExportRun.RunAsync(options, target);
         }
 
-        if (folder is not null) SettingsEnums.Publish(folder, Build());
+        if (folder is not null)
+        {
+            SettingsEnums.Publish(folder, Build());
+            await PatchNoteWriter.WriteAsync(folder, CancellationToken.None);
+        }
 
         return 0;
     }
+    case "patch-notes":
+        await PatchNoteWriter.WriteAsync(Argument(args, OutputFlag) ?? options.ResolvedOutputDir, CancellationToken.None);
+        return 0;
     case "usmap":
         return await UsmapGenerateCommand.RunAsync(options) ? 0 : 1;
     case "dump":
@@ -130,6 +138,8 @@ switch (command)
 
              Commands:
                usmap                 recover the mappings without exporting
+               patch-notes           write each export folder's {PatchNotesFile.FileName} against the
+                                     build before it, with no game install
                dump <filter> [count] write every export of the matching cooked assets as JSON under
                                      output/dump, for reading an asset the export does not carry
                blueprints [filter]   write every cooked blueprint under blueprints/, one folder per

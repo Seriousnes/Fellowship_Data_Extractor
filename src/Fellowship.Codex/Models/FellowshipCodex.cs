@@ -75,23 +75,7 @@ public static class FellowshipCodex
         _ => [],
     };
 
-    public static string Spaced(string value)
-    {
-        var text = string.Join(" / ", value.Split('.'));
-        var spaced = new System.Text.StringBuilder(text.Length + 8);
-
-        for (var at = 0; at < text.Length; at++)
-        {
-            if (at > 0 && char.IsUpper(text[at]) && (char.IsLower(text[at - 1]) || char.IsDigit(text[at - 1])))
-            {
-                spaced.Append(' ');
-            }
-
-            spaced.Append(text[at]);
-        }
-
-        return spaced.ToString();
-    }
+    public static string Spaced(string value) => PatchNoteDiff.Spaced(value);
 
     public static string Label(EntityType type) => PublicTypes.Label(type);
 

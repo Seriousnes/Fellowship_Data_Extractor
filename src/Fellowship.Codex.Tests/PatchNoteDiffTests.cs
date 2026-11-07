@@ -3,7 +3,7 @@ namespace Fellowship.Codex.Tests;
 public class PatchNoteDiffTests
 {
     private static IReadOnlyList<PatchNote> Between(string[] older, string[] newer) =>
-        PatchNoteDiff.Between(ExportReader.Group(older), ExportReader.Group(newer));
+        PatchNoteDiff.Between(ExportText.Group(older), ExportText.Group(newer));
 
     private static string Reads(PatchNoteField field) =>
         $"{field.Label}: {field.Older ?? "(none)"} -> {field.Newer ?? "(none)"}";

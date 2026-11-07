@@ -14,8 +14,9 @@ public class HistoryServiceTests
             older.ToDictionary(
                 version => version.Build,
                 version => new ExportVersion(
-                    version.Build, ExportReader.Group(version.Lines), "{}"),
-                StringComparer.Ordinal)));
+                    version.Build, ExportText.Group(version.Lines), "{}"),
+                StringComparer.Ordinal),
+            new Dictionary<string, IReadOnlyList<PatchNote>>()));
 
     [Fact]
     public void Every_build_reads_newest_first()

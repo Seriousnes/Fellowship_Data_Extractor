@@ -53,6 +53,9 @@ public sealed record FailureUsage(
     public ClientKind Kind => UserAgents.Kind(Browser);
 }
 
+/// <summary>One process, from its start to its last write, and its stop when it stopped cleanly.</summary>
+public sealed record ProcessStart(DateTimeOffset Started, DateTimeOffset Seen, DateTimeOffset? Stopped);
+
 /// <summary>The SQLite database of usage counts.</summary>
 public sealed class UsageStore
 {
@@ -150,6 +153,11 @@ public sealed class UsageStore
             memory INTEGER NOT NULL,
             heap INTEGER NOT NULL
         ) WITHOUT ROWID;
+        CREATE TABLE IF NOT EXISTS starts (
+            started INTEGER NOT NULL PRIMARY KEY,
+            seen INTEGER NOT NULL,
+            stopped INTEGER
+        ) WITHOUT ROWID;
         """;
 
     private SqliteConnection Open()
@@ -192,8 +200,16 @@ public sealed class UsageStore
         using var command = open.CreateCommand();
         command.CommandText =
             """
-            INSERT OR REPLACE INTO samples (minute, running, queued, pool_queue, circuits, processor, memory, heap)
-            VALUES ($minute, $running, $queued, $pool, $circuits, $processor, $memory, $heap);
+            INSERT INTO samples (minute, running, queued, pool_queue, circuits, processor, memory, heap)
+            VALUES ($minute, $running, $queued, $pool, $circuits, $processor, $memory, $heap)
+            ON CONFLICT DO UPDATE SET
+                running = max(running, excluded.running),
+                queued = max(queued, excluded.queued),
+                pool_queue = max(pool_queue, excluded.pool_queue),
+                circuits = max(circuits, excluded.circuits),
+                processor = max(processor, excluded.processor),
+                memory = max(memory, excluded.memory),
+                heap = max(heap, excluded.heap);
             """;
         command.Parameters.AddWithValue("$minute", sample.Minute);
         command.Parameters.AddWithValue("$running", sample.Running);
@@ -203,6 +219,25 @@ public sealed class UsageStore
         command.Parameters.AddWithValue("$processor", sample.Processor);
         command.Parameters.AddWithValue("$memory", sample.Memory);
         command.Parameters.AddWithValue("$heap", sample.Heap);
+        command.ExecuteNonQuery();
+    }
+
+    public void Started(long started) =>
+        WriteStart("INSERT OR IGNORE INTO starts (started, seen) VALUES ($started, $started);", started, started);
+
+    public void Seen(long started, long at) =>
+        WriteStart("UPDATE starts SET seen = $at WHERE started = $started;", started, at);
+
+    public void Stopped(long started, long at) =>
+        WriteStart("UPDATE starts SET seen = $at, stopped = $at WHERE started = $started;", started, at);
+
+    private void WriteStart(string sql, long started, long at)
+    {
+        using var open = Open();
+        using var command = open.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("$started", started);
+        if (sql.Contains("$at", StringComparison.Ordinal)) command.Parameters.AddWithValue("$at", at);
         command.ExecuteNonQuery();
     }
 
@@ -405,6 +440,7 @@ public sealed class UsageStore
             DELETE FROM failures WHERE hour < $cutoff;
             DELETE FROM failure_minutes WHERE minute < $minutes;
             DELETE FROM samples WHERE minute < $minutes;
+            DELETE FROM starts WHERE started < $cutoff;
 
             CREATE TEMP TABLE rolled_requests AS
                 SELECT hour / 86400 * 86400, area, method, route, entity, status, cached,
@@ -452,6 +488,7 @@ public sealed class UsageStore
             DELETE FROM failures WHERE hour < $cutoff;
             DELETE FROM failure_minutes WHERE minute < $cutoff;
             DELETE FROM samples WHERE minute < $cutoff;
+            DELETE FROM starts WHERE started < $cutoff;
             """;
         command.Parameters.AddWithValue("$cutoff", cutoff.ToUnixTimeSeconds());
         command.ExecuteNonQuery();
@@ -600,6 +637,16 @@ public sealed class UsageStore
             since,
             row => new ServerSample(
                 row.GetInt64(0), row.GetInt32(1), row.GetInt32(2), row.GetInt32(3), row.GetInt32(4), row.GetDouble(5), row.GetInt64(6), row.GetInt64(7)));
+
+    /// <summary>Process starts since the given time, newest first.</summary>
+    public IReadOnlyList<ProcessStart> Starts(DateTimeOffset since) =>
+        Read(
+            "SELECT started, seen, stopped FROM starts WHERE started >= $since ORDER BY started DESC;",
+            since,
+            row => new ProcessStart(
+                DateTimeOffset.FromUnixTimeSeconds(row.GetInt64(0)),
+                DateTimeOffset.FromUnixTimeSeconds(row.GetInt64(1)),
+                row.IsDBNull(2) ? null : DateTimeOffset.FromUnixTimeSeconds(row.GetInt64(2))));
 
     private static string Area(UsageArea area) => $"sum(CASE WHEN area = '{area}' THEN count ELSE 0 END)";
 

@@ -11,11 +11,12 @@ services:
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       ASPNETCORE_URLS: "http://+:8080"
       Usage__Database: /data/usage.db
+      Codex__Image: ${CODEX_TAG}
     volumes:
       - codex-data:/data
     restart: unless-stopped
     mem_limit: 512m
-    memswap_limit: 512m
+    memswap_limit: 1g
     logging:
       driver: json-file
       options:

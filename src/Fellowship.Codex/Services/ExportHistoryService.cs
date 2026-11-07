@@ -73,11 +73,11 @@ public sealed class ExportHistoryService : IExportHistoryService
     {
         if (!version.Documents.TryGetValue(key, out var lines) || lines.Count == 0) return null;
 
-        if (lines.Count == 1) return JsonNode.Parse(lines[0]);
+        if (lines.Count == 1) return JsonNode.Parse(lines[0].Span);
 
         foreach (var line in lines)
         {
-            var reading = JsonNode.Parse(line);
+            var reading = JsonNode.Parse(line.Span);
 
             if (DocumentVariants.Same(reading, live)) return reading;
         }

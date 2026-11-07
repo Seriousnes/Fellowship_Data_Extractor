@@ -1,8 +1,6 @@
 using System.Text.Json.Nodes;
 
-using Fellowship.SDK.Documents;
-
-namespace Fellowship.Codex.Services;
+namespace Fellowship.SDK.Documents;
 
 public static class DocumentVariants
 {

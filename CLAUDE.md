@@ -27,8 +27,10 @@ dotnet run --project src/FellowshipExtractor
 ```
 
 With no destination named the run writes `output/` in one pass: the documents under
-`export-<build>/`, every composed texture under `ui/`, and `src/Fellowship.SDK/settings.json`, the
-source generator's input for the enums the documents are read against. It needs no variables set,
+`export-<build>/`, every composed texture under `ui/`, each build's `patch-notes.jsonl` against the
+build before it, and `src/Fellowship.SDK/settings.json`, the source generator's input for the enums
+the documents are read against. `dotnet run --project src/FellowshipExtractor -- patch-notes` writes
+the patch notes alone and needs no game install. The export run needs no variables set,
 because the committed `mappings/` has the usmap. It does need the Steam install, for the paks and the
 appmanifest naming the build. The first run against a clean `bin/` downloads Oodle.
 

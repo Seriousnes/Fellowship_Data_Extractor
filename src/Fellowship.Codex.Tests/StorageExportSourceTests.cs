@@ -30,7 +30,7 @@ public class StorageExportSourceTests
         var beneath = Assert.Single(history.Older).Value;
 
         Assert.Equal("1000", beneath.Build);
-        Assert.Equal([Older], beneath.Documents[new DocumentKey("item", 5224)]);
+        Assert.Equal([Older], ExportText.Read(beneath.Documents[new DocumentKey("item", 5224)]));
     }
 
     [Fact]
