@@ -108,6 +108,21 @@ public class SitemapTests(AdminHost host)
     }
 
     [Fact]
+    public void A_patch_notes_page_takes_the_one_permit_policy_and_other_pages_the_shared_one()
+    {
+        var endpoints = host.Factory.Services
+            .GetRequiredService<Microsoft.AspNetCore.Routing.EndpointDataSource>()
+            .Endpoints.OfType<Microsoft.AspNetCore.Routing.RouteEndpoint>();
+
+        string? Policy(string route) => endpoints
+            .First(endpoint => endpoint.RoutePattern.RawText == route)
+            .Metadata.GetMetadata<Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute>()?.PolicyName;
+
+        Assert.Equal(Serving.PatchNotesPolicy, Policy("/patch-notes/{Build}"));
+        Assert.Equal(Serving.Policy, Policy("/heroes"));
+    }
+
+    [Fact]
     public async Task A_patch_notes_page_has_each_notes_anchor_and_fields()
     {
         var notes = host.Factory.Services.GetRequiredService<IPatchNotesService>();

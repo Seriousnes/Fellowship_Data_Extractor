@@ -12,6 +12,26 @@ public class StorageExportSourceTests
         new(new MemoryStorage(objects));
 
     [Fact]
+    public async Task Each_builds_patch_notes_load_and_a_build_with_no_file_has_none()
+    {
+        var note = new PatchNote(new DocumentKey("item", 5224), "Sword", null, true, []);
+
+        var source = Reading(new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [ExportReader.Data("1000", ExportReader.EntitiesName)] = Older,
+            [ExportReader.Data("1000", ExportReader.SettingsName)] = Settings,
+            [ExportReader.Data("1001", ExportReader.EntitiesName)] = Newer,
+            [ExportReader.Data("1001", ExportReader.SettingsName)] = Settings,
+            [ExportReader.Data("1001", PatchNotesFile.FileName)] = PatchNotesFile.Write([note]),
+        });
+
+        var history = await source.LoadAsync(Xunit.TestContext.Current.CancellationToken);
+
+        Assert.Equal(note.Key, Assert.Single(history.Notes["1001"]).Key);
+        Assert.False(history.Notes.ContainsKey("1000"));
+    }
+
+    [Fact]
     public async Task Two_prefixes_in_one_container_load_as_the_newer_and_the_one_beneath_it()
     {
         var source = Reading(new Dictionary<string, string>(StringComparer.Ordinal)

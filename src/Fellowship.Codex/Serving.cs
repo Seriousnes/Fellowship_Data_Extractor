@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.RateLimiting;
 
+using Fellowship.Codex.Components.Pages;
 using Fellowship.Codex.Usage;
 
 namespace Fellowship.Codex;
@@ -14,6 +15,8 @@ public static class Serving
     public const string Policy = "codex";
 
     public const string Origins = "origins";
+
+    public const string PatchNotesPolicy = "patch-notes";
 
     private const long SizeLimit = 64L * 1024 * 1024;
 
@@ -55,6 +58,14 @@ public static class Serving
             };
 
             options.AddPolicy(Policy, _ => RateLimitPartition.Get(Policy, _ => load.Open()));
+
+            // One build's page is 9 MB of HTML, and eight at once exhaust the heap.
+            options.AddConcurrencyLimiter(PatchNotesPolicy, limiter =>
+            {
+                limiter.PermitLimit = 1;
+                limiter.QueueLimit = RequestLoad.QueueLimit;
+                limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            });
         });
 
         services.AddRequestTimeouts(options => options.AddPolicy(Policy, new RequestTimeoutPolicy
@@ -87,6 +98,15 @@ public static class Serving
 
         pages.RequireRateLimiting(Policy);
         pages.WithRequestTimeout(Policy);
+
+        builder.Add(endpoint =>
+        {
+            if (endpoint is RouteEndpointBuilder route &&
+                route.RoutePattern.RawText?.StartsWith(PatchNotes.Href, StringComparison.OrdinalIgnoreCase) is true)
+            {
+                endpoint.Metadata.Add(new EnableRateLimitingAttribute(PatchNotesPolicy));
+            }
+        });
 
         return pages;
     }
