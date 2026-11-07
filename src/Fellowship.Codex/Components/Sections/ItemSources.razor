@@ -1,65 +1,62 @@
 @using Fellowship.SDK.Models
-@inject ICodexViewService Ui
 @inject IEntityStoreService Store
 
-@if (Pools.Count > 0)
+@if (Rows.Count > 0)
 {
-    <Panel Head="Location / Source">
-        @foreach (var pool in Pools)
-        {
-            <details class="cx-item-source" open="@(Pools.Count == 1)">
-                <summary>
-                    @if (Dungeon(pool.Source) is { } dungeon)
-                    {
-                        <EntityLink Entity="dungeon" Class="cx-nm" />
-                    }
-                    else
-                    {
-                        <span class="cx-item-source-name">@pool.Source.Name</span>
-                    }
-                    <Chip>@pool.Source.Kind</Chip>
-                    @if (pool.Source.Category is { } category)
-                    {
-                        <Chip>@category</Chip>
-                    }
-                    <CountBadge Text="@Count(pool.Items.Count)" />
-                </summary>
-
-                <Table Items="pool.Items">
-                    <Columns>
-                        <Column Head="" Class="cx-texture">
-                            <Content Context="row"><Texture Entity="row" /></Content>
-                        </Column>
-                        <Column Head="Name">
-                            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
-                        </Column>
-                        <Column Head="ILvl" Numeric Value="row => row.ItemLevel" />
-                        <Column Head="Slot" Value="row => row.Slot" />
-                    </Columns>
-                </Table>
-            </details>
-        }
+    <Panel Head="Location / Source" Badge="@Rows.Count.ToString()">
+        <Table Items="Rows">
+            <Columns>
+                <Column Head="" Class="cx-texture">
+                    <Content Context="row">
+                        @if (row.Place is { } place)
+                        {
+                            <Texture Entity="place" />
+                        }
+                    </Content>
+                </Column>
+                <Column Head="Source">
+                    <Content Context="row">
+                        @if (row.Place is { } place)
+                        {
+                            <EntityLink Entity="place" Class="cx-nm" />
+                        }
+                        else
+                        {
+                            @row.Source.Name
+                        }
+                    </Content>
+                </Column>
+                <Column Head="Kind" Class="cx-tags">
+                    <Content Context="row"><Chip>@row.Source.Kind</Chip></Content>
+                </Column>
+                <Column Head="Category" Class="cx-tags">
+                    <Content Context="row">
+                        @if (row.Source.Category is { } category)
+                        {
+                            <Chip>@category</Chip>
+                        }
+                    </Content>
+                </Column>
+            </Columns>
+        </Table>
     </Panel>
 }
 
 @code {
     [CascadingParameter] private EntityDocument Entity { get; set; } = default!;
 
-    [CascadingParameter] private Bearings Here { get; set; } = new();
+    private IReadOnlyList<Row> Rows = [];
 
-    private IReadOnlyList<Pool> Pools = [];
-
-    private sealed record Pool(ItemSource Source, IReadOnlyList<ItemDocument> Items);
+    /// <param name="Place">The page the source has, where the export names one.</param>
+    private sealed record Row(ItemSource Source, EntityDocument? Place);
 
     protected override void OnParametersSet() =>
-        Pools =
+        Rows =
         [
             .. ((Entity as ItemDocument)?.Sources ?? [])
-                .Select(source => new Pool(source, ItemPools.Of(Ui.Codex, Store, source, Here.Reading))),
+                .Select(source => new Row(source, Place(source))),
         ];
 
-    private EntityDocument? Dungeon(ItemSource source) =>
+    private EntityDocument? Place(ItemSource source) =>
         source.Dungeon is { } dungeon ? Store.All(dungeon.Type, dungeon.Id).FirstOrDefault() : null;
-
-    private static string Count(int items) => $"{items} {(items == 1 ? "item" : "items")}";
 }

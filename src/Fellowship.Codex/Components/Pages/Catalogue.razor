@@ -23,7 +23,7 @@
 }
 else
 {
-    <div class="cx-tabs">
+    <Tabs Aria="Types">
         <a class="cx-tab" href="@View.OfType(null)" aria-current="@(Results.Chosen is null ? "page" : null)">
             All
             @if (Query.Text is not null)
@@ -42,179 +42,12 @@ else
                 }
             </a>
         }
-    </div>
+    </Tabs>
 
-    <div class="cx-browse">
-        <Panel As="aside" Class="cx-rail" Aria="Filters" Head="Refine" Collapsible="true"
-               Badge="@(View.Chosen.Count > 0 ? View.Chosen.Count.ToString("N0") : null)">
-            @if (View.Chosen.Count > 0)
-            {
-                <ul class="cx-chosen">
-                    @foreach (var (label, href) in View.Chosen)
-                    {
-                        <li><a href="@href" title="Remove this filter">@label</a></li>
-                    }
-                    <li class="cx-clear-all"><a href="@View.Bare">clear all</a></li>
-                </ul>
-            }
-
-            @foreach (var facet in View.Primary)
-            {
-                <details class="cx-facet" open>
-                    <summary>@facet.Label</summary>
-                    @Values(facet)
-                </details>
-            }
-
-            @foreach (var facet in View.More)
-            {
-                <details class="cx-facet" data-more="@("facet-" + facet.Key)" hidden="@(!View.Selected(facet.Type))" open>
-                    <summary>@facet.Label <FilterOff Clear="@(View.Selected(facet.Type) ? View.Choose(facet.Type, null) : null)" /></summary>
-                    @Values(facet)
-                </details>
-            }
-
-            @foreach (var flag in View.Flags)
-            {
-                var answer = View.Answer(flag.Type);
-
-                <details class="cx-facet" data-more="@("flag-" + flag.Key)" hidden="@(!View.Stated(flag.Type))" open>
-                    <summary>@flag.Label <FilterOff Clear="@(View.Stated(flag.Type) ? View.State(flag.Type, null) : null)" /></summary>
-                    <ul class="cx-facet-values">
-                        <li><a href="@View.State(flag.Type, true)" class="@BrowseView.On(answer == true)">Yes</a></li>
-                        <li><a href="@View.State(flag.Type, false)" class="@BrowseView.On(answer == false)">No</a></li>
-                    </ul>
-                </details>
-            }
-
-            @if (View.Ranges.Count > 0)
-            {
-                <form class="cx-ranges" method="get" action="@View.Where">
-                    @foreach (var (name, value) in Query.Fields())
-                    {
-                        <input type="hidden" name="@name" value="@value" />
-                    }
-                    @foreach (var measure in View.Ranges)
-                    {
-                        <details class="cx-facet" data-more="@("range-" + measure.Key)" hidden="@(!View.Bounded(measure.Type))" open>
-                            <summary>@Name(measure) <FilterOff Clear="@(View.Bounded(measure.Type) ? View.Unbound(measure.Type) : null)" /></summary>
-                            <div class="cx-range">
-                                <input type="number" step="any" name="@(measure.Key)Min" placeholder="min"
-                                       value="@(Query.Bound(measure.Type, false) is { } low ? FellowshipCodex.Number(low) : null)" />
-                                <input type="number" step="any" name="@(measure.Key)Max" placeholder="max"
-                                       value="@(Query.Bound(measure.Type, true) is { } high ? FellowshipCodex.Number(high) : null)" />
-                            </div>
-                        </details>
-                    }
-                    <button type="submit">Apply</button>
-                </form>
-            }
-
-            @foreach (var flag in View.Reveals)
-            {
-                var shown = View.Revealed(flag.Type);
-
-                <details class="cx-facet" data-more="@("reveal-" + flag.Key)" hidden="@(!shown)" open>
-                    <summary>@flag.Label <FilterOff Clear="@(shown ? View.State(flag.Type, null) : null)" /></summary>
-                    <ul class="cx-facet-values">
-                        <li><a href="@View.State(flag.Type, shown ? null : true)" class="@BrowseView.On(shown)">Yes</a></li>
-                    </ul>
-                </details>
-            }
-
-            <select class="cx-more" aria-label="Additional filters">
-                <option value="">Additional filters…</option>
-                @if (View.More.Any(facet => !View.Selected(facet.Type)))
-                {
-                    <optgroup label="Filter by">
-                        @foreach (var facet in View.More.Where(facet => !View.Selected(facet.Type)))
-                        {
-                            <option value="@("facet-" + facet.Key)">@facet.Label</option>
-                        }
-                    </optgroup>
-                }
-                @if (View.Flags.Any(flag => !View.Stated(flag.Type)))
-                {
-                    <optgroup label="Only rows that">
-                        @foreach (var flag in View.Flags.Where(flag => !View.Stated(flag.Type)))
-                        {
-                            <option value="@("flag-" + flag.Key)">@flag.Label</option>
-                        }
-                    </optgroup>
-                }
-                @if (View.Ranges.Any(measure => !View.Bounded(measure.Type)))
-                {
-                    <optgroup label="Between">
-                        @foreach (var measure in View.Ranges.Where(measure => !View.Bounded(measure.Type)))
-                        {
-                            <option value="@("range-" + measure.Key)">@Name(measure)</option>
-                        }
-                    </optgroup>
-                }
-                @if (View.Reveals.Any(flag => !View.Revealed(flag.Type)))
-                {
-                    <optgroup label="Include">
-                        @foreach (var flag in View.Reveals.Where(flag => !View.Revealed(flag.Type)))
-                        {
-                            <option value="@("reveal-" + flag.Key)">@flag.Label</option>
-                        }
-                    </optgroup>
-                }
-            </select>
-
-            @if (Query.Text is not null)
-            {
-                <details class="cx-facet cx-group" open>
-                    <summary>Sort results by</summary>
-                    <ul class="cx-facet-values">
-                        @foreach (var column in Orders)
-                        {
-                            <li>
-                                <a href="@View.SortBy(column)" class="@BrowseView.On(Query.Sort == column && !Query.Descending)">@Catalog.Sorting(column).Label</a>
-                            </li>
-                        }
-                    </ul>
-                </details>
-            }
-
-            <details class="cx-facet cx-group" open="@(Query.Group is not null)">
-                <summary>Group results by</summary>
-                <ul class="cx-facet-values">
-                    <li>
-                        <a href="@View.GroupBy(null)" class="@BrowseView.On(Query.Group is null)">Nothing</a>
-                    </li>
-                    @foreach (var facet in View.Rail)
-                    {
-                        var grouping = Query.Group == facet.Type;
-                        <li>
-                            <a href="@View.GroupBy(facet.Type)" class="@BrowseView.On(grouping)">@facet.Label</a>
-                        </li>
-                    }
-                </ul>
-            </details>
-        </Panel>
-
-        <section>
-            @Pager()
-
-            @if (Results.Rows.Count == 0)
-            {
-                <Panel>
-                    <Empty Message="Nothing in the build answers that.">
-                        @(Query.IsEmpty
-                            ? "Pick a category from the menus above, or type a name into the search box."
-                            : "Remove a filter and try again.")
-                    </Empty>
-                </Panel>
-            }
-            else
-            {
-                <Rows Type="Results.Chosen" Documents="Results.Rows" View="View" />
-
-                @Pager()
-            }
-        </section>
-    </div>
+    <Browsing Query="Query" Results="Results" View="View"
+              Nothing="@(Query.IsEmpty
+                  ? "Pick a category from the menus above, or type a name into the search box."
+                  : "Remove a filter and try again.")" />
 }
 
 @code {
@@ -255,67 +88,6 @@ else
             return [.. types.Where(type => Results.Types.ContainsKey(type.Type) || Results.Chosen == type.Type)];
         }
     }
-
-    private static readonly SortingType[] Orders = [SortingType.Relevance, SortingType.Name];
-
-    private Facet? Grouping => Query.Group is { } group ? Catalog.Facet(group) : null;
-
-    private static string Name(Measure measure) =>
-        measure.Unit is null ? measure.Label : $"{measure.Label} ({measure.Unit})";
-
-    private RenderFragment Values(FacetCount facet) =>
-        @<ul class="cx-facet-values">
-            @foreach (var value in facet.Values)
-            {
-                var chosen = Query.Chosen(facet.Type, value.Value);
-
-                <li>
-                    <a href="@View.Toggle(facet.Type, value.Value)" class="@BrowseView.On(chosen)"
-                       style="@(chosen || value.Colour is null ? null : $"color:{value.Colour}")">@value.Label</a>
-                </li>
-            }
-        </ul>;
-
-    private RenderFragment Pager() =>
-        @<nav class="cx-pager" aria-label="Pagination">
-            <div class="cx-count">
-                <b>@Results.Total.ToString("N0")</b> @(Results.Total == 1 ? "entity" : "entities")
-                @if (Grouping is { } grouped)
-                {
-                    <span>&middot; grouped by @grouped.Label</span>
-                }
-            </div>
-            @if (Results.Pages > 1)
-            {
-                <div class="cx-pager-links">
-                    @if (Results.Page > 1)
-                    {
-                        <a href="@View.PageLink(1)">&laquo; First</a>
-                        <a href="@View.PageLink(Results.Page - 1)">&lsaquo; Prev</a>
-                    }
-                    @foreach (var number in BrowseView.Window(Results.Page, Results.Pages))
-                    {
-                        if (number < 0)
-                        {
-                            <span class="cx-gap">&hellip;</span>
-                        }
-                        else if (number == Results.Page)
-                        {
-                            <span aria-current="page">@number</span>
-                        }
-                        else
-                        {
-                            <a href="@View.PageLink(number)">@number</a>
-                        }
-                    }
-                    @if (Results.Page < Results.Pages)
-                    {
-                        <a href="@View.PageLink(Results.Page + 1)">Next &rsaquo;</a>
-                        <a href="@View.PageLink(Results.Pages)">Last &raquo;</a>
-                    }
-                </div>
-            }
-        </nav>;
 
     protected override void OnParametersSet()
     {

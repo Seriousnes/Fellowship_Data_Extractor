@@ -1,101 +1,162 @@
 @using Fellowship.SDK.Models
 @inject ICodexViewService Ui
+@inject ICodexSearchService Search
+@inject NavigationManager Nav
 
 <EntityView Entity="Entity">
-    @if (Entity.Background is { } behind)
-    {
-        <Panel Head="Loading screen">
-            <img class="cx-loading-screen" alt="" loading="lazy" src="@Ui.Icon(behind)" />
-        </Panel>
-    }
+    <Gallery Slides="Slides" Class="cx-entity-gallery" Label="@($"{Name} images")" />
 
-    @if (Entity.Floors is { Count: > 0 } floors)
+    @if (Offered.Count > 0)
     {
-        <Panel Head="Map" Badge="@floors.Count.ToString()">
-            @for (var index = 0; index < floors.Count; index++)
+        <Tabs Aria="@($"{Name} contents")">
+            @foreach (var tab in Offered)
             {
-                var at = index;
-                var floor = floors[at];
-                var placed = (Entity.Placements ?? []).Where(spot => spot.Floor == at).ToArray();
-
-                <Rule />
-                <SubHead>@(floor.Name ?? $"Floor {at + 1}")</SubHead>
-
-                <figure class="cx-dungeon-map" style="@Aspect(floor)">
-                    @if (floor.Map is { } map)
-                    {
-                        <img alt="" loading="lazy" src="@Ui.Icon(map)" />
-                    }
-
-                    <svg class="cx-dungeon-patrols" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
-                        @foreach (var patrol in Patrolled(placed))
-                        {
-                            <polyline points="@Projected(floor, patrol)" />
-                        }
-                    </svg>
-
-                    @foreach (var spot in placed)
-                    {
-                        if (spot is not { MapX: { } x, MapY: { } y }) continue;
-
-                        var creature = Creature(spot.Creature);
-                        var tip = creature is null ? null : Ui.Tip(creature, showIcon: true);
-
-                        <span class="cx-dungeon-spot" data-rank="@creature?.Rank" style="@Position(x, y)"
-                              data-tip="@tip?.Address" data-tip-request="@tip?.Body"></span>
-                    }
-                </figure>
+                <a class="cx-tab" href="@Address(tab.Type)" aria-current="@(tab.Type == Chosen ? "page" : null)">
+                    @tab.Label
+                    <CountBadge Text="@tab.Count.ToString("N0")" />
+                </a>
             }
-        </Panel>
-    }
+        </Tabs>
 
-    @if (Dwelling.Count > 0)
-    {
-        <Panel Head="Creatures" Badge="@Dwelling.Count.ToString()">
-            <Table Items="Dwelling">
-                <Columns>
-                    <Column Head="" Class="cx-texture">
-                        <Content Context="row"><Texture Entity="row" /></Content>
-                    </Column>
-                    <Column Head="Name">
-                        <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
-                    </Column>
-                    <Column Head="Rank" Class="cx-tags">
-                        <Content Context="row">
-                            @if (row.Rank is { } rank)
-                            {
-                                <Chip>@rank</Chip>
-                            }
-                        </Content>
-                    </Column>
-                    <Column Head="Health" Numeric Value="row => row.Health" />
-                    <Column Head="Kill score" Numeric Value="row => row.KillScore" />
-                </Columns>
-            </Table>
-        </Panel>
+        @if (Error is { } error)
+        {
+            <Panel>
+                <Empty Message="That filter could not be read.">@error</Empty>
+            </Panel>
+        }
+        else
+        {
+            <Browsing Query="Query" Results="Results" View="View" Kept="Kept"
+                      Pinned="@([$"{Ui.Codex.Facet(Pin).Label}: {Name}"])" />
+        }
     }
 </EntityView>
 
 @code {
     [Parameter, EditorRequired] public DungeonDocument Entity { get; set; } = default!;
 
-    private IReadOnlyList<CreatureDocument> Dwelling = [];
+    [CascadingParameter] private HttpContext? Http { get; set; }
 
-    protected override void OnParametersSet() =>
-        Dwelling =
+    /// <summary>The query key naming the tab, which holds the slug of the type it lists.</summary>
+    public const string TabKey = "tab";
+
+    /// <summary>The facet every tab fixes to this dungeon: an item's source, a creature's location.</summary>
+    private const FacetType Pin = FacetType.Source;
+
+    private static readonly (EntityType Type, string Label)[] Contents =
+        [(EntityType.Item, "Loot"), (EntityType.Creature, "Creatures")];
+
+    private string Name => PublicTypes.NameOf(Entity);
+
+    private IReadOnlyList<GallerySlide> Slides = [];
+
+    private IReadOnlyList<(EntityType Type, string Label, int Count)> Offered = [];
+
+    private EntityType Chosen;
+
+    private CodexQuery Query = new();
+
+    private CodexResults Results = new(0, 1, 1, [], [], new Dictionary<EntityType, int>(), null, [], []);
+
+    private BrowseView View = default!;
+
+    private string? Error;
+
+    private IReadOnlyList<(string Name, string Value)> Kept = [];
+
+    private string Address(EntityType type) =>
+        type == Offered[0].Type ? Ui.Path(Entity) : $"{Ui.Path(Entity)}?{TabKey}={EntityTypes.Slug(type)}";
+
+    protected override void OnParametersSet()
+    {
+        Slides = Gathered();
+
+        var all = Search.Run(new CodexQuery { Selections = new Dictionary<FacetType, IReadOnlyList<string>> { [Pin] = [Name] } });
+
+        Offered =
         [
-            .. Ui.Codex.Of(EntityType.Creature)
-                .OfType<CreatureDocument>()
-                .Where(creature => creature.FoundIn?.Any(level => level.Id == Entity.Id) is true)
-                .OrderBy(creature => Ordinal(creature.Rank))
-                .ThenBy(creature => PublicTypes.NameOf(creature), StringComparer.OrdinalIgnoreCase),
+            .. Contents
+                .Select(content => (content.Type, content.Label, Count: all.Types.GetValueOrDefault(content.Type)))
+                .Where(content => content.Count > 0),
         ];
+
+        if (Offered.Count == 0) return;
+
+        var request = Http?.Request.Query ?? Microsoft.AspNetCore.Http.QueryCollection.Empty;
+        var wanted = request.TryGetValue(TabKey, out var named) ? named.ToString() : null;
+
+        Chosen = Offered
+            .Select(tab => tab.Type)
+            .FirstOrDefault(type => EntityTypes.Slug(type) == wanted, Offered[0].Type);
+
+        var where = Address(Chosen);
+        Kept = Chosen == Offered[0].Type ? [] : [(TabKey, EntityTypes.Slug(Chosen))];
+
+        var browsed = new Microsoft.AspNetCore.Http.QueryCollection(
+            request.Where(pair => pair.Key != TabKey).ToDictionary(pair => pair.Key, pair => pair.Value));
+
+        Query = CodexQuery.Parse(browsed, Ui.Codex, RequestProperties.Of(typeof(EntitiesRequest)), null, out Error)
+            .Unpinned(Pin);
+
+        if (Error is null && request.Any(pair => pair.Value.All(string.IsNullOrEmpty)))
+        {
+            var rest = Query.ToQueryString();
+            Nav.NavigateTo(rest.Length == 0 ? where : where + (where.Contains('?') ? "&" + rest[1..] : rest), replace: true);
+            return;
+        }
+
+        if (Error is null) Results = Search.Run(Query.Pinned(Chosen, Pin, Name));
+
+        View = new BrowseView(Ui.Codex, Query, Results, where, new HashSet<FacetType> { Pin });
+    }
+
+    private IReadOnlyList<GallerySlide> Gathered()
+    {
+        var slides = new List<GallerySlide>();
+
+        if (Ui.Icon(Entity.Background) is { } behind) slides.Add(new GallerySlide("Loading screen", behind));
+
+        var floors = Entity.Floors ?? [];
+
+        for (var index = 0; index < floors.Count; index++)
+        {
+            var at = index;
+            var floor = floors[at];
+
+            if (Ui.Icon(floor.Map) is not { } map) continue;
+
+            slides.Add(new GallerySlide(
+                floor.Name ?? $"Floor {at + 1}", map, floor.Extent.Y / floor.Extent.X, Placed(floor, at)));
+        }
+
+        return slides;
+    }
+
+    private RenderFragment Placed(DungeonFloor floor, int at) => __builder =>
+    {
+        var placed = (Entity.Placements ?? []).Where(spot => spot.Floor == at).ToArray();
+
+        <svg class="cx-dungeon-patrols" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
+            @foreach (var patrol in Patrolled(placed))
+            {
+                <polyline points="@Projected(floor, patrol)" />
+            }
+        </svg>
+
+        @foreach (var spot in placed)
+        {
+            if (spot is not { MapX: { } x, MapY: { } y }) continue;
+
+            var creature = Creature(spot.Creature);
+            var tip = creature is null ? null : Ui.Tip(creature, showIcon: true);
+
+            <span class="cx-dungeon-spot" data-rank="@creature?.Rank" style="@Position(x, y)"
+                  data-tip="@tip?.Address" data-tip-request="@tip?.Body"></span>
+        }
+    };
 
     private CreatureDocument? Creature(EntityReference reference) =>
         Ui.Store.All(reference.Type, reference.Id).OfType<CreatureDocument>().FirstOrDefault();
-
-    private static string Aspect(DungeonFloor floor) =>
-        string.Create(CultureInfo.InvariantCulture, $"aspect-ratio:{floor.Extent.Y:0.###} / {floor.Extent.X:0.###}");
 
     private static string Position(double x, double y) =>
         string.Create(CultureInfo.InvariantCulture, $"left:{x * 100:0.###}%;top:{y * 100:0.###}%");
@@ -110,10 +171,4 @@
             CultureInfo.InvariantCulture,
             $"{(point.Y - (floor.Center.Y - floor.Extent.Y)) / (2 * floor.Extent.Y):0.#####}," +
             $"{(floor.Center.X + floor.Extent.X - point.X) / (2 * floor.Extent.X):0.#####}")));
-
-    private static readonly CreatureRank[] Order =
-        [CreatureRank.Boss, CreatureRank.Elite, CreatureRank.Enemy, CreatureRank.Friendly];
-
-    private static int Ordinal(CreatureRank? rank) =>
-        rank is { } named ? Array.IndexOf(Order, named) : Order.Length;
 }

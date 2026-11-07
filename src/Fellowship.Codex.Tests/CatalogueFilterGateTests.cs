@@ -74,4 +74,21 @@ public class CatalogueFilterGateTests(AdminHost host)
 
         Assert.DoesNotContain(CatalogueFilterGate.Cookie, body);
     }
+
+    [Fact]
+    public async Task A_filtered_dungeon_list_receives_the_fixed_page()
+    {
+        var (_, body) = await GetAsync("/dungeon/13/wraithtide-vault?slot=Weapon");
+
+        Assert.Contains(CatalogueFilterGate.Cookie, body);
+        Assert.DoesNotContain(Results, body);
+    }
+
+    [Fact]
+    public async Task A_dungeon_page_with_no_filter_renders_its_lists()
+    {
+        var (_, body) = await GetAsync("/dungeon/13/wraithtide-vault");
+
+        Assert.Contains(Results, body);
+    }
 }

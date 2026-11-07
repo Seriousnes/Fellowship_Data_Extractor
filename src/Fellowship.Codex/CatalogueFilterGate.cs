@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Endpoints;
 
 using Fellowship.Codex.Components.Pages;
+using Fellowship.Codex.Models;
 
 namespace Fellowship.Codex;
 
@@ -12,6 +13,10 @@ namespace Fellowship.Codex;
 /// <para>
 /// Enhanced navigation names itself in its Accept header, so a click on a filter passes. A direct
 /// request receives the fixed page, whose script sets the session cookie and requests the URL again.
+/// </para>
+/// <para>
+/// An entity page with a filtered list, such as a dungeon's loot, has the same links, so a request for one
+/// that carries a filter is gated too. A reading of the entity, such as <c>?hero=</c>, is not.
 /// </para>
 /// </summary>
 public sealed class CatalogueFilterGate(RequestDelegate next)
@@ -53,7 +58,21 @@ public sealed class CatalogueFilterGate(RequestDelegate next)
     private static bool Gated(HttpContext http) =>
         HttpMethods.IsGet(http.Request.Method) &&
         http.Request.QueryString.HasValue &&
-        http.GetEndpoint()?.Metadata.GetMetadata<ComponentTypeMetadata>()?.Type == typeof(Catalogue) &&
+        http.GetEndpoint()?.Metadata.GetMetadata<ComponentTypeMetadata>()?.Type is { } page &&
+        (page == typeof(Catalogue) || (page == typeof(EntityPage) && http.Request.Query.Keys.Any(Browses))) &&
         !http.Request.Cookies.ContainsKey(Cookie) &&
         !http.Request.Headers.Accept.Any(accept => accept?.Contains(EnhancedNavigation, StringComparison.Ordinal) is true);
+
+    private static bool Browses(string key) =>
+        !QueryKeys.TryParse<ReadingParameter>(key, out _) &&
+        (key == Components.Views.Dungeon.TabKey ||
+         QueryKeys.TryParse<FacetType>(key, out _) ||
+         QueryKeys.TryParse<FlagType>(key, out _) ||
+         QueryKeys.TryParse<BrowseParameter>(key, out _) ||
+         QueryKeys.TryParse<MeasureType>(Bound(key), out _));
+
+    private static string Bound(string key) =>
+        key.EndsWith("Min", StringComparison.OrdinalIgnoreCase) || key.EndsWith("Max", StringComparison.OrdinalIgnoreCase)
+            ? key[..^3]
+            : key;
 }
