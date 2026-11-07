@@ -1,5 +1,6 @@
 param(
-    [string]$Destination = 'G:/mcp/Fellowship'
+    [Parameter(Mandatory)]
+    [string]$Destination
 )
 
 $ErrorActionPreference = 'Stop'

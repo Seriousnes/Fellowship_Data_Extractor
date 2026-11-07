@@ -49,7 +49,7 @@ public static partial class GameBuild
         {
             var text = File.ReadAllText(manifest.FullName);
 
-            if (InstallDirEntry().Match(text) is not { Success: true } named) continue;
+            if (SteamLibrary.InstallDirEntry().Match(text) is not { Success: true } named) continue;
             if (!named.Groups[1].Value.Equals(install.Name, StringComparison.OrdinalIgnoreCase)) continue;
 
             return (manifest, text);
@@ -59,9 +59,6 @@ public static partial class GameBuild
             $"No appmanifest in {library.FullName} declares installdir {install.Name}, so the build number " +
             $"that names the export folder cannot be read. Set {OverrideVariable} to name the build instead.");
     }
-
-    [GeneratedRegex("\"installdir\"\\s+\"([^\"]*)\"", RegexOptions.IgnoreCase)]
-    private static partial Regex InstallDirEntry();
 
     [GeneratedRegex("\"buildid\"\\s+\"([^\"]*)\"", RegexOptions.IgnoreCase)]
     private static partial Regex BuildIdEntry();

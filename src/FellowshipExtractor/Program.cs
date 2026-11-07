@@ -21,6 +21,7 @@ const string BucketVariable = "S3__Bucket";
 var command = args.Length > 0 && !args[0].StartsWith('-') ? args[0].ToLowerInvariant() : "export";
 var options = new ExtractorOptions
 {
+    InstallDir = Argument(args, ExtractorOptions.InstallFlag),
     MappingsFile = Environment.GetEnvironmentVariable("FELLOWSHIP_USMAP"),
     Game = ExtractorOptions.ParseGame(Environment.GetEnvironmentVariable("FELLOWSHIP_UE_VERSION")),
 };
@@ -36,6 +37,11 @@ catch (MappingException)
         This package uses unversioned properties and no mappings are loaded.
         Run with --usmap to recover them, or set FELLOWSHIP_USMAP to a .usmap file for this build.
         """);
+    return 2;
+}
+catch (InstallNotFoundException missing)
+{
+    Console.Error.WriteLine(missing.Message);
     return 2;
 }
 
@@ -136,6 +142,10 @@ switch (command)
                                             own configuration chain, also read from the {BucketVariable}
                                             variable
 
+               --install <path>             the game's install folder, otherwise the
+                                            {ExtractorOptions.InstallVariable} variable, otherwise
+                                            found in the Steam libraries
+
              Commands:
                usmap                 recover the mappings without exporting
                patch-notes           write each export folder's {PatchNotesFile.FileName} against the
@@ -152,6 +162,7 @@ switch (command)
                                      and tag tables, every curve table, the locres and the config
 
              Environment:
+               FELLOWSHIP_INSTALL    the game's install folder, otherwise found in the Steam libraries
                FELLOWSHIP_USMAP      a .usmap for this build, otherwise the one the usmap command wrote
                FELLOWSHIP_BUILD      names the build the export folder is filed under, otherwise the
                                      Steam appmanifest for the install supplies it

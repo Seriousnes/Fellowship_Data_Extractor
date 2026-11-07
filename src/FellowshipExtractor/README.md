@@ -1,54 +1,31 @@
 # Fellowship extractor
 
-Reads the Fellowship game install and writes the export: every entity as its type's JSON document
-under `export-<steam build id>/`, and every image under `ui/`.
+Reads the game install and writes the export to `output/`.
 
-## Run it
-
-```powershell
-dotnet run --project src/FellowshipExtractor
+```shell
+dotnet run --project src/FellowshipExtractor [-- <command>] [options]
 ```
 
-With no command, the extractor writes the whole export to `output/`, unless an option names a
-remote store.
+| Option | |
+| --- | --- |
+| `--install PATH` | Game install folder. Default: found in the Steam libraries. |
+| `--output PATH` | Folder to write to. Default: `output/`. |
+| `--connection-string VALUE` | Also write to an Azure Blob container. |
+| `--bucket NAME` | Also write to an S3 bucket (AWS SDK credentials). |
+| `--usmap` | Recover the property mappings first. Needed when the game updates. |
 
-## Options
+| Command | |
+| --- | --- |
+| `usmap` | Recover the property mappings only. |
+| `patch-notes` | Rewrite each export's patch notes. No game install needed. |
+| `dump FILTER [COUNT]` | Write matching cooked assets as JSON to `output/dump`. |
+| `blueprints [FILTER]` | Write cooked blueprints as pseudo-code to `blueprints/`. |
+| `dump-all FOLDER` | Write the raw evidence behind every ability and effect. |
 
-The export takes the following options:
-
-- **`--usmap`**: Recovers the property mappings first, and stops before exporting if they come back
-  short.
-- **`--output PATH`**: Writes to a folder, `output/` unless a remote store is named.
-- **`--connection-string CONNECTION_STRING`**: Writes to an Azure Blob container, also read from
-  the `ConnectionStrings__icons` environment variable.
-- **`--bucket BUCKET`**: Writes to an S3 bucket whose region and credentials come from the AWS SDK
-  configuration chain, also read from the `S3__Bucket` environment variable.
-
-Naming more than one destination writes each of them in the one pass.
-
-## Commands
-
-The extractor takes the following commands in place of the export:
-
-- **`usmap`**: Recovers the property mappings without exporting.
-- **`dump FILTER [COUNT]`**: Writes every export of the matching cooked assets as JSON under
-  `output/dump`, for reading an asset that is not in the export. `COUNT` defaults to 1.
-- **`blueprints [FILTER]`**: Writes every cooked blueprint under `blueprints/` at the repository
-  root, one folder per package. `defaults.json` has the class default object, its components and
-  its sub-objects. Each function and ubergraph with bytecode is a `.txt` of pseudo-code, with
-  structured `if`/`else` and `sequence` blocks, and labels and `goto` where the jumps allow no
-  structure. Each event stub names the ubergraph label it enters. A `FILTER` writes only the
-  packages whose path contains it.
-- **`dump-all FOLDER`**: Writes the evidence base behind every ability and gameplay effect into the
-  named folder. Give it a folder of its own rather than `output/`.
-
-## Environment variables
-
-The extractor reads the following environment variables:
-
-- **`FELLOWSHIP_USMAP`**: A `.usmap` file for this build. Unset, the extractor reads the highest
-  build id under `mappings/` at the repository root.
-- **`FELLOWSHIP_BUILD`**: The build the export folder is named for. Unset, the Steam
-  `appmanifest_*.acf` file for the install supplies it.
-- **`FELLOWSHIP_UE_VERSION`**: An engine version override, such as `5.6` or `GAME_UE5_6`.
-- **`FELLOWSHIP_LOG`**: Any value writes read failures to standard error.
+| Environment variable | |
+| --- | --- |
+| `FELLOWSHIP_INSTALL` | Game install folder, same as `--install`. |
+| `FELLOWSHIP_USMAP` | A `.usmap` file. Default: the newest in `mappings/`. |
+| `FELLOWSHIP_BUILD` | Build id for the export folder. Default: from the Steam appmanifest. |
+| `FELLOWSHIP_UE_VERSION` | Engine version override, such as `5.6`. |
+| `FELLOWSHIP_LOG` | Any value prints read failures to standard error. |

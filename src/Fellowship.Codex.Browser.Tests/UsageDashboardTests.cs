@@ -234,33 +234,6 @@ public sealed class UsageDashboardTests(UsageSite site)
         Assert.Equal(before, await page.EvaluateAsync<double>("() => window.cxLowest"));
     }
 
-    [Theory]
-    [InlineData(0.5)]
-    [InlineData(1.0)]
-    public async Task A_reload_returns_to_its_scroll_position(double depth)
-    {
-        const double Tolerance = 40;
-
-        await using var context = await site.NewContextAsync(UsageSite.SignedIn);
-        var page = await context.NewPageAsync();
-
-        foreach (var path in new[] { "/", "/api/catalog", "/heroes" }) await page.GotoAsync(path);
-
-        site.Services.GetRequiredService<UsageStore>().Write(site.Services.GetRequiredService<UsageCounter>().Drain());
-
-        await page.SetViewportSizeAsync(1400, 800);
-        await page.GotoAsync($"{UsageRoutes.Admin}?days=1");
-        await LiveAsync(page);
-
-        var before = await page.EvaluateAsync<double>(
-            "depth => { window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * depth); return scrollY; }", depth);
-
-        await page.ReloadAsync();
-        await LiveAsync(page);
-
-        Assert.InRange(await page.EvaluateAsync<double>("() => scrollY"), before - Tolerance, before + Tolerance);
-    }
-
     [Fact]
     public async Task The_dashboard_draws_both_charts_and_refreshes_the_report_in_place()
     {

@@ -10,7 +10,7 @@ anywhere in the calling routine.
 Confidence: high. Two independent lines of evidence agree.
 
 Read from `fellowship-Win64-Shipping.exe` (177,222,144 bytes) at
-`C:\Program Files (x86)\Steam\steamapps\common\Fellowship\fellowship\Binaries\Win64\`.
+`<install>/fellowship/Binaries/Win64/`.
 Image base `0x140000000`. All addresses below are virtual addresses in that image.
 
 ## The decisive instructions

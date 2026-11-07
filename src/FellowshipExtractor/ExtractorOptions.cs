@@ -1,10 +1,14 @@
+using System.Diagnostics.CodeAnalysis;
+
 using CUE4Parse.UE4.Versions;
 
 namespace FellowshipExtractor;
 
 public sealed class ExtractorOptions
 {
-    public const string DefaultInstallDir = @"C:\Program Files (x86)\Steam\steamapps\common\Fellowship";
+    public const string InstallVariable = "FELLOWSHIP_INSTALL";
+
+    public const string InstallFlag = "--install";
 
     public const string MappingsPrefix = "fellowship-";
 
@@ -14,7 +18,22 @@ public sealed class ExtractorOptions
 
     public static string MappingsName(string build) => $"{MappingsPrefix}{build}{MappingsSuffix}";
 
-    public string InstallDir { get; init; } = DefaultInstallDir;
+    private string? installDir;
+
+    [AllowNull]
+    public string InstallDir
+    {
+        get => installDir ??= LocateInstall();
+        init => installDir = value is { Length: > 0 } ? value : null;
+    }
+
+    private static string LocateInstall() =>
+        Environment.GetEnvironmentVariable(InstallVariable) is { Length: > 0 } named
+            ? named
+            : SteamLibrary.FindGame()
+                ?? throw new InstallNotFoundException(
+                    $"No Steam library has {SteamLibrary.InstallDirName} installed. Set {InstallVariable} " +
+                    $"or pass {InstallFlag} with the game's install folder.");
 
     public EGame Game { get; init; } = EGame.GAME_UE5_5;
 
@@ -34,7 +53,7 @@ public sealed class ExtractorOptions
     public string? MappingsFile { get; init; }
 
     public string MappingsDir { get; init; } =
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "mappings");
+        Path.Combine(RepositoryRoot.Folder, "mappings");
 
     public string ResolvedMappingsDir => Path.GetFullPath(MappingsDir);
 
@@ -60,10 +79,10 @@ public sealed class ExtractorOptions
         long.TryParse(name[MappingsPrefix.Length..^MappingsSuffix.Length], out var build) ? build : -1;
 
     public string OutputDir { get; init; } =
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "output");
+        Path.Combine(RepositoryRoot.Folder, "output");
 
     public string BlueprintsDir { get; init; } =
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "blueprints");
+        Path.Combine(RepositoryRoot.Folder, "blueprints");
 
     public string ResolvedBlueprintsDir => Path.GetFullPath(BlueprintsDir);
 
@@ -74,3 +93,5 @@ public sealed class ExtractorOptions
 
     public string ResolvedOutputDir => Path.GetFullPath(OutputDir);
 }
+
+public sealed class InstallNotFoundException(string message) : DirectoryNotFoundException(message);
