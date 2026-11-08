@@ -57,6 +57,14 @@ builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
 builder.Services.AddServing();
 
+// Siteverify tokens are single-use, so the client has no retries, and a 10 s timeout fails closed.
+builder.Services.AddSingleton(TurnstileSettings.From(builder.Configuration, builder.Environment));
+#pragma warning disable EXTEXP0001 // RemoveAllResilienceHandlers removes the default handler from one client.
+builder.Services
+    .AddHttpClient<TurnstileVerification>(TurnstileVerification.ClientName, http => http.Timeout = TurnstileVerification.Timeout)
+    .RemoveAllResilienceHandlers();
+#pragma warning restore EXTEXP0001
+
 var usage = builder.AddUsage();
 
 var app = builder.Build();
@@ -94,6 +102,7 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode().ServePages();
 
+CatalogueFilterGate.MapPass(app);
 app.MapCards();
 app.MapAdmin(usage);
 

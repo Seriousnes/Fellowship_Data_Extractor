@@ -138,6 +138,9 @@ jobs:
           OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
           OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
           OWNERS: ${{ secrets.ADMIN_GITHUB_IDS }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          TURNSTILE_HOSTNAMES: codex.fellowshipanalyzer.com
         run: |
           umask 077
           {
@@ -149,6 +152,12 @@ jobs:
             printf 'GitHub__ClientId=%s\n' "$OAUTH_CLIENT_ID"
             printf 'GitHub__ClientSecret=%s\n' "$OAUTH_CLIENT_SECRET"
             printf 'GitHub__Owners=%s\n' "$OWNERS"
+            # A site key with no secret key stops the codex at startup, so the three keys are written together.
+            if [ -n "$TURNSTILE_SITE_KEY" ] && [ -n "$TURNSTILE_SECRET_KEY" ]; then
+              printf 'Turnstile__SiteKey=%s\n' "$TURNSTILE_SITE_KEY"
+              printf 'Turnstile__SecretKey=%s\n' "$TURNSTILE_SECRET_KEY"
+              printf 'Turnstile__Hostnames=%s\n' "$TURNSTILE_HOSTNAMES"
+            fi
           } > codex.env
           scp -o BatchMode=yes codex.env deploy/compose.yaml "$REMOTE:$REMOTE_DIR/"
           rm codex.env
