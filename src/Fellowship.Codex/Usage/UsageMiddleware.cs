@@ -14,7 +14,6 @@ public sealed class UsageMiddleware(
     UsageCounter counter,
     Ring<FailedRequest> failures,
     ClientTags clients,
-    ServerWatch server,
     TimeProvider time)
 {
     public const string OtherMethod = "OTHER";
@@ -33,10 +32,7 @@ public sealed class UsageMiddleware(
     public async Task InvokeAsync(HttpContext http)
     {
         var started = Stopwatch.GetTimestamp();
-        var circuit = UsageRoutes.IsCircuit(http);
         Exception? thrown = null;
-
-        if (circuit) server.CircuitOpened();
 
         try
         {
@@ -49,8 +45,6 @@ public sealed class UsageMiddleware(
         }
         finally
         {
-            if (circuit) server.CircuitClosed();
-
             if (UsageRoutes.Group(http) is { } route)
             {
                 var failed = thrown is not null;

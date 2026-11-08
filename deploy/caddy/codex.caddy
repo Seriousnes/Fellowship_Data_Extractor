@@ -1,4 +1,10 @@
 codex.fellowshipanalyzer.com {
+	# Lightpanda runs the catalogue filter gate's script, and each page it loads starts a circuit.
+	@lightpanda header User-Agent *Lightpanda*
+	@lightpandaHint header Sec-Ch-Ua *Lightpanda*
+	respond @lightpanda 403
+	respond @lightpandaHint 403
+
 	reverse_proxy 127.0.0.1:5280
 
 	log {

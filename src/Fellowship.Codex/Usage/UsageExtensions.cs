@@ -5,6 +5,7 @@ using AspNet.Security.OAuth.GitHub;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 
@@ -55,6 +56,7 @@ public static class UsageExtensions
             services.AddSingleton<ClientTags>();
             services.AddSingleton<RecentLogs>();
             services.AddSingleton<ServerWatch>();
+            services.TryAddEnumerable(ServiceDescriptor.Scoped<CircuitHandler, CircuitCount>());
             services.AddHostedService<UsageFlush>();
             services.AddSingleton<ILoggerProvider, ErrorCounting>();
             services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(settings.Keys!));

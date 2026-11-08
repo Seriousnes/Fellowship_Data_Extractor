@@ -38,9 +38,6 @@ public static class UsageRoutes
 
     private const string SlugValue = "slug";
 
-    public static bool IsCircuit(HttpContext http) =>
-        http.Request.Path.StartsWithSegments(Hub, out var rest) && (!rest.HasValue || rest == "/");
-
     /// <summary>The usage route for a request, or null for a request excluded from the counts.</summary>
     public static UsageRoute? Group(HttpContext http)
     {
