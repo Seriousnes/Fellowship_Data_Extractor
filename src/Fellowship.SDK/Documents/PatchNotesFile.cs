@@ -18,17 +18,11 @@ public static class PatchNotesFile
 {
     public const string FileName = "patch-notes.jsonl";
 
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
-
     public static string Write(IEnumerable<PatchNote> notes)
     {
         var text = new StringBuilder();
 
-        foreach (var note in notes) text.Append(JsonSerializer.Serialize(note, Options)).Append('\n');
+        foreach (var note in notes) text.Append(JsonSerializer.Serialize(note, PatchNotesJson.Default.PatchNote)).Append('\n');
 
         return text.ToString();
     }
@@ -40,10 +34,16 @@ public static class PatchNotesFile
 
         while (reading.ReadLine() is { Length: > 0 } line)
         {
-            notes.Add(JsonSerializer.Deserialize<PatchNote>(line, Options)
+            notes.Add(JsonSerializer.Deserialize(line, PatchNotesJson.Default.PatchNote)
                 ?? throw new InvalidOperationException($"A line of {FileName} deserialised to nothing."));
         }
 
         return notes;
     }
 }
+
+[JsonSourceGenerationOptions(
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSerializable(typeof(PatchNote))]
+internal sealed partial class PatchNotesJson : JsonSerializerContext;
