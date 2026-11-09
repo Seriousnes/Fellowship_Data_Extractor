@@ -20,7 +20,7 @@ public sealed class CreatureLocations
     public int Unplaced { get; }
 
     public CreatureLocations(
-        AbstractFileProvider provider, DungeonNames dungeons, IReadOnlyCollection<string> creatures)
+        AbstractFileProvider provider, PackageLoads loads, DungeonNames dungeons, IReadOnlyCollection<string> creatures)
     {
         var wanted = new HashSet<string>(creatures, StringComparer.OrdinalIgnoreCase);
 
@@ -48,7 +48,7 @@ public sealed class CreatureLocations
             foreach (var map in maps)
             {
                 if (!map.Path.StartsWith(folder, StringComparison.OrdinalIgnoreCase)) continue;
-                if (!provider.TryLoadPackage(map, out var package)) continue;
+                if (!loads.TryLoad(map, out var package)) continue;
 
                 Maps++;
 

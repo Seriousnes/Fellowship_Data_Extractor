@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
@@ -229,6 +231,9 @@ public sealed class EntityResolver
         Collections = new VisualCollections(provider, _assets);
         HeroItems = new HeroItemTable(provider, _assets, Armor, SlotNames, Collections, rarities);
         Heroes = new HeroNames(provider, _assets, Armor, HeroItems.PrimaryStatByHero);
+
+        var heroes = Heroes;
+        var owners = Task.Run(() => new AbilityOwners(provider, _assets, _tags, heroes, _constants));
         Enchants = new StatEnchants(provider, AugmentationRows, _constants, Heroes);
         HeroAttributes = new HeroAttributes(provider, Heroes);
         DynamicText = new DynamicTextRows(provider, _assets, _constants, Heroes);
@@ -253,8 +258,15 @@ public sealed class EntityResolver
                 .Select(tag => tag.Name),
         ];
 
-        Locations = new CreatureLocations(provider, Dungeons, creatures);
-        Layouts = new DungeonLayouts(provider, Dungeons, creatures);
+        var dungeons = Dungeons;
+        var placements = Task.Run(() =>
+        {
+            var loads = new PackageLoads(provider);
+
+            return (
+                Locations: new CreatureLocations(provider, loads, dungeons, creatures),
+                Layouts: new DungeonLayouts(provider, loads, dungeons, creatures));
+        });
         DungeonDifficulties = new DungeonDifficulties(provider, _assets, Leagues.Matched);
 
         Categories = new AbilityCategories(provider);
@@ -277,7 +289,7 @@ public sealed class EntityResolver
             _tags, Talents, Gems, AugmentationRows, Mappings, Dungeons, Progression, Customizations, TableNames, Heroes,
             _mountsByTag.Keys);
 
-        Owners = new AbilityOwners(provider, _assets, _tags, Heroes, _constants);
+        Owners = owners.GetAwaiter().GetResult();
         Pools = new ResourcePools(provider, Heroes, _constants);
         ResourceNames = new ResourceNames(Pools, Heroes);
 
@@ -288,6 +300,8 @@ public sealed class EntityResolver
         Falloffs = new TargetCountFalloffs(provider, mappings, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
         Rolls = new ProcRolls(_constants, provider);
         Commits = new CommitTriggers(provider, _effectNames, name => Owned(name, EffectTable));
+
+        (Locations, Layouts) = placements.GetAwaiter().GetResult();
     }
 
     private Dictionary<string, EffectNameSource>? _traitGrantees;
@@ -2803,10 +2817,17 @@ public sealed class EntityResolver
         return package.GetExports().FirstOrDefault(e => e.Name.StartsWith("Default__", StringComparison.Ordinal));
     }
 
-    private UObject? LoadDefaultObject(FAssetData? asset)
-    {
-        if (asset is null) return null;
+    /// <summary>
+    /// Each asset's default object, loaded once. The constructor's name, icon, gain and falloff
+    /// readers and <see cref="Resolve"/> each ask for the same effect and ability defaults.
+    /// </summary>
+    private readonly ConcurrentDictionary<FAssetData, UObject?> _defaultObjects = new(ReferenceEqualityComparer.Instance);
 
+    private UObject? LoadDefaultObject(FAssetData? asset) =>
+        asset is null ? null : _defaultObjects.GetOrAdd(asset, ReadDefaultObject);
+
+    private UObject? ReadDefaultObject(FAssetData asset)
+    {
         var path = AbilityPresentationIndex.PackagePath(asset.ObjectPath);
         if (!_provider.TryLoadPackage(path, out var package)) return null;
 
