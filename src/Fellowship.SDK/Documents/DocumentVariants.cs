@@ -18,6 +18,5 @@ public static class DocumentVariants
     private static JsonNode? Field(JsonNode? node, string name) =>
         node is JsonObject fields && fields.TryGetPropertyValue(name, out var value) ? value : null;
 
-    private static string JsonName(string property) =>
-        EntityDocuments.Options.PropertyNamingPolicy!.ConvertName(property);
+    private static string JsonName(string property) => EntityDocuments.NamingPolicy.ConvertName(property);
 }

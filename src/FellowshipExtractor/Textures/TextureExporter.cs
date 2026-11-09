@@ -14,6 +14,11 @@ public readonly record struct TextureBytes(
 
 public static class TextureExporter
 {
+    private static readonly string Identity =
+        $"CUE4Parse-Conversion {PngCache.Version(typeof(TextureEncoder))};" +
+        $"SkiaSharp {PngCache.Version(typeof(SkiaSharp.SKBitmap))};" +
+        $"ImageSharp {PngCache.Version(typeof(Image))};png";
+
     public static TextureBytes Export(UTexture texture, ETextureFormat format, bool discardAlpha = false)
     {
         var pixelFormat = texture.Format.ToString();
@@ -26,14 +31,25 @@ public static class TextureExporter
                 return new TextureBytes(null, 0, 0, pixelFormat, "decoder returned nothing");
             }
 
-            var bytes = decoded.Encode(format, saveHdrAsHdr: false, out _);
+            byte[]? Encode()
+            {
+                var encoded = decoded.Encode(format, saveHdrAsHdr: false, out _);
+                if (encoded is null or { Length: 0 }) return null;
+
+                return discardAlpha ? Opaque(encoded) : encoded;
+            }
+
+            var bytes = format is ETextureFormat.Png
+                ? PngCache.Encoded(
+                    $"{Identity};{decoded.PixelFormat};{(discardAlpha ? "opaque" : "alpha")}",
+                    decoded.Width, decoded.Height, decoded.Data, () => Encode() ?? [])
+                : Encode();
+
             if (bytes is null or { Length: 0 })
             {
                 return new TextureBytes(
                     null, decoded.Width, decoded.Height, pixelFormat, "encoder produced no bytes");
             }
-
-            if (discardAlpha) bytes = Opaque(bytes);
 
             return new TextureBytes(bytes, decoded.Width, decoded.Height, pixelFormat, null);
         }

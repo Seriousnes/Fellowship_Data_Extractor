@@ -28,13 +28,15 @@ public static class EntityDocuments
 
     private static JsonSerializerOptions? options;
 
+    public static JsonNamingPolicy NamingPolicy => JsonNamingPolicy.CamelCase;
+
     public static JsonSerializerOptions Options
     {
         [RequiresUnreferencedCode(TrimWarning)]
         get => options ??= new()
         {
             WriteIndented = false,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNamingPolicy = NamingPolicy,
             PropertyNameCaseInsensitive = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             AllowOutOfOrderMetadataProperties = true,

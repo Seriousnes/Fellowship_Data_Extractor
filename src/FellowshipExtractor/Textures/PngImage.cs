@@ -15,10 +15,20 @@ internal static class PngImage
         SkipMetadata = true,
     };
 
+    private static readonly string Identity =
+        $"ImageSharp {PngCache.Version(typeof(PngEncoder))};Rgba32;" +
+        $"{Encoder.ColorType}/{Encoder.BitDepth}/{Encoder.CompressionLevel}/{Encoder.FilterMethod}/{Encoder.SkipMetadata}";
+
     internal static byte[] Save(Image<Rgba32> image)
     {
-        using var png = new MemoryStream();
-        image.Save(png, Encoder);
-        return png.ToArray();
+        var pixels = new byte[image.Width * image.Height * 4];
+        image.CopyPixelDataTo(pixels);
+
+        return PngCache.Encoded(Identity, image.Width, image.Height, pixels, () =>
+        {
+            using var png = new MemoryStream();
+            image.Save(png, Encoder);
+            return png.ToArray();
+        });
     }
 }

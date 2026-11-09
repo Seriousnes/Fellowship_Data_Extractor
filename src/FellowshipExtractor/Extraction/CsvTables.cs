@@ -15,7 +15,8 @@ public readonly record struct ConstantRecord(
     string[] Raws,
     double?[] Values,
     string[] Columns,
-    string? Comment)
+    string? Comment,
+    string File)
 {
     /// <summary>
     /// Value at each rank. A <c>---,1,2,3,4</c> header names the columns as ranks, and a row whose ranks all hold one
@@ -92,7 +93,7 @@ public static partial class CsvTables
                     .ToArray();
 
                 yield return new ConstantRecord(
-                    table, key, values[0], raws, values, Labels(columns, values.Length), comment);
+                    table, key, values[0], raws, values, Labels(columns, values.Length), comment, file.Path);
             }
         }
     }

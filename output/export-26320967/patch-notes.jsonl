@@ -9,6 +9,8 @@
 {"key":{"slug":"talent","id":672},"name":"The Motherload","icon":"T_Nhance_RPG_Icons_SoulGrave","added":false,"fields":[{"label":"Changes 1 \u203A Field","older":"DamageScale"},{"label":"Changes 1 \u203A Op","older":"MultiplyCompound"},{"label":"Changes 1 \u203A Value","older":"1"},{"label":"Changes 2 \u203A Target","older":"Chain Lightning"},{"label":"Changes 2 \u203A Field","older":"DamageScale"},{"label":"Changes 2 \u203A Op","older":"MultiplyCompound"},{"label":"Changes 2 \u203A Value","older":"1"}]}
 {"key":{"slug":"talent","id":764},"name":"Bloodbath","icon":"T_Nhance_RPG_BloodCombat_22","added":false,"fields":[{"label":"Changes \u203A Target","newer":"Reign in Blood"},{"label":"Changes \u203A Field","newer":"cooldownAcceleration"},{"label":"Changes \u203A Op","newer":"Additive"},{"label":"Changes \u203A Value","newer":"2"},{"label":"Changes \u203A While 1","newer":"Bloodbath"},{"label":"Changes \u203A Percent","newer":"true"}]}
 {"key":{"slug":"ability","id":109},"name":"Radiant Blast","icon":"T_Vigor_Cone","added":false,"fields":[{"label":"Changed By","newer":"Avatar of Light"},{"label":"Changed By","newer":"Beacon in the Dark"}]}
+{"key":{"slug":"ability","id":207},"name":"Attack","icon":"Tex_axe_04_bg","added":false,"fields":[{"label":"Cooldown","older":"1.7"}]}
+{"key":{"slug":"ability","id":554},"name":"Attack","icon":"Tex_axe_06_bg","added":false,"fields":[{"label":"Cooldown","older":"1"}]}
 {"key":{"slug":"ability","id":985},"name":"Shield Throw","icon":"T_Warmaster_Shieldthrow","added":false,"fields":[{"label":"Changed By","newer":"Skull Cracker"},{"label":"Changed By","newer":"The Best Defense"}]}
 {"key":{"slug":"ability","id":992},"name":"Dawnbreaker Orb","icon":"T_Vigor_DawnSphere","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
 {"key":{"slug":"ability","id":994},"name":"Soulbrand","icon":"T_Vigor_Soulbrand","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
@@ -26,11 +28,14 @@
 {"key":{"slug":"ability","id":1120},"name":"Spirited Vortex","icon":"Meiko_AbilityIcon_07","added":false,"fields":[{"label":"Changed By","newer":"Harsh Winds"},{"label":"Changed By","newer":"Conclusive Strikes"}]}
 {"key":{"slug":"ability","id":1121},"name":"Stone Shield","icon":"T_Meiko_StoneShield","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"}]}
 {"key":{"slug":"ability","id":1201},"name":"Queen\u0027s Fang","icon":"Mara_SingleTargetFinisher","added":false,"fields":[{"label":"Changed By","newer":"Deadly Scheme: Active"},{"label":"Changed By","newer":"Assassin\u0027s Guile"},{"label":"Changed By","newer":"Malevolence: Queen\u0027s Fang"}]}
+{"key":{"slug":"ability","id":1208},"name":"Hemorrhaging Strike","icon":"Mara_Bleed","added":false,"fields":[{"label":"Cooldown","older":"2"}]}
 {"key":{"slug":"ability","id":1212},"name":"Arachnid Assault","icon":"Mara_SpiderAOE","added":false,"fields":[{"label":"Changed By","newer":"Deadly Scheme: Active"},{"label":"Changed By","newer":"Assassin\u0027s Guile"},{"label":"Changed By","newer":"Malevolence: Arachnid Assault"}]}
 {"key":{"slug":"ability","id":1219},"name":"Face Breaker (old)","icon":"T_Ink_Facebreaker","added":false,"fields":[{"label":"Changed By","newer":"Flash of Anger"}]}
 {"key":{"slug":"ability","id":1228},"name":"Culling Strike","icon":"T_Ink_Cullingstrike","added":false,"fields":[{"label":"Changed By","newer":"Focused Wrath"}]}
 {"key":{"slug":"ability","id":1236},"added":false,"fields":[{"label":"Changed By","older":"The Motherload"}]}
 {"key":{"slug":"ability","id":1239},"name":"Heavy Strike","icon":"T_Ink_TimerAbility","added":false,"fields":[{"label":"Changed By","newer":"Kill Em All"}]}
+{"key":{"slug":"ability","id":1242},"name":"Hammer Storm","icon":"T_Ink_Hammerstorm","added":false,"fields":[{"label":"Cooldown","older":"1.5"}]}
+{"key":{"slug":"ability","id":1244},"name":"Jawbreaker","icon":"t_gunde_Interrupt","added":false,"fields":[{"label":"Cooldown","older":"12","newer":"16"}]}
 {"key":{"slug":"ability","id":1260},"name":"Fire Ball","icon":"Firemage_Inferno","added":false,"fields":[{"label":"Changed By","newer":"Reign of Fire"},{"label":"Changed By","newer":"Reign of Fire"}]}
 {"key":{"slug":"ability","id":1563},"name":"Meticulous Runesmith","icon":"T_LightPortal","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
 {"key":{"slug":"ability","id":1565},"name":"Fire Ball","icon":"Firemage_Inferno","added":false,"fields":[{"label":"Changed By","newer":"Reign of Fire"},{"label":"Changed By","newer":"Reign of Fire"}]}

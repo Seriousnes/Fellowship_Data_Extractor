@@ -9,8 +9,7 @@ public static class ExportLines
 
     private const byte CarriageReturn = (byte)'\r';
 
-    private static readonly string IdName =
-        EntityDocuments.Options.PropertyNamingPolicy!.ConvertName(nameof(EntityDocument.Id));
+    private static readonly string IdName = EntityDocuments.NamingPolicy.ConvertName(nameof(EntityDocument.Id));
 
     public static IReadOnlyDictionary<DocumentKey, IReadOnlyList<ReadOnlyMemory<byte>>> Group(ReadOnlyMemory<byte> file)
     {

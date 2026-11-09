@@ -60,7 +60,8 @@ public sealed class DungeonLayouts
 
     public int Unfloored => _byTag.Values.Sum(layout => layout.Placements.Count(placed => placed.Floor is null));
 
-    public DungeonLayouts(AbstractFileProvider provider, DungeonNames dungeons, IReadOnlyCollection<string> creatures)
+    public DungeonLayouts(
+        AbstractFileProvider provider, PackageLoads loads, DungeonNames dungeons, IReadOnlyCollection<string> creatures)
     {
         var wanted = new HashSet<string>(creatures, StringComparer.OrdinalIgnoreCase);
 
@@ -75,11 +76,10 @@ public sealed class DungeonLayouts
             var persistent = Array.Find(maps, file =>
                 Path.GetFileNameWithoutExtension(file.Path).Equals(levelName, StringComparison.OrdinalIgnoreCase));
 
-            if (persistent is null || !provider.TryLoadPackage(persistent, out var level)) continue;
+            if (persistent is null || !loads.TryLoad(persistent, out var level)) continue;
 
-            var exports = level.GetExports().ToArray();
-            IPackage[] loadedLevels = [level, .. AlwaysLoaded(provider, exports)];
-            var floors = FloorsOf(loadedLevels.SelectMany(loaded => loaded.GetExports()));
+            IPackage[] loadedLevels = [level, .. AlwaysLoaded(loads, Exports(level, type => type == AlwaysLoadedClass))];
+            var floors = FloorsOf(loadedLevels.SelectMany(loaded => Exports(loaded, type => type == AreaBoxClass)));
 
             var placements = new List<CreaturePlacement>();
             var patrols = new List<IReadOnlyList<WorldPoint>>();
@@ -112,20 +112,50 @@ public sealed class DungeonLayouts
         _ => [],
     };
 
+    /// <summary>The class each export names, in export order, without deserializing the export.</summary>
+    private static string? ClassAt(IPackage package, int at) => package switch
+    {
+        IoPackage io => io.ResolveObjectIndex(io.ExportMap[at].ClassIndex)?.Name.Text,
+        Package legacy => legacy.ExportMap[at].ClassName,
+        _ => null,
+    };
+
+    /// <summary>
+    /// The exports whose class passes the filter. Only those deserialize, because a level's other
+    /// exports are its geometry and lighting.
+    /// </summary>
+    private static IEnumerable<UObject> Exports(IPackage package, Func<string, bool> wanted)
+    {
+        if (package is not (IoPackage or Package))
+        {
+            foreach (var export in package.GetExports())
+            {
+                if (wanted(export.ExportType)) yield return export;
+            }
+
+            yield break;
+        }
+
+        for (var at = 0; at < package.ExportsLazy.Length; at++)
+        {
+            if (ClassAt(package, at) is { } type && wanted(type)) yield return package.ExportsLazy[at].Value;
+        }
+    }
+
     public static string? CreatureOf(string className) =>
         className.EndsWith(BlueprintSuffix, StringComparison.Ordinal) ? className[..^BlueprintSuffix.Length] : null;
 
     private static bool Holds(IPackage package, IReadOnlySet<string> wanted) =>
         Classes(package).Any(type => CreatureOf(type) is { } creature && wanted.Contains(creature));
 
-    private static IEnumerable<IPackage> AlwaysLoaded(AbstractFileProvider provider, IEnumerable<UObject> exports)
+    private static IEnumerable<IPackage> AlwaysLoaded(PackageLoads loads, IEnumerable<UObject> exports)
     {
         foreach (var streaming in exports)
         {
             if (streaming.ExportType != AlwaysLoadedClass) continue;
             if (PropertyWalk.GetString(streaming, WorldAssetField) is not { } world) continue;
 
-            if (provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(world), out var sublevel))
+            if (loads.TryLoad(AbilityPresentationIndex.PackagePath(world), out var sublevel))
             {
                 yield return sublevel;
             }
@@ -163,7 +193,8 @@ public sealed class DungeonLayouts
         List<CreaturePlacement> placements,
         List<IReadOnlyList<WorldPoint>> patrols)
     {
-        var exports = package.GetExports().ToArray();
+        var exports = Exports(package, type => type == PatrolClass || CreatureOf(type) is { } creature && wanted.Contains(creature))
+            .ToArray();
         var patrolByActor = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var patrol in exports)

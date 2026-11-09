@@ -9,30 +9,30 @@
         <Empty Message="No usage database.">Set @UsageSettings.DatabaseKey to a file path to count requests.</Empty>
     </Panel>
 }
-else
+else if (Reading is { } reading)
 {
     <script type="application/json" id="cx-usage-data">@((MarkupString)ChartJson)</script>
 
     <Panel Head="Server">
         <div class="cx-usage-server">
             <Facts>
-                <Fact Label="Started">@Reading!.Started.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) UTC</Fact>
+                <Fact Label="Started">@reading.Started.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) UTC</Fact>
                 <Fact Label="Uptime">@Uptime</Fact>
                 <Fact Label="Runtime">@System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription</Fact>
                 <Fact Label="Processors">@Environment.ProcessorCount.ToString(Count)</Fact>
-                <Fact Label="Processor use" Unit="%">@Reading.Processor.ToString(Duration, CultureInfo.InvariantCulture)</Fact>
+                <Fact Label="Processor use" Unit="%">@reading.Processor.ToString(Duration, CultureInfo.InvariantCulture)</Fact>
             </Facts>
             <Facts>
-                <Fact Label="Requests running">@Reading.Running of @RequestLoad.PermitLimit</Fact>
-                <Fact Label="Requests queued">@Reading.Queued of @RequestLoad.QueueLimit</Fact>
-                <Fact Label="Open circuits">@Reading.Circuits.ToString(Count)</Fact>
-                <Fact Label="Threads">@Reading.Threads.ToString(Count)</Fact>
-                <Fact Label="Thread pool">@Reading.PoolThreads.ToString(Count) threads, @Reading.PoolQueue.ToString(Count) queued</Fact>
+                <Fact Label="Requests running">@reading.Running of @RequestLoad.PermitLimit</Fact>
+                <Fact Label="Requests queued">@reading.Queued of @RequestLoad.QueueLimit</Fact>
+                <Fact Label="Open circuits">@reading.Circuits.ToString(Count)</Fact>
+                <Fact Label="Threads">@reading.Threads.ToString(Count)</Fact>
+                <Fact Label="Thread pool">@reading.PoolThreads.ToString(Count) threads, @reading.PoolQueue.ToString(Count) queued</Fact>
             </Facts>
             <Facts>
-                <Fact Label="Working set" Unit="MiB">@Mebibytes(Reading.Memory) of @Mebibytes(Reading.MemoryLimit)</Fact>
-                <Fact Label="Heap" Unit="MiB">@Mebibytes(Reading.Heap)</Fact>
-                <Fact Label="Full collections">@Reading.FullCollections.ToString(Count)</Fact>
+                <Fact Label="Working set" Unit="MiB">@Mebibytes(reading.Memory) of @Mebibytes(reading.MemoryLimit)</Fact>
+                <Fact Label="Heap" Unit="MiB">@Mebibytes(reading.Heap)</Fact>
+                <Fact Label="Full collections">@reading.FullCollections.ToString(Count)</Fact>
                 <Fact Label="Usage database" Unit="MiB">@Mebibytes(DatabaseBytes)</Fact>
                 <Fact Label="Free disk" Unit="MiB">@Mebibytes(FreeBytes)</Fact>
             </Facts>

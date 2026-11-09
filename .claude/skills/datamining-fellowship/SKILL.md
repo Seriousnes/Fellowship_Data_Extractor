@@ -193,6 +193,18 @@ Decoded against **26320967**, behind the Cooldown Recovery values in `CommitTrig
 | `GetGameplayEffectStackCount`, exec thunk 0x144F6CFD0 | **0x1452369C0** |
 | `AuthRegisterAbilityTimeWithEffectForOwningAbility`, exec thunk 0x144F2DFB0 | **0x1452593A0** |
 
+Decoded against **26320967**, implemented in `AbilityCooldowns.cs` and written up in
+`docs/cooldown-haste.md`:
+
+| What | Where |
+| --- | --- |
+| `UCRGameplayAbility` constructor; `CooldownDuration` +0x448 `Value` 0, no table, row or registry | **0x1450D7D60**, stores 0x1450D7E1E to 0x1450D7E46 |
+| `FScalableFloat` evaluator, shared by `IsValid` 0x144AACDD0 and `GetValueAtLevel` 0x144AAB590 | **0x144AA85B0**; `mulss` by `Value` at 0x144AA864A; no table and no registry returns `Value`, invalid, at 0x144AA8714 |
+| `ApplyCooldown`, vtable slot +0x3B0 | **0x1450D9990**; `IsValid` 0x1450D9A4B; `operator!=` against the default 0x1450D9A7C; `CooldownTags` count 0x1450D9A89; charges above 1 0x1450D9AC4; `CooldownEffectBaseClass` 0x1450D9BE8 |
+| Charge class has `HasDuration` | 0x1450E23F0, `cmp byte [rax+0x30],2` at 0x1450E24AB |
+| `ChargeGameplayEffectClass` +0x618, `FreeChargeOwnedAnyTags` +0x620 | getter 0x144FEC290 at vtable +0x508 |
+| Native `GetMaximumCharges` returns 0 | 0x1450E18E0 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
