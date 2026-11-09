@@ -54,7 +54,7 @@ public sealed partial class DungeonPageTests(AdminHost host)
 
     private static int Counted(string body) => int.Parse(Count().Match(body).Groups[1].Value.Replace(",", ""));
 
-    [GeneratedRegex(@"cx-count""[^>]*><b[^>]*>([\d,]+)</b>")]
+    [GeneratedRegex(@"cx-shown""[^>]*>[^<]* of ([\d,]+)</span>")]
     private static partial Regex Count();
 
     [Fact]

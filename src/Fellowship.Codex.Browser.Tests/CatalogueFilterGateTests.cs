@@ -26,7 +26,7 @@ public sealed class CatalogueFilterGateTests(Site site)
         var page = await context.NewPageAsync();
 
         await page.GotoAsync("/items");
-        await page.Locator(".cx-pick label").Filter(new() { Has = page.Locator("input[name='kind'][value='Plate']") }).ClickAsync();
+        await page.Locator("#pick-kind").SelectOptionAsync("Plate");
         await page.Locator(".cx-apply").ClickAsync();
         await page.WaitForURLAsync("**/items?kind=Plate");
         await page.Locator(Results).WaitForAsync();

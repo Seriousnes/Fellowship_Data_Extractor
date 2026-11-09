@@ -61,8 +61,15 @@ public sealed class BrowseView(
 
     public string Where => where;
 
+    /// <summary>This list with no facet, flag or comparison. It keeps the search text, the type, the order and the grouping.</summary>
     public string Bare =>
-        query.Text is null ? where : At("?q=" + Uri.EscapeDataString(query.Text));
+        At((query with
+        {
+            Selections = new Dictionary<FacetType, IReadOnlyList<string>>(),
+            Flags = new Dictionary<FlagType, bool>(),
+            Comparisons = [],
+            Page = 1,
+        }).ToQueryString());
 
     private string At(string browsed) =>
         browsed.Length == 0 || !where.Contains('?', StringComparison.Ordinal) ? where + browsed : where + "&" + browsed[1..];
@@ -140,11 +147,6 @@ public sealed class BrowseView(
         get
         {
             var chips = new List<(string, string)>();
-
-            foreach (var type in query.Types)
-            {
-                chips.Add((Models.FellowshipCodex.Label(type), At(query.Toggled(type).ToQueryString())));
-            }
 
             foreach (var (key, values) in query.Selections)
             {

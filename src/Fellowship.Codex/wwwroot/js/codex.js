@@ -270,7 +270,7 @@ function kindsOf(select) {
 
 function offer(select) {
     const kinds = kindsOf(select);
-    const panel = select.closest('.cx-panel');
+    const panel = select.closest('.cx-filters');
 
     for (const group of select.querySelectorAll('optgroup')) group.remove();
 
@@ -293,7 +293,7 @@ function offer(select) {
 }
 
 function reveal(select) {
-    const row = select.closest('.cx-panel')?.querySelector(`[data-more="${CSS.escape(select.value)}"]`);
+    const row = select.closest('.cx-filters')?.querySelector(`[data-more="${CSS.escape(select.value)}"]`);
     select.value = '';
 
     if (!row) return;
@@ -307,12 +307,13 @@ function reveal(select) {
 
 function conceal(button) {
     const row = button.closest('[data-more]');
-    const select = row.closest('.cx-panel').querySelector('.cx-more');
+    const select = row.closest('.cx-filters').querySelector('.cx-more');
 
     row.hidden = true;
 
     for (const control of row.querySelectorAll('input, select')) {
-        if (control instanceof HTMLSelectElement) control.selectedIndex = Math.max(0, [...control.options].findIndex(option => option.defaultSelected));
+        if (control instanceof HTMLSelectElement && control.multiple) for (const option of control.options) option.selected = option.defaultSelected;
+        else if (control instanceof HTMLSelectElement) control.selectedIndex = Math.max(0, [...control.options].findIndex(option => option.defaultSelected));
         else if (control.type === 'checkbox') control.checked = control.defaultChecked;
         else control.value = control.defaultValue;
         control.disabled = true;
@@ -335,7 +336,7 @@ function fold(toggle) {
 }
 
 document.addEventListener('formdata', event => {
-    if (!event.target.matches('.cx-filter-form')) return;
+    if (!event.target.matches('.cx-filters')) return;
 
     const entries = [...event.formData];
     for (const [name] of entries) event.formData.delete(name);
@@ -448,6 +449,13 @@ document.addEventListener('click', event => {
 
     if (folder) {
         fold(folder);
+        return;
+    }
+
+    const clearer = event.target.closest?.('.cx-pick-clear');
+
+    if (clearer) {
+        for (const option of clearer.closest('.cx-pick').querySelector('select').options) option.selected = false;
         return;
     }
 
@@ -694,5 +702,11 @@ if (document.readyState === 'loading') {
 }
 
 window.Blazor?.addEventListener('enhancedload', arrived);
+
+// A full page load starts with focus on the body. An enhanced navigation keeps focus on the link that
+// started it, so the next key press would draw that link's focus ring.
+window.Blazor?.addEventListener('enhancedload', () => {
+    if (document.activeElement instanceof HTMLAnchorElement) document.activeElement.blur();
+});
 
 window.codexTypeset = typeset;
