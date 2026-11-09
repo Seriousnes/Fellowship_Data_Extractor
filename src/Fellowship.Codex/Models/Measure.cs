@@ -14,4 +14,9 @@ public sealed record Measure(string Key, string Label, Func<EntityDocument, doub
 
     /// <summary>The value is the item's at its drop item level, so a record list's item reading changes it.</summary>
     public bool Itemised { get; init; }
+
+    public MeasureGroup Group { get; init; } = MeasureGroup.Stats;
+
+    /// <summary>The rail offers a comparison on the measure. A query still takes one when the rail does not.</summary>
+    public bool Offered { get; init; } = true;
 }

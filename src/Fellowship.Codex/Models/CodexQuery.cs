@@ -311,7 +311,7 @@ public sealed record CodexQuery
 
     public string ToQueryString(int? page = null)
     {
-        var parts = Parameters(comparisons: true).Select(field => $"{Uri.EscapeDataString(field.Name)}={Uri.EscapeDataString(field.Value)}").ToList();
+        var parts = Parameters(filters: true).Select(field => $"{Uri.EscapeDataString(field.Name)}={Uri.EscapeDataString(field.Value)}").ToList();
 
         var wanted = page ?? Page;
         if (wanted > 1) parts.Add($"{QueryKeys.Key(BrowseParameter.Page)}={wanted.ToString(CultureInfo.InvariantCulture)}");
@@ -319,26 +319,26 @@ public sealed record CodexQuery
         return parts.Count == 0 ? string.Empty : "?" + string.Join('&', parts);
     }
 
-    /// <summary>Every parameter except the comparisons. The comparison form sends its own comparisons.</summary>
-    public IEnumerable<(string Name, string Value)> Fields() => Parameters(comparisons: false);
+    /// <summary>The type, order, grouping and page size. The filter form sends the filters.</summary>
+    public IEnumerable<(string Name, string Value)> Fields() => Parameters(filters: false);
 
-    private IEnumerable<(string Name, string Value)> Parameters(bool comparisons)
+    private IEnumerable<(string Name, string Value)> Parameters(bool filters)
     {
-        if (!string.IsNullOrWhiteSpace(Text)) yield return (QueryKeys.Key(BrowseParameter.Q), Text);
+        if (filters && !string.IsNullOrWhiteSpace(Text)) yield return (QueryKeys.Key(BrowseParameter.Q), Text);
 
         foreach (var type in Types) yield return (QueryKeys.Key(BrowseParameter.Type), EntityTypes.Slug(type));
 
-        foreach (var (key, values) in Selections.OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
+        foreach (var (key, values) in Selections.Where(_ => filters).OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
         {
             foreach (var value in values) yield return (QueryKeys.Key(key), value);
         }
 
-        foreach (var (key, wanted) in Flags.OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
+        foreach (var (key, wanted) in Flags.Where(_ => filters).OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
         {
             yield return (QueryKeys.Key(key), wanted ? "1" : "0");
         }
 
-        foreach (var comparison in Comparisons.Where(_ => comparisons))
+        foreach (var comparison in Comparisons.Where(_ => filters))
         {
             yield return (comparison.Parameter, FellowshipCodex.Number(comparison.Value));
         }

@@ -98,7 +98,10 @@ public sealed class CodexService : ICodexService
             },
 
             new Facet(FacetType.Kind, document =>
-                One(document is ItemDocument item ? Kind(item) : null)),
+                One(document is ItemDocument item ? Kind(item) : null))
+            {
+                Primary = true,
+            },
 
             new Facet(FacetType.ArmorType, document =>
                 One(document is ItemDocument { ArmorType: { } armor } ? armor.ToString() : null)),
@@ -118,6 +121,7 @@ public sealed class CodexService : ICodexService
             {
                 Colour = (t, value) => t.Hero(value),
                 Primary = true,
+                Single = true,
             },
 
             new Facet(FacetType.Source, document => document switch
@@ -150,9 +154,6 @@ public sealed class CodexService : ICodexService
 
             new Facet(FacetType.Rarity, document => document switch
             {
-                ItemDocument { Rarities: { Count: > 0 } rarities } =>
-                    rarities.Select(tier => RarityWord(store, tier, gem: false)),
-                ItemDocument { Rarity: { } rarity } => One(RarityWord(store, rarity, gem: false)),
                 CurrencyDocument { Rarity: { } coin } => One(RarityWord(store, coin, gem: false)),
                 GemDocument stone => One(RarityWord(store, stone.Rarity, gem: true)),
                 _ => [],
@@ -207,7 +208,7 @@ public sealed class CodexService : ICodexService
             new Measure(MeasureType.Charges, document => DocumentFields.Number(document, nameof(AbilityDocument.Charges))),
             new Measure(MeasureType.MaxRank, document => DocumentFields.Number(document, nameof(AugmentationDocument.MaxRank))),
 
-            new Measure(MeasureType.Id, document => (double?)document.Id),
+            new Measure(MeasureType.Id, document => (double?)document.Id) { Offered = false },
 
             .. StatMeasures(store),
         ];
@@ -428,6 +429,10 @@ public sealed class CodexService : ICodexService
                         : null)
             {
                 Itemised = true,
+                Group = StatMagnitudes.OnPrimaryPool(attribute.Key, store.PrimaryAttributes) ||
+                    attribute.Key.Equals(StatMagnitudes.ArmorStat, StringComparison.OrdinalIgnoreCase)
+                        ? MeasureGroup.Base
+                        : MeasureGroup.Secondary,
             });
     }
 

@@ -74,7 +74,11 @@ public sealed class BrowseView(
             (facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Type))),
     ];
 
-    public IReadOnlyList<FacetCount> Primary => [.. Rail.Where(facet => facet.Facet.Primary)];
+    /// <summary>Primary facets the rail offers one value of at a time.</summary>
+    public IReadOnlyList<FacetCount> Single => [.. Rail.Where(facet => facet.Facet is { Primary: true, Single: true })];
+
+    /// <summary>Primary facets the rail offers several values of.</summary>
+    public IReadOnlyList<FacetCount> Primary => [.. Rail.Where(facet => facet.Facet is { Primary: true, Single: false })];
 
     public IReadOnlyList<FacetCount> More => [.. Rail.Where(facet => !facet.Facet.Primary)];
 
@@ -97,11 +101,10 @@ public sealed class BrowseView(
 
     public string Without(Comparison comparison) => At(query.Without(comparison).ToQueryString());
 
-    /// <summary>Measures with a value on at least one row of the list. Each can take a comparison.</summary>
+    /// <summary>Offered measures with a value on at least one row of the list, and the measures of the comparisons.</summary>
     public IReadOnlyList<Measure> Comparable =>
     [
-        .. codex.Measures.Where(measure =>
-            results.Measured.Contains(measure.Key) ||
+        .. codex.Measures.Where(measure => (measure.Offered && results.Measured.Contains(measure.Key)) ||
             query.Comparisons.Any(comparison => comparison.Measure == measure.Key)),
     ];
 

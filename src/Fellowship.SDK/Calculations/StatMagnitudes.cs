@@ -13,7 +13,7 @@ public static class StatMagnitudes
 {
     private const string StaminaStat = "Stamina";
 
-    private const string ArmorStat = "Armor";
+    public const string ArmorStat = "Armor";
 
     public static IReadOnlyList<StatLine> For(
         ItemDocument item,
@@ -140,7 +140,7 @@ public static class StatMagnitudes
         return folded;
     }
 
-    private static bool OnPrimaryPool(string stat, IReadOnlySet<string> primaryAttributes) =>
+    public static bool OnPrimaryPool(string stat, IReadOnlySet<string> primaryAttributes) =>
         stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase) || primaryAttributes.Contains(stat);
 
     private static List<(string Stat, decimal Value)> Spare(

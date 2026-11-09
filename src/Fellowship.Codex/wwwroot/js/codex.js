@@ -302,7 +302,7 @@ function reveal(select) {
     row.open = true;
     for (const control of row.querySelectorAll('input, select')) control.disabled = false;
     offer(select);
-    row.querySelector('a, input')?.focus();
+    row.querySelector('a, input, select')?.focus();
 }
 
 function conceal(button) {
@@ -311,16 +311,14 @@ function conceal(button) {
 
     row.hidden = true;
 
-    if (row.dataset.measure) {
-        for (const control of row.querySelectorAll('input, select')) {
-            if (control instanceof HTMLSelectElement) control.selectedIndex = [...control.options].findIndex(option => option.defaultSelected);
-            else control.value = control.defaultValue;
-            control.disabled = true;
-        }
-        compare(row.querySelector('.cx-op'));
-    } else {
-        for (const input of row.querySelectorAll('input')) input.value = '';
+    for (const control of row.querySelectorAll('input, select')) {
+        if (control instanceof HTMLSelectElement) control.selectedIndex = Math.max(0, [...control.options].findIndex(option => option.defaultSelected));
+        else if (control.type === 'checkbox') control.checked = control.defaultChecked;
+        else control.value = control.defaultValue;
+        control.disabled = true;
     }
+
+    if (row.dataset.measure) compare(row.querySelector('.cx-op'));
 
     offer(select);
     select.focus();
@@ -335,6 +333,14 @@ function fold(toggle) {
     const panel = toggle.closest('.cx-panel');
     toggle.setAttribute('aria-expanded', String(panel.toggleAttribute('data-open')));
 }
+
+document.addEventListener('formdata', event => {
+    if (!event.target.matches('.cx-filter-form')) return;
+
+    const entries = [...event.formData];
+    for (const [name] of entries) event.formData.delete(name);
+    for (const [name, value] of entries) if (value !== '') event.formData.append(name, value);
+}, true);
 
 document.addEventListener('change', event => {
     const select = event.target;

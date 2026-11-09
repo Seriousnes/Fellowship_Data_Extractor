@@ -14,6 +14,9 @@ public sealed record Facet(FacetType Type, Func<EntityDocument, IEnumerable<stri
 
     public bool Primary { get; init; }
 
+    /// <summary>The rail offers one value at a time. A query still takes several.</summary>
+    public bool Single { get; init; }
+
     public bool Matches(EntityDocument document, IReadOnlyCollection<string> wanted) =>
         Values(document).Any(value => wanted.Contains(value, StringComparer.OrdinalIgnoreCase));
 }
