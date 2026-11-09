@@ -49,9 +49,11 @@ public static class CountReads
             }
         }
 
+        var walk = new Walk(functions, members);
+
         foreach (var body in bodies)
         {
-            var scope = new Scope(body, functions, members);
+            var scope = walk.For(body);
 
             foreach (var statement in body.ScriptBytecode!)
             {
@@ -64,8 +66,8 @@ public static class CountReads
 
                     for (var side = 0; side < 2; side++)
                     {
-                        if (scope.Scaled(parameters[side], 0) is not { } property) continue;
-                        if (scope.Counted(parameters[1 - side], 0) is not { } read ||
+                        if (scope.Scaled(parameters[side]) is not { } property) continue;
+                        if (scope.Counted(parameters[1 - side]) is not { } read ||
                             (read.Tags.Count == 0 && read.Attribute is null && read.Call is null && read.Inverts is null)) continue;
 
                         counts[property] = read;
@@ -77,23 +79,102 @@ public static class CountReads
         return counts;
     }
 
-    private sealed class Scope(
-        UStruct body,
+    /// <summary>
+    /// One package's bodies, members and functions, with one <see cref="Scope"/> per body and every
+    /// expression's reading kept once found.
+    /// </summary>
+    private sealed class Walk(
         IReadOnlyDictionary<string, UStruct> functions,
         IReadOnlyDictionary<string, List<(UStruct Body, KismetExpression Value)>> members)
     {
+        private readonly Dictionary<UStruct, Scope> _scopes = new(ReferenceEqualityComparer.Instance);
+
+        public IReadOnlyDictionary<string, UStruct> Functions { get; } = functions;
+
+        public IReadOnlyDictionary<string, List<(UStruct Body, KismetExpression Value)>> Members { get; } = members;
+
+        public Visits<CountRead?> Counted { get; } = new();
+
+        public Visits<string?> Scaled { get; } = new();
+
+        public Visits<bool> Reads { get; } = new();
+
+        /// <summary>The number of expressions open on the walk's path.</summary>
+        public int Depth { get; set; }
+
+        /// <summary>
+        /// The shallowest open expression a revisit returned to since the current expression opened.
+        /// </summary>
+        public int Revisited { get; set; } = int.MaxValue;
+
+        public Scope For(UStruct body)
+        {
+            if (!_scopes.TryGetValue(body, out var scope)) _scopes[body] = scope = new Scope(body, this);
+            return scope;
+        }
+    }
+
+    /// <summary>
+    /// One reading per expression. An expression the path already has open reads as the cut value, so
+    /// a local assigned from itself ends the walk instead of repeating it. A reading that depended on
+    /// a cut back to an expression still open is not kept, because a walk from elsewhere reaches that
+    /// expression with nothing open.
+    /// </summary>
+    private sealed class Visits<T>
+    {
+        private readonly Dictionary<KismetExpression, T> _known = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<KismetExpression, int> _open = new(ReferenceEqualityComparer.Instance);
+
+        public T Visit(Walk walk, KismetExpression expression, T cut, Func<KismetExpression, T> read)
+        {
+            if (_known.TryGetValue(expression, out var known)) return known;
+
+            if (_open.TryGetValue(expression, out var at))
+            {
+                walk.Revisited = Math.Min(walk.Revisited, at);
+                return cut;
+            }
+
+            var depth = walk.Depth++;
+            var outer = walk.Revisited;
+            walk.Revisited = int.MaxValue;
+            _open[expression] = depth;
+
+            try
+            {
+                var value = read(expression);
+                if (walk.Revisited >= depth) _known[expression] = value;
+                return value;
+            }
+            finally
+            {
+                _open.Remove(expression);
+                walk.Depth--;
+                walk.Revisited = Math.Min(outer, walk.Revisited);
+            }
+        }
+    }
+
+    private sealed class Scope(UStruct body, Walk walk)
+    {
         private readonly Dictionary<string, List<KismetExpression>> _locals = Locals(body);
 
-        public string? Scaled(KismetExpression? expression, int depth)
-        {
-            if (expression is null || depth > MaxDepth) return null;
+        private readonly (KismetExpression Statement, KismetExpression Call)[] _calls =
+        [
+            .. (body.ScriptBytecode ?? []).SelectMany(statement => Calls(statement, 0).Select(call => (statement, call))),
+        ];
 
+        public string? Scaled(KismetExpression? expression) =>
+            expression is null ? null : walk.Scaled.Visit(walk, expression, null, ScaledFrom);
+
+        private string? ScaledFrom(KismetExpression expression)
+        {
             switch (expression)
             {
                 case EX_Cast cast:
-                    return Scaled(cast.Target, depth + 1);
+                    return Scaled(cast.Target);
                 case EX_LocalVariable or EX_LocalOutVariable when DynamicTextFloats.Name(expression) is { } local:
-                    return _locals.GetValueOrDefault(local)?.Select(value => Scaled(value, depth + 1)).FirstOrDefault(found => found is not null);
+                    return _locals.GetValueOrDefault(local)?.Select(Scaled).FirstOrDefault(found => found is not null);
             }
 
             if (RowSinks.Invoking(expression) is { } call && RowSinks.Calling(call)?.StartsWith(ScalableRead, StringComparison.Ordinal) == true)
@@ -104,20 +185,21 @@ public static class CountReads
             return null;
         }
 
-        public CountRead? Counted(KismetExpression? expression, int depth)
-        {
-            if (expression is null || depth > MaxDepth) return null;
+        public CountRead? Counted(KismetExpression? expression) =>
+            expression is null ? null : walk.Counted.Visit(walk, expression, null, CountedFrom);
 
+        private CountRead? CountedFrom(KismetExpression expression)
+        {
             switch (expression)
             {
                 case EX_Cast cast:
-                    return Counted(cast.Target, depth + 1);
+                    return Counted(cast.Target);
                 case EX_InstanceVariable when DynamicTextFloats.Name(expression) is { } member:
-                    return members.GetValueOrDefault(member)?
-                        .Select(written => new Scope(written.Body, functions, members).Counted(written.Value, depth + 1))
+                    return walk.Members.GetValueOrDefault(member)?
+                        .Select(written => walk.For(written.Body).Counted(written.Value))
                         .FirstOrDefault(found => found is not null);
                 case EX_LocalVariable or EX_LocalOutVariable when DynamicTextFloats.Name(expression) is { } local:
-                    return First(_locals.GetValueOrDefault(local), depth) ?? Produced(local, depth);
+                    return First(_locals.GetValueOrDefault(local)) ?? Produced(local);
             }
 
             if (RowSinks.Invoking(expression) is not { } call || RowSinks.Calling(call) is not { } called) return null;
@@ -131,14 +213,14 @@ public static class CountReads
             }
 
             if (called.StartsWith(Divide, StringComparison.Ordinal) && parameters.Count == 2 &&
-                Scaled(parameters[1], depth + 1) is { } divisor && Reads(parameters[0], depth + 1))
+                Scaled(parameters[1]) is { } divisor && Reads(parameters[0]))
             {
                 return new CountRead([], 0) { Inverts = divisor };
             }
 
             if (called.Contains(StackCount, StringComparison.Ordinal))
             {
-                return parameters.Select(parameter => Counted(parameter, depth + 1)).FirstOrDefault(found => found is not null) is { } held
+                return parameters.Select(Counted).FirstOrDefault(found => found is not null) is { } held
                     ? held with { Stacks = true }
                     : null;
             }
@@ -151,68 +233,66 @@ public static class CountReads
             }
 
             if (called.StartsWith(Subtract, StringComparison.Ordinal) && parameters.Count == 2 &&
-                Integer(parameters[1]) is { } skipped && Counted(parameters[0], depth + 1) is { } counted)
+                Integer(parameters[1]) is { } skipped && Counted(parameters[0]) is { } counted)
             {
                 return counted with { Skipped = counted.Skipped + skipped };
             }
 
-            return parameters.Select(parameter => Counted(parameter, depth + 1)).FirstOrDefault(found => found is not null);
+            return parameters.Select(Counted).FirstOrDefault(found => found is not null);
         }
 
-        private bool Reads(KismetExpression? expression, int depth)
-        {
-            if (expression is null || depth > MaxDepth) return false;
+        private bool Reads(KismetExpression? expression) =>
+            expression is not null && walk.Reads.Visit(walk, expression, false, ReadsFrom);
 
+        private bool ReadsFrom(KismetExpression expression)
+        {
             switch (expression)
             {
                 case EX_Cast cast:
-                    return Reads(cast.Target, depth + 1);
+                    return Reads(cast.Target);
                 case EX_InstanceVariable when DynamicTextFloats.Name(expression) is { } member:
-                    return members.GetValueOrDefault(member)?.Any(written => new Scope(written.Body, functions, members).Reads(written.Value, depth + 1)) == true;
+                    return walk.Members.GetValueOrDefault(member)?.Any(written => walk.For(written.Body).Reads(written.Value)) == true;
                 case EX_LocalVariable or EX_LocalOutVariable when DynamicTextFloats.Name(expression) is { } local:
-                    return _locals.GetValueOrDefault(local)?.Any(value => Reads(value, depth + 1)) == true;
+                    return _locals.GetValueOrDefault(local)?.Any(Reads) == true;
             }
 
             if (RowSinks.Invoking(expression) is not { } call || RowSinks.Calling(call) is not { } called) return false;
 
             return called.Contains(MagnitudeRead, StringComparison.Ordinal) ||
-                   RowSinks.Parameters(call).Any(parameter => Reads(parameter, depth + 1));
+                   RowSinks.Parameters(call).Any(Reads);
         }
 
-        private CountRead? First(IEnumerable<KismetExpression>? values, int depth) =>
-            values?.Select(value => Counted(value, depth + 1)).FirstOrDefault(found => found is not null);
+        private CountRead? First(IEnumerable<KismetExpression>? values) =>
+            values?.Select(Counted).FirstOrDefault(found => found is not null);
 
-        private CountRead? Produced(string local, int depth)
+        private CountRead? Produced(string local)
         {
-            foreach (var statement in body.ScriptBytecode!)
+            foreach (var (statement, call) in _calls)
             {
-                foreach (var call in Calls(statement, 0))
+                if (RowSinks.Calling(call) is not { } called || !local.StartsWith(Prefix(called), StringComparison.Ordinal)) continue;
+                if (!RowSinks.Parameters(call).Any(parameter => DynamicTextFloats.Name(parameter) == local)) continue;
+
+                if (called.Contains(EffectQuery, StringComparison.Ordinal))
                 {
-                    if (RowSinks.Calling(call) is not { } called || !local.StartsWith(Prefix(called), StringComparison.Ordinal)) continue;
-                    if (!RowSinks.Parameters(call).Any(parameter => DynamicTextFloats.Name(parameter) == local)) continue;
+                    return new CountRead([.. RowSinks.Parameters(call).SelectMany(parameter => Tags(parameter, 0)).Distinct(StringComparer.Ordinal)], 0);
+                }
 
-                    if (called.Contains(EffectQuery, StringComparison.Ordinal))
-                    {
-                        return new CountRead([.. RowSinks.Parameters(call).SelectMany(parameter => Tags(parameter, 0)).Distinct(StringComparer.Ordinal)], 0);
-                    }
+                if (walk.Functions.GetValueOrDefault(called) is { } function)
+                {
+                    var output = local[Prefix(called).Length..];
 
-                    if (functions.GetValueOrDefault(called) is { } function)
-                    {
-                        var output = local[Prefix(called).Length..];
-
-                        if (new Scope(function, functions, members).Named(output, depth + 1) is { } found) return found;
-                    }
-                    else if (Holder(statement, depth) is { } holder)
-                    {
-                        return new CountRead([], 0) { Call = $"{holder}.{called}" };
-                    }
+                    if (walk.For(function).Named(output) is { } found) return found;
+                }
+                else if (Holder(statement) is { } holder)
+                {
+                    return new CountRead([], 0) { Call = $"{holder}.{called}" };
                 }
             }
 
             return null;
         }
 
-        private string? Holder(KismetExpression statement, int depth)
+        private string? Holder(KismetExpression statement)
         {
             var reached = statement switch
             {
@@ -223,7 +303,7 @@ public static class CountReads
 
             if (reached is not EX_Context { ObjectExpression: { } owner }) return null;
 
-            return Classed(owner, depth + 1);
+            return Classed(owner, 1);
         }
 
         private string? Classed(KismetExpression? expression, int depth)
@@ -232,15 +312,12 @@ public static class CountReads
 
             if (expression is EX_LocalVariable or EX_LocalOutVariable && DynamicTextFloats.Name(expression) is { } local)
             {
-                foreach (var statement in body.ScriptBytecode!)
+                foreach (var (_, call) in _calls)
                 {
-                    foreach (var call in Calls(statement, 0))
-                    {
-                        if (RowSinks.Calling(call) is not { } called || !local.StartsWith(Prefix(called), StringComparison.Ordinal)) continue;
+                    if (RowSinks.Calling(call) is not { } called || !local.StartsWith(Prefix(called), StringComparison.Ordinal)) continue;
 
-                        var leaf = RowSinks.Parameters(call).OfType<EX_ObjectConst>().Select(constant => constant.Value.Name).FirstOrDefault(name => name is not null);
-                        if (leaf is not null) return leaf.EndsWith("_C", StringComparison.Ordinal) ? leaf[..^2] : leaf;
-                    }
+                    var leaf = RowSinks.Parameters(call).OfType<EX_ObjectConst>().Select(constant => constant.Value.Name).FirstOrDefault(name => name is not null);
+                    if (leaf is not null) return leaf.EndsWith("_C", StringComparison.Ordinal) ? leaf[..^2] : leaf;
                 }
 
                 return _locals.GetValueOrDefault(local)?.Select(value => Classed(value, depth + 1)).FirstOrDefault(found => found is not null);
@@ -249,17 +326,16 @@ public static class CountReads
             return null;
         }
 
-        private CountRead? Named(string local, int depth)
+        private CountRead? Named(string local)
         {
             foreach (var (name, values) in _locals)
             {
                 if (!name.Replace(' ', '_').Equals(local, StringComparison.Ordinal)) continue;
-                if (First(values, depth) is { } found) return found;
+                if (First(values) is { } found) return found;
             }
 
             return null;
         }
-
     }
 
     private static string? AttributeName(KismetExpression? expression) => expression switch
