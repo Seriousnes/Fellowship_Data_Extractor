@@ -52,7 +52,7 @@ public sealed class MenuService : IMenuService
             Category(Categories.Items, new MenuSection(null,
             [
                 Tab(EntityType.Item,
-                    new MenuSection("Armour", Armour(Where(EntityType.Item))),
+                    new MenuSection("Armor", Armor(Where(EntityType.Item))),
                     new MenuSection("Accessories", Accessories(Where(EntityType.Item))),
                     new MenuSection("Weapons", Weapons(Where(EntityType.Item)))),
                 Tab(EntityType.Glyph),
@@ -86,7 +86,7 @@ public sealed class MenuService : IMenuService
             .Select(hero => new MenuLink(view.Name(hero), view.Href(hero), view.LinkColour(hero), [])),
     ];
 
-    private IReadOnlyList<MenuLink> Armour(string where) =>
+    private IReadOnlyList<MenuLink> Armor(string where) =>
     [
         .. Enum.GetValues<ArmorType>().Select(worn =>
         {

@@ -20,6 +20,7 @@
             </Content>
         </Column>
         <Column Head="Max Rank" Key="SortingType.Rank" Numeric Value="row => row.MaxRank" />
+        @ComparedColumns.For(View, Documents)
     </Columns>
 </Table>
 

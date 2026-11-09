@@ -37,7 +37,7 @@ public sealed record AugmentationRecordRequest
     [Description("The id.")]
     public int Id { get; init; }
 
-    [Reads(MeasureType.Rank)]
+    [Reads(MeasureType.MaxRank)]
     [Description(AugmentationReading.RankSources)]
     public string? RankSources { get; init; }
 
@@ -46,7 +46,7 @@ public sealed record AugmentationRecordRequest
 
 public sealed record AugmentationListRequest : RecordListRequest
 {
-    [Reads(MeasureType.Rank)]
+    [Reads(MeasureType.MaxRank)]
     [Description(AugmentationReading.RankSources)]
     public string? RankSources { get; init; }
 

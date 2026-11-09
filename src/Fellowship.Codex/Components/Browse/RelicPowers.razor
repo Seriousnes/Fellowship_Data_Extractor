@@ -13,6 +13,7 @@
         <Column Head="Cast" Key="MeasureType.Cast" Unit="s" Numeric Value="row => row.CastTime" />
         <Column Head="Range" Key="MeasureType.Range" Numeric Value="row => row.Range" />
         <Column Head="Duration" Key="MeasureType.Duration" Unit="s" Numeric Value="row => row.Duration" />
+        @ComparedColumns.For(View, Documents)
     </Columns>
 </Table>
 

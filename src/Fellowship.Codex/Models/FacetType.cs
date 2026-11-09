@@ -10,8 +10,8 @@ public enum FacetType
     [Description("Item type")]
     Kind,
 
-    [Description("Armour")]
-    Armor,
+    [Description("Armor")]
+    ArmorType,
 
     [Description("Primary stat")]
     Stat,

@@ -7,7 +7,7 @@ public sealed record ItemNaming
 {
     public required IReadOnlyDictionary<string, string> ByArmorType { get; init; }
 
-    public string? Unarmoured { get; init; }
+    public string? Unarmored { get; init; }
 
     public required IReadOnlyDictionary<string, string> ByHero { get; init; }
 
@@ -20,7 +20,7 @@ public sealed record ItemNaming
     internal ItemNaming Settled()
     {
         var distinct = ByArmorType.Values
-            .Append(Unarmoured)
+            .Append(Unarmored)
             .OfType<string>()
             .Distinct(StringComparer.Ordinal)
             .ToArray();
@@ -49,14 +49,14 @@ public static class ItemNames
 
         var byArmorType = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var byHero = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        string? unarmoured = null;
+        string? unarmored = null;
 
         foreach (var (key, value) in Entries(asset, ByArmorTypeField))
         {
             if (!IsRealName(value)) continue;
 
             var label = ArmorTypeLabel(key);
-            if (label is null) unarmoured ??= value; else byArmorType.TryAdd(label, value);
+            if (label is null) unarmored ??= value; else byArmorType.TryAdd(label, value);
         }
 
         foreach (var (key, value) in Entries(asset, ByHeroField))
@@ -72,7 +72,7 @@ public static class ItemNames
         return new ItemNaming
         {
             ByArmorType = byArmorType,
-            Unarmoured = unarmoured,
+            Unarmored = unarmored,
             ByHero = byHero,
             Scalar = IsRealName(scalar) ? scalar : null,
         }.Settled();

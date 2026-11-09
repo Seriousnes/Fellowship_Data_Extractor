@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
 
@@ -37,6 +39,9 @@ public interface ICodexService
 
     Measure Measure(MeasureType type);
 
+    /// <summary>Measure for a query key. The key is case-insensitive.</summary>
+    Measure Measure(string key);
+
     Flag Flag(FlagType type);
 
     Sorting Sorting(SortingType type);
@@ -54,7 +59,7 @@ public sealed class CodexService : ICodexService
 
     private readonly IReadOnlyDictionary<FlagType, Flag> flags;
 
-    private readonly IReadOnlyDictionary<MeasureType, Measure> measures;
+    private readonly IReadOnlyDictionary<string, Measure> measures;
 
     private readonly IReadOnlyDictionary<SortingType, Sorting> sortings;
 
@@ -95,7 +100,7 @@ public sealed class CodexService : ICodexService
             new Facet(FacetType.Kind, document =>
                 One(document is ItemDocument item ? Kind(item) : null)),
 
-            new Facet(FacetType.Armor, document =>
+            new Facet(FacetType.ArmorType, document =>
                 One(document is ItemDocument { ArmorType: { } armor } ? armor.ToString() : null)),
 
             new Facet(FacetType.Stat, document =>
@@ -200,9 +205,11 @@ public sealed class CodexService : ICodexService
             },
             new Measure(MeasureType.Cost, document => DocumentFields.Number(document, nameof(AbilityDocument.Cost))),
             new Measure(MeasureType.Charges, document => DocumentFields.Number(document, nameof(AbilityDocument.Charges))),
-            new Measure(MeasureType.Rank, document => DocumentFields.Number(document, nameof(AugmentationDocument.MaxRank))),
+            new Measure(MeasureType.MaxRank, document => DocumentFields.Number(document, nameof(AugmentationDocument.MaxRank))),
 
             new Measure(MeasureType.Id, document => (double?)document.Id),
+
+            .. StatMeasures(store),
         ];
 
         Sortings =
@@ -299,8 +306,10 @@ public sealed class CodexService : ICodexService
 
         facets = Defined(Facets, facet => facet.Type);
         flags = Defined(Flags, flag => flag.Type);
-        measures = Defined(Measures, measure => measure.Type);
+        measures = Keyed(Measures);
         sortings = Defined(Sortings, sorting => sorting.Type);
+
+        Distinct(Facets.Select(facet => facet.Key).Concat(Flags.Select(flag => flag.Key)).Concat(Measures.Select(measure => measure.Key)));
 
         var counts = store.Entities
             .Where(document => PublicTypes.IsListed(document))
@@ -343,6 +352,83 @@ public sealed class CodexService : ICodexService
         }
 
         return defined.ToDictionary(type);
+    }
+
+    private static void Distinct(IEnumerable<string> keys)
+    {
+        var twice = keys.GroupBy(key => key, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToArray();
+
+        if (twice.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"{string.Join(", ", twice)} {(twice.Length == 1 ? "names" : "name")} more than one facet, flag or " +
+                "measure, so a download would hold two fields of that key.");
+        }
+    }
+
+    private static IReadOnlyDictionary<string, Measure> Keyed(IReadOnlyList<Measure> defined)
+    {
+        var missing = Enum.GetValues<MeasureType>()
+            .Where(type => !defined.Any(measure => measure.Key == QueryKeys.Key(type)))
+            .ToArray();
+        var twice = defined.GroupBy(measure => measure.Key, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToArray();
+
+        if (missing.Length > 0 || twice.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Each {nameof(MeasureType)} member has one {nameof(Models.Measure)} and each measure key names one " +
+                $"measure, and {string.Join(", ", missing.Select(type => type.ToString()).Concat(twice))} " +
+                $"{(missing.Length + twice.Length == 1 ? "does" : "do")} not, so a comparison would answer nothing or answer twice.");
+        }
+
+        return defined.ToDictionary(measure => measure.Key, StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// One measure for each attribute with a value on at least one item at its drop item level.
+    /// <see cref="StatMagnitudes"/> computes the values, as the item tooltip does. The order is the order of the
+    /// settings' attributes.
+    /// </summary>
+    private static IEnumerable<Measure> StatMeasures(IEntityStoreService store)
+    {
+        var calculation = store.Settings.StatCalculation;
+        var reading = new TooltipQuery();
+
+        var values = new Dictionary<ItemDocument, IReadOnlyDictionary<string, double>>(ReferenceEqualityComparer.Instance);
+
+        foreach (var item in store.Entities.OfType<ItemDocument>().Where(item => PublicTypes.IsListed(item)))
+        {
+            var lines = StatMagnitudes.For(
+                item, calculation, store.Settings.Items, store.PrimaryAttributes, null, store.DropItemLevel(item), reading);
+
+            if (lines.Count == 0) continue;
+
+            values[item] = lines
+                .Where(line => line is { Stat: not null, Rolled: false })
+                .ToDictionary(line => line.Stat!, line => (double)line.Value, StringComparer.OrdinalIgnoreCase);
+        }
+
+        var held = values.Values.SelectMany(stats => stats.Keys).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return calculation.Attributes
+            .Where(attribute => held.Contains(attribute.Key))
+            .Select(attribute => new Measure(
+                JsonNamingPolicy.CamelCase.ConvertName(attribute.Key),
+                attribute.Value.DisplayName,
+                document => document is ItemDocument item &&
+                    values.TryGetValue(item, out var stats) &&
+                    stats.TryGetValue(attribute.Key, out var value)
+                        ? value
+                        : null)
+            {
+                Itemised = true,
+            });
     }
 
     public FacetView View(Facet facet, IReadOnlyList<EntityDocument> rows) =>
@@ -392,7 +478,9 @@ public sealed class CodexService : ICodexService
 
     public Facet Facet(FacetType type) => facets[type];
 
-    public Measure Measure(MeasureType type) => measures[type];
+    public Measure Measure(MeasureType type) => measures[QueryKeys.Key(type)];
+
+    public Measure Measure(string key) => measures[key];
 
     public Flag Flag(FlagType type) => flags[type];
 
@@ -425,7 +513,7 @@ public sealed class CodexService : ICodexService
         {
             throw new InvalidOperationException(
                 $"{string.Join(", ", missing)} {(missing.Length == 1 ? "is" : "are")} not a slot the build weights, " +
-                $"so {nameof(CodexService)}.{nameof(Kind)} would read an armour type onto a slot that has none. " +
+                $"so {nameof(CodexService)}.{nameof(Kind)} would read an armor type onto a slot that has none. " +
                 $"The slots are {string.Join(", ", slots)}.");
         }
     }

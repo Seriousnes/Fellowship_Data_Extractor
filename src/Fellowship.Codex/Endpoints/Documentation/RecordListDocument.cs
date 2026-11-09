@@ -31,8 +31,14 @@ public sealed class RecordListParameters(ICodexService codex, IEntityStoreServic
 
         foreach (var measure in RecordLists.Measures(codex).Where(measure => documents.Any(document => measure.Value(document) is not null)))
         {
-            Add(operation, measure.Key + "Min", JsonSchemaType.Number, $"Lowest {measure.Label}.");
-            Add(operation, measure.Key + "Max", JsonSchemaType.Number, $"Highest {measure.Label}.");
+            foreach (var comparator in Enum.GetValues<Comparator>())
+            {
+                Add(
+                    operation,
+                    Comparisons.Parameter(measure.Key, comparator),
+                    JsonSchemaType.Number,
+                    $"{measure.Label} {CodexKeys.Label(comparator)} this number.");
+            }
         }
 
         foreach (var field in RecordFields.Of(list.Record))
@@ -46,7 +52,8 @@ public sealed class RecordListParameters(ICodexService codex, IEntityStoreServic
 
         var note =
             $"Each row is a whole {PublicTypes.Noun(list.Type)} record. A filter names a facet, a flag, a " +
-            "measure bound or a record field. A record field matches its value, or any value of a list field, " +
+            "measure comparison or a record field. " + Comparisons.Note + " " +
+            "A record field matches its value, or any value of a list field, " +
             "case insensitively. An item level, rank, tier or difficulty is a reading parameter: each row is " +
             "read at that value. A name taken by a reading parameter or a facet reads as that, not as a record " +
             "field. `sort` takes name, a sorting, a measure or a record field.";

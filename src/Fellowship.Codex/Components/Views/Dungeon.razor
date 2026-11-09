@@ -105,9 +105,11 @@
             return;
         }
 
-        if (Error is null) Results = Search.Run(Query.Pinned(Chosen, Pin, Name));
+        var listed = Query.Pinned(Chosen, Pin, Name);
 
-        View = new BrowseView(Ui.Codex, Query, Results, where, new HashSet<FacetType> { Pin });
+        if (Error is null) Results = Search.Run(listed);
+
+        View = new BrowseView(Ui.Codex, Query, Results, where, new HashSet<FacetType> { Pin }, listed);
     }
 
     private IReadOnlyList<GallerySlide> Gathered()

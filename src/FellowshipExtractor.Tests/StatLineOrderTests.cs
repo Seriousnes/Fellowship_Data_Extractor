@@ -44,7 +44,7 @@ public sealed class StatLineOrderTests
             new ItemScaling());
 
     [Fact]
-    public void ArmourLeadsAndTheDeclaredSlotsKeepTheirOwnOrder()
+    public void ArmorLeadsAndTheDeclaredSlotsKeepTheirOwnOrder()
     {
         var declared = Greaves().Stats!.Select(slot => slot.Stat);
 

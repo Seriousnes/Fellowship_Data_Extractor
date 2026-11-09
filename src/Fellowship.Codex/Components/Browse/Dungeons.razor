@@ -12,6 +12,7 @@
         <Column Head="Qualifier" Key="SortingType.Qualifier" Numeric Unit="s" Value="row => row.QualifierTime" />
         <Column Head="Required score" Key="SortingType.Score" Numeric Value="row => row.RequiredScore" />
         <Column Head="Creatures" Numeric Value="row => Dwelling(row)" />
+        @ComparedColumns.For(View, Documents)
     </Columns>
 </Table>
 

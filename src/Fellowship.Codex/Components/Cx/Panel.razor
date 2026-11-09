@@ -16,7 +16,7 @@
 }
 else if (As == "aside")
 {
-    <aside class="@Classes" aria-label="@Aria">
+    <aside class="@Classes" aria-label="@Aria" data-folded="@Folded">
         @if (Head is not null)
         {
             <div class="cx-panel-head">
@@ -75,6 +75,9 @@ else
     [Parameter] public string? Aria { get; set; }
 
     [Parameter] public bool Collapsible { get; set; }
+
+    /// <summary>The collapsible panel starts closed at every screen width.</summary>
+    [Parameter] public bool Folded { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 

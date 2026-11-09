@@ -25,12 +25,20 @@
 .cx-panel-toggle::after { content: "+"; margin-left: auto; color: var(--gold-deep); font-size: 18px; }
 .cx-panel-collapsible[data-open] > .cx-panel-toggle::after { content: "\2212"; }
 
+@mixin collapsed($panel) {
+  #{$panel} > .cx-panel-head:not(.cx-panel-toggle) { display: none; }
+  #{$panel} > .cx-panel-toggle { display: flex; }
+  #{$panel}:not([data-open]) > .cx-panel-toggle { margin-bottom: -14px; }
+  #{$panel}:not([data-open]) > .cx-panel-body { display: none; }
+}
+
+@include collapsed(".cx-panel-collapsible[data-folded]");
+
+.cx-rail[data-folded]:not([data-open]) { position: static; max-height: none; }
+
 @media (max-width: 1080px) {
   .cx-rail { position: static; max-height: none; }
-  .cx-panel-collapsible > .cx-panel-head:not(.cx-panel-toggle) { display: none; }
-  .cx-panel-collapsible > .cx-panel-toggle { display: flex; }
-  .cx-panel-collapsible:not([data-open]) > .cx-panel-toggle { margin-bottom: -14px; }
-  .cx-panel-collapsible:not([data-open]) > .cx-panel-body { display: none; }
+  @include collapsed(".cx-panel-collapsible");
 }
 
 .cx-raw-record > summary { cursor: pointer; list-style: none; }

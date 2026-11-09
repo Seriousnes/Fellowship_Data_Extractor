@@ -6,7 +6,7 @@ namespace Fellowship.Codex.Tests;
 [Collection(Admin.Name)]
 public class CatalogueFilterGateTests(AdminHost host)
 {
-    private const string Filtered = "/items?armor=Plate";
+    private const string Filtered = "/items?armorType=Plate";
 
     private const string Results = "cx-tabs";
 

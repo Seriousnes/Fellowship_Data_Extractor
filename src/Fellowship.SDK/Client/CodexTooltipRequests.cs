@@ -342,8 +342,8 @@ public sealed record ItemTooltipRequest
         "tempering ceiling and the slots the rarity adds.")]
     public decimal? PotentialPower { get; init; }
 
-    /// <summary>The armour to print in place of the one the tooltip computes from the item level.</summary>
-    [Description("The armour to print in place of the one the tooltip computes from the item level.")]
+    /// <summary>The armor to print in place of the one the tooltip computes from the item level.</summary>
+    [Description("The armor to print in place of the one the tooltip computes from the item level.")]
     public decimal? Armor { get; init; }
 
     /// <summary>The item's modifiers.</summary>

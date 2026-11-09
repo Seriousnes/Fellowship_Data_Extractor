@@ -300,6 +300,7 @@ function reveal(select) {
 
     row.hidden = false;
     row.open = true;
+    for (const control of row.querySelectorAll('input, select')) control.disabled = false;
     offer(select);
     row.querySelector('a, input')?.focus();
 }
@@ -309,9 +310,25 @@ function conceal(button) {
     const select = row.closest('.cx-panel').querySelector('.cx-more');
 
     row.hidden = true;
-    for (const input of row.querySelectorAll('input')) input.value = '';
+
+    if (row.dataset.measure) {
+        for (const control of row.querySelectorAll('input, select')) {
+            if (control instanceof HTMLSelectElement) control.selectedIndex = [...control.options].findIndex(option => option.defaultSelected);
+            else control.value = control.defaultValue;
+            control.disabled = true;
+        }
+        compare(row.querySelector('.cx-op'));
+    } else {
+        for (const input of row.querySelectorAll('input')) input.value = '';
+    }
+
     offer(select);
     select.focus();
+}
+
+function compare(op) {
+    const row = op.closest('[data-measure]');
+    row.querySelector('input').name = row.dataset.measure + op.value;
 }
 
 function fold(toggle) {
@@ -322,6 +339,7 @@ function fold(toggle) {
 document.addEventListener('change', event => {
     const select = event.target;
     if (select instanceof HTMLSelectElement && select.matches('.cx-more') && select.value) reveal(select);
+    if (select instanceof HTMLSelectElement && select.matches('.cx-op')) compare(select);
 });
 
 document.addEventListener('pointerover', event => {

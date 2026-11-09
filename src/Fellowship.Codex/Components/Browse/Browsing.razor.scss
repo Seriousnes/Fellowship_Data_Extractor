@@ -4,10 +4,16 @@
   display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); gap: 18px; align-items: start;
 }
 
+.cx-browse:has(> .cx-rail[data-folded]:not([data-open])) { grid-template-columns: minmax(0, 1fr); }
+
 @media (max-width: 1080px) {
   .cx-browse { grid-template-columns: minmax(0, 1fr); }
   .cx-browse > section { order: 1; }
 }
+
+.cx-downloads { display: inline-flex; gap: 8px; margin-left: 10px; }
+.cx-downloads a { color: var(--muted); }
+.cx-downloads a:hover { color: var(--gold-bright); }
 
 .cx-facet:not([hidden]) ~ .cx-facet,
 .cx-facet:not([hidden]) ~ .cx-ranges,
@@ -22,7 +28,8 @@
 .cx-facet > summary::after { content: "+"; margin-left: auto; color: var(--gold-deep); font-size: 14px; }
 .cx-facet[open] > summary::after { content: "\2212"; }
 .cx-facet > summary:hover { color: var(--gold-bright); }
-.cx-facet[data-more] > summary::after { margin-left: 0; }
+.cx-facet[data-more] > summary::after,
+.cx-facet[data-measure] > summary::after { margin-left: 0; }
 
 .cx-more {
   display: block; width: 100%; margin-top: 12px; padding: 7px 8px; cursor: pointer;
@@ -42,13 +49,15 @@
 .cx-facet-values li a.on::before { content: "\2713"; color: var(--gold-bright); font-size: 11px; }
 
 .cx-ranges { margin-top: 0; }
-.cx-range { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 6px 0 4px; }
-.cx-range input {
-  width: 100%; min-width: 0; appearance: textfield;
+.cx-range { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px; margin: 6px 0 4px; }
+.cx-range select, .cx-range input {
+  width: 100%; min-width: 0;
   @include sunken;
   border-radius: 2px; font: 400 12px/1 var(--sans); padding: 5px 6px;
 }
-.cx-range input:focus { @include edged; }
+.cx-range input { appearance: textfield; }
+.cx-range select { cursor: pointer; }
+.cx-range select:focus, .cx-range input:focus { @include edged; }
 .cx-ranges button {
   width: 100%; appearance: none; cursor: pointer; margin-top: 4px;
   @include gold-slab;

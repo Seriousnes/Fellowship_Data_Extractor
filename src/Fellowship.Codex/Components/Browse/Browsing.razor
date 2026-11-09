@@ -1,5 +1,6 @@
 <div class="cx-browse">
     <Panel As="aside" Class="cx-rail" Aria="Filters" Head="Refine" Collapsible="true"
+           Folded="@(View.Chosen.Count == Query.Types.Count && Query.Group is null)"
            Badge="@(View.Chosen.Count > 0 ? View.Chosen.Count.ToString("N0") : null)">
         @if (Pinned.Count > 0)
         {
@@ -51,23 +52,27 @@
             </details>
         }
 
-        @if (View.Ranges.Count > 0)
+        @if (View.Comparable.Count > 0)
         {
             <form class="cx-ranges" method="get" action="@View.Where">
                 @foreach (var (name, value) in Kept.Concat(Query.Fields()))
                 {
                     <input type="hidden" name="@name" value="@value" />
                 }
-                @foreach (var measure in View.Ranges)
+                @foreach (var comparison in Query.Comparisons)
                 {
-                    <details class="cx-facet" data-more="@("range-" + measure.Key)" hidden="@(!View.Bounded(measure.Type))" open>
-                        <summary>@Name(measure) <FilterOff Clear="@(View.Bounded(measure.Type) ? View.Unbound(measure.Type) : null)" /></summary>
-                        <div class="cx-range">
-                            <input type="number" step="any" name="@(measure.Key)Min" placeholder="min"
-                                   value="@(Query.Bound(measure.Type, false) is { } low ? FellowshipCodex.Number(low) : null)" />
-                            <input type="number" step="any" name="@(measure.Key)Max" placeholder="max"
-                                   value="@(Query.Bound(measure.Type, true) is { } high ? FellowshipCodex.Number(high) : null)" />
-                        </div>
+                    var measure = View.Codex.Measure(comparison.Measure);
+
+                    <details class="cx-facet" data-measure="@measure.Key" open>
+                        <summary>@Name(measure) <FilterOff Clear="@View.Without(comparison)" /></summary>
+                        @Compare(measure, comparison.Comparator, comparison.Value, enabled: true)
+                    </details>
+                }
+                @foreach (var measure in View.Comparable)
+                {
+                    <details class="cx-facet" data-more="@("compare-" + measure.Key)" data-measure="@measure.Key" hidden open>
+                        <summary>@Name(measure) <FilterOff /></summary>
+                        @Compare(measure, Comparisons.Default, Comparisons.DefaultValue, enabled: false)
                     </details>
                 }
                 <button type="submit">Apply</button>
@@ -106,12 +111,12 @@
                     }
                 </optgroup>
             }
-            @if (View.Ranges.Any(measure => !View.Bounded(measure.Type)))
+            @if (View.Comparable.Count > 0)
             {
-                <optgroup label="Between">
-                    @foreach (var measure in View.Ranges.Where(measure => !View.Bounded(measure.Type)))
+                <optgroup label="Compare">
+                    @foreach (var measure in View.Comparable)
                     {
-                        <option value="@("range-" + measure.Key)">@Name(measure)</option>
+                        <option value="@("compare-" + measure.Key)">@Name(measure)</option>
                     }
                 </optgroup>
             }
@@ -198,6 +203,19 @@
     private static string Name(Measure measure) =>
         measure.Unit is null ? measure.Label : $"{measure.Label} ({measure.Unit})";
 
+    private static RenderFragment Compare(Measure measure, Comparator chosen, double value, bool enabled) =>
+        @<div class="cx-range">
+            <select class="cx-op" aria-label="@($"{measure.Label} comparison")" disabled="@(!enabled)">
+                @foreach (var comparator in Enum.GetValues<Comparator>())
+                {
+                    <option value="@Comparisons.Suffix(comparator)" selected="@(comparator == chosen)">@BrowseView.Printed(comparator)</option>
+                }
+            </select>
+            <input type="number" step="any" required aria-label="@measure.Label"
+                   name="@Comparisons.Parameter(measure.Key, chosen)" value="@FellowshipCodex.Number(value)"
+                   disabled="@(!enabled)" />
+        </div>;
+
     private RenderFragment Values(FacetCount facet) =>
         @<ul class="cx-facet-values">
             @foreach (var value in facet.Values)
@@ -218,6 +236,15 @@
                 @if (Grouping is { } grouped)
                 {
                     <span>&middot; grouped by @grouped.Label</span>
+                }
+                @if (Results.Total > 0)
+                {
+                    <span class="cx-downloads">
+                        @foreach (var format in EntitiesEndpoint.Downloads)
+                        {
+                            <a href="@View.Download(format)" rel="nofollow" download>@format.ToUpperInvariant()</a>
+                        }
+                    </span>
                 }
             </div>
             @if (Results.Pages > 1)

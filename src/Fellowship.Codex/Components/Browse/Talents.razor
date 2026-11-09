@@ -19,6 +19,7 @@
         </Column>
         <Column Head="Cost" Key="SortingType.Cost" Numeric Value="row => Slot(row.Id)?.Cost" />
         <Column Head="Tier" Key="SortingType.Tier" Numeric Value="row => Slot(row.Id)?.Row" />
+        @ComparedColumns.For(View, Documents)
     </Columns>
 </Table>
 

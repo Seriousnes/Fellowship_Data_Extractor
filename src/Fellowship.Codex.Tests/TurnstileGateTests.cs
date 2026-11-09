@@ -81,7 +81,7 @@ public sealed class TurnstileHost : IAsyncLifetime
 
 public class TurnstileGateTests(TurnstileHost host) : IClassFixture<TurnstileHost>
 {
-    private const string Filtered = "/items?armor=Plate";
+    private const string Filtered = "/items?armorType=Plate";
 
     private const string Results = "cx-tabs";
 

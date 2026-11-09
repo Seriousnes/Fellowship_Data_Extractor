@@ -3,7 +3,7 @@ namespace Fellowship.Codex.Browser.Tests;
 [Collection(Browsing.Name)]
 public sealed class CatalogueFilterGateTests(Site site)
 {
-    private const string Filtered = "/items?armor=Plate";
+    private const string Filtered = "/items?armorType=Plate";
 
     private const string Results = ".cx-tabs";
 
