@@ -76,8 +76,10 @@ else
 
     [Parameter] public bool Collapsible { get; set; }
 
+    [Parameter] public bool Plain { get; set; }
+
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
     private string Classes =>
-        (Class is null ? "cx-panel" : $"cx-panel {Class}") + (Collapsible ? " cx-panel-collapsible" : string.Empty);
+        (Class is null ? "cx-panel" : $"cx-panel {Class}") + (Collapsible ? " cx-panel-collapsible" : string.Empty) + (Plain ? " cx-panel-plain" : string.Empty);
 }

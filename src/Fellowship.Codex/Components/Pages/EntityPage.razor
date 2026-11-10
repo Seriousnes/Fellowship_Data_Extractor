@@ -44,16 +44,16 @@
     }
 
     <CascadingValue Value="Here">
-        <div class="cx-entity @(Paired ? "cx-entity-paired" : null)">
+        <div class="cx-entity">
             <Craft Slug="@Slug" Id="Id" Page="@Ui.Path(Entity)" Search="@Search" Hero="@Reading" />
 
-            <div class="cx-entity-side">
+            <div class="cx-entity-main">
                 <Versions />
+
+                <Detail Entity="Entity" />
+
+                <Nearby />
             </div>
-
-            <Detail Entity="Entity" />
-
-            <Nearby />
         </div>
     </CascadingValue>
 }
@@ -108,8 +108,6 @@
     private TooltipLink Tip => Ui.Tip(Entity);
 
     private Fellowship.Codex.Embeds.CardModel? Card;
-
-    private bool Paired => Entity is ItemDocument && Readings.Count > 1;
 
     private bool PicksHero =>Readings.Count > 1 || (Entity as ItemDocument)?.Heroes is { Count: > 1 };
 

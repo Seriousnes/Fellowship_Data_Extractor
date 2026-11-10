@@ -1,9 +1,110 @@
 @page "/"
+@inject ICodexViewService Ui
+@inject IEntityStoreService Store
+@inject IMenuService Menus
+@inject ITextureSource Textures
 
 <PageTitle>Fellowship Codex</PageTitle>
 
 <section class="cx-home">
-    <span class="cx-home-mark" aria-hidden="true"></span>
     <h1 class="cx-home-name">Fellowship <b>Codex</b></h1>
     <Omnibox Hero="true" />
 </section>
+
+<section class="cx-home-sec" aria-labelledby="home-heroes">
+    <h2 id="home-heroes">@Heroes.Label</h2>
+    <div class="cx-home-roles">
+        @foreach (var role in Roles)
+        {
+            var first = role.First();
+
+            <div class="cx-home-role">
+                <p class="cx-home-role-head">
+                    @if (first.RoleIcon is { } icon)
+                    {
+                        <img alt="" src="@Textures.Address(icon, TextureSize.Small)" />
+                    }
+                    <span>@first.Role</span>
+                </p>
+                <div class="cx-home-roster">
+                    @foreach (var hero in role)
+                    {
+                        <a href="@Ui.Href(hero)" style="color:@Ui.NameColour(hero)">
+                            @if (hero.Portrait is { } portrait)
+                            {
+                                <img alt="" src="@Textures.Address(portrait, TextureSize.Medium)" />
+                            }
+                            <span>@Ui.Name(hero)</span>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+<section class="cx-home-sec" aria-labelledby="home-tools">
+    <h2 id="home-tools">@ToolPages.Label</h2>
+    <div class="cx-home-tools">
+        @foreach (var (label, href) in ToolPages.All)
+        {
+            <a href="@href">@label</a>
+        }
+    </div>
+</section>
+
+<section class="cx-home-sec" aria-labelledby="home-database">
+    <h2 id="home-database">Database</h2>
+    <div class="cx-home-db">
+        @foreach (var column in Database)
+        {
+            <div class="cx-home-db-col">
+                @foreach (var (top, links) in column)
+                {
+                    <div class="cx-home-db-group">
+                        <a class="cx-home-db-head" href="@top.Href">@top.Label</a>
+                        @foreach (var link in links)
+                        {
+                            <a href="@link.Href" style="@(link.Colour is null ? null : $"color:{link.Colour}")">@link.Label</a>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private IReadOnlyList<IGrouping<int?, HeroDocument>> Roles = [];
+
+    private IReadOnlyList<List<(MenuLink Top, IReadOnlyList<MenuLink> Links)>> Database = [];
+
+    protected override void OnParametersSet()
+    {
+        Roles =
+        [
+            .. Store.Entities.OfType<HeroDocument>()
+                .OrderBy(hero => hero.RoleOrdinal ?? int.MaxValue)
+                .ThenBy(hero => Ui.Name(hero), StringComparer.OrdinalIgnoreCase)
+                .GroupBy(hero => hero.RoleOrdinal),
+        ];
+
+        var columns = new List<List<(MenuLink, IReadOnlyList<MenuLink>)>>();
+
+        foreach (var top in Menus.Menu.Where(top => top.Href != Heroes.Href))
+        {
+            IReadOnlyList<MenuLink> links = [.. Tabs(top)];
+
+            // A category with no tabs of its own sits under the shortest column.
+            if (links.Count == 0 && columns.Count > 0)
+                columns.MinBy(column => column.Sum(group => group.Item2.Count + 1))!.Add((top, links));
+            else columns.Add([(top, links)]);
+        }
+
+        Database = columns;
+    }
+
+    // A labelled section narrows a category by a facet; only the unlabelled one lists its tabs.
+    private static IEnumerable<MenuLink> Tabs(MenuLink top) =>
+        top.Sections.Where(section => section.Head is null).SelectMany(section => section.Links);
+}

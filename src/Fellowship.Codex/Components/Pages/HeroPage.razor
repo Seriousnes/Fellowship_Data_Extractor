@@ -10,32 +10,75 @@
     <PageTitle>@Name - Fellowship Codex</PageTitle>
     <Crumbs Trail="@(new List<(string, string?)> { (Heroes.Label, Heroes.Href), (Name, null) })" />
 
-    <div class="cx-hero-title">
-        @if (Entity.RoleIcon is { } role)
+    <div class="cx-hero-head">
+        @if (Entity.Portrait is { } portrait)
         {
-            <img class="cx-hero-role" alt="@Entity.Role" title="@Entity.Role"
-                 src="@Textures.Address(role, TextureSize.Small)" />
+            <img class="cx-hero-portrait" alt="@Name" src="@Textures.Address(portrait, TextureSize.Large)" />
         }
 
-        <h1 class="cx-hero-name" style="color:@Ui.NameColour(Entity)">@Name</h1>
+        <div class="cx-hero-about">
+            <div class="cx-hero-title">
+                <h1 class="cx-hero-name" style="color:@Ui.NameColour(Entity)">@Name</h1>
+                @if (Entity.Title is { } title)
+                {
+                    <p class="cx-hero-epithet">@title</p>
+                }
+            </div>
 
-        @if (Entity.Title is { } title)
-        {
-            <p class="cx-hero-epithet">@title</p>
-        }
+            <dl class="cx-hero-facts">
+                @foreach (var (label, value, unit, _, _) in Facts)
+                {
+                    <div>
+                        <dt>@label</dt>
+                        <dd>
+                            @if (label == RoleLabel && Entity.RoleIcon is { } role)
+                            {
+                                <img alt="" src="@Textures.Address(role, TextureSize.Small)" />
+                            }
+                            @if (label == DifficultyLabel && Stars is var (level, scale))
+                            {
+                                <span class="cx-hero-stars" role="img" aria-label="@level of @scale">
+                                    @for (var star = 1; star <= scale; star++)
+                                    {
+                                        <span aria-hidden="true" data-on="@(star <= level ? "true" : null)">&#9733;</span>
+                                    }
+                                </span>
+                            }
+                            else
+                            {
+                                @value
+                            }
+                            @if (unit is not null)
+                            {
+                                <span class="cx-unit">@unit</span>
+                            }
+                        </dd>
+                    </div>
+                }
+            </dl>
+
+            <div class="cx-actions">
+                <a class="cx-act cx-act-main" href="@Calculator">Talent Calculator</a>
+                <a class="cx-act" href="@ItemsFor">Items for @Name</a>
+            </div>
+        </div>
+
+        <nav class="cx-hero-roster" aria-label="@Heroes.Label">
+            @foreach (var hero in Roster)
+            {
+                <a href="@Ui.Href(hero)" aria-label="@Ui.Name(hero)" title="@Ui.Name(hero)"
+                   aria-current="@(hero.Id == Entity.Id ? "page" : null)">
+                    @if (hero.Portrait is { } face)
+                    {
+                        <img alt="" src="@Textures.Address(face, TextureSize.Small)" />
+                    }
+                </a>
+            }
+        </nav>
     </div>
 
     <CascadingValue Value="Here">
-        <div class="cx-hero">
-            @if (Entity.Portrait is { } portrait)
-            {
-                <figure class="cx-hero-portrait">
-                    <img alt="" src="@Textures.Address(portrait, TextureSize.Large)" />
-                </figure>
-            }
-
-            <Detail Entity="Entity" />
-        </div>
+        <Detail Entity="Entity" />
     </CascadingValue>
 }
 
@@ -44,11 +87,27 @@
 
     [Parameter] public string? Named { get; set; }
 
+    private const string RoleLabel = nameof(HeroDocument.Role);
+
+    private static readonly string DifficultyLabel = FellowshipCodex.Spaced(nameof(HeroDocument.OverallDifficulty));
+
+    private (int Level, int Scale)? Stars =>
+        Entity is { OverallDifficulty: { } level, OverallDifficultyStars: { } scale } ? (level, scale) : null;
+
     private HeroDocument? Entity;
 
     private Bearings Here = new();
 
+    private IReadOnlyList<HeroDocument> Roster = [];
+
+    private IReadOnlyList<(string Label, string Value, string? Unit, string? Href, TooltipLink? Tip)> Facts = [];
+
     private string Name => Ui.Name(Entity!);
+
+    private string Calculator => $"{ToolPages.Talents}/{Uri.EscapeDataString(Name.ToLowerInvariant())}";
+
+    private string ItemsFor =>
+        $"{PublicTypes.Where(EntityType.Item)}&{QueryKeys.Key(FacetType.Hero)}={Uri.EscapeDataString(Name)}";
 
     protected override void OnParametersSet()
     {
@@ -67,6 +126,20 @@
             Entity = null;
             return;
         }
+
+        Roster =
+        [
+            .. Store.Entities.OfType<HeroDocument>()
+                .OrderBy(hero => Ui.Name(hero), StringComparer.OrdinalIgnoreCase),
+        ];
+
+        var armor = Store.Hero(Name)?.ArmorType is { } worn
+            ? new[] { (FellowshipCodex.Spaced(nameof(HeroEntry.ArmorType)), worn, (string?)null, (string?)null, (TooltipLink?)null) }
+            : [];
+
+        var facts = Ui.Facts(Entity);
+
+        Facts = [.. facts.Where(fact => fact.Label == RoleLabel), .. armor, .. facts.Where(fact => fact.Label != RoleLabel)];
 
         Here = new Bearings
         {

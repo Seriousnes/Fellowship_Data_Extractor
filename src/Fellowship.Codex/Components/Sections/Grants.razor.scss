@@ -1,0 +1,20 @@
+@use "../../Styles/shared" as *;
+
+.cx-grants {
+  display: flex; flex-direction: column; gap: 14px; padding: 18px 20px 16px;
+  background: var(--panel); border: 1px solid var(--line);
+}
+
+.cx-grants-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px;
+
+  > div { min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+  h2 { margin: 0; font-size: 24px; letter-spacing: .03em; text-transform: none; }
+}
+
+.cx-grants-eyebrow {
+  margin: 0; color: var(--faint); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+}
+
+.cx-grants ::deep .cx-panel { padding: 0; background: none; border: 0; }
+.cx-grants ::deep .cx-panel + .cx-panel { margin-top: 16px; }

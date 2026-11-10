@@ -39,6 +39,8 @@ body {
   font: 400 14px/1.55 var(--sans);
   font-variant-numeric: tabular-nums;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 @scope (body) to (.fx-tip) {
@@ -87,6 +89,16 @@ body {
   .cx-who { font-weight: 600; }
 
   .cx-miss { color: var(--faint); font-style: italic; }
+
+  .cx-row-grants { display: block; color: var(--faint); font-size: 12px; }
+
+  .cx-act {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px;
+    border: 1px solid var(--core-secondary-600); color: var(--ink); font-weight: 600; text-decoration: none;
+  }
+  .cx-act:hover { border-color: var(--gold-deep); color: var(--gold-bright); text-decoration: none; }
+  .cx-act-main { @include gold-slab; border-color: var(--gold-bright); font-weight: 700; }
+  .cx-act-main:hover { background: var(--gold); color: $on-gold; }
 
   pre.cx-raw {
     margin: 0; padding: 10px 12px; background: var(--sunken); border: 1px solid var(--line);

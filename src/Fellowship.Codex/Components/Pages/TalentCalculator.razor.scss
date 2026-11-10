@@ -54,7 +54,7 @@ $slot-frame: math.percentage(math.div($slot-frame-px, $slot-canvas));
 .cx-tal:hover .cx-tal-texture { filter: brightness(1.25); }
 
 .cx-tal-name {
-  flex: 1 1 auto; min-width: 0; font-family: var(--display); letter-spacing: .02em;
+  flex: 1 1 auto; min-width: 0; letter-spacing: .02em;
 }
 
 .cx-tal[aria-current] .cx-tal-name { color: var(--gold-bright); }

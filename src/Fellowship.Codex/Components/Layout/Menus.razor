@@ -1,5 +1,6 @@
 @inject ICodexViewService Ui
 @inject IMenuService Nav
+@inject NavigationManager Address
 
 <nav class="cx-menus" aria-label="Site">
     <button type="button" class="cx-menus-toggle" aria-expanded="false" aria-controls="cx-menus-drawer" aria-label="Menu">
@@ -9,96 +10,126 @@
     <div class="cx-menus-drawer" id="cx-menus-drawer">
         <button type="button" class="cx-menus-shut" aria-label="Close menu">&times;</button>
 
+        @foreach (var top in Nav.Menu)
+        {
+            @if (top.Sections.Count == 0)
+            {
+                <a class="cx-menu-open cx-menu-solo" href="@top.Href" aria-current="@Current(top.Href)">@top.Label</a>
+            }
+            else
+            {
+                <details class="cx-menu" name="cx-menu">
+                    <summary class="cx-menu-open" data-here="@Current(top.Href)">@top.Label</summary>
+                    <div class="cx-menu-panel">
+                        @foreach (var section in top.Sections)
+                        {
+                            <section class="cx-menu-group">
+                                @if (section.Head is { } head)
+                                {
+                                    <p class="cx-menu-group-head">@head</p>
+                                }
+                                <ul>
+                                    @if (section == top.Sections[0])
+                                    {
+                                        <li class="cx-menu-row">
+                                            <a href="@top.Href">All @top.Label</a>
+                                        </li>
+                                    }
+                                    @foreach (var link in section.Links)
+                                    {
+                                        <li class="cx-menu-row">
+                                            <a href="@link.Href"
+                                               style="@(link.Colour is null ? null : $"color:{link.Colour}")">@link.Label</a>
+                                            @Flyout(link, Keyed(top.Label))
+                                        </li>
+                                    }
+                                </ul>
+                            </section>
+                        }
+                    </div>
+                </details>
+            }
+        }
+
         <details class="cx-menu" name="cx-menu">
-            <summary class="cx-menu-open">Database</summary>
+            <summary class="cx-menu-open" data-here="@Current("/tools")">@ToolPages.Label</summary>
             <div class="cx-menu-panel">
                 <section class="cx-menu-group">
                     <ul>
-                        @foreach (var category in Nav.Menu)
+                        @foreach (var (label, href) in ToolPages.All)
                         {
                             <li class="cx-menu-row">
-                                <a href="@category.Href">@category.Label</a>
-                                @Flyout(category, "database")
+                                <a href="@href">@label</a>
+                                @ToolFlyout(href)
                             </li>
                         }
-                        <li class="cx-menu-row">
-                            <a href="@PatchNotes.Href">@PatchNotes.Label</a>
-                        </li>
                     </ul>
                 </section>
             </div>
         </details>
 
-        <details class="cx-menu" name="cx-menu">
-            <summary class="cx-menu-open">Tools</summary>
-            <div class="cx-menu-panel">
-                <section class="cx-menu-group">
-                    <ul>
-                        <li class="cx-menu-row">
-                            <a href="@Potential">Power Potential</a>
-                        </li>
-                        <li class="cx-menu-row">
-                            <a href="@Falloff">Multi-Target Damage Falloff</a>
-                        </li>
-                        <li class="cx-menu-row">
-                            <a href="@ProcChanceTool">Proc Chance</a>
-                        </li>
-                        <li class="cx-menu-row">
-                            <a href="@AttunementTreePage">Attunement Trees</a>
-                            <details class="cx-menu-fly" name="cx-fly-tools">
-                                <summary class="cx-menu-more" aria-label="Attunement Trees by slot"></summary>
-                                <div class="cx-menu-fly-panel">
-                                    <div class="cx-menu-sec">
-                                        <p class="cx-menu-sec-head">Slot</p>
-                                        <ul>
-                                            @foreach (var (slot, _) in AttunementTrees.BySlot(Ui.Store))
-                                            {
-                                                <li>
-                                                    <a href="@AttunementTreePage/@Uri.EscapeDataString(slot.ToLowerInvariant())">@slot</a>
-                                                </li>
-                                            }
-                                        </ul>
-                                    </div>
-                                </div>
-                            </details>
-                        </li>
-                        <li class="cx-menu-row">
-                            <a href="@Calculator">Talent Calculator</a>
-                            <details class="cx-menu-fly" name="cx-fly-tools">
-                                <summary class="cx-menu-more" aria-label="Talent Calculator by hero"></summary>
-                                <div class="cx-menu-fly-panel">
-                                    <div class="cx-menu-sec">
-                                        <p class="cx-menu-sec-head">Hero</p>
-                                        <ul>
-                                            @foreach (var who in Nav.Roster)
-                                            {
-                                                <li>
-                                                    <a href="@Calculator/@Uri.EscapeDataString(who.ToLowerInvariant())"
-                                                       style="color:@(Ui.HeroColour(who) ?? "var(--muted)")">@who</a>
-                                                </li>
-                                            }
-                                        </ul>
-                                    </div>
-                                </div>
-                            </details>
-                        </li>
-                    </ul>
-                </section>
-            </div>
-        </details>
+        <a class="cx-menu-open cx-menu-solo" href="@PatchNotes.Href" aria-current="@Current(PatchNotes.Href)">@PatchNotes.Label</a>
     </div>
 </nav>
 
 @code {
-    private const string Calculator = "/tools/talents";
+    private string Path => "/" + Address.ToBaseRelativePath(Address.Uri).Split('?', '#')[0];
 
-    private const string Potential = "/tools/power-potential";
+    private string? Current(string href)
+    {
+        var at = Segment(Path);
+        var top = Segment(href);
 
-    private const string Falloff = "/tools/multi-target-falloff";
+        if (string.Equals(at, top, StringComparison.OrdinalIgnoreCase)) return "page";
 
-    private const string ProcChanceTool = "/tools/proc-chance";
+        if (!EntityTypes.TryParse(at, out var type)) return null;
 
-    private const string AttunementTreePage = "/tools/attunement-trees";
+        var owner = type == EntityType.Hero ? Segment(Heroes.Href) : PublicTypes.Category(type).Slug;
+
+        return string.Equals(owner, top, StringComparison.OrdinalIgnoreCase) ? "page" : null;
+    }
+
+    private static string Segment(string path) => path.Split('?', 2)[0].Trim('/').Split('/', 2)[0];
+
+    private RenderFragment? ToolFlyout(string href) => href switch
+    {
+        ToolPages.AttunementTrees =>
+            @<details class="cx-menu-fly" name="cx-fly-tools">
+                <summary class="cx-menu-more" aria-label="Attunement Trees by slot"></summary>
+                <div class="cx-menu-fly-panel">
+                    <div class="cx-menu-sec">
+                        <p class="cx-menu-sec-head">Slot</p>
+                        <ul>
+                            @foreach (var (slot, _) in AttunementTrees.BySlot(Ui.Store))
+                            {
+                                <li>
+                                    <a href="@ToolPages.AttunementTrees/@Uri.EscapeDataString(slot.ToLowerInvariant())">@slot</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </details>,
+        ToolPages.Talents =>
+            @<details class="cx-menu-fly" name="cx-fly-tools">
+                <summary class="cx-menu-more" aria-label="Talent Calculator by hero"></summary>
+                <div class="cx-menu-fly-panel">
+                    <div class="cx-menu-sec">
+                        <p class="cx-menu-sec-head">Hero</p>
+                        <ul>
+                            @foreach (var who in Nav.Roster)
+                            {
+                                <li>
+                                    <a href="@ToolPages.Talents/@Uri.EscapeDataString(who.ToLowerInvariant())"
+                                       style="color:@(Ui.HeroColour(who) ?? "var(--muted)")">@who</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </details>,
+        _ => null,
+    };
 
     private RenderFragment? Flyout(MenuLink link, string group) =>
         link.Sections.Count == 0

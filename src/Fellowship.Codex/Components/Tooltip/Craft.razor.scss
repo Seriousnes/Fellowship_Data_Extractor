@@ -8,7 +8,9 @@
 
 @include tool-bar;
 
-.cx-tal-bar { margin: 0; }
+.cx-tal-bar { margin: 0; gap: 6px; }
+
+.cx-craft-side .cx-tal-act { flex: 1 1 auto; min-height: 44px; padding: 0 12px; font-size: 13px; }
 
 .cx-craft-read {
   justify-self: start;

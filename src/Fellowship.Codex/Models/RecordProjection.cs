@@ -319,6 +319,7 @@ public static class RecordProjection
         Role = document.Role,
         RoleIcon = Texture(document.RoleIcon, view),
         OverallDifficulty = document.OverallDifficulty,
+        OverallDifficultyStars = document.OverallDifficultyStars,
         Offense = document.Offense,
         Defense = document.Defense,
         Control = document.Control,

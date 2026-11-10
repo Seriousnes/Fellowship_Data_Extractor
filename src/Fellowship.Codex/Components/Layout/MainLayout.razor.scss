@@ -34,9 +34,17 @@ $foot: 40px;
     margin: 0 auto;
     padding: 0 $gutter;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: clamp(10px, 2vw, 26px);
+    gap: 0 clamp(10px, 2vw, 20px);
     min-height: 54px;
+}
+
+@media (min-width: 900px) {
+    .cx-bar ::deep .cx-omnibox {
+        flex: 1 1 200px;
+        margin: 6px 0;
+    }
 }
 
 .cx-brand {
@@ -97,9 +105,12 @@ $foot: 40px;
 }
 
 main {
+    flex: 1 0 auto;
+    box-sizing: border-box;
+    width: 100%;
     max-width: var(--wide);
     margin: 0 auto;
-    padding: 14px $gutter calc(#{$foot} + 40px);
+    padding: 14px $gutter 56px;
 }
 
 .cx-tip-layer {
@@ -124,19 +135,16 @@ main {
 }
 
 .cx-foot {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
     box-sizing: border-box;
-    min-height: $foot;
     border-top: 1px solid var(--line);
-    padding: 12px $gutter;
-    background: linear-gradient(180deg, #0b141d 0%, #101b26 100%);
-    box-shadow: 0 -1px 0 #00000060, 0 -10px 24px -18px #000;
+    padding: 0 $gutter;
     color: var(--faint);
-    font-size: 12px;
+    font-size: 13px;
+}
+
+.cx-foot a {
+    display: inline-block;
+    padding: 12px 0;
 }
 
 .cx-foot p {
@@ -161,9 +169,10 @@ main {
 }
 
 .cx-reconnect {
-    position: absolute;
+    position: fixed;
+    z-index: 50;
     right: $gutter;
-    bottom: calc(100% + 14px);
+    bottom: 14px;
     display: none;
 }
 

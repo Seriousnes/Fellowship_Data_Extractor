@@ -4,6 +4,8 @@
 @page "/patch-notes/{Build}"
 @inject IPatchNotesService Notes
 @inject ICodexViewService Ui
+@inject IEntityStoreService Store
+@inject ITextureSource Textures
 @inject IRichTextService Text
 @inject NavigationManager Nav
 
@@ -11,72 +13,92 @@
 
 <Crumbs Trail="@Trail" />
 
-<h1 id="@Top">@Heading</h1>
-
 @if (Here is not { } here)
 {
+    <h1 id="@Top">@Label</h1>
     <Panel>
         <Empty Message="No patch notes." />
     </Panel>
 }
 else
 {
-    <p class="cx-pn-dates">
-        @Dated(here.Build)
-        <span class="cx-pn-against">compared with build @here.Previous@(Notes.Date(here.Previous) is { } before ? $", {Day(before)}" : null)</span>
-    </p>
+    <div class="cx-pn-title" id="@Top">
+        <p class="cx-pn-eyebrow">@Label</p>
+        <h1>Build @here.Build</h1>
+        <p class="cx-pn-dates">
+            @Dated(here.Build), compared with build <a href="@Address(here.Previous)">@here.Previous</a>
+        </p>
+    </div>
 
     <div class="cx-pn">
-        <Panel As="aside" Class="cx-rail" Aria="Contents" Head="Contents" Collapsible="true">
-            <a class="cx-pn-top-link" href="#@Top">Back to top</a>
-            <ol class="cx-pn-toc">
-                <li><a href="#@BuildsAnchor">Builds</a></li>
-                @foreach (var category in Sections)
-                {
-                    <li>
-                        <details open="@(category.Groups.Count <= OpenGroups)">
-                            <summary>
-                                <a href="#@category.Anchor">@category.Label</a>
-                                <span class="cx-pn-count">@category.Count.ToString("N0")</span>
-                            </summary>
+        <aside class="cx-pn-rail">
+            <Panel As="aside" Aria="Builds" Head="Builds" Class="cx-pn-builds">
+                <nav id="@BuildsAnchor" aria-label="Builds">
+                    @foreach (var build in Notes.Builds)
+                    {
+                        <a href="@Address(build)" aria-current="@(build == here.Build ? "page" : null)">
+                            <span class="cx-pn-build">@build</span>
+                            @if (Notes.Date(build) is { } date)
+                            {
+                                <span class="cx-pn-day">@Day(date)</span>
+                            }
+                        </a>
+                    }
+                </nav>
+            </Panel>
+
+            <Panel As="aside" Class="cx-rail cx-pn-contents" Aria="Contents" Head="Contents" Collapsible="true">
+                <ol class="cx-pn-toc">
+                    @foreach (var category in Sections)
+                    {
+                        <li>
+                            <a class="cx-pn-toc-head" href="@Nav.Fragment(category.Anchor)">
+                                <span>@category.Label</span>
+                                <span>@category.Count.ToString("N0")</span>
+                            </a>
                             <ol>
                                 @foreach (var group in category.Groups)
                                 {
                                     <li>
-                                        <a href="#@group.Anchor" style="@Tone(group.Colour)">@group.Label</a>
-                                        <span class="cx-pn-count">@group.Count.ToString("N0")</span>
+                                        <a href="@Nav.Fragment(group.Anchor)" style="@Tone(group.Colour)">
+                                            <span>@group.Label</span>
+                                            <span class="cx-pn-count">@group.Count.ToString("N0")</span>
+                                        </a>
                                     </li>
                                 }
                             </ol>
-                        </details>
-                    </li>
-                }
-            </ol>
-        </Panel>
+                        </li>
+                    }
+                </ol>
+            </Panel>
+        </aside>
 
-        <section>
-            <div id="@BuildsAnchor" class="cx-pn-group">
-                <Panel Head="Builds">
-                    <div class="cx-roster">
-                        @foreach (var build in Notes.Builds)
-                        {
-                            <a href="@Address(build)" aria-current="@(build == here.Build ? "page" : null)">
-                                <span class="cx-pn-build">@build</span>
-                                @if (Notes.Date(build) is { } date)
-                                {
-                                    <span class="cx-pn-day">@Day(date)</span>
-                                }
-                            </a>
-                        }
-                    </div>
-                </Panel>
-            </div>
-
+        <section class="cx-pn-main">
             @if (Sections.Count == 0)
             {
                 <Panel>
                     <Empty Message="Nothing changed." />
                 </Panel>
+            }
+            else
+            {
+                <div class="cx-pn-bar">
+                    <div class="cx-pn-show" role="radiogroup" aria-label="Show">
+                        @foreach (var (key, label) in Shows)
+                        {
+                            <label class="cx-pn-show-@key">
+                                <input type="radio" name="cx-pn-show" value="@key" checked="@(key == AllChanges)" />
+                                <span>@(key == AllChanges ? $"{label} {Total:N0}" : label)</span>
+                            </label>
+                        }
+                    </div>
+                    <p class="cx-pn-kinds">
+                        @foreach (var (label, count) in Kinds)
+                        {
+                            <span><b>@count.ToString("N0")</b> @label</span>
+                        }
+                    </p>
+                </div>
             }
 
             @foreach (var category in Sections)
@@ -85,24 +107,26 @@ else
 
                 @foreach (var group in category.Groups)
                 {
-                    <div id="@group.Anchor" class="cx-pn-group">
-                        <Panel Head="@group.Label" Badge="@group.Count.ToString("N0")">
-                            @foreach (var kind in group.Kinds)
+                    <details id="@group.Anchor" class="cx-pn-group" open>
+                        <summary>
+                            @if (Portrait(group.Label) is { } portrait)
                             {
-                                @if (kind.Label != group.Label)
-                                {
-                                    <SubHead>@kind.Label</SubHead>
-                                }
-                                <ul class="cx-pn-list">@Entries(kind)</ul>
+                                <img class="cx-pn-portrait" alt="" src="@portrait" />
                             }
-                        </Panel>
-                    </div>
+                            <span class="cx-pn-group-name" style="@Tone(group.Colour)">@group.Label</span>
+                            <span class="cx-pn-group-count">@group.Count.ToString("N0")</span>
+                        </summary>
+                        @foreach (var kind in group.Kinds)
+                        {
+                            <ul class="cx-pn-list">@Entries(kind)</ul>
+                        }
+                    </details>
                 }
             }
         </section>
     </div>
 
-    <a class="cx-pn-top" href="#@Top" aria-label="Back to top">Top</a>
+    <a class="cx-pn-top" href="@Nav.Fragment(Top)" aria-label="Back to top">Top</a>
 }
 
 @code {
@@ -116,7 +140,35 @@ else
 
     private const string BuildsAnchor = "pn-builds";
 
-    private const int OpenGroups = 12;
+    private const string AllChanges = "all";
+
+    private static readonly (string Key, string Label)[] Shows =
+        [(AllChanges, "All"), ("added", "Added"), ("changed", "Changed"), ("removed", "Removed")];
+
+    private int Total => Sections.Sum(category => category.Count);
+
+    private IReadOnlyList<(string Label, int Count)> Kinds =>
+    [
+        .. Sections
+            .SelectMany(category => category.Groups)
+            .SelectMany(group => group.Kinds)
+            .GroupBy(kind => kind.Label, StringComparer.Ordinal)
+            .Select(kinds => (kinds.Key, kinds.Sum(kind => kind.Entries.Count)))
+            .OrderByDescending(kind => kind.Item2),
+    ];
+
+    private IReadOnlyDictionary<string, string>? portraits;
+
+    private string? Portrait(string label) =>
+        (portraits ??= Store.Entities
+            .OfType<HeroDocument>()
+            .Where(hero => hero.Name is not null && hero.Portrait is not null)
+            .DistinctBy(hero => hero.Name)
+            .ToDictionary(
+                hero => hero.Name!,
+                hero => Textures.Address(hero.Portrait!, TextureSize.Small),
+                StringComparer.OrdinalIgnoreCase))
+        .GetValueOrDefault(label);
 
     public static string Address(string build) => $"{Href}/{Uri.EscapeDataString(build)}";
 
@@ -178,16 +230,40 @@ else
 
             if (entry.Note.Fields.Count > 0)
             {
-                html.Append("<dl class=\"cx-pn-fields\">");
+                html.Append("<div class=\"cx-pn-lines\">");
 
-                foreach (var field in entry.Note.Fields)
+                foreach (var run in Runs(entry.Note.Fields))
                 {
-                    html.Append("<dt>").Append(Encoded(field.Label)).Append("</dt><dd>");
-                    Value(html, field);
-                    html.Append("</dd>");
+                    if (Modifier(run) is { } modifier)
+                    {
+                        html.Append("<div class=\"cx-pn-line\"").Append(Attribute("data-change", modifier.Change)).Append('>')
+                            .Append("<span class=\"cx-pn-target\">").Append(Encoded(modifier.Target)).Append("</span>")
+                            .Append("<span class=\"cx-pn-field\">").Append(Encoded(modifier.Field)).Append("</span>")
+                            .Append("<span class=\"cx-pn-value\">")
+                            .Append(modifier.Change == "removed" ? "<del>" : "<ins>").Append(Encoded(modifier.Value))
+                            .Append(modifier.Change == "removed" ? "</del>" : "</ins>").Append("</span>");
+
+                        if (modifier.While is { } condition)
+                        {
+                            html.Append("<span class=\"cx-pn-note\">while ").Append(Encoded(condition)).Append("</span>");
+                        }
+
+                        html.Append("<span class=\"cx-pn-badge\">").Append(Encoded(Titled(modifier.Change))).Append("</span></div>");
+                        continue;
+                    }
+
+                    foreach (var field in run)
+                    {
+                        var change = Change(field);
+
+                        html.Append("<div class=\"cx-pn-line\"").Append(Attribute("data-change", change)).Append('>')
+                            .Append("<span class=\"cx-pn-field\">").Append(Encoded(field.Label)).Append("</span>");
+                        Value(html, field);
+                        html.Append("<span class=\"cx-pn-badge\">").Append(Encoded(Titled(change))).Append("</span></div>");
+                    }
                 }
 
-                html.Append("</dl>");
+                html.Append("</div>");
             }
 
             html.Append("</li>");
@@ -217,6 +293,13 @@ else
             html.Append("<img class=\"cx-pn-icon\" alt=\"\" loading=\"lazy\"").Append(Attribute("src", icon)).Append(" />");
         }
 
+        else
+        {
+            html.Append("<span class=\"cx-pn-icon\" aria-hidden=\"true\"></span>");
+        }
+
+        html.Append("<span class=\"cx-pn-named\">");
+
         if (linked)
         {
             html.Append("<a").Append(Attribute("href", Ui.Href(document!)))
@@ -230,10 +313,77 @@ else
             html.Append("<span>").Append(Encoded(entry.Name)).Append("</span>");
         }
 
-        if (entry.Note.Added) html.Append("<span class=\"cx-pn-new\">New</span>");
+        html.Append("<span class=\"cx-pn-kind\">").Append(Encoded(Titled(PublicTypes.Noun(entry.Type))));
 
-        html.Append("</div>");
+        if (entry.Note.Added) html.Append(" <span class=\"cx-pn-new\" data-change=\"added\">New</span>");
+
+        html.Append("</span></span></div>");
     }
+
+    private const string Step = " › ";
+
+    private sealed record ModifierLine(string Change, string Target, string Field, string Value, string? While);
+
+    // A change record diffs into one field per member, under a label shared up to its last step.
+    private static IEnumerable<IReadOnlyList<PatchNoteField>> Runs(IReadOnlyList<PatchNoteField> fields)
+    {
+        var run = new List<PatchNoteField>();
+        string? owner = null;
+
+        foreach (var field in fields)
+        {
+            var at = field.Label.LastIndexOf(Step, StringComparison.Ordinal);
+            var head = at < 0 ? null : field.Label[..at];
+
+            if (run.Count > 0 && (head is null || head != owner))
+            {
+                yield return run;
+                run = [];
+            }
+
+            owner = head;
+            run.Add(field);
+        }
+
+        if (run.Count > 0) yield return run;
+    }
+
+    private static ModifierLine? Modifier(IReadOnlyList<PatchNoteField> run)
+    {
+        if (run.Count < 4) return null;
+
+        var changes = run.Select(Change).Distinct().ToArray();
+        if (changes is not [var change] || change == "changed") return null;
+
+        var members = run.DistinctBy(field => field.Label).ToDictionary(
+            field => field.Label[(field.Label.LastIndexOf(Step, StringComparison.Ordinal) + Step.Length)..],
+            field => change == "removed" ? field.Older : field.Newer,
+            StringComparer.Ordinal);
+
+        string? Member(string name) => members.GetValueOrDefault(PatchNoteDiff.Spaced(name));
+
+        if (Member(nameof(Fellowship.SDK.Models.Change.Target)) is not { } target ||
+            Member(nameof(Fellowship.SDK.Models.Change.Field)) is not { } field ||
+            Member(nameof(Fellowship.SDK.Models.Change.Op)) is not { } op ||
+            !double.TryParse(Member(nameof(Fellowship.SDK.Models.Change.Value)), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+        {
+            return null;
+        }
+
+        var percent = Member(nameof(Fellowship.SDK.Models.Change.Percent)) == "true";
+
+        return new ModifierLine(
+            change, target, Titled(FellowshipCodex.Spaced(field)), CodexView.Modifier(op, value, percent),
+            Member(nameof(Fellowship.SDK.Models.Change.While)) ?? members
+                .Where(member => member.Key.StartsWith(PatchNoteDiff.Spaced(nameof(Fellowship.SDK.Models.Change.While)) + " ", StringComparison.Ordinal) && member.Key[^1..].All(char.IsDigit))
+                .Select(member => member.Value).FirstOrDefault());
+    }
+
+    private static string Change(PatchNoteField field) =>
+        field.Older is null ? "added" : field.Newer is null ? "removed" : "changed";
+
+    private static string Titled(string text) =>
+        text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 
     private void Value(StringBuilder html, PatchNoteField field)
     {
@@ -242,11 +392,11 @@ else
 
         if (older is null)
         {
-            html.Append($"<span class=\"cx-pn-value\"><ins>{Encoded(newer)}</ins> <span class=\"cx-pn-gone\">added</span></span>");
+            html.Append($"<span class=\"cx-pn-value\"><ins>{Encoded(newer)}</ins></span>");
         }
         else if (newer is null)
         {
-            html.Append($"<span class=\"cx-pn-value\"><del>{Encoded(older)}</del> <span class=\"cx-pn-gone\">removed</span></span>");
+            html.Append($"<span class=\"cx-pn-value\"><del>{Encoded(older)}</del></span>");
         }
         else if (WordDiff.Reads(older, newer))
         {

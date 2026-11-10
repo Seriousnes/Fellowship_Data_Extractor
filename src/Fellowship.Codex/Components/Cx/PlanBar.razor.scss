@@ -23,7 +23,7 @@
 
 .cx-plan-bar-name {
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: var(--display); letter-spacing: .02em;
+  letter-spacing: .02em;
 }
 
 .cx-plan-bar-acts { display: flex; gap: 8px; flex: 0 0 auto; }

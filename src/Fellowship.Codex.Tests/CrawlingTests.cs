@@ -134,7 +134,7 @@ public class SitemapTests(AdminHost host)
         var page = await host.Client().GetStringAsync($"/patch-notes/{build}", TestContext.Current.CancellationToken);
 
         Assert.Contains($"<li id=\"{note.Key.Slug}-{note.Key.Id}\"", page);
-        Assert.Contains("<dl class=\"cx-pn-fields\">", page);
+        Assert.Contains("<div class=\"cx-pn-lines\">", page);
     }
 
     [Fact]

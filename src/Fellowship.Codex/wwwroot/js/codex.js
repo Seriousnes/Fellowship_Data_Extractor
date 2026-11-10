@@ -221,6 +221,11 @@ function nudge(menu) {
 }
 
 function openMenu(menu) {
+    if (!menu) {
+        shutMenus();
+        return;
+    }
+
     for (const other of document.querySelectorAll('.cx-menu[open]')) {
         if (other !== menu) other.removeAttribute('open');
     }
@@ -361,6 +366,7 @@ document.addEventListener('pointerover', event => {
         const menu = opener?.closest('.cx-menu');
 
         if (menu && document.querySelector('.cx-menu[open]') && !menu.hasAttribute('open')) openMenu(menu);
+        if (opener && !menu) shutMenus();
 
         const row = event.target.closest('.cx-menu-row');
         const fly = row?.querySelector(':scope > .cx-menu-fly');
@@ -515,7 +521,7 @@ document.addEventListener('keydown', event => {
             const all = [...nav.querySelectorAll('.cx-menu-open')];
             const at = all.indexOf(opener);
 
-            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && menu) {
                 event.preventDefault();
                 openMenu(menu);
                 const first = menu.querySelector('.cx-menu-panel a');
@@ -526,7 +532,7 @@ document.addEventListener('keydown', event => {
             if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
                 event.preventDefault();
                 const next = all[(at + (event.key === 'ArrowRight' ? 1 : all.length - 1)) % all.length];
-                const wasOpen = menu.hasAttribute('open');
+                const wasOpen = menu?.hasAttribute('open') ?? false;
                 next.focus();
                 if (wasOpen) openMenu(next.closest('.cx-menu'));
                 return;

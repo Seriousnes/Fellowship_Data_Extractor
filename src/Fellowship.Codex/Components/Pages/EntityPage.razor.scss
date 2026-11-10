@@ -1,62 +1,37 @@
+.cx-entity-name { display: flex; align-items: center; gap: 16px; }
+
+.cx-entity-name-icon { display: block; flex: 0 0 auto; }
+
 .cx-entity {
-  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto 1fr;
-  column-gap: 18px; align-items: start;
+  display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); grid-template-rows: auto auto 1fr;
+  gap: 16px 32px; align-items: start; margin-top: 16px;
 }
 
-.cx-entity ::deep > * { grid-column: 1 / -1; margin-top: 16px; }
+.cx-entity ::deep .cx-craft-tip { grid-column: 1; grid-row: 1; }
 
-.cx-entity ::deep .cx-craft-tip { grid-column: 1; grid-row: 1 / 4; }
+.cx-entity ::deep .cx-craft-tip .fx-tip > .fx-slot { display: none; }
 
-.cx-entity ::deep .cx-craft-side { grid-column: 2; grid-row: 1; margin-bottom: 16px; }
+// The controls take the tooltip's width and add none of their own to the column.
+.cx-entity ::deep .cx-craft-side { grid-column: 1; grid-row: 2; width: 0; min-width: 100%; }
 
-.cx-entity-side {
-  grid-column: 2; grid-row: 2; margin: 0 0 16px;
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;
-  align-items: start;
+.cx-entity-main {
+  grid-column: 2; grid-row: 1 / 4; min-width: 0; display: flex; flex-direction: column; gap: 28px;
 }
 
-.cx-entity ::deep .cx-entity-details { grid-column: 2; grid-row: 3; margin-top: 0; }
+.cx-entity-main ::deep .cx-panel + .cx-panel { margin-top: 0; }
 
-.cx-entity ::deep .cx-craft-side:empty,
-.cx-entity-side:empty { display: none; }
-
-.cx-entity:has(.cx-entity-gallery) { grid-template-columns: auto minmax(0, 1fr) auto; }
-
-.cx-entity ::deep .cx-entity-gallery { grid-column: 3; grid-row: 1 / 4; margin-top: 0; }
-
-.cx-entity-name-icon { display: none; }
-
-@media (min-width: 1180px) {
-  .cx-entity-paired { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; }
-
-  .cx-entity-paired ::deep .cx-craft-tip { grid-row: 1 / 3; }
-
-  .cx-entity-paired .cx-entity-side { grid-column: 3; grid-row: 1; }
-
-  .cx-entity-paired ::deep .cx-entity-details { grid-column: 2 / -1; grid-row: 2; }
-}
+.cx-entity ::deep .cx-craft-side:empty { display: none; }
 
 @media (max-width: 860px) {
   .cx-entity { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
 
   .cx-entity ::deep .cx-craft-tip,
   .cx-entity ::deep .cx-craft-side,
-  .cx-entity-side,
-  .cx-entity ::deep .cx-entity-details { grid-column: 1; grid-row: auto; }
+  .cx-entity-main { grid-column: 1; grid-row: auto; }
 
-  .cx-entity ::deep .cx-entity-details { margin-top: 16px; }
-
-  .cx-entity:has(.cx-entity-gallery) { grid-template-columns: minmax(0, 1fr); }
-
-  .cx-entity ::deep .cx-entity-gallery { grid-column: 1; grid-row: auto; margin-top: 16px; }
-
-  .cx-entity-name { display: flex; align-items: center; gap: 12px; }
-
-  .cx-entity-name-icon { display: block; flex: 0 0 auto; }
+  .cx-entity ::deep .cx-craft-side { width: auto; }
 
   .cx-entity ::deep .cx-craft-tip .fx-tip { width: 100%; }
-
-  .cx-entity ::deep .cx-craft-tip .fx-tip > .fx-slot { display: none; }
 
   .cx-entity ::deep .cx-craft-tip .fx-tip > .card { flex: 1 1 auto; width: auto; }
 }

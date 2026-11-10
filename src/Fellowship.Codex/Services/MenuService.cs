@@ -36,18 +36,7 @@ public sealed class MenuService : IMenuService
 
         Menu =
         [
-            Category(Categories.Spells, new MenuSection(null,
-            [
-                Tab(EntityType.Ability),
-                Tab(EntityType.Effect),
-                Tab(EntityType.Talent, new MenuSection("Hero", Heroes(Where(EntityType.Talent)))),
-                Tab(EntityType.GemAbility),
-                Tab(EntityType.WeaponPower),
-                Tab(EntityType.RelicPower),
-                Tab(EntityType.RelicPassive),
-                Tab(EntityType.LegendaryPower),
-                Tab(EntityType.DungeonAffix),
-            ])),
+            new MenuLink(Components.Pages.Heroes.Label, Components.Pages.Heroes.Href, null, [new MenuSection("Hero", Pages(view))]),
 
             Category(Categories.Items, new MenuSection(null,
             [
@@ -62,6 +51,19 @@ public sealed class MenuService : IMenuService
                 Tab(EntityType.CompanionPet),
             ])),
 
+            Category(Categories.Spells, new MenuSection(null,
+            [
+                Tab(EntityType.Ability),
+                Tab(EntityType.Effect),
+                Tab(EntityType.Talent, new MenuSection("Hero", Heroes(Where(EntityType.Talent)))),
+                Tab(EntityType.GemAbility),
+                Tab(EntityType.WeaponPower),
+                Tab(EntityType.RelicPower),
+                Tab(EntityType.RelicPassive),
+                Tab(EntityType.LegendaryPower),
+                Tab(EntityType.DungeonAffix),
+            ])),
+
             Category(Categories.Augmentations, new MenuSection(null,
             [
                 Tab(EntityType.Sigil),
@@ -71,13 +73,20 @@ public sealed class MenuService : IMenuService
                 Tab(EntityType.ItemTrait),
             ])),
 
-            Category(Categories.Dungeons),
+            Category(Categories.Dungeons, new MenuSection(null, Dungeons(view))),
 
             Category(Categories.Npcs, new MenuSection("Zone", Zones($"/{Categories.Npcs.Slug}"))),
-
-            new MenuLink(Components.Pages.Heroes.Label, Components.Pages.Heroes.Href, null, [new MenuSection("Hero", Pages(view))]),
         ];
     }
+
+    private IReadOnlyList<MenuLink> Dungeons(ICodexViewService view) =>
+    [
+        .. store.Entities.OfType<DungeonDocument>()
+            .Where(PublicTypes.IsListed)
+            .Where(dungeon => PublicTypes.DisplayNameOf(dungeon) is not null)
+            .OrderBy(dungeon => view.Name(dungeon), StringComparer.OrdinalIgnoreCase)
+            .Select(dungeon => new MenuLink(view.Name(dungeon), view.Href(dungeon), null, [])),
+    ];
 
     private IReadOnlyList<MenuLink> Pages(ICodexViewService view) =>
     [

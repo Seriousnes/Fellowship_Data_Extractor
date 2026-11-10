@@ -402,7 +402,11 @@ public sealed record Entity
 
     public string? RoleIcon { get; init; }
 
+    public int? RoleOrdinal { get; init; }
+
     public int? OverallDifficulty { get; init; }
+
+    public int? OverallDifficultyStars { get; init; }
 
     public double? Offense { get; init; }
 
