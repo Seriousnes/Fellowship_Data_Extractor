@@ -513,6 +513,13 @@ public sealed record Placeholder
     [JsonIgnore]
     public int? DynamicTextFloatIdentifier { get; init; }
 
+    /// <summary>
+    /// The ability whose <c>ResolveDynamicTextFloat</c> answers this token, where the token names an ability other
+    /// than the one owning it.
+    /// </summary>
+    [JsonIgnore]
+    public string? DynamicTextAbility { get; init; }
+
     [JsonIgnore]
     public bool FromTable { get; init; }
 }

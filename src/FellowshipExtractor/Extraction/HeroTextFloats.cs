@@ -30,7 +30,11 @@ public static class HeroTextFloats
         return Evaluated(returned, assigned, ability, heroTag, constants, 0);
     }
 
-    private static (KismetExpression Returned, Dictionary<string, KismetExpression> Assigned)? Returned(
+    /// <summary>
+    /// The expression a <c>ResolveDynamicTextFloat</c> returns for one identifier, following the jumps its switch on
+    /// <c>AbilityDynamicTextFloatIdentifier</c> compiles to, with every local assigned on the way.
+    /// </summary>
+    internal static (KismetExpression Returned, Dictionary<string, KismetExpression> Assigned)? Returned(
         KismetExpression[] bytecode, int identifier)
     {
         var at = new Dictionary<int, int>();

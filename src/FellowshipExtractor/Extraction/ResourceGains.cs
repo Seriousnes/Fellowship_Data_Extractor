@@ -506,6 +506,55 @@ public sealed class ResourceGains(
         return null;
     }
 
+    /// <summary>
+    /// The hero's maximum of a channel, as the custom calculation of the effect overriding it works it out. Helena's
+    /// <c>MaxResourcesSecond</c> is <c>GE_Warmaster_Toughness</c>'s 7.7 of Strength.
+    /// </summary>
+    public DynamicTextReading? CeilingReading(string hero, string channel)
+    {
+        var ceiling = ResourcePools.CeilingPrefix + channel;
+        var codename = heroes.Profiles.FirstOrDefault(
+            profile => profile.ShippedName.Equals(hero, StringComparison.OrdinalIgnoreCase))?.Codename;
+
+        var effects = (Owned().GetValueOrDefault(hero) ?? [])
+            .Concat(codename is null ? [] : Under(codename))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(effect => Overrides(effect, ceiling))
+            .ToArray();
+
+        if (effects.Length == 0) return null;
+
+        var readings = effects.Select(effect => CeilingCalculation(effect, ceiling)).ToArray();
+
+        if (readings.Any(reading => reading is null)) return null;
+
+        return readings.DistinctBy(Signature).Count() == 1 ? readings[0] : null;
+    }
+
+    private static string Signature(DynamicTextReading? reading) =>
+        reading is null
+            ? string.Empty
+            : $"{reading.Coefficient}|{reading.Attribute}|{reading.ScalesWithExpertise}|{reading.Addend}|" +
+              string.Join(',', (reading.Terms ?? []).Select(term => $"{term.Attribute}={term.Coefficient}"));
+
+    private DynamicTextReading? CeilingCalculation(string effect, string ceiling)
+    {
+        if (byName(effect) is not { } cdo) return null;
+        if (PropertyWalk.Get(cdo, ModifiersField)?.GenericValue is not UScriptArray modifiers) return null;
+
+        foreach (var entry in modifiers.Properties)
+        {
+            if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
+            if (Name(modifier) != ceiling) continue;
+            if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) continue;
+            if (Kind(magnitude) != CustomCalculationClass) continue;
+
+            return MagnitudeCalculations.Reading(magnitude, provider, constants);
+        }
+
+        return null;
+    }
+
     private IReadOnlyList<string> Calculated(string calculationClass)
     {
         if (Default(calculationClass) is not { } cdo) return [];

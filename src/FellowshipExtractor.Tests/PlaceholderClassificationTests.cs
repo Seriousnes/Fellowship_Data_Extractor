@@ -31,6 +31,23 @@ public sealed class PlaceholderClassificationTests
     }
 
     [Fact]
+    public void ShieldSlamsMaximumToughnessIsHelenasToughnessCalculationOverStrength()
+    {
+        var toughness = Token(EntityType.Ability, 977, "MaxToughness");
+
+        Assert.Equal("Strength", toughness["attribute"]?.GetValue<string>());
+        Assert.Equal(7.7, toughness["coefficient"]?.GetValue<double>());
+        Assert.Null(toughness["spread"]);
+
+        var terms = toughness["bracket"]!["terms"]!.AsArray()
+            .Select(term => (term!["attribute"]!.GetValue<string>(), term["coefficient"]!.GetValue<double>()))
+            .ToArray();
+
+        Assert.Equal([("CritChance", 2), ("Expertise", 2), ("Haste", 2), ("Spirit", 2)], terms);
+        Assert.Equal(-1, toughness["bracket"]!["addend"]!.GetValue<double>());
+    }
+
+    [Fact]
     public void TheSharesThatAreNotMultipliersAreLeftUnmarked()
     {
         Assert.Null(Token(EntityType.Ability, 1964, "CleanHeal")["multiplies"]);

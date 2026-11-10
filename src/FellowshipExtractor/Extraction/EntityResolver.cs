@@ -5,6 +5,7 @@ using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.Kismet;
 
 using Fellowship.SDK.Models;
 
@@ -1412,6 +1413,13 @@ public sealed class EntityResolver
                 continue;
             }
 
+            if (Foreign(placeholder, assetName) is { } answered)
+            {
+                placeholders[name] = answered;
+                AnsweredByOtherAbility++;
+                continue;
+            }
+
             if (NativeTokenRows.Value(assetName, name, _constants) is { } linked)
             {
                 placeholders[name] = placeholder with { Value = linked };
@@ -2017,6 +2025,94 @@ public sealed class EntityResolver
         PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::Infinite", StringComparison.Ordinal) == true;
 
     public int DeclaredByBlueprint { get; private set; }
+
+    public int AnsweredByOtherAbility { get; private set; }
+
+    /// <summary>
+    /// A token naming another ability, read through that ability's <c>ResolveDynamicTextFloat</c>. Shield Slam's
+    /// <c>{MaxToughness}</c> names <c>GA_Warmaster_ToughnessMonitor</c>, which returns Helena's
+    /// <c>MaxResourcesSecond</c>, so a maximum reads as the calculation of the effect overriding it on the owning hero.
+    /// </summary>
+    private Placeholder? Foreign(Placeholder placeholder, string? assetName)
+    {
+        if (placeholder.DynamicTextAbility is not { } objectPath) return null;
+        if (placeholder.DynamicTextFloatIdentifier is not { } identifier) return null;
+        if (DefaultOf(objectPath) is not { } ability) return null;
+
+        if (Answer(ability, identifier) is not { } reading) return null;
+
+        if (reading.IsNumber)
+        {
+            return placeholder with
+            {
+                Value = reading.Coefficient,
+                Tickrate = reading.ScalesWithHaste ? true : null,
+            };
+        }
+
+        if (reading.Attribute is not { } attribute || reading.Terms is not null || reading.ScalesWithExpertise)
+        {
+            return null;
+        }
+
+        if (!attribute.StartsWith(ResourcePools.CeilingPrefix, StringComparison.Ordinal) ||
+            !Pools.Channels.Contains(attribute[ResourcePools.CeilingPrefix.Length..]))
+        {
+            return placeholder with { Attribute = attribute, Coefficient = reading.Coefficient };
+        }
+
+        var channel = attribute[ResourcePools.CeilingPrefix.Length..];
+        var ceilings = (assetName is null ? [] : Owners.HeroesOf(assetName))
+            .Select(hero => Gains.CeilingReading(Heroes.Shipped(hero) ?? hero, channel))
+            .ToArray();
+
+        if (ceilings is not [{ Attribute: { } scaled } ceiling]) return null;
+
+        var bracket = ToBracket(ceiling);
+
+        return placeholder with
+        {
+            Attribute = scaled,
+            Coefficient = Math.Round(reading.Coefficient * ceiling.Coefficient, 10),
+            ScalesWithExpertise = ceiling.ScalesWithExpertise ? true : null,
+            Bracket = bracket,
+            ScalesOff = [.. new[] { scaled }.Concat(bracket?.Terms.Select(term => term.Attribute) ?? []).Distinct().Order(StringComparer.Ordinal)],
+        };
+    }
+
+    /// <summary>
+    /// The ability's <c>ResolveDynamicTextFloat</c> for one identifier. A body branching on the identifier is read
+    /// along the branch the identifier takes, because <c>GA_Perk_Passive_DamageToHeal</c> assigns its return once per
+    /// identifier and the last assignment is the duration, not the percentage its identifier 0 returns.
+    /// </summary>
+    private DynamicTextReading? Answer(UObject ability, int identifier)
+    {
+        const string function = "ResolveDynamicTextFloat";
+
+        var bindings = CurveBindings.Collect(ability, _constants);
+        var scalable = Reader(bindings, []);
+        var borrowed = Borrowed(ability);
+
+        if (BareStateWalk.Compiled(ability, function)?.ScriptBytecode is not { Length: > 0 } bytecode) return null;
+
+        if (!bytecode.Any(statement => statement is EX_JumpIfNot or EX_Jump or EX_ComputedJump))
+        {
+            return DynamicTextFloats.Of(ability).Read(identifier, scalable, borrowed);
+        }
+
+        if (HeroTextFloats.Returned(bytecode, identifier) is not var (returned, assigned)) return null;
+
+        return new DynamicTextArithmetic(assigned, identifier, scalable, borrowed).Of(returned) is { } value
+            ? DynamicTextArithmetic.Published(value)
+            : null;
+    }
+
+    private UObject? DefaultOf(string objectPath)
+    {
+        if (!_provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(objectPath), out var package)) return null;
+
+        return package.GetExports().FirstOrDefault(e => e.Name.StartsWith(DefaultPrefix, StringComparison.Ordinal));
+    }
 
     public int NamedByToken { get; private set; }
 
