@@ -88,8 +88,8 @@ public sealed class ItemPowerTests(Export export)
     {
         var unworn = new ItemDocument { Id = 1, Slot = "Sporran" };
 
-        Assert.Null(ItemPower.Inputs(unworn, Settings, null, new TooltipQuery(), 300));
-        Assert.Null(ItemPower.Of(unworn, Settings, null, new TooltipQuery(), 300));
+        Assert.Null(ItemPower.Inputs(unworn, Settings, null, new ItemScaling(), 300));
+        Assert.Null(ItemPower.Of(unworn, Settings, null, new ItemScaling(), 300));
     }
 
     [Fact]
@@ -98,8 +98,8 @@ public sealed class ItemPowerTests(Export export)
         var slotless = new ItemDocument { Id = 2 };
         var worn = new ItemDocument { Id = 3, Slot = "Chest" };
 
-        Assert.Null(ItemPower.Of(slotless, Settings, null, new TooltipQuery(), 300));
-        Assert.Null(ItemPower.Of(worn, Settings, null, new TooltipQuery(), null));
+        Assert.Null(ItemPower.Of(slotless, Settings, null, new ItemScaling(), 300));
+        Assert.Null(ItemPower.Of(worn, Settings, null, new ItemScaling(), null));
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public sealed class ItemPowerTests(Export export)
         var weapon = Rolled(Printed(ItemPower.WeaponType));
         var added = Settings.StatCalculation.RarityAdditions[weapon.RuleSet!][Regal.Tier];
 
-        var given = ItemPower.Inputs(weapon, Settings, Regal, new TooltipQuery(), 300);
+        var given = ItemPower.Inputs(weapon, Settings, Regal, new ItemScaling(), 300);
 
         Assert.NotNull(given);
         Assert.True(given.HasGrantedAbility);
@@ -123,8 +123,8 @@ public sealed class ItemPowerTests(Export export)
         var rung = Settings.Rarities.Single(rarity => rarity.Name == "Epic");
         var worn = Socketed;
 
-        var socketed = ItemPower.Inputs(worn, Settings, rung, new TooltipQuery(), 300);
-        var bare = ItemPower.Inputs(worn, Settings, rung, new TooltipQuery { NoSocket = true }, 300);
+        var socketed = ItemPower.Inputs(worn, Settings, rung, new ItemScaling(), 300);
+        var bare = ItemPower.Inputs(worn, Settings, rung, new ItemScaling { NoSocket = true }, 300);
 
         Assert.NotNull(socketed);
         Assert.NotNull(bare);
@@ -142,8 +142,8 @@ public sealed class ItemPowerTests(Export export)
     {
         var necklace = Rolled(Printed(ItemPower.NecklaceType));
 
-        var given = ItemPower.Inputs(necklace, Settings, Regal, new TooltipQuery(), 300);
-        var allocated = ItemPower.Inputs(necklace, Settings, Regal, new TooltipQuery { AllocatedAttunements = 2 }, 300);
+        var given = ItemPower.Inputs(necklace, Settings, Regal, new ItemScaling(), 300);
+        var allocated = ItemPower.Inputs(necklace, Settings, Regal, new TooltipQuery { AllocatedAttunements = 2 }.Scaling, 300);
 
         Assert.NotNull(given);
         Assert.NotNull(allocated);

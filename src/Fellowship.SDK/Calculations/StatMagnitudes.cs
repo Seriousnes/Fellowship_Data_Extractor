@@ -1,6 +1,6 @@
 using Fellowship.SDK.Documents;
 
-namespace Fellowship.Codex.Models;
+namespace Fellowship.SDK.Calculations;
 
 public sealed record StatLine(string? Stat, string DisplayName, decimal Value, string Kind, bool Rolled)
 {
@@ -22,16 +22,16 @@ public static class StatMagnitudes
         IReadOnlySet<string> primaryAttributes,
         RarityEntry? rarity,
         int itemLevel,
-        TooltipQuery query,
+        ItemScaling scaling,
         IReadOnlyList<(string Stat, decimal Value)>? granted = null)
     {
-        var armor = (query.Armor ?? Armor(item, calculation, itemLevel)) is { } worn
+        var armor = (scaling.Armor ?? Armor(item, calculation, itemLevel)) is { } worn
             ? new StatLine(ArmorStat, Label(calculation, ArmorStat), worn, SlotKinds.Fixed, Rolled: false)
             : null;
 
         granted ??= [];
 
-        if (item.Stats is not { Count: > 0 } && query.Stats.Count == 0 && granted.Count == 0 && armor is null)
+        if (item.Stats is not { Count: > 0 } && scaling.Stats.Count == 0 && granted.Count == 0 && armor is null)
         {
             return [];
         }
@@ -45,7 +45,7 @@ public static class StatMagnitudes
 
         var declaredWeights = StatRows.Weights([.. (item.Stats ?? []).Select(slot => slot.Weight)]);
         var guaranteedBlock = StatRows.Guaranteed(calculation, items);
-        var tempers = Math.Max(0, query.Upgrades ?? 0);
+        var tempers = Math.Max(0, scaling.Upgrades ?? 0);
         var temperStamina = Tempering.StaminaMultiplier(items, itemLevel);
         var ordinal = 0;
 
@@ -76,7 +76,7 @@ public static class StatMagnitudes
             var at = taken.GetValueOrDefault(declared.Stat);
             taken[declared.Stat] = at + 1;
 
-            var named = query.Stats.TryGetValue(declared.Stat, out var values);
+            var named = scaling.Stats.TryGetValue(declared.Stat, out var values);
             var sent = named ? at < values!.Count ? values[at] : 0m : (decimal?)null;
 
             var value = sent is { } amount
@@ -87,7 +87,7 @@ public static class StatMagnitudes
                 declared.Stat, Label(calculation, declared.Stat), value, declared.Kind, Rolled: false));
         }
 
-        foreach (var (stat, value) in Spare(item, query, taken).Concat(granted))
+        foreach (var (stat, value) in Spare(item, scaling, taken).Concat(granted))
         {
             lines.Add(new StatLine(
                 stat, Label(calculation, stat), Round(value, calculation, stat), SlotKinds.Random, Rolled: true));
@@ -144,11 +144,11 @@ public static class StatMagnitudes
         stat.Equals(StaminaStat, StringComparison.OrdinalIgnoreCase) || primaryAttributes.Contains(stat);
 
     private static List<(string Stat, decimal Value)> Spare(
-        ItemDocument item, TooltipQuery query, IReadOnlyDictionary<string, int> taken)
+        ItemDocument item, ItemScaling scaling, IReadOnlyDictionary<string, int> taken)
     {
         var spare = new List<(string, decimal)>();
 
-        foreach (var (stat, values) in query.Stats)
+        foreach (var (stat, values) in scaling.Stats)
         {
             for (var at = taken.GetValueOrDefault(stat); at < values.Count; at++) spare.Add((stat, values[at]));
         }

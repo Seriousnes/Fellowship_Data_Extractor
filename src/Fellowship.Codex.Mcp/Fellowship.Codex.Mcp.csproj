@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Using Include="Fellowship.SDK" />
+    <Using Include="Fellowship.SDK.Calculations" />
   </ItemGroup>
 
   <ItemGroup>

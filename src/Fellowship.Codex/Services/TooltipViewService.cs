@@ -41,7 +41,7 @@ public interface ITooltipViewService
     IReadOnlyList<TooltipView.ModifierLine> Modifiers(
         ItemDocument document, TooltipQuery query, RarityEntry? rarity);
 
-    IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity);
+    IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query);
 
     MarkupString Text(
         string source,
@@ -62,6 +62,7 @@ public interface ITooltipViewService
 }
 
 public sealed class TooltipViewService(
+    FellowshipExport export,
     IEntityStoreService store,
     IDesignTokenService tokens,
     IRichTextService renderer,
@@ -81,20 +82,7 @@ public sealed class TooltipViewService(
 
     public GlyphEntry Glyphs => store.Settings.Glyphs;
 
-    public RarityEntry? Rarity(EntityDocument document, TooltipQuery query)
-    {
-        var tier = document switch
-        {
-            ItemDocument { Rarity: { } only } => (int?)only,
-            ItemDocument { Rarities: { Count: > 0 } rarities } => (int)rarities.Max(),
-            CurrencyDocument { Rarity: { } coin } => (int)coin,
-            GemDocument gem => (int)gem.Rarity,
-            _ => null,
-        };
-
-        return store.Rarity(query.Rarity, document is GemDocument)
-            ?? (tier is { } t ? store.Settings.Rarities.FirstOrDefault(r => r.Tier == t) : null);
-    }
+    public RarityEntry? Rarity(EntityDocument document, TooltipQuery query) => export.Rarity(document, query.Rarity);
 
     public string Variables(RarityEntry? rarity)
     {
@@ -122,8 +110,7 @@ public sealed class TooltipViewService(
 
     public string? Ornament(RarityEntry? rarity) => rarity is null ? null : chrome.Ornament(rarity.Name);
 
-    public string RarityName(EntityDocument document, RarityEntry rarity) =>
-        document is GemDocument ? rarity.GemDisplayName : rarity.DisplayName;
+    public string RarityName(EntityDocument document, RarityEntry rarity) => FellowshipExport.RarityName(document, rarity);
 
     public int? Level(EntityDocument document, TooltipQuery query) => document switch
     {
@@ -329,7 +316,7 @@ public sealed class TooltipViewService(
     {
         var power = query.PotentialPower
             ?? (document is ItemDocument item
-                ? ItemPower.Of(item, store.Settings, rarity, query, level)
+                ? ItemPower.Of(item, store.Settings, rarity, query.Scaling, level)
                 : null);
 
         return power?.Normalize().ToString(CultureInfo.InvariantCulture);
@@ -345,9 +332,9 @@ public sealed class TooltipViewService(
 
         foreach (var modifier in query.Modifiers)
         {
-            var type = TooltipView.TypeOf(modifier.Kind, store.Settings);
+            var type = ItemCraft.TypeOf(modifier.Kind, store.Settings);
             var row = AugmentationTypes.Is(type)
-                ? TooltipView.Augmentation(store, modifier.Id, wearer)
+                ? export.Augmentation(modifier.Id, wearer)
                 : store.All(type, modifier.Id).FirstOrDefault();
 
             lines.Add(new TooltipView.ModifierLine(
@@ -367,7 +354,7 @@ public sealed class TooltipViewService(
             });
         }
 
-        for (var rolled = lines.Count; rolled < RandomRolls(document, rarity); rolled++)
+        for (var rolled = lines.Count; rolled < ItemCraft.RandomRolls(document, store.Settings, rarity); rolled++)
         {
             lines.Add(TooltipView.Empty(store.Settings));
         }
@@ -375,36 +362,8 @@ public sealed class TooltipViewService(
         return lines;
     }
 
-    private int RandomRolls(ItemDocument document, RarityEntry? rarity)
-    {
-        if (rarity is null || document.RuleSet is not { } ruleSet) return 0;
-        if (!store.Settings.StatCalculation.RarityAdditions.TryGetValue(ruleSet, out var byTier)) return 0;
-
-        return byTier.TryGetValue(rarity.Tier, out var added) ? added.RandomRolls : 0;
-    }
-
-    public IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query, RarityEntry? rarity)
-    {
-        var level = query.ItemLevel ?? store.DropItemLevel(document);
-
-        return StatMagnitudes.For(
-            document,
-            store.Settings.StatCalculation,
-            store.Settings.Items,
-            store.PrimaryAttributes,
-            rarity,
-            level,
-            query,
-            [.. Enchanted(query).SelectMany(enchant => AugmentationRanks.Granted(enchant, store.Settings, level))]);
-    }
-
-    private IEnumerable<EnchantDocument> Enchanted(TooltipQuery query) =>
-        query.Modifiers
-            .Where(modifier => TooltipView.TypeOf(modifier.Kind, store.Settings) == EntityType.Enchant)
-            .Select(modifier => modifier.Id)
-            .Concat(query.Attunements.Select(attuned => attuned.Id))
-            .Select(id => TooltipView.Augmentation(store, id, query.Hero))
-            .OfType<EnchantDocument>();
+    public IReadOnlyList<StatLine> Rolls(ItemDocument document, TooltipQuery query) =>
+        export.Stats(document, query.Scaling);
 
     public MarkupString Text(
         string source,

@@ -41,7 +41,7 @@ public sealed class StatLineOrderTests
             new HashSet<string>(["Strength", "Intellect", "Agility"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
             itemLevel: 360,
-            new TooltipQuery());
+            new ItemScaling());
 
     [Fact]
     public void ArmourLeadsAndTheDeclaredSlotsKeepTheirOwnOrder()

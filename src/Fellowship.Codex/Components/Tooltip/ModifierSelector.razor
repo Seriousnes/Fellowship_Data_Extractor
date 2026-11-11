@@ -176,7 +176,7 @@
                     $"{TagSeparator}{gem.Type}", StringComparison.OrdinalIgnoreCase))),
 
             _ => Store.Entities.Where(row =>
-                EntityTypes.TypeOf(row) == TooltipView.TypeOf(ItemCraft.KindOf(accepts, Store.Settings)!.Value, Store.Settings)),
+                EntityTypes.TypeOf(row) == ItemCraft.TypeOf(ItemCraft.KindOf(accepts, Store.Settings)!.Value, Store.Settings)),
         };
 
         var label = definition.SlotType switch

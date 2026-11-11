@@ -398,6 +398,7 @@ public static class ExportRun
             $"path other than the tag's: {string.Join(", ", resolver.TalentTagsByName)}");
         Console.WriteLine(
             $"  {resolver.DeclaredByBlueprint} tokens bound by the ability's ResolveDynamicTextFloat, " +
+            $"{resolver.AnsweredByOtherAbility} by the ResolveDynamicTextFloat of the other ability they name, " +
             $"{resolver.NamedByToken} by the quantity their name states, " +
             $"{resolver.SynthesizedFromModifier} from the sole modifier their description leaves undeclared, " +
             $"{resolver.StatedByNativeLink} by a stated link to the row native code reads, " +

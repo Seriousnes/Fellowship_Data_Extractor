@@ -54,8 +54,8 @@ public sealed class EnchantTests(Export export)
         var plain = new TooltipQuery { ItemLevel = 300 };
         var enchanted = plain with { Modifiers = [new ItemModifier(ItemCraft.KindOfAugmentation(enchant, Settings)!.Value, enchant.Id, 1)] };
 
-        var before = export.Tooltip.Rolls(item, plain, null);
-        var after = export.Tooltip.Rolls(item, enchanted, null);
+        var before = export.Tooltip.Rolls(item, plain);
+        var after = export.Tooltip.Rolls(item, enchanted);
 
         foreach (var (stat, value) in AugmentationRanks.Granted(enchant, Settings, 300))
         {
@@ -74,9 +74,9 @@ public sealed class EnchantTests(Export export)
         var item = export.Store.Entities.OfType<ItemDocument>().First(row => row.Stats is { Count: > 0 });
 
         var rolled = export.Tooltip.Rolls(
-            item, new TooltipQuery { ItemLevel = 300, Modifiers = [new ItemModifier(ItemCraft.KindOfAugmentation(enchant, Settings)!.Value, enchant.Id, 1)] }, null);
+            item, new TooltipQuery { ItemLevel = 300, Modifiers = [new ItemModifier(ItemCraft.KindOfAugmentation(enchant, Settings)!.Value, enchant.Id, 1)] });
         var attuned = export.Tooltip.Rolls(
-            item, new TooltipQuery { ItemLevel = 300, Attunements = [new Attunement(enchant.Id, 1)] }, null);
+            item, new TooltipQuery { ItemLevel = 300, Attunements = [new Attunement(enchant.Id, 1)] });
 
         Assert.Equal(rolled.Select(line => (line.Stat, line.Value)), attuned.Select(line => (line.Stat, line.Value)));
     }
@@ -126,7 +126,7 @@ public sealed class EnchantTests(Export export)
         var query = new TooltipQuery { RankSources = ["Head", "Weapon"] };
 
         Assert.Equal(("Sigil", "Augmentation"), (AugmentationRanks.Category(Settings, sigil).Heading, AugmentationRanks.Category(Settings, sigil).Band));
-        Assert.Equal(2, AugmentationRanks.Rank(export.Store, query, sigil));
+        Assert.Equal(2, AugmentationRanks.Rank(export.Store.Export, query.Equipped, sigil));
 
         var described = AugmentationRanks.Description(sigil, 2)!;
         Assert.Contains(run.Printed[1], described, StringComparison.Ordinal);
@@ -139,9 +139,9 @@ public sealed class EnchantTests(Export export)
         var enchant = Enchanted[0];
         var perItem = AugmentationRanks.Power(Settings, Settings.Items.MaxItemLevel);
 
-        Assert.Equal(2 * perItem, AugmentationRanks.Rank(export.Store, new TooltipQuery { RankSources = ["Head", "Necklace"] }, enchant));
-        Assert.Equal(perItem, AugmentationRanks.Rank(export.Store, new TooltipQuery(), enchant));
-        Assert.Equal(["Head"], AugmentationRanks.Sources(export.Store, new TooltipQuery(), enchant).Select(source => source.Type));
+        Assert.Equal(2 * perItem, AugmentationRanks.Rank(export.Store.Export, new TooltipQuery { RankSources = ["Head", "Necklace"] }.Equipped, enchant));
+        Assert.Equal(perItem, AugmentationRanks.Rank(export.Store.Export, new TooltipQuery().Equipped, enchant));
+        Assert.Equal(["Head"], AugmentationRanks.Sources(export.Store.Export, new TooltipQuery().Equipped, enchant).Select(source => source.Type));
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public sealed class EnchantTests(Export export)
     {
         var query = new TooltipQuery { RankSources = ["Head", "Necklace"], ItemLevel = 200 };
 
-        Assert.Equal(10, AugmentationRanks.Rank(export.Store, query, Enchanted[0]));
+        Assert.Equal(10, AugmentationRanks.Rank(export.Store.Export, query.Equipped, Enchanted[0]));
         Assert.Equal([(1, 149, 4), (150, 299, 5), (300, (int?)null, 6)], AugmentationRanks.RanksByItemLevel(Settings));
     }
 
@@ -158,8 +158,8 @@ public sealed class EnchantTests(Export export)
     {
         var protective = export.Store.Entities.OfType<ProtectiveEnchantDocument>().First();
 
-        Assert.False(AugmentationRanks.Ranked(export.Store, protective));
-        Assert.True(AugmentationRanks.Ranked(export.Store, Enchanted[0]));
+        Assert.False(AugmentationRanks.Ranked(export.Store.Export, protective));
+        Assert.True(AugmentationRanks.Ranked(export.Store.Export, Enchanted[0]));
     }
 
     [Fact]
@@ -168,20 +168,20 @@ public sealed class EnchantTests(Export export)
         var sigil = export.Store.Entities.OfType<SigilDocument>().First();
         var everySlot = new TooltipQuery
         {
-            RankSources = [.. AugmentationRanks.Carriers(export.Store, sigil).Select(type => type.Type)],
+            RankSources = [.. AugmentationRanks.Carriers(export.Store.Export, sigil).Select(type => type.Type)],
         };
 
         Assert.Equal(4, sigil.MaxRank);
-        Assert.Equal(4, AugmentationRanks.Limit(export.Store, everySlot, sigil));
-        Assert.Equal(4, AugmentationRanks.Sources(export.Store, everySlot, sigil).Count);
-        Assert.Equal(4, AugmentationRanks.Rank(export.Store, everySlot, sigil));
+        Assert.Equal(4, AugmentationRanks.Limit(export.Store.Export, everySlot.Equipped, sigil));
+        Assert.Equal(4, AugmentationRanks.Sources(export.Store.Export, everySlot.Equipped, sigil).Count);
+        Assert.Equal(4, AugmentationRanks.Rank(export.Store.Export, everySlot.Equipped, sigil));
     }
 
     [Fact]
     public void Only_a_gear_slot_whose_items_can_carry_the_augmentation_is_a_rank_source()
     {
         string[] Carriers<T>() where T : AugmentationDocument =>
-            [.. AugmentationRanks.Carriers(export.Store, export.Store.Entities.OfType<T>().First()).Select(type => type.Type)];
+            [.. AugmentationRanks.Carriers(export.Store.Export, export.Store.Entities.OfType<T>().First()).Select(type => type.Type)];
 
         Assert.DoesNotContain("Charm", Carriers<EnchantDocument>());
         Assert.Contains("Weapon", Carriers<EnchantDocument>());

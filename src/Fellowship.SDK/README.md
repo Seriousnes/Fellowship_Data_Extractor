@@ -66,3 +66,46 @@ await File.WriteAllBytesAsync("entities.jsonl", entities);
 byte[] settings = await client.ExportSettingsAsync();
 await File.WriteAllBytesAsync("settings.json", settings);
 ```
+
+## Read an item's stats from the export
+
+`FellowshipExport` reads `settings.json` and `entities.jsonl` from one folder. A folder of
+`export-<build>` folders reads its highest build. The stats it returns are the codex API's
+`Magnitudes` for the same reading:
+
+```csharp
+using Fellowship.SDK.Calculations;
+using Fellowship.SDK.Documents;
+using Fellowship.SDK.Models;
+using Fellowship.SDK.Records;
+
+FellowshipExport export = FellowshipExport.Load("output");
+
+var orb = new EntityReference(EntityType.Item, 5919, "Orb of Sanguine Restoration");
+var scaling = new ItemScaling { Hero = "Aeona", ItemLevel = 315, Upgrades = 8 };
+
+ItemMagnitudesRecord magnitudes = export.Magnitudes(orb, scaling);
+// magnitudes.MaxUpgrades is 8, and magnitudes.Stats has Expertise 27.
+
+IReadOnlyList<StatLine> lines = export.Stats(orb, scaling);
+decimal? potential = export.PotentialPower(export.Find<ItemDocument>(orb, "Aeona")!, scaling);
+```
+
+`ItemScaling` has the item level, tempers, tempering ceiling, rarity, armor, stat values, and the
+modifiers and attunements in the item's crafted rows. An enchant among the modifiers or attunements adds
+its stats at the item level. A field left unset reads as the codex API reads it: the drop item level,
+the item's highest rarity, and that rarity's tempering ceiling.
+
+An augmentation's rank and the gear slots it ranks from:
+
+```csharp
+var enchant = export.Augmentation(id: 67, wearer: "Mara")!;
+var reading = new EquippedReading { ItemLevel = 300, RankSources = ["Head", "Chest"] };
+
+int rank = AugmentationRanks.Rank(export, reading, enchant);
+```
+
+The static classes in `Fellowship.SDK.Calculations` take the settings and documents directly.
+
+A reading the codex API refuses throws `RefusedReadingException`. Its `Refusal` has the API's problem
+title and detail. `FellowshipExport.Refusal` returns the same refusal without the throw.

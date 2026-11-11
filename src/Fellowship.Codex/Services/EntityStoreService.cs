@@ -10,6 +10,8 @@ namespace Fellowship.Codex.Services;
 
 public interface IEntityStoreService
 {
+    FellowshipExport Export { get; }
+
     SettingsFile Settings { get; }
 
     IReadOnlyList<EntityDocument> Entities { get; }
@@ -55,23 +57,17 @@ public interface IEntityStoreService
 
 public sealed class EntityStoreService : IEntityStoreService
 {
-    private const string DefaultDropRow = "Default";
-
-    private const string LegendaryDropRow = "Legendary";
-
     private static readonly ConcurrentDictionary<(Type Document, string Property), PropertyInfo?> Fields = new();
 
     private static IReadOnlyList<T> Field<T>(EntityDocument document, string name) =>
         Fields.GetOrAdd((document.GetType(), name), key => key.Document.GetProperty(key.Property))
             ?.GetValue(document) as IReadOnlyList<T> ?? [];
 
-    private readonly Dictionary<(EntityType Type, int Id), EntityDocument[]> byId = new();
-
-    private readonly Dictionary<string, HeroEntry> heroesByName = new(StringComparer.OrdinalIgnoreCase);
-
     private readonly Dictionary<int, TalentSlotDocument> slotsByTalent = [];
 
     private readonly Dictionary<Hero, List<TalentSlotDocument>> treesByHero = [];
+
+    public FellowshipExport Export { get; }
 
     public SettingsFile Settings { get; }
 
@@ -87,56 +83,18 @@ public sealed class EntityStoreService : IEntityStoreService
 
     public int Ids { get; }
 
-    public EntityStoreService(ExportSnapshot snapshot, ILogger<EntityStoreService> logger)
+    public EntityStoreService(FellowshipExport export, ILogger<EntityStoreService> logger)
     {
-        var file = snapshot.Settings;
+        Export = export;
+        Settings = Export.Settings;
+        PrimaryAttributes = Export.PrimaryAttributes;
 
-        Settings = file with
-        {
-            TextStyles = new Dictionary<string, TextStyle>(file.TextStyles, StringComparer.OrdinalIgnoreCase),
-            Colors = new Dictionary<string, string>(file.Colors, StringComparer.OrdinalIgnoreCase),
-            SlotIcons = new Dictionary<string, string>(file.SlotIcons, StringComparer.OrdinalIgnoreCase),
-            RarityOrnaments = new Dictionary<string, string>(
-                file.RarityOrnaments, StringComparer.OrdinalIgnoreCase),
-            RarityColorRows = new Dictionary<string, string>(
-                file.RarityColorRows, StringComparer.OrdinalIgnoreCase),
-            SectionHeadingRows = new Dictionary<string, string>(
-                file.SectionHeadingRows, StringComparer.OrdinalIgnoreCase),
-            MaxTempers = new Dictionary<string, IReadOnlyList<TemperCeiling>>(
-                file.MaxTempers, StringComparer.OrdinalIgnoreCase),
-            StatCalculation = file.StatCalculation with
-            {
-                SlotWeights = new Dictionary<string, SlotWeight>(
-                    file.StatCalculation.SlotWeights, StringComparer.OrdinalIgnoreCase),
-                Attributes = new Dictionary<string, AttributeDisplay>(
-                    file.StatCalculation.Attributes, StringComparer.OrdinalIgnoreCase),
-                RarityAdditions = new Dictionary<string, IReadOnlyDictionary<int, RaritySlots>>(
-                    file.StatCalculation.RarityAdditions, StringComparer.OrdinalIgnoreCase),
-            },
-        };
-
-        var attributes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var hero in Settings.Heroes)
-        {
-            heroesByName[hero.Name] = hero;
-            attributes.Add(hero.PrimaryStat);
-        }
-
-        PrimaryAttributes = attributes;
-
-        var groups = new Dictionary<(EntityType, int), List<EntityDocument>>();
         var stats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var attributeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var entities = snapshot.Entities;
+        var entities = export.Entities;
 
         foreach (var document in entities)
         {
-            var key = (EntityTypes.TypeOf(document), document.Id);
-
-            if (!groups.TryGetValue(key, out var list)) groups[key] = list = [];
-            list.Add(document);
-
             if (document is TalentSlotDocument slot)
             {
                 slotsByTalent.TryAdd(slot.Talent.Id, slot);
@@ -151,9 +109,7 @@ public sealed class EntityStoreService : IEntityStoreService
             Count++;
         }
 
-        foreach (var (key, list) in groups) byId[key] = [.. list];
-
-        Ids = byId.Count;
+        Ids = Export.Ids;
 
         Entities = entities;
         Stats = new StatParameters(Settings.StatCalculation.Attributes);
@@ -173,7 +129,7 @@ public sealed class EntityStoreService : IEntityStoreService
         logger.LogInformation(
             "Export snapshot loaded: {Entities} entities under {Ids} ids, {Ambiguous} of which read differently per hero. " +
             "{Heroes} heroes, {Rarities} rarities, {Formats} print formats, {Colors} colours, {Styles} text styles, {Stats} stat names",
-            Count, Ids, byId.Count(e => e.Value.Length > 1), Settings.Heroes.Count,
+            Count, Ids, Export.PerHeroIds, Settings.Heroes.Count,
             Settings.Rarities.Count, Settings.PrintFormats.Count, Settings.Colors.Count,
             Settings.TextStyles.Count, Stats.Names.Count);
 
@@ -224,11 +180,10 @@ public sealed class EntityStoreService : IEntityStoreService
             (display.IsPercent ? "%" : string.Empty);
     }
 
-    public HeroEntry? Hero(string? name) =>
-        name is not null && heroesByName.TryGetValue(name, out var hero) ? hero : null;
+    public HeroEntry? Hero(string? name) => Export.Hero(name);
 
     public IReadOnlyList<EntityDocument> All(EntityType type, int id) =>
-        byId.TryGetValue((type, id), out var found) ? found : [];
+        Export.All(type, id);
 
     public TalentSlotDocument? Slot(int talentId) =>
         slotsByTalent.TryGetValue(talentId, out var slot) ? slot : null;
@@ -237,38 +192,13 @@ public sealed class EntityStoreService : IEntityStoreService
         treesByHero.TryGetValue(hero, out var tree) ? tree : [];
 
     public Lookup Resolve(
-        EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero)
-    {
-        document = null;
-        hero = Hero(heroName);
-
-        var candidates = All(type, id);
-        if (candidates.Count == 0) return Lookup.NoSuchId;
-
-        if (candidates.Count == 1)
-        {
-            document = candidates[0];
-            return Lookup.Found;
-        }
-
-        if (hero is null) return heroName is null ? Lookup.NeedsHero : Lookup.NotForThatHero;
-
-        var named = hero;
-        var matches = candidates.Where(e => EntityStore.Reads(e, named)).ToArray();
-
-        if (matches.Length == 0) return Lookup.NotForThatHero;
-
-        document = matches[0];
-        return Lookup.Found;
-    }
+        EntityType type, int id, string? heroName, out EntityDocument? document, out HeroEntry? hero) =>
+        Export.Resolve(type, id, heroName, out document, out hero);
 
     public HeroEntry? Wearer(EntityDocument document) =>
         Settings.Heroes.FirstOrDefault(hero => EntityStore.Reads(document, hero));
 
-    public int DropItemLevel(EntityDocument document) =>
-        ItemLevel(document is ItemDocument { Rarity: Fellowship.SDK.Rarity.Legendary }
-            ? LegendaryDropRow
-            : DefaultDropRow);
+    public int DropItemLevel(EntityDocument document) => Export.DropItemLevel(document);
 
     public int Difficulty(string? value, EntityDocument? entity = null)
     {
@@ -296,23 +226,5 @@ public sealed class EntityStoreService : IEntityStoreService
         _ => null,
     };
 
-    private int ItemLevel(string row) =>
-        Settings.DropItemLevels.FirstOrDefault(
-            level => level.Row.Equals(row, StringComparison.OrdinalIgnoreCase))?.ItemLevel
-        ?? throw new InvalidOperationException(
-            $"The settings state no {row} drop item level. Write it again with 'dotnet run --project " +
-            "src/FellowshipExtractor'.");
-
-    public RarityEntry? Rarity(string? word, bool gem)
-    {
-        if (word is null) return null;
-
-        if (int.TryParse(word, NumberStyles.Integer, CultureInfo.InvariantCulture, out var tier))
-        {
-            return Settings.Rarities.FirstOrDefault(r => r.Tier == tier);
-        }
-
-        return Settings.Rarities.FirstOrDefault(r =>
-            string.Equals(gem ? r.GemDisplayName : r.DisplayName, word, StringComparison.OrdinalIgnoreCase));
-    }
+    public RarityEntry? Rarity(string? word, bool gem) => Export.Rarity(word, gem);
 }

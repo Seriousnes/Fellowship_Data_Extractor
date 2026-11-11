@@ -1,5 +1,6 @@
 @inject ITooltipViewService Ui
 @inject IEntityStoreService Store
+@inject FellowshipExport Export
 
 @if (Capacity(Entity, Query, Store.Settings) is { } total)
 {
@@ -31,7 +32,7 @@
 
     private IEnumerable<string> Attuned() =>
         Query.Attunements
-            .Select(augmentation => TooltipView.Augmentation(Store, augmentation.Id, TooltipView.Wearer(Entity, Query)))
+            .Select(augmentation => Export.Augmentation(augmentation.Id, TooltipView.Wearer(Entity, Query)))
             .OfType<EntityDocument>()
             .Select(augmentation => PublicTypes.NameOf(augmentation));
 }

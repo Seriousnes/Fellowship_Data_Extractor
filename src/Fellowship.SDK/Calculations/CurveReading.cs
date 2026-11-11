@@ -1,6 +1,6 @@
 using Fellowship.SDK.Models;
 
-namespace Fellowship.Codex.Models;
+namespace Fellowship.SDK.Calculations;
 
 public static class CurveReading
 {

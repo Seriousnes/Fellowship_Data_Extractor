@@ -135,6 +135,17 @@ internal sealed class DynamicTextArithmetic(
 
     public IReadOnlySet<string> Unity { get; init; } = new HashSet<string>();
 
+    /// <summary>The attribute at each index of a calculation's <c>RelevantAttributesToCapture</c>.</summary>
+    public IReadOnlyList<string?> Captures { get; init; } = [];
+
+    /// <summary>
+    /// A constants row's number. Set, it reads a scalable float a local holds as a literal, as a custom calculation
+    /// declares <c>MaxToughnessTotalSecondaryStatModifier</c>.
+    /// </summary>
+    public Func<string, double?>? Rows { get; init; }
+
+    private const string CaptureRead = "GetCapturedAttribute";
+
     public DynamicTextValue? Of(KismetExpression? expression, int depth = 0)
     {
         if (expression is null || depth > 32) return null;
@@ -231,9 +242,18 @@ internal sealed class DynamicTextArithmetic(
             var argument = call.Parameters.FirstOrDefault();
 
             if (Across(argument, depth) is { } borrowed) return borrowed;
+            if (Literal(argument) is { } literal) return Number(literal);
 
             return Property(argument, depth) is { } property && scalable(property) is { } value
                 ? Number(value)
+                : null;
+        }
+
+        if (function.Equals(CaptureRead, StringComparison.Ordinal))
+        {
+            return call.Parameters.ElementAtOrDefault(1) is EX_ArrayGetByRef { ArrayIndex: EX_IntConst index } &&
+                   Captures.ElementAtOrDefault(index.Value) is { Length: > 0 } captured
+                ? new DynamicTextValue(1, captured, null)
                 : null;
         }
 
@@ -282,6 +302,33 @@ internal sealed class DynamicTextArithmetic(
 
         return null;
     }
+
+    private double? Literal(KismetExpression? argument)
+    {
+        if (Rows is null) return null;
+        if (argument is not EX_LocalVariable || DynamicTextFloats.Name(argument) is not { } local) return null;
+        if (!locals.TryGetValue(local, out var bound)) return null;
+        if (bound is not EX_StructConst { Struct.Name: ScalableStruct } held) return null;
+
+        var multiplier = held.Properties.ElementAtOrDefault(0) switch
+        {
+            EX_FloatConst value => value.Value,
+            EX_DoubleConst value => value.Value,
+            _ => (double?)null,
+        };
+
+        if (multiplier is null) return null;
+
+        var row = held.Properties.ElementAtOrDefault(1) is EX_StructConst handle
+            ? handle.Properties.OfType<EX_NameConst>().Select(name => name.Value.Text).FirstOrDefault()
+            : null;
+
+        if (row is null || row.Equals("None", StringComparison.Ordinal)) return multiplier;
+
+        return Rows(row) is { } stated ? multiplier * stated : null;
+    }
+
+    private const string ScalableStruct = "ScalableFloat";
 
     private string? Property(KismetExpression? argument, int depth)
     {

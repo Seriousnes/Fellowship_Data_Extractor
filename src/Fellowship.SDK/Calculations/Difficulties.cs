@@ -1,7 +1,7 @@
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
 
-namespace Fellowship.Codex.Models;
+namespace Fellowship.SDK.Calculations;
 
 public sealed record DifficultyStep(int Difficulty, string League, int Step, string Label);
 

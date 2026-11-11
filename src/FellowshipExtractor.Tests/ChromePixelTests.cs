@@ -26,7 +26,7 @@ public sealed class ChromePixelTests
             .GetResult()
             .Snapshot;
 
-        var store = new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
+        var store = new EntityStoreService(new FellowshipExport(snapshot.Settings, snapshot.Entities), NullLogger<EntityStoreService>.Instance);
 
         return new Reading(
             store,

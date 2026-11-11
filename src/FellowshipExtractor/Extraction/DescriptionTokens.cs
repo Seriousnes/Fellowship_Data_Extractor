@@ -193,7 +193,11 @@ public static class DescriptionTokens
 
         if (selected.Any(binding => binding.Multiplies)) declared = declared with { Multiplies = true };
 
-        return Made(declared, direct, effect.CapturedAttributes, selected, tuning, heroes);
+        var applied = Made(declared, direct, effect.CapturedAttributes, selected, tuning, heroes);
+
+        return ResolvedByAbility(token)
+            ? applied with { DynamicTextAbility = objectPath, DynamicTextFloatIdentifier = Identifier(token) }
+            : applied;
     }
 
     public static IEnumerable<string> TableRows(IPropertyHolder row)

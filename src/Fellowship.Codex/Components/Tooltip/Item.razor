@@ -71,7 +71,7 @@
         potential = Ui.Potential(Entity, Query, Rarity, Level);
         Sheet = new MarkupString(Ui.Style());
         facts = Ui.Facts(Entity, Query);
-        rolls = Ui.Rolls(Entity, Query, Rarity);
+        rolls = Ui.Rolls(Entity, Query);
         modifiers = Ui.Modifiers(Entity, Query, Rarity);
         granted = Ui.Granted(Entity);
         Name = granted is null ? null : PublicTypes.DisplayNameOf(granted);

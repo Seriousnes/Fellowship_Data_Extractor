@@ -263,6 +263,48 @@ public static class MagnitudeCalculations
             post == 0 ? scaled : $"{scaled}{Signed(post)}");
     }
 
+    /// <summary>
+    /// A custom calculation's magnitude as a coefficient on one captured attribute, with the bracket the attribute is
+    /// multiplied by. <c>GMMC_Warmaster_Toughness_Max</c> under a Coefficient of
+    /// <c>Warmaster.Toughness.MaxToughnessStrengthScaler</c> is 7.7 of Strength times
+    /// <c>2 × (CritChance + Haste + Expertise + Spirit) - 1</c>. A magnitude with a PreMultiplyAdditiveValue or a
+    /// PostMultiplyAdditiveValue other than 0 has no such reading.
+    /// </summary>
+    public static DynamicTextReading? Reading(
+        IPropertyHolder magnitude, AbstractFileProvider provider, ConstantsTable constants)
+    {
+        if (PropertyWalk.GetStruct(magnitude, CustomField) is not { } custom) return null;
+        if (PropertyWalk.GetString(custom, ClassField) is not { } classPath) return null;
+        if (Calculation(provider, classPath) is not { } calculation) return null;
+        if (BareStateWalk.Compiled(calculation, Function)?.ScriptBytecode is not { Length: > 0 } statements) return null;
+        if (Scaled(custom, "PreMultiplyAdditiveValue", 0, constants) != 0) return null;
+        if (Scaled(custom, "PostMultiplyAdditiveValue", 0, constants) != 0) return null;
+
+        var locals = new Dictionary<string, KismetExpression>(StringComparer.Ordinal);
+
+        foreach (var statement in statements)
+        {
+            if (DynamicTextFloats.Assigned(statement) is not var (variable, assignment)) continue;
+            if (DynamicTextFloats.Name(variable) is { } local) locals[local] = assignment;
+        }
+
+        if (!locals.TryGetValue(ReturnedLocal, out var returned)) return null;
+
+        var reader = new DynamicTextArithmetic(locals, 0, _ => null)
+        {
+            Captures = Declared(calculation, provider),
+            Rows = row => constants.Lookup(row).Record?.Value,
+        };
+
+        if (reader.Of(returned) is not { Attribute: not null } value) return null;
+
+        var coefficient = Scaled(custom, "Coefficient", 1, constants);
+
+        return DynamicTextArithmetic.Published(value with { Scale = value.Scale * coefficient });
+    }
+
+    private const string ReturnedLocal = "ReturnValue";
+
     private const string Times = " × ";
     private const string StackCountRead = "GetGameplayEffectStackCount";
 

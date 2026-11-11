@@ -6,8 +6,15 @@ public static class CodexServices
     {
         services.AddSingleton<ExportHistoryHolder>();
 
+        services.AddSingleton(s =>
+        {
+            var snapshot = s.GetRequiredService<ExportHistoryHolder>().History.Snapshot;
+
+            return new FellowshipExport(snapshot.Settings, snapshot.Entities);
+        });
+
         services.AddSingleton<IEntityStoreService>(s => new EntityStoreService(
-            s.GetRequiredService<ExportHistoryHolder>().History.Snapshot,
+            s.GetRequiredService<FellowshipExport>(),
             s.GetRequiredService<ILogger<EntityStoreService>>()));
         services.AddSingleton<IExportHistoryService>(s =>
             new ExportHistoryService(s.GetRequiredService<ExportHistoryHolder>().History));

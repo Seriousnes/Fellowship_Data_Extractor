@@ -1,9 +1,7 @@
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
 
-using Fellowship.Codex.Services;
-
-namespace Fellowship.Codex.Models;
+namespace Fellowship.SDK.Calculations;
 
 public sealed record DamageFalloffSplit(int Threshold, double Targets, double Scaler, double PerTarget, double Total);
 
@@ -24,22 +22,6 @@ public static class DamageFalloff
             new FalloffSource(talent, entries, null),
         _ => null,
     };
-
-    public static IReadOnlyList<FalloffSource> Sources(IEntityStoreService store) =>
-    [
-        .. store.Entities
-            .Select(Source)
-            .OfType<FalloffSource>()
-            .DistinctBy(source => (source.Type, source.Document.Id))
-            .OrderBy(source => PublicTypes.NameOf(source.Document), StringComparer.OrdinalIgnoreCase)
-            .ThenBy(source => source.Type)
-            .ThenBy(source => source.Document.Id),
-    ];
-
-    public static FalloffSource? Source(IEntityStoreService store, EntityType type, int? id) =>
-        id is { } wanted
-            ? store.All(type, wanted).Select(Source).OfType<FalloffSource>().FirstOrDefault()
-            : null;
 
     public static int Whole(double value) => Math.Max(0, (int)Math.Truncate(value));
 

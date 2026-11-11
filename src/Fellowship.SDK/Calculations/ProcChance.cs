@@ -1,9 +1,7 @@
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
 
-using Fellowship.Codex.Services;
-
-namespace Fellowship.Codex.Models;
+namespace Fellowship.SDK.Calculations;
 
 /// <summary>
 /// A proc a player picks by the thing they hold or cast, with the rolls behind it.
@@ -68,64 +66,6 @@ public static class ProcChance
     /// <summary>The rolls the document makes in its own right: an ability's roll behind a talent is the talent's.</summary>
     public static IReadOnlyList<ProcRoll> Baseline(EntityDocument document) =>
         [.. (Rolls(document) ?? []).Where(roll => roll.Talent is null)];
-
-    /// <summary>
-    /// Every proc, one per thing a player holds or casts. A relic passive is offered as each relic granting it, one per
-    /// relic name, and an ability without an icon of its own as the one augmentation it comes from.
-    /// </summary>
-    public static IReadOnlyList<ProcRollSource> Sources(IEntityStoreService store)
-    {
-        var relics = store.Entities
-            .OfType<ItemDocument>()
-            .Where(item => item is { Name: not null, Grants.Type: EntityType.RelicPassive })
-            .GroupBy(item => item.Grants!.Id)
-            .ToDictionary(group => group.Key, group => group.DistinctBy(item => item.Name).ToArray());
-
-        var sources = new List<ProcRollSource>();
-
-        foreach (var carrier in store.Entities)
-        {
-            if (carrier.Name is null || Baseline(carrier) is not { Count: > 0 } rolls) continue;
-
-            foreach (var face in Faces(store, carrier, relics))
-            {
-                var source = new ProcRollSource(face, carrier, rolls);
-                var at = sources.FindIndex(other => other.Type == source.Type && other.Face.Id == source.Face.Id);
-
-                if (at < 0) sources.Add(source);
-                else if (ReferenceEquals(face, carrier)) sources[at] = source with { Others = [.. sources[at].Others, sources[at].Carrier] };
-                else sources[at] = sources[at] with { Others = [.. sources[at].Others, carrier] };
-            }
-        }
-
-        return
-        [
-            .. sources
-                .OrderBy(source => PublicTypes.NameOf(source.Face), StringComparer.OrdinalIgnoreCase)
-                .ThenBy(source => source.Type)
-                .ThenBy(source => source.Face.Id),
-        ];
-    }
-
-    private static IEnumerable<EntityDocument> Faces(
-        IEntityStoreService store, EntityDocument carrier, IReadOnlyDictionary<int, ItemDocument[]> relics)
-    {
-        switch (carrier)
-        {
-            case RelicPassiveDocument relic when relics.TryGetValue(relic.Id, out var items):
-                return items;
-
-            case AbilityDocument { Icon: null, Origins: [{ } origin] }
-                when origin.Type != EntityType.Hero && store.All(origin.Type, origin.Id) is [var from, ..]:
-                return [from];
-
-            default:
-                return [carrier];
-        }
-    }
-
-    public static ProcRollSource? Source(IEntityStoreService store, EntityType? type, int? id) =>
-        type is { } wanted && id is { } number ? Sources(store).FirstOrDefault(source => source.Is(wanted, number)) : null;
 
     /// <summary>
     /// True when the formula is the rate symbol times 1 plus each attribute of <see cref="ProcRoll.ScalesOff"/> in

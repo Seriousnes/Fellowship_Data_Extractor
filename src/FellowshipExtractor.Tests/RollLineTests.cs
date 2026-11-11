@@ -69,7 +69,7 @@ public sealed class RollLineTests
             rarity: null,
             Export.Loaded.Settings.DropItemLevels
                 .Single(level => level.Row == FellowshipExtractor.Extraction.DropItemLevels.DefaultRow).ItemLevel,
-            query);
+            query.Scaling);
     }
 
     private static decimal Line(IReadOnlyList<StatLine> lines, string stat) =>

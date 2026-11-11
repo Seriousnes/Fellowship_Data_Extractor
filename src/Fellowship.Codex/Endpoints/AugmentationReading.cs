@@ -28,7 +28,7 @@ public static class AugmentationReading
     {
         Hero = StatQuery.NullIfEmpty(hero),
         ItemLevel = itemLevel,
-        RankSources = Models.RankSources.Parse(StatQuery.NullIfEmpty(rankSources)),
+        RankSources = Fellowship.SDK.Calculations.RankSources.Parse(StatQuery.NullIfEmpty(rankSources)),
     };
 }
 

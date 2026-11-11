@@ -58,7 +58,7 @@ public sealed class TemperStaminaTests
             new HashSet<string>(["Strength"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
             itemLevel,
-            new TooltipQuery { Upgrades = tempers });
+            new ItemScaling { Upgrades = tempers });
 
     private static decimal Line(IReadOnlyList<StatLine> lines, string stat) =>
         lines.Single(line => string.Equals(line.Stat, stat, StringComparison.OrdinalIgnoreCase)).Value;

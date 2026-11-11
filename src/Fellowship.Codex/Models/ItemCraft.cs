@@ -6,215 +6,106 @@ using Fellowship.SDK.Documents;
 
 namespace Fellowship.Codex.Models;
 
-public static class CraftSlots
-{
-    public const string GemSocket = "GemSocket";
-    public const string AttunementTree = "TraitTree";
-    public const string GrantedAbility = "GrantedAbility";
-    public const string RandomRolls = "RandomRolls";
-
-    public const string GemPower = "GemPower";
-    public const string Augmentation = "ItemTrait";
-    public const string AbilityRank = "AbilityRank";
-}
-
 public readonly record struct KnobTurn(ReadingParameter Key, string? Value);
 
-public sealed record CraftSlot(string SlotName, int Ordinal, IReadOnlyList<string> Accepts)
+public static class ItemCraftEditing
 {
-    public int Capacity { get; init; } = 1;
-
-    public string Key => KeyOf(SlotName, Ordinal);
-
-    public static string KeyOf(string slotName, int ordinal) =>
-        $"{slotName}:{ordinal.ToString(CultureInfo.InvariantCulture)}";
-}
-
-public static class ItemCraft
-{
-    public static IReadOnlyList<CraftSlot> Slots(
-        ItemDocument item, SettingsFile settings, RarityEntry? rarity)
+    extension(ItemCraft)
     {
-        if (rarity is null || item.RuleSet is not { } ruleSet) return [];
-        if (!settings.StatCalculation.RarityAdditions.TryGetValue(ruleSet, out var byTier)) return [];
-        if (!byTier.TryGetValue(rarity.Tier, out var added)) return [];
-
-        var slots = new List<CraftSlot>();
-        var ordinals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
-        int Next(string name)
-        {
-            var at = ordinals.GetValueOrDefault(name);
-            ordinals[name] = at + 1;
-            return at;
-        }
-
-        void Add(string name)
-        {
-            var type = Definition(name, settings).SlotType;
-            var ordinal = Next(type);
-
-            slots.Add(type switch
+        public static int MaxRank(CraftCandidate candidate, IEntityStoreService store) =>
+            ItemCraft.Definition(candidate.Accepts, store.Settings).SlotType switch
             {
-                CraftSlots.AttunementTree => new CraftSlot(type, ordinal, [name])
+                CraftSlots.AbilityRank => Find<GlyphDocument>(store, EntityType.Glyph, candidate.Id)?.MaxRank ?? 1,
+                CraftSlots.Augmentation or CraftSlots.AttunementTree =>
+                    store.Export.Augmentation(candidate.Id, null)?.MaxRank ?? 1,
+                _ => int.MaxValue,
+            };
+
+        public static string? Forbids(
+            ItemDocument item,
+            TooltipQuery query,
+            CraftSlot slot,
+            CraftCandidate candidate,
+            IEntityStoreService store)
+        {
+            var floor = ItemCraft.Definition(candidate.Accepts, store.Settings).MinimumItemLevel;
+
+            if ((query.ItemLevel ?? store.DropItemLevel(item)) < floor) return CraftReasons.BelowItemLevel(floor);
+
+            if (slot.SlotName == CraftSlots.AttunementTree)
+            {
+                var tree = TooltipView.TreeName(store.Settings);
+
+                if (query.Attunements.Any(augmentation => augmentation.Id == candidate.Id)) return CraftReasons.AlreadyAttuned(tree);
+                if (query.Attunements.Count >= slot.Capacity) return CraftReasons.NoRoom(tree);
+
+                var ceiling = ItemCraft.MaxRank(candidate, store);
+                return candidate.Amount < 1 || candidate.Amount > ceiling ? CraftReasons.PastRank(ceiling) : null;
+            }
+
+            if (ItemCraft.KindOf(candidate.Accepts, store.Settings) is not { } kind) return null;
+
+            if (ItemCraft.TypeOf(kind, store.Settings) == EntityType.Glyph)
+            {
+                if (Find<GlyphDocument>(store, EntityType.Glyph, candidate.Id) is { } glyph &&
+                    item.Slot is { } worn &&
+                    !(glyph.Slots ?? []).Contains(worn, StringComparer.OrdinalIgnoreCase))
                 {
-                    Capacity = AttunementTrees.Capacity(item.AttunementTree, settings) ?? 0,
-                },
-                CraftSlots.GemSocket => new CraftSlot(type, ordinal, [name]),
-                _ => new CraftSlot(type, ordinal, []),
-            });
+                    return CraftReasons.NotInPool(worn);
+                }
+            }
+
+            var type = TooltipView.Type(kind, store.Settings);
+
+            if (type.MaximumLimit is { } cap && query.Modifiers.Count(modifier => modifier.Kind == kind) >= cap)
+            {
+                return type.MaximumLimitWarning
+                    ?? throw new InvalidOperationException($"The {kind} modifier type states a cap and no warning.");
+            }
+
+            if (query.Modifiers.Count(
+                modifier => modifier.Kind == kind && modifier.Id == candidate.Id) >= ItemCraft.SameIdentity)
+            {
+                return CraftReasons.TwoOfAKind;
+            }
+
+            var max = ItemCraft.MaxRank(candidate, store);
+
+            return candidate.Amount < 1 || candidate.Amount > max ? CraftReasons.PastRank(max) : null;
         }
 
-        foreach (var name in added.GuaranteedSlots) Add(name);
-        foreach (var special in added.SpecialSlots) Add(special.SlotName);
-
-        IReadOnlyList<string> accepts =
-            [.. added.RandomizedSlots.Distinct(StringComparer.OrdinalIgnoreCase)];
-
-        for (var roll = 0; roll < added.RandomRolls; roll++)
+        public static TooltipQuery Without(TooltipQuery query, CraftSlot slot) => slot.SlotName switch
         {
-            slots.Add(new CraftSlot(CraftSlots.RandomRolls, Next(CraftSlots.RandomRolls), accepts));
-        }
+            CraftSlots.GemSocket => query with { Gem = null },
 
-        return slots;
-    }
+            CraftSlots.AttunementTree => query,
 
-    public static ItemSlotDefinition Definition(string name, SettingsFile settings) =>
-        settings.StatCalculation.SlotDefinitions.TryGetValue(name, out var definition)
-            ? definition
-            : throw new InvalidOperationException(
-                $"The settings define no item slot {name}, so the editor knows no slot type for it. The slots " +
-                $"defined are {string.Join(", ", settings.StatCalculation.SlotDefinitions.Keys)}.");
-
-    public static string? Defining(ModifierKind kind, EntityDocument? row, SettingsFile settings) =>
-        settings.StatCalculation.SlotDefinitions.TryGetValue(kind.ToString(), out var definition) &&
-        (definition.SlotType != CraftSlots.Augmentation ||
-         row is AugmentationDocument { CategoryTag: { } tag } && definition.AugmentationPool.Contains(tag, StringComparer.Ordinal))
-            ? kind.ToString()
-            : null;
-
-    public static ModifierKind? KindOf(string accepted, SettingsFile settings) =>
-        Enum.TryParse<ModifierKind>(accepted, out var kind) && settings.StatCalculation.SlotDefinitions.ContainsKey(accepted)
-            ? kind
-            : null;
-
-    public static ModifierKind? KindOfSlotType(string slotType, SettingsFile settings) =>
-        settings.StatCalculation.SlotDefinitions
-            .Where(pair => pair.Value.SlotType == slotType)
-            .Select(pair => KindOf(pair.Key, settings))
-            .FirstOrDefault(kind => kind is not null);
-
-    public static ModifierKind? KindOfAugmentation(EntityDocument? row, SettingsFile settings) =>
-        row is AugmentationDocument { CategoryTag: { } tag }
-            ? settings.StatCalculation.SlotDefinitions
-                .Where(pair => pair.Value.SlotType == CraftSlots.Augmentation &&
-                               pair.Value.AugmentationPool.Contains(tag, StringComparer.Ordinal))
-                .Select(pair => KindOf(pair.Key, settings))
-                .FirstOrDefault(kind => kind is not null)
-            : null;
-
-    public const int SameIdentity = 2;
-
-    public static int MaxRank(CraftCandidate candidate, IEntityStoreService store) =>
-        Definition(candidate.Accepts, store.Settings).SlotType switch
-        {
-            CraftSlots.AbilityRank => Find<GlyphDocument>(store, EntityType.Glyph, candidate.Id)?.MaxRank ?? 1,
-            CraftSlots.Augmentation or CraftSlots.AttunementTree =>
-                TooltipView.Augmentation(store, candidate.Id, null)?.MaxRank ?? 1,
-            _ => int.MaxValue,
+            _ => query with
+            {
+                Modifiers = slot.Ordinal < query.Modifiers.Count
+                    ? [.. query.Modifiers.Take(slot.Ordinal), .. query.Modifiers.Skip(slot.Ordinal + 1)]
+                    : query.Modifiers,
+            },
         };
 
-    public static string? Forbids(
-        ItemDocument item,
-        TooltipQuery query,
-        CraftSlot slot,
-        CraftCandidate candidate,
-        IEntityStoreService store)
-    {
-        var floor = Definition(candidate.Accepts, store.Settings).MinimumItemLevel;
-
-        if ((query.ItemLevel ?? store.DropItemLevel(item)) < floor) return CraftReasons.BelowItemLevel(floor);
-
-        if (slot.SlotName == CraftSlots.AttunementTree)
+        public static TooltipQuery With(
+            TooltipQuery query, CraftSlot slot, CraftCandidate candidate, SettingsFile settings) => slot.SlotName switch
         {
-            var tree = TooltipView.TreeName(store.Settings);
-
-            if (query.Attunements.Any(augmentation => augmentation.Id == candidate.Id)) return CraftReasons.AlreadyAttuned(tree);
-            if (query.Attunements.Count >= slot.Capacity) return CraftReasons.NoRoom(tree);
-
-            var ceiling = MaxRank(candidate, store);
-            return candidate.Amount < 1 || candidate.Amount > ceiling ? CraftReasons.PastRank(ceiling) : null;
-        }
-
-        if (KindOf(candidate.Accepts, store.Settings) is not { } kind) return null;
-
-        if (TooltipView.TypeOf(kind, store.Settings) == EntityType.Glyph)
-        {
-            if (Find<GlyphDocument>(store, EntityType.Glyph, candidate.Id) is { } glyph &&
-                item.Slot is { } worn &&
-                !(glyph.Slots ?? []).Contains(worn, StringComparer.OrdinalIgnoreCase))
+            CraftSlots.AttunementTree => query with
             {
-                return CraftReasons.NotInPool(worn);
-            }
-        }
+                Attunements = [.. query.Attunements, new Attunement(candidate.Id, candidate.Amount)],
+            },
 
-        var type = TooltipView.Type(kind, store.Settings);
+            CraftSlots.GemSocket => query with { Gem = candidate.Id },
 
-        if (type.MaximumLimit is { } cap && query.Modifiers.Count(modifier => modifier.Kind == kind) >= cap)
-        {
-            return type.MaximumLimitWarning
-                ?? throw new InvalidOperationException($"The {kind} modifier type states a cap and no warning.");
-        }
-
-        if (query.Modifiers.Count(
-            modifier => modifier.Kind == kind && modifier.Id == candidate.Id) >= SameIdentity)
-        {
-            return CraftReasons.TwoOfAKind;
-        }
-
-        var max = MaxRank(candidate, store);
-
-        return candidate.Amount < 1 || candidate.Amount > max ? CraftReasons.PastRank(max) : null;
-    }
-
-    public static TooltipQuery Without(TooltipQuery query, CraftSlot slot) => slot.SlotName switch
-    {
-        CraftSlots.GemSocket => query with { Gem = null },
-
-        CraftSlots.AttunementTree => query,
-
-        _ => query with
-        {
-            Modifiers = slot.Ordinal < query.Modifiers.Count
-                ? [.. query.Modifiers.Take(slot.Ordinal), .. query.Modifiers.Skip(slot.Ordinal + 1)]
-                : query.Modifiers,
-        },
-    };
-
-    public static TooltipQuery With(
-        TooltipQuery query, CraftSlot slot, CraftCandidate candidate, SettingsFile settings) => slot.SlotName switch
-    {
-        CraftSlots.AttunementTree => query with
-        {
-            Attunements = [.. query.Attunements, new Attunement(candidate.Id, candidate.Amount)],
-        },
-
-        CraftSlots.GemSocket => query with { Gem = candidate.Id },
-
-        _ => query with
-        {
-            Modifiers = Set(
-                [.. query.Modifiers],
-                slot.Ordinal,
-                new ItemModifier(KindOf(candidate.Accepts, settings)!.Value, candidate.Id, candidate.Amount)),
-        },
-    };
-
-    public static List<TValue> Set<TValue>(List<TValue> values, int at, TValue value)
-    {
-        if (at >= values.Count) values.Add(value); else values[at] = value;
-
-        return values;
+            _ => query with
+            {
+                Modifiers = ItemCraft.Set(
+                    [.. query.Modifiers],
+                    slot.Ordinal,
+                    new ItemModifier(ItemCraft.KindOf(candidate.Accepts, settings)!.Value, candidate.Id, candidate.Amount)),
+            },
+        };
     }
 
     private static TDocument? Find<TDocument>(IEntityStoreService store, EntityType type, int id)

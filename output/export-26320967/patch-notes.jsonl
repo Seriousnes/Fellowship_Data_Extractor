@@ -69,6 +69,8 @@
 {"key":{"slug":"effect","id":2010},"name":"Multishot","icon":"Bowguy_Multishot","added":false,"fields":[{"label":"Changed By","newer":"Skystrider\u0027s Supremacy"}]}
 {"key":{"slug":"effect","id":2334},"added":false,"fields":[{"label":"Enabled In Game","older":"false"}]}
 {"key":{"slug":"effect","id":2335},"name":"Earthfist Barrage","icon":"Meiko_AbilityIcon_09","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"},{"label":"Changed By","newer":"Conclusive Strikes"}]}
+{"key":{"slug":"effect","id":2361},"name":"Agonizing Wound","icon":"Tex_SpellBook06_48","added":false,"fields":[{"label":"Placeholders 1 \u203A Value","older":"1.2","newer":"0.2"}]}
+{"key":{"slug":"effect","id":2362},"name":"Shimmer","icon":"T_Icon_Energy_114","added":false,"fields":[{"label":"Placeholders 1 \u203A Attribute","older":"Agility"},{"label":"Placeholders 1 \u203A Coefficient","older":"13.6673"}]}
 {"key":{"slug":"effect","id":2432},"name":"Soulbrand: Remnant","icon":"T_Vigor_Soulbrand","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
 {"key":{"slug":"effect","id":2577},"name":"Omnistrike","icon":"T_Sune_Omnistrike","added":false,"fields":[{"label":"Changed By 1","older":"Golden Hour"}]}
 {"key":{"slug":"effect","id":2755},"name":"Heavy Strike","icon":"T_Ink_TimerAbility","added":false,"fields":[{"label":"Changed By","newer":"Kill Em All"}]}

@@ -1,4 +1,4 @@
-namespace Fellowship.Codex.Models;
+namespace Fellowship.SDK.Calculations;
 
 public sealed record StatBlock(
     float PrimaryWeight,
