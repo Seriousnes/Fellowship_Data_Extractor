@@ -11,6 +11,7 @@
         </Column>
         <Column Head="Max Rank" Key="SortingType.Rank" Numeric Value="row => row.MaxRank" />
         <Column Head="Random Chance" Numeric Unit="%" Value="row => row.RandomChance" />
+        @ComparedColumns.For(View, Documents)
     </Columns>
 </Table>
 

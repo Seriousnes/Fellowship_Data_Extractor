@@ -1,8 +1,10 @@
+using Fellowship.Codex.Services;
+
 namespace Fellowship.Codex.Models;
 
 public readonly record struct SortColumn
 {
-    private SortColumn(SortingType? sorting, MeasureType? measure)
+    private SortColumn(SortingType? sorting, string? measure)
     {
         Sorting = sorting;
         Measure = measure;
@@ -10,20 +12,23 @@ public readonly record struct SortColumn
 
     public SortingType? Sorting { get; }
 
-    public MeasureType? Measure { get; }
+    /// <summary>Key of the sorting measure.</summary>
+    public string? Measure { get; }
 
-    public string Key => Sorting is { } sorting ? QueryKeys.Key(sorting) : QueryKeys.Key(Measure!.Value);
+    public string Key => Sorting is { } sorting ? QueryKeys.Key(sorting) : Measure!;
 
     public static implicit operator SortColumn(SortingType sorting) => new(sorting, null);
 
-    public static implicit operator SortColumn(MeasureType measure) => new(null, measure);
+    public static implicit operator SortColumn(MeasureType measure) => new(null, QueryKeys.Key(measure));
 
-    public static bool TryParse(string? key, out SortColumn sort)
+    public static SortColumn Of(Measure measure) => new(null, measure.Key);
+
+    public static bool TryParse(string? key, ICodexService codex, out SortColumn sort)
     {
         sort = default;
 
         if (QueryKeys.TryParse<SortingType>(key, out var sorting)) sort = sorting;
-        else if (QueryKeys.TryParse<MeasureType>(key, out var measure)) sort = measure;
+        else if (codex.Measures.FirstOrDefault(measure => measure.Key.Equals(key, StringComparison.OrdinalIgnoreCase)) is { } measure) sort = Of(measure);
         else return false;
 
         return true;

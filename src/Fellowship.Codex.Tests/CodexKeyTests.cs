@@ -1,7 +1,10 @@
 namespace Fellowship.Codex.Tests;
 
-public sealed class CodexKeyTests
+[Collection(Corpus.Name)]
+public sealed class CodexKeyTests(Export export)
 {
+    private ICodexService Codex => export.View.Codex;
+
     [Theory]
     [InlineData("unobtainable")]
     [InlineData("Unobtainable")]
@@ -31,14 +34,21 @@ public sealed class CodexKeyTests
     [InlineData("cost", SortingType.Cost)]
     public void A_sort_naming_a_sorting_and_a_measure_is_the_sorting(string key, SortingType sorting)
     {
-        Assert.True(SortColumn.TryParse(key, out var sort));
+        Assert.True(SortColumn.TryParse(key, Codex, out var sort));
         Assert.Equal(sorting, sort.Sorting);
     }
 
     [Fact]
     public void A_sort_naming_only_a_measure_is_the_measure()
     {
-        Assert.True(SortColumn.TryParse("cooldown", out var sort));
-        Assert.Equal(MeasureType.Cooldown, sort.Measure);
+        Assert.True(SortColumn.TryParse("cooldown", Codex, out var sort));
+        Assert.Equal(QueryKeys.Key(MeasureType.Cooldown), sort.Measure);
+    }
+
+    [Fact]
+    public void A_sort_naming_a_stat_is_the_stat_measure()
+    {
+        Assert.True(SortColumn.TryParse("haste", Codex, out var sort));
+        Assert.Equal("haste", sort.Measure);
     }
 }

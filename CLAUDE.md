@@ -77,6 +77,6 @@ open` on an `output/ui` texture has a process holding that file: close it and ru
 ## No explanatory filler in the UI
 
 Do not add a `<Note>` or any paragraph that explains how the data works under a panel ("One id,
-several items. The name follows the armour type..."). The panel's heading and contents speak for
+several items. The name follows the armor type..."). The panel's heading and contents speak for
 themselves. Text in the UI is limited to data, labels, and instructions a user needs to operate a
 control.

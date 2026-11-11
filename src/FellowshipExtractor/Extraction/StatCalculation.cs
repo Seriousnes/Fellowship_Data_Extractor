@@ -74,7 +74,7 @@ public sealed class StatCalculation
         {
             throw new InvalidOperationException(
                 $"The stat calculation is missing a whole table: {Weights.Count} weight rows, " +
-                $"{SlotWeights.Count} slots, {ArmorWeights.Count} armour types, {Attributes.Count} attributes, " +
+                $"{SlotWeights.Count} slots, {ArmorWeights.Count} armor types, {Attributes.Count} attributes, " +
                 $"{RarityAdditions.Count} rule sets. Every item's stat magnitudes would come out wrong.");
         }
     }

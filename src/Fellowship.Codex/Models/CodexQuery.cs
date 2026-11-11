@@ -23,8 +23,7 @@ public sealed record CodexQuery
 
     public IReadOnlyDictionary<FlagType, bool> Flags { get; init; } = new Dictionary<FlagType, bool>();
 
-    public IReadOnlyDictionary<MeasureType, (double? Min, double? Max)> Ranges { get; init; } =
-        new Dictionary<MeasureType, (double?, double?)>();
+    public IReadOnlyList<Comparison> Comparisons { get; init; } = [];
 
     public SortColumn Sort { get; init; } = SortingType.Name;
 
@@ -47,7 +46,8 @@ public sealed record CodexQuery
 
         var selections = new Dictionary<FacetType, IReadOnlyList<string>>();
         var flags = new Dictionary<FlagType, bool>();
-        var ranges = new Dictionary<MeasureType, (double?, double?)>();
+        var comparisons = new List<Comparison>();
+        var measures = codex.Measures.Select(measure => measure.Key).ToArray();
         var types = new List<EntityType>();
 
         string? text = null, sort = null, group = null;
@@ -167,20 +167,22 @@ public sealed record CodexQuery
                 continue;
             }
 
-            if (Bound(key) is var (measureKey, isMax) && QueryKeys.TryParse<MeasureType>(measureKey, out var measure))
+            if (Models.Comparisons.TryParse(key, measures, out var measure, out var comparator))
             {
-                if (!TryNumber(values, out var bound, out error)) return new CodexQuery { Category = category };
-                if (bound is null) continue;
+                foreach (var entry in values)
+                {
+                    if (!TryNumber([entry], out var bound, out error)) return new CodexQuery { Category = category };
 
-                var current = ranges.GetValueOrDefault(measure);
-                ranges[measure] = isMax ? (current.Item1, bound) : (bound, current.Item2);
+                    comparisons.Add(new Comparison(measure, comparator, bound!.Value));
+                }
+
                 continue;
             }
 
             error = $"Unknown parameter '{key}'. The filters are " +
                 string.Join(", ", codex.Facets.Select(f => f.Key)
                     .Concat(codex.Flags.Select(f => f.Key))
-                    .Concat(codex.Measures.SelectMany(m => new[] { m.Key + "Min", m.Key + "Max" }))
+                    .Concat(Models.Comparisons.Parameters(measures))
                     .Concat(declared)) + ".";
             return new CodexQuery { Category = category };
         }
@@ -189,10 +191,10 @@ public sealed record CodexQuery
 
         sort ??= DefaultSort(searched).Key;
 
-        if (!SortColumn.TryParse(sort, out var sorted))
+        if (!SortColumn.TryParse(sort, codex, out var sorted))
         {
             error = $"'{sort}' is not a column. Sort by one of " +
-                string.Join(", ", codex.Sortings.Select(s => s.Key).Concat(codex.Measures.Select(m => m.Key))) + ".";
+                string.Join(", ", codex.Sortings.Select(s => s.Key).Concat(measures)) + ".";
             return new CodexQuery { Category = category };
         }
 
@@ -217,7 +219,7 @@ public sealed record CodexQuery
             Types = types,
             Selections = selections,
             Flags = flags,
-            Ranges = ranges,
+            Comparisons = comparisons,
             Sort = sorted,
             Descending = descending,
             Group = grouped,
@@ -232,11 +234,6 @@ public sealed record CodexQuery
         : throw new InvalidOperationException(
             $"'{key}' is declared as a filter parameter and no {nameof(BrowseParameter)} names it, so a caller " +
             "would find it in the published document and see it do nothing.");
-
-    private static (string Key, bool IsMax) Bound(string key) =>
-        key.EndsWith("Max", StringComparison.OrdinalIgnoreCase) ? (key[..^3], true)
-        : key.EndsWith("Min", StringComparison.OrdinalIgnoreCase) ? (key[..^3], false)
-        : (key, false);
 
     private static bool TryNumber(IReadOnlyList<string> values, out double? result, out string? error)
     {
@@ -288,8 +285,13 @@ public sealed record CodexQuery
         return this with { Flags = flags, Page = 1 };
     }
 
-    public CodexQuery WithoutRange(MeasureType measure) =>
-        this with { Ranges = Ranges.Where(range => range.Key != measure).ToDictionary(), Page = 1 };
+    public CodexQuery Without(Comparison comparison)
+    {
+        var kept = Comparisons.ToList();
+        kept.Remove(comparison);
+
+        return this with { Comparisons = kept, Page = 1 };
+    }
 
     /// <summary>This query with no type and no choice of <paramref name="facet"/>, the part of it a page that fixes them leaves to the reader.</summary>
     public CodexQuery Unpinned(FacetType facet) =>
@@ -309,7 +311,7 @@ public sealed record CodexQuery
 
     public string ToQueryString(int? page = null)
     {
-        var parts = Parameters(ranges: true).Select(field => $"{Uri.EscapeDataString(field.Name)}={Uri.EscapeDataString(field.Value)}").ToList();
+        var parts = Parameters(filters: true).Select(field => $"{Uri.EscapeDataString(field.Name)}={Uri.EscapeDataString(field.Value)}").ToList();
 
         var wanted = page ?? Page;
         if (wanted > 1) parts.Add($"{QueryKeys.Key(BrowseParameter.Page)}={wanted.ToString(CultureInfo.InvariantCulture)}");
@@ -317,28 +319,28 @@ public sealed record CodexQuery
         return parts.Count == 0 ? string.Empty : "?" + string.Join('&', parts);
     }
 
-    public IEnumerable<(string Name, string Value)> Fields() => Parameters(ranges: false);
+    /// <summary>The type, order, grouping and page size. The filter form sends the filters.</summary>
+    public IEnumerable<(string Name, string Value)> Fields() => Parameters(filters: false);
 
-    private IEnumerable<(string Name, string Value)> Parameters(bool ranges)
+    private IEnumerable<(string Name, string Value)> Parameters(bool filters)
     {
-        if (!string.IsNullOrWhiteSpace(Text)) yield return (QueryKeys.Key(BrowseParameter.Q), Text);
+        if (filters && !string.IsNullOrWhiteSpace(Text)) yield return (QueryKeys.Key(BrowseParameter.Q), Text);
 
         foreach (var type in Types) yield return (QueryKeys.Key(BrowseParameter.Type), EntityTypes.Slug(type));
 
-        foreach (var (key, values) in Selections.OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
+        foreach (var (key, values) in Selections.Where(_ => filters).OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
         {
             foreach (var value in values) yield return (QueryKeys.Key(key), value);
         }
 
-        foreach (var (key, wanted) in Flags.OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
+        foreach (var (key, wanted) in Flags.Where(_ => filters).OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
         {
             yield return (QueryKeys.Key(key), wanted ? "1" : "0");
         }
 
-        foreach (var (key, range) in Ranges.Where(_ => ranges).OrderBy(pair => QueryKeys.Key(pair.Key), StringComparer.Ordinal))
+        foreach (var comparison in Comparisons.Where(_ => filters))
         {
-            if (range.Min is { } min) yield return (QueryKeys.Key(key) + "Min", FellowshipCodex.Number(min));
-            if (range.Max is { } max) yield return (QueryKeys.Key(key) + "Max", FellowshipCodex.Number(max));
+            yield return (comparison.Parameter, FellowshipCodex.Number(comparison.Value));
         }
 
         if (Sort != DefaultSort(Text)) yield return (QueryKeys.Key(BrowseParameter.Sort), Sort.Key);
@@ -349,9 +351,6 @@ public sealed record CodexQuery
 
     public static SortColumn DefaultSort(string? text) => text is null ? SortingType.Name : SortingType.Relevance;
 
-    public double? Bound(MeasureType measure, bool max) =>
-        Ranges.TryGetValue(measure, out var range) ? max ? range.Max : range.Min : null;
-
     public bool Chosen(FacetType facet, string value) =>
         Selections.TryGetValue(facet, out var values) &&
         values.Contains(value, StringComparer.OrdinalIgnoreCase);
@@ -360,7 +359,7 @@ public sealed record CodexQuery
 
     public bool IsEmpty =>
         Text is null && Types.Count == 0 && Selections.All(s => s.Value.Count == 0) &&
-        Flags.Count == 0 && Ranges.Count == 0;
+        Flags.Count == 0 && Comparisons.Count == 0;
 }
 
 public sealed record CodexResults(
@@ -371,6 +370,6 @@ public sealed record CodexResults(
     IReadOnlyList<FacetCount> Facets,
     IReadOnlyDictionary<EntityType, int> Types,
     EntityType? Chosen,
-    IReadOnlyList<MeasureType> Measured,
+    IReadOnlyList<string> Measured,
     IReadOnlyList<FlagType> Flagged);
 

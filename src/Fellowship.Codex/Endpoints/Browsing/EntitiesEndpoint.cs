@@ -34,12 +34,63 @@ public sealed record EntitiesRequest
 
 public static class EntitiesEndpoint
 {
-    public static RouteHandlerBuilder MapEntities(this IEndpointRouteBuilder group) =>
+    public const string Name = "GetEntities";
+
+    /// <summary>File formats of the unpaged list. Each format is also the extension of its address.</summary>
+    public static readonly IReadOnlyList<string> Downloads = [EntityTable.Csv, EntityTable.Json];
+
+    public static string DownloadName(string format) => "DownloadEntities" + char.ToUpperInvariant(format[0]) + format[1..];
+
+    public static IEndpointRouteBuilder MapEntities(this IEndpointRouteBuilder group)
+    {
         group.MapGet("/entities", Handle)
-            .WithName("GetEntities")
+            .WithName(Name)
             .WithSummary("Every entity a filter leaves, paged.")
             .Produces<EntitiesResponse>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
+
+        foreach (var format in Downloads)
+        {
+            group.MapGet("/entities." + format, (
+                    [AsParameters] EntitiesRequest request,
+                    HttpContext http,
+                    ICodexService codex,
+                    ICodexSearchService search,
+                    ICodexViewService view) => Download(format, request, http, codex, search, view))
+                .WithName(DownloadName(format))
+                .WithSummary($"Every entity a filter leaves, unpaged, in a {format.ToUpperInvariant()} file with its facets and measures.")
+                .Produces(StatusCodes.Status200OK, contentType: EntityTable.ContentType(format))
+                .ProducesProblem(StatusCodes.Status400BadRequest);
+        }
+
+        return group;
+    }
+
+    private static IResult Download(
+        string format,
+        EntitiesRequest request,
+        HttpContext http,
+        ICodexService codex,
+        ICodexSearchService search,
+        ICodexViewService view)
+    {
+        var query = request.ToQuery(http.Request.Query, codex, out var error);
+
+        if (error is not null)
+        {
+            return Results.Problem(
+                title: "The filter could not be read.", detail: error, statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        var rows = search.Run(query with { Page = 1, PageSize = int.MaxValue / 2 }).Rows;
+        var table = EntityTable.Of(rows, codex, view, Origins.Of(http));
+        var named = query.Types is [var only] ? EntityTypes.Slug(only) : "entities";
+
+        return Results.File(
+            table.Write(format),
+            EntityTable.ContentType(format),
+            $"fellowship-codex-{named}.{format}");
+    }
 
     private static IResult Handle(
         [AsParameters] EntitiesRequest request,

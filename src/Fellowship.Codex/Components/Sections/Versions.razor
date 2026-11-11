@@ -73,9 +73,9 @@
             ? Store.Settings.Heroes.Where(hero => EntityStore.Reads(reading, hero)).Select(hero => hero.Name)
             : Ui.Codex.Facet(FacetType.Hero).Values(reading);
 
-    private static string? Discriminator(ArmorType? armour, PrimaryStat? stat)
+    private static string? Discriminator(ArmorType? armor, PrimaryStat? stat)
     {
-        string?[] halves = [armour?.ToString(), stat?.ToString()];
+        string?[] halves = [armor?.ToString(), stat?.ToString()];
         var pair = string.Join(" / ", halves.Where(half => !string.IsNullOrEmpty(half)));
 
         return pair.Length == 0 ? null : pair;

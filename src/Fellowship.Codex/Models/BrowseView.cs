@@ -7,9 +7,31 @@ namespace Fellowship.Codex.Models;
 /// browse parameters.
 /// </param>
 /// <param name="pinned">Facets the page fixes, so the rail offers neither their values nor a grouping by them.</param>
+/// <param name="listed">Query for <paramref name="results"/>. It differs from <paramref name="query"/> on a page that fixes more filters.</param>
 public sealed class BrowseView(
-    ICodexService codex, CodexQuery query, CodexResults results, string where, IReadOnlySet<FacetType>? pinned = null)
+    ICodexService codex,
+    CodexQuery query,
+    CodexResults results,
+    string where,
+    IReadOnlySet<FacetType>? pinned = null,
+    CodexQuery? listed = null)
 {
+    /// <summary>Address of the unpaged <paramref name="format"/> file of the list.</summary>
+    public string Download(string format)
+    {
+        var answered = listed ?? query;
+
+        if (answered.Types.Count == 0 && answered.Category is { } category)
+        {
+            answered = answered with
+            {
+                Types = [.. PublicTypes.Listed.Where(type => type.Category == category).Select(type => type.Type)],
+            };
+        }
+
+        return $"/api/entities.{format}" + (answered with { Page = 1 }).ToQueryString();
+    }
+
     public ICodexService Codex => codex;
 
     public CodexQuery Query => query;
@@ -39,8 +61,15 @@ public sealed class BrowseView(
 
     public string Where => where;
 
+    /// <summary>This list with no facet, flag or comparison. It keeps the search text, the type, the order and the grouping.</summary>
     public string Bare =>
-        query.Text is null ? where : At("?q=" + Uri.EscapeDataString(query.Text));
+        At((query with
+        {
+            Selections = new Dictionary<FacetType, IReadOnlyList<string>>(),
+            Flags = new Dictionary<FlagType, bool>(),
+            Comparisons = [],
+            Page = 1,
+        }).ToQueryString());
 
     private string At(string browsed) =>
         browsed.Length == 0 || !where.Contains('?', StringComparison.Ordinal) ? where + browsed : where + "&" + browsed[1..];
@@ -52,7 +81,11 @@ public sealed class BrowseView(
             (facet.Values.Count > 1 || query.Selections.ContainsKey(facet.Type))),
     ];
 
-    public IReadOnlyList<FacetCount> Primary => [.. Rail.Where(facet => facet.Facet.Primary)];
+    /// <summary>Primary facets the rail offers one value of at a time.</summary>
+    public IReadOnlyList<FacetCount> Single => [.. Rail.Where(facet => facet.Facet is { Primary: true, Single: true })];
+
+    /// <summary>Primary facets the rail offers several values of.</summary>
+    public IReadOnlyList<FacetCount> Primary => [.. Rail.Where(facet => facet.Facet is { Primary: true, Single: false })];
 
     public IReadOnlyList<FacetCount> More => [.. Rail.Where(facet => !facet.Facet.Primary)];
 
@@ -70,18 +103,25 @@ public sealed class BrowseView(
 
     public bool Stated(FlagType flag) => query.Flags.ContainsKey(flag);
 
-    public bool Bounded(MeasureType measure) => query.Ranges.ContainsKey(measure);
-
     public bool? Answer(FlagType flag) =>
         query.Flags.TryGetValue(flag, out var wanted) ? wanted : null;
 
-    public string Unbound(MeasureType measure) => At(query.WithoutRange(measure).ToQueryString());
+    public string Without(Comparison comparison) => At(query.Without(comparison).ToQueryString());
 
-    public IReadOnlyList<Measure> Ranges =>
+    /// <summary>Offered measures with a value on at least one row of the list, and the measures of the comparisons.</summary>
+    public IReadOnlyList<Measure> Comparable =>
     [
-        .. codex.Measures.Where(measure =>
-            query.Ranges.ContainsKey(measure.Type) || results.Measured.Contains(measure.Type)),
+        .. codex.Measures.Where(measure => (measure.Offered && results.Measured.Contains(measure.Key)) ||
+            query.Comparisons.Any(comparison => comparison.Measure == measure.Key)),
     ];
+
+    /// <summary>Measures in the comparisons, in order of first use. Each has a column in the table.</summary>
+    public IReadOnlyList<Measure> Compared =>
+    [
+        .. query.Comparisons.Select(comparison => comparison.Measure).Distinct().Select(codex.Measure),
+    ];
+
+    public static string Printed(Comparator comparator) => CodexKeys.Label(comparator);
 
     public static string? On(bool chosen) => chosen ? "on" : null;
 
@@ -108,11 +148,6 @@ public sealed class BrowseView(
         {
             var chips = new List<(string, string)>();
 
-            foreach (var type in query.Types)
-            {
-                chips.Add((Models.FellowshipCodex.Label(type), At(query.Toggled(type).ToQueryString())));
-            }
-
             foreach (var (key, values) in query.Selections)
             {
                 var facet = codex.Facet(key);
@@ -130,21 +165,13 @@ public sealed class BrowseView(
                 chips.Add(((wanted ? string.Empty : "Not: ") + flag.Label, State(key, null)));
             }
 
-            foreach (var (key, range) in query.Ranges)
+            foreach (var comparison in query.Comparisons)
             {
-                var measure = codex.Measure(key);
+                var measure = codex.Measure(comparison.Measure);
 
-                var bounds = range switch
-                {
-                    (not null, not null) => $"{Models.FellowshipCodex.Number(range.Min!.Value)} to {Models.FellowshipCodex.Number(range.Max!.Value)}",
-                    (not null, null) => $"from {Models.FellowshipCodex.Number(range.Min!.Value)}",
-                    (null, not null) => $"up to {Models.FellowshipCodex.Number(range.Max!.Value)}",
-                    _ => null,
-                };
-
-                if (bounds is null) continue;
-
-                chips.Add(($"{measure.Label}: {bounds}{measure.Unit}", Unbound(key)));
+                chips.Add((
+                    $"{measure.Label} {Printed(comparison.Comparator)} {Models.FellowshipCodex.Number(comparison.Value)}{measure.Unit}",
+                    Without(comparison)));
             }
 
             return chips;

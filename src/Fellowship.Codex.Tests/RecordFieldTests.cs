@@ -54,7 +54,7 @@ public sealed class RecordFieldTests
     public void A_reading_names_no_measure_bound()
     {
         Assert.Contains("itemLevel", RecordLists.Readings);
-        Assert.Contains("rank", RecordLists.Readings);
+        Assert.Contains(QueryKeys.Key(MeasureType.MaxRank), RecordLists.Readings);
         Assert.Contains("difficulty", RecordLists.Readings);
         Assert.DoesNotContain("page", RecordLists.Readings);
     }

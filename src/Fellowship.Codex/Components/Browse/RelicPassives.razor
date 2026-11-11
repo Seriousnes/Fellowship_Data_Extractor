@@ -11,6 +11,7 @@
         </Column>
         <Column Head="Cooldown" Key="MeasureType.Cooldown" Unit="s" Numeric
                 Value="row => row.Cooldown" />
+        @ComparedColumns.For(View, Documents)
     </Columns>
 </Table>
 

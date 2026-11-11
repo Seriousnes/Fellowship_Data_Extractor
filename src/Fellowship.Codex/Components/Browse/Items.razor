@@ -11,6 +11,7 @@
         </Column>
         <Column Head="ILvl" Key="SortingType.Ilvl" Numeric Value="row => row.ItemLevel" />
         <Column Head="Slot" Key="SortingType.Slot" Value="row => row.Slot" />
+        @ComparedColumns.For(View, Documents)
         <Column Head="Source" Key="SortingType.Source" Class="cx-tags">
             <Content Context="row">
                 @foreach (var source in row.Sources ?? [])
@@ -28,7 +29,7 @@
                         <Chip Colour="@Ui.HeroColour(hero.ToString())">@hero</Chip>
                     }
                 }
-                else if (Armoured(row.Slot))
+                else if (Armored(row.Slot))
                 {
                     @if (row.ArmorType is { } armor)
                     {
@@ -55,7 +56,7 @@
 
     protected override void OnParametersSet() => Documents = [.. Rows.OfType<ItemDocument>()];
 
-    private bool Armoured(string? slot) =>
+    private bool Armored(string? slot) =>
         slot is not null &&
         Ui.Store.Settings.StatCalculation.SlotWeights.TryGetValue(slot, out var weight) &&
         weight.ArmorWeight > 0;

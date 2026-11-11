@@ -40,7 +40,7 @@ public sealed class ArmorLineTests
         StatMagnitudes.Armor(Item(id), Export.Loaded.Settings.StatCalculation, itemLevel);
 
     [Fact]
-    public void ASlotThatWearsNoArmourHasNone() =>
+    public void ASlotThatWearsNoArmorHasNone() =>
         Assert.Null(Armor(RubelliteRing, 360));
 
     [Fact]

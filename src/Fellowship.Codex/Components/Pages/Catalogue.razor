@@ -23,31 +23,33 @@
 }
 else
 {
-    <Tabs Aria="Types">
-        <a class="cx-tab" href="@View.OfType(null)" aria-current="@(Results.Chosen is null ? "page" : null)">
-            All
-            @if (Query.Text is not null)
-            {
-                <CountBadge Text="@Results.Types.Values.Sum().ToString("N0")" />
-            }
-        </a>
-        @foreach (var type in Tabs)
-        {
-            <a class="cx-tab" href="@View.OfType(type.Type)"
-               aria-current="@(Results.Chosen == type.Type ? "page" : null)">
-                @type.Label
-                @if (Query.Text is not null)
-                {
-                    <CountBadge Text="@Results.Types.GetValueOrDefault(type.Type).ToString("N0")" />
-                }
-            </a>
-        }
-    </Tabs>
-
     <Browsing Query="Query" Results="Results" View="View"
               Nothing="@(Query.IsEmpty
                   ? "Pick a category from the menus above, or type a name into the search box."
-                  : "Remove a filter and try again.")" />
+                  : "Remove a filter and try again.")">
+        <Types>
+            <Tabs Aria="Types">
+                <a class="cx-tab" href="@View.OfType(null)" aria-current="@(Results.Chosen is null ? "page" : null)">
+                    All
+                    @if (Query.Text is not null)
+                    {
+                        <CountBadge Text="@Results.Types.Values.Sum().ToString("N0")" />
+                    }
+                </a>
+                @foreach (var type in Tabs)
+                {
+                    <a class="cx-tab" href="@View.OfType(type.Type)"
+                       aria-current="@(Results.Chosen == type.Type ? "page" : null)">
+                        @type.Label
+                        @if (Query.Text is not null)
+                        {
+                            <CountBadge Text="@Results.Types.GetValueOrDefault(type.Type).ToString("N0")" />
+                        }
+                    </a>
+                }
+            </Tabs>
+        </Types>
+    </Browsing>
 }
 
 @code {

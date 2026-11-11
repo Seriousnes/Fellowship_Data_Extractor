@@ -10,6 +10,7 @@
             <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
         </Column>
         <Column Head="Hero rank" Key="SortingType.Rank" Numeric Value="row => row.MinimumHeroRank" />
+        @ComparedColumns.For(View, Documents)
     </Columns>
 </Table>
 

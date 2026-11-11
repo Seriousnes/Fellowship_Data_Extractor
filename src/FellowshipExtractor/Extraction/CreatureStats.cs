@@ -66,7 +66,7 @@ public sealed class CreatureStats
     public CreatureStats(AbstractFileProvider provider, IReadOnlySet<int> difficulties)
     {
         var attributes = CurveRows.Load(
-            provider, BaseTable, "how much health, armour, resist, kill score and spirit points a creature has");
+            provider, BaseTable, "how much health, armor, resist, kill score and spirit points a creature has");
 
         var namespaces = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

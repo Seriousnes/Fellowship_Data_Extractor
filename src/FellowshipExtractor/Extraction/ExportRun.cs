@@ -171,7 +171,7 @@ public static class ExportRun
                 {
                     throw new InvalidOperationException(
                         $"Two entries share the key {key}. Expansion has produced entries that differ in " +
-                        "something other than armour type, primary stat and hero.");
+                        "something other than armor type, primary stat and hero.");
                 }
 
                 resolved.Add(record);

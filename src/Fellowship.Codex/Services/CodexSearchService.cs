@@ -50,13 +50,13 @@ public sealed class CodexSearchService(
             .GroupBy(EntityTypes.TypeOf)
             .ToDictionary(group => group.Key, group => group.Count());
 
-        var unbounded = query.Ranges.Count == 0
+        var unbounded = query.Comparisons.Count == 0
             ? applied
-            : rows.Where(row => Matches(row, query with { Ranges = NoRanges })).ToArray();
+            : rows.Where(row => Matches(row, query with { Comparisons = [] })).ToArray();
 
         var measured = codex.Measures
             .Where(measure => unbounded.Any(row => measure.Value(row) is not null))
-            .Select(measure => measure.Type)
+            .Select(measure => measure.Key)
             .ToArray();
 
         var flagged = codex.Flags
@@ -68,9 +68,6 @@ public sealed class CodexSearchService(
 
         return new CodexResults(ordered.Length, page, pages, window, facets, types, chosen, measured, flagged);
     }
-
-    private static readonly IReadOnlyDictionary<MeasureType, (double?, double?)> NoRanges =
-        new Dictionary<MeasureType, (double?, double?)>();
 
     private EntityDocument[]? listed;
 
@@ -109,11 +106,10 @@ public sealed class CodexSearchService(
             if (!query.Flags.GetValueOrDefault(flag.Type) && !flag.Admits(row)) return false;
         }
 
-        foreach (var (key, range) in query.Ranges)
+        foreach (var comparison in query.Comparisons)
         {
-            if (codex.Measure(key).Value(row) is not { } value) return false;
-            if (range.Min is { } min && value < min) return false;
-            if (range.Max is { } max && value > max) return false;
+            if (codex.Measure(comparison.Measure).Value(row) is not { } value) return false;
+            if (!comparison.Admits(value)) return false;
         }
 
         return true;
@@ -139,7 +135,7 @@ public sealed class CodexSearchService(
 
         var ordered = query.Sort.Sorting is { } sorting
             ? Sorted(rows, codex.Sorting(sorting), query.Descending)
-            : Measured(rows, codex.Measure(query.Sort.Measure!.Value), query.Descending);
+            : Measured(rows, codex.Measure(query.Sort.Measure!), query.Descending);
 
         return
         [

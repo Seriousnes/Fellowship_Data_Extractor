@@ -92,7 +92,7 @@ public static class RecordLists
             {
                 if (QueryKeys.TryParse<BrowseParameter>(key, out var control) && control is BrowseParameter.Sort &&
                     values.LastOrDefault() is { Length: > 0 } sort &&
-                    !SortColumn.TryParse(sort, out _) &&
+                    !SortColumn.TryParse(sort, codex, out _) &&
                     RecordFields.Find(typeof(TRecord), sort) is { } field)
                 {
                     sortField = field;
@@ -174,13 +174,10 @@ public static class RecordLists
         .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     public static IEnumerable<Measure> Measures(ICodexService codex) =>
-        codex.Measures.Where(measure => !Readings.Contains(measure.Key));
+        codex.Measures.Where(measure => !measure.Itemised && !Readings.Contains(measure.Key));
 
     private static bool Bounded(ICodexService codex, string key) =>
-        (key.EndsWith("Min", StringComparison.OrdinalIgnoreCase) ||
-            key.EndsWith("Max", StringComparison.OrdinalIgnoreCase)) &&
-        QueryKeys.TryParse<MeasureType>(key[..^3], out var bounded) &&
-        Measures(codex).Any(measure => measure.Type == bounded);
+        Comparisons.TryParse(key, Measures(codex).Select(measure => measure.Key), out _, out _);
 
     private static string[] Wanted(StringValues values) =>
     [
@@ -211,7 +208,7 @@ public static class RecordLists
         string.Join(", ", reading.Select(JsonNamingPolicy.CamelCase.ConvertName).Order(StringComparer.Ordinal)
             .Concat(codex.Facets.Select(facet => facet.Key))
             .Concat(codex.Flags.Select(flag => flag.Key))
-            .Concat(Measures(codex).SelectMany(measure => new[] { measure.Key + "Min", measure.Key + "Max" }))
+            .Concat(Comparisons.Parameters(Measures(codex).Select(measure => measure.Key)))
             .Concat(RecordFields.Of(record).Select(field => field.Key))
             .Distinct(StringComparer.OrdinalIgnoreCase)) + ".";
 

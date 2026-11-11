@@ -89,7 +89,10 @@
 
     public void Add(Column<T> column)
     {
-        if (!columns.Contains(column)) columns.Add(column);
+        if (columns.Contains(column)) return;
+        if (column.Key is { } key && columns.Any(held => held.Key == key)) return;
+
+        columns.Add(column);
     }
 
     public void Remove(Column<T> column) => columns.Remove(column);

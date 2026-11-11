@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.DataProtection;
 
 using Fellowship.Codex.Components.Pages;
 using Fellowship.Codex.Models;
+using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex;
 
@@ -118,7 +119,8 @@ public sealed class CatalogueFilterGate(RequestDelegate next, TurnstileSettings 
         HttpMethods.IsGet(http.Request.Method) &&
         http.Request.QueryString.HasValue &&
         http.GetEndpoint()?.Metadata.GetMetadata<ComponentTypeMetadata>()?.Type is { } page &&
-        (page == typeof(Catalogue) || (page == typeof(EntityPage) && http.Request.Query.Keys.Any(Browses))) &&
+        (page == typeof(Catalogue) || (page == typeof(EntityPage) &&
+            http.Request.Query.Keys.Any(key => Browses(key, http.RequestServices.GetRequiredService<ICodexService>())))) &&
         !HasSession(http) &&
         !http.Request.Headers.Accept.Any(accept => accept?.Contains(EnhancedNavigation, StringComparison.Ordinal) is true);
 
@@ -165,16 +167,11 @@ public sealed class CatalogueFilterGate(RequestDelegate next, TurnstileSettings 
         </html>
         """;
 
-    private static bool Browses(string key) =>
+    private static bool Browses(string key, ICodexService codex) =>
         !QueryKeys.TryParse<ReadingParameter>(key, out _) &&
         (key == Components.Views.Dungeon.TabKey ||
          QueryKeys.TryParse<FacetType>(key, out _) ||
          QueryKeys.TryParse<FlagType>(key, out _) ||
          QueryKeys.TryParse<BrowseParameter>(key, out _) ||
-         QueryKeys.TryParse<MeasureType>(Bound(key), out _));
-
-    private static string Bound(string key) =>
-        key.EndsWith("Min", StringComparison.OrdinalIgnoreCase) || key.EndsWith("Max", StringComparison.OrdinalIgnoreCase)
-            ? key[..^3]
-            : key;
+         Comparisons.TryParse(key, codex.Measures.Select(measure => measure.Key), out _, out _));
 }

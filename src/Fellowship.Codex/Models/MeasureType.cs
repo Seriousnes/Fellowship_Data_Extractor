@@ -29,7 +29,7 @@ public enum MeasureType
     Charges,
 
     [Description("Max rank")]
-    Rank,
+    MaxRank,
 
     [Description("ID")]
     Id,

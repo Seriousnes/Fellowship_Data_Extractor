@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
+using Fellowship.Codex.Models;
 using Fellowship.Codex.Services;
 
 namespace Fellowship.Codex.Endpoints;
 
 public sealed class BrowsingParameters(ICodexService codex) : IOpenApiOperationTransformer
 {
-    private const string EndpointName = "GetEntities";
+    private static readonly string[] EndpointNames =
+        [EntitiesEndpoint.Name, .. EntitiesEndpoint.Downloads.Select(EntitiesEndpoint.DownloadName)];
 
     public Task TransformAsync(
         OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellation)
@@ -16,7 +18,7 @@ public sealed class BrowsingParameters(ICodexService codex) : IOpenApiOperationT
             .Select(metadata => metadata.EndpointName)
             .FirstOrDefault();
 
-        if (!string.Equals(endpointName, EndpointName, StringComparison.Ordinal)) return Task.CompletedTask;
+        if (!EndpointNames.Contains(endpointName, StringComparer.Ordinal)) return Task.CompletedTask;
 
         foreach (var facet in codex.Facets)
         {
@@ -29,8 +31,7 @@ public sealed class BrowsingParameters(ICodexService codex) : IOpenApiOperationT
         }
 
         var note =
-            "Each measure bounds a range through a `Min` and a `Max` parameter, as `?cooldownMin=3`. " +
-            "The measures are " + string.Join(", ", codex.Measures.Select(measure => measure.Key)) + ". " +
+            Comparisons.Note + " The measures are " + string.Join(", ", codex.Measures.Select(measure => measure.Key)) + ". " +
             "`sort` takes name, type or a measure, and `group` takes a facet.";
 
         operation.Description = operation.Description is { Length: > 0 } existing
