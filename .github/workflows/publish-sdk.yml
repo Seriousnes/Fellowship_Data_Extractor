@@ -39,7 +39,8 @@ jobs:
         env:
           HASH: ${{ steps.inputs.outputs.hash }}
         run: |
-          latest=$(curl -fsS "$PACKAGES/index.json" | jq -r '.versions[-1] // empty' || true)
+          curl -fsS "$PACKAGES/index.json" -o versions.json || echo '{"versions":[]}' > versions.json
+          latest=$(jq -r '.versions[-1] // empty' versions.json)
           shipped=""
           if [ -n "$latest" ]; then
             curl -fsSL "$PACKAGES/$latest/fellowshipanalyzer.codex.sdk.$latest.nupkg" -o latest.nupkg || true
@@ -59,7 +60,11 @@ jobs:
 
       - name: Pack the SDK
         if: steps.published.outputs.changed == 'true'
-        run: dotnet pack src/Fellowship.SDK -c Release -p:BuildNumber=${{ github.run_number }} -o package
+        run: |
+          series=$(dotnet msbuild src/Fellowship.SDK -getProperty:MajorMinorVersion)
+          patch=$(jq -r --arg prefix "$series." '[.versions[] | select(startswith($prefix)) | ltrimstr($prefix) | select(test("^[0-9]+$")) | tonumber] | (max // -1) + 1' versions.json)
+          echo "Packing $series.$patch"
+          dotnet pack src/Fellowship.SDK -c Release -p:PatchNumber="$patch" -o package
 
       - name: Keep the package with the run
         if: steps.published.outputs.changed == 'true'
