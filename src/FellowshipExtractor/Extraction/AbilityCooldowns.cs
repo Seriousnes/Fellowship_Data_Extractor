@@ -3,6 +3,8 @@ using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Engine;
 using CUE4Parse.UE4.Assets.Objects;
 
+using Fellowship.SDK.Models;
+
 namespace FellowshipExtractor.Extraction;
 
 /// <summary>
@@ -22,18 +24,32 @@ public sealed class AbilityCooldowns(AbstractFileProvider provider, ConstantsTab
 
     public bool Declares(UObject ability) => ClassDefaults.Inherited(ability, DurationField, provider) is not null;
 
-    public double? Of(UObject ability, ChargeCounts charges)
+    public double? Of(UObject ability, ChargeCounts charges) => Read(ability, charges).Seconds;
+
+    /// <summary>The cooldown, with the row its <c>CooldownDuration</c> reads.</summary>
+    public (double? Seconds, FieldSource? Source) Read(UObject ability, ChargeCounts charges)
     {
         if (ClassDefaults.Inherited(ability, DurationField, provider)?.GenericValue
             is not FScriptStruct { StructType: IPropertyHolder scalable })
         {
-            return null;
+            return (null, null);
         }
 
-        if (Evaluated(scalable) is not (> 0 and var seconds)) return null;
-        if (PropertyWalk.AsTags(ClassDefaults.Inherited(ability, TagsField, provider)?.GenericValue) is not { Length: > 0 }) return null;
+        if (Evaluated(scalable) is not (> 0 and var seconds)) return (null, null);
+        if (PropertyWalk.AsTags(ClassDefaults.Inherited(ability, TagsField, provider)?.GenericValue) is not { Length: > 0 }) return (null, null);
 
-        return OnChargeEffect(ability, charges) || Class(ability, CooldownClassField) is not null ? seconds : null;
+        return OnChargeEffect(ability, charges) || Class(ability, CooldownClassField) is not null
+            ? (seconds, Source(scalable))
+            : (null, null);
+    }
+
+    /// <summary>The row times the <c>Value</c>, where a <c>Value</c> of 1 leaves the row's value.</summary>
+    private static FieldSource? Source(IPropertyHolder scalable)
+    {
+        var row = PropertyWalk.GetStruct(scalable, "Curve") is { } curve ? PropertyWalk.GetString(curve, "RowName") : null;
+        var value = PropertyWalk.AsNumber(PropertyWalk.Get(scalable, "Value")?.GenericValue) ?? 0;
+
+        return FieldSources.Scalable(row, value);
     }
 
     /// <summary>

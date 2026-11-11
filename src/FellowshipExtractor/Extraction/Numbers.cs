@@ -5,7 +5,11 @@ public sealed record SplitNumbers(
     Dictionary<string, object?> Rest,
     HashSet<string> Rows,
     HashSet<string> Own,
-    Dictionary<string, double> Promoted);
+    Dictionary<string, double> Promoted)
+{
+    /// <summary>The binding each field of <see cref="ByName"/> takes its value from.</summary>
+    public Dictionary<string, CurveBinding> Won { get; } = new(StringComparer.Ordinal);
+}
 
 public static class Numbers
 {
@@ -39,6 +43,7 @@ public static class Numbers
     public const string Duration = "duration";
     public const string ChannelTick = "channelTick";
     public const string Cost = "cost";
+    public const string Cooldown = "cooldown";
 
     public static double? Own(SplitNumbers split, string field)
     {
@@ -99,7 +104,10 @@ public static class Numbers
             Place(rest, own, binding.RowName, Value(binding), tuningNamespace);
         }
 
-        return new SplitNumbers(byName, rest, rows, own, promoted);
+        var split = new SplitNumbers(byName, rest, rows, own, promoted);
+        foreach (var (field, binding) in claimed) split.Won[field] = binding;
+
+        return split;
     }
 
     public static void Add(

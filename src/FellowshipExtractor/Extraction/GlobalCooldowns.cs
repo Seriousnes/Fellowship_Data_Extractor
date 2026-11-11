@@ -4,9 +4,14 @@ using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Objects.Properties;
 using CUE4Parse.UE4.Objects.UObject;
 
+using Fellowship.SDK.Models;
+
 namespace FellowshipExtractor.Extraction;
 
-public sealed record GlobalCooldown(double Duration, bool ScalesWithHaste);
+public sealed record GlobalCooldown(double Duration, bool ScalesWithHaste)
+{
+    public FieldSource? Source { get; init; }
+}
 
 public sealed class GlobalCooldowns
 {
@@ -67,7 +72,7 @@ public sealed class GlobalCooldowns
             var value = MagnitudeCalculations.Scalable(scalable, _constants)
                 ?? throw Unreadable(assetName, classPath, "names a scalable float row the constants do not have");
 
-            return new GlobalCooldown(value, false);
+            return new GlobalCooldown(value, false) { Source = MagnitudeCalculations.Source(scalable, _constants) };
         }
 
         if (type != CustomType) throw Unreadable(assetName, classPath, $"has a {type ?? "missing"} duration magnitude");
@@ -84,10 +89,19 @@ public sealed class GlobalCooldowns
         var context = new EffectContext(classPath, CooldownScaling.AssetTags(effect), Starting);
         var hasted = context with { Captured = attribute => attribute == CooldownScaling.HasteAttribute ? HasteProbe * Starting(attribute) : Starting(attribute) };
 
-        var bare = Folded(chain, Computed(body, calculation, context) ?? throw Unreadable(assetName, classPath, $"reads {calculationPath} to no number"));
+        var walk = new BareStateWalk(body, calculation, _constants, null) { Effect = context };
+        var bare = Folded(chain, walk.Answer() ?? throw Unreadable(assetName, classPath, $"reads {calculationPath} to no number"));
         var raised = Folded(chain, Computed(body, calculation, hasted) ?? throw Unreadable(assetName, classPath, $"reads {calculationPath} to no number at raised haste"));
 
-        return new GlobalCooldown(bare, raised < bare);
+        var folded = new[] { CoefficientField, PreAddField, PostAddField }
+            .Select(field => Struct(Leaf(chain, [CustomField, field])) is { } scalable
+                ? MagnitudeCalculations.Read(scalable, _constants).Row
+                : null);
+
+        return new GlobalCooldown(bare, raised < bare)
+        {
+            Source = FieldSources.Of(ResourceGains.RowProduct, [.. walk.Answered?.Rows ?? [], .. folded]),
+        };
     }
 
     private double? Computed(UStruct body, UObject calculation, EffectContext context) =>

@@ -237,6 +237,9 @@ public sealed class ChangeIndex
 
     public IReadOnlyDictionary<string, double>? Constants(Entity source) => _modifiers.Rows(source);
 
+    /// <summary>The constants row a tuning key names for <paramref name="context"/>.</summary>
+    public string Row(string key, Entity context) => _modifiers.Row(key, context);
+
     public IReadOnlyList<(EntityType Type, int Id)> Holding(string tag) => _modifiers.Holding(tag);
 
     public IReadOnlyList<int> AbilitiesTagged(string tag) => _modifiers.AbilitiesTagged(tag);

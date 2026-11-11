@@ -3,6 +3,8 @@ using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
 
+using Fellowship.SDK.Models;
+
 namespace FellowshipExtractor.Extraction;
 
 public static class SetByCallerDurations
@@ -33,12 +35,13 @@ public static class SetByCallerDurations
         return PropertyWalk.GetString(tag, TagNameField);
     }
 
-    public static (double? Duration, string? Derivation, IReadOnlyList<string> Gates) From(
+    public static (double? Duration, string? Derivation, IReadOnlyList<string> Gates, FieldSource? Source) From(
         UObject? applier, string tag, ConstantsTable constants, string? effectClass = null)
     {
-        if (applier is null) return (null, null, []);
+        if (applier is null) return (null, null, [], null);
 
         var values = new List<double>();
+        var sources = new List<FieldSource?>();
         var derivations = new List<string>();
         var assignments = 0;
         var gates = new SortedSet<string>(StringComparer.Ordinal);
@@ -78,12 +81,13 @@ public static class SetByCallerDurations
 
                     var magnitude = parameters.ElementAtOrDefault(MagnitudeParameter);
                     var tested = walk.Gates.ToHashSet(StringComparer.Ordinal);
-                    var read = walk.Number(magnitude);
+                    var (read, traced) = walk.Traced(magnitude);
 
                     gates.UnionWith(walk.Gates.Except(tested, StringComparer.Ordinal));
                     if (read is null) continue;
 
                     values.Add(read.Value);
+                    sources.Add(traced);
                     derivations.Add($"{read} = {walk.Text(magnitude)}");
                 }
 
@@ -91,13 +95,17 @@ public static class SetByCallerDurations
             }
         }
 
-        if (assignments == 0 || values.Count != assignments) return (null, null, []);
+        if (assignments == 0 || values.Count != assignments) return (null, null, [], null);
 
         var distinct = values.Distinct().ToArray();
 
+        var source = sources.Distinct().ToArray() is [var only]
+            ? only
+            : FieldSources.Joined(ResourceGains.RowProduct, [.. sources]);
+
         return distinct.Length == 1
-            ? (distinct[0], string.Join(" and ", derivations.Distinct(StringComparer.Ordinal)), [.. gates])
-            : (null, null, []);
+            ? (distinct[0], string.Join(" and ", derivations.Distinct(StringComparer.Ordinal)), [.. gates], source)
+            : (null, null, [], null);
     }
 
     private static void Assignments(

@@ -107,5 +107,22 @@ int rank = AugmentationRanks.Rank(export, reading, enchant);
 
 The static classes in `Fellowship.SDK.Calculations` take the settings and documents directly.
 
+## Find the rows a document's field is set from
+
+`EntityDocument.FieldSources` is keyed by a scalar field's name in the document, such as `castTime` or
+`range`. Each `FieldSource` has the full names of the ability constants rows the field is set from, and a
+`Kind` from the vocabulary of `ResourceGain.SourceKind`. A `ConstantsRow` field has the value of its one
+row. `Tuning` has the keys of the document's `Tuning` for those rows:
+
+```csharp
+var ability = export.Find<AbilityDocument>(new EntityReference(EntityType.Ability, 1273, "Apocalypse"))!;
+
+FieldSource castTime = ability.FieldSources!["castTime"];
+string key = castTime.Tuning![0];
+// key is "CastTime", and ability.Tuning![key] is the row castTime has the value of.
+```
+
+A field set from no row has no entry, and a document with no such field has no `FieldSources`.
+
 A reading the codex API refuses throws `RefusedReadingException`. Its `Refusal` has the API's problem
 title and detail. `FellowshipExport.Refusal` returns the same refusal without the throw.

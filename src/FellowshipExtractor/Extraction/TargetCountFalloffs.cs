@@ -5,6 +5,7 @@ using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
 using Fellowship.SDK;
+using Fellowship.SDK.Models;
 
 namespace FellowshipExtractor.Extraction;
 
@@ -358,9 +359,10 @@ public sealed class TargetCountFalloffs(
         }
     }
 
-    public double? MaxTargets(UObject? cdo)
+    /// <summary>The target cap, with the row it is the floor of a multiple of.</summary>
+    public (double? Value, FieldSource? Source) MaxTargets(UObject? cdo)
     {
-        if (cdo?.Owner is not { } package) return null;
+        if (cdo?.Owner is not { } package) return (null, null);
 
         var exports = package.GetExports().ToArray();
 
@@ -368,11 +370,11 @@ public sealed class TargetCountFalloffs(
             ? Subobject(exports, acquisition, SelectionField)
             : Held(exports, cdo);
 
-        if (policy?.Class?.Name.Text is not { } type || !Capped(type)) return null;
+        if (policy?.Class?.Name.Text is not { } type || !Capped(type)) return (null, null);
 
         Caps++;
 
-        if (PropertyWalk.GetStruct(policy, CapField) is not { } scalable) return ConstructedCap;
+        if (PropertyWalk.GetStruct(policy, CapField) is not { } scalable) return (ConstructedCap, null);
 
         var multiplier = PropertyWalk.AsNumber(PropertyWalk.Get(scalable, ValueField)?.GenericValue) ?? 1;
         var row = Row(scalable);
@@ -391,10 +393,10 @@ public sealed class TargetCountFalloffs(
         {
             Caps--;
             Unread.Add($"{package.Name}: {CapField} names row {row}, which no constants table has");
-            return null;
+            return (null, null);
         }
 
-        return Math.Floor(cap + RoundingBias);
+        return (Math.Floor(cap + RoundingBias), FieldSources.Of(ResourceGains.RowProduct, [row]));
     }
 
     private static UObject? Held(IReadOnlyList<UObject> exports, UObject cdo) =>

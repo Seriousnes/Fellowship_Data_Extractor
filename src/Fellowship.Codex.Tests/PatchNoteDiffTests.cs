@@ -209,6 +209,30 @@ public class PatchNoteDiffTests
     }
 
     [Fact]
+    public void A_changed_field_source_is_not_noted()
+    {
+        Assert.Equal(
+            ["Cast Time: 2 -> 3"],
+            Fields(
+                """{"$type":"ability","id":1,"castTime":2,"fieldSources":{"castTime":{"kind":"ConstantsRow","rows":["A.CastTime"],"tuning":["CastTime"]}}}""",
+                """{"$type":"ability","id":1,"castTime":3,"fieldSources":{"castTime":{"kind":"RowProduct","rows":["B.CastTime","B.Scale"]}}}"""));
+    }
+
+    [Fact]
+    public void A_field_source_gone_from_the_newer_build_is_not_noted()
+    {
+        Assert.Empty(Between(
+            [
+                """{"$type":"ability","id":1,"castTime":2,"fieldSources":{"castTime":{"kind":"ConstantsRow","rows":["A.CastTime"]}}}""",
+                """{"$type":"ability","id":2,"fieldSources":{"range":{"kind":"ConstantsRow","rows":["A.Range"]}}}""",
+            ],
+            [
+                """{"$type":"ability","id":1,"castTime":2}""",
+                """{"$type":"ability","id":2,"fieldSources":{"range":{"kind":"ConstantsRow","rows":["A.Range"]}}}""",
+            ]));
+    }
+
+    [Fact]
     public void A_nested_value_reads_under_its_parents()
     {
         Assert.Equal(

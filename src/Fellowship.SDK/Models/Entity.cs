@@ -86,6 +86,10 @@ public sealed record Entity
     [JsonIgnore]
     public string? Tuning { get; init; }
 
+    /// <summary>Rows each scalar field is set from, keyed by the field's name in the document.</summary>
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, FieldSource>? FieldSources { get; init; }
+
     [JsonIgnore]
     public IReadOnlyList<string>? Declares { get; init; }
 

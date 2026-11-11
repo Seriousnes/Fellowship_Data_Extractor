@@ -21,6 +21,15 @@ public sealed record CurveBinding(string Property, string RowName)
 
     public string[]? ComputedFrom { get; init; }
 
+    /// <summary>
+    /// Rows a computed binding's calculation binds or names on any branch, with the rows of
+    /// <see cref="ComputedFrom"/> among them.
+    /// </summary>
+    public string[]? NamedRows { get; init; }
+
+    /// <summary>Rows a computed <see cref="Value"/> is read from.</summary>
+    public Fellowship.SDK.Models.FieldSource? Source { get; init; }
+
     public string[]? AmbiguousIn { get; init; }
 }
 

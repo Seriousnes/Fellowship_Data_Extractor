@@ -3,6 +3,8 @@ using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Kismet;
 
+using Fellowship.SDK.Models;
+
 namespace FellowshipExtractor.Extraction;
 
 public sealed record CustomMagnitudes(CurveBinding? Duration, IReadOnlyList<string> Captures)
@@ -21,6 +23,8 @@ public sealed record MagnitudeReading(double? Value, double? Low, double? High)
     public bool ReadsCapture { get; init; }
 
     public IReadOnlyList<double>? Ranks { get; init; }
+
+    public FieldSource? Source { get; init; }
 }
 
 /// <summary>A custom calculation's magnitude written out over what it captures.</summary>
@@ -65,7 +69,9 @@ public static class MagnitudeCalculations
             if (PropertyWalk.GetStruct(magnitude, CustomField) is not { } custom) continue;
             var body = BareStateWalk.Compiled(calculation, Function);
             if (body?.ScriptBytecode is not { Length: > 0 } bytecode) continue;
-            if (new BareStateWalk(body, calculation, constants, null).Answer() is not { } computed) continue;
+
+            var walk = new BareStateWalk(body, calculation, constants, null);
+            if (walk.Answer() is not { } computed) continue;
 
             duration = new CurveBinding(
                 "DurationMagnitude.ScalableFloatMagnitude",
@@ -73,7 +79,9 @@ public static class MagnitudeCalculations
             {
                 Value = Folded(custom, computed, constants),
                 Computed = true,
-                ComputedFrom = Rows(bytecode, calculation, constants),
+                ComputedFrom = [.. walk.Read.Distinct(StringComparer.OrdinalIgnoreCase)],
+                NamedRows = Rows(bytecode, calculation, constants),
+                Source = FoldedSource(custom, walk.Answered, constants),
             };
         }
 
@@ -205,7 +213,11 @@ public static class MagnitudeCalculations
 
         if (computed is { } answer)
         {
-            return new MagnitudeReading(Folded(custom, answer, constants), null, null) { ReadsCapture = walk.ReadsCapture };
+            return new MagnitudeReading(Folded(custom, answer, constants), null, null)
+            {
+                ReadsCapture = walk.ReadsCapture,
+                Source = FoldedSource(custom, walk.Answered, constants),
+            };
         }
         if (walk.Range is not { } range) return MagnitudeReading.None;
 
@@ -394,6 +406,31 @@ public static class MagnitudeCalculations
             + Scaled(custom, "PostMultiplyAdditiveValue", 0, constants),
             10);
 
+    private static readonly (string Field, double Identity)[] FoldFields =
+        [("Coefficient", 1), ("PreMultiplyAdditiveValue", 0), ("PostMultiplyAdditiveValue", 0)];
+
+    /// <summary>
+    /// Rows <see cref="Folded"/> reads, with those of the calculation's answer. A fold of a coefficient of 1 and adds
+    /// of 0 stated as numbers leaves the answer's source as it is.
+    /// </summary>
+    private static FieldSource? FoldedSource(IPropertyHolder custom, FieldSource? answered, ConstantsTable constants)
+    {
+        var folded = FoldFields
+            .Select(fold => PropertyWalk.GetStruct(custom, fold.Field) is { } scalable ? Read(scalable, constants) : (null, null))
+            .ToArray();
+
+        if (folded.All(read => read.Row is null) &&
+            folded.Zip(FoldFields).All(pair => pair.First.Value is null || pair.First.Value == pair.Second.Identity))
+        {
+            return answered;
+        }
+
+        var rows = new List<string?>(answered?.Rows ?? []);
+        foreach (var read in folded) rows.Add(read.Row);
+
+        return FieldSources.Of(ResourceGains.RowProduct, rows);
+    }
+
     private static UObject? Calculation(AbstractFileProvider provider, string classPath)
     {
         if (!provider.TryLoadPackage(AbilityPresentationIndex.PackagePath(classPath), out var package)) return null;
@@ -407,17 +444,25 @@ public static class MagnitudeCalculations
             ? Scalable(scalable, constants) ?? fallback
             : fallback;
 
-    public static double? Scalable(IPropertyHolder scalable, ConstantsTable constants)
+    public static double? Scalable(IPropertyHolder scalable, ConstantsTable constants) => Read(scalable, constants).Value;
+
+    /// <summary>The scalable float's value, with the row it reads. A <c>Value</c> of none or 1 is the row's value.</summary>
+    public static (double? Value, string? Row) Read(IPropertyHolder scalable, ConstantsTable constants)
     {
         var value = PropertyWalk.AsNumber(PropertyWalk.Get(scalable, "Value")?.GenericValue);
         var row = PropertyWalk.GetStruct(scalable, "Curve") is { } curve
             ? PropertyWalk.GetString(curve, "RowName")
             : null;
 
-        if (row is null || row.Length == 0 || row.Equals("None", StringComparison.Ordinal)) return value;
+        if (row is null || row.Length == 0 || row.Equals("None", StringComparison.Ordinal)) return (value, null);
 
-        return constants.Lookup(row).Record?.Value is { } resolved ? (value ?? 1) * resolved : null;
+        return (constants.Lookup(row).Record?.Value is { } resolved ? (value ?? 1) * resolved : null, row);
     }
+
+    public static FieldSource? Source(IPropertyHolder scalable, ConstantsTable constants) =>
+        FieldSources.Scalable(
+            Read(scalable, constants).Row,
+            PropertyWalk.AsNumber(PropertyWalk.Get(scalable, "Value")?.GenericValue));
 
     /// <summary>The scalable float at each rank, where its row has ranks.</summary>
     public static IReadOnlyList<double>? ScalableRanks(IPropertyHolder scalable, ConstantsTable constants)
@@ -437,6 +482,7 @@ public static class MagnitudeCalculations
             ? new BareStateWalk(body, calculation, constants, null).Answer()
             : null;
 
+    /// <summary>Rows the calculation binds or its bytecode names on any branch.</summary>
     private static string[] Rows(KismetExpression[] bytecode, UObject calculation, ConstantsTable constants)
     {
         var rows = new List<string>();

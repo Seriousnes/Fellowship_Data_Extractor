@@ -10,6 +10,9 @@ public static class PatchNoteDiff
 
     private static readonly HashSet<string> NoShape = [];
 
+    /// <summary>The document member naming the rows each field is set from. A patch note has the fields alone.</summary>
+    private static readonly string Sources = EntityDocuments.NamingPolicy.ConvertName(nameof(EntityDocument.FieldSources));
+
     public static IReadOnlyList<PatchNote> Between(
         IReadOnlyDictionary<DocumentKey, IReadOnlyList<ReadOnlyMemory<byte>>> older,
         IReadOnlyDictionary<DocumentKey, IReadOnlyList<ReadOnlyMemory<byte>>> newer)
@@ -141,6 +144,8 @@ public static class PatchNoteDiff
     {
         foreach (var (name, value) in was)
         {
+            if (path.Length == 0 && name == Sources) continue;
+
             now.TryGetPropertyValue(name, out var after);
 
             Compare(Below(path, name), Join(label, Named(name)), value, after, shape, found);

@@ -6,6 +6,8 @@ namespace FellowshipExtractor.Extraction;
 public sealed record ChargeCounts(double? Charges, IReadOnlyDictionary<string, double>? ByLevelType)
 {
     public static readonly ChargeCounts None = new(null, null);
+
+    public Fellowship.SDK.Models.FieldSource? Source { get; init; }
 }
 
 public static class MaximumCharges
@@ -21,7 +23,7 @@ public static class MaximumCharges
 
         var walk = new BareStateWalk(body, cdo, constants, mappings) { Unreadable = Unreadable(cdo) };
 
-        return new ChargeCounts(walk.Answer(), walk.ByLevelType);
+        return new ChargeCounts(walk.Answer(), walk.ByLevelType) { Source = walk.Answered };
     }
 
     public static IReadOnlyList<string> Raising(UObject cdo, ConstantsTable constants, TypeMappings mappings)

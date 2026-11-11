@@ -47,6 +47,7 @@ public static class AugmentationPowers
                 Granted = row.Granted ?? power.Granted,
                 ProcRolls = row.ProcRolls ?? power.ProcRolls,
                 Generates = row.Generates ?? power.Generates,
+                FieldSources = Folded(row, power),
             };
             redirects[(row.Type!.Value, granted)] = row.NetId!.Value;
         }
@@ -63,6 +64,24 @@ public static class AugmentationPowers
         return new FoldedPowers(
             [.. entities.Where(entity => !folded.Contains(entity)).Select(entity => filled.GetValueOrDefault(entity, entity))],
             redirects);
+    }
+
+    /// <summary>The row's sources, with the power's for each field the row takes from the power.</summary>
+    private static IReadOnlyDictionary<string, Fellowship.SDK.Models.FieldSource>? Folded(Entity row, Entity power)
+    {
+        var sources = row.FieldSources;
+
+        if (row.Cooldown is null && power.Cooldown is not null)
+        {
+            sources = FieldSources.Set(sources, nameof(Entity.Cooldown), FieldSources.Get(power.FieldSources, nameof(Entity.Cooldown)));
+        }
+
+        if (row.Duration is null && power.Duration is not null)
+        {
+            sources = FieldSources.Set(sources, nameof(Entity.Duration), FieldSources.Get(power.FieldSources, nameof(Entity.Duration)));
+        }
+
+        return sources;
     }
 
     private const string RowTable = AugmentationRows.Table;

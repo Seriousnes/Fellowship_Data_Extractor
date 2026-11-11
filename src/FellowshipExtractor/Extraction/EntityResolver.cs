@@ -563,6 +563,8 @@ public sealed class EntityResolver
             }
         }
 
+        entity = entity with { FieldSources = FieldSources.Finished(entity, _constants) };
+
         if (entity.NameByPrimaryStat is { } byStat)
         {
             return
@@ -822,7 +824,14 @@ public sealed class EntityResolver
 
         SpentResourcesResolved++;
 
-        return entity with { Cost = fraction * pool };
+        return entity with
+        {
+            Cost = fraction * pool,
+            FieldSources = FieldSources.Set(
+                entity.FieldSources,
+                nameof(Entity.Cost),
+                FieldSources.As(FieldSources.Get(entity.FieldSources, nameof(Entity.Cost)), ResourceGains.PoolFraction)),
+        };
     }
 
     private bool Fractional(TagRecord tag)
@@ -864,7 +873,12 @@ public sealed class EntityResolver
             $"{tag.Name} from {applier} assigning {supplied}: {recovered.Derivation}");
         DurationsFromSetByCaller++;
 
-        return entity with { Duration = duration, DurationGates = recovered.Gates.Count == 0 ? entity.DurationGates : recovered.Gates };
+        return entity with
+        {
+            Duration = duration,
+            DurationGates = recovered.Gates.Count == 0 ? entity.DurationGates : recovered.Gates,
+            FieldSources = FieldSources.Set(entity.FieldSources, nameof(Entity.Duration), recovered.Source),
+        };
     }
 
     public int ModifiersFromSetByCaller { get; private set; }
@@ -915,7 +929,19 @@ public sealed class EntityResolver
         var onApplication = ClassDefaults.Inherited(cdo, PeriodicOnApplicationField, _provider)?.GenericValue is not false;
         var ticks = (int)Math.Floor(duration / period + 1e-9) + (onApplication ? 1 : 0);
 
-        return ticks > 0 ? entity with { Ticks = ticks } : entity;
+        return ticks > 0
+            ? entity with
+            {
+                Ticks = ticks,
+                FieldSources = FieldSources.Set(
+                    entity.FieldSources,
+                    nameof(Entity.Ticks),
+                    FieldSources.Joined(
+                        ResourceGains.RowProduct,
+                        FieldSources.Get(entity.FieldSources, nameof(Entity.Duration)),
+                        FieldSources.Get(entity.FieldSources, nameof(Entity.Period)))),
+            }
+            : entity;
     }
 
     private Entity WithSetByCallerScaling(Entity entity, UObject? cdo, TagRecord tag)
@@ -1333,8 +1359,8 @@ public sealed class EntityResolver
             }
         }
 
-        var supersedes = appliedDurations
-            .Where(binding => Supersedes(binding, tuning))
+        var superseding = appliedDurations.Where(binding => Supersedes(binding, tuning)).ToArray();
+        var supersedes = superseding
             .Select(binding => binding.Value!.Value)
             .Distinct()
             .ToArray();
@@ -1342,16 +1368,26 @@ public sealed class EntityResolver
         if (supersedes.Length == 1 && !split.ByName.ContainsKey(Numbers.Duration))
         {
             split.ByName[Numbers.Duration] = supersedes[0];
+            split.Won[Numbers.Duration] = superseding[0];
         }
+
+        FieldSource? costSource = null;
 
         if (AbilityCosts.Of(cdo, _provider, _constants, tuning, SpentFrom(assetName)) is { } cost &&
             !split.ByName.ContainsKey(Numbers.Cost))
         {
             split.ByName[Numbers.Cost] = cost.Amount;
+            costSource = cost.Source;
             if (cost.ReadsPool) _pooledCosts.Add(cdo!);
         }
 
         if (!costing) Supplement(split, tuning, boundByEffect);
+
+        var sources = split.Won
+            .Where(won => won.Key != Numbers.Cost && FieldSources.Of(won.Value) is not null)
+            .ToDictionary(won => won.Key, won => FieldSources.Of(won.Value)!, StringComparer.Ordinal);
+
+        if (costSource is not null) sources[Numbers.Cost] = costSource;
 
         var grantedTags = cdo is null ? [] : PropertyWalk.GetTags(cdo, GrantedTagsField) ?? [];
         foreach (var tag in grantedTags) SupplementTalent(split, tag);
@@ -1366,7 +1402,8 @@ public sealed class EntityResolver
         var charges = Charged(cdo);
 
         var globalCooldown = cdo is null ? null : _globalCooldowns.Of(cdo, assetName);
-        var cooldown = Shown(Cooldown(cdo, charges, split), globalCooldown);
+        var (declaredCooldown, cooldownSource) = Cooldown(cdo, charges, split);
+        var cooldown = Shown(declaredCooldown, globalCooldown);
         var timing = cdo is null || cooldown is null ? null : _cooldowns.Of(cdo, charges.Charges);
         var category = Categories.Of(cdo);
 
@@ -1542,6 +1579,21 @@ public sealed class EntityResolver
 
         var described = DescriptionTokens.Renamed(placeholders, display.Description, Heroes);
 
+        var (maxTargets, maxTargetsSource) = Falloffs.MaxTargets(cdo);
+        var (maxStacks, maxStacksSource) = MaxStacks(cdo);
+        var (statedDuration, statedDurationSource) = StatedDuration(cdo);
+
+        if (cooldownSource is not null) sources[Numbers.Cooldown] = cooldownSource; else sources.Remove(Numbers.Cooldown);
+        if (globalCooldown?.Source is { } globalSource) sources[FieldSources.Key(nameof(Entity.GlobalCooldown))] = globalSource;
+        if (charges.Source is { } chargeSource) sources[FieldSources.Key(nameof(Entity.Charges))] = chargeSource;
+        if (maxTargetsSource is not null) sources[FieldSources.Key(nameof(Entity.MaxTargets))] = maxTargetsSource;
+        if (maxStacksSource is not null) sources[FieldSources.Key(nameof(Entity.MaxStacks))] = maxStacksSource;
+
+        if (!split.ByName.ContainsKey(Numbers.Duration) && statedDurationSource is not null)
+        {
+            sources[Numbers.Duration] = statedDurationSource;
+        }
+
         return new Entity
         {
             DisplayName = display.Name,
@@ -1562,7 +1614,7 @@ public sealed class EntityResolver
             Charges = charges.Charges,
             ChargesByLevelType = charges.ByLevelType,
             TargetCountFalloff = Falloffs.Of(cdo),
-            MaxTargets = Falloffs.MaxTargets(cdo),
+            MaxTargets = maxTargets,
             CooldownDurationScalesOff = timing?.DurationScalesOff,
             CooldownTimeRateScalesOff = timing?.TimeRateScalesOff,
             CooldownHasteGrantedBy = cdo is null || cooldown is null ? null : Empty(HasteGrantedBy(cdo, charges.Charges)),
@@ -1572,13 +1624,13 @@ public sealed class EntityResolver
             Range = Number(split, "range"),
             MinRange = Number(split, "minRange"),
             Radius = Number(split, "radius"),
-            Duration = Number(split, "duration") ?? StatedDuration(cdo),
+            Duration = Number(split, "duration") ?? statedDuration,
             DurationScaling = EffectModifiers.DurationScalingOf(cdo, _constants, _mappings),
             Period = Number(split, "period"),
             CastTimeScalesWithHaste = CastTimeScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             CalculationModifiers = cdo is null ? null : Empty(CalculationModifiers.Of(cdo, _provider, _constants)),
-            MaxStacks = MaxStacks(cdo),
+            MaxStacks = maxStacks,
             Infinite = Infinite(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
             Coefficients = Stated(reachable, split.Own, taken, tuning, bands, ownBand, [.. scaling]),
@@ -1589,6 +1641,7 @@ public sealed class EntityResolver
             Thresholds = Empty(_thresholds.Of(cdo)),
             ProcRolls = cdo is null ? null : Empty(Rolls.Of(cdo, cooldown)),
             Tuning = tuning,
+            FieldSources = sources.Count == 0 ? null : sources,
             Declares = Empty(Bound(bindings)),
             Constants = baseline.Count + beside.Count == 0
                 ? null
@@ -1967,7 +2020,7 @@ public sealed class EntityResolver
     {
         if (tuning is null) return false;
 
-        foreach (var row in binding.ComputedFrom ?? [])
+        foreach (var row in binding.NamedRows ?? [])
         {
             var relative = TuningNamespace.Relative(row, tuning);
             if (relative.Length >= row.Length || relative.Contains('.')) continue;
@@ -1977,26 +2030,29 @@ public sealed class EntityResolver
         return false;
     }
 
-    private int? MaxStacks(UObject? cdo)
+    /// <summary>The stack count cap, with its row. The count is the whole part of the row times its <c>Value</c>.</summary>
+    private (int? Count, FieldSource? Source) MaxStacks(UObject? cdo)
     {
-        if (cdo is null) return null;
+        if (cdo is null) return (null, null);
 
         var stacking = PropertyWalk.GetString(cdo, "StackingType");
-        if (stacking is null || stacking.EndsWith("::None", StringComparison.Ordinal)) return null;
+        if (stacking is null || stacking.EndsWith("::None", StringComparison.Ordinal)) return (null, null);
 
-        if (PropertyWalk.GetStruct(cdo, "StackCountMax") is not { } stack) return null;
+        if (PropertyWalk.GetStruct(cdo, "StackCountMax") is not { } stack) return (null, null);
 
         var value = PropertyWalk.AsNumber(PropertyWalk.Get(stack, "Value")?.GenericValue);
         var row = PropertyWalk.GetStruct(stack, "Curve") is { } curve
             ? PropertyWalk.GetString(curve, "RowName")
             : null;
 
-        var count = row is { Length: > 0 } && !row.Equals("None", StringComparison.Ordinal) &&
-                    _constants.Lookup(row).Record?.Value is { } resolved
-            ? (value ?? 1) * resolved
+        var read = row is { Length: > 0 } && !row.Equals("None", StringComparison.Ordinal) &&
+                   _constants.Lookup(row).Record?.Value is { } resolved;
+
+        var count = read
+            ? (value ?? 1) * _constants.Lookup(row).Record!.Value!.Value
             : value;
 
-        return count is > 1 ? (int)count : null;
+        return count is > 1 ? ((int)count, read ? FieldSources.Of(ResourceGains.RowProduct, [row]) : null) : (null, null);
     }
 
     /// <summary>
@@ -2005,7 +2061,7 @@ public sealed class EntityResolver
     /// <c>Trait.GemCooldownRecoveryOnAbilityProc.Cooldown</c>. Any other magnitude kind has the scalable float at its
     /// default, so a magnitude holding more than the scalable float states no duration here.
     /// </summary>
-    private double? StatedDuration(UObject? cdo)
+    private (double? Seconds, FieldSource? Source) StatedDuration(UObject? cdo)
     {
         if (cdo is null ||
             PropertyWalk.GetString(cdo, "DurationPolicy")?.EndsWith("::HasDuration", StringComparison.Ordinal) != true ||
@@ -2013,10 +2069,12 @@ public sealed class EntityResolver
             magnitude.Properties.Any(property => property.Name.Text != ScalableFloatMagnitudeField) ||
             PropertyWalk.GetStruct(magnitude, ScalableFloatMagnitudeField) is not { } scalable)
         {
-            return null;
+            return (null, null);
         }
 
-        return MagnitudeCalculations.Scalable(scalable, _constants) is > 0 and var seconds ? Math.Round(seconds, 4) : null;
+        return MagnitudeCalculations.Scalable(scalable, _constants) is > 0 and var seconds
+            ? (Math.Round(seconds, 4), MagnitudeCalculations.Source(scalable, _constants))
+            : (null, null);
     }
 
     private const string DurationMagnitudeField = "DurationMagnitude";
@@ -2470,6 +2528,8 @@ public sealed class EntityResolver
             {
                 if (!split.ByName.TryAdd(field, value)) continue;
 
+                split.Won[field] = binding;
+
                 if (claimed) NamespaceCorroborated++; else NamespaceSupplied++;
 
                 foreach (var (key, row) in one.Promoted)
@@ -2492,10 +2552,10 @@ public sealed class EntityResolver
     private static double? Shown(double? cooldown, GlobalCooldown? globalCooldown) =>
         cooldown is not { } seconds || seconds <= 0 || seconds < globalCooldown?.Duration ? null : cooldown;
 
-    private double? Cooldown(UObject? cdo, ChargeCounts charges, SplitNumbers split) =>
+    private (double? Seconds, FieldSource? Source) Cooldown(UObject? cdo, ChargeCounts charges, SplitNumbers split) =>
         cdo is not null && _abilityCooldowns.Declares(cdo)
-            ? _abilityCooldowns.Of(cdo, charges)
-            : Number(split, "cooldown");
+            ? _abilityCooldowns.Read(cdo, charges)
+            : (Number(split, "cooldown"), split.Won.GetValueOrDefault("cooldown") is { } won ? FieldSources.Of(won) : null);
 
     private static double? Number(SplitNumbers split, string field) =>
         split.ByName.TryGetValue(field, out var value) ? value : null;
@@ -2560,7 +2620,44 @@ public sealed class EntityResolver
             Radius = Agreed(outer.Radius, inner, ability => ability.Radius),
             Duration = Agreed(outer.Duration, inner, ability => ability.Duration),
             Period = Agreed(outer.Period, inner, ability => ability.Period),
+            FieldSources = FilledSources(outer, inner),
         };
+    }
+
+    private static readonly (string Member, Func<Entity, object?> Read)[] FilledFields =
+    [
+        (nameof(Entity.MaxTargets), ability => ability.MaxTargets),
+        (nameof(Entity.GlobalCooldown), ability => ability.GlobalCooldown),
+        (nameof(Entity.CastTime), ability => ability.CastTime),
+        (nameof(Entity.ChannelTime), ability => ability.ChannelTime),
+        (nameof(Entity.ChannelTick), ability => ability.ChannelTick),
+        (nameof(Entity.Cooldown), ability => ability.Cooldown),
+        (nameof(Entity.Charges), ability => ability.Charges),
+        (nameof(Entity.Cost), ability => ability.Cost),
+        (nameof(Entity.Range), ability => ability.Range),
+        (nameof(Entity.MinRange), ability => ability.MinRange),
+        (nameof(Entity.Radius), ability => ability.Radius),
+        (nameof(Entity.Duration), ability => ability.Duration),
+        (nameof(Entity.Period), ability => ability.Period),
+    ];
+
+    /// <summary>
+    /// The outer ability's sources, and for a field the outer ability has no value for, the source of the first granted
+    /// ability with a value. <see cref="Fill"/> and <see cref="Agreed"/> take that ability's value.
+    /// </summary>
+    private static IReadOnlyDictionary<string, FieldSource>? FilledSources(Entity outer, IReadOnlyList<Entity> inner)
+    {
+        var sources = outer.FieldSources;
+
+        foreach (var (member, read) in FilledFields)
+        {
+            if (read(outer) is not null) continue;
+            if (inner.FirstOrDefault(ability => read(ability) is not null) is not { } granted) continue;
+
+            sources = FieldSources.Set(sources, member, FieldSources.Get(granted.FieldSources, member));
+        }
+
+        return sources;
     }
 
     private static double? Agreed(double? own, IReadOnlyList<Entity> granted, Func<Entity, double?> read)

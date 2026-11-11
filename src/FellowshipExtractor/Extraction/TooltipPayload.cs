@@ -1,6 +1,8 @@
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Kismet;
 
+using Fellowship.SDK.Models;
+
 namespace FellowshipExtractor.Extraction;
 
 public static class TooltipPayload
@@ -54,7 +56,7 @@ public static class TooltipPayload
         if (BareStateWalk.Compiled(cdo, Hook) is not { ScriptBytecode.Length: > 0 } body) return [];
 
         var walk = new BareStateWalk(body, cdo, constants, null);
-        var overwritten = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        var overwritten = new Dictionary<string, (double? Value, FieldSource? Source)>(StringComparer.OrdinalIgnoreCase);
         var found = new List<CurveBinding>();
         var claimed = new HashSet<string>(StringComparer.Ordinal);
 
@@ -67,18 +69,18 @@ public static class TooltipPayload
                     continue;
 
                 case EX_CallMath call when Helper(call.StackNode.Name) is { } helper:
-                    ReadStruct(walk, cdo, constants, call, helper, overwritten, found, claimed);
+                    ReadStruct(cdo, constants, call, helper, overwritten, found, claimed);
                     continue;
 
                 case EX_CallMath call
                     when call.StackNode.Name.Equals(RangeHelper.Function, StringComparison.Ordinal):
-                    Add(found, claimed, MaxRange, walk.Number(Argument(call, RangeHelper.MaxRangeArgument)));
-                    Add(found, claimed, MinRange, walk.Number(Argument(call, RangeHelper.MinRangeArgument)));
+                    Add(found, claimed, MaxRange, walk.Traced(Argument(call, RangeHelper.MaxRangeArgument)));
+                    Add(found, claimed, MinRange, walk.Traced(Argument(call, RangeHelper.MinRangeArgument)));
                     continue;
 
                 case EX_Let { Variable: EX_StructMemberContext member } assignment
                     when Made(member) is { } property:
-                    Add(found, claimed, property, walk.Number(assignment.Assignment));
+                    Add(found, claimed, property, walk.Traced(assignment.Assignment));
                     continue;
             }
         }
@@ -87,21 +89,20 @@ public static class TooltipPayload
     }
 
     private static void Overwritten(
-        BareStateWalk walk, EX_CallMath call, Dictionary<string, double> overwritten)
+        BareStateWalk walk, EX_CallMath call, Dictionary<string, (double? Value, FieldSource? Source)> overwritten)
     {
         if (DynamicTextFloats.Name(Argument(call, OverwrittenData)) is not { } data) return;
-        if (walk.Number(Argument(call, OverwrittenDuration)) is not { } replacement) return;
+        if (walk.Traced(Argument(call, OverwrittenDuration)) is not { Value: not null } replacement) return;
 
         overwritten[data] = replacement;
     }
 
     private static void ReadStruct(
-        BareStateWalk walk,
         UObject cdo,
         ConstantsTable constants,
         EX_CallMath call,
         StructCall helper,
-        IReadOnlyDictionary<string, double> overwritten,
+        IReadOnlyDictionary<string, (double? Value, FieldSource? Source)> overwritten,
         List<CurveBinding> found,
         HashSet<string> claimed)
     {
@@ -132,26 +133,31 @@ public static class TooltipPayload
             ? MadeMembers.GetValueOrDefault(named)
             : null;
 
-    private static void Add(List<CurveBinding> found, HashSet<string> claimed, string property, double? value)
+    private static void Add(
+        List<CurveBinding> found, HashSet<string> claimed, string property, (double? Value, FieldSource? Source) read)
     {
-        if (value is not { } number || number <= 0) return;
+        if (read.Value is not { } number || number <= 0) return;
         if (!claimed.Add(property)) return;
 
-        found.Add(new CurveBinding(property, Hook) { Value = number, Computed = true });
+        found.Add(new CurveBinding(property, Hook) { Value = number, Computed = true, Source = read.Source });
     }
 
-    private static double? Scalable(UObject cdo, string data, string member, ConstantsTable constants)
+    /// <summary>The scalable float's value, with the row it reads.</summary>
+    private static (double? Value, FieldSource? Source) Scalable(
+        UObject cdo, string data, string member, ConstantsTable constants)
     {
-        if (PropertyWalk.GetStruct(cdo, data) is not { } holder) return null;
-        if (PropertyWalk.GetStruct(holder, member) is not { } scalable) return null;
+        if (PropertyWalk.GetStruct(cdo, data) is not { } holder) return (null, null);
+        if (PropertyWalk.GetStruct(holder, member) is not { } scalable) return (null, null);
 
         var value = PropertyWalk.AsNumber(PropertyWalk.Get(scalable, ValueField)?.GenericValue);
         var row = PropertyWalk.GetStruct(scalable, CurveField) is { } curve
             ? PropertyWalk.GetString(curve, RowField)
             : null;
 
-        if (row is null || row.Length == 0 || row.Equals(NoRow, StringComparison.Ordinal)) return value;
+        if (row is null || row.Length == 0 || row.Equals(NoRow, StringComparison.Ordinal)) return (value, null);
 
-        return constants.Lookup(row).Record?.Value is { } resolved ? (value ?? 1) * resolved : null;
+        return constants.Lookup(row).Record?.Value is { } resolved
+            ? ((value ?? 1) * resolved, FieldSources.Scalable(row, value))
+            : (null, null);
     }
 }

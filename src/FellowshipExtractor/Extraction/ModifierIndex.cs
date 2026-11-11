@@ -773,8 +773,8 @@ public sealed partial class ModifierIndex
     public TuningReference? Resolved(string key, Entity context, DocumentProjection.References references) =>
         Resolve(key, context, references, null) is (var reference, true) ? reference : null;
 
-    private (TuningReference Reference, bool Resolved) Resolve(
-        string key, Entity? context, DocumentProjection.References references, object? value)
+    /// <summary>The constants row a tuning key names for <paramref name="context"/>.</summary>
+    public string Row(string key, Entity? context)
     {
         if (key.IndexOf('.') is > 0 and var first && _codenames.TryGetValue(key[..first], out var canonical) &&
             !_heroes.ContainsKey(key[..first]))
@@ -782,7 +782,13 @@ public sealed partial class ModifierIndex
             key = canonical + key[first..];
         }
 
-        var row = Hero(key) is null ? Absolute(key, context?.Tuning) : key;
+        return Hero(key) is null ? Absolute(key, context?.Tuning) : key;
+    }
+
+    private (TuningReference Reference, bool Resolved) Resolve(
+        string key, Entity? context, DocumentProjection.References references, object? value)
+    {
+        var row = Row(key, context);
         var self = context is { Type: { } type, NetId: { } id } ? new Key(type, id) : (Key?)null;
 
         var (scope, owner) = Deepest(row);

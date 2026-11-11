@@ -72,10 +72,19 @@ public static class DocumentProjection
 
 #pragma warning disable CS8524
 
-    public static EntityDocument From(Entity entity, References references, EffectRoles roles) => entity.Type switch
+    public static EntityDocument From(Entity entity, References references, EffectRoles roles)
+    {
+        var tuned = new Lazy<TunedRows>(() => Tuned(entity, references));
+
+        return Projected(entity, references, roles, tuned);
+    }
+
+    private static EntityDocument Projected(
+        Entity entity, References references, EffectRoles roles, Lazy<TunedRows> tuned) => entity.Type switch
     {
         EntityType.Ability => new AbilityDocument
         {
+            FieldSources = Sourced<AbilityDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -124,7 +133,7 @@ public static class DocumentProjection
             Coefficients = entity.Coefficients,
             SetByCallerScaling = entity.SetByCallerScaling,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             Schools = Schools(entity.Tags),
             Heroes = Owning(entity),
             Owner = references.At(entity.Owner),
@@ -195,6 +204,7 @@ public static class DocumentProjection
 
         EntityType.Effect => new EffectDocument
         {
+            FieldSources = Sourced<EffectDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -217,7 +227,7 @@ public static class DocumentProjection
             Infinite = entity.Infinite,
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             Schools = Schools(entity.Tags) ?? Schools(entity.ApplierTags),
             Modifiers = Stacked(entity.Modifiers, entity.MaxStacks),
             Generates = Generated(entity),
@@ -303,7 +313,7 @@ public static class DocumentProjection
             EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ProcRolls = Rolled(entity, references),
             Icon = entity.Icon,
             Generates = Generated(entity),
@@ -408,20 +418,21 @@ public static class DocumentProjection
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
         },
 
         EntityType.Talent => new TalentDocument
         {
+            FieldSources = Sourced<TalentDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
             Cooldown = entity.Cooldown,
@@ -446,7 +457,7 @@ public static class DocumentProjection
             Description = entity.Description,
             Icon = entity.Icon,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             MaxRank = entity.AbilityMaxRank,
             Slots = entity.PoolSlots,
@@ -460,6 +471,7 @@ public static class DocumentProjection
 
         EntityType.Sigil => new SigilDocument
         {
+            FieldSources = Sourced<SigilDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -474,7 +486,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             RankRuns = entity.RankRuns,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
@@ -484,6 +496,7 @@ public static class DocumentProjection
 
         EntityType.ItemTrait => new ItemTraitDocument
         {
+            FieldSources = Sourced<ItemTraitDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -497,7 +510,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             RankRuns = entity.RankRuns,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
@@ -507,6 +520,7 @@ public static class DocumentProjection
 
         EntityType.Aspect => new AspectDocument
         {
+            FieldSources = Sourced<AspectDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -521,7 +535,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             RankRuns = entity.RankRuns,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
@@ -531,6 +545,7 @@ public static class DocumentProjection
 
         EntityType.ProtectiveEnchant => new ProtectiveEnchantDocument
         {
+            FieldSources = Sourced<ProtectiveEnchantDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -545,7 +560,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             RankRuns = entity.RankRuns,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
@@ -555,6 +570,7 @@ public static class DocumentProjection
 
         EntityType.Enchant => new EnchantDocument
         {
+            FieldSources = Sourced<EnchantDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -569,7 +585,7 @@ public static class DocumentProjection
             Duration = entity.Duration,
             RankRuns = entity.RankRuns,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
@@ -581,6 +597,7 @@ public static class DocumentProjection
 
         EntityType.RelicPower => new RelicPowerDocument
         {
+            FieldSources = Sourced<RelicPowerDocument>(entity, null),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -605,6 +622,7 @@ public static class DocumentProjection
 
         EntityType.WeaponPower => new WeaponPowerDocument
         {
+            FieldSources = Sourced<WeaponPowerDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -625,7 +643,7 @@ public static class DocumentProjection
             CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             Schools = Schools(entity.Tags),
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
@@ -635,6 +653,7 @@ public static class DocumentProjection
 
         EntityType.LegendaryPower => new LegendaryPowerDocument
         {
+            FieldSources = Sourced<LegendaryPowerDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -642,7 +661,7 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
@@ -654,6 +673,7 @@ public static class DocumentProjection
 
         EntityType.RelicPassive => new RelicPassiveDocument
         {
+            FieldSources = Sourced<RelicPassiveDocument>(entity, tuned.Value),
             Id = entity.NetId!.Value,
             Name = Name(entity),
             EnabledInGame = entity.EnabledInGame,
@@ -661,7 +681,7 @@ public static class DocumentProjection
             Icon = entity.Icon,
             Cooldown = entity.Cooldown,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
-            Tuning = Tuned(entity, references),
+            Tuning = tuned.Value.Tuning,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
             Grants = Referenced(entity.Granted, references),
@@ -894,9 +914,25 @@ public static class DocumentProjection
     /// group's name alone, and a row a placeholder reads under a longer key has the attribute and op the group's
     /// gated modifier applies it under.
     /// </summary>
-    private static IReadOnlyDictionary<string, TuningReference>? Tuned(Entity entity, References references)
+    private static TunedRows Tuned(Entity entity, References references)
     {
         var tuned = new SortedDictionary<string, TuningReference>(StringComparer.Ordinal);
+        var named = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+
+        void Name(string key, string? read = null)
+        {
+            if (!named.TryGetValue(key, out var held)) named[key] = held = new(StringComparer.OrdinalIgnoreCase);
+
+            held.Add(key);
+            held.Add(references.Changes.Row(key, entity));
+            if (read is not null) held.Add(read);
+
+            if (entity.Tuning is { } scope && $"{scope}.{key}" is var under &&
+                (entity.Rows?.ContainsKey(under) is true || entity.NamespaceRows?.ContainsKey(under) is true))
+            {
+                held.Add(under);
+            }
+        }
 
         var rows = (entity.Placeholders?.Values ?? [])
             .SelectMany(placeholder => placeholder.Constants ?? new Dictionary<string, object?>())
@@ -908,6 +944,7 @@ public static class DocumentProjection
             if (!tuned.ContainsKey(row) && references.Changes.Reference(row, entity, references) is { } reference)
             {
                 tuned[row] = reference with { Value = value };
+                Name(row);
             }
         }
 
@@ -923,6 +960,7 @@ public static class DocumentProjection
             if (own.Owner is not null && !Under(entity, row)) continue;
 
             tuned[row] = own with { Value = value };
+            Name(row);
             constants.Add(row);
         }
 
@@ -937,6 +975,7 @@ public static class DocumentProjection
                 if (row is not null && references.Changes.Reference(row, entity, references) is { } reference)
                 {
                     tuned[relative] = reference with { Value = value };
+                    Name(relative, row);
                 }
                 else if (Gate(entity, group) is { } gate && references.Changes.Holding(gate) is [var (type, id)])
                 {
@@ -949,6 +988,7 @@ public static class DocumentProjection
 
                     var (attribute, op, read) = applied is [var single] ? single : default;
 
+                    Name(relative, read);
                     tuned[relative] = new TuningReference(ModifierIndex.Fold(leaf))
                     {
                         Talent = references.Of(type, id),
@@ -963,6 +1003,7 @@ public static class DocumentProjection
                 else if (references.Changes.TalentNamed(entity, group, references) is { } talent)
                 {
                     tuned[relative] = new TuningReference(ModifierIndex.Fold(leaf)) { Talent = talent, Value = value };
+                    Name(relative);
                 }
             }
         }
@@ -992,7 +1033,54 @@ public static class DocumentProjection
             }
         }
 
-        return tuned.Count == 0 ? null : tuned;
+        var keys = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var key in tuned.Keys)
+        {
+            foreach (var row in named.GetValueOrDefault(key) ?? [])
+            {
+                if (!keys.TryGetValue(row, out var naming)) keys[row] = naming = [];
+                naming.Add(key);
+            }
+        }
+
+        return new TunedRows(tuned.Count == 0 ? null : tuned, keys);
+    }
+
+    /// <summary>A document's <c>tuning</c>, with the keys of it naming each constants row.</summary>
+    private sealed record TunedRows(
+        IReadOnlyDictionary<string, TuningReference>? Tuning, IReadOnlyDictionary<string, List<string>> Keys);
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, HashSet<string>> MembersByDocument = new();
+
+    /// <summary>
+    /// The entity's field sources for the fields <typeparamref name="TDocument"/> has, each with the keys of the
+    /// document's <c>tuning</c> naming its rows.
+    /// </summary>
+    private static IReadOnlyDictionary<string, FieldSource>? Sourced<TDocument>(Entity entity, TunedRows? tuned)
+        where TDocument : EntityDocument
+    {
+        if (entity.FieldSources is not { Count: > 0 } sources) return null;
+
+        var members = MembersByDocument.GetOrAdd(typeof(TDocument), type =>
+            [.. type.GetProperties().Select(property => FieldSources.Key(property.Name))]);
+
+        var projected = new SortedDictionary<string, FieldSource>(StringComparer.Ordinal);
+
+        foreach (var (field, source) in sources)
+        {
+            if (!members.Contains(field)) continue;
+
+            var keys = source.Rows
+                .SelectMany(row => tuned?.Keys.GetValueOrDefault(row) ?? [])
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal)
+                .ToArray();
+
+            projected[field] = keys.Length == 0 ? source : source with { Tuning = keys };
+        }
+
+        return projected.Count == 0 ? null : projected;
     }
 
     /// <summary>True when the row sits under the entity's own namespace, which another entity can share.</summary>

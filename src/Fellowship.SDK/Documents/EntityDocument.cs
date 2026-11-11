@@ -17,6 +17,9 @@ public abstract class EntityDocument
     public bool? NoKnownSource { get; init; }
 
     public IReadOnlyDictionary<string, Models.TuningReference>? Tuning { get; init; }
+
+    /// <summary>Rows each scalar field is set from, keyed by the field's name in the document.</summary>
+    public IReadOnlyDictionary<string, Models.FieldSource>? FieldSources { get; init; }
 }
 
 public static class EntityDocuments

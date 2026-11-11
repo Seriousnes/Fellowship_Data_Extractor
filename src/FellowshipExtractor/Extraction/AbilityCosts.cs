@@ -2,9 +2,14 @@ using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 
+using Fellowship.SDK.Models;
+
 namespace FellowshipExtractor.Extraction;
 
-public sealed record AbilityCost(double Amount, bool ReadsPool);
+public sealed record AbilityCost(double Amount, bool ReadsPool)
+{
+    public FieldSource? Source { get; init; }
+}
 
 public static class AbilityCosts
 {
@@ -29,11 +34,11 @@ public static class AbilityCosts
         Func<string, double?>? captured)
     {
         var spent = FromCostEffect(cdo, provider, constants, captured);
-        var stated = spent?.Amount ?? FromNamespace(constants, tuning);
+        var stated = spent ?? FromNamespace(constants, tuning);
 
-        if (Adjusted(cdo, constants, stated) is not { } amount || amount == 0) return null;
+        if (Adjusted(cdo, constants, stated) is not { } adjusted || adjusted.Amount == 0) return null;
 
-        return new AbilityCost(amount, spent is { ReadsPool: true } && amount == spent.Amount);
+        return adjusted with { ReadsPool = spent is { ReadsPool: true } && adjusted.Amount == spent.Amount };
     }
 
     private static AbilityCost? FromCostEffect(
@@ -54,11 +59,17 @@ public static class AbilityCosts
             if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
             if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) continue;
 
-            if (Scalable(magnitude, constants) is { } stated) return new AbilityCost(Math.Abs(stated), false);
+            if (Scalable(magnitude, constants) is { } stated) return stated;
 
             var custom = MagnitudeCalculations.Custom(magnitude, provider, constants, context);
 
-            if (custom.Value is { } cost) return new AbilityCost(Math.Abs(cost), custom.ReadsCapture);
+            if (custom.Value is { } cost)
+            {
+                return new AbilityCost(Math.Abs(cost), custom.ReadsCapture)
+                {
+                    Source = FieldSources.As(custom.Source, custom.ReadsCapture ? ResourceGains.PoolFraction : ResourceGains.RowProduct),
+                };
+            }
         }
 
         return null;
@@ -72,7 +83,7 @@ public static class AbilityCosts
             .FirstOrDefault(export => export.Name.StartsWith("Default__", StringComparison.Ordinal));
     }
 
-    private static double? Scalable(IPropertyHolder magnitude, ConstantsTable constants)
+    private static AbilityCost? Scalable(IPropertyHolder magnitude, ConstantsTable constants)
     {
         if (PropertyWalk.GetStruct(magnitude, ScalableField) is not { } scalable) return null;
         if (PropertyWalk.GetStruct(scalable, CurveField) is not { } curve) return null;
@@ -80,14 +91,22 @@ public static class AbilityCosts
         if (row.Equals(NoRow, StringComparison.Ordinal)) return null;
         if (constants.Lookup(row).Record?.Value is not { } value) return null;
 
-        return (PropertyWalk.AsNumber(PropertyWalk.Get(scalable, ValueField)?.GenericValue) ?? 1) * value;
+        var multiplier = PropertyWalk.AsNumber(PropertyWalk.Get(scalable, ValueField)?.GenericValue);
+
+        return new AbilityCost(Math.Abs((multiplier ?? 1) * value), false)
+        {
+            Source = FieldSources.As(
+                FieldSources.Row(row),
+                multiplier is null or 1 && value >= 0 ? ResourceGains.ConstantsRow : ResourceGains.RowProduct),
+        };
     }
 
-    private static double? FromNamespace(ConstantsTable constants, string? tuning)
+    private static AbilityCost? FromNamespace(ConstantsTable constants, string? tuning)
     {
         if (tuning is null) return null;
 
         double? stated = null;
+        var rows = new List<string>();
 
         foreach (var record in constants.DirectlyUnder(tuning))
         {
@@ -104,16 +123,25 @@ public static class AbilityCosts
             if (stated is { } agreed && agreed != value) return null;
 
             stated = value;
+            rows.Add(record.Key);
         }
 
-        return stated;
+        return stated is { } amount
+            ? new AbilityCost(amount, false)
+            {
+                Source = FieldSources.Of(rows.Count == 1 ? ResourceGains.ConstantsRow : ResourceGains.RowProduct, rows),
+            }
+            : null;
     }
 
-    private static double? Adjusted(UObject? cdo, ConstantsTable constants, double? stated)
+    /// <summary>The cost <c>ModifyAbilityCostForUI</c> returns, where it returns one.</summary>
+    private static AbilityCost? Adjusted(UObject? cdo, ConstantsTable constants, AbilityCost? stated)
     {
         if (cdo is null) return stated;
         if (BareStateWalk.Compiled(cdo, Function) is not { ScriptBytecode.Length: > 0 } body) return stated;
 
-        return new BareStateWalk(body, cdo, constants, null).Answer() ?? stated;
+        var walk = new BareStateWalk(body, cdo, constants, null);
+
+        return walk.Answer() is { } answer ? new AbilityCost(answer, false) { Source = walk.Answered } : stated;
     }
 }

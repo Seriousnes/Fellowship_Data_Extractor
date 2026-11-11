@@ -4,6 +4,8 @@ using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Objects.UObject;
 
+using Fellowship.SDK.Models;
+
 namespace FellowshipExtractor.Extraction;
 
 public sealed class BareStateWalk(
@@ -31,7 +33,55 @@ public sealed class BareStateWalk(
     private readonly KismetExpression[] _bytecode = function.ScriptBytecode ?? [];
     private readonly Dictionary<string, KismetExpression> _locals = new(StringComparer.Ordinal);
     private readonly Dictionary<string, double> _returned = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string[]> _returnedRows = new(StringComparer.Ordinal);
     private readonly HashSet<string> _gates = new(StringComparer.Ordinal);
+    private readonly List<string> _read = [];
+
+    /// <summary>Every row a scalable float read of the walk has looked up, in reading order.</summary>
+    public IReadOnlyList<string> Read => _read;
+
+    /// <summary>The source of the number the last <see cref="Answer"/> returned.</summary>
+    public FieldSource? Answered { get; private set; }
+
+    /// <summary>The number <paramref name="expression"/> evaluates to, with the rows that evaluation reads.</summary>
+    public (double? Value, FieldSource? Source) Traced(KismetExpression? expression)
+    {
+        var mark = _read.Count;
+        var value = Number(expression);
+
+        return (value, value is null ? null : Since(mark, expression));
+    }
+
+    private FieldSource? Since(int mark, KismetExpression? expression)
+    {
+        var rows = _read.Skip(mark).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+
+        return FieldSources.Of(
+            rows.Length == 1 && Direct(expression, 0) ? ResourceGains.ConstantsRow : ResourceGains.RowProduct, rows);
+    }
+
+    /// <summary>True when the expression is one scalable float read whose <c>Value</c> is 1.</summary>
+    private bool Direct(KismetExpression? expression, int depth)
+    {
+        if (expression is null || depth > MaxDepth) return false;
+
+        switch (expression)
+        {
+            case EX_Cast cast:
+                return Direct(cast.Target, depth + 1);
+
+            case EX_CallMath call when call.StackNode.Name.StartsWith(ScalableRead, StringComparison.Ordinal):
+                return Struct(call.Parameters.FirstOrDefault(), depth + 1) is { Multiplier: 1, Row: not null };
+
+            case EX_CallMath call when call.StackNode.Name.StartsWith("Conv_", StringComparison.Ordinal) ||
+                                       call.StackNode.Name.StartsWith("MakeLiteral", StringComparison.Ordinal):
+                return Direct(call.Parameters.FirstOrDefault(), depth + 1);
+        }
+
+        if (DynamicTextFloats.Name(expression) is { } local && _returned.ContainsKey(local)) return false;
+
+        return Bound(expression) is { } assigned && Direct(assigned, depth + 1);
+    }
 
     public static UStruct? Compiled(UObject cdo, string function)
     {
@@ -122,10 +172,15 @@ public sealed class BareStateWalk(
 
             if (parameter.PropertyFlags.HasFlag(EPropertyFlags.OutParm) &&
                 DynamicTextFloats.Name(call.Parameters.ElementAtOrDefault(at)) is { } local &&
-                inside._locals.TryGetValue(parameter.Name.Text, out var bound) &&
-                inside.Number(bound) is { } number)
+                inside._locals.TryGetValue(parameter.Name.Text, out var bound))
             {
-                _returned[local] = number;
+                var mark = inside._read.Count;
+
+                if (inside.Number(bound) is { } number)
+                {
+                    _returned[local] = number;
+                    _returnedRows[local] = [.. inside._read.Skip(mark)];
+                }
             }
 
             at++;
@@ -141,7 +196,12 @@ public sealed class BareStateWalk(
             switch (_bytecode[at])
             {
                 case EX_Return returned:
-                    if (Number(returned.ReturnExpression) is { } answer) return answer;
+                    if (Number(returned.ReturnExpression) is { } answer)
+                    {
+                        Answered = Since(0, returned.ReturnExpression);
+                        return answer;
+                    }
+
                     if (ByLevelType is not null || Range is not null) return null;
 
                     return Refuse($"returns {Describe(returned.ReturnExpression)} rather than a number");
@@ -383,6 +443,7 @@ public sealed class BareStateWalk(
 
         if (DynamicTextFloats.Name(expression) is { } local && _returned.TryGetValue(local, out var number))
         {
+            _read.AddRange(_returnedRows.GetValueOrDefault(local) ?? []);
             return number;
         }
 
@@ -682,6 +743,8 @@ public sealed class BareStateWalk(
 
         var (multiplier, row) = scalable;
         if (row is null) return multiplier;
+
+        _read.Add(row);
 
         if (constants.Lookup(row).Record?.Value is not { } value)
         {
