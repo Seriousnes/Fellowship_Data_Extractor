@@ -9,7 +9,7 @@ public sealed class ItemLevelInputTests(Site site)
     private ItemDocument Wearable => site.Store.Entities.OfType<ItemDocument>().First(item => item.Stats is { Count: > 0 });
 
     private EnchantDocument Ranked =>
-        site.Store.Entities.OfType<EnchantDocument>().First(enchant => AugmentationRanks.Ranked(site.Store, enchant));
+        site.Store.Entities.OfType<EnchantDocument>().First(enchant => AugmentationRanks.Ranked(site.Store.Export, enchant));
 
     private int MaxItemLevel => site.Store.Settings.Items.MaxItemLevel;
 

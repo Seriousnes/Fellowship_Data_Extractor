@@ -1,6 +1,6 @@
 using Fellowship.SDK.Documents;
 
-namespace Fellowship.Codex.Models;
+namespace Fellowship.SDK.Calculations;
 
 public sealed record ItemPowerInputs(
     string Slot,
@@ -33,7 +33,7 @@ public static class ItemPower
         printed.Equals(slot, StringComparison.OrdinalIgnoreCase);
 
     public static ItemPowerInputs? Inputs(
-        ItemDocument item, SettingsFile settings, RarityEntry? rarity, TooltipQuery query, int? level)
+        ItemDocument item, SettingsFile settings, RarityEntry? rarity, ItemScaling scaling, int? level)
     {
         if (item.Slot is not { } slot) return null;
         if (level is not { } itemLevel) return null;
@@ -48,13 +48,13 @@ public static class ItemPower
         return new ItemPowerInputs(
             Slot: slot,
             Level: itemLevel,
-            MaxUpgrades: query.MaxUpgrades
+            MaxUpgrades: scaling.MaxUpgrades
                 ?? Tempering.Ceiling(settings.MaxTempers, rarity?.Name, itemLevel)
                 ?? 0,
             RerollableSlots: slots.Count(
                 craft => craft.SlotName.Equals(CraftSlots.RandomRolls, StringComparison.OrdinalIgnoreCase)),
             Legendary: rarity is not null && item.Rarity is Rarity.Legendary,
-            HasGemSocket: !query.NoSocket && Carries(CraftSlots.GemSocket),
+            HasGemSocket: !scaling.NoSocket && Carries(CraftSlots.GemSocket),
             HasGrantedAbility: Carries(CraftSlots.GrantedAbility),
             HasAttunementTree: Carries(CraftSlots.AttunementTree));
     }
@@ -120,8 +120,8 @@ public static class ItemPower
     }
 
     public static decimal? Of(
-        ItemDocument item, SettingsFile settings, RarityEntry? rarity, TooltipQuery query, int? level) =>
-        Inputs(item, settings, rarity, query, level) is { } inputs
+        ItemDocument item, SettingsFile settings, RarityEntry? rarity, ItemScaling scaling, int? level) =>
+        Inputs(item, settings, rarity, scaling, level) is { } inputs
             ? StatRows.RoundHalfToEven(Potential(inputs, settings))
             : null;
 }

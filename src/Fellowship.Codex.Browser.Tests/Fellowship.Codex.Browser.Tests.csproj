@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Using Include="Fellowship.SDK" />
+    <Using Include="Fellowship.SDK.Calculations" />
     <Using Include="Fellowship.SDK.Client" />
     <Using Include="Fellowship.SDK.Documents" />
     <Using Include="Fellowship.Codex.Models" />

@@ -46,7 +46,7 @@ public sealed class Export
             .GetAwaiter()
             .GetResult();
 
-        Store = new EntityStoreService(history.Snapshot, NullLogger<EntityStoreService>.Instance);
+        Store = new EntityStoreService(new FellowshipExport(history.Snapshot.Settings, history.Snapshot.Entities), NullLogger<EntityStoreService>.Instance);
 
         var tokens = new DesignTokenService(Store.Settings);
         var richText = new RichTextService(Store.Settings.TextStyles);
@@ -59,7 +59,7 @@ public sealed class Export
 
         View = new CodexViewService(Store, codex, tokens, chrome, richText, substitutions);
 
-        Tooltip = new TooltipViewService(Store, tokens, richText, substitutions, chrome, new ApiWebRoot());
+        Tooltip = new TooltipViewService(Store.Export, Store, tokens, richText, substitutions, chrome, new ApiWebRoot());
     }
 
     private static string Found() =>

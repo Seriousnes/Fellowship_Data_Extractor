@@ -61,7 +61,7 @@ public sealed class TooltipService(
 
         foreach (var attuned in query.Attunements)
         {
-            if (TooltipView.Augmentation(store, attuned.Id, null) is not null) continue;
+            if (store.Export.Augmentation(attuned.Id, null) is not null) continue;
 
             return Results.Problem(
                 title: "No such item augmentation.",

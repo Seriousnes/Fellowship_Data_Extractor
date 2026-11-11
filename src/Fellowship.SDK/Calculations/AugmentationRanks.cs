@@ -1,8 +1,8 @@
 using System.Runtime.CompilerServices;
-using Fellowship.Codex.Services;
+
 using Fellowship.SDK.Documents;
 
-namespace Fellowship.Codex.Models;
+namespace Fellowship.SDK.Calculations;
 
 public static class AugmentationRanks
 {
@@ -20,19 +20,19 @@ public static class AugmentationRanks
         settings.AugmentationTooltip
         ?? throw new InvalidOperationException("The settings state no augmentation tooltip text, so an augmentation card has no labels.");
 
-    public static int Level(SettingsFile settings, TooltipQuery query) =>
-        Math.Clamp(query.ItemLevel ?? settings.Items.MaxItemLevel, 1, settings.Items.MaxItemLevel);
+    public static int Level(SettingsFile settings, EquippedReading reading) =>
+        Math.Clamp(reading.ItemLevel ?? settings.Items.MaxItemLevel, 1, settings.Items.MaxItemLevel);
 
-    public static int PerSource(SettingsFile settings, TooltipQuery query, AugmentationDocument augmentation) =>
-        augmentation is EnchantDocument ? Power(settings, Level(settings, query)) : 1;
+    public static int PerSource(SettingsFile settings, EquippedReading reading, AugmentationDocument augmentation) =>
+        augmentation is EnchantDocument ? Power(settings, Level(settings, reading)) : 1;
 
-    public static bool Ranked(IEntityStoreService store, AugmentationDocument augmentation) =>
-        Carriers(store, augmentation).Count > 1 || augmentation.MaxRank is > 1;
+    public static bool Ranked(FellowshipExport export, AugmentationDocument augmentation) =>
+        Carriers(export, augmentation).Count > 1 || augmentation.MaxRank is > 1;
 
-    public static int Limit(IEntityStoreService store, TooltipQuery query, AugmentationDocument augmentation)
+    public static int Limit(FellowshipExport export, EquippedReading reading, AugmentationDocument augmentation)
     {
-        var carriers = Carriers(store, augmentation).Count;
-        var perSource = PerSource(store.Settings, query, augmentation);
+        var carriers = Carriers(export, augmentation).Count;
+        var perSource = PerSource(export.Settings, reading, augmentation);
 
         return augmentation.MaxRank is { } max ? Math.Min(carriers, (max + perSource - 1) / perSource) : carriers;
     }
@@ -50,41 +50,41 @@ public static class AugmentationRanks
         ];
     }
 
-    public static IReadOnlyList<ItemTypeText> Carriers(IEntityStoreService store, AugmentationDocument augmentation) =>
+    public static IReadOnlyList<ItemTypeText> Carriers(FellowshipExport export, AugmentationDocument augmentation) =>
         augmentation.CategoryTag is { } category
-            ? CarriersByCategory.GetValue(store, Carried).GetValueOrDefault(category) ?? []
+            ? CarriersByCategory.GetValue(export, Carried).GetValueOrDefault(category) ?? []
             : [];
 
     public static IReadOnlyList<ItemTypeText> Sources(
-        IEntityStoreService store, TooltipQuery query, AugmentationDocument augmentation)
+        FellowshipExport export, EquippedReading reading, AugmentationDocument augmentation)
     {
-        var carriers = Carriers(store, augmentation);
+        var carriers = Carriers(export, augmentation);
 
-        if (query.RankSources.Count == 0) return carriers is [var first, ..] ? [first] : [];
+        if (reading.RankSources.Count == 0) return carriers is [var first, ..] ? [first] : [];
 
         return
         [
             .. carriers
-                .Where(carrier => query.RankSources.Contains(carrier.Type, StringComparer.OrdinalIgnoreCase))
-                .Take(Limit(store, query, augmentation)),
+                .Where(carrier => reading.RankSources.Contains(carrier.Type, StringComparer.OrdinalIgnoreCase))
+                .Take(Limit(export, reading, augmentation)),
         ];
     }
 
-    public static int Summed(IEntityStoreService store, TooltipQuery query, AugmentationDocument augmentation) =>
-        Sources(store, query, augmentation).Count * PerSource(store.Settings, query, augmentation);
+    public static int Summed(FellowshipExport export, EquippedReading reading, AugmentationDocument augmentation) =>
+        Sources(export, reading, augmentation).Count * PerSource(export.Settings, reading, augmentation);
 
-    public static int Rank(IEntityStoreService store, TooltipQuery query, AugmentationDocument augmentation) =>
-        Math.Min(Summed(store, query, augmentation), augmentation.MaxRank ?? int.MaxValue);
+    public static int Rank(FellowshipExport export, EquippedReading reading, AugmentationDocument augmentation) =>
+        Math.Min(Summed(export, reading, augmentation), augmentation.MaxRank ?? int.MaxValue);
 
-    private static readonly ConditionalWeakTable<IEntityStoreService, IReadOnlyDictionary<string, IReadOnlyList<ItemTypeText>>>
+    private static readonly ConditionalWeakTable<FellowshipExport, IReadOnlyDictionary<string, IReadOnlyList<ItemTypeText>>>
         CarriersByCategory = new();
 
-    private static IReadOnlyDictionary<string, IReadOnlyList<ItemTypeText>> Carried(IEntityStoreService store)
+    private static IReadOnlyDictionary<string, IReadOnlyList<ItemTypeText>> Carried(FellowshipExport export)
     {
-        var settings = store.Settings;
+        var settings = export.Settings;
         var categoriesBySlot = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var item in store.Entities.OfType<ItemDocument>())
+        foreach (var item in export.Entities.OfType<ItemDocument>())
         {
             if (item.Slot is not { } slot) continue;
 
@@ -194,4 +194,14 @@ public static class RankSources
 
     public static string? Write(IEnumerable<string> sources) =>
         string.Join(',', sources) is { Length: > 0 } written ? written : null;
+}
+
+/// <summary>Item level and gear slots an augmentation is equipped at.</summary>
+public sealed record EquippedReading
+{
+    /// <summary>Item level of the gear. With none, the highest item level.</summary>
+    public int? ItemLevel { get; init; }
+
+    /// <summary>Item types the augmentation is equipped on. With none, the first item type to carry it.</summary>
+    public IReadOnlyList<string> RankSources { get; init; } = [];
 }

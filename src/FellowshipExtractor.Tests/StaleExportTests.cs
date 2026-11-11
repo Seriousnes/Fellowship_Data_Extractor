@@ -1,3 +1,4 @@
+using Fellowship.SDK.Documents;
 using Fellowship.Codex.Services;
 
 using Microsoft.Extensions.Logging.Abstractions;
@@ -24,7 +25,7 @@ public sealed class StaleExportTests
                 .GetResult()
                 .Snapshot;
 
-            return new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
+            return new EntityStoreService(new FellowshipExport(snapshot.Settings, snapshot.Entities), NullLogger<EntityStoreService>.Instance);
         }
         finally
         {

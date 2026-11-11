@@ -24,6 +24,7 @@ public class CardTests(Export export)
             .AddSingleton(export.View.Tokens)
             .AddSingleton(export.Tooltip)
             .AddSingleton(export.Store)
+            .AddSingleton(export.Store.Export)
             .AddSingleton(export.Chrome)
             .AddSingleton<IFragmentService, FragmentService>()
             .AddSingleton<ITextureReader>(new FolderTextureReader(Path.Combine(Project.Repository, "output")))
@@ -47,7 +48,7 @@ public class CardTests(Export export)
 
     private ItemDocument Rolled => export.Store.Entities.OfType<ItemDocument>()
         .First(item => item.Icon is not null && item.Rarity is not null &&
-            export.Tooltip.Rolls(item, new TooltipQuery(), export.Tooltip.Rarity(item, new TooltipQuery())).Count > 0);
+            export.Tooltip.Rolls(item, new TooltipQuery()).Count > 0);
 
     [Fact]
     public async Task A_card_is_a_png_at_the_card_size()
@@ -129,7 +130,7 @@ public class CardTests(Export export)
         var query = Query(Rolled);
         var card = await cards.Card(Rolled, query);
 
-        foreach (var line in export.Tooltip.Rolls(Rolled, query, export.Tooltip.Rarity(Rolled, query)))
+        foreach (var line in export.Tooltip.Rolls(Rolled, query))
         {
             Assert.Contains(StatNames.Short(line.Stat, line.DisplayName).Replace(' ', ' '), card.Lines[0].Text);
         }
@@ -187,8 +188,8 @@ public class CardTests(Export export)
     public async Task An_enchant_card_reads_the_rank_its_sources_give()
     {
         var enchant = export.Store.Entities.OfType<EnchantDocument>()
-            .First(entry => AugmentationRanks.Carriers(export.Store, entry).Count > 1);
-        var sources = RankSources.Write(AugmentationRanks.Carriers(export.Store, enchant).Select(carrier => carrier.Type))!;
+            .First(entry => AugmentationRanks.Carriers(export.Store.Export, entry).Count > 1);
+        var sources = RankSources.Write(AugmentationRanks.Carriers(export.Store.Export, enchant).Select(carrier => carrier.Type))!;
 
         var bare = await cards.Card(enchant, Query(enchant));
         var ranked = await cards.Card(enchant, Query(enchant, ("rankSources", sources)));

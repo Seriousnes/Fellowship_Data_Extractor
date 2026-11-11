@@ -11,65 +11,8 @@ namespace Fellowship.Codex.Models;
 
 public static partial class RecordReadings
 {
-    public static IResult? Refused(RecordReading reading, IEntityStoreService store)
-    {
-        var settings = store.Settings;
-
-        if (reading.Hero is { } hero && store.Hero(hero) is null)
-        {
-            return Lookups.NoSuchHero(hero, settings.Heroes);
-        }
-
-        if (reading.Rarity is { } rarity && store.Rarity(rarity, gem: false) is null)
-        {
-            return Unreadable(
-                "No such rarity.",
-                $"'{rarity}' is not a rarity. The rarities are " +
-                    string.Join(", ", settings.Rarities.Select(entry => $"{entry.DisplayName} ({entry.Tier})")) + ".");
-        }
-
-        if (reading.ItemLevel is { } level && (level < 1 || level > settings.Items.MaxItemLevel))
-        {
-            return Unreadable(
-                "No such item level.",
-                $"The item level is {Number(level)}, and an item level runs from 1 to " +
-                    Number(settings.Items.MaxItemLevel) + ".");
-        }
-
-        if (reading.Upgrades is < 0)
-        {
-            return Unreadable("No such tempering.", $"The tempering is {Number(reading.Upgrades.Value)}, below 0.");
-        }
-
-        if (reading.RankSources is { Count: > 0 } sources)
-        {
-            var types = AugmentationRanks.Text(settings).ItemTypes.Select(type => type.Type).ToArray();
-
-            if (sources.FirstOrDefault(source => !types.Contains(source, StringComparer.OrdinalIgnoreCase)) is { } unknown)
-            {
-                return Unreadable(
-                    "No such rank source.",
-                    $"'{unknown}' is not an item type. The item types are {string.Join(", ", types)}.");
-            }
-        }
-
-        if (reading.Difficulty is { } difficulty && Difficulties.At(settings, difficulty) is null)
-        {
-            return Unreadable(
-                "No such difficulty.",
-                $"The difficulty is {Number(difficulty)}. The difficulties are " +
-                    string.Join(", ", Difficulties.Ladder(settings).Select(step => Number(step.Difficulty))) + ".");
-        }
-
-        if (reading.EquippedTier is { } tier && (tier < 0 || tier > settings.Glyphs.Tiers))
-        {
-            return Unreadable(
-                "No such tier.",
-                $"The equipped tier is {Number(tier)}, and a glyph's tiers run from 0 to {Number(settings.Glyphs.Tiers)}.");
-        }
-
-        return null;
-    }
+    public static IResult? Refused(RecordReading reading, IEntityStoreService store) =>
+        store.Export.Refusal(reading) is { } refusal ? Unreadable(refusal.Title, refusal.Detail) : null;
 
     public static bool Keeps(EntityDocument document, RecordReading reading, IEntityStoreService store)
     {
@@ -95,7 +38,7 @@ public static partial class RecordReadings
         {
             ItemRecord item when document is ItemDocument read &&
                 (reading.ItemLevel is not null || reading.Upgrades is not null || reading.Rarity is not null) =>
-                item with { Magnitudes = Magnitudes(read, reading, store, tooltips) },
+                item with { Magnitudes = Magnitudes(read, reading, store) },
 
             AugmentationRecord augmentation when document is AugmentationDocument read &&
                 (reading.ItemLevel is not null || reading.RankSources is { Count: > 0 }) =>
@@ -143,35 +86,14 @@ public static partial class RecordReadings
             _ => (EntityRecord)record,
         });
 
-    private static ItemMagnitudesRecord Magnitudes(
-        ItemDocument item, RecordReading reading, IEntityStoreService store, ITooltipViewService tooltips)
-    {
-        var query = new TooltipQuery
+    private static ItemMagnitudesRecord Magnitudes(ItemDocument item, RecordReading reading, IEntityStoreService store) =>
+        store.Export.Magnitudes(item, new ItemScaling
         {
             Hero = reading.Hero,
             ItemLevel = reading.ItemLevel,
             Upgrades = reading.Upgrades,
             Rarity = reading.Rarity,
-        };
-
-        var rarity = tooltips.Rarity(item, query);
-        var level = query.ItemLevel ?? store.DropItemLevel(item);
-        var at = query with { ItemLevel = level };
-
-        return new ItemMagnitudesRecord
-        {
-            ItemLevel = level,
-            Upgrades = query.Upgrades ?? 0,
-            MaxUpgrades = Tempering.Ceiling(store.Settings.MaxTempers, rarity?.Name, level),
-            Rarity = rarity is null ? null : tooltips.RarityName(item, rarity),
-            PotentialPower = ItemPower.Of(item, store.Settings, rarity, at, level),
-            Stats =
-            [
-                .. tooltips.Rolls(item, at, rarity).Select(line => new StatMagnitudeRecord(
-                    line.Stat is null ? null : line.DisplayName, line.Value, line.Kind)),
-            ],
-        };
-    }
+        });
 
     private static EquippedAugmentationRecord Equipped(
         AugmentationDocument augmentation,
@@ -188,13 +110,13 @@ public static partial class RecordReadings
             RankSources = reading.RankSources ?? [],
         };
 
-        var rank = AugmentationRanks.Rank(store, query, augmentation);
-        var level = augmentation is EnchantDocument ? AugmentationRanks.Level(settings, query) : (int?)null;
+        var rank = AugmentationRanks.Rank(store.Export, query.Equipped, augmentation);
+        var level = augmentation is EnchantDocument ? AugmentationRanks.Level(settings, query.Equipped) : (int?)null;
 
         return new EquippedAugmentationRecord
         {
             Rank = rank,
-            RankSources = [.. AugmentationRanks.Sources(store, query, augmentation).Select(source => source.Type)],
+            RankSources = [.. AugmentationRanks.Sources(store.Export, query.Equipped, augmentation).Select(source => source.Type)],
             ItemLevel = level,
             Description = AugmentationRanks.Description(
                     augmentation, rank, AugmentationRanks.HeroRead(settings, augmentation, reading.Hero)) is { } text

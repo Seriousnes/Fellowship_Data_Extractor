@@ -32,7 +32,7 @@ public sealed class PrimarySlotTests
             new HashSet<string>(["Strength"], StringComparer.OrdinalIgnoreCase),
             rarity: null,
             itemLevel: 2000,
-            new TooltipQuery());
+            new ItemScaling());
 
         var stamina = lines.Single(line => line.Stat == "Stamina").Value;
         var strength = lines.Single(line => line.Stat == "Strength").Value;

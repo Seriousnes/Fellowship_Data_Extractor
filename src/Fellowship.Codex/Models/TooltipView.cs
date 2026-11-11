@@ -18,17 +18,6 @@ public static class TooltipView
 
     public const string GemSocketLabel = "Gem Socket";
 
-    public static EntityType TypeOf(ModifierKind kind, SettingsFile settings) =>
-        ItemCraft.Definition(kind.ToString(), settings) switch
-        {
-            { SlotType: CraftSlots.Augmentation, AugmentationPool: [var category] }
-                when AugmentationTypes.ByCategory.TryGetValue(category, out var type) => type,
-            { SlotType: CraftSlots.AbilityRank } => EntityType.Glyph,
-            { SlotType: CraftSlots.GemPower } => EntityType.Radiance,
-            var definition => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, $"{kind} is a {definition.SlotType} slot, which names no entity type."),
-        };
-
     public static ModifierTypeEntry Type(ModifierKind kind, SettingsFile settings) =>
         settings.ModifierTypes.FirstOrDefault(type => type.Name == kind.ToString())
         ?? throw new InvalidOperationException(
@@ -67,19 +56,6 @@ public static class TooltipView
         }
 
         return entries;
-    }
-
-    public static AugmentationDocument? Augmentation(IEntityStoreService store, int id, string? wearer)
-    {
-        AugmentationDocument[] readings =
-        [
-            .. AugmentationTypes.All.SelectMany(type => store.All(type, id)).OfType<AugmentationDocument>(),
-        ];
-
-        var hero = wearer is null ? null : store.Hero(wearer);
-
-        return (hero is null ? null : readings.FirstOrDefault(reading => EntityStore.Reads(reading, hero)))
-            ?? readings.FirstOrDefault();
     }
 
     public static string Magnitude(StatLine line) =>

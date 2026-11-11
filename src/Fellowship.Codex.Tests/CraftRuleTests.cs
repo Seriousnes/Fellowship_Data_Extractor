@@ -48,7 +48,7 @@ public class CraftRuleTests(Export export)
             Assert.NotNull(type.MaximumLimitWarning);
 
             var kind = ItemCraft.KindOf(type.Name, Settings)!.Value;
-            var row = TooltipView.TypeOf(kind, Settings) switch
+            var row = ItemCraft.TypeOf(kind, Settings) switch
             {
                 var augmented when AugmentationTypes.Is(augmented) => (EntityDocument)Settings.StatCalculation.SlotDefinitions[type.Name].AugmentationPool
                     .SelectMany(category => AttunementTrees.InCategory(category, export.Store))

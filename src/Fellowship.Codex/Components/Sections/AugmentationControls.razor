@@ -1,6 +1,7 @@
 @inject IEntityStoreService Store
+@inject FellowshipExport Export
 
-@if (Here.Entity is AugmentationDocument augmentation && (PerHero is not null || AugmentationRanks.Ranked(Store, augmentation)))
+@if (Here.Entity is AugmentationDocument augmentation && (PerHero is not null || AugmentationRanks.Ranked(Export, augmentation)))
 {
     <div class="cx-augmentation-controls">
         @if (PerHero is not null)
@@ -17,21 +18,21 @@
             </Knob>
         }
 
-        @if (AugmentationRanks.Ranked(Store, augmentation))
+        @if (AugmentationRanks.Ranked(Export, augmentation))
         {
             @if (augmentation is EnchantDocument)
             {
                 <Slider Caption="Item level" Key="ReadingParameter.ItemLevel" Min="1" Max="Store.Settings.Items.MaxItemLevel"
-                        Value="AugmentationRanks.Level(Store.Settings, Query)" Text="@Typed(ReadingParameter.ItemLevel)"
+                        Value="AugmentationRanks.Level(Store.Settings, Query.Equipped)" Text="@Typed(ReadingParameter.ItemLevel)"
                         OnChange="@(value => Turn(ReadingParameter.ItemLevel, value))" />
             }
 
             var sources = Sources(augmentation);
-            var full = sources.Count >= AugmentationRanks.Limit(Store, Query, augmentation);
+            var full = sources.Count >= AugmentationRanks.Limit(Export, Query.Equipped, augmentation);
 
             <Knob Caption="@Text.RankSources" As="div">
                 <div class="cx-rarities">
-                    @foreach (var type in AugmentationRanks.Carriers(Store, augmentation))
+                    @foreach (var type in AugmentationRanks.Carriers(Export, augmentation))
                     {
                         var mine = type;
                         var chosen = sources.Contains(mine.Type);
@@ -65,7 +66,7 @@
     };
 
     private IReadOnlyList<string> Sources(AugmentationDocument augmentation) =>
-        [.. AugmentationRanks.Sources(Store, Query, augmentation).Select(source => source.Type)];
+        [.. AugmentationRanks.Sources(Export, Query.Equipped, augmentation).Select(source => source.Type)];
 
     private Task Source(AugmentationDocument augmentation, string type)
     {

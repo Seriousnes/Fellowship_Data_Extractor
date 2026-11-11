@@ -34,6 +34,9 @@ jobs:
       - name: Run the codex tests
         run: dotnet test src/Fellowship.Codex.Tests
 
+      - name: Run the SDK tests
+        run: dotnet test src/Fellowship.SDK.Tests
+
   browser:
     runs-on: ubuntu-latest
     steps:

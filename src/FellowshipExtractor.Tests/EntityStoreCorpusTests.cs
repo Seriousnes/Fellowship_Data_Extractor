@@ -19,7 +19,7 @@ public sealed class EntityStoreCorpusTests
             .GetResult()
             .Snapshot;
 
-        return new EntityStoreService(snapshot, NullLogger<EntityStoreService>.Instance);
+        return new EntityStoreService(new FellowshipExport(snapshot.Settings, snapshot.Entities), NullLogger<EntityStoreService>.Instance);
     }
 
     public static IEnumerable<object[]> Counts()

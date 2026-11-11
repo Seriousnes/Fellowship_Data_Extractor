@@ -126,7 +126,7 @@ public static class FellowshipLogs
 
             var id = logged - AugmentationBase;
 
-            if (TooltipView.Augmentation(store, id, null) is null)
+            if (store.Export.Augmentation(id, null) is null)
             {
                 missing.Add($"attuned augmentation id {logged} names no augmentation.");
                 continue;
@@ -140,7 +140,7 @@ public static class FellowshipLogs
             if (Int(entry, "id") is not { } logged) return;
 
             var id = logged - under;
-            EntityDocument? row = type is { } named ? store.All(named, id).FirstOrDefault() : TooltipView.Augmentation(store, id, null);
+            EntityDocument? row = type is { } named ? store.All(named, id).FirstOrDefault() : store.Export.Augmentation(id, null);
 
             var kind = type == EntityType.Radiance
                 ? ItemCraft.KindOfSlotType(CraftSlots.GemPower, store.Settings)
@@ -246,7 +246,7 @@ public static class FellowshipLogs
         var glyphs = new JsonArray();
 
         foreach (var modifier in query.Modifiers.Where(
-            row => TooltipView.TypeOf(row.Kind, store.Settings) == EntityType.Glyph))
+            row => ItemCraft.TypeOf(row.Kind, store.Settings) == EntityType.Glyph))
         {
             if (RankOf(modifier.Id, item, store) is not { } logged) continue;
 
@@ -271,7 +271,7 @@ public static class FellowshipLogs
                     ["id"] = augmentation.Id + AugmentationBase,
                     [GlyphLevelField] = 1,
                     [AttunedPointsField] = augmentation.Rank,
-                    ["name"] = TooltipView.Augmentation(store, augmentation.Id, null) is { } named ? PublicTypes.NameOf(named) : null,
+                    ["name"] = store.Export.Augmentation(augmentation.Id, null) is { } named ? PublicTypes.NameOf(named) : null,
                 });
             }
 
@@ -282,13 +282,13 @@ public static class FellowshipLogs
         {
             var entries = new JsonArray();
 
-            foreach (var modifier in query.Modifiers.Where(row => types.Contains(TooltipView.TypeOf(row.Kind, store.Settings))))
+            foreach (var modifier in query.Modifiers.Where(row => types.Contains(ItemCraft.TypeOf(row.Kind, store.Settings))))
             {
                 entries.Add(new JsonObject
                 {
                     ["id"] = modifier.Id + under,
                     [amountField] = modifier.Amount,
-                    ["name"] = Name(TooltipView.TypeOf(modifier.Kind, store.Settings), modifier.Id, store),
+                    ["name"] = Name(ItemCraft.TypeOf(modifier.Kind, store.Settings), modifier.Id, store),
                 });
             }
 

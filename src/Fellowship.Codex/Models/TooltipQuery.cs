@@ -120,6 +120,22 @@ public sealed record TooltipQuery
     public IReadOnlyDictionary<string, decimal> Attributes { get; init; } =
         new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
 
+    public ItemScaling Scaling => new()
+    {
+        Hero = Hero,
+        ItemLevel = ItemLevel,
+        Upgrades = Upgrades,
+        MaxUpgrades = MaxUpgrades,
+        Rarity = Rarity,
+        NoSocket = NoSocket,
+        Armor = Armor,
+        Modifiers = Modifiers,
+        Attunements = Attunements,
+        Stats = Stats,
+    };
+
+    public EquippedReading Equipped => new() { ItemLevel = ItemLevel, RankSources = RankSources };
+
     public decimal? Total(string stat) =>
         Stats.TryGetValue(stat, out var values) ? values.Sum() : null;
 

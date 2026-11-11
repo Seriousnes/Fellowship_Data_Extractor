@@ -1,3 +1,4 @@
+using Fellowship.SDK.Documents;
 using Fellowship.Codex.Services;
 
 using Microsoft.Extensions.Hosting;

@@ -13,10 +13,10 @@ public abstract class AugmentationRankCard<TDocument>(ICodexViewService ui, Tool
     {
         if (query.ItemLevel is { } level) yield return $"{ItemCard.ItemLevel} {CardText.Number(level)}";
 
-        if (AugmentationRanks.Ranked(Ui.Store, entity))
+        if (AugmentationRanks.Ranked(Ui.Store.Export, entity))
         {
             yield return $"{AugmentationRanks.Text(Ui.Store.Settings).EquippedRank} " +
-                CardText.Number(AugmentationRanks.Rank(Ui.Store, query, entity));
+                CardText.Number(AugmentationRanks.Rank(Ui.Store.Export, query.Equipped, entity));
         }
     }
 }

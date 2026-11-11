@@ -37,12 +37,11 @@ public sealed class RecordReadingTests(Export export)
     public void An_item_magnitude_is_the_tooltip_roll()
     {
         var query = new TooltipQuery { ItemLevel = 300, Upgrades = 2 };
-        var rarity = export.Tooltip.Rarity(Rolled, query);
 
         var magnitudes = Read<ItemRecord>(Rolled, new RecordReading { ItemLevel = 300, Upgrades = 2 }).Magnitudes!;
 
         Assert.Equal(
-            export.Tooltip.Rolls(Rolled, query, rarity).Select(line => line.Value),
+            export.Tooltip.Rolls(Rolled, query).Select(line => line.Value),
             magnitudes.Stats.Select(stat => stat.Value));
     }
 

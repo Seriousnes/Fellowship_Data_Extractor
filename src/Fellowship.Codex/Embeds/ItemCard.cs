@@ -33,7 +33,7 @@ public sealed class ItemCard(ICodexViewService ui, ITooltipViewService tips, Car
         var hero = Ui.Store.Hero(query.Hero);
         var lines = new List<CardLine>();
 
-        var rolls = tips.Rolls(entity, query, tips.Rarity(entity, query));
+        var rolls = tips.Rolls(entity, query);
 
         if (rolls.Count > 0)
         {

@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <Using Include="Fellowship.SDK" />
+    <Using Include="Fellowship.SDK.Calculations" />
     <Using Include="Xunit" />
   </ItemGroup>
 

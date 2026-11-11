@@ -1,5 +1,6 @@
 @inject ITooltipViewService Ui
 @inject IEntityStoreService Store
+@inject FellowshipExport Export
 
 <div class="@TooltipView.Root plain fx-augmentation" style="@Ui.Variables(null)">
     <style>@Sheet</style>
@@ -49,13 +50,13 @@
 
     private AugmentationCategoryText Wording => AugmentationRanks.Category(Store.Settings, Entity);
 
-    private IReadOnlyList<ItemTypeText> Sources => AugmentationRanks.Sources(Store, Query, Entity);
+    private IReadOnlyList<ItemTypeText> Sources => AugmentationRanks.Sources(Export, Query.Equipped, Entity);
 
-    private int PerSource => AugmentationRanks.PerSource(Store.Settings, Query, Entity);
+    private int PerSource => AugmentationRanks.PerSource(Store.Settings, Query.Equipped, Entity);
 
-    private bool Shown => AugmentationRanks.Ranked(Store, Entity);
+    private bool Shown => AugmentationRanks.Ranked(Export, Entity);
 
-    private int Ranked => AugmentationRanks.Rank(Store, Query, Entity);
+    private int Ranked => AugmentationRanks.Rank(Export, Query.Equipped, Entity);
 
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
 
