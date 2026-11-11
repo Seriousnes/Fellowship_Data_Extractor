@@ -117,7 +117,7 @@ public sealed class ComparisonTests(Export export)
 
         foreach (var item in items)
         {
-            foreach (var line in export.Tooltip.Rolls(item, new TooltipQuery(), null).Where(line => line.Stat is not null))
+            foreach (var line in export.Tooltip.Rolls(item, new TooltipQuery()).Where(line => line.Stat is not null))
             {
                 Assert.Equal((double)line.Value, Codex.Measure(line.Stat!).Value(item));
             }

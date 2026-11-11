@@ -399,14 +399,14 @@ public sealed class CodexService : ICodexService
     private static IEnumerable<Measure> StatMeasures(IEntityStoreService store)
     {
         var calculation = store.Settings.StatCalculation;
-        var reading = new TooltipQuery();
+        var scaling = new ItemScaling();
 
         var values = new Dictionary<ItemDocument, IReadOnlyDictionary<string, double>>(ReferenceEqualityComparer.Instance);
 
         foreach (var item in store.Entities.OfType<ItemDocument>().Where(item => PublicTypes.IsListed(item)))
         {
             var lines = StatMagnitudes.For(
-                item, calculation, store.Settings.Items, store.PrimaryAttributes, null, store.DropItemLevel(item), reading);
+                item, calculation, store.Settings.Items, store.PrimaryAttributes, null, store.DropItemLevel(item), scaling);
 
             if (lines.Count == 0) continue;
 
