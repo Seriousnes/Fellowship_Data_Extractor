@@ -396,7 +396,8 @@ public sealed class CodexViewService(
         HeroDocument => property is nameof(HeroDocument.Title) or nameof(HeroDocument.Color)
             or nameof(HeroDocument.Biography) or nameof(HeroDocument.Playstyle)
             or nameof(HeroDocument.SpiritAbility) or nameof(HeroDocument.Portrait)
-            or nameof(HeroDocument.RoleIcon),
+            or nameof(HeroDocument.RoleIcon) or nameof(HeroDocument.RoleOrdinal)
+            or nameof(HeroDocument.OverallDifficultyStars),
         _ => false,
     };
 

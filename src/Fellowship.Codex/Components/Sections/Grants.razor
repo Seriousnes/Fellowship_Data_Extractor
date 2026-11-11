@@ -2,9 +2,16 @@
 
 @if (Tips.Granted(Entity) is { } grants)
 {
-    <Panel Head="Grants an ability" Badge="@PublicTypes.DisplayNameOf(grants)">
+    <section class="cx-grants" aria-label="Grants an ability">
+        <div class="cx-grants-head">
+            <Texture Entity="grants" Width="44" />
+            <div>
+                <p class="cx-grants-eyebrow">Grants an ability</p>
+                <h2><EntityLink Entity="grants" /></h2>
+            </div>
+        </div>
         <Detail Entity="grants" />
-    </Panel>
+    </section>
 }
 
 @code {

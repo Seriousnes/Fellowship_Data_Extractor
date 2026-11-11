@@ -1,4 +1,5 @@
 @inject ICodexViewService Ui
+@inject ITooltipViewService Tips
 
 <Table Items="Documents" SortLink="View.SortLink" SortState="View.SortState"
     Group="Grouped.By<ItemDocument>(View, Ui.Codex)">
@@ -7,7 +8,13 @@
             <Content Context="row"><Texture Entity="row" /></Content>
         </Column>
         <Column Head="Name" Key="SortingType.Name">
-            <Content Context="row"><EntityLink Entity="row" Class="cx-nm" /></Content>
+            <Content Context="row">
+                <EntityLink Entity="row" Class="cx-nm" />
+                @if (Tips.Granted(row) is { } grants)
+                {
+                    <span class="cx-row-grants">@Ui.Name(grants)</span>
+                }
+            </Content>
         </Column>
         <Column Head="ILvl" Key="SortingType.Ilvl" Numeric Value="row => row.ItemLevel" />
         <Column Head="Slot" Key="SortingType.Slot" Value="row => row.Slot" />

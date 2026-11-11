@@ -24,18 +24,20 @@ $panel-gap: 6px;
 .cx-menu-fly > summary::-webkit-details-marker { display: none; }
 
 .cx-menu-open {
-  color: var(--muted); font: 600 12px/1 var(--sans); letter-spacing: .09em; text-transform: uppercase;
+  color: var(--core-secondary-100); font: 600 12px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase;
   white-space: nowrap; user-select: none;
   transition: color .12s ease, border-color .12s ease;
 }
 .cx-menu-open:hover,
-.cx-menu[open] > .cx-menu-open { color: var(--gold-bright); }
+.cx-menu[open] > .cx-menu-open,
+.cx-menu-open[data-here="page"],
+.cx-menu-open[aria-current="page"] { color: var(--gold-bright); text-decoration: none; }
 
 .cx-menu-group ul,
 .cx-menu-sec ul { list-style: none; margin: 0; padding: 0; }
 
 .cx-menu-group-head {
-  font-family: var(--display); font-size: 15px; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 15px; letter-spacing: .06em; text-transform: uppercase;
   color: var(--gold-bright); margin: 0 0 6px; padding: 0 $row-inset 6px;
   border-bottom: 1px solid var(--line);
 }
@@ -68,14 +70,16 @@ $panel-gap: 6px;
   .cx-menus-toggle,
   .cx-menus-shut { display: none; }
 
-  .cx-menus-drawer { display: flex; gap: 2px; }
+  .cx-menus-drawer { display: flex; flex-wrap: wrap; align-items: center; }
 
   .cx-menu { position: relative; }
   .cx-menu-open {
-    padding: 18px 12px;
+    display: block; padding: 19px 9px 17px;
     border-bottom: 2px solid transparent;
   }
-  .cx-menu[open] > .cx-menu-open { border-bottom-color: var(--gold); }
+  .cx-menu[open] > .cx-menu-open,
+  .cx-menu-open[data-here="page"],
+  .cx-menu-open[aria-current="page"] { border-bottom-color: var(--gold-bright); }
 
   .cx-menu-panel {
     position: absolute; left: 0; top: 100%; z-index: 65;
@@ -156,7 +160,7 @@ $panel-gap: 6px;
     padding: 12px 8px; font-size: 14px;
     border-bottom: 1px solid var(--line-soft);
   }
-  .cx-menu-open::after { content: "+"; color: var(--gold-deep); font-size: 18px; line-height: 1; }
+  .cx-menu > .cx-menu-open::after { content: "+"; color: var(--gold-deep); font-size: 18px; line-height: 1; }
   .cx-menu[open] > .cx-menu-open::after { content: "\2212"; }
 
   .cx-menu-panel { padding: 8px 0 12px; }

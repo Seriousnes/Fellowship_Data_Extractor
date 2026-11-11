@@ -1,13 +1,29 @@
 @inject ICodexViewService Ui
 @inject IEntityStoreService Store
+@inject ITextureSource Textures
 
 @if (Named.Count > 0)
 {
-    var badge = $"{Named.Count} {(Named.Count == 1 ? "version" : "versions")}";
-    <Panel Head="@Head" Badge="@badge">
+    var badge = (Here.Entity is ItemDocument ? Wearers.Count : Named.Count).ToString();
+    <Panel Head="@Head" Badge="@badge" Plain="@(Here.Entity is ItemDocument)">
         @if (Here.Entity is ItemDocument)
         {
-            <HeroPicker Heroes="@Wearers.Keys.ToArray()" Current="@Here.Reading" Href="@(hero => Ui.Href(Wearers[hero], hero))" />
+            <div class="cx-versions-grid">
+                @foreach (var (hero, reading) in Wearers)
+                {
+                    <a class="cx-version" href="@Ui.Href(reading, hero)"
+                       aria-current="@(string.Equals(hero, Here.Reading, StringComparison.OrdinalIgnoreCase) ? "page" : null)">
+                        @if (Portraits.GetValueOrDefault(hero) is { } portrait)
+                        {
+                            <img alt="" src="@Textures.Address(portrait, TextureSize.Small)" />
+                        }
+                        <span>
+                            <span class="cx-version-hero" style="color:@(Ui.HeroColour(hero) ?? "var(--muted)")">@hero</span>
+                            <span class="cx-version-item">@Ui.Name(reading)</span>
+                        </span>
+                    </a>
+                }
+            </div>
         }
         else
         {
@@ -66,7 +82,13 @@
                         .OrderBy(hero => hero, StringComparer.OrdinalIgnoreCase)],
                     version.Any(reading => reading == Here.Entity)))];
 
-    private string Head => Here.Entity is AugmentationDocument ? "Versions" : $"Who can use this {Here.Noun}";
+    private string Head => Here.Entity is AugmentationDocument or ItemDocument ? "Versions" : $"Who can use this {Here.Noun}";
+
+    private IReadOnlyDictionary<string, string> Portraits => Store.Entities
+        .OfType<HeroDocument>()
+        .Where(hero => hero.Name is not null && hero.Portrait is not null)
+        .DistinctBy(hero => hero.Name)
+        .ToDictionary(hero => hero.Name!, hero => hero.Portrait!, StringComparer.OrdinalIgnoreCase);
 
     private IEnumerable<string> Wearing(EntityDocument reading) =>
         reading is AugmentationDocument

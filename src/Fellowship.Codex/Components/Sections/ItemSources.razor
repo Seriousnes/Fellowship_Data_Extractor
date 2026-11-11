@@ -3,42 +3,20 @@
 
 @if (Rows.Count > 0)
 {
-    <Panel Head="Location / Source" Badge="@Rows.Count.ToString()">
-        <Table Items="Rows">
-            <Columns>
-                <Column Head="" Class="cx-texture">
-                    <Content Context="row">
-                        @if (row.Place is { } place)
-                        {
-                            <Texture Entity="place" />
-                        }
-                    </Content>
-                </Column>
-                <Column Head="Source">
-                    <Content Context="row">
-                        @if (row.Place is { } place)
-                        {
-                            <EntityLink Entity="place" Class="cx-nm" />
-                        }
-                        else
-                        {
-                            @row.Source.Name
-                        }
-                    </Content>
-                </Column>
-                <Column Head="Kind" Class="cx-tags">
-                    <Content Context="row"><Chip>@row.Source.Kind</Chip></Content>
-                </Column>
-                <Column Head="Category" Class="cx-tags">
-                    <Content Context="row">
-                        @if (row.Source.Category is { } category)
-                        {
-                            <Chip>@category</Chip>
-                        }
-                    </Content>
-                </Column>
-            </Columns>
-        </Table>
+    <Panel Head="Location / Source" Badge="@Rows.Count.ToString()" Plain="true">
+        <div class="cx-sources">
+            @foreach (var row in Rows)
+            {
+                @if (row.Place is { } place)
+                {
+                    <EntityLink Entity="place" Class="cx-source">@Tile(row)</EntityLink>
+                }
+                else
+                {
+                    <div class="cx-source">@Tile(row)</div>
+                }
+            }
+        </div>
     </Panel>
 }
 
@@ -49,6 +27,18 @@
 
     /// <param name="Place">The page the source has, where the export names one.</param>
     private sealed record Row(ItemSource Source, EntityDocument? Place);
+
+    private static RenderFragment Tile(Row row) =>
+        @<text>
+            @if (row.Place is { } place)
+            {
+                <Texture Entity="place" />
+            }
+            <span class="cx-source-text">
+                <span class="cx-source-name">@(row.Place is { } named ? named.Name ?? row.Source.Name : row.Source.Name)</span>
+                <span class="cx-source-kind">@row.Source.Kind@(row.Source.Category is { } category ? $" · {category}" : null)</span>
+            </span>
+        </text>;
 
     protected override void OnParametersSet() =>
         Rows =

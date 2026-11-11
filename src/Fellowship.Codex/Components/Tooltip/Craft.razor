@@ -312,7 +312,8 @@
         var parameters = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
         {
             [QueryKeys.Key(ReadingParameter.Hero)] = values.GetValueOrDefault(QueryKeys.Key(ReadingParameter.Hero)) ?? default,
-            [QueryKeys.Key(ReadingParameter.Rarity)] = query.Rarity ?? default,
+            [QueryKeys.Key(ReadingParameter.Rarity)] =
+                Store.Rarity(query.Rarity, gem: false)?.DisplayName.ToLowerInvariant() ?? query.Rarity ?? default,
             [QueryKeys.Key(ReadingParameter.ItemLevel)] = Text(query.ItemLevel),
             [QueryKeys.Key(ReadingParameter.Upgrades)] = Text(query.Upgrades),
             [QueryKeys.Key(ReadingParameter.MaxUpgrades)] = Text(query.MaxUpgrades),

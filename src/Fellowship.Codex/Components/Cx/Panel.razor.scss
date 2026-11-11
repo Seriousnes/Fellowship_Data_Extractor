@@ -2,7 +2,9 @@
 
 .cx-panel {
   position: relative;
-  @include plated;
+  padding: 14px 16px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
 }
 
 .cx-panel + .cx-panel { margin-top: 16px; }
@@ -10,17 +12,16 @@
 .cx-entity-side .cx-panel + .cx-panel { margin-top: 0; }
 
 .cx-panel-head {
-  display: flex; align-items: center; gap: 10px; margin: -14px -16px 12px;
-  padding: 9px 16px;
-  background: var(--chrome-header) center/100% 100% no-repeat;
-  font-family: var(--display); font-size: 15px; letter-spacing: .1em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 10px; margin: 0 0 12px;
+  font-family: var(--display); font-size: 20px; letter-spacing: .07em; text-transform: uppercase;
   color: var(--gold-bright);
 }
 
 .cx-rail { position: sticky; top: 66px; max-height: calc(100vh - 82px); overflow-y: auto; }
 
 .cx-panel-toggle {
-  display: none; appearance: none; width: calc(100% + 32px); border: 0; cursor: pointer; text-align: left;
+  display: none; appearance: none; width: 100%; min-height: 44px; padding: 0; border: 0; cursor: pointer;
+  background: none; text-align: left;
 }
 .cx-panel-toggle::after { content: "+"; margin-left: auto; color: var(--gold-deep); font-size: 18px; }
 .cx-panel-collapsible[data-open] > .cx-panel-toggle::after { content: "\2212"; }
@@ -29,7 +30,7 @@
   .cx-rail { position: static; max-height: none; }
   .cx-panel-collapsible > .cx-panel-head:not(.cx-panel-toggle) { display: none; }
   .cx-panel-collapsible > .cx-panel-toggle { display: flex; }
-  .cx-panel-collapsible:not([data-open]) > .cx-panel-toggle { margin-bottom: -14px; }
+  .cx-panel-collapsible:not([data-open]) > .cx-panel-toggle { margin-bottom: 0; }
   .cx-panel-collapsible:not([data-open]) > .cx-panel-body { display: none; }
 }
 
@@ -38,3 +39,5 @@
 .cx-raw-record > summary::after { content: "\002B"; margin-left: auto; color: var(--gold-deep); }
 .cx-raw-record[open] > summary::after { content: "\2212"; }
 .cx-raw-record[open] > summary { margin-bottom: 12px; }
+
+.cx-panel-plain { padding: 0; background: none; border: 0; }

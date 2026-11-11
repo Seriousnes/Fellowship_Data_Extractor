@@ -1,19 +1,49 @@
 @use "../../Styles/shared" as *;
 
 .cx-knob select, .cx-knob input {
-  width: 100%; appearance: none;
+  width: 100%; min-height: 44px; appearance: none;
   @include sunken;
-  font: 400 13px/1 var(--sans); padding: 7px 9px; border-radius: 2px;
+  font: 600 14px/1 var(--sans); padding: 0 10px; border-radius: 0;
 }
 .cx-knob select:focus, .cx-knob input:focus { @include edged; }
 
-.cx-rarities {
-  display: flex; flex-wrap: wrap; gap: 4px;
+.cx-step {
+  display: flex; background: var(--sunken); border: 1px solid var(--line);
+
+  &:focus-within { border-color: var(--gold-deep); }
+
+  input {
+    flex: 1 1 auto; min-width: 0; padding: 0 4px; border: 0; background: none; text-align: center;
+    -moz-appearance: textfield;
+  }
+  input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input:focus { outline: none; box-shadow: none; }
+  input:disabled { color: var(--faint); cursor: not-allowed; }
 
   button {
-    appearance: none; cursor: pointer; background: var(--sunken); border: 1px solid var(--line);
-    border-radius: 2px; padding: 5px 9px; font: 600 12px/1 var(--sans); color: var(--muted);
-
-    &[aria-pressed="true"] { border-color: currentColor; background: var(--raised); }
+    flex: 0 0 30px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer;
+    color: var(--core-secondary-100); font: 400 18px/1 var(--sans);
   }
+  button:first-child { border-right: 1px solid var(--line); }
+  button:last-child { border-left: 1px solid var(--line); }
+  button:hover:not(:disabled) { background: var(--raised); color: var(--gold-bright); }
+  button:disabled { color: var(--core-secondary-600); cursor: not-allowed; }
+}
+
+.cx-knob-pair {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+
+  ::deep .cx-knob { margin-bottom: 0; }
+}
+
+.cx-knob select.cx-rarity {
+  cursor: pointer; padding: 0 34px 0 12px; border: 1px solid var(--line);
+  background:
+    linear-gradient(45deg, transparent 50%, var(--faint) 50%) right 17px center / 5px 5px no-repeat,
+    linear-gradient(-45deg, transparent 50%, var(--faint) 50%) right 12px center / 5px 5px no-repeat,
+    var(--sunken);
+
+  &:hover { border-color: var(--gold-deep); }
+
+  option { background: var(--sunken); font-weight: 600; }
 }

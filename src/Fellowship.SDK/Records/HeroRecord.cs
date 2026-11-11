@@ -24,6 +24,8 @@ public sealed record HeroRecord : EntityRecord
 
     public int? OverallDifficulty { get; init; }
 
+    public int? OverallDifficultyStars { get; init; }
+
     public double? Offense { get; init; }
 
     public double? Defense { get; init; }

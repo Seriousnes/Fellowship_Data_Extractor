@@ -116,12 +116,6 @@
             sections.Add(@<TipGranted Entity="Entity" Query="Query" Hero="Hero" Name="@Name" />);
         }
 
-        if (TipLegendaries.Draws(Entity, Ui))
-        {
-            sections.Add(@<TipLegendaries Entity="Entity" Query="Query" Hero="Hero" />);
-        }
-
-
         return sections;
     }
 

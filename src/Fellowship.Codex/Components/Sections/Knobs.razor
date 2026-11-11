@@ -34,34 +34,48 @@
 
         @if (Rarities.Count > 1)
         {
-            <Knob Caption="Rarity" As="div">
-                <div class="cx-rarities">
+            <Knob Caption="Rarity">
+                <select class="cx-rarity" data-knob="@QueryKeys.Key(ReadingParameter.Rarity)"
+                        style="@Colour(Shown)" @onchange="Rarity">
                     @foreach (var rarity in Rarities)
                     {
-                        var colour = CodexView.Readable(Ui.Tokens.Rarity(rarity.Name));
-                        <button type="button" data-knob="@QueryKeys.Key(ReadingParameter.Rarity)" data-choice="@rarity.Tier"
-                                aria-pressed="@(Chosen(rarity) ? "true" : "false")"
-                                data-value="@(Chosen(rarity) ? rarity.Tier.ToString() : null)"
-                                style="@(colour is null ? null : $"color:{colour}")"
-                                @onclick="() => Rarity(rarity)">
-                            @(IsGem ? rarity.GemDisplayName : rarity.DisplayName)
-                        </button>
+                        <option value="@Word(rarity)" selected="@(rarity.Tier == Shown?.Tier)" style="@Colour(rarity)">
+                            @Named(rarity)
+                        </option>
                     }
-                </div>
+                </select>
             </Knob>
         }
 
         @if (Wearable)
         {
-            <Knob Caption="Item level">
-                <input type="number" min="1" max="1000" step="1" data-knob="@QueryKeys.Key(ReadingParameter.ItemLevel)"
-                       value="@(Typed(ReadingParameter.ItemLevel) ?? DropItemLevel.ToString())" @onchange="Level" />
-            </Knob>
+            <div class="cx-knob-pair">
+                <Knob Caption="Item level" As="div">
+                    <div class="cx-step">
+                        <button type="button" aria-label="Lower item level" disabled="@(LevelBelow is null)"
+                                @onclick="() => Turn(ReadingParameter.ItemLevel, LevelBelow?.ToString(CultureInfo.InvariantCulture))">&minus;</button>
+                        <input type="number" inputmode="numeric" aria-label="Item level"
+                               min="@LevelStep" max="@Store.Settings.Items.MaxItemLevel" step="@LevelStep"
+                               data-knob="@QueryKeys.Key(ReadingParameter.ItemLevel)"
+                               value="@(Typed(ReadingParameter.ItemLevel) ?? DropItemLevel.ToString())" @onchange="Level" />
+                        <button type="button" aria-label="Raise item level" disabled="@(LevelAbove is null)"
+                                @onclick="() => Turn(ReadingParameter.ItemLevel, LevelAbove?.ToString(CultureInfo.InvariantCulture))">+</button>
+                    </div>
+                </Knob>
 
-            <Knob Caption="Tempered">
-                <input type="number" min="0" max="@TemperCeiling" step="1" placeholder="none" data-knob="@QueryKeys.Key(ReadingParameter.Upgrades)"
-                       value="@Value(ReadingParameter.Upgrades)" @onchange="Temper" />
-            </Knob>
+                <Knob Caption="Tempered" Note="@(TemperCeiling is > 0 and var most ? $"0 to {most}" : null)" As="div">
+                    <div class="cx-step">
+                        <button type="button" aria-label="Lower tempering" disabled="@(!Tempers || Tempered is not > 0)"
+                                @onclick="() => Turn(ReadingParameter.Upgrades, Tempered is > 1 ? (Tempered - 1).ToString() : null)">&minus;</button>
+                        <input type="number" inputmode="numeric" aria-label="Tempered" disabled="@(!Tempers)"
+                               min="0" max="@TemperCeiling" step="1" placeholder="none"
+                               data-knob="@QueryKeys.Key(ReadingParameter.Upgrades)"
+                               value="@Value(ReadingParameter.Upgrades)" @onchange="Temper" />
+                        <button type="button" aria-label="Raise tempering" disabled="@(!Tempers || Tempered >= TemperCeiling)"
+                                @onclick="() => Turn(ReadingParameter.Upgrades, ((Tempered ?? 0) + 1).ToString())">+</button>
+                    </div>
+                </Knob>
+            </div>
         }
     </Panel>
 }
@@ -76,8 +90,18 @@
     private Task Wearer(ChangeEventArgs who) =>
         Turn(ReadingParameter.Hero, who.Value?.ToString() is { Length: > 0 } name ? name : null);
 
-    private Task Rarity(RarityEntry rarity) =>
-        Turn(ReadingParameter.Rarity, Chosen(rarity) ? null : rarity.Tier.ToString());
+    private Task Rarity(ChangeEventArgs rarity) =>
+        Turn(ReadingParameter.Rarity, rarity.Value?.ToString() is { Length: > 0 } tier ? tier : null);
+
+    /// <summary>The chosen rarity, or the one the tooltip draws when none is chosen.</summary>
+    private RarityEntry? Shown =>
+        Rarities.FirstOrDefault(Chosen) ??
+        (Here.Entity is { } entity && Cards.Rarity(entity, new TooltipQuery()) is { } drawn
+            ? Rarities.FirstOrDefault(rarity => rarity.Tier == drawn.Tier)
+            : null);
+
+    private string? Colour(RarityEntry? rarity) =>
+        rarity is not null && CodexView.Readable(Ui.Tokens.Rarity(rarity.Name)) is { } colour ? $"color:{colour}" : null;
 
     private Task Level(ChangeEventArgs level) => Turn(ReadingParameter.ItemLevel, level.Value?.ToString());
 
@@ -97,6 +121,23 @@
 
     private int DropItemLevel => Here.Entity is { } entity ? Store.DropItemLevel(entity) : 0;
 
+    private int LevelStep => Store.Settings.Items.ItemLevelsPerUpgrade;
+
+    private int CurrentLevel =>
+        int.TryParse(Value(ReadingParameter.ItemLevel), out var level) ? level : DropItemLevel;
+
+    private int? LevelBelow =>
+        (CurrentLevel - 1) / LevelStep * LevelStep is var below && below >= LevelStep ? below : null;
+
+    private int? LevelAbove =>
+        Math.Min((CurrentLevel / LevelStep + 1) * LevelStep, Store.Settings.Items.MaxItemLevel) is var above && above > CurrentLevel
+            ? above
+            : null;
+
+    private int? Tempered => int.TryParse(Value(ReadingParameter.Upgrades), out var tempered) ? tempered : null;
+
+    private bool Tempers => TemperCeiling is > 0;
+
     private int? TemperCeiling =>
         Here.Entity is ItemDocument item
             ? Tempering.Ceiling(
@@ -106,7 +147,7 @@
             : null;
 
     private bool PicksHero =>
-        Here.Entity is not AugmentationDocument &&
+        Here.Entity is not (AugmentationDocument or ItemDocument) &&
         (Here.Readings.Count > 1 || (Here.Entity as ItemDocument)?.Heroes is { Count: > 1 });
 
     private bool PicksDifficulty => Here.Entity is CreatureDocument || Store.Menacing(Here.Entity) is not null;
@@ -120,6 +161,10 @@
         Value(knob) ?? (Here.Emptied.Contains(QueryKeys.Key(knob)) ? string.Empty : null);
 
     private bool Chosen(RarityEntry rarity) =>
-        Value(ReadingParameter.Rarity) is { } value &&
-        (value == rarity.Tier.ToString() || value.Equals(rarity.Name, StringComparison.OrdinalIgnoreCase));
+        Store.Rarity(Value(ReadingParameter.Rarity), IsGem)?.Tier == rarity.Tier;
+
+    private string Named(RarityEntry rarity) => IsGem ? rarity.GemDisplayName : rarity.DisplayName;
+
+    /// <summary>The query word for <paramref name="rarity"/>: its shown name, which <c>Store.Rarity</c> reads back.</summary>
+    private string Word(RarityEntry rarity) => Named(rarity).ToLowerInvariant();
 }
