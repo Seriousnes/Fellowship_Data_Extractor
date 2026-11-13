@@ -43,6 +43,20 @@ decides which row an ability reads.
 
 An ability that declares no `CooldownDuration` states the row directly under its name, when one exists.
 
+## Activation checks
+
+`UCRGameplayAbility::CanActivateAbility` runs the cooldown check and the global cooldown check, and either
+one fails the activation.
+
+- **Cooldown check**: an active effect with a `CooldownType` asset tag granting one of the ability's
+  `CooldownTags` or `Cooldown.Padding`. A `CooldownType.Padding` effect blocks an ability with
+  `BlockedByPaddingCooldown`, false in the constructor.
+- **Global cooldown check**: the owner's tags against the tags the ability's own
+  `GlobalCooldownGameplayEffectClass` grants. An ability with no class passes, and so does an ability with
+  the tag `AbilityLogic.IgnoreGlobalCooldown`.
+
+`ApplyCooldown` also applies `PaddingCooldownEffectBaseClass` for `PaddingCooldownDuration`.
+
 ## Timing effect
 
 An ability with more than one charge recharges on its charge effect, and every other ability cools down

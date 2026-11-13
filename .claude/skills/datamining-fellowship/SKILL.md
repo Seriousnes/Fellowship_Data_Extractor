@@ -244,6 +244,18 @@ Decoded against **26320967**, written up in `docs/effect-periods.md`:
 | Calculation preset row flags: `CanBeBlocked` +0x1B to `ApplyAscensionScaling` +0x30 | bit setters of the reflection records at 0x148ABADE0 onward |
 | Healing gather; ascension scale from `GlobalAscensionReduceHealingScalerKey` (globals +0x358) | 0x1450DB8C0, flag test 0x1450DBB73, getter 0x1450CDB20 |
 
+Decoded against **26320967**, the activation checks of `UCRGameplayAbility`, written up in `docs/cooldown-haste.md`:
+
+| What | Where |
+| --- | --- |
+| `CanActivateAbility`: tag requirements, `CheckCooldown` (vtable +0x3A8), global cooldown check, `CheckCost` (+0x3B8) | **0x1450DAB50**; calls 0x1450DACE5, 0x1450DAD7D, 0x1450DAD91, 0x1450DADC3 |
+| Global cooldown check: passes for `AbilityLogic.IgnoreGlobalCooldown` (tag global 0x14A3CA0F0) and for an ability with no `GlobalCooldownGameplayEffectClass`; otherwise the owner's tags against the class's granted tags | **0x1450DC780**; null return of the getter at 0x1450DC801 |
+| `GlobalCooldownGameplayEffectClass` +0x3C0, getter of its granted tags (class default object +0xA48) | 0x1450E16D0 |
+| Global cooldown application, nothing with no class | 0x1450E2870 |
+| `CheckCooldown`: effects with a `CooldownType` asset tag granting a `CooldownTags` tag or `Cooldown.Padding` | **0x1450DBF50**; tag globals 0x14A3CA4D8 `CooldownType`, 0x14A3CA4E0 `.Regular`, 0x14A3CA4F0 `.Interrupt`, 0x14A3CA4F8 `.SpamProtection`, 0x14A3CA500 `.Padding`, 0x14A3CA508 `.Charge`, 0x14A3CA738 `Cooldown.Padding` |
+| `BlockedByPaddingCooldown` +0x530, constructor default false | test 0x1450DC32E, store 0x1450D7F10 |
+| Padding cooldown application from `ApplyCooldown`: `PaddingCooldownEffectBaseClass` +0x4D8, `PaddingCooldownDuration` +0x4E0 | 0x1450DA5D0, called at 0x1450D9E8D |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
