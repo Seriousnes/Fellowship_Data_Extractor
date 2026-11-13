@@ -300,6 +300,16 @@ Decoded against **26320967**, the damage result, the dot average, the delay task
 | `LimitToSingleApplication` removal: a count per effect class on the target's component (+0x1270) | 0x1452DAE20 |
 | Hero setup grants `Character.PrimaryAttribute.Strength`, `.Agility`, `.Intellect` from the metadata's `PrimaryAttribute` (+0x31) | **0x14530A340**; tag globals 0x14A3CA280, 0x14A3CA288, 0x14A3CA290 |
 | `UGameplayEffect` constructor and destructor, the only engine routines touching the deprecated `ApplicationTagRequirements` (+0x4B0) | 0x144A63AB0, 0x144A65000 |
+| Engine `GiveAbility`, `ClearAbility`, `TryActivateAbility` | 0x144A11CD0, 0x144A02610, 0x144A276D0 |
+| `CRGameplayAbility::OnGiveAbility`: `TryActivateAbility` under `ActivateAbilityOnGranted` (+0x3B9); `PassiveAbility` is +0x3BA | **0x1450E3970**, test 0x1450E399D |
+| `CRGameplayAbilityPassive` constructor sets both flags | 0x1450E82D0, store 0x1450E82E5 |
+| Component give wrapper over `GiveAbility` | 0x1452D6200 |
+| Hero override run with its player state: `EquipmentComponent` (+0xF40) then `TalentComponent` (+0xF60) | 0x145317420; calls 0x14531759E, 0x1453175AD |
+| `EquipmentComponent` loadout interface setter, loadout application, loadout change handler (flags 0x1A) | 0x1453779D0, 0x145376740, 0x145376A80 |
+| `EquipmentComponent` asynchronous load of its augmentation assets: completed test, completion delegate | **0x14537AA80**; 0x14537AC77, 0x145376670 |
+| `EquipmentComponent` augmentation application (wanted +0x528, applied +0x538, `PreloadedAugmentationAssets` +0x620), one asset's `GrantedAbilities` (+0x40) | **0x14536B990**, 0x14536A480 |
+| `TalentComponent` loadout interface setter, talent application, change handler (flag 4) | 0x145446510, **0x1454456A0**, 0x1454459E0 |
+| `TalentComponent` removal of one talent's grants, application of one talent (synchronous load 0x14153D2D0) | 0x1454469C0, 0x145440BC0 |
 
 ## Traps this build sets
 

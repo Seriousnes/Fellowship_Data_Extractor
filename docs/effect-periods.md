@@ -40,6 +40,27 @@ active effect's own spec and handle.
 - A task's event does not run again for an application its own event makes.
 - A write by the applying ability after its apply call runs after every listener of that application.
 
+### Registration order of passive abilities
+
+A `CRGameplayAbilityPassive` has `ActivateAbilityOnGranted`, so `OnGiveAbility` activates it inside the give call. A
+task in its `K2_ActivateAbility` therefore registers at the moment the ability is given.
+
+The hero gives abilities from two components when its player state arrives, the `EquipmentComponent` first and the
+`TalentComponent` second.
+
+- The `TalentComponent` loads each talent's augmentation asset synchronously and gives its `GrantedAbilities` inside
+  the call, in the order of the loadout's talents. Every application first removes every talent of the hero, so a
+  talent change gives every selected talent's abilities again.
+- The `EquipmentComponent` requests one asynchronous load of every augmentation asset its items name. It gives their
+  `GrantedAbilities` inside the call when the load handle is already complete, and from the handle's completion
+  delegate otherwise. An application keeps each augmentation already applied, removes each one no longer named and
+  gives each new one, so an equipment change gives the abilities of the changed items alone.
+
+A talent's passive and an item's passive therefore have no fixed order. The item's passive is given last when its
+asset load completes after the hero's setup call, or when its item is equipped after the last talent application. The
+talent's passive is given last when every asset of the equipment's request is in memory at setup, or after a talent
+change.
+
 ## Last tick
 
 An effect with the asset tag `EffectType.Dot` or `EffectType.Hot`, and without `EffectLogic.IgnorePartialTicks`, ticks
