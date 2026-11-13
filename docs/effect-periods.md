@@ -65,5 +65,17 @@ the period divided by the period, and the damage calculation multiplies by it. A
 
 The product is rounded half away from zero before the target's terms.
 
+The target's terms multiply in this order, each under its preset flag:
+
+1. `clamp(1 - Avoidance, 0, 1)`, under `ApplyTargetAvoidance`.
+2. `IncomingDamageMultiplier`, under `ApplyTargetIncomingDamageHealingMultipliers`.
+3. For an effect with the asset tag `EffectType.Physical`: `clamp(1 - PhysicalDamageReduction, 0, 1)` and
+   `PhysicalIncomingDamageMultiplier`. For `EffectType.Magic`: `clamp(1 - MagicDamageReduction, 0, 1)` and
+   `MagicalIncomingDamageMultiplier`.
+4. `AoeIncomingDamageMultiplier`, under `ApplyTargetAoeIncomingDamageMultiplier`.
+
+An instant effect executes inside its application call, so the attributes and the hit outcome of each hit are those
+of the moment the ability's graph applies it.
+
 `ApplyAscensionScaling` is read by the healing calculation alone. Its scale is the curve row
 `GlobalAscensionReduceHealingScalerKey` names.

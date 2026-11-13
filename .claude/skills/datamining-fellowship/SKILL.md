@@ -269,6 +269,18 @@ Decoded against **26320967**, the applied-effect listeners in `docs/effect-perio
 | `FGameplayEffectSpec` copy constructor, size 0x298 | 0x144A62750 |
 | `FGameplayAbilityTargetData::ApplyGameplayEffectSpec`, a spec copy for each target | 0x144A4F410 |
 
+Decoded against **26320967**, the apply helpers and the target terms of the damage formula:
+
+| What | Where |
+| --- | --- |
+| `CalculateMultiTargetDamageFalloffScaler` in this build, exec thunk 0x144F5B290 | **0x1452188B0**, `cvttss2si` 0x1452188D9, `sqrtss` 0x145218907 |
+| `UGameplayAbility::ApplyGameplayEffectSpecToTarget` | 0x1449D9250 |
+| `CRAbilitySystemComponent::ApplyGameplayEffectSpecToSelf` override (vtable +0x6B0), base called in the same call | 0x1452D0F50, base 0x1449FD330 |
+| An instant effect executes inside `ApplyGameplayEffectSpecToSelf` | call 0x1449FD77C |
+| `FellowshipMakeEffectSpec`, exec thunk 0x144FED8A0; the visual delay goes on the effect context | 0x1450E0230, 0x145244120, 0x14522CFC0 |
+| `BP_FellowshipApplyGameplayEffect`, exec thunk 0x144FED1F0, worker; the last argument is the stack count | 0x1450DA840, 0x1450DF9C0, `SetStackCount` 0x144A8FC60 |
+| Target formula terms: `Avoidance` (statics +0x3B0, values +0x5C, preset +0x23), `IncomingDamageMultiplier` (+0x290, +0x30), `PhysicalDamageReduction` (+0x3F8, +0x34), `MagicDamageReduction` (+0x440, +0x38), `PhysicalIncomingDamageMultiplier` (+0x488, +0x3C), `MagicalIncomingDamageMultiplier` (+0x4D0, +0x40), `AoeIncomingDamageMultiplier` (+0x518, +0x44, preset +0x29), `Armor` (+0x2D8, +0x18) | 0x145107A70, statics constructor 0x1450D5390 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
