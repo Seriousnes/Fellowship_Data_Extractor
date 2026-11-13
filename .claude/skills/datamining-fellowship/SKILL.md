@@ -205,6 +205,22 @@ Decoded against **26320967**, implemented in `AbilityCooldowns.cs` and written u
 | `ChargeGameplayEffectClass` +0x618, `FreeChargeOwnedAnyTags` +0x620 | getter 0x144FEC290 at vtable +0x508 |
 | Native `GetMaximumCharges` returns 0 | 0x1450E18E0 |
 
+Decoded against **26320967**, behind the relic cooldown factor in `docs/cooldown-haste.md`:
+
+| What | Where |
+| --- | --- |
+| Cooldown spec builder, called by `ApplyCooldown` at 0x1450D9DC1 | **0x1450E2B40** |
+| Duration `spec.Duration × ((CooldownDuration + pre) × multipliers + post)`, spec `Duration` +0x50 | `addss` 0x1450E2F8A, `mulss` 0x1450E2F8F, `addss` 0x1450E2F94, `mulss` 0x1450E2FA0, `SetDuration` 0x144A8F3F0 called at 0x1450E3006 |
+| `CooldownPreAdditives` +0x478, `CooldownMultipliers` +0x488, `CooldownPostAdditives` +0x498: stride 0x30, `RequiredGrantedTag` +0x28 | loops at 0x1450E2E31, 0x1450E2EB0 and 0x1450E2F30; tag count test 0x1452EDE40 |
+| `CrGetAllActiveEffectsForQuery(Query, out Handles)`, exec thunk 0x144F5FA30 | **0x14521FDC0** |
+| Process-wide map of active effect handle to owning component: stride 0x18, weak component pointer +8 | global **0x149F6FFB0**, getter 0x144A7A460, owner lookup 0x144A7AF50 |
+| Query filter over every element of that map: `GetActiveGameplayEffect` 0x144A0D7B0, `FGameplayEffectQuery::Matches` 0x144A82910 | **0x14520FD10**, loop at 0x145210140 |
+| `GetFirstValidActiveEffect`, exec thunk 0x144F6C2E0 | **0x145236180** |
+| `GetActiveEffectClass`: spec `Def` +0x18, `ClassPrivate` +0x10; exec thunk 0x144F67DB0 | **0x145231E20** |
+| `CheckIfCharmIsReady`, exec thunk 0x144F5BCD0: the owner's tag `CharacterStatus.Charm.Charm0Ready` or `Charm1Ready` | **0x145219E90**; tag globals 0x14A3CA260 and 0x14A3CA268 |
+| Charm ready setter, true when both equipment slots of the charm's pair hold an item | setter **0x14536DB30**, caller 0x14536F1C0, slot pairs at 0x148D4D14C |
+| `AuthRegisterAbilityTimeWithEffectForOwningAbility` keeps each applied effect handle under the ability's spec handle, in the component's map at +0xD8 | 0x1452593A0, append at 0x145259644 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

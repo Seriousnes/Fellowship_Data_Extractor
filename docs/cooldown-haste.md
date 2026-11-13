@@ -65,6 +65,24 @@ the factor of the ability's `CooldownDuration`:
 | `GE_Shared_Cooldown_Static` | `GEC_CooldownStatic` | `1` |
 | `GE_Shared_Cooldown_RelicScale` | `GMMC_GemAugmentation` | `1` minus the relic gem's reduction |
 
+`ApplyCooldown` sets the effect's duration to the factor times
+`(CooldownDuration + CooldownPreAdditives) × CooldownMultipliers + CooldownPostAdditives`. A term counts
+when the character holds its `RequiredGrantedTag`.
+
+`GMMC_GemAugmentation` reads no attribute and no part of the spec. It queries every active effect in the
+process for the asset tag `Gems.Relics.CooldownReduction`, and the class of the first valid effect decides
+the factor:
+
+| First valid effect | Factor |
+| --- | --- |
+| `GE_GemBonus_RelicCooldownReductionBonusSmall` | `1 - GemBonus.RelicCooldownReductionBonus.Small.CooldownReductionPercentage` |
+| `GE_GemBonus_RelicCooldownReductionBonusMedium` | `1 - GemBonus.RelicCooldownReductionBonus.Medium.CooldownReductionPercentage` |
+| Any other class, or no effect | `1` |
+
+The query names no owner, so a relic gem bonus on one character reaches the relic cooldown of every
+character in the process. Both gem effects apply to a character holding
+`Character.PrimaryAttribute.Strength`.
+
 `cooldownDurationScalesOff` lists the captured attributes the calculation reads on its path to the
 return value. `GEC_CooldownStatic` captures `CooldownReduction` and returns the constant 1, so a static
 cooldown lists nothing.
