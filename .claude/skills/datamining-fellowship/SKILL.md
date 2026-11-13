@@ -221,6 +221,29 @@ Decoded against **26320967**, behind the relic cooldown factor in `docs/cooldown
 | Charm ready setter, true when both equipment slots of the charm's pair hold an item | setter **0x14536DB30**, caller 0x14536F1C0, slot pairs at 0x148D4D14C |
 | `AuthRegisterAbilityTimeWithEffectForOwningAbility` keeps each applied effect handle under the ability's spec handle, in the component's map at +0xD8 | 0x1452593A0, append at 0x145259644 |
 
+Decoded against **26320967**, written up in `docs/effect-periods.md`:
+
+| What | Where |
+| --- | --- |
+| `FActiveGameplayEffectsContainer::ApplyGameplayEffectSpec` | **0x144A6A660** |
+| Stack refresh: `ExistingStackableGE->Spec = Spec`, existing effect returned | assignment 0x144A66DD0 called at 0x144A6A93B; `mov rax,r12` 0x144A6B6F4 |
+| `bSetDuration` from Def +0xA11, `bSetPeriod` from Def +0xA12 | 0x144A6A99D, 0x144A6A9A9 |
+| `CRAbilitySystemComponent` vtable 0x148AB98B8: partial tick +0x948, period +0x950, refresh duration +0x958, time rate +0x960 | 0x1452D4B70, 0x1452D5C70, 0x1452D7CD0, 0x1452D5EF0 |
+| Period: `/ Haste` of the instigator, `x SetByCaller.System.TickRateOverride` | `divss` 0x1452D5E0B, `mulss` 0x1452D5E3A; tag global 0x14A3CA658 |
+| `EffectLogic.TickrateNotAffectedByHaste`, `EffectLogic.TickrateNotAffectedByHasteExclusively` | tag globals 0x14A3C9EA0, 0x14A3C9EA8 |
+| `GetGameplayEffectCustomTickPeriodScaler`, `SetGameplayEffectCustomTickPeriodScaler` | 0x1452365A0, 0x145243620; exec thunks 0x144F6CA60, 0x144F75930 |
+| Applied `EffectType.Dot` and `EffectType.Hot` effects kept at component +0x13B0 | 0x1452D8D70, tag globals 0x14A3C9E20, 0x14A3C9E28 |
+| Haste change delegate, loop over the kept handles, timer refresh, timer rated again | 0x1452EFC60, 0x1452F2830, 0x1452F2A70, 0x1452DC7E0 |
+| Refresh duration: `+ clamp(D x CarryOverLimit, 0, remaining)`, globals +0x334 | `mulss` 0x1452D7E11 to `addss` 0x1452D7E22; tags 0x14A3C9F18 `EffectLogic.CarryOverDuration`, 0x14A3C9F20 `EffectLogic.Proc` |
+| `FActiveGameplayEffectsContainer::CheckDuration`, partial tick call | **0x144A6FAB0**, call 0x144A6FD3A |
+| Partial tick: `SetByCaller.PartialTickFactor` = elapsed / rate, `MinimumPartialTickTime` at globals +0x32C | `divss` 0x1452D4D26, `comiss` 0x1452D4D13; tags 0x14A3CA5F0, 0x14A3C9F10 `EffectLogic.IgnorePartialTicks` |
+| Ability system globals through the `GameplayAbilities` module, vtable +0x40 | 0x1450BD610 |
+| `CRDamageCalculationBase` driver, attribute gather, source formula, target formula | 0x1450DCF40, 0x1450DB100, **0x1451079A0**, 0x145107A70 |
+| Source formula: `x (Expertise + 1)`, `x PartialTickFactor`, `x StackCount`, `x BalancingDamageAura`, round | 0x145107A30, 0x145107A3D, 0x145107A48, 0x145107A53, 0x1412A7850 |
+| Damage capture statics: `DamageScale` +0x50, `DifficultyDamageScale` +0x320, `Expertise` +0x560, `BalancingDamageAura` +0x5F0 | accessor 0x1450DCBE0, constructor 0x1450D5390 |
+| Calculation preset row flags: `CanBeBlocked` +0x1B to `ApplyAscensionScaling` +0x30 | bit setters of the reflection records at 0x148ABADE0 onward |
+| Healing gather; ascension scale from `GlobalAscensionReduceHealingScalerKey` (globals +0x358) | 0x1450DB8C0, flag test 0x1450DBB73, getter 0x1450CDB20 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
