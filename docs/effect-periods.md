@@ -29,6 +29,17 @@ the new spec's.
 An effect with the asset tag `EffectLogic.CarryOverDuration` and without `EffectLogic.Proc` restarts with
 `Duration + min(Duration x GameplayEffectRefreshDurationCarryOverLimit, time remaining)`.
 
+## Applied-effect listeners
+
+Each application, a refresh included, broadcasts the instigator's `OnGameplayEffectAppliedDelegateToTarget` with the
+active effect's own spec and handle.
+
+- A `WaitGameplayEffectAppliedToTarget` task copies that spec in its callback, and its Blueprint event receives the
+  copy. A write to the active effect's spec by one listener is in the copy of every listener after it.
+- Listeners run from the one registered last to the one registered first. A task registers at `ReadyForActivation`.
+- A task's event does not run again for an application its own event makes.
+- A write by the applying ability after its apply call runs after every listener of that application.
+
 ## Last tick
 
 An effect with the asset tag `EffectType.Dot` or `EffectType.Hot`, and without `EffectLogic.IgnorePartialTicks`, ticks

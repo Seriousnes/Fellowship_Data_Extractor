@@ -256,6 +256,19 @@ Decoded against **26320967**, the activation checks of `UCRGameplayAbility`, wri
 | `BlockedByPaddingCooldown` +0x530, constructor default false | test 0x1450DC32E, store 0x1450D7F10 |
 | Padding cooldown application from `ApplyCooldown`: `PaddingCooldownEffectBaseClass` +0x4D8, `PaddingCooldownDuration` +0x4E0 | 0x1450DA5D0, called at 0x1450D9E8D |
 
+Decoded against **26320967**, the applied-effect listeners in `docs/effect-periods.md`:
+
+| What | Where |
+| --- | --- |
+| `UAbilitySystemComponent::ApplyGameplayEffectSpecToSelf`: handle and `&AppliedEffect->Spec` after the apply | call 0x1449FD5AC, `lea r12,[rax+18h]` 0x1449FD5CA |
+| Broadcasts with that live spec: `OnGameplayEffectAppliedDelegateToSelf` (component +0x170), then the instigator's `OnGameplayEffectAppliedDelegateToTarget` (+0x188) | 0x1449FD821, 0x1449FD83B |
+| Delegate broadcast, last listener first | **0x144A00010**, `sub rsi,1` / `jns` 0x144A0008D |
+| `AddUObject`, new listener at the end of the invocation list | 0x1449EDE80 |
+| `UAbilityTask_WaitGameplayEffectApplied_Target::RegisterDelegate` | 0x144A1FAD0 |
+| `UAbilityTask_WaitGameplayEffectApplied::OnApplyGameplayEffectCallback`: tag requirements, `Locked` (task +0x240), `new FGameplayEffectSpec(SpecApplied)` | **0x144A176A0**, copy at 0x144A177CE |
+| `FGameplayEffectSpec` copy constructor, size 0x298 | 0x144A62750 |
+| `FGameplayAbilityTargetData::ApplyGameplayEffectSpec`, a spec copy for each target | 0x144A4F410 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
