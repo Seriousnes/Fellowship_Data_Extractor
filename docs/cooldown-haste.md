@@ -94,8 +94,19 @@ the factor:
 | Any other class, or no effect | `1` |
 
 The query names no owner, so a relic gem bonus on one character reaches the relic cooldown of every
-character in the process. Both gem effects apply to a character holding
-`Character.PrimaryAttribute.Strength`.
+character in the process.
+
+The Diamond row of `DT_GemDefinitions` grants the two effects: node 5 (`RequiredGemPower` 450) grants
+`CA_GemBonus_RelicCooldownReductionBonusSmall` and node 10 (1500) grants
+`CA_GemBonus_RelicCooldownReductionBonusMedium`, each with the effect in `GrantedGameplayEffects`.
+
+An effect's application requirement is its `TargetTagRequirementsGameplayEffectComponent`. The two gem
+effects have no such component, so they apply to every character. Their class defaults also have a value in
+`ApplicationTagRequirements`, the engine's deprecated field of `UGameplayEffect`. The constructor and the
+destructor are the only engine routines touching that field.
+
+The character setup grants `Character.PrimaryAttribute.Strength`, `.Agility` or `.Intellect` from the hero
+metadata's `PrimaryAttribute`.
 
 `cooldownDurationScalesOff` lists the captured attributes the calculation reads on its path to the
 return value. `GEC_CooldownStatic` captures `CooldownReduction` and returns the constant 1, so a static

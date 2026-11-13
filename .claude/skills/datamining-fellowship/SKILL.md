@@ -281,6 +281,26 @@ Decoded against **26320967**, the apply helpers and the target terms of the dama
 | `BP_FellowshipApplyGameplayEffect`, exec thunk 0x144FED1F0, worker; the last argument is the stack count | 0x1450DA840, 0x1450DF9C0, `SetStackCount` 0x144A8FC60 |
 | Target formula terms: `Avoidance` (statics +0x3B0, values +0x5C, preset +0x23), `IncomingDamageMultiplier` (+0x290, +0x30), `PhysicalDamageReduction` (+0x3F8, +0x34), `MagicDamageReduction` (+0x440, +0x38), `PhysicalIncomingDamageMultiplier` (+0x488, +0x3C), `MagicalIncomingDamageMultiplier` (+0x4D0, +0x40), `AoeIncomingDamageMultiplier` (+0x518, +0x44, preset +0x29), `Armor` (+0x2D8, +0x18) | 0x145107A70, statics constructor 0x1450D5390 |
 
+Decoded against **26320967**, the damage result, the dot average, the delay task, the area actor and the hero setup:
+
+| What | Where |
+| --- | --- |
+| Damage result struct: `TotalDamage` +0x00, `MitigatedDamage` +0x04, `RawDamage` +0x08, `PreBlockDamage` +0x0C, `BlockedDamage` +0x10, `AbsorbedDamage` +0x14 | reflection records from 0x148CF15B0 |
+| Blocked outcome: `max(PreBlockDamage x values +0x4C - values +0x48, 1)` | 0x145107C1D to 0x145107C37 |
+| `TotalDamage x DamageMitigationScale` (values +0x64, statics +0x5A8), `MitigatedDamage` the remainder, rounded | **0x1451078C0**, `mulss` 0x145107964, `subss` 0x14510796A |
+| Health change event: `MitigatedDamage` +0x70, `AbsorbedDamage` +0x74, `RawDamage` +0x78, `BlockedDamage` +0x7C | reflection records from 0x148AAE8C0; filled by the driver at 0x1450DD77F |
+| Combat logger literal `ABILITY_DAMAGE` | 0x148AA7838 |
+| `CrApproximateCurrentDotAverageDamage`, exec thunk 0x144F5DA50: per effect `T x (D / timer rate) / D` | **0x14521D420**, per-effect tick 0x145214E40 |
+| Damage calculation virtual +0x2E8: a tick with outcome 9 and spread 0, through both formulas | 0x1450E3F40 |
+| `CRAbilityTask_WaitDelay::WaitDelayCR`, exec thunk 0x144F28280; `Activate` sets a timer of `Time` (+0x90) | 0x14512E940, 0x145125D70 |
+| Ability time factor: `Haste` with `ScaleTimeWithHaste` (+0x3B8 bit 0), + `AttackSpeed` - 1 with `ScaleTimeWithAttackSpeed` (bit 1) | 0x1450E06E0 |
+| `CRAoeActorBase` constructor: rule `Continuous`, `ActiveFromStart` true, `ApplicationPeriod` 0, `ApplicationDelay` -1 | **0x1450C7730** |
+| `ECREffectApplicationRule` | `Continuous` 0, `ContinuousWithDuration` 1, `OneOff` 2, `OverlapOneOff` 3, `RepeatingOverlapOneOff` 4, `PeriodicApplication` 5, `ContinuousInstant` 6 |
+| Area actor: begin play, begin overlap, end overlap, tick, sync of applied effects, activation, end play | 0x1450CA5E0, 0x1450D0770, 0x1450D0940, 0x1450D3270, **0x1450D40D0**, 0x1450D2B00, 0x1450CBFB0 |
+| `LimitToSingleApplication` removal: a count per effect class on the target's component (+0x1270) | 0x1452DAE20 |
+| Hero setup grants `Character.PrimaryAttribute.Strength`, `.Agility`, `.Intellect` from the metadata's `PrimaryAttribute` (+0x31) | **0x14530A340**; tag globals 0x14A3CA280, 0x14A3CA288, 0x14A3CA290 |
+| `UGameplayEffect` constructor and destructor, the only engine routines touching the deprecated `ApplicationTagRequirements` (+0x4B0) | 0x144A63AB0, 0x144A65000 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
