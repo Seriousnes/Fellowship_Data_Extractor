@@ -314,6 +314,12 @@ Decoded against **26320967**, the damage result, the dot average, the delay task
 | `EquipmentComponent` augmentation application (wanted +0x528, applied +0x538, `PreloadedAugmentationAssets` +0x620), one asset's `GrantedAbilities` (+0x40) | **0x14536B990**, 0x14536A480 |
 | `TalentComponent` loadout interface setter, talent application, change handler (flag 4) | 0x145446510, **0x1454456A0**, 0x1454459E0 |
 | `TalentComponent` removal of one talent's grants, application of one talent (synchronous load 0x14153D2D0) | 0x1454469C0, 0x145440BC0 |
+| Hero ability input by input ID: the spec with bit 16 first, else the plain spec, both with null event data | **0x145313640**; lookups 0x14531368D, 0x1453136DB |
+| Hero activation of a spec with event data: a `CRGameplayAbilityTargeting` spec by `TryActivateAbility`, any other through the component | 0x145319D50 |
+| Component activation with event data: null event data goes to `TryActivateAbility` | 0x1452D7440; test 0x1452D7585, call 0x1452D7730 |
+| `OnGiveAbility` gives `TargetingAbility` (+0x400); the give wrapper sets bit 16 of a targeting spec's input ID | 0x1450E39E2 to 0x1450E3AC3; 0x1452D626F |
+| `CRGameplayAbility::PreActivate` (vtable +0x450) writes `PreActivateTargetData` (+0x550); the engine's writes `CurrentEventData` (+0xF0) for non-null event data alone | 0x1450E3D70; 0x1449E04B0, test 0x1449E05C3 |
+| `CRGameplayAbilityTargeting` (vtable 0x148BE4EE0, constructor 0x1450E8370): event data built after target acquisition, then the ability with the same input ID activated | 0x1450EB943; calls 0x1450EBAAE, 0x1450EBB38 |
 
 ## Traps this build sets
 
