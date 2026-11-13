@@ -304,7 +304,11 @@ Decoded against **26320967**, the damage result, the dot average, the delay task
 | `CRGameplayAbility::OnGiveAbility`: `TryActivateAbility` under `ActivateAbilityOnGranted` (+0x3B9); `PassiveAbility` is +0x3BA | **0x1450E3970**, test 0x1450E399D |
 | `CRGameplayAbilityPassive` constructor sets both flags | 0x1450E82D0, store 0x1450E82E5 |
 | Component give wrapper over `GiveAbility` | 0x1452D6200 |
-| Hero override run with its player state: `EquipmentComponent` (+0xF40) then `TalentComponent` (+0xF60) | 0x145317420; calls 0x14531759E, 0x1453175AD |
+| Hero `Restart` override (engine `ACharacter::Restart` 0x143751E50), under authority: `EquipmentComponent` (+0xF40) then `TalentComponent` (+0xF60) | 0x145317420; calls 0x14531759E, 0x1453175AD |
+| `CRGameplayAbilityPassive` vtable 0x148BE4688 differs from `CRGameplayAbility`'s 0x148BE1FB0 in one slot (+0x450); `OnGiveAbility` is +0x418 and the empty `OnAvatarSet` +0x428 | 0x1450F0F70 over 0x1450E3D70 |
+| `CRAssetManager::Get`, `LoadAssetList` (vtable 0x148AF6BD0 +0x580), `RequestAsyncLoad`, `StartHandleRequests`, `CheckCompletedRequests`, `FStreamableHandle::CompleteLoad` (completed byte +0x10) | 0x1452EAA60, 0x1436E4370, 0x143FE9AE0, 0x143FEC7C0, 0x143FD5840, 0x143FD6E20 |
+| `CancelAbilitiesOnCharacterDeath`, `ResetAbilitiesOnFellowshipReset` over the dungeon's ability lists (+0xD40, 0x110 bytes each) | 0x1453B7F90, 0x1453BF860; body 0x1453B7FA0 |
+| Hero's own loadout change handler (flags 6) | 0x145314450 |
 | `EquipmentComponent` loadout interface setter, loadout application, loadout change handler (flags 0x1A) | 0x1453779D0, 0x145376740, 0x145376A80 |
 | `EquipmentComponent` asynchronous load of its augmentation assets: completed test, completion delegate | **0x14537AA80**; 0x14537AC77, 0x145376670 |
 | `EquipmentComponent` augmentation application (wanted +0x528, applied +0x538, `PreloadedAugmentationAssets` +0x620), one asset's `GrantedAbilities` (+0x40) | **0x14536B990**, 0x14536A480 |

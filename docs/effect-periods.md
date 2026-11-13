@@ -45,21 +45,31 @@ active effect's own spec and handle.
 A `CRGameplayAbilityPassive` has `ActivateAbilityOnGranted`, so `OnGiveAbility` activates it inside the give call. A
 task in its `K2_ActivateAbility` therefore registers at the moment the ability is given.
 
-The hero gives abilities from two components when its player state arrives, the `EquipmentComponent` first and the
-`TalentComponent` second.
+`OnAvatarSet` is the engine's empty body for every `CRGameplayAbility`, and no native routine activates a hero's
+talent or item passive a second time.
+
+The hero's `Restart` override gives abilities from two components on the server, the `EquipmentComponent` first and
+the `TalentComponent` second. The engine calls `Restart` at each possession of the hero by its controller. The
+`EquipmentComponent` does nothing at a `Restart` with the loadout it already has. The `TalentComponent` applies its
+talents at every `Restart`.
 
 - The `TalentComponent` loads each talent's augmentation asset synchronously and gives its `GrantedAbilities` inside
   the call, in the order of the loadout's talents. Every application first removes every talent of the hero, so a
   talent change gives every selected talent's abilities again.
 - The `EquipmentComponent` requests one asynchronous load of every augmentation asset its items name. It gives their
   `GrantedAbilities` inside the call when the load handle is already complete, and from the handle's completion
-  delegate otherwise. An application keeps each augmentation already applied, removes each one no longer named and
-  gives each new one, so an equipment change gives the abilities of the changed items alone.
+  delegate otherwise. The handle is complete at return when every requested asset is in memory at the request. An
+  item's `GrantedAbilityAsset` is a soft reference, so its mapping table loads no augmentation asset. An application
+  keeps each augmentation already applied, removes each one no longer named and gives each new one, so an equipment
+  change gives the abilities of the changed items alone.
 
 A talent's passive and an item's passive therefore have no fixed order. The item's passive is given last when its
-asset load completes after the hero's setup call, or when its item is equipped after the last talent application. The
-talent's passive is given last when every asset of the equipment's request is in memory at setup, or after a talent
-change.
+asset load completes after the hero's first `Restart`, or when its item is equipped after the last talent
+application. The talent's passive is given last when every asset of the equipment's request is in memory at the first
+`Restart`, after a talent change, and after each later `Restart`.
+
+`CancelAbilitiesOnCharacterDeath` and `ResetAbilitiesOnFellowshipReset` cancel the `CRGameplayAbilityPassive` classes
+of the dungeon's own ability lists alone, and the second activates each again.
 
 ## Last tick
 
