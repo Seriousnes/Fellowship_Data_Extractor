@@ -19,6 +19,14 @@ public sealed class AdditionalAbilityTests
             Export.Loaded.Documents,
             document => document.Type == EntityType.Ability && document.Id == additional);
 
+    [Theory]
+    [InlineData(1018, 2227)]
+    [InlineData(1129, 2308)]
+    [InlineData(1213, 2309)]
+    [InlineData(1106, 2310)]
+    public void TheListingAbilityListsTheIdOfItsAdditionalAbility(int listing, int additional) =>
+        Assert.Contains(additional, Ability(listing)["additionalIds"]!.AsArray().Select(id => (int)id!));
+
     [Fact]
     public void TheListingAbilityCarriesTheTargetCountFalloffOfItsAdditionalAbility()
     {

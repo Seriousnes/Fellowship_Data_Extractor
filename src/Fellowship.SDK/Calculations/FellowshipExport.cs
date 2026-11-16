@@ -50,6 +50,19 @@ public sealed class FellowshipExport
             list.Add(document);
         }
 
+        foreach (var document in entities)
+        {
+            if (document is not AbilityDocument { AdditionalIds: { } additional }) continue;
+
+            foreach (var id in additional)
+            {
+                var key = (EntityType.Ability, id);
+
+                if (!groups.TryGetValue(key, out var list)) groups[key] = list = [];
+                list.Add(document);
+            }
+        }
+
         foreach (var (key, list) in groups) byId[key] = [.. list];
     }
 

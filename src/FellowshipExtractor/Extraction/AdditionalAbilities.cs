@@ -36,7 +36,10 @@ public static class AdditionalAbilities
                     .Where(entity => !folded.Contains(entity))
                     .Select(entity => entity is { Type: EntityType.Ability, Name: { } name } &&
                         helpers.TryGetValue(name, out var list)
-                            ? EntityResolver.FillFrom(entity, list)
+                            ? EntityResolver.FillFrom(entity, list) with
+                            {
+                                AdditionalIds = [.. list.Select(helper => helper.NetId!.Value).Order()],
+                            }
                             : entity),
             ],
             redirects);

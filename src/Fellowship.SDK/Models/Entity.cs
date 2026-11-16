@@ -61,6 +61,9 @@ public sealed record Entity
 
     public IconSource? NamedAfter { get; init; }
 
+    /// <summary>Ids of the abilities the presentation row lists under AdditionalGameplayAbilityAssets.</summary>
+    public IReadOnlyList<int>? AdditionalIds { get; init; }
+
     public string? Category { get; init; }
 
     public bool? EnabledInGame { get; init; }

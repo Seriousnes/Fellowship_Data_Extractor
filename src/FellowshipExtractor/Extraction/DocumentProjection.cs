@@ -90,6 +90,7 @@ public static class DocumentProjection
             EnabledInGame = entity.EnabledInGame,
             NoKnownSource = entity.NoKnownSource,
             NamedAfter = references.At(entity.NamedAfter),
+            AdditionalIds = entity.AdditionalIds,
             NameBorrowedFrom = references.At(entity.NameInheritedFrom),
             PartOf = Name(entity) is null ? references.Changes.PartOf(entity, references) : null,
             ParentClass = Parent(entity, EntityType.Ability, references),
