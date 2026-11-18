@@ -17,10 +17,10 @@ public sealed class AbilityDocument : EntityDocument
     public EntityReference? NamedAfter { get; init; }
 
     /// <summary>
-    /// Ids the game casts this ability under besides its own: the abilities its presentation row lists
+    /// Abilities the game casts this ability as besides its own id: the abilities its presentation row lists
     /// under AdditionalGameplayAbilityAssets. Each has no document, and a lookup of one reads this ability.
     /// </summary>
-    public IReadOnlyList<int>? AdditionalIds { get; init; }
+    public IReadOnlyList<AdditionalAbility>? AdditionalAbilities { get; init; }
 
     public EntityReference? PartOf { get; init; }
 

@@ -52,11 +52,11 @@ public sealed class FellowshipExport
 
         foreach (var document in entities)
         {
-            if (document is not AbilityDocument { AdditionalIds: { } additional }) continue;
+            if (document is not AbilityDocument { AdditionalAbilities: { } additional }) continue;
 
-            foreach (var id in additional)
+            foreach (var ability in additional)
             {
-                var key = (EntityType.Ability, id);
+                var key = (EntityType.Ability, ability.Id);
 
                 if (!groups.TryGetValue(key, out var list)) groups[key] = list = [];
                 list.Add(document);

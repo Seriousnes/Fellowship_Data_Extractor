@@ -38,7 +38,12 @@ public static class AdditionalAbilities
                         helpers.TryGetValue(name, out var list)
                             ? EntityResolver.FillFrom(entity, list) with
                             {
-                                AdditionalIds = [.. list.Select(helper => helper.NetId!.Value).Order()],
+                                AdditionalAbilities =
+                                [
+                                    .. list
+                                        .Select(helper => new AdditionalAbilitySource(helper.NetId!.Value, helper.Category))
+                                        .OrderBy(helper => helper.Id),
+                                ],
                             }
                             : entity),
             ],

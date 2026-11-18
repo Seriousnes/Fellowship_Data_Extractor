@@ -61,8 +61,8 @@ public sealed record Entity
 
     public IconSource? NamedAfter { get; init; }
 
-    /// <summary>Ids of the abilities the presentation row lists under AdditionalGameplayAbilityAssets.</summary>
-    public IReadOnlyList<int>? AdditionalIds { get; init; }
+    /// <summary>Abilities the presentation row lists under AdditionalGameplayAbilityAssets.</summary>
+    public IReadOnlyList<AdditionalAbilitySource>? AdditionalAbilities { get; init; }
 
     public string? Category { get; init; }
 
@@ -578,3 +578,5 @@ public enum TokenQuantity
 }
 
 public sealed record TargetCountFalloffSource(IconSource? Effect, double Threshold, string? Row);
+
+public sealed record AdditionalAbilitySource(int Id, string? Category);

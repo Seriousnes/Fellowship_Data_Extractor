@@ -25,7 +25,18 @@ public sealed class AdditionalAbilityTests
     [InlineData(1213, 2309)]
     [InlineData(1106, 2310)]
     public void TheListingAbilityListsTheIdOfItsAdditionalAbility(int listing, int additional) =>
-        Assert.Contains(additional, Ability(listing)["additionalIds"]!.AsArray().Select(id => (int)id!));
+        Assert.Contains(
+            additional,
+            Ability(listing)["additionalAbilities"]!.AsArray().Select(entry => (int)entry!["id"]!));
+
+    [Theory]
+    [InlineData(1129, 2308, "Core")]
+    [InlineData(1213, 2309, "Core")]
+    public void TheListingAbilityListsTheCategoryOfItsAdditionalAbility(int listing, int additional, string category) =>
+        Assert.Equal(
+            category,
+            (string?)Ability(listing)["additionalAbilities"]!.AsArray()
+                .Single(entry => (int)entry!["id"]! == additional)!["category"]);
 
     [Fact]
     public void TheListingAbilityCarriesTheTargetCountFalloffOfItsAdditionalAbility()

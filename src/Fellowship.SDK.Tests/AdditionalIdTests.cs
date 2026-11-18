@@ -22,4 +22,16 @@ public sealed class AdditionalIdTests(Checkout checkout)
         Assert.Equal(listing, ability.Id);
         Assert.Equal(icon, ability.Icon);
     }
+
+    [Theory]
+    [InlineData(2308, AbilityCategory.Core)]
+    [InlineData(2309, AbilityCategory.Core)]
+    public void An_additional_id_reads_its_own_category(int additional, AbilityCategory category)
+    {
+        Export.Resolve(EntityType.Ability, additional, null, out var document, out _);
+
+        var ability = Assert.IsType<AbilityDocument>(document);
+
+        Assert.Equal(category, ability.AdditionalAbilities!.Single(entry => entry.Id == additional).Category);
+    }
 }

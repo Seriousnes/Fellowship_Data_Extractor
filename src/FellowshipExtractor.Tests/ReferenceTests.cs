@@ -100,8 +100,6 @@ public sealed class ReferenceTests
             .Where(type => type.IsSubclassOf(typeof(EntityDocument)))
             .SelectMany(type => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(property => property.Name is not nameof(EntityDocument.Id))
-                .Where(property => property.DeclaringType != typeof(AbilityDocument) ||
-                                   property.Name is not nameof(AbilityDocument.AdditionalIds))
                 .Where(property => property.Name.EndsWith("Id", StringComparison.Ordinal)
                     || property.Name.EndsWith("Ids", StringComparison.Ordinal))
                 .Select(property => $"{type.Name}.{property.Name}"))
