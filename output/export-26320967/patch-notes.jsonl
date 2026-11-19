@@ -1,4 +1,6 @@
+{"key":{"slug":"creature","id":330},"name":"Xurath, Fist of the Warden","icon":"T_NPC_MC_BossGuardian","added":false,"fields":[{"label":"Abilities 7 \u203A Ability \u203A Id","older":"2176","newer":"2312"}]}
 {"key":{"slug":"talent","id":71},"name":"Runic Revelations","icon":"T_Nhance_RPG_Icons_CorruptionKnowledge","added":false,"fields":[{"label":"Changes \u203A Target","newer":"Soulbrand"},{"label":"Changes \u203A Field","newer":"duration"},{"label":"Changes \u203A Op","newer":"Multiply"},{"label":"Changes \u203A Value","newer":"1.25"},{"label":"Changes \u203A Result","newer":"30"},{"label":"Changes \u203A Target","newer":"Rune of Renewal"},{"label":"Changes \u203A Field","newer":"duration"},{"label":"Changes \u203A Op","newer":"Multiply"},{"label":"Changes \u203A Value","newer":"1.25"},{"label":"Changes \u203A Result","newer":"37.5"},{"label":"Changes \u203A Target","newer":"Luminous Barrier"},{"label":"Changes \u203A Field","newer":"duration"},{"label":"Changes \u203A Op","newer":"Multiply"},{"label":"Changes \u203A Value","newer":"1.25"},{"label":"Changes \u203A Result","newer":"15"}]}
+{"key":{"slug":"talent","id":91},"name":"Perfect Storm","icon":"Tex_blue_6","added":false,"fields":[{"label":"Grants","older":"Lashing Stormkick"},{"label":"Grants","newer":"Lashing Stormkick"}]}
 {"key":{"slug":"talent","id":103},"name":"Earthbourne","icon":"T_Nhance_RPG_Tech_24","added":false,"fields":[{"label":"Changes 1 \u203A Target","older":"Shatter Earth"},{"label":"Changes 1 \u203A Field","older":"cooldown"},{"label":"Changes 1 \u203A Op","older":"CooldownPostAdditives"},{"label":"Changes 1 \u203A Value","older":"-0"}]}
 {"key":{"slug":"talent","id":104},"name":"Forbidden Technique","icon":"Meiko_AbilityIcon_04","added":false,"fields":[{"label":"Changes \u203A Target","newer":"Forbidden Technique"},{"label":"Changes \u203A Field","newer":"duration"},{"label":"Changes \u203A Op","newer":"Set"},{"label":"Changes \u203A Value","newer":"18"}]}
 {"key":{"slug":"talent","id":415},"name":"Shattering Obelisk","icon":"T_Meiko_TauntTotem","added":false,"fields":[{"label":"Changes \u203A Target","newer":"Twin Souls: Bulwark"},{"label":"Changes \u203A Field","newer":"duration"},{"label":"Changes \u203A Op","newer":"Multiply"},{"label":"Changes \u203A Value","newer":"1.5"},{"label":"Changes \u203A Result","newer":"30"}]}
@@ -41,6 +43,11 @@
 {"key":{"slug":"ability","id":1565},"name":"Fire Ball","icon":"Firemage_Inferno","added":false,"fields":[{"label":"Changed By","newer":"Reign of Fire"},{"label":"Changed By","newer":"Reign of Fire"}]}
 {"key":{"slug":"ability","id":1863},"name":"Omnistrike","icon":"T_Sune_Omnistrike","added":false,"fields":[{"label":"Changed By 1","older":"Golden Hour"}]}
 {"key":{"slug":"ability","id":1929},"name":"Heavy Strike","icon":"T_Ink_TimerAbility","added":false,"fields":[{"label":"Changed By","newer":"Kill Em All"}]}
+{"key":{"slug":"ability","id":2227},"name":"Ice Comet","icon":"T_Rime_OnTargetPulsatingAOE","added":true,"fields":[]}
+{"key":{"slug":"ability","id":2308},"name":"Backstab","icon":"Mara_backstab","added":true,"fields":[]}
+{"key":{"slug":"ability","id":2309},"name":"Skittering Blades","icon":"Mara_AOEBuilder","added":true,"fields":[]}
+{"key":{"slug":"ability","id":2310},"name":"Lashing Stormkick","icon":"Meiko_AbilityIcon_08","added":true,"fields":[]}
+{"key":{"slug":"ability","id":2312},"name":"Searing Fissure","icon":"T_Icon_Heskyr_Rune_Yellow","added":true,"fields":[]}
 {"key":{"slug":"effect","id":1284},"name":"Shield Throw","icon":"T_Warmaster_Shieldthrow","added":false,"fields":[{"label":"Changed By","newer":"Skull Cracker"},{"label":"Changed By","newer":"The Best Defense"}]}
 {"key":{"slug":"effect","id":1310},"added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
 {"key":{"slug":"effect","id":1311},"name":"Dawnbreaker Orb","icon":"T_Vigor_DawnSphere","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
@@ -48,6 +55,7 @@
 {"key":{"slug":"effect","id":1319},"name":"Rune of Renewal","icon":"T_Vigor_Rune","added":false,"fields":[{"label":"Changed By","newer":"Harmonizing Refractions"},{"label":"Changed By","newer":"Runic Proliferation"}]}
 {"key":{"slug":"effect","id":1336},"added":false,"fields":[{"label":"Changed By","newer":"Beacon in the Dark"}]}
 {"key":{"slug":"effect","id":1337},"name":"Radiant Blast","icon":"T_Vigor_Cone","added":false,"fields":[{"label":"Changed By","newer":"Avatar of Light"},{"label":"Changed By","newer":"Beacon in the Dark"}]}
+{"key":{"slug":"effect","id":1380},"name":"Ice Comet","icon":"T_Rime_OnTargetPulsatingAOE","added":false,"fields":[{"label":"Name Borrowed From \u203A Id","older":"1018","newer":"2227"},{"label":"Texture Borrowed From \u203A Id","older":"1018","newer":"2227"}]}
 {"key":{"slug":"effect","id":1524},"name":"Earth Fist","icon":"Meiko_AbilityIcon_03","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"}]}
 {"key":{"slug":"effect","id":1531},"name":"Rising Storm","icon":"Meiko_AbilityIcon_05","added":false,"fields":[{"label":"Changed By","newer":"Conclusive Strikes"}]}
 {"key":{"slug":"effect","id":1533},"name":"Rising Earth","icon":"Meiko_AbilityIcon_06","added":false,"fields":[{"label":"Changed By","newer":"Rumbling Stone"},{"label":"Changed By","newer":"Conclusive Strikes"}]}
@@ -74,6 +82,8 @@
 {"key":{"slug":"effect","id":2432},"name":"Soulbrand: Remnant","icon":"T_Vigor_Soulbrand","added":false,"fields":[{"label":"Changed By","newer":"Runic Proliferation"},{"label":"Changed By","newer":"Harmonizing Refractions"}]}
 {"key":{"slug":"effect","id":2577},"name":"Omnistrike","icon":"T_Sune_Omnistrike","added":false,"fields":[{"label":"Changed By 1","older":"Golden Hour"}]}
 {"key":{"slug":"effect","id":2755},"name":"Heavy Strike","icon":"T_Ink_TimerAbility","added":false,"fields":[{"label":"Changed By","newer":"Kill Em All"}]}
+{"key":{"slug":"effect","id":3025},"name":"Searing Fissure","icon":"T_Nhance_RPG_Icons_NatureRingsDemonic","added":false,"fields":[{"label":"Applied By \u203A Id","older":"2176","newer":"2312"}]}
+{"key":{"slug":"effect","id":3026},"name":"Searing Fissure","icon":"T_Icon_Heskyr_Rune_Yellow","added":false,"fields":[{"label":"Name Borrowed From \u203A Id","older":"2176","newer":"2312"},{"label":"Texture Borrowed From \u203A Id","older":"2176","newer":"2312"},{"label":"Applied By \u203A Id","older":"2176","newer":"2312"}]}
 {"key":{"slug":"item-trait","id":3},"name":"Inspired Arms","icon":"Tex_SpellBook06_93","added":true,"fields":[]}
 {"key":{"slug":"item-trait","id":30},"name":"Topaz Winds","icon":"Tex_y_12_layered","added":true,"fields":[]}
 {"key":{"slug":"item-trait","id":43},"name":"Navigator\u0027s Intuition","icon":"Tex_SpellBook03_42","added":true,"fields":[]}

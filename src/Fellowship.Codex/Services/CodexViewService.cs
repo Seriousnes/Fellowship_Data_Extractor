@@ -332,6 +332,8 @@ public sealed class CodexViewService(
     [
         nameof(AbilityDocument.Grants), nameof(AbilityDocument.Applies), nameof(AbilityDocument.Parts), nameof(EffectDocument.Siblings), nameof(AbilityDocument.PartOf),
         nameof(EffectDocument.AppliedBy), nameof(AbilityDocument.ParentClass), nameof(AbilityDocument.NamedAfter),
+        nameof(AbilityDocument.AdditionalAbilities), nameof(AbilityDocument.Replaces), nameof(AbilityDocument.TriggeredBy),
+        nameof(AbilityDocument.SubcastOf),
     ];
 
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> LinksByType = new();

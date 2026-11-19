@@ -90,13 +90,10 @@ public static class DocumentProjection
             EnabledInGame = entity.EnabledInGame,
             NoKnownSource = entity.NoKnownSource,
             NamedAfter = references.At(entity.NamedAfter),
-            AdditionalAbilities = entity.AdditionalAbilities?
-                .Select(additional => new AdditionalAbility
-                {
-                    Id = additional.Id,
-                    Category = additional.Category is { } category ? Enum.Parse<AbilityCategory>(category) : null,
-                })
-                .ToList(),
+            AdditionalAbilities = entity.AdditionalAbilities?.Select(references.At).OfType<EntityReference>().ToList(),
+            Replaces = references.Of(EntityType.Ability, entity.Replaces),
+            TriggeredBy = references.At(entity.TriggeredBy),
+            SubcastOf = references.At(entity.SubcastOf),
             NameBorrowedFrom = references.At(entity.NameInheritedFrom),
             PartOf = Name(entity) is null ? references.Changes.PartOf(entity, references) : null,
             ParentClass = Parent(entity, EntityType.Ability, references),

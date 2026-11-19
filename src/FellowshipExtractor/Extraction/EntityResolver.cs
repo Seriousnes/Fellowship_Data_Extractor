@@ -1662,6 +1662,8 @@ public sealed class EntityResolver
             CooldownTags = cdo is null ? null : Empty([.. PropertyWalk.GetTags(cdo, CooldownTagsField) ?? []]),
             TriggerTags = Empty(AbilityLinks.Triggers(cdo)),
             SentEvents = Empty(AbilityLinks.Sent(cdo)),
+            WaitedEvents = Empty(AbilityLinks.Waited(cdo)),
+            UtilityAbilities = Empty(AbilityLinks.UtilityAbilities(cdo)),
             SpawnedActors = Empty(RowSinks.SpawnedActors(cdo)),
             BypassCostTags = Empty(AbilityLinks.Bypassed(cdo)),
             InstantTags = Empty(AbilityLinks.Instant(cdo)),

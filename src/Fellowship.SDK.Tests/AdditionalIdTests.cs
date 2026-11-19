@@ -8,10 +8,10 @@ public sealed class AdditionalIdTests(Checkout checkout)
     private FellowshipExport Export => checkout.Export;
 
     [Theory]
-    [InlineData(2308, 1129, "Mara_backstab")]
-    [InlineData(2309, 1213, "Mara_AOEBuilder")]
-    [InlineData(2227, 1018, "T_Rime_OnTargetPulsatingAOE")]
-    public void An_additional_id_reads_the_ability_listing_it(int additional, int listing, string icon)
+    [InlineData(2308, 1129, AbilityCategory.Core)]
+    [InlineData(2309, 1213, AbilityCategory.Core)]
+    public void An_additional_id_reads_its_own_record_replacing_the_listing_ability(
+        int additional, int listing, AbilityCategory category)
     {
         var outcome = Export.Resolve(EntityType.Ability, additional, null, out var document, out _);
 
@@ -19,19 +19,18 @@ public sealed class AdditionalIdTests(Checkout checkout)
 
         var ability = Assert.IsType<AbilityDocument>(document);
 
-        Assert.Equal(listing, ability.Id);
-        Assert.Equal(icon, ability.Icon);
+        Assert.Equal(additional, ability.Id);
+        Assert.Equal(category, ability.Category);
+        Assert.Equal(listing, ability.Replaces?.Id);
     }
 
-    [Theory]
-    [InlineData(2308, AbilityCategory.Core)]
-    [InlineData(2309, AbilityCategory.Core)]
-    public void An_additional_id_reads_its_own_category(int additional, AbilityCategory category)
+    [Fact]
+    public void An_additional_id_reads_the_utility_ability_its_listing_ability_subcasts()
     {
-        Export.Resolve(EntityType.Ability, additional, null, out var document, out _);
+        Export.Resolve(EntityType.Ability, 2227, null, out var document, out _);
 
         var ability = Assert.IsType<AbilityDocument>(document);
 
-        Assert.Equal(category, ability.AdditionalAbilities!.Single(entry => entry.Id == additional).Category);
+        Assert.Equal(1018, ability.SubcastOf?.Id);
     }
 }

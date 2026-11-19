@@ -16,11 +16,17 @@ public sealed class AbilityDocument : EntityDocument
 
     public EntityReference? NamedAfter { get; init; }
 
-    /// <summary>
-    /// Abilities the game casts this ability as besides its own id: the abilities its presentation row lists
-    /// under AdditionalGameplayAbilityAssets. Each has no document, and a lookup of one reads this ability.
-    /// </summary>
-    public IReadOnlyList<AdditionalAbility>? AdditionalAbilities { get; init; }
+    /// <summary>Abilities the presentation row lists under AdditionalGameplayAbilityAssets.</summary>
+    public IReadOnlyList<EntityReference>? AdditionalAbilities { get; init; }
+
+    /// <summary>The listing ability this additional ability replaces through ReplaceAbility.</summary>
+    public EntityReference? Replaces { get; init; }
+
+    /// <summary>The listing ability whose SendGameplayEvent triggers this additional ability.</summary>
+    public EntityReference? TriggeredBy { get; init; }
+
+    /// <summary>The listing ability whose graph triggers this additional ability through CrTriggerUtilityAbility.</summary>
+    public EntityReference? SubcastOf { get; init; }
 
     public EntityReference? PartOf { get; init; }
 

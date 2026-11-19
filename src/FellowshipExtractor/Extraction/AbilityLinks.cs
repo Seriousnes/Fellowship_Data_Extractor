@@ -13,6 +13,8 @@ public static class AbilityLinks
     private const string GrantedAbilitiesField = "GrantedAbilities";
     private const string GrantAbilityConfigsField = "GrantAbilityConfigs";
     private const string SendEvent = "SendGameplayEvent";
+    private const string WaitEvent = "WaitGameplayEvent";
+    private const string TriggerUtility = "CrTriggerUtilityAbility";
     private const string CastingHook = "ModifyCastingDuration";
     private const string Select = "SelectFloat";
     private const string AddLoose = "AddLooseGameplayTag";
@@ -54,6 +56,32 @@ public static class AbilityLinks
             .SelectMany(found => found.Parameters.Where(parameter => parameter is not EX_InstanceVariable).SelectMany(parameter => Tags(parameter, cdo!, 0)))
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];
+
+    public static IReadOnlyList<string> Waited(UObject? cdo) =>
+        [.. Calls(cdo, call => call.Contains(WaitEvent, StringComparison.Ordinal))
+            .SelectMany(found => found.Parameters.Where(parameter => parameter is not EX_InstanceVariable).SelectMany(parameter => Tags(parameter, cdo!, 0)))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)];
+
+    /// <summary>Asset names of the utility abilities the graph triggers through CrTriggerUtilityAbility.</summary>
+    public static IReadOnlyList<string> UtilityAbilities(UObject? cdo) =>
+        [.. Calls(cdo, call => call.Contains(TriggerUtility, StringComparison.Ordinal))
+            .Select(found => found.Parameters.ElementAtOrDefault(1) is EX_InstanceVariable variable &&
+                             DynamicTextFloats.Name(variable) is { } property &&
+                             PropertyWalk.AsString(PropertyWalk.Get(cdo!, property)?.GenericValue) is { } path &&
+                             path.Contains('/')
+                ? ClassName(path)
+                : null)
+            .OfType<string>()
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)];
+
+    private static string ClassName(string path)
+    {
+        var name = path[(path.LastIndexOf('.') + 1)..];
+
+        return name.EndsWith("_C", StringComparison.Ordinal) ? name[..^2] : name;
+    }
 
     public static IReadOnlyList<string> Loose(UObject? cdo)
     {

@@ -276,3 +276,4 @@ dungeon-affix	24	1	+480	Missing	Anomalous Orbs	ONUS  Each Anomalous Orb players 
 dungeon-affix	24	2	45	Missing	Anomalous Orbs	ponding color of the Orb that was destroyed for 45 seconds.	
 talent	8	0	10	Missing	Macabre Stratagem	agem.    Upon use, Macabre Stratagem grants you 10 seconds of Matriarch Macabre.    If used while	
 talent	8	1	10	Missing	Macabre Stratagem	is already active, its duration is extended by 10 seconds.	
+ability	2310	0	50%	Missing	Lashing Stormkick	rby enemies.    Lashing Stormkick heals you for 50% of the damage it deals.    AFFECTED BY STORMFAL	

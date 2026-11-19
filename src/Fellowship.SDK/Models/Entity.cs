@@ -62,7 +62,13 @@ public sealed record Entity
     public IconSource? NamedAfter { get; init; }
 
     /// <summary>Abilities the presentation row lists under AdditionalGameplayAbilityAssets.</summary>
-    public IReadOnlyList<AdditionalAbilitySource>? AdditionalAbilities { get; init; }
+    public IReadOnlyList<IconSource>? AdditionalAbilities { get; init; }
+
+    /// <summary>The listing ability whose SendGameplayEvent triggers this additional ability.</summary>
+    public IconSource? TriggeredBy { get; init; }
+
+    /// <summary>The listing ability whose graph triggers this additional ability through CrTriggerUtilityAbility.</summary>
+    public IconSource? SubcastOf { get; init; }
 
     public string? Category { get; init; }
 
@@ -192,6 +198,14 @@ public sealed record Entity
 
     [JsonIgnore]
     public IReadOnlyList<string>? SentEvents { get; init; }
+
+    /// <summary>Tags of the gameplay events the ability's graph waits for through WaitGameplayEvent.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<string>? WaitedEvents { get; init; }
+
+    /// <summary>Asset names of the utility abilities the ability's graph triggers through CrTriggerUtilityAbility.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<string>? UtilityAbilities { get; init; }
 
     [JsonIgnore]
     public IReadOnlyList<string>? SpawnedActors { get; init; }
@@ -578,5 +592,3 @@ public enum TokenQuantity
 }
 
 public sealed record TargetCountFalloffSource(IconSource? Effect, double Threshold, string? Row);
-
-public sealed record AdditionalAbilitySource(int Id, string? Category);
