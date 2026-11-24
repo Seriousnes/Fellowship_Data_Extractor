@@ -35,6 +35,13 @@ because the committed `mappings/` has the usmap. It does need the game install, 
 appmanifest naming the build. The install is found in the Steam libraries; `FELLOWSHIP_INSTALL` or
 `--install <path>` names it outright. The first run against a clean `bin/` downloads Oodle.
 
+## Patch notes hold game changes alone
+
+A run that rewrites a build's existing `entities.jsonl` adds each changed field's first value to that
+build's `extraction-changes.jsonl`. Both exports read the same game data, so the extractor made the
+change. A patch note leaves out a field whose value in the build before equals the recorded first value,
+and a document the first export is recorded without.
+
 ## The export folder is named for the build
 
 `<build>` is the Steam build id from the `appmanifest_*.acf` whose `installdir` matches the game

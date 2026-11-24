@@ -41,7 +41,12 @@ An ability has one when all of these hold:
 differ. `DR_AbilityConstants` scans the first and `DR_AbilityConstants_Gunde` the second, so `RegistryType`
 decides which row an ability reads.
 
-An ability that declares no `CooldownDuration` states the row directly under its name, when one exists.
+An ability whose native class has a `CooldownDuration` and which leaves it unset has the constructor's 0.
+A `.Cooldown` row directly under its name that no property of the ability binds starts nothing, so the
+ability has no cooldown. Earthfist Barrage is one. Its `Meiko.ChanneledHeavyDamage.Cooldown` row is 45.
+
+A row a property of the ability binds is the cooldown. The row directly under the name of an entity whose
+native class has no `CooldownDuration` is the cooldown too.
 
 ## Activation checks
 

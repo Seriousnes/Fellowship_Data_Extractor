@@ -31,6 +31,9 @@ public sealed record CurveBinding(string Property, string RowName)
     public Fellowship.SDK.Models.FieldSource? Source { get; init; }
 
     public string[]? AmbiguousIn { get; init; }
+
+    /// <summary>The row sits directly under the entity's tuning namespace, and no property binds it.</summary>
+    public bool NamespaceOnly { get; init; }
 }
 
 public static class CurveBindings

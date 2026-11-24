@@ -24,6 +24,26 @@ public sealed class AbilityCooldowns(AbstractFileProvider provider, ConstantsTab
 
     public bool Declares(UObject ability) => ClassDefaults.Inherited(ability, DurationField, provider) is not null;
 
+    /// <summary>
+    /// Whether the native class <paramref name="cdo"/> derives from has a <c>CooldownDuration</c>. A class default
+    /// object that leaves the field unset has the constructor's 0 and starts no cooldown.
+    /// </summary>
+    public bool HasDurationField(UObject cdo)
+    {
+        if (ClassDefaults.NativeParent(cdo, provider) is not { } native) return false;
+        if (provider.MappingsContainer?.MappingsForGame is not { } mappings) return false;
+
+        for (string? name = native[(native.LastIndexOf('.') + 1)..]; name is not null;)
+        {
+            if (!mappings.Types.TryGetValue(name, out var structure)) return false;
+            if (structure.Properties.Values.Any(property => property.Name.Equals(DurationField, StringComparison.Ordinal))) return true;
+
+            name = structure.SuperType;
+        }
+
+        return false;
+    }
+
     public double? Of(UObject ability, ChargeCounts charges) => Read(ability, charges).Seconds;
 
     /// <summary>The cooldown, with the row its <c>CooldownDuration</c> reads.</summary>

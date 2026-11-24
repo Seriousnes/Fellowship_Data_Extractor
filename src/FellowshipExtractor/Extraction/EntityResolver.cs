@@ -2521,6 +2521,7 @@ public sealed class EntityResolver
                 Value = record.Value,
                 Values = record.Values is { Length: > 1 } ranks ? ranks : null,
                 ConstantsTable = record.Table,
+                NamespaceOnly = !claimed,
             };
 
             var one = Numbers.Split([binding], tuning);
@@ -2554,10 +2555,14 @@ public sealed class EntityResolver
     private static double? Shown(double? cooldown, GlobalCooldown? globalCooldown) =>
         cooldown is not { } seconds || seconds <= 0 || seconds < globalCooldown?.Duration ? null : cooldown;
 
-    private (double? Seconds, FieldSource? Source) Cooldown(UObject? cdo, ChargeCounts charges, SplitNumbers split) =>
-        cdo is not null && _abilityCooldowns.Declares(cdo)
-            ? _abilityCooldowns.Read(cdo, charges)
-            : (Number(split, "cooldown"), split.Won.GetValueOrDefault("cooldown") is { } won ? FieldSources.Of(won) : null);
+    private (double? Seconds, FieldSource? Source) Cooldown(UObject? cdo, ChargeCounts charges, SplitNumbers split)
+    {
+        if (cdo is not null && _abilityCooldowns.Declares(cdo)) return _abilityCooldowns.Read(cdo, charges);
+        var won = split.Won.GetValueOrDefault(Numbers.Cooldown);
+        if (cdo is not null && won is { NamespaceOnly: true } && _abilityCooldowns.HasDurationField(cdo)) return (null, null);
+
+        return (Number(split, Numbers.Cooldown), won is null ? null : FieldSources.Of(won));
+    }
 
     private static double? Number(SplitNumbers split, string field) =>
         split.ByName.TryGetValue(field, out var value) ? value : null;

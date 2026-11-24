@@ -16,7 +16,9 @@ public static class PatchNoteWriter
 
         foreach (var (newer, older) in folders.Zip(folders.Skip(1)))
         {
-            var notes = PatchNoteDiff.Between(await GroupAsync(older, cancellationToken), await GroupAsync(newer, cancellationToken));
+            var notes = ExtractionChanges.Without(
+                PatchNoteDiff.Between(await GroupAsync(older, cancellationToken), await GroupAsync(newer, cancellationToken)),
+                ExtractionChanges.Read(newer.FullName));
 
             await File.WriteAllTextAsync(Path.Combine(newer.FullName, PatchNotesFile.FileName), PatchNotesFile.Write(notes), cancellationToken);
 
@@ -24,7 +26,7 @@ public static class PatchNoteWriter
         }
     }
 
-    private static async Task<IReadOnlyDictionary<DocumentKey, IReadOnlyList<ReadOnlyMemory<byte>>>> GroupAsync(
+    public static async Task<IReadOnlyDictionary<DocumentKey, IReadOnlyList<ReadOnlyMemory<byte>>>> GroupAsync(
         DirectoryInfo folder, CancellationToken cancellationToken) =>
         ExportLines.Group(await File.ReadAllBytesAsync(Path.Combine(folder.FullName, ExportLayout.EntitiesFile), cancellationToken));
 }

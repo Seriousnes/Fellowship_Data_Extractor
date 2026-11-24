@@ -77,6 +77,11 @@ switch (command)
         if (bucket is not null)
             destinations.Add(new StorageTarget(S3Storage.FromBucket(bucket), Build()));
 
+        var exported = folder is null ? null : Path.Combine(folder, ExportFolders.Name(Build()));
+        var previous = exported is not null && File.Exists(Path.Combine(exported, ExportLayout.EntitiesFile))
+            ? await File.ReadAllBytesAsync(Path.Combine(exported, ExportLayout.EntitiesFile))
+            : null;
+
         await using (IExportTarget target = new VariantTarget(destinations.Count == 1
             ? destinations[0]
             : new CompositeTarget(destinations)))
@@ -86,6 +91,16 @@ switch (command)
 
         if (folder is not null)
         {
+            if (previous is not null)
+            {
+                var recorded = ExtractionChanges.Record(
+                    exported!,
+                    ExportLines.Group(previous),
+                    await PatchNoteWriter.GroupAsync(new DirectoryInfo(exported!), CancellationToken.None));
+
+                Console.WriteLine($"{ExportFolders.Name(Build())}: {recorded} extraction changes recorded.");
+            }
+
             SettingsEnums.Publish(folder, Build());
             await PatchNoteWriter.WriteAsync(folder, CancellationToken.None);
         }
