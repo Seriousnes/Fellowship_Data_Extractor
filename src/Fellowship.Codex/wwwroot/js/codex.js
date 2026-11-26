@@ -50,6 +50,7 @@ let clearing = 0;
 let sequence = 0;
 let anchored = null;
 let pointer = null;
+let following = 0;
 let modal = false;
 
 const layer = () => document.getElementById('cx-tip');
@@ -61,13 +62,14 @@ function place(link) {
     const at = link.getBoundingClientRect();
     const width = box.offsetWidth;
     const height = box.offsetHeight;
-    const mouse = pointer?.link === link ? { x: at.left + pointer.x, y: at.top + pointer.y } : null;
+    const mouse = pointer?.link === link ? pointer : null;
 
     let x = (mouse?.x ?? at.right) + 14;
     if (x + width > window.innerWidth - 8) x = (mouse?.x ?? at.left) - width - 14;
     if (x < 8) x = Math.max(8, window.innerWidth - width - 8);
 
     let y = mouse ? mouse.y + 14 : at.top - 4;
+    if (mouse && y + height > window.innerHeight - 8) y = mouse.y - height - 14;
     if (y + height > window.innerHeight - 8) y = window.innerHeight - height - 8;
     if (y < 8) y = 8;
 
@@ -384,10 +386,16 @@ document.addEventListener('pointermove', event => {
     if (event.pointerType && event.pointerType !== 'mouse') return;
 
     const link = event.target.closest?.('[data-tip]');
-    if (!link || anchored === link) return;
+    if (!link) return;
 
-    const at = link.getBoundingClientRect();
-    pointer = { link, x: event.clientX - at.left, y: event.clientY - at.top };
+    pointer = { link, x: event.clientX, y: event.clientY };
+
+    if (anchored === link && !following) {
+        following = window.requestAnimationFrame(() => {
+            following = 0;
+            if (anchored) place(anchored);
+        });
+    }
 }, { passive: true });
 
 document.addEventListener('pointerout', event => {
