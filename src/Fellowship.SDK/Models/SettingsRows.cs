@@ -139,3 +139,38 @@ public sealed record ProcPerMinuteRoll
     /// <summary>The most seconds since the last proc the drought factor counts.</summary>
     public double LongestDrought { get; init; }
 }
+
+/// <summary>
+/// The split of one hit between the target's absorption effects and its Health, as the shipping binary's damage
+/// calculation computes it, and the amount the combat log writes for the hit.
+/// </summary>
+public sealed record DamageAbsorption
+{
+    public string DisplayText { get; init; } = string.Empty;
+
+    /// <summary>The amount, hit points and absorption of the hit's combat log line.</summary>
+    public string LoggedAmountText { get; init; } = string.Empty;
+
+    public IReadOnlyList<FormulaSymbol> Symbols { get; init; } = [];
+
+    /// <summary>The tag of an effect the hit is split over.</summary>
+    public string EffectTag { get; init; } = string.Empty;
+
+    /// <summary>The set-by-caller magnitude with an effect's pool.</summary>
+    public string PoolMagnitude { get; init; } = string.Empty;
+
+    /// <summary>The set-by-caller magnitude with the share of absorbed damage an effect's pool loses.</summary>
+    public string ConsumptionScalerMagnitude { get; init; } = string.Empty;
+
+    /// <summary>The consumption scaler of an effect with no such magnitude.</summary>
+    public double DefaultConsumptionScaler { get; init; }
+
+    /// <summary>The factor on an effect's consumption scaler for a hit its deduction crits on.</summary>
+    public double DeductionCritScaler { get; init; }
+
+    /// <summary>The attribute of the effect's instigator the deduction crit chance comes from.</summary>
+    public string CritChanceAttribute { get; init; } = string.Empty;
+
+    /// <summary>The most times one hit goes through the effects.</summary>
+    public int MostPasses { get; init; }
+}

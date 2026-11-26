@@ -1004,6 +1004,43 @@
     "firstProcChanceFloorDivisor": 8,
     "longestDrought": 1000
   },
+  "damageAbsorption": {
+    "displayText": "The effects with the tag split the hit after mitigation, in order of capacity, least first. Capacity is pool \u00F7 (consumption scaler \u00D7 crit factor). Each pass gives every effect the share D \u00F7 n. When the least capacity is above the share, every effect absorbs the share, its pool loses share \u00D7 consumption scaler \u00D7 crit factor, and the hit is absorbed. Otherwise the effect of least capacity absorbs its capacity and ends, and the rest of the hit goes through mitigation and the effects left again. Health loses max(round(T \u00D7 DamageMitigationScale) \u2212 A, 0). The crit factor is one roll for each effect and hit, with chance 2c \u00F7 (1 \u002B c).",
+    "loggedAmountText": "amount = clamp(|H \u002B A| \u2212 absorption left, 0, Health \u2212 MinHealth). hitPoints = Health before the hit \u2212 amount. absorption = the sum of the pools after the hit. absorbed = A \u002B the reductions of the hooks after the effects. The amount of each DAMAGE_ABSORBED line is the damage one effect absorbed.",
+    "symbols": [
+      {
+        "symbol": "D",
+        "meaning": "damage left of the hit after mitigation"
+      },
+      {
+        "symbol": "n",
+        "meaning": "number of effects with the tag on the target"
+      },
+      {
+        "symbol": "T",
+        "meaning": "damage absorbed plus damage left when the passes end"
+      },
+      {
+        "symbol": "A",
+        "meaning": "damage absorbed by the effects"
+      },
+      {
+        "symbol": "H",
+        "meaning": "Health lost, after the hooks"
+      },
+      {
+        "symbol": "c",
+        "meaning": "CritChance of the effect\u0027s instigator"
+      }
+    ],
+    "effectTag": "EffectType.Absorption",
+    "poolMagnitude": "SetByCaller.System.EffectAbsorptionPool",
+    "consumptionScalerMagnitude": "SetByCaller.System.EffectAbsorptionConsumptionScaler",
+    "defaultConsumptionScaler": 1,
+    "deductionCritScaler": 0.5,
+    "critChanceAttribute": "CritChance",
+    "mostPasses": 30
+  },
   "leagueKinds": [
     {
       "name": "Unknown",

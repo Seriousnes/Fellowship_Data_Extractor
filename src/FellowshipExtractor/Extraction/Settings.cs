@@ -81,6 +81,8 @@ public sealed class Settings
         LongestDrought = 1000,
     };
 
+    public DamageAbsorption DamageAbsorption { get; }
+
     public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; }
 
     public IReadOnlyList<LeagueEntry> Leagues { get; }
@@ -139,6 +141,7 @@ public sealed class Settings
         Leagues = leagues.All;
         LeagueKinds = leagues.Kinds;
         Items = items.Values with { StatEnchantPower = enchants.Power };
+        DamageAbsorption = DamageAbsorptions.Read(provider);
 
         StatCalculation = statCalculation;
         GemTypes = gemTypes;
@@ -224,6 +227,7 @@ public sealed class Settings
         ModifierAbilityUnlock = ModifierAbilityUnlock,
         MultiTargetDamageFalloff = MultiTargetDamageFalloff,
         ProcPerMinuteRoll = ProcPerMinuteRoll,
+        DamageAbsorption = DamageAbsorption,
         LeagueKinds = LeagueKinds,
         Leagues = Leagues,
         AttunementTrees = _attunementTrees.NamedTrees,

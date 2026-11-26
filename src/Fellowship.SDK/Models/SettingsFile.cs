@@ -79,6 +79,8 @@ public sealed record SettingsFile
 
     public ProcPerMinuteRoll ProcPerMinuteRoll { get; init; } = new();
 
+    public DamageAbsorption DamageAbsorption { get; init; } = new();
+
     public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; init; } = [];
 
     public IReadOnlyList<LeagueEntry> Leagues { get; init; } = [];

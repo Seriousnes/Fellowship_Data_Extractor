@@ -331,6 +331,29 @@ Decoded against **26320967**, the target selection defaults in `CreatureAbilityR
 | RandomPreferRoleActorSet `PreferredRole` +0x78: 0, `ROLE_TANK` | constructor 0x14506F160, store 0x14506F1C1 |
 | A class's constructor: name literal, registration record [-8] StaticClass, `GetPrivateStaticClassBody` argument [r11-30h] | 0x14144CE70; UObject base constructor 0x14156D290 |
 
+Decoded against **26320967**, implemented in `DamageAbsorptions.cs` and written up in `docs/damage-absorption.md`:
+
+| What | Where |
+| --- | --- |
+| Absorption pass: effects with `EffectType.Absorption` (tag global 0x14A3C9E88), share `rest / count`, an effect at its end removed and the pass ended | **0x1450E4BE0**; share 0x1450E4D99, compare 0x1450E4E6A, removal 0x1450E4F7C, `rest -= absorbed` 0x1450E4FCB |
+| Sort of the effects by `pool / (ConsumptionScaler x crit factor)`, least first | 0x1450D4FE0, predicate 0x1450D9480 |
+| Deduction crit factor: `DefaultAbsorbDeductionCritScaler` (character +0xCF8) with chance `2c / (1 + c)` of the instigator's `CritChance`, kept for each effect and hit | **0x1450D90F0**; chance 0x1450D934E to 0x1450D937C |
+| `SetByCaller.System.EffectAbsorptionConsumptionScaler` (0x14A3CA670, default 1.0), `SetByCaller.System.EffectAbsorptionPool` (0x14A3CA668) | read 0x1450E4E3F; written by the pool setter |
+| Character `CachedAbsorptionValuesMap` +0xA88, `CurrentAbsorption` +0xD38: getter by handle, total, setter | 0x1452EAC00, 0x1452EABF0, **0x1452E4DC0** |
+| Driver loop over the absorption pass: at most 30 passes, `Raw = Raw / PreBlock x rest` before each pass after the first | 0x1450DD270 to 0x1450DD373 |
+| Health damage `max(round(T x DamageMitigationScale) - A, 0)`; a hook's reduction added to `AbsorbedDamage`; event amount `-(H + A)` | 0x1450DD3E9, 0x1450DD48D, 0x1450DD4C8 and 0x1450DD6E2 |
+| Hook listeners (virtual +0x60) in the character's maps +0xC78 and +0xC90: Stagger, damage redirect, death prevention | caller 0x1450D4920; 0x1452C85F0, 0x14527DD90, 0x14527E150 |
+| Stagger pool add, cap `StaggerMaxHealthPercentage` (+0xF8) x MaxHealth, `CurrentStagger` +0x140 | 0x1452C3540 |
+| `EffectType.Environmental`, `EffectLogic.DamageIgnoreStagger`, `EffectLogic.NoLogging` | tag globals 0x14A3C9E80, 0x14A3C9F80, 0x14A3C9F30 |
+| Attribute set `PostGameplayEffectExecute`; Health `clamp(Health - Damage, MinHealth, MaxHealth)` (Health +0x58, MaxHealth +0x38, MinHealth +0x48) | 0x1450C45C0; **0x1450C4DB0**, vtable slot +0x318 |
+| Health change event to the meters, and from there to the combat log writer | 0x14527C080, call 0x14527C422 |
+| Combat log damage line: `Amount = clamp(abs(event amount) - CurrentAbsorption, 0, Health - MinHealth)`, hit points `Health - Amount` | **0x145296FB0**; 0x1452976FD to 0x145297736 |
+| Combat log `DAMAGE_ABSORBED` line, `AmountAbsorbed` the damage absorbed | 0x1452959F0, store 0x145295CE2 |
+| Damage line record: `HitType` +0x92, `Amount` +0x94, `OverAmount` +0x98, `Absorbed` +0x9C, `Blocked` +0xA0, `RawDamage` +0xA4 | reflection records 0x148AAA9B0 to 0x148AAAAD0 |
+| `FGameplayEffectContextHandle` vtable: `GetInstigator`, `GetInstigatorAbilitySystemComponent`, `GetEffectCauser` (context slots +0x28, +0x30, +0x38) | 0x148947BB8; 0x1449DE200, 0x1449DE220, 0x1449DDFB0 |
+| `CrAddOnAbsorbValue`: `x IncomingAbsorptionMultiplier` (target), `x OutgoingAbsorptionMultiplier` (instigator), `x (1 + Expertise)` | 0x14521BE40; 0x14521BFEA, 0x14521BFFA, 0x14521C02F |
+| A second execution over the absorption pass, with the captured `DamageScale` as its damage | 0x1450DDDE0, vtable entry 0x148B806C8 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
