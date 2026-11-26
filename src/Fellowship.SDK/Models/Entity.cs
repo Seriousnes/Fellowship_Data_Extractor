@@ -112,6 +112,24 @@ public sealed record Entity
 
     public bool? CastTimeScalesWithHaste { get; init; }
 
+    public string? TargetAcquisition { get; init; }
+
+    public TargetSelection? TargetSelection { get; init; }
+
+    public bool? CastInterruptible { get; init; }
+
+    public bool? ChannelInterruptible { get; init; }
+
+    public bool? ChangeTargetOnTaunt { get; init; }
+
+    public bool? AutoAttack { get; init; }
+
+    public bool? Area { get; init; }
+
+    public bool? Projectile { get; init; }
+
+    public string? CalculationPreset { get; init; }
+
     public double? GlobalCooldown { get; init; }
 
     public bool? GlobalCooldownScalesWithHaste { get; init; }
@@ -379,6 +397,8 @@ public sealed record Entity
 
     public IReadOnlyList<PhaseAbility>? Passives { get; init; }
 
+    public IReadOnlyList<CreaturePhase>? Phases { get; init; }
+
     public IReadOnlyList<IconSource>? FoundIn { get; init; }
 
     public string? Background { get; init; }
@@ -445,7 +465,19 @@ public sealed record IconSource(string Table, int NetId, string Name);
 
 public sealed record PhaseAbility(IconSource Ability, string Phase, bool Shown)
 {
+    public int? Priority { get; init; }
+
+    public string? Activation { get; init; }
+
+    public double? DifficultyUnlocked { get; init; }
+
+    public bool? Interruptible { get; init; }
+
+    public string? ActivationTag { get; init; }
+
     public bool? EnabledByDefault { get; init; }
+
+    public bool? PreserveCooldownBetweenPhases { get; init; }
 
     public PhaseCooldown? InitialCooldown { get; init; }
 

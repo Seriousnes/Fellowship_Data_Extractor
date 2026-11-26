@@ -17,6 +17,7 @@ public sealed record CreatureRecord : EntityRecord
     public double? Agility { get; init; }
     public IReadOnlyList<CreatureAbilityRecord>? Abilities { get; init; }
     public IReadOnlyList<CreatureAbilityRecord>? Passives { get; init; }
+    public IReadOnlyList<CreaturePhase>? Phases { get; init; }
     public IReadOnlyList<RecordReference>? FoundIn { get; init; }
 
     public CreatureDifficultyRecord? Difficulty { get; init; }

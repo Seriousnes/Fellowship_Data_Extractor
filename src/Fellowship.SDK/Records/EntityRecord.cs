@@ -99,7 +99,19 @@ public sealed record RankRunRecord(string Literal, IReadOnlyList<string> Printed
 
 public sealed record CreatureAbilityRecord(RecordReference Ability, string Phase, bool Shown)
 {
+    public int? Priority { get; init; }
+
+    public string? Activation { get; init; }
+
+    public double? DifficultyUnlocked { get; init; }
+
+    public bool? Interruptible { get; init; }
+
+    public string? ActivationTag { get; init; }
+
     public bool? EnabledByDefault { get; init; }
+
+    public bool? PreserveCooldownBetweenPhases { get; init; }
 
     public PhaseCooldown? InitialCooldown { get; init; }
 

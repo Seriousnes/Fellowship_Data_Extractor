@@ -1,0 +1,276 @@
+using CUE4Parse.FileProvider;
+using CUE4Parse.MappingsProvider;
+using CUE4Parse.UE4.Assets;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.Kismet;
+using CUE4Parse.UE4.Objects.UObject;
+
+using Fellowship.SDK.Models;
+
+namespace FellowshipExtractor.Extraction;
+
+public sealed record CreatureAbilityFacts
+{
+    public string? TargetAcquisition { get; init; }
+
+    public TargetSelection? TargetSelection { get; init; }
+
+    public bool? CastInterruptible { get; init; }
+
+    public bool? ChannelInterruptible { get; init; }
+
+    public bool? ChangeTargetOnTaunt { get; init; }
+
+    public bool? AutoAttack { get; init; }
+
+    public bool? Area { get; init; }
+
+    public bool? Projectile { get; init; }
+}
+
+/// <summary>
+/// The targeting, interrupt and kind of a creature ability, each read from the nearest class of its Blueprint chain that
+/// declares it. A subobject a policy property names is read from the package that holds it.
+/// </summary>
+public sealed class CreatureAbilityReads(AbstractFileProvider provider, TypeMappings mappings, ConstantsTable constants)
+{
+    private const string AcquisitionField = "TargetAcquisitionPolicy";
+    private const string SelectionField = "TargetSelectionPolicy";
+    private const string AcquisitionPrefix = "CRAbilityTargetingAcquisitionPolicy_";
+    private const string SelectionPrefix = "CRAbilityTargetSelectionPolicy_";
+
+    private const string ThreatSelection = "CRAbilityTargetSelectionPolicy_Threat";
+    private const string ActorSetSelection = "CRAbilityTargetSelectionPolicy_ActorSet";
+    private const string HealthSelection = "CRAbilityTargetSelectionPolicy_RemainingHealthActorSet";
+    private const string ThreatModeEnum = "ECRAbilityTargetSelectionPolicy_ThreatSelectionType";
+    private const string HealthOrderEnum = "ECRAbilityTargetSelectionPolicy_RemainingHealth";
+    private const string RoleEnum = "EPlayerRole";
+    private const string SelectionTypeField = "SelectionType";
+    private const string PreferredRoleField = "PreferredRole";
+    private const string ShouldHaveField = "ShouldHaveTags";
+    private const string ShouldNotHaveField = "ShouldNotHaveTags";
+    private const string MinimumField = "MinNumberOfTargets";
+    private const string MaximumField = "MaxNumberOfTargets";
+    private const string BlueprintField = "Blueprint";
+
+    /// <summary><c>CRAbilityTargetSelectionPolicy_Threat</c>'s constructor default for <c>SelectionType</c>.</summary>
+    public const string DefaultThreatMode = "ThreatSorted";
+
+    /// <summary>
+    /// The constructor default of <c>MinNumberOfTargets</c> and <c>MaxNumberOfTargets</c> on every
+    /// <c>CRAbilityTargetSelectionPolicy_ActorSet</c> class.
+    /// </summary>
+    public const double DefaultTargetCount = 1;
+
+    private const string CastingField = "CastingData";
+    private const string ChannelingField = "ChannelingData";
+    private const string TargetedCastingField = "TargetedCastingData";
+    private const string InterruptibleField = "Interruptible";
+    private const string TauntField = "ChangeTargetOnTaunt";
+
+    private const string AbilityTagsField = "AbilityTags";
+    private const string AutoAttackTag = "AbilityType.AutoAttack";
+    private const string AreaTag = "AbilityType.Aoe";
+
+    private const string ProjectileMovement = "ProjectileMovementComponent";
+    private const string ScriptRoot = "/Script/";
+    private const string ClassSuffix = "_C";
+    private const int MaxDepth = 16;
+
+    private readonly Dictionary<string, bool> _projectiles = new(StringComparer.OrdinalIgnoreCase);
+
+    public CreatureAbilityFacts Of(UObject cdo)
+    {
+        var chain = ClassDefaults.Chain(cdo, provider).ToArray();
+        var tags = PropertyWalk.AsTags(ClassDefaults.Inherited(cdo, AbilityTagsField, provider)?.GenericValue) ?? [];
+
+        var (acquisition, selection) = Targeting(chain);
+
+        return new CreatureAbilityFacts
+        {
+            TargetAcquisition = acquisition,
+            TargetSelection = selection,
+            CastInterruptible = Flag(chain, CastingField, InterruptibleField),
+            ChannelInterruptible = Flag(chain, ChannelingField, InterruptibleField),
+            ChangeTargetOnTaunt = Flag(chain, TargetedCastingField, TauntField),
+            AutoAttack = tags.Contains(AutoAttackTag, StringComparer.Ordinal) ? true : null,
+            Area = tags.Contains(AreaTag, StringComparer.Ordinal) ? true : null,
+            Projectile = chain.Any(SpawnsProjectile) ? true : null,
+        };
+    }
+
+    private (string? Acquisition, TargetSelection? Selection) Targeting(IReadOnlyList<UObject> chain)
+    {
+        foreach (var holder in chain)
+        {
+            if (PropertyWalk.GetString(holder, AcquisitionField) is not { } path) continue;
+            if (Subobject(path) is not { } acquisition) return (null, null);
+
+            var acquired = Stripped(acquisition, AcquisitionPrefix);
+            var selection = PropertyWalk.GetString(acquisition, SelectionField) is { } selected &&
+                            Subobject(selected) is { } policy
+                ? Selection(policy)
+                : null;
+
+            return (acquired, selection);
+        }
+
+        return (null, null);
+    }
+
+    private TargetSelection Selection(UObject policy)
+    {
+        var type = policy.Class?.Name.Text ?? policy.ExportType;
+        var lineage = Lineage(type);
+
+        var selection = new TargetSelection(Stripped(policy, SelectionPrefix))
+        {
+            ThreatMode = lineage.Contains(ThreatSelection)
+                ? Member(policy, SelectionTypeField, ThreatModeEnum) ?? DefaultThreatMode
+                : null,
+            HealthOrder = lineage.Contains(HealthSelection) ? Member(policy, SelectionTypeField, HealthOrderEnum) : null,
+            PreferredRole = Member(policy, PreferredRoleField, RoleEnum),
+            PreferredTags = PropertyWalk.GetTags(policy, ShouldHaveField) is { Length: > 0 } wanted ? wanted : null,
+            AvoidedTags = PropertyWalk.GetTags(policy, ShouldNotHaveField) is { Length: > 0 } avoided ? avoided : null,
+            MinNumberOfTargets = lineage.Contains(ActorSetSelection) ? Count(policy, MinimumField) : null,
+            MaxNumberOfTargets = lineage.Contains(ActorSetSelection) ? Count(policy, MaximumField) : null,
+            Blueprint = PropertyWalk.GetString(policy, BlueprintField) is { } blueprint ? Leaf(blueprint) : null,
+        };
+
+        return selection;
+    }
+
+    private string? Member(UObject policy, string field, string enumeration) =>
+        PropertyWalk.GetString(policy, field) is { } text ? EnumOrdinals.Member(mappings, enumeration, text) : null;
+
+    private double Count(UObject policy, string field)
+    {
+        if (PropertyWalk.GetStruct(policy, field) is not { } scalable) return DefaultTargetCount;
+
+        return MagnitudeCalculations.Scalable(scalable, constants)
+            ?? throw new InvalidOperationException(
+                $"{policy.Owner?.Name}'s {policy.Name} reads {field} from a row no constants table has.");
+    }
+
+    /// <summary>The native class and its native ancestors.</summary>
+    private HashSet<string> Lineage(string type)
+    {
+        var lineage = new HashSet<string>(StringComparer.Ordinal);
+
+        for (var name = type; name is { Length: > 0 } && lineage.Add(name);)
+        {
+            name = mappings.Types.TryGetValue(name, out var structure) ? structure.SuperType : null;
+        }
+
+        return lineage;
+    }
+
+    private UObject? Subobject(string path)
+    {
+        var colon = path.IndexOf(':');
+        var package = colon < 0 ? path : path[..colon];
+        var dot = package.LastIndexOf('.');
+        if (dot > 0) package = package[..dot];
+
+        var name = path[(path.LastIndexOfAny(['.', ':']) + 1)..];
+
+        if (!provider.TryLoadPackage(package, out var loaded)) return null;
+
+        return loaded.GetExports().FirstOrDefault(export => export.Name.Equals(name, StringComparison.Ordinal));
+    }
+
+    private static string Stripped(UObject policy, string prefix)
+    {
+        var type = policy.Class?.Name.Text ?? policy.ExportType;
+
+        return type.StartsWith(prefix, StringComparison.Ordinal) ? type[prefix.Length..] : type;
+    }
+
+    /// <summary>
+    /// A struct field's bool, from the nearest class holding a property of that name, spaces aside. Where the chain holds
+    /// two such properties, the one the ability's graph reads is the one read.
+    /// </summary>
+    private static bool? Flag(IReadOnlyList<UObject> chain, string field, string member)
+    {
+        var held = new List<(string Name, IPropertyHolder Data)>();
+
+        foreach (var holder in chain)
+        {
+            foreach (var property in holder.Properties)
+            {
+                if (!property.Name.Text.Replace(" ", string.Empty).Equals(field, StringComparison.OrdinalIgnoreCase)) continue;
+                if (property.Tag?.GenericValue is not FScriptStruct { StructType: IPropertyHolder data }) continue;
+                if (held.Any(entry => entry.Name == property.Name.Text)) continue;
+
+                held.Add((property.Name.Text, data));
+            }
+        }
+
+        if (held.Count == 0) return null;
+
+        var read = held.Count == 1 ? held[0].Data : held.FirstOrDefault(entry => Reads(chain, entry.Name)).Data ?? held[0].Data;
+
+        return PropertyWalk.Get(read, member)?.GenericValue as bool?;
+    }
+
+    /// <summary>Whether a graph of the chain's packages reads the instance variable.</summary>
+    private static bool Reads(IReadOnlyList<UObject> chain, string variable) =>
+        chain.Any(holder => holder.Owner?.GetExports()
+            .OfType<UStruct>()
+            .Where(body => body.ScriptBytecode is { Length: > 0 })
+            .Any(body => body.ScriptBytecode!.Any(statement => Names(statement, 0).Contains(variable))) is true);
+
+    private static IEnumerable<string> Names(KismetExpression? expression, int depth)
+    {
+        if (expression is null || depth > MaxDepth) yield break;
+
+        if (expression is EX_InstanceVariable && DynamicTextFloats.Name(expression) is { } name) yield return name;
+
+        foreach (var child in ResourceGains.Children(expression))
+        {
+            foreach (var found in Names(child, depth + 1)) yield return found;
+        }
+    }
+
+    private bool SpawnsProjectile(UObject holder) =>
+        RowSinks.SpawnedPaths(holder).Any(IsProjectile);
+
+    /// <summary>An actor class with a component template, in its own package or a parent's, of a projectile movement class.</summary>
+    private bool IsProjectile(string classPath)
+    {
+        if (_projectiles.TryGetValue(classPath, out var known)) return known;
+
+        _projectiles[classPath] = false;
+
+        var found = ClassDefaults.Load(classPath, provider) is { } actor &&
+                    ClassDefaults.Chain(actor, provider).Any(holder =>
+                        holder.Owner?.GetExports().Any(export => Moves(export.Class)) is true);
+
+        return _projectiles[classPath] = found;
+    }
+
+    private bool Moves(ResolvedObject? type)
+    {
+        for (var depth = 0; type is not null && depth < MaxDepth; depth++)
+        {
+            var name = type.Name.Text;
+
+            if (type.GetPathName().StartsWith(ScriptRoot, StringComparison.Ordinal) || type.Load() is not UStruct loaded)
+            {
+                return Lineage(name).Contains(ProjectileMovement);
+            }
+
+            type = loaded.SuperStruct?.ResolvedObject;
+        }
+
+        return false;
+    }
+
+    private static string Leaf(string path)
+    {
+        var name = path[(path.LastIndexOfAny(['.', '/']) + 1)..];
+
+        return name.EndsWith(ClassSuffix, StringComparison.Ordinal) ? name[..^ClassSuffix.Length] : name;
+    }
+}

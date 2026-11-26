@@ -101,5 +101,19 @@ public sealed record SettingsFile
 
     public StatCalculationFile StatCalculation { get; init; } = new();
 
+    /// <summary>Each row of <c>DT_EffectCalculationPresets</c>, by its row name.</summary>
+    public IReadOnlyDictionary<string, EffectCalculationPresetEntry> EffectCalculationPresets { get; init; } =
+        new Dictionary<string, EffectCalculationPresetEntry>(StringComparer.Ordinal);
+
+    public ThreatSettings? Threat { get; init; }
+
+    public AiGlobals? AiGlobals { get; init; }
+
+    public PartyScaling? PartyScaling { get; init; }
+
+    /// <summary>The damage and scale rows of <c>CT_DungeonModifiers</c>, by their row name.</summary>
+    public IReadOnlyDictionary<string, double> DungeonModifiers { get; init; } =
+        new Dictionary<string, double>(StringComparer.Ordinal);
+
     public ItemSettingsFile Items { get; init; } = new();
 }
