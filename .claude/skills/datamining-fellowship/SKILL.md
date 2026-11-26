@@ -321,6 +321,16 @@ Decoded against **26320967**, the damage result, the dot average, the delay task
 | `CRGameplayAbility::PreActivate` (vtable +0x450) writes `PreActivateTargetData` (+0x550); the engine's writes `CurrentEventData` (+0xF0) for non-null event data alone | 0x1450E3D70; 0x1449E04B0, test 0x1449E05C3 |
 | `CRGameplayAbilityTargeting` (vtable 0x148BE4EE0, constructor 0x1450E8370): event data built after target acquisition, then the ability with the same input ID activated | 0x1450EB943; calls 0x1450EBAAE, 0x1450EBB38 |
 
+Decoded against **26320967**, the target selection defaults in `CreatureAbilityReads.cs`:
+
+| What | Where |
+| --- | --- |
+| ActorSet `MinNumberOfTargets` +0x28, `MaxNumberOfTargets` +0x50: `Value` 1.0, no curve row, in every subclass | ActorSet 0x14506EE80 (stores 0x14506EEA9, 0x14506EEC7); RandomActorSet **0x14506F0F0** (0x14506F10B, 0x14506F12D) |
+| Threat `SelectionType` +0x50: 0, `ThreatSorted`, the allocation's zero fill; `NumberOfTargets` +0x28 1.0 | constructor 0x14506F350 stores nothing past +0x48; 1.0 at 0x14506F379 |
+| RemainingHealthActorSet `SelectionType` +0x78: 0, `LeastHealthLeft` | constructor 0x14506F2E0, store 0x14506F341 |
+| RandomPreferRoleActorSet `PreferredRole` +0x78: 0, `ROLE_TANK` | constructor 0x14506F160, store 0x14506F1C1 |
+| A class's constructor: name literal, registration record [-8] StaticClass, `GetPrivateStaticClassBody` argument [r11-30h] | 0x14144CE70; UObject base constructor 0x14156D290 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

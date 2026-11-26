@@ -118,6 +118,8 @@ public sealed class CreatureAbilitySlotTests
             .ToArray();
 
         Assert.Equal(682, abilities.Length);
+        Assert.Equal(4, abilities.Count(row => row.Body["targetSelection"]?["preferredRole"] is not null));
+        Assert.Equal(6, abilities.Count(row => row.Body["targetSelection"]?["healthOrder"] is not null));
         Assert.Equal(190, abilities.Count(row => row.Body["targetAcquisition"] is null));
         Assert.Equal(306, abilities.Count(row =>
             row.Body["targetAcquisition"]?.GetValue<string>() == "AIThreat" &&

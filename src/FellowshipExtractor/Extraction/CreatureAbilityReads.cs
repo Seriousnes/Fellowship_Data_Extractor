@@ -54,14 +54,33 @@ public sealed class CreatureAbilityReads(AbstractFileProvider provider, TypeMapp
     private const string MaximumField = "MaxNumberOfTargets";
     private const string BlueprintField = "Blueprint";
 
-    /// <summary><c>CRAbilityTargetSelectionPolicy_Threat</c>'s constructor default for <c>SelectionType</c>.</summary>
+    /// <summary>
+    /// <c>CRAbilityTargetSelectionPolicy_Threat</c>'s constructor default for <c>SelectionType</c> (+0x50): 0, the
+    /// object's zero fill. Shipping exe 26320967, constructor 0x14506F350 stores nothing past +0x48.
+    /// </summary>
     public const string DefaultThreatMode = "ThreatSorted";
 
     /// <summary>
-    /// The constructor default of <c>MinNumberOfTargets</c> and <c>MaxNumberOfTargets</c> on every
-    /// <c>CRAbilityTargetSelectionPolicy_ActorSet</c> class.
+    /// The constructor default of <c>MinNumberOfTargets</c> (+0x28) and <c>MaxNumberOfTargets</c> (+0x50) on every
+    /// <c>CRAbilityTargetSelectionPolicy_ActorSet</c> class: <c>Value</c> 1.0 with no curve row. Shipping exe 26320967,
+    /// ActorSet constructor 0x14506EE80, stores 0x14506EEA9 and 0x14506EEC7; RandomActorSet constructor 0x14506F0F0,
+    /// stores 0x14506F10B and 0x14506F12D.
     /// </summary>
     public const double DefaultTargetCount = 1;
+
+    /// <summary>
+    /// <c>CRAbilityTargetSelectionPolicy_RemainingHealthActorSet</c>'s constructor default for <c>SelectionType</c>
+    /// (+0x78): 0. Shipping exe 26320967, constructor 0x14506F2E0, store 0x14506F341.
+    /// </summary>
+    public const string DefaultHealthOrder = "LeastHealthLeft";
+
+    /// <summary>
+    /// <c>CRAbilityTargetSelectionPolicy_RandomPreferRoleActorSet</c>'s constructor default for <c>PreferredRole</c>
+    /// (+0x78): 0. Shipping exe 26320967, constructor 0x14506F160, store 0x14506F1C1.
+    /// </summary>
+    public const string DefaultPreferredRole = "ROLE_TANK";
+
+    private const string RoleSelection = "CRAbilityTargetSelectionPolicy_RandomPreferRoleActorSet";
 
     private const string CastingField = "CastingData";
     private const string ChannelingField = "ChannelingData";
@@ -129,8 +148,12 @@ public sealed class CreatureAbilityReads(AbstractFileProvider provider, TypeMapp
             ThreatMode = lineage.Contains(ThreatSelection)
                 ? Member(policy, SelectionTypeField, ThreatModeEnum) ?? DefaultThreatMode
                 : null,
-            HealthOrder = lineage.Contains(HealthSelection) ? Member(policy, SelectionTypeField, HealthOrderEnum) : null,
-            PreferredRole = Member(policy, PreferredRoleField, RoleEnum),
+            HealthOrder = lineage.Contains(HealthSelection)
+                ? Member(policy, SelectionTypeField, HealthOrderEnum) ?? DefaultHealthOrder
+                : null,
+            PreferredRole = lineage.Contains(RoleSelection)
+                ? Member(policy, PreferredRoleField, RoleEnum) ?? DefaultPreferredRole
+                : null,
             PreferredTags = PropertyWalk.GetTags(policy, ShouldHaveField) is { Length: > 0 } wanted ? wanted : null,
             AvoidedTags = PropertyWalk.GetTags(policy, ShouldNotHaveField) is { Length: > 0 } avoided ? avoided : null,
             MinNumberOfTargets = lineage.Contains(ActorSetSelection) ? Count(policy, MinimumField) : null,
