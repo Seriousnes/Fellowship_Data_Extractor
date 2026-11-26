@@ -104,6 +104,27 @@ public sealed class CreatureAbilitySlotTests
     }
 
     [Fact]
+    public void OfTheDungeonCreaturesAbilities190HaveNoTargetPolicy()
+    {
+        var slotted = Export.Loaded.Documents
+            .Where(row => row.Type == EntityType.Creature && row.Body["foundIn"] is JsonArray { Count: > 0 })
+            .SelectMany(row => row.Body["abilities"]?.AsArray() ?? [])
+            .Where(slot => slot!["ability"]!["type"]!.GetValue<string>() == "ability")
+            .Select(slot => slot!["ability"]!["id"]!.GetValue<int>())
+            .ToHashSet();
+
+        var abilities = Export.Loaded.Documents
+            .Where(row => row.Type == EntityType.Ability && slotted.Contains(row.Id))
+            .ToArray();
+
+        Assert.Equal(682, abilities.Length);
+        Assert.Equal(190, abilities.Count(row => row.Body["targetAcquisition"] is null));
+        Assert.Equal(306, abilities.Count(row =>
+            row.Body["targetAcquisition"]?.GetValue<string>() == "AIThreat" &&
+            row.Body["targetSelection"]?["type"]?.GetValue<string>() == "Threat"));
+    }
+
+    [Fact]
     public void TheSettingsHaveThePresetsThreatAndDungeonModifiers()
     {
         var settings = Export.Loaded.Settings;

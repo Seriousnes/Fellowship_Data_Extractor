@@ -320,7 +320,7 @@ public sealed class CodexViewService(
 
         if (document is AbilityDocument { TargetSelection: { } selection })
         {
-            facts.Add(("Target selection", Selected(selection), null, null, null));
+            facts.Add(("Target Selection", Selected(selection), null, null, null));
         }
 
         if (document is EffectDocument { DurationScaling: { } scaling })
@@ -345,7 +345,7 @@ public sealed class CodexViewService(
 
         if (selection is { MinNumberOfTargets: { } low, MaxNumberOfTargets: { } high })
         {
-            parts.Add(low == high ? $"{Number(low)} targets" : $"{Number(low)} to {Number(high)} targets");
+            parts.Add(low == high ? $"{Number(low)} {(low == 1 ? "target" : "targets")}" : $"{Number(low)} to {Number(high)} targets");
         }
 
         if (selection.Blueprint is { } blueprint) parts.Add(blueprint);
