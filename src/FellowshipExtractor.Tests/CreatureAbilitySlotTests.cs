@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 
 using Fellowship.SDK.Documents;
 using Fellowship.SDK.Models;
+using FellowshipExtractor.Extraction;
 
 namespace FellowshipExtractor.Tests;
 
@@ -124,6 +125,41 @@ public sealed class CreatureAbilitySlotTests
         Assert.Equal(306, abilities.Count(row =>
             row.Body["targetAcquisition"]?.GetValue<string>() == "AIThreat" &&
             row.Body["targetSelection"]?["type"]?.GetValue<string>() == "Threat"));
+    }
+
+    [Fact]
+    public void NoDungeonCreatureAbilityTakesItsTargetPolicyFromAParentBlueprint()
+    {
+        var slotted = Export.Loaded.Documents
+            .Where(row => row.Type == EntityType.Creature && row.Body["foundIn"] is JsonArray { Count: > 0 })
+            .SelectMany(row => row.Body["abilities"]?.AsArray() ?? [])
+            .Where(slot => slot!["ability"]!["type"]!.GetValue<string>() == "ability")
+            .Select(slot => slot!["ability"]!["id"]!.GetValue<int>())
+            .ToHashSet();
+
+        var provider = Export.Provider;
+        var assets = AssetRegistry.ReadAssets(provider)
+            .GroupBy(asset => asset.AssetName.Text, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+        var reads = new CreatureAbilityReads(provider, provider.MappingsContainer!.MappingsForGame!, new ConstantsTable(provider));
+
+        var names = CsvTables.Current([.. CsvTables.ReadTags(provider)])
+            .Where(tag => tag.Table == "GameplayAbility" && slotted.Contains(tag.NetId))
+            .Select(tag => tag.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        Assert.Equal(682, names.Length);
+
+        var read = names
+            .Select(name => assets.TryGetValue(name, out var asset) ? ClassDefaults.Load(asset.ObjectPath, provider) : null)
+            .OfType<CUE4Parse.UE4.Assets.Exports.UObject>()
+            .Select(reads.ArchetypeHeld)
+            .ToArray();
+
+        Assert.Equal(682, read.Length);
+        Assert.Equal(0, read.Count(entry => entry.Inherited));
+        Assert.Empty(read.SelectMany(entry => entry.Fields));
     }
 
     [Fact]

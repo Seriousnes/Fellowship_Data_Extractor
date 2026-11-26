@@ -138,6 +138,51 @@ public sealed class CreatureAbilityReads(AbstractFileProvider provider, TypeMapp
         return (null, null);
     }
 
+    /// <summary>
+    /// The policy fields a parent Blueprint's subobject of the same name sets while the ability's own policy leaves
+    /// them unset, and whether the ability's class inherits its whole acquisition policy from a parent class.
+    /// </summary>
+    public (bool Inherited, IReadOnlyList<string> Fields) ArchetypeHeld(UObject cdo)
+    {
+        var chain = ClassDefaults.Chain(cdo, provider).ToArray();
+        var at = Array.FindIndex(chain, holder => PropertyWalk.GetString(holder, AcquisitionField) is not null);
+
+        if (at < 0) return (false, []);
+
+        var path = PropertyWalk.GetString(chain[at], AcquisitionField)!;
+        var held = new List<string>();
+
+        if (Subobject(path) is not { } acquisition) return (at > 0, held);
+
+        var policy = PropertyWalk.GetString(acquisition, SelectionField) is { } selected ? Subobject(selected) : null;
+
+        foreach (var parent in chain.Skip(at + 1))
+        {
+            if (parent.Owner is not { } package) continue;
+
+            var exports = package.GetExports().ToArray();
+            var archetype = exports.FirstOrDefault(export => export.Name == acquisition.Name);
+            var selection = policy is null ? null : exports.FirstOrDefault(export => export.Name == policy.Name);
+
+            if (archetype is not null && policy is null && PropertyWalk.GetString(archetype, SelectionField) is not null)
+            {
+                held.Add($"{parent.Name}.{SelectionField}");
+            }
+
+            if (policy is null || selection is null) continue;
+
+            foreach (var field in (string[])[MinimumField, MaximumField, SelectionTypeField, PreferredRoleField])
+            {
+                if (PropertyWalk.Get(policy, field) is null && PropertyWalk.Get(selection, field) is not null)
+                {
+                    held.Add($"{parent.Name}.{field}");
+                }
+            }
+        }
+
+        return (at > 0, held);
+    }
+
     private TargetSelection Selection(UObject policy)
     {
         var type = policy.Class?.Name.Text ?? policy.ExportType;
