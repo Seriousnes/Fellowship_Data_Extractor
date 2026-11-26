@@ -105,6 +105,14 @@ public static class RecordProjection
             Duration = document.Duration,
             Period = document.Period,
             CastTimeScalesWithHaste = document.CastTimeScalesWithHaste,
+            TargetAcquisition = document.TargetAcquisition,
+            TargetSelection = document.TargetSelection,
+            CastInterruptible = document.CastInterruptible,
+            ChannelInterruptible = document.ChannelInterruptible,
+            ChangeTargetOnTaunt = document.ChangeTargetOnTaunt,
+            AutoAttack = document.AutoAttack,
+            Area = document.Area,
+            Projectile = document.Projectile,
             ScalesOff = Scaling(document.ScalesOff, view),
             ProcRolls = Rolls(document.ProcRolls, view, origin),
             CommitTriggers = Commits(document.CommitTriggers, view, origin),
@@ -166,6 +174,7 @@ public static class RecordProjection
         Agility = document.Agility,
         Abilities = Wielded(document.Abilities, view, origin),
         Passives = Wielded(document.Passives, view, origin),
+        Phases = document.Phases,
         FoundIn = References(document.FoundIn, view, origin),
     };
 
@@ -238,6 +247,7 @@ public static class RecordProjection
             Schools = Some(tags),
             Modifiers = Some(document.Modifiers),
             CalculationModifiers = Some(document.CalculationModifiers),
+            CalculationPreset = document.CalculationPreset,
             Talents = document.Talents,
             NameBorrowedFrom = Reference(document.NameBorrowedFrom, view, origin),
             TextureBorrowedFrom = Reference(document.TextureBorrowedFrom, view, origin),
@@ -725,7 +735,13 @@ public static class RecordProjection
         abilities?.Select(slot => new CreatureAbilityRecord(
                 Referenced(slot.Ability.Type, slot.Ability.Id, view, origin), slot.Phase, slot.Shown)
             {
+                Priority = slot.Priority,
+                Activation = slot.Activation,
+                DifficultyUnlocked = slot.DifficultyUnlocked,
+                Interruptible = slot.Interruptible,
+                ActivationTag = slot.ActivationTag,
                 EnabledByDefault = slot.EnabledByDefault,
+                PreserveCooldownBetweenPhases = slot.PreserveCooldownBetweenPhases,
                 InitialCooldown = slot.InitialCooldown,
                 Cooldown = slot.Cooldown,
                 InterruptCooldown = slot.InterruptCooldown,

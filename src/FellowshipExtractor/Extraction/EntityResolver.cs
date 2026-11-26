@@ -51,6 +51,7 @@ public sealed class EntityResolver
     private readonly FAssetData[] _assets;
     private readonly ConstantsTable _constants;
     private readonly EffectCalculationPresets _presets;
+    private readonly CreatureAbilityReads _creatureReads;
     private readonly CooldownScaling _cooldowns;
     private readonly AbilityCooldowns _abilityCooldowns;
     private readonly GlobalCooldowns _globalCooldowns;
@@ -184,6 +185,7 @@ public sealed class EntityResolver
         Superseded = tags.Length - _tags.Count;
         _constants = new ConstantsTable(provider);
         _presets = new EffectCalculationPresets(provider, _assets);
+        _creatureReads = new CreatureAbilityReads(provider, mappings, _constants);
         _cooldowns = new CooldownScaling(provider, _assets, _constants);
         _abilityCooldowns = new AbilityCooldowns(provider, _constants, new DataRegistries(provider, _assets));
         _globalCooldowns = new GlobalCooldowns(provider, _constants);
@@ -278,7 +280,8 @@ public sealed class EntityResolver
             new RarityColorRows(provider, rarities),
             new SectionHeadingRows(provider), Tempers, Drops, new GlyphWording(provider, _constants),
             CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, AttunementTrees,
-            ModifierRecipes, new TooltipWidgetText(provider, _assets, SlotNames), new AbilityTooltipTexts(provider, _assets));
+            ModifierRecipes, new TooltipWidgetText(provider, _assets, SlotNames), new AbilityTooltipTexts(provider, _assets),
+            new EnemySettings(provider, _assets, _constants, _presets));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -423,6 +426,29 @@ public sealed class EntityResolver
         }
 
         entity = WithOwners(entity, tag);
+
+        if (cdo is not null && tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase) &&
+            Owners.CreatureOf(tag.Name) is not null)
+        {
+            var facts = _creatureReads.Of(cdo);
+
+            entity = entity with
+            {
+                TargetAcquisition = facts.TargetAcquisition,
+                TargetSelection = facts.TargetSelection,
+                CastInterruptible = facts.CastInterruptible,
+                ChannelInterruptible = facts.ChannelInterruptible,
+                ChangeTargetOnTaunt = facts.ChangeTargetOnTaunt,
+                AutoAttack = facts.AutoAttack,
+                Area = facts.Area,
+                Projectile = facts.Projectile,
+            };
+        }
+
+        if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
+        {
+            entity = entity with { CalculationPreset = _presets.Executed(cdo) };
+        }
 
         entity = WithSpentResource(entity, display, tag, cdo);
         entity = WithGeneratedResources(entity);
@@ -987,6 +1013,9 @@ public sealed class EntityResolver
             Agility = attributes?.Agility,
             Abilities = Empty(Sourced(slots.Where(slot => !slot.Passive))),
             Passives = Empty(Sourced(slots.Where(slot => slot.Passive))),
+            Phases = Empty(Owners.PhasesOf(tag.Name)
+                .Select(phase => new CreaturePhase(DocumentProjection.Spaced(phase.Phase), phase.Tag, phase.Type))
+                .ToArray()),
             FoundIn = Empty(found),
         };
     }
@@ -1005,7 +1034,13 @@ public sealed class EntityResolver
 
             held.Add(new PhaseAbility(source, DocumentProjection.Spaced(slot.Phase), slot.Shown)
             {
+                Priority = slot.Timing?.Priority,
+                Activation = slot.Timing?.Activation,
+                DifficultyUnlocked = slot.Timing?.DifficultyUnlocked,
+                Interruptible = slot.Timing?.Interruptible,
+                ActivationTag = slot.Timing?.ActivationTag,
                 EnabledByDefault = slot.Timing?.EnabledByDefault,
+                PreserveCooldownBetweenPhases = slot.Timing?.PreserveCooldownBetweenPhases,
                 InitialCooldown = slot.Timing?.InitialCooldown,
                 Cooldown = slot.Timing?.Cooldown,
                 InterruptCooldown = slot.Timing?.InterruptCooldown,

@@ -318,6 +318,11 @@ public sealed class CodexViewService(
             facts.Add((Models.FellowshipCodex.Spaced(property.Name), text, Unit(property.Name), null, null));
         }
 
+        if (document is AbilityDocument { TargetSelection: { } selection })
+        {
+            facts.Add(("Target Selection", Selected(selection), null, null, null));
+        }
+
         if (document is EffectDocument { DurationScaling: { } scaling })
         {
             var shares = string.Join(" / ", scaling.Coefficients.Select(share => $"{Number(Math.Round(share * 100, 10))}%"));
@@ -326,6 +331,26 @@ public sealed class CodexViewService(
         }
 
         return facts;
+    }
+
+    private string Selected(Fellowship.SDK.Models.TargetSelection selection)
+    {
+        var parts = new List<string> { Models.FellowshipCodex.Spaced(selection.Type) };
+
+        if (selection.ThreatMode is { } mode) parts.Add(Models.FellowshipCodex.Spaced(mode));
+        if (selection.HealthOrder is { } order) parts.Add(Models.FellowshipCodex.Spaced(order));
+        if (selection.PreferredRole is { } role) parts.Add($"prefers {role}");
+        if (selection.PreferredTags is { Count: > 0 } wanted) parts.Add($"prefers {string.Join(", ", wanted)}");
+        if (selection.AvoidedTags is { Count: > 0 } avoided) parts.Add($"avoids {string.Join(", ", avoided)}");
+
+        if (selection is { MinNumberOfTargets: { } low, MaxNumberOfTargets: { } high })
+        {
+            parts.Add(low == high ? $"{Number(low)} {(low == 1 ? "target" : "targets")}" : $"{Number(low)} to {Number(high)} targets");
+        }
+
+        if (selection.Blueprint is { } blueprint) parts.Add(blueprint);
+
+        return string.Join(", ", parts);
     }
 
     private static readonly string[] LinkProperties =

@@ -97,6 +97,8 @@ public sealed class Settings
 
     public AbilityTooltipText AbilityTooltip { get; }
 
+    public EnemySettings Enemies { get; }
+
     public Settings(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -120,8 +122,10 @@ public sealed class Settings
         AttunementTrees attunementTrees,
         ModifierRecipes recipes,
         TooltipWidgetText widgetText,
-        AbilityTooltipTexts abilityTooltip)
+        AbilityTooltipTexts abilityTooltip,
+        EnemySettings enemies)
     {
+        Enemies = enemies;
         _attunementTrees = attunementTrees;
         ModifierTypes = recipes.Types;
         EmptyModifierSlot = widgetText.EmptySlot;
@@ -256,6 +260,11 @@ public sealed class Settings
             RarityAdditions = StatCalculation.RarityAdditions,
             SlotDefinitions = StatCalculation.SlotDefinitions,
         },
+        EffectCalculationPresets = Enemies.Presets,
+        Threat = Enemies.Threat,
+        AiGlobals = Enemies.AiGlobals,
+        PartyScaling = Enemies.PartyScaling,
+        DungeonModifiers = Enemies.DungeonModifiers,
     };
 
     private static Dictionary<string, string> HeroRows(Dictionary<string, string> colours, HeroNames heroes)

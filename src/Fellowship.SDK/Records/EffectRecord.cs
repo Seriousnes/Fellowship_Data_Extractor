@@ -33,6 +33,8 @@ public sealed record EffectRecord : EntityRecord
 
     public IReadOnlyList<CalculationModifier>? CalculationModifiers { get; init; }
 
+    public string? CalculationPreset { get; init; }
+
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>? Talents { get; init; }
 
     public RecordReference? NameBorrowedFrom { get; init; }

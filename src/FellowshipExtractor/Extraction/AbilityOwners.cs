@@ -47,6 +47,10 @@ public sealed class AbilityOwners
     private const string BehaviourField = "BehaviorComponentClass";
     private const string PhasesField = "Phases";
     private const string PhaseAbilityField = "AbilityClass";
+    private const string PhaseTypeField = "PhaseType";
+    private const string PhaseTypeEnum = "ECRPhaseDataType";
+    private const string GenericPhase = "Generic";
+    private const string GenericPhaseField = "GenericPhaseData";
     private const string PhaseEffectsField = "Effects";
     private const string PhaseEffectField = "Effect";
     private const string ShowOnUiField = "ShowOnUI";
@@ -71,6 +75,9 @@ public sealed class AbilityOwners
     private readonly Dictionary<string, string> _creatures = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<string, List<CreatureSlot>> _slots =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly Dictionary<string, IReadOnlyList<(string Phase, string? Tag, string Type)>> _phases =
         new(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<string, string> _outsiders = new(StringComparer.OrdinalIgnoreCase);
@@ -145,6 +152,10 @@ public sealed class AbilityOwners
 
     public IReadOnlyList<CreatureSlot> SlotsOf(string creature) =>
         _slots.TryGetValue(creature, out var slots) ? slots : [];
+
+    /// <summary>The phases of the creature's behaviour component, with each phase's name, tag and type.</summary>
+    public IReadOnlyList<(string Phase, string? Tag, string Type)> PhasesOf(string creature) =>
+        _phases.TryGetValue(creature, out var phases) ? phases : [];
 
     public string? ApplierOf(string name) => _appliers.GetValueOrDefault(name);
 
@@ -347,7 +358,42 @@ public sealed class AbilityOwners
             }
 
             if (slots.Count > 0) _slots[tag.Name] = slots;
+
+            if (Phases(creature) is { Count: > 0 } phases) _phases[tag.Name] = phases;
         }
+    }
+
+    private IReadOnlyList<(string Phase, string? Tag, string Type)> Phases(UObject creature)
+    {
+        if (PropertyWalk.GetString(creature, BehaviourField) is not { } behaviour) return [];
+        if (!_byName.TryGetValue(Leaf(behaviour), out var asset)) return [];
+        if (DungeonNames.Load(_provider, asset.ObjectPath) is not { } component) return [];
+        if (PropertyWalk.Get(component, PhasesField)?.GenericValue is not UScriptMap phases) return [];
+
+        var found = new List<(string, string?, string)>();
+
+        foreach (var (key, value) in phases.Properties)
+        {
+            if (value?.GenericValue is not FScriptStruct { StructType: IPropertyHolder phase }) continue;
+
+            var tag = PropertyWalk.AsString(key?.GenericValue);
+            var type = EnumOrdinals.Member(_mappings, PhaseTypeEnum, PropertyWalk.GetString(phase, PhaseTypeField))
+                ?? throw new InvalidOperationException(
+                    $"{asset.AssetName.Text} has a phase {tag ?? PhasesField} with no {PhaseTypeField} the mappings " +
+                    $"name in {PhaseTypeEnum}.");
+
+            if (type == GenericPhase)
+            {
+                type = PropertyWalk.GetString(phase, GenericPhaseField) is { } generic
+                    ? Leaf(generic)
+                    : throw new InvalidOperationException(
+                        $"{asset.AssetName.Text}'s {GenericPhase} phase {tag ?? PhasesField} names no {GenericPhaseField}.");
+            }
+
+            found.Add((tag is null ? PhasesField : HeroNames.LastSegment(tag), tag, type));
+        }
+
+        return found;
     }
 
     private IEnumerable<CreatureSlot> Owned(UObject creature)
@@ -402,7 +448,7 @@ public sealed class AbilityOwners
                 Leaf(path), phase, PropertyWalk.Get(slot, ShowOnUiField)?.GenericValue is not false, Passive: false)
             {
                 Timing = field.Equals(AbilitiesField, StringComparison.Ordinal)
-                    ? PhaseCooldowns.Read(slot, _mappings, _constants)
+                    ? PhaseCooldowns.Read(slot, _mappings, _constants, _provider)
                     : null,
             };
         }

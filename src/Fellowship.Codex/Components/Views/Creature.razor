@@ -8,7 +8,7 @@
             @foreach (var phase in Phases)
             {
                 <Rule />
-                <SubHead>@phase.Key</SubHead>
+                <SubHead>@phase.Key@(PhaseType(phase.Key) is { } type ? $" ({type})" : null)</SubHead>
                 <Table Items="phase">
                     <Columns>
                         <Column Head="" Class="cx-texture">
@@ -47,11 +47,32 @@
                         <Column Head="Initial cooldown" Class="cx-numeric">
                             <Content Context="slot">@Seconds(slot.InitialCooldown)</Content>
                         </Column>
+                        <Column Head="Priority" Numeric Value="slot => slot.Priority" />
                         <Column Head="" Class="cx-tags">
                             <Content Context="slot">
                                 @if (!slot.Shown)
                                 {
                                     <Chip>@Hidden</Chip>
+                                }
+                                @if (slot.Activation is { } activation && activation != TimerBased)
+                                {
+                                    <Chip>@FellowshipCodex.Spaced(activation).ToLowerInvariant()</Chip>
+                                }
+                                @if (slot.DifficultyUnlocked is { } unlocked)
+                                {
+                                    <Chip>from difficulty @FellowshipCodex.Number(unlocked)</Chip>
+                                }
+                                @if (slot.Interruptible is true)
+                                {
+                                    <Chip>interruptible</Chip>
+                                }
+                                @if (slot.EnabledByDefault is false)
+                                {
+                                    <Chip>disabled</Chip>
+                                }
+                                @if (slot.PreserveCooldownBetweenPhases is true)
+                                {
+                                    <Chip>keeps cooldown</Chip>
                                 }
                             </Content>
                         </Column>
@@ -80,6 +101,8 @@
     [CascadingParameter] private Bearings Here { get; set; } = new();
 
     private const string Hidden = "hidden";
+
+    private const string TimerBased = "TimerBased";
 
     private DifficultyStep Step = new(1, string.Empty, 1, "1");
 
@@ -165,6 +188,9 @@
                     : Printed(entry.Band!)),
         ];
     }
+
+    private string? PhaseType(string phase) =>
+        Entity.Phases?.FirstOrDefault(entry => entry.Phase == phase)?.Type;
 
     private static string? Seconds(PhaseCooldown? cooldown) => cooldown switch
     {

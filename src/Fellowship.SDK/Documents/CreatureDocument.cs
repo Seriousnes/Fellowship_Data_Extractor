@@ -17,5 +17,6 @@ public sealed class CreatureDocument : EntityDocument
     public double? Agility { get; init; }
     public IReadOnlyList<CreatureAbility>? Abilities { get; init; }
     public IReadOnlyList<CreatureAbility>? Passives { get; init; }
+    public IReadOnlyList<CreaturePhase>? Phases { get; init; }
     public IReadOnlyList<EntityReference>? FoundIn { get; init; }
 }

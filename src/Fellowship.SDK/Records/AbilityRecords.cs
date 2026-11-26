@@ -41,6 +41,15 @@ public sealed record AbilityRecord : EntityRecord
 
     public bool? CastTimeScalesWithHaste { get; init; }
 
+    public string? TargetAcquisition { get; init; }
+    public TargetSelection? TargetSelection { get; init; }
+    public bool? CastInterruptible { get; init; }
+    public bool? ChannelInterruptible { get; init; }
+    public bool? ChangeTargetOnTaunt { get; init; }
+    public bool? AutoAttack { get; init; }
+    public bool? Area { get; init; }
+    public bool? Projectile { get; init; }
+
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
     public IReadOnlyList<ProcRollRecord>? ProcRolls { get; init; }

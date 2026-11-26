@@ -72,6 +72,30 @@ public sealed class AbilityDocument : EntityDocument
 
     public bool? CastTimeScalesWithHaste { get; init; }
 
+    /// <summary>A creature ability's <c>TargetAcquisitionPolicy</c> class without the <c>CRAbilityTargetingAcquisitionPolicy_</c> prefix.</summary>
+    public string? TargetAcquisition { get; init; }
+
+    /// <summary>A creature ability's <c>TargetSelectionPolicy</c>, the acquisition policy's.</summary>
+    public TargetSelection? TargetSelection { get; init; }
+
+    /// <summary>A creature ability's <c>CastingData.Interruptible</c>.</summary>
+    public bool? CastInterruptible { get; init; }
+
+    /// <summary>A creature ability's <c>ChannelingData.Interruptible</c>.</summary>
+    public bool? ChannelInterruptible { get; init; }
+
+    /// <summary>A creature ability's <c>TargetedCastingData.ChangeTargetOnTaunt</c>.</summary>
+    public bool? ChangeTargetOnTaunt { get; init; }
+
+    /// <summary>A creature ability with the tag <c>AbilityType.AutoAttack</c>.</summary>
+    public bool? AutoAttack { get; init; }
+
+    /// <summary>A creature ability with the tag <c>AbilityType.Aoe</c>.</summary>
+    public bool? Area { get; init; }
+
+    /// <summary>A creature ability that spawns an actor with a projectile movement component.</summary>
+    public bool? Projectile { get; init; }
+
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
 
