@@ -370,6 +370,24 @@ Decoded against **26320967**, implemented in `DamageAbsorptions.cs` and written 
 | `CrAddOnAbsorbValue`: `x IncomingAbsorptionMultiplier` (target), `x OutgoingAbsorptionMultiplier` (instigator), `x (1 + Expertise)` | 0x14521BE40; 0x14521BFEA, 0x14521BFFA, 0x14521C02F |
 | A second execution over the absorption pass, with the captured `DamageScale` as its damage | 0x1450DDDE0, vtable entry 0x148B806C8 |
 
+Decoded against **26320967**, `CRStaggerActorComponent` (character +0xF78), behind `settings.json` `stagger`
+(`StaggerComponent.cs`):
+
+| What | Where |
+| --- | --- |
+| Vtable; `BeginPlay` +0x3C0, `TickComponent` +0x3D8, `OnStaggerChanged` broadcast +0x4B8 | 0x148C9A4A8; **0x1452C3990**, **0x1452CDD70**, 0x1452C97D0 |
+| Fields: `StaggerPeriodRef` +0xA8, `StaggerDurationRef` +0xD0, `StaggerMaxHealthPercentage` +0xF8 (all `FScalableFloat`), `DamageEffectClass` +0x120, `DamageEffectSetByCallerTag` +0x128, `CurrentStagger` +0x140, damage spec +0x158, last tick +0x168, period countdown +0x16C, buckets `TArray<float>` +0x178, `CachedStaggerContributions` +0x188 | reflection records from 0x148C98F60; constructor 0x1452C2320 |
+| Rows: `BP_PlayerCharacter` `StaggerActorComponent` binds `Stagger.Period`, `Stagger.AmountOfBuckets`, `Stagger.MaxHealthPercentage`, `GE_Shared_Stagger_Damage`, `SetByCaller.Damage`; no hero Blueprint overrides them | asset |
+| Bucket count `ceil(StaggerDurationRef)`, `SetNumZeroed` | 0x1452C3DB4 to 0x1452C3E1D |
+| Natives: `AuthClearStagger`, `AuthUpdateStagger(StaggerDelta, ShouldUpdateStaggerDamage)`, `AuthUpdateStaggerAndLog`, `UpdateStaggerDamage` | 0x1452C3510, **0x1452C3540**, 0x1452C3670, **0x1452CF830**; table 0x148C9A9B0 |
+| Pool setter: `clamp(cur + Δ, 0, cap)`, unchanged value returns at once; flag set calls the bucket update with the Δ taken | 0x1452C3580, 0x1452C35EF to 0x1452C3618, 0x1452C364E |
+| Bucket add: countdown 0 takes `Period` (first add only); `f = countdown / Period`; first bucket `Δ·f/(n−1+f)`, others `Δ/(n−1+f)` | 0x1452CF884 to 0x1452CF9AA |
+| Bucket removal (Δ ≤ 0): every bucket × `max(sum + Δ, 0) / sum`, × 0 when sum ≤ 0.0001 | 0x1452CF9C2 to 0x1452CFAF2 |
+| Tick: authority, `CurrentStagger > 0` else return before the countdown moves; countdown −= dt; on expiry pop bucket 0, shift, deal `min(bucket0, CurrentStagger)` when bucket0 > 0, `CurrentStagger −= bucket0` (flag 0), countdown += Period | 0x1452CDD80 to 0x1452CDE68; deal 0x1452C3380 (`AssignTagSetByCallerMagnitude` 0x1449FE350, apply 0x1449FE3F0) |
+| Damage hook part, flag 1; heal hook for `EffectLogic.HealAffectStagger` (0x14A3C9F88): Δ = −min(heal × `StaggerHealReductionFactor`, CurrentStagger), heal less by it | 0x1452C87D5; 0x1452C8900, call 0x1452C8B0B |
+| `CRModifyStaggerExecution`: `SetByCaller.Stagger` to `AuthUpdateStaggerAndLog` with flag 1 | 0x1451091E0, call 0x145109383 |
+| Hero death override clears Stagger before the base death (+0x92D, `EffectLogic.RemoveOnDeath`) | 0x145312310 (vtable entry 0x148CFC7A8), call 0x145312378; base 0x1452ED190 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

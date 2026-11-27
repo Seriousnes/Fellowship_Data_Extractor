@@ -281,7 +281,8 @@ public sealed class EntityResolver
             new SectionHeadingRows(provider), Tempers, Drops, new GlyphWording(provider, _constants),
             CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, AttunementTrees,
             ModifierRecipes, new TooltipWidgetText(provider, _assets, SlotNames), new AbilityTooltipTexts(provider, _assets),
-            new EnemySettings(provider, _assets, _constants, _presets));
+            new EnemySettings(provider, _assets, _constants, _presets),
+            StaggerComponent.Read(provider, _constants));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));

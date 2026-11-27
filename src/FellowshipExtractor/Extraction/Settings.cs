@@ -101,6 +101,8 @@ public sealed class Settings
 
     public EnemySettings Enemies { get; }
 
+    public StaggerSettings Stagger { get; }
+
     public Settings(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -125,9 +127,11 @@ public sealed class Settings
         ModifierRecipes recipes,
         TooltipWidgetText widgetText,
         AbilityTooltipTexts abilityTooltip,
-        EnemySettings enemies)
+        EnemySettings enemies,
+        StaggerSettings stagger)
     {
         Enemies = enemies;
+        Stagger = stagger;
         _attunementTrees = attunementTrees;
         ModifierTypes = recipes.Types;
         EmptyModifierSlot = widgetText.EmptySlot;
@@ -228,6 +232,7 @@ public sealed class Settings
         MultiTargetDamageFalloff = MultiTargetDamageFalloff,
         ProcPerMinuteRoll = ProcPerMinuteRoll,
         DamageAbsorption = DamageAbsorption,
+        Stagger = Stagger,
         LeagueKinds = LeagueKinds,
         Leagues = Leagues,
         AttunementTrees = _attunementTrees.NamedTrees,

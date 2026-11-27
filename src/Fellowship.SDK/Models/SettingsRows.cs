@@ -119,6 +119,37 @@ public sealed record MultiTargetDamageFalloff
 public sealed record FormulaSymbol(string Symbol, string Meaning);
 
 /// <summary>
+/// Every hero's <c>CRStaggerActorComponent</c>, as <c>BP_PlayerCharacter</c> binds it. The component spreads each
+/// part over <see cref="Buckets"/> buckets and, every <see cref="Period"/> seconds while the pool holds Stagger, deals
+/// the first bucket as <see cref="DamageEffect"/> and shifts the rest forward.
+/// </summary>
+public sealed record StaggerSettings
+{
+    /// <summary>Seconds between ticks (<c>StaggerPeriodRef</c>).</summary>
+    public double Period { get; init; }
+
+    public string PeriodRow { get; init; } = string.Empty;
+
+    /// <summary>Bucket count, the ceiling of <c>StaggerDurationRef</c>.</summary>
+    public int Buckets { get; init; }
+
+    public string BucketsRow { get; init; } = string.Empty;
+
+    /// <summary>Cap on the pool as a share of MaxHealth (<c>StaggerMaxHealthPercentage</c>).</summary>
+    public double MaxHealthPercentage { get; init; }
+
+    public string MaxHealthPercentageRow { get; init; } = string.Empty;
+
+    /// <summary>Effect a tick applies to the owner.</summary>
+    public string DamageEffect { get; init; } = string.Empty;
+
+    /// <summary>SetByCaller tag holding a tick's damage.</summary>
+    public string DamageSetByCallerTag { get; init; } = string.Empty;
+
+    public string DisplayText { get; init; } = string.Empty;
+}
+
+/// <summary>
 /// The chance <c>CRRandomStreamComponent.RollProcPerMinute</c> gives one roll at a rate, as the shipping binary
 /// computes it. A proc roll's rate is its <see cref="ProcRoll.Formula"/>.
 /// </summary>

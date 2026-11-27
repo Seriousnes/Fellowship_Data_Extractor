@@ -81,6 +81,8 @@ public sealed record SettingsFile
 
     public DamageAbsorption DamageAbsorption { get; init; } = new();
 
+    public StaggerSettings? Stagger { get; init; }
+
     public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; init; } = [];
 
     public IReadOnlyList<LeagueEntry> Leagues { get; init; } = [];

@@ -1041,6 +1041,17 @@
     "critChanceAttribute": "CritChance",
     "mostPasses": 30
   },
+  "stagger": {
+    "period": 3,
+    "periodRow": "Stagger.Period",
+    "buckets": 5,
+    "bucketsRow": "Stagger.AmountOfBuckets",
+    "maxHealthPercentage": 0.6,
+    "maxHealthPercentageRow": "Stagger.MaxHealthPercentage",
+    "damageEffect": "GE_Shared_Stagger_Damage",
+    "damageSetByCallerTag": "SetByCaller.Damage",
+    "displayText": "A part p added part-way through a period puts p\u00B7f/(n\u22121\u002Bf) in the first bucket and p/(n\u22121\u002Bf) in each other bucket, f the share of the period left. While the pool holds Stagger, each period deals the first bucket (at most the pool) and shifts the buckets forward. The period\u0027s countdown pauses while the pool is empty and resumes at the next add. A removal outside a tick scales every bucket by the share of Stagger left."
+  },
   "leagueKinds": [
     {
       "name": "Unknown",
