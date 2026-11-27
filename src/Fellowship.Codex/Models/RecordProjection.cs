@@ -172,6 +172,8 @@ public static class RecordProjection
         Intellect = document.Intellect,
         Strength = document.Strength,
         Agility = document.Agility,
+        CritChance = document.CritChance,
+        CritMultiplier = document.CritMultiplier,
         Abilities = Wielded(document.Abilities, view, origin),
         Passives = Wielded(document.Passives, view, origin),
         Phases = document.Phases,

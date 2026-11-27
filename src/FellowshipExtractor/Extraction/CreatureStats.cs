@@ -20,6 +20,10 @@ public sealed record CreatureAttributes
     public double? Strength { get; init; }
 
     public double? Agility { get; init; }
+
+    public double? CritChance { get; init; }
+
+    public double? CritMultiplier { get; init; }
 }
 
 public sealed record CreatureScaling(
@@ -44,6 +48,8 @@ public sealed class CreatureStats
     private const string Intellect = "BasicAttributeSet.Intellect";
     private const string Strength = "BasicAttributeSet.Strength";
     private const string Agility = "BasicAttributeSet.Agility";
+    private const string CritChance = "BasicAttributeSet.CritChance";
+    private const string CritMultiplier = "BasicAttributeSet.CritMultiplier";
 
     private readonly Dictionary<string, double> _base = new(StringComparer.OrdinalIgnoreCase);
 
@@ -141,6 +147,8 @@ public sealed class CreatureStats
             Intellect = Shared(characterId, Intellect),
             Strength = Shared(characterId, Strength),
             Agility = Shared(characterId, Agility),
+            CritChance = Shared(characterId, CritChance),
+            CritMultiplier = Shared(characterId, CritMultiplier),
         };
 
         if (attributes is { Health: null, Armor: null, Resist: null, KillScore: null, SpiritPoints: null })

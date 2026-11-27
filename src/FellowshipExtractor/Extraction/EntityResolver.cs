@@ -1011,6 +1011,8 @@ public sealed class EntityResolver
             Intellect = attributes?.Intellect,
             Strength = attributes?.Strength,
             Agility = attributes?.Agility,
+            CritChance = attributes?.CritChance,
+            CritMultiplier = attributes?.CritMultiplier,
             Abilities = Empty(Sourced(slots.Where(slot => !slot.Passive))),
             Passives = Empty(Sourced(slots.Where(slot => slot.Passive))),
             Phases = Empty(Owners.PhasesOf(tag.Name)

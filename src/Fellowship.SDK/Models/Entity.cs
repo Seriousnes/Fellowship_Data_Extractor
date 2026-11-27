@@ -391,6 +391,10 @@ public sealed record Entity
 
     public double? Agility { get; init; }
 
+    public double? CritChance { get; init; }
+
+    public double? CritMultiplier { get; init; }
+
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }

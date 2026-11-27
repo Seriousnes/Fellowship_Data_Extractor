@@ -281,6 +281,8 @@ public static class DocumentProjection
             Intellect = entity.Intellect,
             Strength = entity.Strength,
             Agility = entity.Agility,
+            CritChance = entity.CritChance,
+            CritMultiplier = entity.CritMultiplier,
             Abilities = Abilities(entity.Abilities, references),
             Passives = Abilities(entity.Passives, references),
             Phases = entity.Phases,
