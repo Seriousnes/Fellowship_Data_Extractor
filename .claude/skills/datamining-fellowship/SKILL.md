@@ -244,6 +244,22 @@ Decoded against **26320967**, written up in `docs/effect-periods.md`:
 | Calculation preset row flags: `CanBeBlocked` +0x1B to `ApplyAscensionScaling` +0x30 | bit setters of the reflection records at 0x148ABADE0 onward |
 | Healing gather; ascension scale from `GlobalAscensionReduceHealingScalerKey` (globals +0x358) | 0x1450DB8C0, flag test 0x1450DBB73, getter 0x1450CDB20 |
 
+Decoded against **26320967**, `CrAddToAndRecalculatePeriodicEffect` in `docs/effect-periods.md`:
+
+| What | Where |
+| --- | --- |
+| Name literal, native table entry, exec thunk | 0x148B13660, 0x148B30CC0, 0x144F5CA10 |
+| Body; `TargetingFilters` check; return value false on every path | **0x14521C1D0**; 0x14524B830 called at 0x14521C2B1; 0x14521CB2F |
+| Query: `EffectSource` +0x178 = `Source`, `EffectDefinition` +0x180 = `EffectClass`, on `Target`'s component; first live handle | stores 0x14521C349, 0x14521C365; `GetActiveEffects` 0x144A0D680; loop 0x14521C410 |
+| `FGameplayEffectQuery::Matches(Spec)`: context vtable +0x58 (`GetSourceObject`, as the `EffectContextGetSourceObject` thunk 0x144A32A60 calls it) against `EffectSource`; `Def` against the class default object | 0x144A82E23 to 0x144A82E4C; 0x144A82E57 to 0x144A82EBC |
+| Fresh: `AddedValue / (floor(D/P) + Fmod(D,P)/P + bExecutePeriodicEffectOnApplication)`, spec `Duration` +0x50, `Period` +0x54, CDO +0x240 | 0x14521C992 to 0x14521C9DF; getters 0x144A78C20, 0x144A7B020; bit setter 0x1434A2410 |
+| Existing: time remaining `D - D x ((t - start +0x2EC) x rate +0x2DC / D + offset +0x2E0)` | 0x144A7BF10 |
+| Existing: period timer (+0x318) remaining and elapsed | 0x1452D5AC0 (`GetTimerRemaining` 0x144042D40), 0x1452D5A10 (`GetTimerElapsed` 0x144042CD0) |
+| Existing: ticks left `ceil(clamp(R-Pr,0,10000)/P) + f + [f==0]`, `f` from `Fmod(R-Pr,P)` or `Pe+R` | 0x14521C6B4 to 0x14521C732; 10000 at 0x147C084C8; `Fmod` 0x1411EA290 |
+| Existing: new tick `(left x V + AddedValue) / (floor(D/P) + Fmod(D-Pr,P)/P)` | 0x14521C737 to 0x14521C782; `V` 0x145232130; `D` 0x144A0EF40 |
+| Duration restart: vtable +0x740 `ModifyActiveEffectStartTime(D - R)`, start `+= diff / max(rate, 0.0001)`, then `CheckDuration` | 0x14521C83F; 0x144A83160, `CheckDuration` call 0x144A83236 |
+| Magnitude edit: vtable +0x6E8 `UpdateActiveGameplayEffectSetByCallerMagnitude` | 0x14521C874; 0x144A911F0, `SetSetByCallerMagnitude` 0x144A8FB20 |
+
 Decoded against **26320967**, the activation checks of `UCRGameplayAbility`, written up in `docs/cooldown-haste.md`:
 
 | What | Where |

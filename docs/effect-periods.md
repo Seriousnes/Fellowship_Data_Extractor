@@ -29,6 +29,44 @@ the new spec's.
 An effect with the asset tag `EffectLogic.CarryOverDuration` and without `EffectLogic.Proc` restarts with
 `Duration + min(Duration x GameplayEffectRefreshDurationCarryOverLimit, time remaining)`.
 
+## Damage added to a running periodic effect
+
+`CRBlueprintLibrary::CrAddToAndRecalculatePeriodicEffect(Ability, Source, Target, EffectClass, SetByCallerTag,
+AddedValue, TargetingFilters)` spreads `AddedValue` over the ticks of one effect on `Target`. The SetByCaller magnitude
+it writes is the amount of one tick. The function returns false on every path.
+
+It first checks `Target` against `TargetingFilters` and does nothing on a failure. It then queries `Target`'s
+ability system component for active effects whose context source object is `Source` and whose definition is exactly
+`EffectClass`, and takes the first handle with a live effect.
+
+With no such effect it makes a spec from `Ability` and applies it with
+
+`tick = AddedValue / (floor(D / P) + Fmod(D, P) / P + E)`
+
+- **`D`**, **`P`**: the new spec's `Duration` and `Period`. `P` has no Haste term.
+- **`E`**: 1 when the effect has `bExecutePeriodicEffectOnApplication`, otherwise 0.
+
+With an effect it applies no spec. It reads the effect's state:
+
+- **`R`**: the effect's time remaining.
+- **`Pr`**, **`Pe`**: the remaining and the elapsed time of the effect's period timer. The timer runs at the hasted
+  rate, so these are real seconds.
+- **`P`**: the active spec's `Period`, with no Haste term.
+- **`D`**: the effect's duration.
+- **`V`**: the active spec's magnitude for `SetByCallerTag`.
+
+The ticks left are `n + f + z`:
+
+- `n = ceil(clamp(R - Pr, 0, 10000) / P)`
+- `f = Fmod(R - Pr, P) / P` when `R >= Pr`, otherwise `(Pe + R) / P`
+- `z = 1` when `f` is 0, otherwise 0
+
+The new tick is `((n + f + z) x V + AddedValue) / (floor(D / P) + Fmod(D - Pr, P) / P)`. The function moves the
+effect's start time forward by `D - R`, which restarts the duration and leaves the period timer running. It then writes
+the new tick to the active spec's `SetByCallerTag` magnitude.
+
+Haste enters the result only through `Pr` and `Pe`. The function reads no Haste attribute and rounds no magnitude.
+
 ## Applied-effect listeners
 
 Each application, a refresh included, broadcasts the instigator's `OnGameplayEffectAppliedDelegateToTarget` with the
