@@ -146,6 +146,8 @@ public sealed record Entity
 
     public IReadOnlyList<CalculationModifier>? CalculationModifiers { get; init; }
 
+    public IReadOnlyList<SetByCallerModifier>? SetByCallerModifiers { get; init; }
+
     public int? MaxStacks { get; init; }
 
     public int? Ticks { get; init; }

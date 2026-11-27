@@ -1665,6 +1665,7 @@ public sealed class EntityResolver
             CastTimeScalesWithHaste = CastTimeScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             CalculationModifiers = cdo is null ? null : Empty(CalculationModifiers.Of(cdo, _provider, _constants)),
+            SetByCallerModifiers = cdo is null ? null : Empty(CalculationModifiers.SetByCallers(cdo, _provider)),
             MaxStacks = maxStacks,
             Infinite = Infinite(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],

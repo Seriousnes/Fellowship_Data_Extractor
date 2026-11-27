@@ -234,6 +234,7 @@ public static class DocumentProjection
             Cost = entity.Cost,
             TickrateIgnoresHaste = entity.TickrateIgnoresHaste,
             CalculationModifiers = entity.CalculationModifiers,
+            SetByCallerModifiers = entity.SetByCallerModifiers,
             CalculationPreset = entity.CalculationPreset,
             MaxStacks = entity.MaxStacks,
             Ticks = entity.Ticks,

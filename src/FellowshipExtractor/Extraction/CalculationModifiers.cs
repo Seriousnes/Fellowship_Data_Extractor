@@ -42,6 +42,9 @@ public static class CalculationModifiers
     private const string CurveTableField = "CurveTable";
     private const string RowField = "RowName";
     private const string NoName = "None";
+    private const string SetByCallerType = "SetByCaller";
+    private const string SetByCallerField = "SetByCallerMagnitude";
+    private const string DataTagField = "DataTag";
 
     public static IReadOnlyList<CalculationModifier> Of(UObject effect, AbstractFileProvider provider, ConstantsTable constants)
     {
@@ -67,6 +70,58 @@ public static class CalculationModifiers
         }
 
         return found;
+    }
+
+    /// <summary>
+    /// The modifiers of the effect's executions whose magnitude is <c>SetByCaller</c> with a data tag. The applier sets
+    /// the number under that tag on the spec.
+    /// </summary>
+    public static IReadOnlyList<SetByCallerModifier> SetByCallers(UObject effect, AbstractFileProvider provider)
+    {
+        if (ClassDefaults.Inherited(effect, ExecutionsField, provider)?.GenericValue is not UScriptArray executions) return [];
+
+        var found = new List<SetByCallerModifier>();
+
+        foreach (var element in executions.Properties)
+        {
+            if (element?.GenericValue is not FScriptStruct { StructType: IPropertyHolder execution }) continue;
+            if (Leaf(PropertyWalk.GetString(execution, ClassField)) is not { } calculation) continue;
+            if (PropertyWalk.Get(execution, ModifiersField)?.GenericValue is not UScriptArray modifiers) continue;
+
+            foreach (var entry in modifiers.Properties)
+            {
+                if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
+
+                if (SetByCaller(calculation, modifier) is { } read && !found.Contains(read)) found.Add(read);
+            }
+        }
+
+        return found;
+    }
+
+    private static SetByCallerModifier? SetByCaller(string calculation, IPropertyHolder modifier)
+    {
+        if (PropertyWalk.GetStruct(modifier, MagnitudeField) is not { } magnitude) return null;
+        if (Member(PropertyWalk.GetString(magnitude, CalculationTypeField)) != SetByCallerType) return null;
+        if (PropertyWalk.GetStruct(magnitude, SetByCallerField) is not { } byCaller) return null;
+        if (PropertyWalk.GetStruct(byCaller, DataTagField) is not { } tag) return null;
+        if (PropertyWalk.GetString(tag, TagNameField) is not { } dataTag || dataTag == NoName) return null;
+        if (Member(PropertyWalk.GetString(modifier, OpField)) is not { } op) return null;
+
+        var transient = Member(PropertyWalk.GetString(modifier, AggregatorTypeField)) == TransientAggregator &&
+                        PropertyWalk.GetStruct(modifier, TransientIdentifierField) is { } identifier
+            ? PropertyWalk.GetString(identifier, TagNameField)
+            : null;
+        var captured = transient is null ? Captured(PropertyWalk.GetStruct(modifier, CapturedField)) : default;
+
+        if (captured.Name is null && transient is null) return null;
+
+        return new SetByCallerModifier(calculation, op, dataTag)
+        {
+            Attribute = captured.Name,
+            Transient = transient,
+            AttributeSource = captured.Source,
+        };
     }
 
     private static CalculationModifier? Read(

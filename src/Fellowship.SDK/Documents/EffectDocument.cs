@@ -42,6 +42,9 @@ public sealed class EffectDocument : EntityDocument
     /// <summary>Attribute-based modifiers its executions apply to the attributes they capture.</summary>
     public IReadOnlyList<CalculationModifier>? CalculationModifiers { get; init; }
 
+    /// <summary>Modifiers its executions apply with a magnitude the applier sets on the spec.</summary>
+    public IReadOnlyList<SetByCallerModifier>? SetByCallerModifiers { get; init; }
+
     /// <summary>
     /// The row of <c>DT_EffectCalculationPresets</c> the effect's <c>EffectCalculationPreset</c> names, on an effect
     /// with a damage or healing execution. <c>settings.json</c>'s <c>effectCalculationPresets</c> has the row.
