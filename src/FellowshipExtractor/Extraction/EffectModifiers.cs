@@ -104,6 +104,7 @@ public static class EffectModifiers
                     Coefficient = scaling?.Coefficient ?? computed?.Coefficient,
                     ScalesOff = scaling?.Attribute is { } captured ? [captured] : computed?.Attributes,
                     Formula = computed?.Text,
+                    SetByCaller = SetByCallerTag(slot.Magnitude, kind),
                     Row = Row(slot.Magnitude, kind),
                 });
             }
@@ -200,18 +201,20 @@ public static class EffectModifiers
                 ?? ScalableFloat;
             var op = EnumOrdinals.Member(mappings, OpEnum, PropertyWalk.GetString(modifier, ModifierOpField));
 
-            var tag = kind.Equals(SetByCallerKind, StringComparison.Ordinal) &&
-                      PropertyWalk.GetStruct(magnitude, SetByCallerField) is { } supplied &&
-                      PropertyWalk.GetStruct(supplied, DataTagField) is { } named
-                ? PropertyWalk.GetString(named, TagNameField)
-                : null;
-
-            yield return new SlotUse(attribute, op, Row(magnitude, kind), tag is { Length: > 0 } ? tag : null, executed)
+            yield return new SlotUse(attribute, op, Row(magnitude, kind), SetByCallerTag(magnitude, kind), executed)
             {
                 Required = Required(modifier),
             };
         }
     }
+
+    private static string? SetByCallerTag(IPropertyHolder magnitude, string kind) =>
+        kind.Equals(SetByCallerKind, StringComparison.Ordinal) &&
+        PropertyWalk.GetStruct(magnitude, SetByCallerField) is { } supplied &&
+        PropertyWalk.GetStruct(supplied, DataTagField) is { } named &&
+        PropertyWalk.GetString(named, TagNameField) is { Length: > 0 } tag
+            ? tag
+            : null;
 
     private static string[] Required(IPropertyHolder modifier) =>
         [

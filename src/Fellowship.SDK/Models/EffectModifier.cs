@@ -38,14 +38,20 @@ public sealed record EffectModifier(string Attribute)
     /// </summary>
     public string? Formula { get; init; }
 
+    /// <summary>
+    /// The SetByCaller tag the magnitude reads, for a modifier whose value the applying ability or actor sets on the
+    /// effect spec.
+    /// </summary>
+    public string? SetByCaller { get; init; }
+
     public bool Equals(EffectModifier? other) =>
         other is not null &&
         Attribute == other.Attribute && Row == other.Row && Op == other.Op && Value == other.Value &&
         ValueLow == other.ValueLow && ValueHigh == other.ValueHigh && Coefficient == other.Coefficient && Formula == other.Formula &&
-        Same(Ranks, other.Ranks) && Same(ScalesOff, other.ScalesOff);
+        SetByCaller == other.SetByCaller && Same(Ranks, other.Ranks) && Same(ScalesOff, other.ScalesOff);
 
     public override int GetHashCode() =>
-        HashCode.Combine(Attribute, Row, Op, Value, ValueLow, ValueHigh, Coefficient, Formula);
+        HashCode.Combine(Attribute, Row, Op, Value, ValueLow, ValueHigh, Coefficient, HashCode.Combine(Formula, SetByCaller));
 
     private static bool Same<T>(IReadOnlyList<T>? first, IReadOnlyList<T>? second) =>
         first is null ? second is null : second is not null && first.SequenceEqual(second);
