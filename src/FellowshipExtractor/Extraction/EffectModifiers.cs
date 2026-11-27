@@ -46,10 +46,12 @@ public static class EffectModifiers
     private const string DataTagField = "DataTag";
     private const string TagNameField = "TagName";
 
+    private const string IgnoreTagsField = "IgnoreTags";
+    private const string SourceTagsField = "SourceTags";
     private const string TargetTagsField = "TargetTags";
     public const string TargetMark = "~target:";
 
-    private static readonly string[] TagFilterFields = ["SourceTags", TargetTagsField];
+    private static readonly string[] TagFilterFields = [SourceTagsField, TargetTagsField];
 
     private const string OpEnum = GameplayEffects.OpEnum;
     private const string KindEnum = "EGameplayEffectMagnitudeCalculation";
@@ -62,7 +64,8 @@ public static class EffectModifiers
     private const string TalentsSegment = "Talents";
     private const int MaxGates = 16;
 
-    private readonly record struct Slot(string Attribute, string? Op, IPropertyHolder Magnitude, bool Declared);
+    private readonly record struct Slot(
+        string Attribute, string? Op, IPropertyHolder Magnitude, bool Declared, IPropertyHolder? Modifier = null);
 
     public static EffectMagnitudes Of(
         UObject? cdo, AbstractFileProvider provider, ConstantsTable constants, TypeMappings mappings,
@@ -106,6 +109,10 @@ public static class EffectModifiers
                     Formula = computed?.Text,
                     SetByCaller = SetByCallerTag(slot.Magnitude, kind),
                     Row = Row(slot.Magnitude, kind),
+                    SourceRequireTags = FilterTags(slot.Modifier, SourceTagsField, RequireTagsField),
+                    SourceIgnoreTags = FilterTags(slot.Modifier, SourceTagsField, IgnoreTagsField),
+                    TargetRequireTags = FilterTags(slot.Modifier, TargetTagsField, RequireTagsField),
+                    TargetIgnoreTags = FilterTags(slot.Modifier, TargetTagsField, IgnoreTagsField),
                 });
             }
 
@@ -219,12 +226,18 @@ public static class EffectModifiers
     private static string[] Required(IPropertyHolder modifier) =>
         [
             .. TagFilterFields
-                .SelectMany(filter => PropertyWalk.GetStruct(modifier, filter) is { } tags
-                    ? (PropertyWalk.GetTags(tags, RequireTagsField) ?? [])
-                        .Select(tag => filter == TargetTagsField ? TargetMark + tag : tag)
-                    : [])
+                .SelectMany(filter => (FilterTags(modifier, filter, RequireTagsField) ?? [])
+                    .Select(tag => filter == TargetTagsField ? TargetMark + tag : tag))
                 .Distinct(StringComparer.Ordinal),
         ];
+
+    /// <summary>One tag list of a modifier's <c>SourceTags</c> or <c>TargetTags</c> requirements; null when it is empty.</summary>
+    private static string[]? FilterTags(IPropertyHolder? modifier, string filter, string field) =>
+        modifier is not null &&
+        PropertyWalk.GetStruct(modifier, filter) is { } requirements &&
+        PropertyWalk.GetTags(requirements, field) is { Length: > 0 } tags
+            ? tags
+            : null;
 
     private static IEnumerable<(string Attribute, IPropertyHolder Modifier, bool Executed)> GatedSlots(UObject effect)
     {
@@ -300,7 +313,8 @@ public static class EffectModifiers
                     named,
                     EnumOrdinals.Member(mappings, OpEnum, PropertyWalk.GetString(modifier, ModifierOpField)),
                     magnitude,
-                    true));
+                    true,
+                    modifier));
             }
         }
 

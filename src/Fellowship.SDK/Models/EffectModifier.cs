@@ -44,11 +44,28 @@ public sealed record EffectModifier(string Attribute)
     /// </summary>
     public string? SetByCaller { get; init; }
 
+    /// <summary>
+    /// The modifier's <c>SourceTags.RequireTags</c>: tags of the source of the spec an attribute is evaluated for,
+    /// each of which that spec needs for the modifier to count. A spec's source tags include its effect's asset tags.
+    /// </summary>
+    public IReadOnlyList<string>? SourceRequireTags { get; init; }
+
+    /// <summary>The modifier's <c>SourceTags.IgnoreTags</c>: a spec whose source has any of them leaves the modifier out.</summary>
+    public IReadOnlyList<string>? SourceIgnoreTags { get; init; }
+
+    /// <summary>The modifier's <c>TargetTags.RequireTags</c>: tags the target needs for the modifier to count.</summary>
+    public IReadOnlyList<string>? TargetRequireTags { get; init; }
+
+    /// <summary>The modifier's <c>TargetTags.IgnoreTags</c>: a target with any of them leaves the modifier out.</summary>
+    public IReadOnlyList<string>? TargetIgnoreTags { get; init; }
+
     public bool Equals(EffectModifier? other) =>
         other is not null &&
         Attribute == other.Attribute && Row == other.Row && Op == other.Op && Value == other.Value &&
         ValueLow == other.ValueLow && ValueHigh == other.ValueHigh && Coefficient == other.Coefficient && Formula == other.Formula &&
-        SetByCaller == other.SetByCaller && Same(Ranks, other.Ranks) && Same(ScalesOff, other.ScalesOff);
+        SetByCaller == other.SetByCaller && Same(Ranks, other.Ranks) && Same(ScalesOff, other.ScalesOff) &&
+        Same(SourceRequireTags, other.SourceRequireTags) && Same(SourceIgnoreTags, other.SourceIgnoreTags) &&
+        Same(TargetRequireTags, other.TargetRequireTags) && Same(TargetIgnoreTags, other.TargetIgnoreTags);
 
     public override int GetHashCode() =>
         HashCode.Combine(Attribute, Row, Op, Value, ValueLow, ValueHigh, Coefficient, HashCode.Combine(Formula, SetByCaller));
