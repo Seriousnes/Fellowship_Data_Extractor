@@ -23,6 +23,24 @@ public sealed record EffectRecord : EntityRecord
 
     public int? MaxStacks { get; init; }
 
+    public string? StackingType { get; init; }
+
+    public string? StackDurationRefreshPolicy { get; init; }
+
+    public string? StackPeriodResetPolicy { get; init; }
+
+    public string? StackExpirationPolicy { get; init; }
+
+    public bool? DenyOverflowApplication { get; init; }
+
+    public bool? ClearStackOnOverflow { get; init; }
+
+    public IReadOnlyList<RecordReference>? OverflowEffects { get; init; }
+
+    public bool? SilentStack { get; init; }
+
+    public bool? RecaptureSourceAttributesBeforeEveryExecution { get; init; }
+
     public bool? Infinite { get; init; }
 
     public string? DurationPolicy { get; init; }

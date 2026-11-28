@@ -618,6 +618,26 @@ Decoded against **26320967**, the attributes of the ability time rate and the pa
 | `SetDynamicDuration` (`ChannelingDuration` +0x08), `SetDynamicTickInterval` (`ChannelingTickInterval` +0x30); exec thunks 0x144F1C520, 0x144F1C660 | 0x145121B30, 0x145121B40 |
 | `FScalableFloat::SetValue`: `Value` stored, curve table, row and registry cleared | 0x144AB46C0 |
 
+Decoded against **26320967**, the effect stack rule in `EffectStacks.cs`, written up in `docs/effect-stacks.md`:
+
+| What | Where |
+| --- | --- |
+| Stack lookup: none for `StackingType` (+0x9E1) 0 or the `Instant` policy; `AggregateBySource` matches the instigator component | **0x144A74BD0**; 0x144A74BFD, 0x144A74C0F, 0x144A74DC7 |
+| Stack count `min(existing + applied, StackCountMax)`: spec `StackCount` +0x1C0, spec `StackCountMax` +0x58 | 0x144A6A78F to 0x144A6A7AD, 0x144A6A977 to 0x144A6A98B |
+| Spec `StackCountMax` from the effect's `StackCountMax` scalable float (+0x9E8), rounded. `StackLimitCount` (+0x9E4) has no reader | 0x144A8F520 to 0x144A8F550 |
+| Overflow routine: `OverflowEffects` +0x2B0, `bDenyOverflowApplication` +0x2C0, `bClearStackOnOverflow` +0x2C1 | **0x144A7C3F0**, called at 0x144A6A782 |
+| Period timer set again under `StackPeriodResetPolicy`; next-frame tick for `bExecutePeriodicEffectOnApplication` (+0x240) | 0x144A6B2F4 to 0x144A6B518, flag test 0x144A6B3BB |
+| `StackExpirationPolicy` (+0xA13) at the end of the duration | 0x144A6FC35 |
+| `UGameplayEffect` constructor stores at `StackingType`, `RecaptureSourceAttributesBeforeEveryExecution` (+0xA10), the duration and period policies | 0x144A63EEE, 0x144A63E60, 0x144A63F2B |
+| `CRChargeEffect` constructor stack stores: `AggregateByTarget`, `NeverRefresh` and `NeverReset`, `RemoveSingleStackAndRefreshDuration`, `StackCountMax` 0. No other routine stores at +0x9E1 or +0xA13 | 0x1450E71E0; 0x1450E749D, 0x1450E74D3, 0x1450E74DC, 0x1450E74CA |
+| `GetStackCount`; the damage gather's read and its `bSilentStack` clamp (bit 0 of +0xA98, setter 0x144FF4170) | 0x144A7BDD0; 0x1450DB595, 0x1450DB5BE |
+| Healing driver's stack count read; healing formula's multiply | 0x1450DE6AA; 0x145107770, `mulss` 0x145107874 |
+| `RecaptureSourceAttributesBeforeEveryExecution`: source capture again before a tick and before an instant execution | 0x144A808C4, 0x1449FD735; capture 0x144A6F7D0 |
+| `FellowshipMakeLooseEffectSpec`, exec thunk 0x144F66590: `MakeOutgoingSpec` on the source's component, 8th argument the level, 9th to `SetStackCount` | **0x14522E110**; 0x14522E22E, 0x14522E249 |
+| `CalculateAndSetMultiTargetDamageFalloffScaler` in this build, exec thunk 0x144F5AD60; actor count from `GetAllActorsFromTargetData` 0x144A0D930 | **0x145218380**, `sqrtss` 0x1452184C1 |
+| `AcquireTargets_CylinderAoe`, exec thunk 0x145072420; character query, flat list walk | **0x1450FAD20**; 0x1450F3920, 0x145534620 |
+| `CRGameplayEffectDamage` static class | 0x144FF3E90 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
