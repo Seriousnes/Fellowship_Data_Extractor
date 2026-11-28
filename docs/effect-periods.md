@@ -3,6 +3,47 @@
 A periodic gameplay effect ticks on a looping timer. `CRAbilitySystemComponent` sets the timer's rate, the
 duration of a refreshed effect and the last tick of an expiring one. Every address is of build 26320967.
 
+## Duration policy
+
+An effect's `DurationPolicy` is `Instant`, `Infinite` or `HasDuration`. A cooked effect states the field only where
+it differs from its parent class. The value otherwise comes from the constructor of the effect's native class, in the
+byte it stores at `UGameplayEffect` +0x30. An effect document has the result in `durationPolicy`.
+
+| Native class | Constructor | `DurationPolicy` |
+| --- | --- | --- |
+| `GameplayEffect` | 0x144A63AB0, store 0x144A63ED7 | `Instant` |
+| `CRGameplayEffectDamage` | 0x1450E84D0, no store of its own | `Instant` |
+| `CRCostEffect` | 0x1450E76D0, store 0x1450E7704 | `Instant` |
+| `CRDamageReflectGameplayEffect` | 0x1450E7880, store 0x1450E78B5 | `Instant` |
+| `CRInterruptGameplayEffect` | 0x1450E8C30, store 0x1450E8C64 | `Instant` |
+| `CRKnockbackEffect` | 0x1450E8DF0, store 0x1450E8E24 | `Instant` |
+| `CRLifeStealGameplayEffect` | 0x1450E9090, store 0x1450E90CD | `Instant` |
+| `CRReflectHealGameplayEffect` | 0x1450E9B10, store 0x1450E9B4D | `Instant` |
+| `CRSetByCallerDamageGameplayEffect` | 0x1450E9F70, store 0x1450E9FA0 | `Instant` |
+| `CRSetByCallerHealGameplayEffect` | 0x1450EA350, store 0x1450EA380 | `Instant` |
+| `CRAbsorptionEffect` | 0x1450E67B0, store 0x1450E6804 | `Infinite` |
+| `CRDisconnectedGameplayEffect` | 0x1450E7E30, store 0x1450E7E62 | `Infinite` |
+| `CRGameplayEffectActorDependency` | 0x1450E84A0, store 0x1450E84B5 | `Infinite` |
+| `CRGodModeEffect` | 0x1450E8700, store 0x1450E8739 | `Infinite` |
+| `CRInfiniteChannelingGameplayEffect` | 0x1450E8C00, store 0x1450E8C15 | `Infinite` |
+| `CRProcEffect` | 0x1450E9830, store 0x1450E9864 | `Infinite` |
+| `CRCastingGameplayEffect` | 0x1450E69E0, store 0x1450E6A2F | `HasDuration` |
+| `CRChannelingGameplayEffect` | 0x1450E6DE0, store 0x1450E70C2 | `HasDuration` |
+| `CRChargeEffect` | 0x1450E71E0, store 0x1450E7211 | `HasDuration` |
+| `CRGenericAbilityCooldownEffect` | 0x1450E8550, store 0x1450E8584 | `HasDuration` |
+| `CRLockoutGameplayEffect` | 0x1450E94F0, store 0x1450E953D | `HasDuration` |
+
+An `Instant` effect executes once inside each application and has no duration, period or tick of its own. A
+`duration` and a `period` on its document are rows of the ability or the actor applying it, and `ticks` is on
+documents of the `HasDuration` policy alone.
+
+Sanguine Ritual's damage effect, `GE_MC_BloodSummoner_ChannelSpawnBloodAnimation_TickDamage`, states no
+`DurationPolicy` and derives from `CRGameplayEffectDamage`. The ability's graph makes its spec and applies it to the
+ability's one target on each `OnTick` of the channel task. The ability's `Channeling Data` has `ChannelingDuration`
+10, `ChannelingTickInterval` 1, `TickImmediately` false, `Interruptible` true and `EnablePartialTicks` false. The
+first `OnTick` is one tick interval after the task's activation, and a channel ended before it has no hit:
+`docs/casting-and-channeling.md` has the task.
+
 ## Period
 
 The timer's rate is `Period / Haste x TickRateOverride`.

@@ -249,6 +249,7 @@ public static class RecordProjection
             TickrateIgnoresHaste = document.TickrateIgnoresHaste,
             MaxStacks = document.MaxStacks,
             Infinite = document.Infinite,
+            DurationPolicy = document.DurationPolicy,
             ScalesOff = Scaling(document.ScalesOff, view),
             Placeholders = Tokens(tokens, tags, view),
             Schools = Some(tags),

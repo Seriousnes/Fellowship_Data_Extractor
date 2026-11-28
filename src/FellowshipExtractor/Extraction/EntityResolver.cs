@@ -471,11 +471,15 @@ public sealed class EntityResolver
 
         if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
         {
+            var policy = DurationPolicies.Of(cdo, _provider, _mappings);
+
             entity = entity with
             {
                 CalculationPreset = _presets.Executed(cdo),
                 TargetTags = Empty(AbilityTaskReads.GrantedTags(cdo, _provider)),
                 Executions = Empty(AbilityTaskReads.Executions(cdo, _provider)),
+                DurationPolicy = policy,
+                Infinite = policy == DurationPolicies.Infinite ? true : null,
             };
         }
 
@@ -975,11 +979,14 @@ public sealed class EntityResolver
     /// The effect's periodic executions over its duration: one per whole period, and one on application unless the
     /// effect or a Blueprint parent sets <c>bExecutePeriodicEffectOnApplication</c> false. The engine's default is
     /// true. Entropic Burst executes 6 times over 9 seconds at 1.5 seconds, and its talent prints 246% for 0.41 a tick.
+    /// An effect of the <c>HasDuration</c> policy alone has them: an <c>Instant</c> effect executes once for each
+    /// application, so a duration and a period on its record are rows of the ability or the actor applying it.
     /// </summary>
     private Entity WithTicks(Entity entity, UObject? cdo, TagRecord tag)
     {
         if (cdo is null || !tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) return entity;
-        if (entity is not { Duration: > 0 and var duration, Period: > 0 and var period } || entity.Infinite == true) return entity;
+        if (entity.DurationPolicy != DurationPolicies.HasDuration) return entity;
+        if (entity is not { Duration: > 0 and var duration, Period: > 0 and var period }) return entity;
 
         var onApplication = ClassDefaults.Inherited(cdo, PeriodicOnApplicationField, _provider)?.GenericValue is not false;
         var ticks = (int)Math.Floor(duration / period + 1e-9) + (onApplication ? 1 : 0);

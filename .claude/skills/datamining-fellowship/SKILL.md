@@ -504,6 +504,15 @@ written up in `docs/leaps-timers-respawn.md`:
 | `HasMatchEnded` (game mode vtable +0x7C0), `HasMatchStarted` (+0x7B8) | 0x1439BBF40, 0x1439BBF90 |
 | Class names by `StaticClass`: `CRFellowshipCharacter`, `CRAICharacter`, `CRCharacterBase`, `CRGameStateBase`, `CRGameStateBossComponent`, `CRGameModeBossComponent` | 0x14509CBB0, 0x144F3A240, 0x144F86210, 0x144FF69E0, 0x144FF90C0, 0x144FE74C0 |
 
+Decoded against **26320967**, implemented in `DurationPolicies.cs` and written up in `docs/effect-periods.md`:
+
+| What | Where |
+| --- | --- |
+| `UGameplayEffect` constructor stores `DurationPolicy` (+0x30) 0, `Instant` | 0x144A63AB0, store 0x144A63ED7 |
+| `CRGameplayEffectDamage` constructor, no store at +0x30; class registration 0x144FF3E90, constructor wrapper 0x144FF5590 | **0x1450E84D0** |
+| The other native effect classes' registrations, each with its name literal and its constructor wrapper | 0x144FF4380 to 0x144FF5090, wrappers 0x144FF5500 to 0x144FF5650 |
+| Their constructors, each with one store at +0x30 after the `UGameplayEffect` constructor call | 0x1450E67B0 to 0x1450EA350, the table in `docs/effect-periods.md` |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

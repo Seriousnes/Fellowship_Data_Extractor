@@ -179,6 +179,8 @@ public sealed record Entity
 
     public bool? Infinite { get; init; }
 
+    public string? DurationPolicy { get; init; }
+
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
     public IReadOnlyDictionary<string, Placeholder>? Placeholders { get; init; }

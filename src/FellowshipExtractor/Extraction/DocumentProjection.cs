@@ -249,6 +249,7 @@ public static class DocumentProjection
             MaxStacks = entity.MaxStacks,
             Ticks = entity.Ticks,
             Infinite = entity.Infinite,
+            DurationPolicy = entity.DurationPolicy,
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = tuned.Value.Tuning,

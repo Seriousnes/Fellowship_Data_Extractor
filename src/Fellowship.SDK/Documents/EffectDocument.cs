@@ -33,11 +33,18 @@ public sealed class EffectDocument : EntityDocument
 
     /// <summary>
     /// Periodic executions over the duration: one per whole period, and one more on application unless the effect
-    /// declares it does not execute then.
+    /// declares it does not execute then. An effect of the <c>HasDuration</c> policy alone has them.
     /// </summary>
     public int? Ticks { get; init; }
 
     public bool? Infinite { get; init; }
+
+    /// <summary>
+    /// The effect's <c>DurationPolicy</c>, a member of <c>EGameplayEffectDurationType</c>: <c>Instant</c>,
+    /// <c>Infinite</c> or <c>HasDuration</c>. An <c>Instant</c> effect executes once for each application, so a
+    /// <see cref="Duration"/> and a <see cref="Period"/> on it are rows of the ability or the actor applying it.
+    /// </summary>
+    public string? DurationPolicy { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
