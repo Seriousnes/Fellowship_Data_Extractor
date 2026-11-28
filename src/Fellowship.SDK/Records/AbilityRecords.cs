@@ -52,6 +52,7 @@ public sealed record AbilityRecord : EntityRecord
     public IReadOnlyList<string>? AbilityTags { get; init; }
     public IReadOnlyList<string>? BlockAbilitiesWithTag { get; init; }
     public bool? ScaleTimeWithAttackSpeed { get; init; }
+    public RecordReference? LogAsADifferentAbility { get; init; }
     public double? InterruptCooldownDuration { get; init; }
     public IReadOnlyList<EndAbilityPath>? EndAbilityPaths { get; init; }
 

@@ -132,6 +132,7 @@ public static class DocumentProjection
             Period = entity.Period,
             CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
             ChannelingData = entity.ChannelingData,
+            DamageModificationTasks = entity.DamageModificationTasks,
             ActivationBlockedTags = entity.ActivationBlockedTags,
             TargetAcquisition = entity.TargetAcquisition,
             TargetSelection = entity.TargetSelection,
@@ -144,6 +145,7 @@ public static class DocumentProjection
             AbilityTags = entity.InheritedAbilityTags,
             BlockAbilitiesWithTag = entity.BlockAbilitiesWithTag,
             ScaleTimeWithAttackSpeed = entity.ScaleTimeWithAttackSpeed,
+            LogAsADifferentAbility = references.At(entity.LogAsADifferentAbility),
             InterruptCooldownDuration = entity.InterruptCooldownDuration,
             EndAbilityPaths = entity.EndAbilityPaths,
             ScalesOff = entity.ScalesOff,
@@ -266,11 +268,19 @@ public static class DocumentProjection
             Owner = references.At(entity.Owner),
             Origins = references.Origins(entity),
             AppliedBy = references.At(entity.AppliedBy),
+            VisualDisplayName = entity.VisualDisplayName,
+            AlwaysUseVisualDisplayName = entity.AlwaysUseVisualDisplayName,
+            LogIdClass = entity.LogIdClass,
+            LoggedUnder = references.At(entity.LoggedUnder),
+            LogsEffectEvents = entity.LogsEffectEvents,
             LinkedBy = Linked(entity, references),
             AppliedOnCommitOf = Commits(entity, references),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),
             Siblings = references.Links.Siblings(references.Of(EntityType.Effect, entity.NetId)),
             ParentClass = Parent(entity, EntityType.Effect, references),
+            EffectAppliedToTheInstigatorOfTheMainEffect = Dependent(entity, entity.InstigatorDependencyEffectName, references),
+            EffectAppliedToTheOwnerOfTheMainEffect = Dependent(entity, entity.OwnerDependencyEffectName, references),
+            ActorDependency = entity.ActorDependency,
             Applies = Applied(entity, references),
             Grants = references.Changes.Named(entity, entity.GrantedAbilityNames, EntityType.Ability, references),
             Role = roles.Role(entity.Name),
@@ -839,6 +849,14 @@ public static class DocumentProjection
             entity.ReachedEffects?.Except(entity.TimingEffects ?? [], StringComparer.OrdinalIgnoreCase),
             EntityType.Effect,
             references);
+
+    private static EntityReference? Dependent(Entity entity, string? effectName, References references) =>
+        effectName is null
+            ? null
+            : references.Changes.Named(entity, [effectName], EntityType.Effect, references) is [var only]
+                ? only
+                : throw new InvalidOperationException(
+                    $"{entity.Name}'s actor dependency component names {effectName}, and no effect of the export has that name.");
 
     private static EntityReference? Parent(Entity entity, EntityType type, References references) =>
         references.Changes.Named(entity, entity.ParentClassName is { } parent ? [parent] : null, type, references) is [var only]

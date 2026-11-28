@@ -513,6 +513,72 @@ Decoded against **26320967**, implemented in `DurationPolicies.cs` and written u
 | The other native effect classes' registrations, each with its name literal and its constructor wrapper | 0x144FF4380 to 0x144FF5090, wrappers 0x144FF5500 to 0x144FF5650 |
 | Their constructors, each with one store at +0x30 after the `UGameplayEffect` constructor call | 0x1450E67B0 to 0x1450EA350, the table in `docs/effect-periods.md` |
 
+Decoded against **26320967**, the school test of the damage formula and an effect's asset tags, implemented in
+`EffectAssetTags.cs` and written up in `docs/effect-periods.md`:
+
+| What | Where |
+| --- | --- |
+| Calculation context: evaluate parameters +0x08 (source tags pointer, target tags pointer), spec copy +0x70, `GetAllAssetTags` +0x308, preset row +0x328, aggregated source tags +0x330, aggregated target tags +0x350 | **0x145106850**; `GetAggregatedTags` 0x144AAAF50 called at 0x145106929 and 0x145106940 |
+| Spec: `CapturedSourceTags` +0x60, `CapturedTargetTags` +0xE8, `DynamicAssetTags` +0x190 | 0x145106922, 0x145106939, 0x144A76EB0 |
+| School test over the aggregated source tags: `EffectType.Physical` first, then `EffectType.Magic` | 0x145107B1E, 0x145107B6E; tag globals 0x14A3C9E50, 0x14A3C9E48; the container is the driver's `r9` at 0x1450DD27E |
+| Gather: preset flags +0x25 to +0x28 over the four school captures | 0x1450DB1AB, 0x1450DB1D6, 0x1450DB201, 0x1450DB22C |
+| Value defaults: reductions (+0x34, +0x38) 0, multipliers (+0x30, +0x3C, +0x40, +0x44) 1 | constants 0x147CC0F50 and 0x147F57540, stored at 0x1450DD187 and 0x1450DD195 |
+| Preset row of an effect (`EffectCalculationPreset` at Def +0xAA0); the row for `Execution.UseEmptyCalculationPreset` (tag global 0x14A3C9F90) | 0x1450ECDB0; 0x149FD0140 |
+| Hit flag byte: `AbilityType.AutoAttack` 0x01, periodic 0x04 or 0x02, `EffectType.Magic` 0x10 before `EffectType.Physical` 0x08, `EffectLogic.NotReflectable` 0x40, `EffectType.StaggerDamage` 0x80 | **0x145107C50**; tests 0x145107CBD, 0x145107D77, 0x145107DB0, 0x145107E16, 0x145107E71, 0x145107D1B |
+| Attack table roll and spread roll `(rand() & 0x7FFF) / 32767 - 0.5` | 0x14510C4D0; 0x14510C5D0 to 0x14510C5EA |
+| `FGameplayEffectSpec::GetAllAssetTags`: `DynamicAssetTags` and the Def's cached asset tags (+0xA28) | 0x144A76EA0 |
+| `AssetTagsGameplayEffectComponent` load and `SetAndApplyAssetTagChanges`: parent component 0x144A9CD90, `UpdateInheritedTagProperties` 0x144A91D70, `ApplyTo` 0x144A6B880 | 0x144AAFE60, 0x144AB4390 |
+| `ApplyTo`: an empty target container takes `CombinedTags` whole | 0x144A6B88A to 0x144A6B8AC |
+| `FellowshipMakeEffectSpec` calls the ability's virtual +0x2E0 with the new spec | 0x1450E03DC |
+| `CRGameplayAbility::ApplyAbilityTagsToGameplayEffectSpec`: the engine's body (`AbilityTags` +0xB0), then `AbilityInstanceTags` (+0x648) into the spec's source tags and `AbilityInstanceSetByCallerMagnitudes` (+0x668) into the spec | **0x1450D9940**; engine 0x1449D8EB0 |
+| `GetAbilityInstanceTags`, `GetAbilityInstanceSetByCallerMagnitudes` exec thunks | 0x144FEDDD0, 0x144FEDD00 |
+| `CRSetByCallerDamageGameplayEffect` constructor: an `AssetTagsGameplayEffectComponent` subobject with `EffectType.Magic` | 0x1450E9F70, tag at 0x1450EA0C1; heal class 0x1450EA350, 0x1450EA4A1 |
+
+Decoded against **26320967**, implemented in `CombatLogIds.cs` and written up in `docs/combat-log-ids.md`:
+
+| What | Where |
+| --- | --- |
+| `HealthChangedInfo` fill: `InstigatingAbilityClass` +0x40 from the effect context's ability (context +0x18), `InstigatingEffectClass` +0x48 from the spec's effect | **0x1450E3600**; 0x1450E3685, 0x1450E36D2 |
+| Log record's `AbilityClass` from the event's ability class, replaced by its `LogAsADifferentAbility` (`CRGameplayAbility` +0x610); the form taking an ability instance | **0x145299170**, read 0x145299285; 0x145299390 |
+| `CRCombatLogAbilityEffectData`: id +0x00, name +0x08, source ability id +0x20, duration flag +0x28, auto attack flag +0x29, `AbilityClass` +0x30, `EffectClass` +0x38; text `{0}\|"{1}"\|{2}` | text 0x1452851D0, literal 0x148D35098 |
+| Flags and resolve of a damage record's `InstigatingAbilityEffectData` (record +0x108): `DurationPolicy` not `Instant`, `AbilityType.AutoAttack` (0x14A3C9FA8) or `Ability.AutoAttack` (0x14A3CAA10) | **0x1452AE480**, called at 0x1452AB2AF; 0x1452AE5F9, 0x1452AE694, 0x1452AE6F0 |
+| Id resolver: effect id for a `CRGameplayEffectDamage` with a duration, or with `AlwaysUseVisualDisplayName` (+0xAC0) and a `VisualDisplayName` (+0xAB0) on no auto attack; else the named ability's id; else the effect's | **0x145285FC0**; 0x1452860FA, 0x1452863D3, 0x1452865D2, 0x145286769, 0x145286959 |
+| `CRCombatLogEffectData` resolver (aura lines), `CRCombatLogAbilityData` resolver (cast lines) | 0x145286AB0, 0x145285DC0 |
+| `CRCombatLogGuidSubsystem`: getter, class name to id lookup (map +0x30, `_C` removed), builder over `Content/guid` (first line 0 tags +0xD0, 1 classes +0x30, 2 strings +0x80), row parser | 0x1452AB840, **0x1452AB8D0**, 0x1452ABF80, 0x1452A80A0 |
+| `CRAbilityDataSubsystem`: getter, `AbilityDataMap` (+0x30, element 0x1E0) name lookup, default data +0x90, populator keyed by `GameplayAbilityAsset` and `AdditionalGameplayAbilityAssets` | 0x1450CD0A0, 0x1450CD280, **0x1450C7FE0** (inserts 0x1450C8459, 0x1450C84CD) |
+| Literals `Invalid Ability Data`, `Unnamed DoT` | 0x148D2A698, 0x148D350B8 |
+| Damage record constructor, its text function, the event names by `Flags` (+0x90) and `DamageTypeFlags` (+0x91) | 0x14526F780, **0x145275470** |
+| Record reader by schema, the dispatcher by record type, the line writer (timestamp, text, newline) | 0x1452AA370, 0x1452A8260, 0x1452A0AD0 |
+| `CRGameplayEffectDamage` constructor stores `AlwaysUseVisualDisplayName` false | 0x1450E8528 |
+| `GameplayEffectUIData_BuffDebuff` `Name` +0x28; the effect's UI data component getter | 0x144F09F40 (class), 0x1449EECC0 |
+| Logger's registration of a character: `OnActiveGameplayEffectAddedDelegateToSelf` (+0x1A0) bound to the applied handler, each active effect replayed | 0x145293BEB; bind 0x145293F6C, replay 0x14529429E |
+| Applied handler (`EFFECT_APPLIED`, record type 0xC): active effect of the handle, tag test over the effect's cached asset tags (+0xA28), handlers of the other lines bound | **0x145295100**; 0x145295147, 0x145295162 to 0x1452951C7 |
+| Tags of the test: `Effect.Buff`, `Effect.Debuff` (literals 0x148D34608, 0x148D34620), `EffectVisualization.Icon` (0x14A3CA2B8), `EffectVisualization.IconOnPartyUnitFrame` (0x14A3CA2C0) | container getter **0x145292650** |
+| Removal handler (`EFFECT_REMOVED`, event set +0x18), stack change handler (`EFFECT_REFRESHED`, record type 0xD, +0x30), handler of the delegate at +0x60 (`EFFECT_REMOVED` on a true flag), dispel line (record type 0xE) | 0x145296DC0, 0x145296AE0, 0x1452968E0, 0x145296634 |
+| Effect event record fill, its prepare (a record whose effect data does not resolve is left out), the text function with the three event names | 0x14528E2E0, **0x1452AE130** (0x1452AE1CE), 0x145275E30 |
+| `EffectLogic.System` tag global, with no reader in the logger | 0x14A3C9EC0 |
+
+No routine of the executable has the immediate 1,000,000 in the combat log code. Fellowship Logs adds it to the id of a
+line logged under an effect.
+
+Decoded against **26320967**, the damage modification task and the actor dependency effects, implemented in
+`DamageModificationTasks.cs` and `ActorDependencies.cs` and written up in `docs/damage-absorption.md`:
+
+| What | Where |
+| --- | --- |
+| `DamageModificationTask` factory: `IncomingDamageCharacter` +0x90, `OutgoingDamageCharacter` +0x98, `BlockOnTaskOwnerTag` +0xA0, `CapturedSourceTagsRequirements` +0xA8, `Prio` +0xF0; exec thunk 0x144EFF890, parameter names at 0x148A99660 | **0x1451115E0** |
+| Task activation: handler into the incoming character's map (+0xC90) and the outgoing character's (+0xC78), keyed by `Prio` | 0x14510F960; map entry 0x145112C00, bind 0x14510D160 |
+| Task handler: block tag, source tag query against context +0x330, `OnDamage` broadcast, new value from task +0xF4 | **0x145114290**; 0x1451142D1, 0x145114309, 0x14511439C, 0x1451143A9 |
+| `SetDamageValue`, exec thunk 0x144F00310 | 0x145116A60 |
+| Hook dispatcher: levels ascending, listeners of a level last first, virtual +0x60 | 0x1450D4920 |
+| Levels of the native hooks: damage redirect 0, stagger 1, death prevention 3 | 0x1452824D1, 0x1452CA0E7, 0x1452720B1 |
+| Driver delegates of the hit's target: before the attack table roll (character +0x848), after the absorption passes (+0x860); `Miss`, `Parry` and `Dodge` skip the second | 0x1450DD072, 0x1450DD3B9; `jne` 0x1450DD1D3 |
+| `CRActorDependencyComponent`: instigator's class +0x28, owner's class +0x30; vtable 0x148ADF808, effect-added override at +0x2D0 | **0x1452EF3E0** |
+| Its listeners: owner's class apply 0x1452F04A0 and remove 0x1452E37F0; instigator's class apply 0x1452F0820 and remove 0x1452E38D0 | lambda bodies 0x1452E9AA0, 0x1452E9B80, 0x1452E9C50, 0x1452E9D30 |
+| Instigator's class apply: the hit's source is the main effect's owner (0x1452F089F), stack count of the main effect (0x1452F099F), `ApplyGameplayEffectSpecToTarget` (0x1452F0AE8) | 0x1452F0820 |
+| Main effect removal: unbinds both listeners, removes the class | 0x1452EFAE0 |
+| `CRGameplayEffectActorDependency` static class | 0x144FF4FE0 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

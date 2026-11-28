@@ -75,6 +75,12 @@ public sealed class AbilityDocument : EntityDocument
     /// <summary>The flags of the ability's <c>ChannelingData</c>, each from the nearest class of its Blueprint chain with it.</summary>
     public ChannelingTaskData? ChannelingData { get; init; }
 
+    /// <summary>
+    /// The <c>CRAbilityTask_DamageModificationTask</c> calls of the ability's graph. Each task's handler has a hit's
+    /// Health damage and replaces it, and a reduction is in the hit's <c>Absorbed</c> amount.
+    /// </summary>
+    public IReadOnlyList<DamageModificationTask>? DamageModificationTasks { get; init; }
+
     /// <summary>The ability's <c>ActivationBlockedTags</c>. An owner with one of them cannot activate the ability.</summary>
     public IReadOnlyList<string>? ActivationBlockedTags { get; init; }
 
@@ -118,6 +124,12 @@ public sealed class AbilityDocument : EntityDocument
     /// <c>AttackSpeed</c> minus 1 for the second, and 1 for an ability with neither.
     /// </summary>
     public bool? ScaleTimeWithAttackSpeed { get; init; }
+
+    /// <summary>
+    /// The ability's <c>LogAsADifferentAbility</c>. The combat log has this ability's casts and hits under that
+    /// ability's id and name.
+    /// </summary>
+    public EntityReference? LogAsADifferentAbility { get; init; }
 
     /// <summary>A creature ability's <c>InterruptCooldownDuration</c> in seconds.</summary>
     public double? InterruptCooldownDuration { get; init; }

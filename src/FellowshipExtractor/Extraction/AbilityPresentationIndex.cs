@@ -22,6 +22,7 @@ public sealed class AbilityPresentationIndex
     private readonly Dictionary<string, AbilityPresentation> _byAbilityAsset = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AbilityPresentation?> _byAdditionalAsset = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _names = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, AbilityPresentation> _dataMap = new(StringComparer.OrdinalIgnoreCase);
 
     public int TableCount { get; }
     public int RowCount { get; }
@@ -78,9 +79,41 @@ public sealed class AbilityPresentationIndex
                 }
 
                 if (PropertyWalk.GetString(row, "Name") is { } shown) _names.Add(shown);
+
+                MapData(presentation);
             }
         }
     }
+
+    /// <summary>
+    /// The row's entries of <c>CRAbilityDataSubsystem</c>'s <c>AbilityDataMap</c>, as its populator makes them (shipping
+    /// exe 26320967, 0x1450C7FE0). A row with a <c>GameplayAbilityAsset</c> the map has is left out (0x1450C8158).
+    /// Any other row is under its <c>GameplayAbilityAsset</c> (0x1450C8459) and under each of its
+    /// <c>AdditionalGameplayAbilityAssets</c> (0x1450C84CD). The row's name is no key.
+    /// </summary>
+    private void MapData(AbilityPresentation presentation)
+    {
+        var asset = PropertyWalk.GetString(presentation.Row, AbilityAssetField);
+
+        if (!_dataMap.TryAdd(DataKey(asset), presentation)) return;
+
+        if (PropertyWalk.Get(presentation.Row, AdditionalMatch)?.GenericValue is not UScriptArray additional) return;
+
+        foreach (var element in additional.Properties)
+        {
+            _dataMap[DataKey(PropertyWalk.AsString(element?.GenericValue))] = presentation;
+        }
+    }
+
+    private static string DataKey(string? classPath) =>
+        string.IsNullOrEmpty(classPath) || classPath == "None" ? string.Empty : StripClassSuffix(AssetName(classPath));
+
+    /// <summary>
+    /// The <c>Name</c> <c>AbilityDataMap</c> has for the ability's class, or null for a class with no entry. The
+    /// subsystem returns the name <c>Invalid Ability Data</c> for such a class.
+    /// </summary>
+    public string? DataName(string abilityName) =>
+        _dataMap.TryGetValue(StripClassSuffix(abilityName), out var data) ? PropertyWalk.GetString(data.Row, "Name") : null;
 
     public AbilityPresentation? Find(string abilityName)
     {

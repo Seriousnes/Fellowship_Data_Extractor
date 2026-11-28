@@ -25,6 +25,7 @@ public sealed class EntityResolver
     private const string AdventureLevelType = "Adventure";
     private const string HoveredIconField = "UIIconHovered";
     private const string EffectTable = "GameplayEffect";
+    private const int MaxLinkDepth = 8;
     private const string CostEffectClass = "/Script/fellowship.CRCostEffect";
     private const string AbilityTypePrefix = "AbilityType.";
     private const string TalentTagPrefix = "Talents.";
@@ -74,8 +75,6 @@ public sealed class EntityResolver
 
     private const string MountClass = "CRMountData";
     private const string TextureClass = "Texture2D";
-    private const string EffectTagsField = "InheritableGameplayEffectTags";
-    private const string CombinedTagsField = "CombinedTags";
     private const string MountIdField = "MountID";
     private const string MountRarityField = "Rarity";
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
@@ -464,8 +463,10 @@ public sealed class EntityResolver
             {
                 ScaleTimeWithAttackSpeed = AbilityTaskReads.ScalesWithAttackSpeed(cdo, _provider) ? true : null,
                 ChannelingData = AbilityTaskReads.Channeling(cdo, _provider),
+                DamageModificationTasks = Empty(DamageModificationTasks.Of(cdo, _mappings)),
                 InheritedAbilityTags = Empty(AbilityTaskReads.AbilityTags(cdo, _provider)),
                 ActivationBlockedTags = Empty(AbilityTaskReads.ActivationBlockedTags(cdo, _provider)),
+                LogAsADifferentAbility = Owned(CombatLogIds.LogAsADifferentAbility(cdo, _provider), AbilityTable),
             };
         }
 
@@ -473,9 +474,19 @@ public sealed class EntityResolver
         {
             var policy = DurationPolicies.Of(cdo, _provider, _mappings);
             var healthPolicy = MaxHealthPolicies.Of(cdo, _provider, _mappings);
+            var logged = CombatLogIds.Of(cdo, _provider, _mappings);
+            var hits = _presets.Executes(cdo);
 
             entity = entity with
             {
+                VisualDisplayName = logged.VisualDisplayName,
+                AlwaysUseVisualDisplayName = logged.AlwaysUseVisualDisplayName ? true : null,
+                LogIdClass = hits ? logged.IdClass(policy) : null,
+                LoggedUnder = hits ? LoggedUnder(tag, logged, policy) : null,
+                LogsEffectEvents = CombatLogIds.LogsEffectEvents(cdo, logged, policy, _provider) ? true : null,
+                InstigatorDependencyEffectName = ActorDependencies.Of(cdo, _provider)?.AppliedToTheInstigator,
+                OwnerDependencyEffectName = ActorDependencies.Of(cdo, _provider)?.AppliedToTheOwner,
+                ActorDependency = ActorDependencies.IsDependent(cdo, _provider) ? true : null,
                 CalculationPreset = _presets.Executed(cdo),
                 TargetTags = Empty(AbilityTaskReads.GrantedTags(cdo, _provider)),
                 Executions = Empty(AbilityTaskReads.Executions(cdo, _provider)),
@@ -1212,6 +1223,48 @@ public sealed class EntityResolver
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Select(named => Owned(named, AbilityTable) ?? Owned(named, EffectTable))
             .OfType<IconSource>()];
+
+    /// <summary>
+    /// The effect or ability with the id of the combat log line of the effect's hit, by the resolver of
+    /// <c>CRCombatLogAbilityEffectData</c> (shipping exe 26320967, 0x145285FC0). The hit's instigating ability is the
+    /// ability applying the effect, or applying the effect linking it. Null where the effect's own members leave the
+    /// id to an ability and no ability applies the effect.
+    /// </summary>
+    private IconSource? LoggedUnder(TagRecord tag, CombatLogIds.EffectMembers members, string durationPolicy)
+    {
+        var self = new IconSource(EffectTable, tag.NetId, tag.Name);
+        var ability = LoggedAbility(InstigatingAbility(tag.Name));
+
+        if (members.OwnId(durationPolicy, ability is not null && IsAutoAttack(ability))) return self;
+        if (ability is null) return null;
+
+        return CombatLogIds.Names(Presentation.DataName(ability)) ? Owned(ability, AbilityTable) : self;
+    }
+
+    private string? InstigatingAbility(string effect)
+    {
+        var name = effect;
+
+        for (var depth = 0; depth < MaxLinkDepth; depth++)
+        {
+            if (Owners.ApplierOf(name) is { } ability) return ability;
+            if (Owners.LinkParentOf(name) is not { Length: > 0 } parent) return null;
+
+            name = parent;
+        }
+
+        return null;
+    }
+
+    /// <summary>The ability the log has in the ability's place: its <c>LogAsADifferentAbility</c> where it has one.</summary>
+    private string? LoggedAbility(string? ability) =>
+        ability is not null && LoadDefaultObject(FindAsset(ability)) is { } cdo
+            ? CombatLogIds.LogAsADifferentAbility(cdo, _provider) ?? ability
+            : ability;
+
+    private bool IsAutoAttack(string ability) =>
+        LoadDefaultObject(FindAsset(ability)) is { } cdo &&
+        AbilityTaskReads.AbilityTags(cdo, _provider).Any(CombatLogIds.AutoAttackTags.Contains);
 
     private IconSource? Owned(string? named, string table)
     {
@@ -2963,10 +3016,8 @@ public sealed class EntityResolver
 
     private static readonly string[] EffectTagFamilies = ["EffectType.", "EffectLogic.", "EffectVisualization."];
 
-    private static List<string> EffectTags(UObject cdo) =>
-        [.. (PropertyWalk.GetStruct(cdo, EffectTagsField) is { } inherited
-                ? PropertyWalk.GetTags(inherited, CombinedTagsField) ?? []
-                : [])
+    private List<string> EffectTags(UObject cdo) =>
+        [.. EffectAssetTags.Of(cdo, _provider)
             .Where(tag => EffectTagFamilies.Any(family => tag.StartsWith(family, StringComparison.Ordinal)))
             .Order(StringComparer.Ordinal)];
 

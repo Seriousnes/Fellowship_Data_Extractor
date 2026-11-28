@@ -520,23 +520,34 @@
 {"slug":"effect","id":422,"label":"Ticks","older":"11"}
 {"slug":"effect","id":452,"label":"Ticks","older":"11"}
 {"slug":"effect","id":600,"label":"Ticks","older":"8"}
+{"slug":"effect","id":605,"label":"Effect Tags","older":"EffectType.Physical"}
 {"slug":"effect","id":612,"label":"Origins"}
 {"slug":"effect","id":707,"label":"Ticks","older":"5"}
 {"slug":"effect","id":735,"label":"Ticks","older":"25"}
 {"slug":"effect","id":749,"label":"Ticks","older":"9"}
 {"slug":"effect","id":983,"label":"Ticks","older":"17"}
+{"slug":"effect","id":1261,"label":"Effect Tags","older":"EffectType.Physical"}
 {"slug":"effect","id":1319,"label":"Ticks","older":"16"}
+{"slug":"effect","id":1383,"label":"Effect Tags","older":"EffectType.Magic.Frost"}
 {"slug":"effect","id":1557,"label":"Ticks","older":"6"}
+{"slug":"effect","id":1561,"label":"Effect Tags","older":"EffectType.Physical"}
 {"slug":"effect","id":1569,"label":"Ticks","older":"16"}
+{"slug":"effect","id":1704,"label":"Effect Tags","older":"EffectType.Physical"}
+{"slug":"effect","id":1759,"label":"Effect Tags","older":"EffectType.Physical"}
+{"slug":"effect","id":1822,"label":"Effect Tags","older":"EffectType.Magic.Fire"}
 {"slug":"effect","id":1830,"label":"Ticks","older":"6"}
+{"slug":"effect","id":1875,"label":"Effect Tags","older":"EffectType.Magic.Frost"}
 {"slug":"effect","id":2106,"label":"Ticks","older":"1"}
 {"slug":"effect","id":2137,"label":"Origins"}
 {"slug":"effect","id":2137,"label":"Owner","older":"Medium Chicken"}
 {"slug":"effect","id":2242,"label":"Origins"}
 {"slug":"effect","id":2367,"label":"Origins"}
 {"slug":"effect","id":2369,"label":"Ticks","older":"25"}
+{"slug":"effect","id":2546,"label":"Effect Tags","older":"EffectType.Physical"}
+{"slug":"effect","id":2580,"label":"Effect Tags","older":"EffectType.Magic.Frost"}
 {"slug":"effect","id":2585,"label":"Ticks","older":"5"}
 {"slug":"effect","id":2807,"label":"Ticks","older":"9"}
+{"slug":"effect","id":2850,"label":"Effect Tags","older":"EffectType.Magic.Frost"}
 {"slug":"effect","id":2879,"label":"Ticks","older":"5"}
 {"slug":"effect","id":2890,"label":"Ticks","older":"7"}
 {"slug":"effect","id":2897,"label":"Ticks","older":"8"}
@@ -544,7 +555,9 @@
 {"slug":"effect","id":2985,"label":"Ticks","older":"4"}
 {"slug":"effect","id":3004,"label":"Ticks","older":"5"}
 {"slug":"effect","id":3037,"label":"Ticks","older":"11"}
+{"slug":"effect","id":3050,"label":"Effect Tags","older":"EffectType.Physical"}
 {"slug":"effect","id":3076,"label":"Ticks","older":"9"}
+{"slug":"effect","id":3214,"label":"Effect Tags","older":"EffectLogic.System"}
 {"slug":"effect","id":3243,"label":"Ticks","older":"5"}
 {"slug":"effect","id":3257,"label":"Ticks","older":"7"}
 {"slug":"effect","id":3315,"label":"Ticks","older":"3"}

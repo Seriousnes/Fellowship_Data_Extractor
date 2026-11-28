@@ -92,6 +92,47 @@ public sealed class EffectDocument : EntityDocument
 
     public EntityReference? AppliedBy { get; init; }
 
+    /// <summary>
+    /// The effect's <c>VisualDisplayName</c>, a member of <c>CRGameplayEffectDamage</c>: the name of a combat log line
+    /// with the effect's id, on an effect with no <c>GameplayEffectUIData_BuffDebuff</c> name.
+    /// </summary>
+    public string? VisualDisplayName { get; init; }
+
+    /// <summary>
+    /// The effect's <c>AlwaysUseVisualDisplayName</c>, a member of <c>CRGameplayEffectDamage</c>. With a
+    /// <see cref="VisualDisplayName"/> it gives the effect's hit a combat log line of its own id and name.
+    /// </summary>
+    public bool? AlwaysUseVisualDisplayName { get; init; }
+
+    /// <summary>
+    /// The member of <c>CRCombatLogAbilityEffectData</c> with the id of the combat log line of the effect's hit, on an
+    /// effect with a damage or healing execution. <c>EffectClass</c>: the line has the effect's id. The effect derives
+    /// from <c>CRGameplayEffectDamage</c> and has a <see cref="DurationPolicy"/> other than <c>Instant</c>, or has
+    /// <see cref="AlwaysUseVisualDisplayName"/> with a <see cref="VisualDisplayName"/>. <c>AbilityClass</c>: the line
+    /// has the id of the hit's instigating ability, or of that ability's <c>logAsADifferentAbility</c>. Where the
+    /// ability has no <c>CRAbilityDataRow</c> name, or the hit has no ability, the line has the effect's id. An
+    /// <see cref="AlwaysUseVisualDisplayName"/> effect of an auto attack ability is logged as <c>AbilityClass</c>.
+    /// </summary>
+    public string? LogIdClass { get; init; }
+
+    /// <summary>
+    /// The effect or ability with the id of the combat log line of the effect's hit, with the ability in
+    /// <see cref="AppliedBy"/> as the hit's instigating ability. Where <see cref="AppliedBy"/> is an effect, the
+    /// instigating ability is the ability applying that effect. Null for a <see cref="LogIdClass"/> of
+    /// <c>AbilityClass</c> with no applying ability.
+    /// </summary>
+    public EntityReference? LoggedUnder { get; init; }
+
+    /// <summary>
+    /// True for an effect whose application, refresh, stack change and removal each write a combat log line
+    /// (<c>EFFECT_APPLIED</c>, <c>EFFECT_REFRESHED</c>, <c>EFFECT_REMOVED</c>), each with the effect's id. The effect
+    /// has a <see cref="DurationPolicy"/> other than <c>Instant</c>, an asset tag among <c>Effect.Buff</c>,
+    /// <c>Effect.Debuff</c>, <c>EffectVisualization.Icon</c> and <c>EffectVisualization.IconOnPartyUnitFrame</c>, and
+    /// a <c>GameplayEffectUIData_BuffDebuff</c> or <see cref="AlwaysUseVisualDisplayName"/> with a
+    /// <see cref="VisualDisplayName"/>. An effect with a duration and no such lines is active with no line in the log.
+    /// </summary>
+    public bool? LogsEffectEvents { get; init; }
+
     /// <summary>Effects applying this one through a linked effect component.</summary>
     public IReadOnlyList<EffectLink>? LinkedBy { get; init; }
 
@@ -102,6 +143,28 @@ public sealed class EffectDocument : EntityDocument
 
     /// <summary>The effect whose Blueprint class this effect's class derives from.</summary>
     public EntityReference? ParentClass { get; init; }
+
+    /// <summary>
+    /// The <c>EffectAppliedToTheInstigatorOfTheMainEffect</c> of this effect's <c>CRActorDependencyComponent</c>.
+    /// This effect's instigator has it for one hit alone: a hit on the instigator whose source has this effect. It is
+    /// applied before the hit's attribute gather with this effect's stack count and removed after the hit. A hit
+    /// with the outcome <c>Miss</c>, <c>Parry</c> or <c>Dodge</c> has no removal, and the effect then stays until the
+    /// next hit of that source with any other outcome, or until this effect ends.
+    /// </summary>
+    public EntityReference? EffectAppliedToTheInstigatorOfTheMainEffect { get; init; }
+
+    /// <summary>
+    /// The <c>EffectAppliedToTheOwnerOfTheMainEffect</c> of this effect's <c>CRActorDependencyComponent</c>. This
+    /// effect's owner has it for one hit alone: a hit on the owner whose source is this effect's instigator. The
+    /// application and the removal are those of <see cref="EffectAppliedToTheInstigatorOfTheMainEffect"/>.
+    /// </summary>
+    public EntityReference? EffectAppliedToTheOwnerOfTheMainEffect { get; init; }
+
+    /// <summary>
+    /// True for an effect whose native class is <c>CRGameplayEffectActorDependency</c>, the class of an effect a
+    /// <c>CRActorDependencyComponent</c> names. Its own duration has no part: the main effect's hits apply and remove it.
+    /// </summary>
+    public bool? ActorDependency { get; init; }
 
     /// <summary>Effects the effect's properties and graph reference.</summary>
     public IReadOnlyList<EntityReference>? Applies { get; init; }
