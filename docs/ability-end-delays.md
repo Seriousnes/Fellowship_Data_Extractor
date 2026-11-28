@@ -42,6 +42,11 @@ each variable the argument reads and the constants row of each `FScalableFloat`,
 `Multiply`, `Divide`, `FMax` and `FMin`. `variables` has each variable read, with its class default. Razor Trap's first
 wait is `Spawn Delay` 0.4 less a literal 0.05, so its `seconds` is 0.35.
 
+`K2_SetTimerDelegate(Delegate, Time, bLooping, bMaxOncePerFrame, InitialStartDelay, InitialStartDelayVariance)`
+(0x143ABCF70) first fires `Time + InitialStartDelay` after the call (0x143ABD16C), moved by a roll within the variance
+(0x143ABD02B to 0x143ABD060). A timer's `seconds` is that sum, for a timer with a variance of 0. Every timer of a
+creature ability in this build passes 0 for both.
+
 `CRAbilityTask_AILeapTo::AILeapToLocation(OwningAbility, GoalLocation, LeapTime, MaxHeight, Timeout,
 AcceptanceRadius, LeapToGround, DrawDebug)` and `AILeapToTarget` have `seconds` too. The task's `TickTask`
 (0x145117E30) broadcasts `OnArrived` on the first tick with `LeapTime` (task +0x150) passed since `Activate`
@@ -85,12 +90,16 @@ The time factor routine is at 0x1450E06E0:
 | No owner component: 1.0 | 0x1450E083D |
 
 The factory divides once, so the wait keeps the factor of the moment the task starts. An ability with neither flag
-waits `Time` itself, whatever the argument. `Delay` is the engine's latent action and has no factor.
+waits `Time` itself, whatever the argument. `Delay` is the engine's latent action and has no factor. The cast and the
+channel tasks read the same factor (`docs/casting-and-channeling.md`).
 
 The document has the two flags as `castTimeScalesWithHaste` (`ScaleTimeWithHaste`) and `scaleTimeWithAttackSpeed`.
 
 ## InterruptCooldownDuration
 
-`InterruptCooldownDuration` is an `FScalableFloat` of `CRGameplayAbility`, beside `InterruptCooldownEffectBaseClass`.
-The ability document has its value in seconds as `interruptCooldownDuration`, and `fieldSources` names its constants
-row. A creature's ability slot has its own `interruptCooldown`, from the phase data.
+`InterruptCooldownDuration` is an `FScalableFloat` of `CRGameplayAbility` at +0x4A8, beside
+`InterruptCooldownEffectBaseClass` at +0x4D0. The ability document has its value in seconds as
+`interruptCooldownDuration`, and `fieldSources` names its constants row. The constructor (0x1450D7D60) gives the
+property a `Value` of 0 with no table, row or registry (stores 0x1450D7E7E to 0x1450D7EA3), so an ability whose
+Blueprint sets none has no interrupt cooldown of its own. A creature's ability slot has its own `interruptCooldown`,
+from the phase data.

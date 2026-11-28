@@ -21,8 +21,9 @@ public sealed record EndAbilityTask(string Task)
     public string? Delegate { get; init; }
 
     /// <summary>
-    /// The seconds from the task's start to <see cref="Delegate"/>: the <c>Time</c> of a <c>WaitDelayCR</c>,
-    /// <c>WaitDelay</c> or <c>K2_SetTimerDelegate</c>, the <c>Duration</c> of a <c>Delay</c>, and for
+    /// The seconds from the task's start to <see cref="Delegate"/>: the <c>Time</c> of a <c>WaitDelayCR</c> or
+    /// <c>WaitDelay</c>, the <c>Time</c> plus <c>InitialStartDelay</c> of a <c>K2_SetTimerDelegate</c> with no
+    /// <c>InitialStartDelayVariance</c>, the <c>Duration</c> of a <c>Delay</c>, and for
     /// <c>AILeapToLocation</c> and <c>AILeapToTarget</c> the <c>LeapTime</c> of <c>OnArrived</c> and the <c>Timeout</c>
     /// of <c>OnTimeout</c>. Present where the graph computes the argument from class defaults, constants rows and
     /// literals alone. A wait without it computes its time from a value of the run, such as a distance or the time

@@ -19,7 +19,7 @@ public sealed class EndAbilityPathTests
     private const int CrushArmor = 609;
     private const int Maelstrom = 759;
     private const int DuelistAttack = 740;
-    private const int CrusaderAttack = 389;
+    private const int ReaverAttack = 204;
     private const int CultistDot = 833;
 
     private static AbilityDocument Ability(int id) =>
@@ -130,7 +130,7 @@ public sealed class EndAbilityPathTests
     [Fact]
     public void ADeclaredVariableWithNoClassDefaultIsZeroSeconds()
     {
-        var wait = Assert.Single(Assert.Single(Ability(CrusaderAttack).EndAbilityPaths!).Tasks);
+        var wait = Assert.Single(Assert.Single(Ability(ReaverAttack).EndAbilityPaths!).Tasks);
 
         Assert.Equal("WaitDelayCR", wait.Task);
         Assert.Equal(0, wait.Seconds);

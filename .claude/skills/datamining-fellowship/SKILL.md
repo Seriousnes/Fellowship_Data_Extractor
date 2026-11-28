@@ -441,6 +441,7 @@ Decoded against **26320967**, the wait of `WaitDelayCR`, read by `EndAbilityPath
 | `ScaleTimeWithAbilitySpeed` false: `Time` stored unchanged | 0x14512EA2D |
 | Ability time factor: 1.0, the owner's `Haste` under `ScaleTimeWithHaste` (+0x3B8 bit 0), then `+ AttackSpeed - 1` under `ScaleTimeWithAttackSpeed` (bit 1) | 0x1450E06E0; tests 0x1450E0710, 0x1450E07A1; `addss` 0x1450E07F0, `subss` 0x1450E07F7 |
 | Task `Activate`: `Time` above 0 sets a timer; `Time` of 0 or less ends the task and broadcasts the delegate at +0x80 in the same call | 0x145125D70; `comiss` 0x145125D9C, broadcast 0x145126028 |
+| `InterruptCooldownDuration` +0x4A8, `InterruptCooldownEffectBaseClass` +0x4D0: constructor default `Value` 0, no table, row or registry | `UCRGameplayAbility` constructor 0x1450D7D60, stores 0x1450D7E7E to 0x1450D7EA3 |
 
 ## Traps this build sets
 

@@ -25,6 +25,9 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
     private const string Conversion = "Conv_";
     private const string ScaledWait = "WaitDelayCR";
     private const int ScaleParameter = 2;
+    private const string Timer = "K2_SetTimerDelegate";
+    private const int StartDelayParameter = 4;
+    private const int StartDelayVarianceParameter = 5;
     private const int MaxDepth = 24;
 
     /// <summary>The routes kept for one ability. A graph with more has <see cref="Truncated"/> name it.</summary>
@@ -37,7 +40,9 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
     /// tasks and the timer, <c>Duration</c> of the latent delays, and <c>LeapTime</c> and <c>Timeout</c> of
     /// <c>CRAbilityTask_AILeapTo</c>. Shipping exe 26320967: the leap's <c>TickTask</c> 0x145117E30 broadcasts
     /// <c>OnArrived</c> once <c>LeapTime</c> (+0x150) has passed since <c>Activate</c>, and a <c>Timeout</c> above 0 sets
-    /// a timer for <c>OnTimeout</c> (0x14510F6C0).
+    /// a timer for <c>OnTimeout</c> (0x14510F6C0). <c>K2_SetTimerDelegate</c> 0x143ABCF70 first fires
+    /// <c>Time + InitialStartDelay</c> after the call (0x143ABD16C), moved by a roll within
+    /// <c>InitialStartDelayVariance</c>, so a timer has seconds where its variance is 0.
     /// </summary>
     private static readonly Dictionary<(string Task, string? Delegate), int> Timed = new()
     {
@@ -45,7 +50,7 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
         [("WaitDelay", "OnFinish")] = 1,
         [("Delay", null)] = 1,
         [("RetriggerableDelay", null)] = 1,
-        [("K2_SetTimerDelegate", null)] = 1,
+        [(Timer, null)] = 1,
         [("AILeapToLocation", "OnArrived")] = 2,
         [("AILeapToTarget", "OnArrived")] = 2,
         [("AILeapToLocation", "OnTimeout")] = 4,
@@ -356,6 +361,14 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
         var parameters = RowSinks.Parameters(call);
         var variables = new SortedDictionary<string, double>(StringComparer.Ordinal);
         var seconds = Number(parameters.ElementAtOrDefault(timed), body, at, graph, variables, 0);
+
+        if (task.Task == Timer)
+        {
+            var delay = Number(parameters.ElementAtOrDefault(StartDelayParameter), body, at, graph, variables, 0);
+            var variance = Number(parameters.ElementAtOrDefault(StartDelayVarianceParameter), body, at, graph, variables, 0);
+
+            seconds = variance is 0 ? seconds + delay : null;
+        }
 
         return task with
         {
