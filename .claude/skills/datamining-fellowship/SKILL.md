@@ -579,6 +579,31 @@ Decoded against **26320967**, the damage modification task and the actor depende
 | Main effect removal: unbinds both listeners, removes the class | 0x1452EFAE0 |
 | `CRGameplayEffectActorDependency` static class | 0x144FF4FE0 |
 
+Decoded against **26320967**, the movement, tick and combat event tasks and the NPC walk speed, written up in
+`docs/movement-tick-and-event-tasks.md`:
+
+| What | Where |
+| --- | --- |
+| `AbilityTask_FellowshipMoveTo` natives `FellowshipMoveTo`, `FellowshipMoveToLocation`, `FollowActor`; exec thunks 0x144EFFAB0, 0x144EFFD20, 0x144EFFFA0; parameter records 0x148A998D0, 0x148A99B90, 0x148A99E30 | **0x145111AC0**, **0x145111BA0**, **0x145112AE0** |
+| Task fields: `Goal` actor +0xE8, location +0xF0, flags +0x108 (`DisableCollision` 1, actor goal 2, follow 4, `CancelIfTargetDies` 8, `AllowPartialPaths` 0x10), `ProximityTolerance` +0x10C, `Timeout` +0x110, request id +0x114, `Controller` +0x118 | static class 0x144EFF0E0, size 0x120, constructor 0x144EFF340, vtable 0x148A9A790 |
+| `GetInteractionRadius` of a `CRInteractable` goal added to `ProximityTolerance` | 0x145019620, `addss` 0x145112B4C |
+| `Activate`: arrival within `ProximityTolerance` in 2D, timer of `Timeout` for `OnTimeout` | **0x14510F060**; `comisd` 0x14510F21C, timer 0x14510F3CF, handler 0x145115040 |
+| Move start: `FindPathSync`, `OnNoPath` for a result other than Success (3), `RequestMove` | **0x145110BE0**; 0x1443D3B40, `cmp` 0x145110E74, 0x145110F63 |
+| Request finished: nothing for the follow flag, Success to `OnArrived`, InvalidPath to `OnNoPath` | 0x145114AB0 |
+| `TickTask`: dead goal to `OnNoPath`, follow move restart at `ProximityTolerance + 20` | **0x145117C60**; `test` 0x145117CA8, `addss` 0x145117DA3 |
+| `FTimerManager::SetTimer` wrapper over 0x144042D80 | 0x1440430A0 |
+| `CRAICharacter` combined move speed (vtable 0x148AEB930 +0xA50): `MoveSpeed` (set +0x168) x `GlobalNPCBaseMoveSpeed` (globals +0x310) x `PassiveMoveSpeed` (+0x178) x character +0xEB0 | **0x145155D80** |
+| `MaxWalkSpeed` (movement +0x268) written from the virtual; character +0xEB0 default 1.0 and its setter | 0x1452ED990; 0x145152975, 0x14515A7B0 |
+| Engine `AbilityTask_MoveToLocation::MoveToLocation` exec thunk, factory inlined: `max(Duration, 0.001)` to +0xD0, end time +0xD8 | 0x144A3BDE0; `maxss` 0x144A3C1C0, `addss` 0x144A3C200 |
+| Its `TickTask`, vtable 0x1489758E0 +0x2D8 | 0x144A26EA0, `comiss` 0x144A26F62 |
+| `CRAbilityTask_TickAsync::TickAsync`, exec thunk 0x144F02F50, parameter records 0x148A9EE80: `TickInterval` +0xB0, `TotalTime` +0xB4, `TickAtStart` +0xB8 | **0x145122B00**, vtable 0x148A9F6C8 |
+| Its `Activate`: looping timer of `TickInterval`, timer of `TotalTime + 0.05` | 0x14511CE40; 0x14511D023, `addss` 0x14511D0F4, 0x14511D25C |
+| Its tick handler, finish handler and `ExternalCancel` | 0x145120A50, 0x14511F3D0, 0x14511E670 |
+| `CRAbilityTask_WaitForCombatEvents::WaitForCombatEvents` and `WaitForCombatEventsWithParams`, exec thunk 0x144F284A0, parameter records 0x148AD0E20 | **0x14512EDD0**, 0x14512EEA0, vtable 0x148AD2680 |
+| Task fields: `EventTags` +0x90, `OnlyFromCurrentLife` +0xC8, external target flag +0xC9, `OnlyTriggerOnce` +0xCA, `OnlyMatchExact` +0xCB, `AssetTagsRequirements` +0xD0, `OptionalExternalTarget` +0x158 | factory stores 0x14512EE44 to 0x14512EE5A |
+| Its `Activate` and event handler | 0x1451260E0, **0x1451275B0** |
+| An ability task's vtable: `Activate` +0x2C8, `TickTask` +0x2D8, `ExternalCancel` +0x2E8, `OnDestroy` +0x308 | e.g. `CRAbilityTask_AILeapTo` 0x148A97650: 0x14510F4A0, 0x145117E30 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
