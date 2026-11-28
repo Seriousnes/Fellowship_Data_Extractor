@@ -1,3 +1,4 @@
+{"slug":"ability","id":6,"label":"Origins"}
 {"slug":"ability","id":45,"label":"Cooldown","older":"2"}
 {"slug":"ability","id":48,"label":"Cooldown","older":"2.5"}
 {"slug":"ability","id":51,"label":"Cooldown","older":"18"}
@@ -56,6 +57,7 @@
 {"slug":"ability","id":512,"label":"Cooldown","older":"23"}
 {"slug":"ability","id":513,"label":"Cooldown","older":"30"}
 {"slug":"ability","id":514,"label":"Cooldown","older":"30"}
+{"slug":"ability","id":519,"label":"Origins"}
 {"slug":"ability","id":525,"label":"Cooldown","older":"1.6"}
 {"slug":"ability","id":527,"label":"Cooldown","older":"27"}
 {"slug":"ability","id":531,"label":"Cooldown","older":"22"}
@@ -203,7 +205,11 @@
 {"slug":"ability","id":1472,"label":"Cooldown","older":"1.8"}
 {"slug":"ability","id":1473,"label":"Cooldown","older":"2"}
 {"slug":"ability","id":1479,"label":"Cooldown","older":"2.1"}
+{"slug":"ability","id":1479,"label":"Origins"}
+{"slug":"ability","id":1479,"label":"Owner","older":"Medium Chicken"}
 {"slug":"ability","id":1526,"label":"Cooldown","older":"60"}
+{"slug":"ability","id":1540,"label":"Origins"}
+{"slug":"ability","id":1540,"label":"Owner","older":"Medium Chicken"}
 {"slug":"ability","id":1550,"label":"Cooldown","older":"2.1"}
 {"slug":"ability","id":1565,"label":"Cooldown","older":"30"}
 {"slug":"ability","id":1581,"label":"Cooldown","older":"30"}
@@ -262,5 +268,254 @@
 {"slug":"ability","id":2380,"label":"Cooldown","older":"2.8"}
 {"slug":"ability","id":2383,"label":"Cooldown","older":"20"}
 {"slug":"ability","id":2386,"label":"Cooldown","older":"8"}
+{"slug":"creature","id":3,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":3,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":5,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":5,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":11,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":11,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":14,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":14,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":17,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":17,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":18,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":18,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":22,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":22,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":23,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":23,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":24,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":24,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":25,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":25,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":27,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":27,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":28,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":28,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":30,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":30,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":31,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":31,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":38,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":38,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":41,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":41,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":43,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":43,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":44,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":44,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":46,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":46,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":48,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":48,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":65,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":65,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":77,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":77,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":80,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":80,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":81,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":81,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":83,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":83,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":86,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":86,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":87,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":87,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":92,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":92,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":94,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":94,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":97,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":97,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":99,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":99,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":101,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":101,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":105,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":105,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":110,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":110,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":111,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":111,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":112,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":112,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":113,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":113,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":120,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":120,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":121,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":121,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":122,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":122,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":124,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":124,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":125,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":125,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":128,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":128,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":132,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":132,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":133,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":133,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":135,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":135,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":139,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":139,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":140,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":140,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":141,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":141,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":149,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":149,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":151,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":151,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":154,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":154,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":155,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":155,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":156,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":156,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":160,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":160,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":167,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":167,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":168,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":168,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":169,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":169,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":170,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":170,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":172,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":172,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":174,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":174,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":175,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":175,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":177,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":177,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":180,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":180,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":182,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":182,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":183,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":183,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":186,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":186,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":189,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":189,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":197,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":197,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":198,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":198,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":199,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":199,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":200,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":200,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":202,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":202,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":240,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":240,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":241,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":241,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":247,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":247,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":249,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":249,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":251,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":251,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":255,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":255,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":256,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":256,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":257,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":257,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":258,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":258,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":262,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":262,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":264,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":264,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":268,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":268,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":269,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":269,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":270,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":270,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":274,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":274,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":279,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":279,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":280,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":280,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":281,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":281,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":282,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":282,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":283,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":283,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":284,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":284,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":291,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":291,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":292,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":292,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":294,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":294,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":301,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":301,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":308,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":308,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":311,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":311,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":313,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":313,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":315,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":315,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":317,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":317,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":318,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":318,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":319,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":319,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":321,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":321,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":322,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":322,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":323,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":323,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":324,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":324,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":325,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":325,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":326,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":326,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":330,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":330,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":331,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":331,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":335,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":335,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":336,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":336,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":337,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":337,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":339,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":339,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":341,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":341,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":347,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":347,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":348,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":348,"label":"Passives \u203A Shown"}
+{"slug":"creature","id":349,"label":"Passives \u203A Phase"}
+{"slug":"creature","id":349,"label":"Passives \u203A Shown"}
+{"slug":"effect","id":108,"label":"Origins"}
+{"slug":"effect","id":155,"label":"Origins"}
+{"slug":"effect","id":612,"label":"Origins"}
+{"slug":"effect","id":2137,"label":"Origins"}
+{"slug":"effect","id":2137,"label":"Owner","older":"Medium Chicken"}
+{"slug":"effect","id":2242,"label":"Origins"}
+{"slug":"effect","id":2367,"label":"Origins"}
 {"slug":"talent","id":162,"label":"Cooldown","older":"30"}
 {"slug":"talent","id":664,"label":"Cooldown","older":"30"}
