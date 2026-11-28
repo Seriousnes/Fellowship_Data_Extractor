@@ -17,6 +17,16 @@ public sealed class CreatureDocument : EntityDocument
     public double? Agility { get; init; }
     public double? CritChance { get; init; }
     public double? CritMultiplier { get; init; }
+
+    /// <summary>
+    /// The creature's base <c>Haste</c>, a multiplier with 1 for no Haste. An ability's time rate is the attribute
+    /// itself under <c>ScaleTimeWithHaste</c>.
+    /// </summary>
+    public double? Haste { get; init; }
+
+    /// <summary>The creature's base <c>AttackSpeed</c>, a multiplier with 1 for no change.</summary>
+    public double? AttackSpeed { get; init; }
+
     public IReadOnlyList<CreatureAbility>? Abilities { get; init; }
     public IReadOnlyList<CreatureAbility>? Passives { get; init; }
     public IReadOnlyList<CreaturePhase>? Phases { get; init; }

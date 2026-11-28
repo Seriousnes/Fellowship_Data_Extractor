@@ -34,6 +34,72 @@ An ability has one route for each way its graph reaches `K2_EndAbility`. The del
 `SpawnActorFromAbility.DidNotSpawn`, `AILeapToLocation.OnNoPath` and `ServerTargetedNPCCast.OnFailed` are the routes of
 a failed step. A route with no task is an end in the activation frame, such as a target out of range.
 
+## Branch conditions of a route
+
+Two routes with the same tasks up to one handler part at a branch of that handler. A Blueprint `Branch` node, an
+`Is Valid` node, a cast node and a switch node each compile to `EX_JumpIfNot` or `EX_PopExecutionFlowIfNot` on a boolean
+expression. `EndAbilityConditions.cs` walks a handler from its entry offset and gives each statement the branches whose
+last test before it has the same side on every path to it. A branch with a path through each side meeting again before
+the statement is left out. The test of a `ForEach` or `ForLoop` node reads the loop's counter, a local assigned from
+itself. It is kept on its true side, inside the loop's body, and left out on its false side, because a counted loop
+always ends through that side.
+
+| Field | Branches between |
+| --- | --- |
+| `conditions` of a task | the entry of the handler the task starts in, and the task's start |
+| `endConditions` of a route | the entry of the route's last handler, and `K2_EndAbility` |
+| `conditions` of a `loops` entry | the entry of the handler at `from`, and the start of the task at `to` |
+
+The handler of a route's first task is the activation. Each condition has the expression in `condition` and the side
+taken in `value`. `GraphExpressionText.cs` writes the expression in the graph's names:
+
+- A local is replaced by the expression assigned to it, so `CallFunc_Greater_IntInt_ReturnValue` is
+  `Greater_IntInt(Array_Length(TargetsLeft), 0)`.
+- A function has its name without its library class, and a call on another object has the object before a dot:
+  `GetOwningCRCharacterFromActorInfo().HasAnyMatchingGameplayTags([CharacterStatus.Immobilized])`.
+- A variable of the ability has its name alone. A parameter of the handler's delegate has the parameter's name, such
+  as `SpawnedActor` of `SpawnActorFromAbility.Success`.
+- A local filled through an out parameter is the call, a dot and the parameter: `CalculateChargeTargetInfo(...).Success`.
+- A loop's counter has the compiler's name for it, `Temp_int_Loop_Counter_Variable`.
+- A cast node is `DynamicCast<Class>(object)`, true where the cast succeeds.
+- `Not_PreBool` is left out and reverses `value`. A `BooleanAND` taken true and a `BooleanOR` taken false give one
+  condition for each operand.
+
+The validity test of the task a route waits on is left out, because a task the factory returns null for has no
+delegate. The side of a branch past a failed `K2_CommitAbility` is closed to the walk.
+
+Collapsing Star (`GA_DD_WitheringMagi_CastedRangedProjectileDOT`, ability 772) has three routes after its cast. Two
+part in the handler of `SpawnActorFromAbility.Success`:
+
+| Route | Condition | `value` |
+| --- | --- | --- |
+| ends in the `Success` handler | `endConditions`: `IsValid(SpawnedActor)` | false |
+| waits `StayInAbilityDelay` 0.3 seconds, then ends | `conditions` of `WaitDelayCR`: `IsValid(SpawnedActor)` | true |
+
+The third route is the task's other delegate, `DidNotSpawn`.
+
+## Loops of a route
+
+A handler starting a task of an earlier step of its own route is a loop. A route has each task once, and `loops` has
+the return: the handler of the task at `from` starts the task at `to` again, under `conditions`. The tasks from `to`
+to `from` therefore run once for each turn of the loop.
+
+Bloodhunt (`GA_FK_BossElfDragon_MultiDash`, ability 761) dashes to each character in `TargetsLeft`:
+
+| Step | `task` | `delegate` | `seconds` | `conditions` |
+| --- | --- | --- | --- | --- |
+| 0 | `WaitDelayCR` | `OnFinish` | 1.5 (`InitialChargeDelay`) | `Greater_IntInt(Array_Length(TargetsLeft), 0)` true |
+| 1 | `MonitorTargetValidityWithFilters` | `OnActivate` | | `Greater_IntInt(Array_Length(TargetsLeft), 0)` true |
+| 2 | `MoveToActorUsingPathFixedSpeed` | `OnTargetLocationReached` | | |
+| 3 | `WaitDelayCR` | `OnFinish` | 0.5 (`ChargeArriveDelay`) | |
+| 4 | `WaitDelayCR` | `OnFinish` | 0.7 (`StayInAbilityDelay`) | `Array_RemoveItem(TargetsLeft, CurrentDashTarget)` true, `Greater_IntInt(Array_Length(TargetsLeft), 0)` false |
+
+The route's `loops` has `from` 3 and `to` 1, under `Array_RemoveItem(TargetsLeft, CurrentDashTarget)` true and
+`Greater_IntInt(Array_Length(TargetsLeft), 0)` true. The handler of step 3 removes `CurrentDashTarget` from
+`TargetsLeft`. With a target left it starts step 1 for the next target, and with none it starts step 4. Steps 1 to 3
+run once for each target marked at activation, and `GetMarkedTargetsSortedByRange` fills `TargetsLeft` in the
+activation. Each of the three waits has `ScaleTimeWithAbilitySpeed` true.
+
 ## Seconds of a wait
 
 `seconds` is the `Time` argument of `WaitDelayCR`, `WaitDelay` and `K2_SetTimerDelegate`, and the `Duration` argument

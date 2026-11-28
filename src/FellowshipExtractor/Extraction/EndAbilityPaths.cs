@@ -12,7 +12,8 @@ namespace FellowshipExtractor.Extraction;
 /// Reads the routes of an ability's graph from its activation to <c>K2_EndAbility</c>. A task's delegate, a latent
 /// action's linkage and a timer's delegate each enter the graph at an offset, and the statements from that offset start
 /// the next tasks. The graph of a parent Blueprint class is read where the ability's own class has none. A statement
-/// reached only past a failed <c>K2_CommitAbility</c> is left out.
+/// reached only past a failed <c>K2_CommitAbility</c> is left out. A task and an end have the branches between the
+/// entry of their handler and their statement, and a handler starting an earlier task of its route is a loop.
 /// </summary>
 public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTable constants)
 {
@@ -76,14 +77,34 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
 
     private sealed class Segment
     {
-        public bool Ends { get; set; }
+        public bool Ends { get; private set; }
+
+        /// <summary>The branches every <c>K2_EndAbility</c> of the segment is reached under.</summary>
+        public IReadOnlyList<BranchCondition> EndConditions { get; private set; } = [];
 
         public List<Edge> Edges { get; } = [];
+
+        public void End(IReadOnlyList<BranchCondition> conditions)
+        {
+            EndConditions = Ends ? [.. EndConditions.Intersect(conditions)] : conditions;
+            Ends = true;
+        }
+
+        /// <summary>Adds a task start, once for each statement starting it.</summary>
+        public void Start(Edge edge)
+        {
+            if (!Edges.Any(known => known.Body == edge.Body && known.Entry == edge.Entry && known.At == edge.At &&
+                                    known.Task.Task == edge.Task.Task && known.Task.Delegate == edge.Task.Delegate))
+            {
+                Edges.Add(edge);
+            }
+        }
     }
 
     private sealed class Graph(UObject cdo, IReadOnlyList<UStruct> bodies, IReadOnlySet<string> numeric)
     {
         private readonly Dictionary<UStruct, BranchPaths> _paths = [];
+        private readonly Dictionary<UStruct, EndAbilityConditions> _conditions = [];
         private readonly Dictionary<UStruct, Dictionary<int, int>> _indexes = [];
 
         public UObject Cdo => cdo;
@@ -101,6 +122,14 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
 
         public BranchPaths PathsOf(UStruct body) =>
             _paths.TryGetValue(body, out var known) ? known : _paths[body] = new BranchPaths(body);
+
+        /// <summary>The branches of a body, with the side of a failed <c>K2_CommitAbility</c> closed.</summary>
+        public EndAbilityConditions ConditionsOf(UStruct body) =>
+            _conditions.TryGetValue(body, out var known)
+                ? known
+                : _conditions[body] = new EndAbilityConditions(
+                    body,
+                    (branch, held) => Commit(Tested(branch), PathsOf(body)) is { } positive ? positive != held : null);
 
         public int IndexOf(UStruct body, KismetExpression statement)
         {
@@ -151,6 +180,7 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
         var graph = new Graph(cdo, bodies, numeric);
         var found = new List<EndAbilityPath>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
+        var loops = new List<EndAbilityLoop>();
         var truncated = false;
         var steps = 0;
 
@@ -160,7 +190,7 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
 
             var root = Read(entered, entered.ScriptBytecode![0].StatementIndex, graph);
 
-            Follow(root, [], [root]);
+            Follow(root, [], new Dictionary<Segment, int> { [root] = 0 });
         }
 
         if (truncated) Truncated.Add(cdo.Owner?.Name ?? cdo.Name);
@@ -178,7 +208,8 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
 
         return found;
 
-        void Follow(Segment segment, List<EndAbilityTask> tasks, HashSet<Segment> entered)
+        // A segment is entered with the count of the tasks before it, so the segment at count n is the handler of task n - 1.
+        void Follow(Segment segment, List<EndAbilityTask> tasks, Dictionary<Segment, int> entered)
         {
             if (found.Count >= MaxPaths || ++steps > MaxSteps)
             {
@@ -186,25 +217,61 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
                 return;
             }
 
-            if (segment.Ends && seen.Add(Key(tasks))) found.Add(new EndAbilityPath([.. tasks]));
+            var returning = loops.Count;
+
+            foreach (var edge in segment.Edges)
+            {
+                if (!entered.TryGetValue(Read(edge.Body, edge.Entry, graph), out var count) || count == 0) continue;
+                if (loops.Skip(returning).Any(loop => loop.To == count - 1)) continue;
+
+                loops.Add(new EndAbilityLoop(tasks.Count - 1, count - 1) { Conditions = edge.Task.Conditions });
+            }
+
+            if (segment.Ends && seen.Add($"{Key(tasks)}|{Key(segment.EndConditions)}"))
+            {
+                found.Add(new EndAbilityPath([.. tasks])
+                {
+                    EndConditions = segment.EndConditions.Count > 0 ? segment.EndConditions : null,
+                    Loops = loops.Count > 0 ? [.. loops] : null,
+                });
+            }
 
             foreach (var edge in segment.Edges)
             {
                 var next = Read(edge.Body, edge.Entry, graph);
 
-                if (!entered.Add(next)) continue;
+                if (!entered.TryAdd(next, tasks.Count + 1)) continue;
 
                 tasks.Add(edge.Task);
                 Follow(next, tasks, entered);
                 tasks.RemoveAt(tasks.Count - 1);
                 entered.Remove(next);
             }
+
+            loops.RemoveRange(returning, loops.Count - returning);
         }
     }
 
     private static string Key(IEnumerable<EndAbilityTask> tasks) =>
         string.Join('|', tasks.Select(task =>
-            $"{task.Task}.{task.Delegate}:{task.Seconds}:{task.ScaleTimeWithAbilitySpeed}:{string.Join(',', task.Variables?.Keys ?? [])}"));
+            $"{task.Task}.{task.Delegate}:{task.Seconds}:{task.ScaleTimeWithAbilitySpeed}:{string.Join(',', task.Variables?.Keys ?? [])}:{Key(task.Conditions)}"));
+
+    private static string Key(IEnumerable<BranchCondition>? conditions) =>
+        string.Join('&', (conditions ?? []).Select(condition => $"{condition.Condition}={condition.Value}"));
+
+    /// <summary>The boolean expression of a branch statement.</summary>
+    private static KismetExpression? Tested(KismetExpression branch) => branch switch
+    {
+        EX_JumpIfNot jump => jump.BooleanExpression,
+        EX_PopExecutionFlowIfNot pop => pop.BooleanExpression,
+        _ => null,
+    };
+
+    /// <summary>A task start under the branches of its handler, after the branches of the handler's caller.</summary>
+    private static Edge Under(Edge edge, IReadOnlyList<BranchCondition> conditions) =>
+        conditions.Count == 0
+            ? edge
+            : edge with { Task = edge.Task with { Conditions = [.. conditions.Union(edge.Task.Conditions ?? [])] } };
 
     /// <summary>
     /// The statements a body runs from an entry offset before it returns: whether one is <c>K2_EndAbility</c>, and the
@@ -217,7 +284,17 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
 
         var segment = graph.Segments[(body, entry)] = new Segment();
         var paths = graph.PathsOf(body);
+        var conditions = graph.ConditionsOf(body);
         var visited = new HashSet<int>();
+
+        // The branches between the segment's entry and a statement. A validity test of the object waited on is left out.
+        IReadOnlyList<BranchCondition> Held(KismetExpression statement, string? waited = null) =>
+        [
+            .. conditions.Between(entry, statement.StatementIndex)
+                .SelectMany(side => GraphExpressionText.Conditions(
+                    Tested(conditions.Statements[side.At]), side.Held, conditions.Statements, side.At, waited))
+                .Distinct(),
+        ];
 
         foreach (var (statement, taken) in paths.From(entry, condition => Commit(condition, paths) is not null))
         {
@@ -227,13 +304,16 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
             if (statement is EX_LocalVirtualFunction or EX_LocalFinalFunction or EX_VirtualFunction or EX_FinalFunction &&
                 RowSinks.Calling(statement) == EndCall)
             {
-                segment.Ends = true;
+                segment.End(Held(statement));
                 continue;
             }
 
             if (statement is EX_AddMulticastDelegate added)
             {
-                if (Delegated(added, body, graph) is { } edge) segment.Edges.Add(edge);
+                if (Delegated(added, body, graph) is { } edge)
+                {
+                    segment.Start(Under(edge, Held(added, DynamicTextFloats.Name((added.Delegate as EX_Context)?.ObjectExpression))));
+                }
 
                 continue;
             }
@@ -251,9 +331,11 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
                     if (at is { } offset)
                     {
                         var read = Read(inner, offset, graph);
+                        var calling = Held(statement);
 
-                        segment.Ends |= read.Ends;
-                        segment.Edges.AddRange(read.Edges.Where(edge => !segment.Edges.Contains(edge)));
+                        if (read.Ends) segment.End([.. calling.Union(read.EndConditions)]);
+
+                        foreach (var started in read.Edges) segment.Start(Under(started, calling));
                     }
 
                     continue;
@@ -264,7 +346,9 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
                 if (parameters.OfType<EX_StructConst>().FirstOrDefault(constant => constant.Struct.Name == LatentInfo) is { } latent &&
                     latent.Properties.OfType<EX_SkipOffsetConst>().FirstOrDefault() is { } linkage)
                 {
-                    segment.Edges.Add(new Edge(Timing(new EndAbilityTask(called), call, body, graph.IndexOf(body, statement), graph), body, (int)linkage.Value, statement.StatementIndex));
+                    segment.Start(Under(
+                        new Edge(Timing(new EndAbilityTask(called), call, body, graph.IndexOf(body, statement), graph), body, (int)linkage.Value, statement.StatementIndex),
+                        Held(statement)));
 
                     continue;
                 }
@@ -274,7 +358,9 @@ public sealed class EndAbilityPaths(AbstractFileProvider provider, ConstantsTabl
                     if (parameter is not EX_LocalVariable || DynamicTextFloats.Name(parameter) is not { } local) continue;
                     if (Bound(body, graph.IndexOf(body, statement), local, graph) is not { } handler) continue;
 
-                    segment.Edges.Add(new Edge(Timing(new EndAbilityTask(called), call, body, graph.IndexOf(body, statement), graph), handler.Body, handler.Entry, statement.StatementIndex));
+                    segment.Start(Under(
+                        new Edge(Timing(new EndAbilityTask(called), call, body, graph.IndexOf(body, statement), graph), handler.Body, handler.Entry, statement.StatementIndex),
+                        Held(statement)));
                 }
             }
         }

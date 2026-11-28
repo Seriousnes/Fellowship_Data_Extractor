@@ -21,6 +21,10 @@ An effect document has:
 - **`grantedTags`**: the combined granted tags of the effect's `TargetTagsGameplayEffectComponent`.
 - **`executions`**: the calculation class of each of the effect's `Executions`.
 
+A creature document has:
+
+- **`haste`**, **`attackSpeed`**: the creature's base `Haste` and `AttackSpeed`, the two attributes of the time rate.
+
 A stun cancels an ability when an effect of the stun's `applies` has
 `CRCancelAbilitiesBlockedByThisEffectsParentExecution` in its `executions`, and the ability's `abilityTags` and
 `activationBlockedTags` pass the tests of [Cancel by a stun](#cancel-by-a-stun) against the stun's `grantedTags`.
@@ -34,6 +38,33 @@ Both tasks read the ability's time rate once, in their factory call. The rate (0
 - 1 with neither flag.
 
 A change of either attribute after the factory call changes no time of a running cast or channel.
+
+| `ScaleTimeWithHaste` | `ScaleTimeWithAttackSpeed` | Rate |
+| --- | --- | --- |
+| false | false | 1 |
+| true | false | `Haste` |
+| false | true | `AttackSpeed` |
+| true | true | `Haste + AttackSpeed - 1` |
+
+Each attribute is the current value `GetNumericAttribute` returns for the owner's `CRBasicAttributeSet` (calls at
+0x1450E077B and 0x1450E07E6).
+
+### Base Haste and AttackSpeed
+
+`Haste` and `AttackSpeed` are multipliers with a base of 1. A character with no effect on either has a rate of 1 under
+every state of the flags, and casts in `CastingDuration`.
+
+- The `CRBasicAttributeSet` constructor (0x1450BB750) stores 1.0 in the base and the current value of `Haste`
+  (+0xF8, stores 0x1450BB89E and 0x1450BB8A8) and of `AttackSpeed` (+0x2A8, stores 0x1450BBABE and 0x1450BBAC8).
+- `CT_CharacterBaseAttributes` has 55 `<character>.BasicAttributeSet.Haste` rows, for heroes and for some creatures,
+  each with the value 1. It has no `Default.BasicAttributeSet.Haste` row and no `AttackSpeed` row.
+- `GE_NPCAttributesBase`, a passive effect of every creature, modifies `BlockDamageReductionFlat` and
+  `BlockDamageReductionMultiplier` and applies the three primary attribute effects.
+- `CT_CharacterScalingBaseAttributes` has `DifficultyDamageScale` and `DifficultyHealthScale` rows alone.
+
+An effect raises `Haste` with an `Additive` fraction of the base, such as 0.3 for 30 per cent, or with a
+`Multiplicitive` or `MultiplyCompound` factor. Effects change `AttackSpeed` with factors. A creature document has the
+base values in `haste` and `attackSpeed`: the character's row, and the constructor's value for a character with none.
 
 ## Cast
 
@@ -70,6 +101,10 @@ The effect's expiry calls 0x14511EFC0. A removal before the expiry returns at on
 
 `OnFinished` is therefore at `Duration / CastSpeed` after `Activate`, with no wait on the montage. The montage's start
 is `T / CastSpeed` before `OnFinished`.
+
+`CRAbilityTask_TargetedNPCCast::ServerTargetedNPCCast` (0x14512B9C0) makes its cast with a call of
+`ServerStartCasting` for the same ability and `CastingData` (0x14512BADD), and binds that task's `OnFinished` to its
+own `OnCastFinished`. A targeted creature cast therefore has the same `Duration / CastSpeed`.
 
 ## Channel
 
@@ -117,6 +152,56 @@ class and a `ChannelingData`, and adds `partial` to the count under `EnableParti
 
 The factory gives the channel's `PostLoopMontagePlayDelayTask` the time
 `clamp(ScaledDuration - T / rate, 0, ScaledDuration)` (0x145121809 to 0x145121823).
+
+### Partial tick
+
+`partial` is the fraction of an interval left over at the channel's end. `Activate` computes it once and keeps it at
+task +0x118. The expiry handler tests `EnablePartialTicks` (flag bit 0x20, 0x14511F2CE) and `|partial| > 0.00000001`
+(0x14511F2E4), and broadcasts `OnTick` with `partial` as its `PartialTickFactor` argument. The task scales no
+magnitude and no damage: the ability's graph has the argument. `OnFinished` has a `PartialTickFactor` of 0.
+
+Under `ScaleDurationWithAbilityTimeRate` the duration and the interval both divide by the rate, so `partial` is the
+same at every rate.
+
+Two graphs of the build read the argument, and each assigns it to a set-by-caller magnitude of its tick damage spec:
+
+| Ability | Tag | Effect's modifier under the tag |
+| --- | --- | --- |
+| Freezing Torrent, `GA_Rime_ChanneledBeamSingleDamage` | `SetByCaller.DamageScale` | `Multiplicitive` on `DamageScale` |
+| Chronoshift, `GA_Weapon_ChanneledCooldownReducer` | `SetByCaller.DamageScalePartialTick` | `MultiplyCompound` on `DamageScale` |
+
+Every other graph with an `OnTick` handler stores the argument in a temporary and reads it nowhere, so its partial
+tick is a whole tick. `SetByCaller.PartialTickFactor` is the tag of a periodic effect's own last tick
+(`docs/effect-periods.md`), and no channel graph assigns it.
+
+Six abilities have `EnablePartialTicks`:
+
+| Ability | Duration, interval | `partial` | Graph reads the argument |
+| --- | --- | --- | --- |
+| Freezing Torrent | 2, 0.4, duration unscaled | `frac(2 x rate / 0.4)` | yes |
+| Chronoshift | 3, 1.5, duration unscaled | `frac(3 x rate / 1.5)` | yes |
+| Incinerate, `GA_Firemage_ChanneledForwardAoeDamage` | 2.5, 0.5, duration unscaled | `frac(2.5 x rate / 0.5)` | no |
+| Tormenting Visions, `GA_ST_BossArbiter_ChannelTruesighter` | 5, 1.5 | 0.33333 | no |
+| Eagle's Fury, `GA_NF_DruidFeralist_Spin` | 4, 4 / 8 | 0 | no |
+| Bear's Might, `GA_NF_DruidFeralist_ChanneledAttack` | 1.5, 1.5 / 3 | 0 | no |
+
+Tormenting Visions has whole ticks at 1.5, 3 and 4.5 seconds over the rate and a tick of the factor 0.33333 at 5
+seconds over the rate. Its graph applies the damage effect with `SetByCaller.DamageScale` of 1 over the count of
+targets in the radius on each of the four.
+
+### Dynamic duration and tick interval
+
+`CRAbilityTask_ServerChanneling::SetDynamicDuration(ChannelingData, NewDuration)` (0x145121B30) and
+`SetDynamicTickInterval(ChannelingData, NewTickInterval)` (0x145121B40) write a `ChannelingData`'s
+`ChannelingDuration` (+0x08) and `ChannelingTickInterval` (+0x30). Each stores the number as the scalable float's
+`Value` and clears its curve table, row and registry (0x144AB46C0). A graph calls them before
+`ServerStartChanneling`.
+
+`BPFL_Shared_NPC.Set Channel Num of Ticks(ChannelingData, Num of Ticks)` sets the interval to
+`(ChannelingDuration + 1) / Num of Ticks` under `TickImmediately` and to `ChannelingDuration / Num of Ticks`
+otherwise. Eagle's Fury passes its `Num of Spins` row (8) and Bear's Might its `Num Of Ticks` row (3), so each has an
+interval of 0.5 seconds, a whole number of ticks and a `partial` of 0. Freezing Torrent calls both natives from its
+own graph.
 
 ### Constructor defaults of `CRChannelingTaskData`
 

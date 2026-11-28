@@ -17,6 +17,8 @@ public sealed record CreatureRecord : EntityRecord
     public double? Agility { get; init; }
     public double? CritChance { get; init; }
     public double? CritMultiplier { get; init; }
+    public double? Haste { get; init; }
+    public double? AttackSpeed { get; init; }
     public IReadOnlyList<CreatureAbilityRecord>? Abilities { get; init; }
     public IReadOnlyList<CreatureAbilityRecord>? Passives { get; init; }
     public IReadOnlyList<CreaturePhase>? Phases { get; init; }

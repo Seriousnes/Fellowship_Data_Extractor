@@ -462,6 +462,12 @@ public sealed record Entity
 
     public double? CritMultiplier { get; init; }
 
+    /// <summary>A creature's base <c>Haste</c>.</summary>
+    public double? Haste { get; init; }
+
+    /// <summary>A creature's base <c>AttackSpeed</c>.</summary>
+    public double? AttackSpeed { get; init; }
+
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
 
     public IReadOnlyList<EffectModifier>? Modifiers { get; init; }

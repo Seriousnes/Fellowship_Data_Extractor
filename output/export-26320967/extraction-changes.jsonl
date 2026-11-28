@@ -172,6 +172,15 @@
 {"slug":"ability","id":827,"label":"Cooldown","older":"2.6"}
 {"slug":"ability","id":828,"label":"Cooldown","older":"16"}
 {"slug":"ability","id":829,"label":"Cooldown","older":"30"}
+{"slug":"ability","id":829,"label":"End Ability Paths \u203A Tasks 1 \u203A Conditions 1 \u203A Condition"}
+{"slug":"ability","id":829,"label":"End Ability Paths \u203A Tasks 1 \u203A Conditions 1 \u203A Value"}
+{"slug":"ability","id":829,"label":"End Ability Paths \u203A Tasks 1 \u203A Delegate"}
+{"slug":"ability","id":829,"label":"End Ability Paths \u203A Tasks 1 \u203A Task"}
+{"slug":"ability","id":829,"label":"End Ability Paths \u203A Tasks 2 \u203A Delegate"}
+{"slug":"ability","id":829,"label":"End Ability Paths \u203A Tasks 2 \u203A Scale Time With Ability Speed"}
+{"slug":"ability","id":829,"label":"End Ability Paths \u203A Tasks 2 \u203A Seconds"}
+{"slug":"ability","id":829,"label":"End Ability Paths \u203A Tasks 2 \u203A Task"}
+{"slug":"ability","id":829,"label":"End Ability Paths \u203A Tasks 2 \u203A Variables \u203A End Ability Delay"}
 {"slug":"ability","id":830,"label":"Cooldown","older":"21"}
 {"slug":"ability","id":831,"label":"Cooldown","older":"1.6"}
 {"slug":"ability","id":833,"label":"Cooldown","older":"22"}
@@ -241,6 +250,12 @@
 {"slug":"ability","id":2017,"label":"Cooldown","older":"5"}
 {"slug":"ability","id":2059,"label":"Cooldown","older":"30"}
 {"slug":"ability","id":2083,"label":"Cooldown","older":"25"}
+{"slug":"ability","id":2125,"label":"End Ability Paths \u203A Tasks 1 \u203A Delegate"}
+{"slug":"ability","id":2125,"label":"End Ability Paths \u203A Tasks 1 \u203A Task"}
+{"slug":"ability","id":2125,"label":"End Ability Paths \u203A Tasks 2 \u203A Conditions 1 \u203A Condition"}
+{"slug":"ability","id":2125,"label":"End Ability Paths \u203A Tasks 2 \u203A Conditions 1 \u203A Value"}
+{"slug":"ability","id":2125,"label":"End Ability Paths \u203A Tasks 2 \u203A Delegate"}
+{"slug":"ability","id":2125,"label":"End Ability Paths \u203A Tasks 2 \u203A Task"}
 {"slug":"ability","id":2153,"label":"Cooldown","older":"3.2"}
 {"slug":"ability","id":2154,"label":"Cooldown","older":"15"}
 {"slug":"ability","id":2155,"label":"Cooldown","older":"20"}
