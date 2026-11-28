@@ -388,6 +388,14 @@ Decoded against **26320967**, `CRStaggerActorComponent` (character +0xF78), behi
 | `CRModifyStaggerExecution`: `SetByCaller.Stagger` to `AuthUpdateStaggerAndLog` with flag 1 | 0x1451091E0, call 0x145109383 |
 | Hero death override clears Stagger before the base death (+0x92D, `EffectLogic.RemoveOnDeath`) | 0x145312310 (vtable entry 0x148CFC7A8), call 0x145312378; base 0x1452ED190 |
 
+Decoded against **26320967**, the school and armor terms of the target formula in `docs/effect-periods.md`:
+
+| What | Where |
+| --- | --- |
+| Target attribute gather: one capture for each set preset flag, `Armor` +0x22, `Avoidance` +0x23, `IncomingDamageMultiplier` +0x24, `PhysicalDamageReduction` +0x25, `MagicDamageReduction` +0x26, `PhysicalIncomingDamageMultiplier` +0x27, `MagicalIncomingDamageMultiplier` +0x28, `AoeIncomingDamageMultiplier` +0x29 | **0x1450DB100**, flag tests 0x1450DB128 to 0x1450DB303 |
+| School pair by asset tag, `GameplayTags` then `ParentTags`: `EffectType.Physical` first, else `EffectType.Magic` | 0x145107B1E to 0x145107BC0; tag globals 0x14A3C9E50, 0x14A3C9E48 |
+| Armor term: `CRItemSettings` default object +0x38, `CalcDamageReductionFromArmorValue` of `trunc(Armor)` | 0x145107A90 to 0x145107AE9, caller of the Blueprint function 0x145020120, name global 0x14A3B1970 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

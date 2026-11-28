@@ -136,12 +136,22 @@ The product is rounded half away from zero before the target's terms.
 
 The target's terms multiply in this order, each under its preset flag:
 
-1. `clamp(1 - Avoidance, 0, 1)`, under `ApplyTargetAvoidance`.
-2. `IncomingDamageMultiplier`, under `ApplyTargetIncomingDamageHealingMultipliers`.
-3. For an effect with the asset tag `EffectType.Physical`: `clamp(1 - PhysicalDamageReduction, 0, 1)` and
-   `PhysicalIncomingDamageMultiplier`. For `EffectType.Magic`: `clamp(1 - MagicDamageReduction, 0, 1)` and
-   `MagicalIncomingDamageMultiplier`.
-4. `AoeIncomingDamageMultiplier`, under `ApplyTargetAoeIncomingDamageMultiplier`.
+1. `CalcDamageReductionFromArmorValue(trunc(Armor))`, under `ApplyTargetArmor`. `HeroItemStatCalculation` has the
+   function: `1 - 0.00052 x Armor / (Global.ArmorToDamageReductionMultiplier + 0.00048 x |Armor|)`.
+2. `clamp(1 - Avoidance, 0, 1)`, under `ApplyTargetAvoidance`.
+3. `IncomingDamageMultiplier`, under `ApplyTargetIncomingDamageHealingMultipliers`.
+4. For an effect with an asset tag at or under `EffectType.Physical`: `clamp(1 - PhysicalDamageReduction, 0, 1)`
+   under `ApplyTargetPhysicalDamageReduction` and `PhysicalIncomingDamageMultiplier` under
+   `ApplyTargetPhysicalIncomingDamageMultiplier`. Otherwise, for a tag at or under `EffectType.Magic`:
+   `clamp(1 - MagicDamageReduction, 0, 1)` under `ApplyTargetMagicDamageReduction` and
+   `MagicalIncomingDamageMultiplier` under `ApplyTargetMagicalIncomingDamageMultiplier`.
+5. `AoeIncomingDamageMultiplier`, under `ApplyTargetAoeIncomingDamageMultiplier`.
+
+The gather captures a target attribute only for a set flag. A reduction is otherwise 0 and a multiplier 1. A school
+pair therefore needs the tag and the flag together. High Tide's damage effect has the tag `EffectType.Magic.Water`
+and the preset `EnemyPhysicalArea`, so neither pair changes its hit: the tag selects the magic pair and the preset
+has both magic flags clear. Arcane Volley's damage effect has the preset `EnemyMagicalArea`, so `Avoidance` and
+`AoeIncomingDamageMultiplier` apply to it.
 
 An instant effect executes inside its application call, so the attributes and the hit outcome of each hit are those
 of the moment the ability's graph applies it.
