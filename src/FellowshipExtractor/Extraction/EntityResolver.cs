@@ -553,6 +553,7 @@ public sealed class EntityResolver
         entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
 
         if (Owners.DisabledInSet(tag.Name) ||
+            Owners.GrantedByDisabledTalentsAlone(tag.Name) ||
             (presentation is not null &&
              PropertyWalk.Get(presentation.Row, AbilityOwners.EnabledInGameField)?.GenericValue is false) ||
             (IsDynamicDefinition(asset) && cdo is not null &&
