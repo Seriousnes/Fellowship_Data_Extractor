@@ -75,6 +75,12 @@ public sealed class AbilityDocument : EntityDocument
     /// <summary>The flags of the ability's <c>ChannelingData</c>, each from the nearest class of its Blueprint chain with it.</summary>
     public ChannelingTaskData? ChannelingData { get; init; }
 
+    /// <summary>
+    /// The <c>CRAbilityTask_DamageModificationTask</c> calls of the ability's graph. Each task's handler has a hit's
+    /// Health damage and replaces it, and a reduction is in the hit's <c>Absorbed</c> amount.
+    /// </summary>
+    public IReadOnlyList<DamageModificationTask>? DamageModificationTasks { get; init; }
+
     /// <summary>The ability's <c>ActivationBlockedTags</c>. An owner with one of them cannot activate the ability.</summary>
     public IReadOnlyList<string>? ActivationBlockedTags { get; init; }
 

@@ -115,6 +115,20 @@ public sealed record Entity
 
     public ChannelingTaskData? ChannelingData { get; init; }
 
+    /// <summary>The <c>CRAbilityTask_DamageModificationTask</c> calls of the ability's graph.</summary>
+    public IReadOnlyList<DamageModificationTask>? DamageModificationTasks { get; init; }
+
+    /// <summary>Asset name of the main effect's <c>EffectAppliedToTheInstigatorOfTheMainEffect</c>.</summary>
+    [JsonIgnore]
+    public string? InstigatorDependencyEffectName { get; init; }
+
+    /// <summary>Asset name of the main effect's <c>EffectAppliedToTheOwnerOfTheMainEffect</c>.</summary>
+    [JsonIgnore]
+    public string? OwnerDependencyEffectName { get; init; }
+
+    /// <summary>True for an effect whose native class is <c>CRGameplayEffectActorDependency</c>.</summary>
+    public bool? ActorDependency { get; init; }
+
     /// <summary>The ability's <c>AbilityTags</c>, from the nearest class of its Blueprint chain with them.</summary>
     public IReadOnlyList<string>? InheritedAbilityTags { get; init; }
 

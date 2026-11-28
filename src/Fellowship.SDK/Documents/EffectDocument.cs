@@ -144,6 +144,28 @@ public sealed class EffectDocument : EntityDocument
     /// <summary>The effect whose Blueprint class this effect's class derives from.</summary>
     public EntityReference? ParentClass { get; init; }
 
+    /// <summary>
+    /// The <c>EffectAppliedToTheInstigatorOfTheMainEffect</c> of this effect's <c>CRActorDependencyComponent</c>.
+    /// This effect's instigator has it for one hit alone: a hit on the instigator whose source has this effect. It is
+    /// applied before the hit's attribute gather with this effect's stack count and removed after the hit. A hit
+    /// with the outcome <c>Miss</c>, <c>Parry</c> or <c>Dodge</c> has no removal, and the effect then stays until the
+    /// next hit of that source with any other outcome, or until this effect ends.
+    /// </summary>
+    public EntityReference? EffectAppliedToTheInstigatorOfTheMainEffect { get; init; }
+
+    /// <summary>
+    /// The <c>EffectAppliedToTheOwnerOfTheMainEffect</c> of this effect's <c>CRActorDependencyComponent</c>. This
+    /// effect's owner has it for one hit alone: a hit on the owner whose source is this effect's instigator. The
+    /// application and the removal are those of <see cref="EffectAppliedToTheInstigatorOfTheMainEffect"/>.
+    /// </summary>
+    public EntityReference? EffectAppliedToTheOwnerOfTheMainEffect { get; init; }
+
+    /// <summary>
+    /// True for an effect whose native class is <c>CRGameplayEffectActorDependency</c>, the class of an effect a
+    /// <c>CRActorDependencyComponent</c> names. Its own duration has no part: the main effect's hits apply and remove it.
+    /// </summary>
+    public bool? ActorDependency { get; init; }
+
     /// <summary>Effects the effect's properties and graph reference.</summary>
     public IReadOnlyList<EntityReference>? Applies { get; init; }
 

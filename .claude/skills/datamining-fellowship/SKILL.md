@@ -561,6 +561,24 @@ Decoded against **26320967**, implemented in `CombatLogIds.cs` and written up in
 No routine of the executable has the immediate 1,000,000 in the combat log code. Fellowship Logs adds it to the id of a
 line logged under an effect.
 
+Decoded against **26320967**, the damage modification task and the actor dependency effects, implemented in
+`DamageModificationTasks.cs` and `ActorDependencies.cs` and written up in `docs/damage-absorption.md`:
+
+| What | Where |
+| --- | --- |
+| `DamageModificationTask` factory: `IncomingDamageCharacter` +0x90, `OutgoingDamageCharacter` +0x98, `BlockOnTaskOwnerTag` +0xA0, `CapturedSourceTagsRequirements` +0xA8, `Prio` +0xF0; exec thunk 0x144EFF890, parameter names at 0x148A99660 | **0x1451115E0** |
+| Task activation: handler into the incoming character's map (+0xC90) and the outgoing character's (+0xC78), keyed by `Prio` | 0x14510F960; map entry 0x145112C00, bind 0x14510D160 |
+| Task handler: block tag, source tag query against context +0x330, `OnDamage` broadcast, new value from task +0xF4 | **0x145114290**; 0x1451142D1, 0x145114309, 0x14511439C, 0x1451143A9 |
+| `SetDamageValue`, exec thunk 0x144F00310 | 0x145116A60 |
+| Hook dispatcher: levels ascending, listeners of a level last first, virtual +0x60 | 0x1450D4920 |
+| Levels of the native hooks: damage redirect 0, stagger 1, death prevention 3 | 0x1452824D1, 0x1452CA0E7, 0x1452720B1 |
+| Driver delegates of the hit's target: before the attack table roll (character +0x848), after the absorption passes (+0x860); `Miss`, `Parry` and `Dodge` skip the second | 0x1450DD072, 0x1450DD3B9; `jne` 0x1450DD1D3 |
+| `CRActorDependencyComponent`: instigator's class +0x28, owner's class +0x30; vtable 0x148ADF808, effect-added override at +0x2D0 | **0x1452EF3E0** |
+| Its listeners: owner's class apply 0x1452F04A0 and remove 0x1452E37F0; instigator's class apply 0x1452F0820 and remove 0x1452E38D0 | lambda bodies 0x1452E9AA0, 0x1452E9B80, 0x1452E9C50, 0x1452E9D30 |
+| Instigator's class apply: the hit's source is the main effect's owner (0x1452F089F), stack count of the main effect (0x1452F099F), `ApplyGameplayEffectSpecToTarget` (0x1452F0AE8) | 0x1452F0820 |
+| Main effect removal: unbinds both listeners, removes the class | 0x1452EFAE0 |
+| `CRGameplayEffectActorDependency` static class | 0x144FF4FE0 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

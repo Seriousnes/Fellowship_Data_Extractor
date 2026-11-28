@@ -102,6 +102,79 @@ Each character has a map of listeners for outgoing damage (+0xC78) and one for i
 - **Damage redirect** (0x14527DD90): H loses `H * factor / count`, and the part is queued for the
   redirect's target with a `DAMAGE_ABSORBED` line (0x14527E080).
 - **Death prevention** (0x14527E150): when H is above Health by more than 1, H becomes `Health - 1`.
+- **Damage modification task** (0x145114290, `CRAbilityTask_DamageModificationTask`): the task's
+  `OnDamage` handler in an ability's graph has H, and `SetDamageValue` replaces it.
+
+Each map is keyed by an `EDamageExecutionPreApplicationPrioLevel` member: `RedirectDamage` 0,
+`DelayDamage` 1, `RedirectHeal` 2, `DeathPrevention` 3. The dispatcher (0x1450D4920) runs the levels in
+ascending order and the listeners of one level last registered first. Damage redirect is at
+`RedirectDamage` (0x1452824D1), stagger at `DelayDamage` (0x1452CA0E7) and death prevention at
+`DeathPrevention` (0x1452720B1).
+
+### The damage modification task
+
+The factory (0x1451115E0) takes `OwningAbility`, `IncomingDamageCharacter` (task +0x90),
+`OutgoingDamageCharacter` (+0x98), `BlockOnTaskOwnerTag` (+0xA0), `CapturedSourceTagsRequirements`
+(+0xA8) and `Prio` (+0xF0). Activation (0x14510F960) puts the handler in the incoming character's
+incoming map and in the outgoing character's outgoing map, each under `Prio`. `damageModificationTasks`
+on an ability has the four literal arguments of each call in its graph.
+
+The handler:
+
+```
+if the ability's owner has BlockOnTaskOwnerTag: return        # 0x1451142D1 to 0x145114303
+if CapturedSourceTagsRequirements is set and the hit's
+   aggregated source tags fail it: return                     # 0x145114309 to 0x14511433E
+task.DamageValue = H                                          # task +0xF4, 0x14511434C
+OnDamage(DamagerCharacter, DamagedCharacter, H, HitType, Spec)   # 0x14511439C
+H = task.DamageValue                                          # 0x1451143A9; SetDamageValue 0x145116A60
+```
+
+A lower H adds the difference to `AbsorbedDamage`, so the combat log has it in `Absorbed` with no
+`DAMAGE_ABSORBED` line.
+
+Against All Odds, the trait of The Beetle (`GA_Trait_BigBlowMitigation_Monitor`): the task has the
+owner's incoming hits at `RedirectDamage` and is blocked by
+`CustomGrantedTags.Trait.BigBlowMitigation.Cooldown`. For `MaxHealth * DamageMaxHealthFraction < H` the
+handler sets `H - H * DamageReduction` and applies Against All Odds: Cooldown to the owner, the effect
+granting the blocking tag. Both rows are read at the ability's level.
+
+Ancestral Intervention, the trait of The Mountain (`GA_Trait_DeathPreventionWithImmunity_Monitor`):
+the task has the owner's incoming hits at `DeathPrevention`. For `Health < H` the handler sets 0 and
+applies its cooldown and its immunity effect.
+
+## Actor dependency effects
+
+An effect with a `CRActorDependencyComponent` names up to two effect classes of the native class
+`CRGameplayEffectActorDependency`: `EffectAppliedToTheInstigatorOfTheMainEffect` (component +0x28) and
+`EffectAppliedToTheOwnerOfTheMainEffect` (+0x30). The effect with the component is the main effect.
+
+The driver calls a delegate of the hit's target before the attack table roll and the attribute gather
+(character +0x848, called at 0x1450DD072) and one after the absorption passes (+0x860, called at
+0x1450DD3B9). Both take the source's and
+the target's ability system component. The component's effect-added routine (0x1452EF3E0) binds a
+listener to each delegate for each named class:
+
+- The instigator's class, on the main effect's instigator: for a hit whose source is the main effect's
+  owner, the first listener (0x1452F0820) applies the class to the instigator with the main effect's
+  stack count (0x1452F099F, 0x1452F0AE8), and the second removes every stack of it (0x1452E38D0,
+  removal at 0x1452E398A).
+- The owner's class, on the main effect's owner: for a hit whose source is the main effect's
+  instigator, the first listener (0x1452F04A0) applies the class to the owner and the second removes it
+  (0x1452E37F0, removal at 0x1452E38AA).
+
+The class is therefore on its character for one hit's calculation alone, and its own duration has no
+part. The end of the main effect unbinds the listeners and removes the class (0x1452EFAE0).
+
+Lingering Concussion, the debuff of Helena's Shield Slam, names `IncomingDamageMultiplier x0.97` for
+its instigator. A hit on Helena from an enemy with n stacks of Lingering Concussion takes `0.97^n`, and
+a hit from any other enemy takes none of it.
+
+A hit with the outcome `Miss`, `Parry` or `Dodge` leaves the driver before the second delegate
+(`jne` at 0x1450DD1D3 to 0x1450DD4F9), so the class applied for that hit stays on its character. It then
+applies to hits from every source until the next hit of the same pair with any other outcome, or until
+the main effect ends. Lingering Concussion's class stacks by source, so that next application adds its
+stacks to the stacks left before the removal.
 
 ## The combat log line
 

@@ -463,6 +463,7 @@ public sealed class EntityResolver
             {
                 ScaleTimeWithAttackSpeed = AbilityTaskReads.ScalesWithAttackSpeed(cdo, _provider) ? true : null,
                 ChannelingData = AbilityTaskReads.Channeling(cdo, _provider),
+                DamageModificationTasks = Empty(DamageModificationTasks.Of(cdo, _mappings)),
                 InheritedAbilityTags = Empty(AbilityTaskReads.AbilityTags(cdo, _provider)),
                 ActivationBlockedTags = Empty(AbilityTaskReads.ActivationBlockedTags(cdo, _provider)),
                 LogAsADifferentAbility = Owned(CombatLogIds.LogAsADifferentAbility(cdo, _provider), AbilityTable),
@@ -483,6 +484,9 @@ public sealed class EntityResolver
                 LogIdClass = hits ? logged.IdClass(policy) : null,
                 LoggedUnder = hits ? LoggedUnder(tag, logged, policy) : null,
                 LogsEffectEvents = CombatLogIds.LogsEffectEvents(cdo, logged, policy, _provider) ? true : null,
+                InstigatorDependencyEffectName = ActorDependencies.Of(cdo, _provider)?.AppliedToTheInstigator,
+                OwnerDependencyEffectName = ActorDependencies.Of(cdo, _provider)?.AppliedToTheOwner,
+                ActorDependency = ActorDependencies.IsDependent(cdo, _provider) ? true : null,
                 CalculationPreset = _presets.Executed(cdo),
                 TargetTags = Empty(AbilityTaskReads.GrantedTags(cdo, _provider)),
                 Executions = Empty(AbilityTaskReads.Executions(cdo, _provider)),
