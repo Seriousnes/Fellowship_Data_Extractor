@@ -90,6 +90,65 @@ public sealed class CreatureAbilitySlotTests
         Assert.Contains(phases, phase => phase.Tag == "AIPhase.Custom.PR.BossAnchor.HighTide");
     }
 
+    /// <summary>
+    /// <c>BP_NPC_Critter_PolymorphChickenLarge</c> and <c>BP_NPC_Critter_PolymorphChickenSmall</c> have no
+    /// <c>BehaviorComponentClass</c>, <c>CharacterTags</c>, <c>Abilities</c> or <c>PassiveGameplayEffects</c>. Their parent
+    /// <c>BP_NPC_Critter_PolymorphChickenMedium</c> has the first two, and <c>BP_AICharacter</c> the last two.
+    /// </summary>
+    [Theory]
+    [InlineData(276)]
+    [InlineData(277)]
+    [InlineData(278)]
+    public void APolymorphChickenHasTheSlotsPhasesRankAndPassivesOfItsBlueprintChain(int creature)
+    {
+        var peck = Slot(creature, 1479);
+
+        Assert.Equal("Default Combat", peck.Phase);
+        Assert.Equal("TimerBased", peck.Activation);
+        Assert.Equal(0, peck.Priority);
+        Assert.True(peck.Interruptible);
+        Assert.False(peck.Shown);
+        Assert.Equal(new PhaseCooldown("FixedValue") { Seconds = 2.1 }, peck.Cooldown);
+        Assert.Null(peck.InitialCooldown);
+
+        Assert.Equal("Spawn", Slot(creature, 1540).Phase);
+
+        var chicken = Document<CreatureDocument>(EntityType.Creature, creature);
+
+        Assert.Equal(CreatureRank.Elite, chicken.Rank);
+        Assert.Equal(
+            ["AIPhase.Idle", "AIPhase.DefaultCombat", "AIPhase.Spawn"],
+            chicken.Phases!.Select(phase => phase.Tag));
+        Assert.Equal(
+            [(EntityType.Ability, 6), (EntityType.Effect, 155)],
+            chicken.Passives!.Select(passive => (passive.Ability.Type, passive.Ability.Id)));
+
+        var attack = Document<AbilityDocument>(EntityType.Ability, 1479);
+
+        Assert.Equal("AIThreat", attack.TargetAcquisition);
+        Assert.Equal("Threat", attack.TargetSelection!.Type);
+        Assert.Equal("ThreatSorted", attack.TargetSelection.ThreatMode);
+        Assert.True(attack.AutoAttack);
+        Assert.Equal(
+            [276, 277, 278],
+            attack.Origins!.Where(origin => origin.Type == EntityType.Creature).Select(origin => origin.Id));
+    }
+
+    /// <summary>
+    /// <c>GE_NPCAttributesBase</c> is in <c>BP_AICharacter</c>'s <c>PassiveGameplayEffects</c>, and in the same field of
+    /// every creature class with its own.
+    /// </summary>
+    [Fact]
+    public void EveryCreatureHasTheBaseAttributesEffectOfBpAiCharacter()
+    {
+        var creatures = Export.Loaded.Documents.Where(row => row.Type == EntityType.Creature).ToArray();
+
+        Assert.All(creatures, row => Assert.Contains(
+            row.Body["passives"]!.AsArray(),
+            passive => passive!["ability"]!["type"]!.GetValue<string>() == "effect" &&
+                       passive["ability"]!["id"]!.GetValue<int>() == 155));
+    }
+
     [Fact]
     public void EverySlotOfADungeonCreatureHasAnActivationAndAPriority()
     {

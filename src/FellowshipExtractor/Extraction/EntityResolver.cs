@@ -999,14 +999,16 @@ public sealed class EntityResolver
 
         return entity with
         {
-            Rank = cdo is null ? null : Ranked(PropertyWalk.GetTags(cdo, CharacterTagsField)),
+            Rank = cdo is null
+                ? null
+                : Ranked(PropertyWalk.AsTags(ClassDefaults.Inherited(cdo, CharacterTagsField, _provider)?.GenericValue)),
             Health = attributes?.Health,
             Armor = attributes?.Armor,
             Resist = attributes?.Resist,
             KillScore = attributes?.KillScore,
             SpiritPoints = attributes?.SpiritPoints,
             CountsTowardScore = cdo is not null &&
-                PropertyWalk.Get(cdo, CountsTowardScoreField)?.GenericValue is false
+                ClassDefaults.Inherited(cdo, CountsTowardScoreField, _provider)?.GenericValue is false
                 ? false
                 : null,
             Intellect = attributes?.Intellect,

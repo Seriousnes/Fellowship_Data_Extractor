@@ -365,10 +365,8 @@ public sealed class AbilityOwners
 
     private IReadOnlyList<(string Phase, string? Tag, string Type)> Phases(UObject creature)
     {
-        if (PropertyWalk.GetString(creature, BehaviourField) is not { } behaviour) return [];
-        if (!_byName.TryGetValue(Leaf(behaviour), out var asset)) return [];
-        if (DungeonNames.Load(_provider, asset.ObjectPath) is not { } component) return [];
-        if (PropertyWalk.Get(component, PhasesField)?.GenericValue is not UScriptMap phases) return [];
+        if (Behaviour(creature) is not var (asset, component)) return [];
+        if (Inherited(component, PhasesField) is not UScriptMap phases) return [];
 
         var found = new List<(string, string?, string)>();
 
@@ -400,25 +398,23 @@ public sealed class AbilityOwners
     {
         foreach (var field in (string[])[AbilitiesField, PassiveEffectsField])
         {
-            foreach (var named in Paths(creature, field))
+            foreach (var named in Paths(Inherited(creature, field)))
             {
                 yield return new CreatureSlot(named, field, true, Passive: true);
             }
         }
 
-        if (PropertyWalk.GetString(creature, BehaviourField) is not { } behaviour) yield break;
-        if (!_byName.TryGetValue(Leaf(behaviour), out var asset)) yield break;
-        if (DungeonNames.Load(_provider, asset.ObjectPath) is not { } component) yield break;
+        if (Behaviour(creature) is not var (_, component)) yield break;
 
         foreach (var field in (string[])[LifetimeAbilitiesField, LifetimeEffectsField])
         {
-            foreach (var named in Paths(component, field))
+            foreach (var named in Paths(Inherited(component, field)))
             {
                 yield return new CreatureSlot(named, field, true, Passive: true);
             }
         }
 
-        if (PropertyWalk.Get(component, PhasesField)?.GenericValue is not UScriptMap phases) yield break;
+        if (Inherited(component, PhasesField) is not UScriptMap phases) yield break;
 
         foreach (var (key, value) in phases.Properties)
         {
@@ -454,9 +450,26 @@ public sealed class AbilityOwners
         }
     }
 
-    private static IEnumerable<string> Paths(IPropertyHolder holder, string field)
+    /// <summary>
+    /// The creature's behaviour component class, from the nearest class of the creature's Blueprint chain with a
+    /// <c>BehaviorComponentClass</c>. <c>BP_NPC_Critter_PolymorphChickenLarge</c> has none, and its parent
+    /// <c>BP_NPC_Critter_PolymorphChickenMedium</c> has <c>AIBC_Shared_PolymorphChicken</c>.
+    /// </summary>
+    private (FAssetData Asset, UObject Component)? Behaviour(UObject creature)
     {
-        if (PropertyWalk.Get(holder, field)?.GenericValue is not UScriptArray listed) yield break;
+        if (PropertyWalk.AsString(Inherited(creature, BehaviourField)) is not { } behaviour) return null;
+        if (!_byName.TryGetValue(Leaf(behaviour), out var asset)) return null;
+        if (DungeonNames.Load(_provider, asset.ObjectPath) is not { } component) return null;
+
+        return (asset, component);
+    }
+
+    /// <summary>The field's value on the nearest class of the Blueprint chain with that field.</summary>
+    private object? Inherited(UObject cdo, string field) => ClassDefaults.Inherited(cdo, field, _provider)?.GenericValue;
+
+    private static IEnumerable<string> Paths(object? value)
+    {
+        if (value is not UScriptArray listed) yield break;
 
         foreach (var entry in listed.Properties)
         {
