@@ -83,6 +83,8 @@ public sealed class Settings
 
     public DamageAbsorption DamageAbsorption { get; }
 
+    public IReadOnlyDictionary<string, IReadOnlyList<AttributeCapture>> RelevantAttributesToCapture { get; }
+
     public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; }
 
     public IReadOnlyList<LeagueEntry> Leagues { get; }
@@ -150,6 +152,7 @@ public sealed class Settings
         LeagueKinds = leagues.Kinds;
         Items = items.Values with { StatEnchantPower = enchants.Power };
         DamageAbsorption = DamageAbsorptions.Read(provider);
+        RelevantAttributesToCapture = CalculationCaptures.Read(provider);
 
         StatCalculation = statCalculation;
         GemTypes = gemTypes;
@@ -275,6 +278,7 @@ public sealed class Settings
             SlotDefinitions = StatCalculation.SlotDefinitions,
         },
         EffectCalculationPresets = Enemies.Presets,
+        RelevantAttributesToCapture = RelevantAttributesToCapture,
         Threat = Enemies.Threat,
         AiGlobals = Enemies.AiGlobals,
         PartyScaling = Enemies.PartyScaling,

@@ -95,7 +95,9 @@ the captured attributes of the latest application.
 ## The source attributes of a tick
 
 A source capture with `bSnapshot` has the source's attribute value of the spec's creation. An application on a stack
-replaces the spec, and the values with it.
+replaces the spec, and the values with it. Every source definition of the damage and healing calculation classes has
+`bSnapshot`, and every target definition is live: `attribute-captures.md` has the definitions, and `settings.json` has
+them in `relevantAttributesToCapture`.
 
 An effect with `RecaptureSourceAttributesBeforeEveryExecution` captures the source's attributes again before each
 execution: a periodic tick (0x144A808C4) and the execution of an instant application (0x1449FD735) clear the spec's
@@ -156,6 +158,34 @@ The eruption, in the order of the graph:
 
 The ability's `Damage Effect` property names effect 2732. No statement of the graph applies it.
 
+### The eruption at a target's death
+
+Four conditions of the graph stop an eruption, each before step 3:
+
+| Offset | Condition |
+| --- | --- |
+| 10 | `Has Talent` is false. The activation sets it from the tag `Talents.Lisa.SingleTargetDot.DotAoe` of the Claim's source. |
+| 73 | `IsValid` of the ability's owning character, the Claim's target, is false. |
+| 116 | `IsValid` of `Source Character`, the Claim's source, is false. |
+| 630 | The target list of step 1 is empty. |
+
+The route has no test of the source's alive state, of the ability's activation, of authority or of a tag.
+
+At the death of the Claim's target the query of step 1 leaves the target out, and an eruption with no other target
+ends at offset 630:
+
+- The death routine of a character (0x1452ED190, authority alone) writes the dead flag (+0x92D, 0x1452ED233) and
+  calls virtual +0xAB8 (0x1452ED25A). For `CRAICharacter` that is 0x145157A20, and its callee 0x1452F0BD0 writes bit
+  0 of the character's flags in the targeting registry (0x145534A50) from virtual +0xA10, the dead flag equal to 0
+  (0x144F3AC00).
+- The routine removes the effects with `EffectLogic.RemoveOnDeath` after that (0x1452ED326, tag global
+  0x14A3C9EE0). Effect 2603 has the tag, and its removal ends the ability.
+- The filter context of a query (0x1450C9260) has a state of `MustBeTrue` in the first state byte as required bit 0
+  (0x1450C941A). The list walk (0x145534620) leaves out an entry without the required bits (0x1455346E0).
+
+An eruption at the target's death therefore has the alive enemies within the radius of the dead target as its
+targets, and `N` is their count.
+
 ### Effect 2819
 
 | Member | Value |
@@ -183,7 +213,12 @@ x BalancingDamageAura`, rounded, then the target terms of `HeroMagicalOT`.
 
 - **`stacks`**: 1 after the first eruption on a target, and 1 more for each later eruption of the same Aeona on it, up
   to 10.
-- **`Intellect`, `DamageScale`, `N`**: those of the latest eruption on the target.
+- **`Intellect`, `DamageScale`, `Expertise`, `BalancingDamageAura`, `N`**: those of the latest eruption on the target.
+  Each attribute is a source capture with `bSnapshot`, made at the spec's creation in step 3, and the effect has no
+  `RecaptureSourceAttributesBeforeEveryExecution`.
+- **`outcome`**: rolled at each tick, with the `CritChance` and the `CritMultiplier` of the latest eruption. Both are
+  source captures with `bSnapshot`.
+- **Target terms**: the target's attributes of the tick. Each is a live target capture.
 - **Duration**: 9 seconds from the latest eruption, with no Haste term and no time carried over. The whole stack ends
   together, with the partial last tick of an `EffectType.Dot` effect.
 - **Period timer**: set again by each eruption. The first tick after an eruption is one hasted period after it.
@@ -207,3 +242,15 @@ within 5 ms of the target's latest one.
 | First tick after an `applydebuffstack` line (same fight) | median 776 ms, 10th percentile 736 ms |
 | Removal after the latest application line, target alive | median 9016 to 9021 ms in each fight |
 | Highest count in each fight | 10, 9, 3, 5, 10, 9, 3 |
+
+Twelve fights with an Aeona have 90 removals of 1002603 within 250 ms of the target's `death` line. An enemy's
+position is the `x` and `y` of its nearest log line, and an enemy is alive from its first line to its `death` line.
+
+| Reading | Result |
+| --- | --- |
+| Removals with an eruption within 60 ms | 78 of 90 |
+| Removals with no eruption, and no other enemy alive within 800 of the dead target | 12 of 12 |
+| Eruptions with the dead target among their targets, removal 0 to 11 ms after the `death` line | 0 of 76 |
+| Eruptions with the dead target among their targets, removal 103 and 133 ms before the `death` line | 2 of 2 |
+| Eruptions at a death with a target count equal to the alive enemies within 800 | 75 of 76 |
+| Other removals of 1002603 with an eruption | 958 of 958 |
