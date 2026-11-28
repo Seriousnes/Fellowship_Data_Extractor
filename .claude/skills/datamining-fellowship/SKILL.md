@@ -396,6 +396,41 @@ Decoded against **26320967**, the school and armor terms of the target formula i
 | School pair by asset tag, `GameplayTags` then `ParentTags`: `EffectType.Physical` first, else `EffectType.Magic` | 0x145107B1E to 0x145107BC0; tag globals 0x14A3C9E50, 0x14A3C9E48 |
 | Armor term: `CRItemSettings` default object +0x38, `CalcDamageReductionFromArmorValue` of `trunc(Armor)` | 0x145107A90 to 0x145107AE9, caller of the Blueprint function 0x145020120, name global 0x14A3B1970 |
 
+Decoded against **26320967**, `CRAbilityTask_ServerCasting` and `CRAbilityTask_ServerChanneling`, written up in
+`docs/casting-and-channeling.md`:
+
+| What | Where |
+| --- | --- |
+| `ServerStartCasting`, exec thunk 0x144F1A680; `Duration` +0xB0 from `ModifyCastingDuration`, `CastSpeed` +0xB4 `clamp(rate, 0, 999)` | **0x145121260**; 0x14512137D, 0x14512139D to 0x1451213AD |
+| `ServerStartChanneling`, exec thunk 0x144F1C070; `rate = clamp(rate, 0.0001, 999)`, `ScaledDuration` +0xB0, `TickInterval` +0xB4 `/ rate` | **0x145121540**; 0x14512167F, 0x1451216CC, 0x1451216FD |
+| `ModifyCastingDuration`, `ModifyChannelingDuration`: callers by name, native bodies return the input (ability vtable +0x4C8, +0x4C0) | 0x144FEC850, 0x144FEC8F0; 0x1450E30F0; names 0x14A3ACC68, 0x14A3ACC70 |
+| Ability time rate for an ability instance, and for a class default object with a component | 0x1450E06E0, 0x1450E0910 |
+| End montage delay: first `AnimNotify_CastEndMarker` (class getter 0x144F19050) of the montage's notifies (+0x80, stride 0xB8), `WaitDelayCR` 0x14512E940 | cast 0x145121460 to 0x1451214C2; channel 0x1451217D0 to 0x145121830 |
+| Cast task `Activate`: `CRCastingGameplayEffect` (0x144FF4380), `SetDuration(Duration / CastSpeed)`, removal handler, time change handler | **0x14511BE30**; 0x14511C06B to 0x14511C077; 0x14511EFC0; 0x14511EE30 |
+| Channel task `Activate`: `CRChannelingGameplayEffect` (0x144FF4430) or `CRInfiniteChannelingGameplayEffect` (0x144FF44E0), tick count, looping timer with first delay -1 or 0.01 | **0x14511C300**; 0x14511C8CB to 0x14511C935; 0x14511CAE2 |
+| Channel tick timer body; expiry handler with the remaining ticks, the partial tick and `OnFinished`; time change handler | 0x145120A20; **0x14511F270**; 0x14511F030 |
+| `OnLoopTimerExpired` of the cast and of the channel; `OnDestroy` of each | 0x145120770, 0x145120820; 0x145120190, **0x1451202F0** |
+| `EstimateChannelValues`, `ForceMarkChannelComplete`; native tables | 0x14511E000, 0x14511E810; 0x148ABE700, 0x148AC0880 |
+| Channel task: `OnTick` +0x90, `OnFinished` +0xA0, `TickImmediately` +0xB8, flags +0x100 (bit 0 `ContinuousChannel`, 2 `Interruptible`, 5 `EnablePartialTicks`, 6 `AllowSpellPushback`), effect handle +0x104, start time +0x10C, tick count +0x110, ticks remaining +0x114, partial tick +0x118, timer +0x120, complete +0x129, delay task +0x130 | reflection records from 0x148ABF7A0 |
+| Cast task: `OnFinished` +0x90, flags +0xF0 (bit 0 `ShowOverhead`, 1 `Interruptible`, 2 `AllowSpellPushback`), effect handle +0xF4, end montage played +0xFC, finished +0xFD, delay task +0x100 | reflection records from 0x148ABCC40 |
+| `CRChannelingTaskData` (0x80): `ContinuousChannel` +0x00, `ChannelingDuration` +0x08, `ChannelingTickInterval` +0x30, `TickImmediately` +0x78, `ScaleDurationWithAbilityTimeRate` +0x7C, `EnablePartialTicks` +0x7E, `AllowSpellPushback` +0x7F; `CRCastingTaskData`: `CastingDuration` +0x00, `CastEndAnimMontage` +0x30, `Interruptible` +0x39 | reflection records from 0x148ABE840 and 0x148ABC1C0 |
+| `EffectVisualization.OverheadStatus`, `EffectLogic.UninterruptibleCast`, `EffectLogic.NeverShowInterruptOnCastBar`, `EffectLogic.Dynamic.NoSpellPushback` | tag globals 0x14A3CA2B0, 0x14A3C9ED0, 0x14A3C9ED8, 0x14A3C9F78 |
+
+Decoded against **26320967**, the cancel of abilities by an applied effect, written up in
+`docs/casting-and-channeling.md`:
+
+| What | Where |
+| --- | --- |
+| `CRCancelAbilitiesBlockedByThisEffectsParentExecution`: vtable 0x148B3C718, execute +0x2D0; granted tags (+0xA48) of the context's `RootGEDef` (+0x98) | **0x1451085F0** |
+| `RootGEDef` written at the application of an effect with an `AdditionalEffectsGameplayEffectComponent` (class getter 0x1449D01E0) | 0x1452D1229 to 0x1452D128A, in 0x1452D0F50 |
+| Filter: with `AbilityType.Skill` (0x14A3C9FB0) or `Ability.Skill`, without `AbilityLogic.AtomicExecution` (0x14A3CA0C8) | 0x1450CB280; without-tags form 0x1450CAF20, execution 0x145108570 |
+| Component cancel loop over the activatable abilities (+0x500, stride 0xF0): `AbilityTags` (+0xB0), `ActivationBlockedTags` (+0x248, getter 0x1450E0B30) | **0x1452D21A0**; blocked test 0x1452D23E2 to 0x1452D2483 |
+| Per-ability cancel: `CancelAbility` (vtable +0x330) on each active instance, then `ApplyCooldown` (+0x3B0) for a committed ability | 0x1452D1F50; calls 0x1452D20ED, 0x1452D2136 |
+| Engine `CancelAbility`: `CanBeCanceled` (+0x338), `EndAbility` (+0x470) with `bWasCancelled` | 0x1449DA700; 0x1449DA94B |
+| `CRGameplayAbility` flags +0x414: bit 0 ended, 1 committed, 2 cooldown applied; `CommitAbility` (+0x370), `ActivateAbility` (+0x448), `EndAbility` (+0x470) | 0x1450DC8F0, 0x1450D95A0, **0x1450DCC60** |
+| `EndAbility`: global cooldown effect removed for a cancelled ability not committed; `ApplyCooldown` under `CCP_OnAbilityEnd` (`CooldownCommitmentPolicy` +0x3C8 = 2) | 0x1450DCD26 to 0x1450DCDB1; 0x1450DCDB6 to 0x1450DCDF0 |
+| `CharacterStatus.IgnoreMoveInput`, `.IgnoreActionInput`, `.IgnoreRotationInput`, `.Silenced`, `.Uninterruptible` | tag globals 0x14A3CA1A8, 0x14A3CA1B0, 0x14A3CA1B8, 0x14A3CA200, 0x14A3CA210 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
