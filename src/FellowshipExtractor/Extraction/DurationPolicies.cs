@@ -11,6 +11,7 @@ namespace FellowshipExtractor.Extraction;
 /// </summary>
 public static class DurationPolicies
 {
+    public const string Instant = "Instant";
     public const string Infinite = "Infinite";
     public const string HasDuration = "HasDuration";
 

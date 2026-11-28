@@ -185,6 +185,34 @@ public sealed record Entity
 
     public int? MaxStacks { get; init; }
 
+    /// <summary>The effect's <c>StackingType</c>, for a member other than <c>None</c>.</summary>
+    public string? StackingType { get; init; }
+
+    /// <summary>The <c>StackDurationRefreshPolicy</c> of an effect with a <see cref="StackingType"/>.</summary>
+    public string? StackDurationRefreshPolicy { get; init; }
+
+    /// <summary>The <c>StackPeriodResetPolicy</c> of an effect with a <see cref="StackingType"/>.</summary>
+    public string? StackPeriodResetPolicy { get; init; }
+
+    /// <summary>The <c>StackExpirationPolicy</c> of an effect with a <see cref="StackingType"/>.</summary>
+    public string? StackExpirationPolicy { get; init; }
+
+    /// <summary>True for <c>bDenyOverflowApplication</c> on an effect with a <see cref="StackingType"/>.</summary>
+    public bool? DenyOverflowApplication { get; init; }
+
+    /// <summary>True for <c>bClearStackOnOverflow</c> on an effect with a <see cref="StackingType"/>.</summary>
+    public bool? ClearStackOnOverflow { get; init; }
+
+    /// <summary>Asset name of each of the effect's <c>OverflowEffects</c>.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<string>? OverflowEffectNames { get; init; }
+
+    /// <summary>True for an effect with <c>bSilentStack</c>.</summary>
+    public bool? SilentStack { get; init; }
+
+    /// <summary>True for an effect with <c>RecaptureSourceAttributesBeforeEveryExecution</c>.</summary>
+    public bool? RecaptureSourceAttributesBeforeEveryExecution { get; init; }
+
     public int? Ticks { get; init; }
 
     public IReadOnlyList<SetByCallerScaling>? SetByCallerScaling { get; init; }

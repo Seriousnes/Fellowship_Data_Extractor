@@ -476,9 +476,23 @@ public sealed class EntityResolver
             var healthPolicy = MaxHealthPolicies.Of(cdo, _provider, _mappings);
             var logged = CombatLogIds.Of(cdo, _provider, _mappings);
             var hits = _presets.Executes(cdo);
+            var stack = policy == DurationPolicies.Instant ? null : EffectStacks.Of(cdo, _provider, _mappings);
 
             entity = entity with
             {
+                MaxStacks = stack is null ? null : entity.MaxStacks,
+                FieldSources = stack is null
+                    ? FieldSources.Set(entity.FieldSources, nameof(Entity.MaxStacks), null)
+                    : entity.FieldSources,
+                StackingType = stack?.StackingType,
+                StackDurationRefreshPolicy = stack?.DurationRefreshPolicy,
+                StackPeriodResetPolicy = stack?.PeriodResetPolicy,
+                StackExpirationPolicy = stack?.ExpirationPolicy,
+                DenyOverflowApplication = stack?.DenyOverflowApplication == true ? true : null,
+                ClearStackOnOverflow = stack?.ClearStackOnOverflow == true ? true : null,
+                OverflowEffectNames = stack is { OverflowEffects.Count: > 0 } ? stack.OverflowEffects : null,
+                SilentStack = EffectStacks.SilentStack(cdo, _provider) ? true : null,
+                RecaptureSourceAttributesBeforeEveryExecution = EffectStacks.Recaptures(cdo, _provider) ? true : null,
                 VisualDisplayName = logged.VisualDisplayName,
                 AlwaysUseVisualDisplayName = logged.AlwaysUseVisualDisplayName ? true : null,
                 LogIdClass = hits ? logged.IdClass(policy) : null,
@@ -2168,15 +2182,22 @@ public sealed class EntityResolver
         return false;
     }
 
-    /// <summary>The stack count cap, with its row. The count is the whole part of the row times its <c>Value</c>.</summary>
+    /// <summary>
+    /// The stack count cap of an effect with a <c>StackingType</c>, with its row. The count is the whole part of the
+    /// row times its <c>Value</c>. Each member is from the nearest class of the effect's chain stating it. A cap of 0
+    /// or less is no cap, and the effect then has no count here.
+    /// </summary>
     private (int? Count, FieldSource? Source) MaxStacks(UObject? cdo)
     {
         if (cdo is null) return (null, null);
 
-        var stacking = PropertyWalk.GetString(cdo, "StackingType");
-        if (stacking is null || stacking.EndsWith("::None", StringComparison.Ordinal)) return (null, null);
+        if (EffectStacks.StackingType(cdo, _provider, _mappings) is null) return (null, null);
 
-        if (PropertyWalk.GetStruct(cdo, "StackCountMax") is not { } stack) return (null, null);
+        var stack = ClassDefaults.Chain(cdo, _provider)
+            .Select(holder => PropertyWalk.GetStruct(holder, "StackCountMax"))
+            .FirstOrDefault(stated => stated is not null);
+
+        if (stack is null) return (null, null);
 
         var value = PropertyWalk.AsNumber(PropertyWalk.Get(stack, "Value")?.GenericValue);
         var row = PropertyWalk.GetStruct(stack, "Curve") is { } curve
@@ -2190,7 +2211,7 @@ public sealed class EntityResolver
             ? (value ?? 1) * _constants.Lookup(row).Record!.Value!.Value
             : value;
 
-        return count is > 1 ? ((int)count, read ? FieldSources.Of(ResourceGains.RowProduct, [row]) : null) : (null, null);
+        return count is >= 1 ? ((int)count, read ? FieldSources.Of(ResourceGains.RowProduct, [row]) : null) : (null, null);
     }
 
     /// <summary>

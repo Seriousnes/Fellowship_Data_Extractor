@@ -249,6 +249,15 @@ public static class DocumentProjection
             SetByCallerModifiers = entity.SetByCallerModifiers,
             CalculationPreset = entity.CalculationPreset,
             MaxStacks = entity.MaxStacks,
+            StackingType = entity.StackingType,
+            StackDurationRefreshPolicy = entity.StackDurationRefreshPolicy,
+            StackPeriodResetPolicy = entity.StackPeriodResetPolicy,
+            StackExpirationPolicy = entity.StackExpirationPolicy,
+            DenyOverflowApplication = entity.DenyOverflowApplication,
+            ClearStackOnOverflow = entity.ClearStackOnOverflow,
+            OverflowEffects = Overflow(entity, references),
+            SilentStack = entity.SilentStack,
+            RecaptureSourceAttributesBeforeEveryExecution = entity.RecaptureSourceAttributesBeforeEveryExecution,
             Ticks = entity.Ticks,
             Infinite = entity.Infinite,
             DurationPolicy = entity.DurationPolicy,
@@ -859,6 +868,19 @@ public static class DocumentProjection
                 ? only
                 : throw new InvalidOperationException(
                     $"{entity.Name}'s actor dependency component names {effectName}, and no effect of the export has that name.");
+
+    private static IReadOnlyList<EntityReference>? Overflow(Entity entity, References references)
+    {
+        if (entity.OverflowEffectNames is not { Count: > 0 } names) return null;
+
+        var found = references.Changes.Named(entity, names, EntityType.Effect, references);
+
+        return found?.Count == names.Distinct(StringComparer.Ordinal).Count()
+            ? found
+            : throw new InvalidOperationException(
+                $"{entity.Name} names the overflow effects {string.Join(", ", names)}, and the export has " +
+                $"{found?.Count ?? 0} of them.");
+    }
 
     private static EntityReference? Parent(Entity entity, EntityType type, References references) =>
         references.Changes.Named(entity, entity.ParentClassName is { } parent ? [parent] : null, type, references) is [var only]

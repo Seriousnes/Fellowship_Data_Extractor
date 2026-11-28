@@ -29,7 +29,74 @@ public sealed class EffectDocument : EntityDocument
 
     public bool? TickrateIgnoresHaste { get; init; }
 
+    /// <summary>
+    /// The stack count cap of an effect with a <see cref="StackingType"/>: its <c>StackCountMax</c>. A stacking effect
+    /// with no cap has none.
+    /// </summary>
     public int? MaxStacks { get; init; }
+
+    /// <summary>
+    /// The effect's <c>StackingType</c>, a member of <c>EGameplayEffectStackingType</c> other than <c>None</c>.
+    /// <c>AggregateByTarget</c>: a target has one stack of the effect. <c>AggregateBySource</c>: a target has one
+    /// stack for each instigator. An application on a stack adds the applied spec's stack count up to
+    /// <see cref="MaxStacks"/> and replaces the stack's spec, so the SetByCaller magnitudes and the captured source
+    /// attributes of the new application are those of every stack. An effect with no <c>StackingType</c> has no
+    /// stack: each application is an active effect of its own, with its own duration and ticks.
+    /// </summary>
+    public string? StackingType { get; init; }
+
+    /// <summary>
+    /// The <c>StackDurationRefreshPolicy</c> of an effect with a <see cref="StackingType"/>, a member of
+    /// <c>EGameplayEffectStackingDurationPolicy</c>. <c>RefreshOnSuccessfulApplication</c>: an application on the
+    /// stack restarts the duration. <c>NeverRefresh</c>: the duration is that of the first application.
+    /// </summary>
+    public string? StackDurationRefreshPolicy { get; init; }
+
+    /// <summary>
+    /// The <c>StackPeriodResetPolicy</c> of an effect with a <see cref="StackingType"/>, a member of
+    /// <c>EGameplayEffectStackingPeriodPolicy</c>. <c>ResetOnSuccessfulApplication</c>: an application on the stack
+    /// sets the period timer again, so the next tick is one full period after it. <c>NeverReset</c>: the running
+    /// timer is kept.
+    /// </summary>
+    public string? StackPeriodResetPolicy { get; init; }
+
+    /// <summary>
+    /// The <c>StackExpirationPolicy</c> of an effect with a <see cref="StackingType"/>, a member of
+    /// <c>EGameplayEffectStackingExpirationPolicy</c>, read at the end of the duration. <c>ClearEntireStack</c>: the
+    /// effect ends. <c>RemoveSingleStackAndRefreshDuration</c>: one stack ends and the duration restarts.
+    /// <c>RefreshDuration</c>: the duration restarts with every stack.
+    /// </summary>
+    public string? StackExpirationPolicy { get; init; }
+
+    /// <summary>
+    /// True for <c>bDenyOverflowApplication</c>: an application on a stack at <see cref="MaxStacks"/> changes nothing
+    /// of the stack. Without it the application replaces the stack's spec and follows
+    /// <see cref="StackDurationRefreshPolicy"/> and <see cref="StackPeriodResetPolicy"/>.
+    /// </summary>
+    public bool? DenyOverflowApplication { get; init; }
+
+    /// <summary>
+    /// True for <c>bClearStackOnOverflow</c>: with <see cref="DenyOverflowApplication"/>, an application on a stack at
+    /// <see cref="MaxStacks"/> ends the effect.
+    /// </summary>
+    public bool? ClearStackOnOverflow { get; init; }
+
+    /// <summary>The effect's <c>OverflowEffects</c>: each is applied by an application on a stack at <see cref="MaxStacks"/>.</summary>
+    public IReadOnlyList<EntityReference>? OverflowEffects { get; init; }
+
+    /// <summary>
+    /// True for <c>bSilentStack</c>, a member of <c>CRGameplayEffectDamage</c>: the damage calculation has no stack
+    /// count term for the effect's hit. A damage or healing execution of any other stacking effect multiplies by the
+    /// stack count.
+    /// </summary>
+    public bool? SilentStack { get; init; }
+
+    /// <summary>
+    /// True for <c>RecaptureSourceAttributesBeforeEveryExecution</c>: each execution, a periodic tick included,
+    /// captures the source's attributes again. Without it the source's attributes are those of the spec's creation,
+    /// and of the latest application on a stack.
+    /// </summary>
+    public bool? RecaptureSourceAttributesBeforeEveryExecution { get; init; }
 
     /// <summary>
     /// Periodic executions over the duration: one per whole period, and one more on application unless the effect

@@ -618,6 +618,66 @@ Decoded against **26320967**, the attributes of the ability time rate and the pa
 | `SetDynamicDuration` (`ChannelingDuration` +0x08), `SetDynamicTickInterval` (`ChannelingTickInterval` +0x30); exec thunks 0x144F1C520, 0x144F1C660 | 0x145121B30, 0x145121B40 |
 | `FScalableFloat::SetValue`: `Value` stored, curve table, row and registry cleared | 0x144AB46C0 |
 
+Decoded against **26320967**, the effect stack rule in `EffectStacks.cs`, written up in `docs/effect-stacks.md`:
+
+| What | Where |
+| --- | --- |
+| Stack lookup: none for `StackingType` (+0x9E1) 0 or the `Instant` policy; `AggregateBySource` matches the instigator component | **0x144A74BD0**; 0x144A74BFD, 0x144A74C0F, 0x144A74DC7 |
+| Stack count `min(existing + applied, StackCountMax)`: spec `StackCount` +0x1C0, spec `StackCountMax` +0x58 | 0x144A6A78F to 0x144A6A7AD, 0x144A6A977 to 0x144A6A98B |
+| Spec `StackCountMax` from the effect's `StackCountMax` scalable float (+0x9E8), rounded. `StackLimitCount` (+0x9E4) has no reader | 0x144A8F520 to 0x144A8F550 |
+| Overflow routine: `OverflowEffects` +0x2B0, `bDenyOverflowApplication` +0x2C0, `bClearStackOnOverflow` +0x2C1 | **0x144A7C3F0**, called at 0x144A6A782 |
+| Period timer set again under `StackPeriodResetPolicy`; next-frame tick for `bExecutePeriodicEffectOnApplication` (+0x240) | 0x144A6B2F4 to 0x144A6B518, flag test 0x144A6B3BB |
+| `StackExpirationPolicy` (+0xA13) at the end of the duration | 0x144A6FC35 |
+| `UGameplayEffect` constructor stores at `StackingType`, `RecaptureSourceAttributesBeforeEveryExecution` (+0xA10), the duration and period policies | 0x144A63EEE, 0x144A63E60, 0x144A63F2B |
+| `CRChargeEffect` constructor stack stores: `AggregateByTarget`, `NeverRefresh` and `NeverReset`, `RemoveSingleStackAndRefreshDuration`, `StackCountMax` 0. No other routine stores at +0x9E1 or +0xA13 | 0x1450E71E0; 0x1450E749D, 0x1450E74D3, 0x1450E74DC, 0x1450E74CA |
+| `GetStackCount`; the damage gather's read and its `bSilentStack` clamp (bit 0 of +0xA98, setter 0x144FF4170) | 0x144A7BDD0; 0x1450DB595, 0x1450DB5BE |
+| Healing driver's stack count read; healing formula's multiply | 0x1450DE6AA; 0x145107770, `mulss` 0x145107874 |
+| `RecaptureSourceAttributesBeforeEveryExecution`: source capture again before a tick and before an instant execution | 0x144A808C4, 0x1449FD735; capture 0x144A6F7D0 |
+| `FellowshipMakeLooseEffectSpec`, exec thunk 0x144F66590: `MakeOutgoingSpec` on the source's component, 8th argument the level, 9th to `SetStackCount` | **0x14522E110**; 0x14522E22E, 0x14522E249 |
+| `CalculateAndSetMultiTargetDamageFalloffScaler` in this build, exec thunk 0x144F5AD60; actor count from `GetAllActorsFromTargetData` 0x144A0D930 | **0x145218380**, `sqrtss` 0x1452184C1 |
+| `AcquireTargets_CylinderAoe`, exec thunk 0x145072420; character query, flat list walk | **0x1450FAD20**; 0x1450F3920, 0x145534620 |
+| `CRGameplayEffectDamage` static class | 0x144FF3E90 |
+
+Decoded against **26320967**, the attribute captures of the calculation classes in `CalculationCaptures.cs`, written
+up in `docs/attribute-captures.md`:
+
+| What | Where |
+| --- | --- |
+| Capture definition, 0x40 bytes: `AttributeSource` +0x38 (`Source` 0, `Target` 1), `bSnapshot` +0x39; a statics constructor stores both as one word, 0x0100 or 0x0001 | e.g. `DamageScale` 0x1450D58ED, `DodgeChance` 0x1450D5CFF |
+| Shared statics: `Strength` +0x08, `Agility` +0x50, `Intellect` +0x98, `PrimaryAttribute` +0xE0, `CritChance` +0x128, `CritMultiplier` +0x170, each `Source` with `bSnapshot` | accessor 0x1450E5720, constructor **0x1450D6E10** |
+| Damage statics: 7 `Source` definitions with `bSnapshot`, 15 `Target` definitions without it | accessor 0x1450DCBE0, constructor **0x1450D5390** |
+| Heal statics: `LifeSteal` +0x08, `HealThreatMultiplier` +0x128, `HealScale` +0x170, `Expertise` +0x1B8, `BalancingHealAura` +0x290 as `Source` with `bSnapshot`; `IncomingHealMultiplier` +0x50, `IncomingHealSign` +0x98, `ReflectHeal` +0xE0, `Health` +0x200, `MaxHealth` +0x248 as `Target` | accessor 0x1450E27E0, constructor **0x1450D65C0** |
+| Attribute set classes of the statics: `CRBasicAttributeSet`, `CRHeroAttributeSet` (`Expertise`, `BalancingDamageAura`, `BalancingHealAura`, `Avoidance`) | 0x144F04090, 0x1450094E0 |
+| `RelevantAttributesToCapture` (+0x28) additions: `CRDamageCalculationBase` 24, `CRHealCalculationBase` 12 | **0x1450D7510**, **0x1450D80C0** |
+| Main stat constructors, damage: Strength, Agility, Intellect, PrimaryAttribute, UserDefined | 0x1450D8910, 0x1450D73F0, 0x1450D84C0, 0x1450D8700, 0x1450D8A30 |
+| Main stat constructors, heal: Strength, Agility, Intellect, PrimaryAttribute, UserDefined | 0x1450D89A0, 0x1450D7480, 0x1450D8550, 0x1450D8790, 0x1450D8A60 |
+| `CRDamageReflectDamageCalculation`, `CRLifeStealHealCalculation`, `CRReflectHealCalculation`, `CRManaGainCalculation` constructors | 0x1450D7CC0, 0x1450D85E0, 0x1450D8820, 0x1450D86D0 |
+| Static class functions with the name literal, super class and constructor wrapper: Intellect damage, ManaGain, UserDefined damage, UserDefined heal | 0x144FB2320, 0x144FB2480, 0x144FB2110, 0x144FB1CF0; wrappers 0x144FB2CB0 to 0x144FB2D70 |
+| `CaptureAttributeForGameplayEffect`: component 0x144A01BE0, container; `bSnapshot` test, aggregator copy (0xB8 bytes), aggregator reference | **0x144A6F7A0**; 0x144A6F7AE, 0x144AB4A30, 0x144A65E90 |
+| `FGameplayEffectSpec::CaptureDataFromSource(bSkipRecaptureSourceActorTags)`: `Source` definitions at spec +0x18, 0x50 bytes each | **0x144A6F7D0** |
+| Its callers: `Initialize` 0x144A80040, the periodic tick 0x144A80830, the instant execution, `SetContext` 0x144A8F240 | 0x144A801B0 (and 0x144A800CD), 0x144A808F1, 0x1449FD764, 0x144A8F27D |
+| `CRBlueprintLibrary::SetEffectContext`, exec thunk 0x144F75580, the one caller of `SetContext` | 0x1452432E0 |
+| `FGameplayAbilityTargetData::ApplyGameplayEffectSpec`: spec copy and context copy for each target, no capture | 0x144A4F410; 0x144A4F5B9, 0x144A4F5D8 |
+| Target capture at an application; `CaptureAttributeDataFromTarget` | 0x144A6ACEB; 0x144A6F710 |
+| `AttemptCalculateCapturedAttributeMagnitude`: scoped aggregator lookup, `FindCaptureSpecByDefinition`, capture evaluation | **0x144AA2990**; 0x144A9CAC0, 0x144A73C10, 0x144A6B950 |
+| Aggregator evaluation and its pass over the modifiers with the parameters; `ExecuteActiveEffectsFrom` reads the target actor's tags (spec +0xE8) | 0x144AA8310, 0x144AA87B0; 0x144A72D10 |
+| Attack table gather (calculation vtable +0x2E0): `CritChance`, `DodgeChance`, `ParryChance`, `BlockChance`; `min(CritChance, 1)` without `CanGrievousCrit` (preset +0x1D) | **0x1450DB760**; 0x1450DB7BD |
+| Source formula's `EHitType` factor: 0.75 for `GlancingBlow` (3), `CritMultiplier` for `CriticalStrike` (4), `(CritChance - 1) x G + CritMultiplier` for `GrievousCriticalStrike` (5), 1.5 for `CrushingBlow` (6); `G` from the row of `GlobalGrievousCritScalerKey` (globals +0x368) | 0x1451079B8 to 0x1451079F9; 0x1450CDBF0 |
+| Attack table roll's thresholds in `ECRAttackResult` order: miss (values +0x0C), dodge (+0x04), parry (+0x10), 0, block (+0x08), crit (+0x00), 0 | 0x14510C51D to 0x14510C5CD |
+| Healing gather's `HealScale` factor of the source and target characters | 0x145362710, called at 0x1450DB9C6 |
+
+Decoded against **26320967**, the death of a character and the alive state of a target query, written up in
+`docs/effect-stacks.md`:
+
+| What | Where |
+| --- | --- |
+| Death routine of a character, authority alone: dead flag (+0x92D), virtual +0xAB8, removal of the `EffectLogic.RemoveOnDeath` effects | **0x1452ED190**; 0x1452ED233, 0x1452ED25A, 0x1452ED326 |
+| `EffectLogic.RemoveOnDeath` tag global; removal of the active effects with a tag | 0x14A3C9EE0; 0x144A208D0 |
+| `CRAICharacter` vtable 0x148AEB930: alive getter +0xA10, death state handler +0xAB8 | 0x144F3AC00, 0x145157A20 |
+| Death state handler of the base class: bit 0 of the character's flags in the targeting registry (handle at character +0xA82) | **0x1452F0BD0**; flag write 0x145534A50 |
+| Filter context of a target query: the four state bytes of the state filter (+8 to +0xB) as bits 1, 2, 4 and 8, required for 1 and forbidden for 0 | **0x1450C9260**; 0x1450C9402 to 0x1450C9474 |
+| List walk's flag test: required bits (context +0), forbidden bits (context +4), entry flags (+0x30 of a 0x38 byte entry) | 0x1455346E0 to 0x1455346F2 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

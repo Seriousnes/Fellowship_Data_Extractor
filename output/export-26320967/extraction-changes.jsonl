@@ -558,6 +558,7 @@
 {"slug":"effect","id":2242,"label":"Origins"}
 {"slug":"effect","id":2367,"label":"Origins"}
 {"slug":"effect","id":2369,"label":"Ticks","older":"25"}
+{"slug":"effect","id":2495,"label":"Max Stacks","older":"2"}
 {"slug":"effect","id":2546,"label":"Effect Tags","older":"EffectType.Physical"}
 {"slug":"effect","id":2580,"label":"Effect Tags","older":"EffectType.Magic.Frost"}
 {"slug":"effect","id":2585,"label":"Ticks","older":"5"}

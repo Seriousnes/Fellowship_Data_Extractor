@@ -111,6 +111,13 @@ public sealed record SettingsFile
     public IReadOnlyDictionary<string, EffectCalculationPresetEntry> EffectCalculationPresets { get; init; } =
         new Dictionary<string, EffectCalculationPresetEntry>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// The <c>RelevantAttributesToCapture</c> of each native damage and healing calculation class, by the class name
+    /// an effect's <c>executions</c> has.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<AttributeCapture>> RelevantAttributesToCapture { get; init; } =
+        new Dictionary<string, IReadOnlyList<AttributeCapture>>(StringComparer.Ordinal);
+
     public ThreatSettings? Threat { get; init; }
 
     public AiGlobals? AiGlobals { get; init; }

@@ -62,6 +62,8 @@ public static class CalculationModifiers
             {
                 if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder modifier }) continue;
 
+                CheckCapture(calculation, modifier, effect.Name, provider);
+
                 if (Read(calculation, modifier, provider, constants, effect.Name) is { } read && !found.Contains(read))
                 {
                     found.Add(read);
@@ -70,6 +72,21 @@ public static class CalculationModifiers
         }
 
         return found;
+    }
+
+    /// <summary>
+    /// Checks the <c>CapturedAttribute</c> of a modifier on a captured attribute against the definitions
+    /// <see cref="CalculationCaptures"/> records for the calculation class.
+    /// </summary>
+    private static void CheckCapture(string calculation, IPropertyHolder modifier, string effect, AbstractFileProvider provider)
+    {
+        if (Member(PropertyWalk.GetString(modifier, AggregatorTypeField)) == TransientAggregator) return;
+
+        var captured = Captured(PropertyWalk.GetStruct(modifier, CapturedField));
+
+        if (captured.Name is not { Length: > 0 } attribute || attribute == NoName) return;
+
+        CalculationCaptures.Check(calculation, attribute, captured.Source, captured.Snapshot, effect, provider);
     }
 
     /// <summary>

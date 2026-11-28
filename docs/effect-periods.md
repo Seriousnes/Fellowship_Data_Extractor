@@ -65,7 +65,8 @@ effect. The SetByCaller magnitudes of the old spec, `SetByCaller.System.TickRate
 the new spec's.
 
 `StackPeriodResetPolicy` `NeverReset` keeps the running period timer. `StackDurationRefreshPolicy` other than
-`NeverRefresh` restarts the duration.
+`NeverRefresh` restarts the duration. `effect-stacks.md` has the stack's count, its cap and the fields of an effect
+document.
 
 An effect with the asset tag `EffectLogic.CarryOverDuration` and without `EffectLogic.Proc` restarts with
 `Duration + min(Duration x GameplayEffectRefreshDurationCarryOverLimit, time remaining)`.
@@ -170,7 +171,7 @@ the period divided by the period, and the damage calculation multiplies by it. A
    `SpreadRoll x Spread + 1`.
 2. `Expertise + 1`, under `ApplySourceExpertiseMultiplier`.
 3. `SetByCaller.PartialTickFactor`.
-4. The stack count.
+4. The stack count, 1 for an effect with `silentStack`.
 5. `BalancingDamageAura`, under `ApplySourceDamageHealingBalancingAura`.
 
 The product is rounded half away from zero before the target's terms.

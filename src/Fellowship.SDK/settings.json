@@ -5081,6 +5081,1184 @@
       "defaultSpread": 0
     }
   },
+  "relevantAttributesToCapture": {
+    "CRAgilityDamageCalculation": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "SourceDamageReflect",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "TargetDamageReflect",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DodgeChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "ParryChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionFlat",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DamageMitigationScale",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Avoidance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "AoeIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingDamageAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Armor",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Agility",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRAgilityHealCalculation": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "HealThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingHealMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "IncomingHealSign",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "HealScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingHealAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Health",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MaxHealth",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Agility",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRDamageCalculationBase": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "SourceDamageReflect",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "TargetDamageReflect",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DodgeChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "ParryChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionFlat",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DamageMitigationScale",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Avoidance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "AoeIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingDamageAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Armor",
+        "attributeSource": "Target",
+        "snapshot": false
+      }
+    ],
+    "CRDamageReflectDamageCalculation": [
+      {
+        "attribute": "DamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRHealCalculationBase": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "HealThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingHealMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "IncomingHealSign",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "HealScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingHealAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Health",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MaxHealth",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRIntellectDamageCalculation": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "SourceDamageReflect",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "TargetDamageReflect",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DodgeChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "ParryChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionFlat",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DamageMitigationScale",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Avoidance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "AoeIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingDamageAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Armor",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Intellect",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRIntellectHealCalculation": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "HealThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingHealMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "IncomingHealSign",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "HealScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingHealAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Health",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MaxHealth",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Intellect",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRLifeStealHealCalculation": [
+      {
+        "attribute": "DamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRManaGainCalculation": [],
+    "CRPrimaryAttributeDamageCalculation": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "SourceDamageReflect",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "TargetDamageReflect",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DodgeChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "ParryChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionFlat",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DamageMitigationScale",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Avoidance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "AoeIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingDamageAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Armor",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PrimaryAttribute",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRPrimaryAttributeHealCalculation": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "HealThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingHealMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "IncomingHealSign",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "HealScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingHealAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Health",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MaxHealth",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "PrimaryAttribute",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRReflectHealCalculation": [
+      {
+        "attribute": "DamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "HealThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRStrengthDamageCalculation": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "SourceDamageReflect",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "TargetDamageReflect",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DodgeChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "ParryChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionFlat",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DamageMitigationScale",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Avoidance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "AoeIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingDamageAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Armor",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Strength",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRStrengthHealCalculation": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "HealThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingHealMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "IncomingHealSign",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "HealScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingHealAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Health",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MaxHealth",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Strength",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ],
+    "CRUserDefinedDamageCalculation": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "SourceDamageReflect",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "TargetDamageReflect",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DodgeChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "ParryChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockChance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionFlat",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "BlockDamageReductionMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DamageThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "DamageMitigationScale",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Avoidance",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicDamageReduction",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "PhysicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MagicalIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "AoeIncomingDamageMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingDamageAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Armor",
+        "attributeSource": "Target",
+        "snapshot": false
+      }
+    ],
+    "CRUserDefinedHealCalculation": [
+      {
+        "attribute": "CritChance",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "CritMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "HealThreatMultiplier",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "IncomingHealMultiplier",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "IncomingHealSign",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "HealScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "LifeSteal",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Expertise",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "BalancingHealAura",
+        "attributeSource": "Source",
+        "snapshot": true
+      },
+      {
+        "attribute": "Health",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "MaxHealth",
+        "attributeSource": "Target",
+        "snapshot": false
+      },
+      {
+        "attribute": "DifficultyDamageScale",
+        "attributeSource": "Source",
+        "snapshot": true
+      }
+    ]
+  },
   "threat": {
     "threatRelevancyPercentage": 0.1,
     "threatSurpassPercentageMelee": 0.1,

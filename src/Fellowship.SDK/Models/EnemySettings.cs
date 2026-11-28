@@ -67,3 +67,16 @@ public sealed record PartyScaling
     /// <summary>Each scalable float of <c>GA_DungeonModifier_HolyTrinityNerf</c>, by the constants row it reads.</summary>
     public IReadOnlyDictionary<string, double> HolyTrinityNerf { get; init; } = new Dictionary<string, double>(StringComparer.Ordinal);
 }
+
+/// <summary>
+/// One <c>FGameplayEffectAttributeCaptureDefinition</c> of a calculation class's <c>RelevantAttributesToCapture</c>.
+/// </summary>
+/// <param name="Attribute">The definition's <c>AttributeToCapture</c>.</param>
+/// <param name="AttributeSource"><c>Source</c> or <c>Target</c>: whose <see cref="Attribute"/> is captured.</param>
+/// <param name="Snapshot">
+/// The definition's <c>bSnapshot</c>. With it the capture is a copy of the attribute's aggregator. A source capture is
+/// made at the spec's creation, and again before each execution of an effect with
+/// <c>RecaptureSourceAttributesBeforeEveryExecution</c>. Without it the capture is the live aggregator, so each
+/// execution has the attribute's value of that moment.
+/// </param>
+public sealed record AttributeCapture(string Attribute, string AttributeSource, bool Snapshot);
