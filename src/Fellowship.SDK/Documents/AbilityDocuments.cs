@@ -129,6 +129,12 @@ public sealed class AbilityDocument : EntityDocument
     /// <summary>Set-by-caller magnitudes the ability computes as a base plus an amount for each unit counted.</summary>
     public IReadOnlyList<SetByCallerScaling>? SetByCallerScaling { get; init; }
 
+    /// <summary>
+    /// Each delta the ability assigns to a target's Stagger through an effect running
+    /// <c>CRModifyStaggerExecution</c>.
+    /// </summary>
+    public IReadOnlyList<StaggerDelta>? StaggerDeltas { get; init; }
+
     /// <summary>Proc-per-minute rolls the ability makes, each with the rate it is made at.</summary>
     public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }
 

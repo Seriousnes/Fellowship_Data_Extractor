@@ -115,6 +115,8 @@ public sealed class EntityResolver
 
     public TargetCountFalloffs Falloffs { get; }
 
+    public StaggerDeltas Deltas { get; }
+
     public ProcRolls Rolls { get; }
 
     public CommitTriggers Commits { get; }
@@ -306,6 +308,7 @@ public sealed class EntityResolver
             name => LoadDefaultObject(FindAsset(name)));
 
         Falloffs = new TargetCountFalloffs(provider, mappings, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
+        Deltas = new StaggerDeltas(provider, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
         Rolls = new ProcRolls(_constants, provider);
         Commits = new CommitTriggers(provider, _effectNames, name => Owned(name, EffectTable));
 
@@ -1664,6 +1667,7 @@ public sealed class EntityResolver
             Charges = charges.Charges,
             ChargesByLevelType = charges.ByLevelType,
             TargetCountFalloff = Falloffs.Of(cdo),
+            StaggerDeltas = Deltas.Of(cdo),
             MaxTargets = maxTargets,
             CooldownDurationScalesOff = timing?.DurationScalesOff,
             CooldownTimeRateScalesOff = timing?.TimeRateScalesOff,
@@ -2745,6 +2749,7 @@ public sealed class EntityResolver
         Category = outer.Category ?? inner.Category,
         ChargesByLevelType = outer.ChargesByLevelType ?? inner.ChargesByLevelType,
         TargetCountFalloff = Union(outer.TargetCountFalloff, inner.TargetCountFalloff),
+        StaggerDeltas = Union(outer.StaggerDeltas, inner.StaggerDeltas),
         MaxTargets = outer.MaxTargets ?? inner.MaxTargets,
         Resource = outer.Resource ?? inner.Resource,
         CastTimeScalesWithHaste = outer.CastTimeScalesWithHaste ?? inner.CastTimeScalesWithHaste,
@@ -2845,6 +2850,15 @@ public sealed class EntityResolver
     {
         if (first is null || second is null) return first ?? second;
         return [.. first.Concat(second).Distinct()];
+    }
+
+    private static IReadOnlyList<StaggerDeltaSource>? Union(
+        IReadOnlyList<StaggerDeltaSource>? first, IReadOnlyList<StaggerDeltaSource>? second)
+    {
+        if (first is null || second is null) return first ?? second;
+
+        return [.. first.Concat(second.Where(delta =>
+            !first.Any(held => held.Effect == delta.Effect && held.Formula == delta.Formula)))];
     }
 
     private static IReadOnlyList<ProcRoll>? Union(IReadOnlyList<ProcRoll>? first, IReadOnlyList<ProcRoll>? second)

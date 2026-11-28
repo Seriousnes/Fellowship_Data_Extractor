@@ -443,6 +443,25 @@ Decoded against **26320967**, the wait of `WaitDelayCR`, read by `EndAbilityPath
 | Task `Activate`: `Time` above 0 sets a timer; `Time` of 0 or less ends the task and broadcasts the delegate at +0x80 in the same call | 0x145125D70; `comiss` 0x145125D9C, broadcast 0x145126028 |
 | `InterruptCooldownDuration` +0x4A8, `InterruptCooldownEffectBaseClass` +0x4D0: constructor default `Value` 0, no table, row or registry | `UCRGameplayAbility` constructor 0x1450D7D60, stores 0x1450D7E7E to 0x1450D7EA3 |
 
+Decoded against **26320967**, the Stagger pool's cap, removals and log line, behind the `stagger` texts in
+`StaggerComponent.cs` and the `staggerDeltas` of `StaggerDeltas.cs`, written up in `docs/stagger.md`:
+
+| What | Where |
+| --- | --- |
+| Setter cap, for Δ ≥ 0 alone: owner (component +0x98) cast to `CRFellowshipCharacter`, `StaggerMaxHealthPercentage` at level 0 × virtual +0xA38 | 0x1452C3589 to 0x1452C35EF; class getter 0x14509CBB0 |
+| Cap under the pool: Δ = 0 and return. New pool over the cap: Δ −= new − cap | 0x1452C35F3 to 0x1452C3602; 0x1452C3604 to 0x1452C3618 |
+| `CRFellowshipCharacter` vtable (constructor 0x145308740); +0xA38 is the current `MaxHealth` (attribute set character +0x898, attribute +0x38, `GetCurrentValue` 0x1421D97D0) | 0x148CFBD20; 0x1452EC9A0 |
+| Damage hook: factor getter `StaggerDamageAdditionFactor`, `H −= Δ taken`, a `DAMAGE_ABSORBED` line of Δ taken × weight (entry +0x298, stride 0x2A0) | 0x1452C76E0; 0x1452C87E9 to 0x1452C87FA; 0x1452C887C |
+| Heal hook: `Role` (+0x170) authority, target = owner, `EffectType.Environmental` returns, `EffectLogic.HealAffectStagger` required, factor getter `StaggerHealReductionFactor`, factor ≤ 0 returns, `clamp(heal × factor, 0, CurrentStagger)` | 0x1452C8932, 0x1452C8971, 0x1452C897A, 0x1452C89F2, 0x1452C7790, 0x1452C8AB6, 0x1452C8ACE to 0x1452C8AEA |
+| `CRHeroAttributeSet` constructor: `StaggerDamageAdditionFactor` +0x218 and `StaggerHealReductionFactor` +0x228, base and current value 0 | **0x14500A430**, stores 0x14500A503, 0x14500A50A; records 0x148C0F6C0, 0x148C0F700 |
+| `CRModifyStaggerExecution`: transient magnitude of `SetByCaller.Stagger` (tag global 0x14A3CA5E8), the target avatar's component (+0xF78), no other factor | 0x145109278, 0x145109367 to 0x145109383 |
+| `AuthUpdateStaggerAndLog`: setter, combat logger, meters call for a removal with an ability and an effect (`StaggerModData`: source, target, `InstigatingAbility`, `InstigatingGameplayEffect`) | 0x1452C3699, 0x1452C36E1, 0x1452C37B2 (0x14527D320) |
+| Stagger change log writer: event variant 0xA, the variant of the attribute resource writer 0x145297E00 (`RESOURCE_CHANGED`); type byte 7 at record +0xF0, amount `round(new × 100)` +0xF4, change +0xF8, maximum and overcap −1 | **0x145298560**, 0x145298685 to 0x1452986DD; queue 0x1452AE960 called at 0x145298985 |
+| Every caller of the setter and of the logging form | 0x1452C3531 clear, 0x1452C87E4 damage hook, 0x1452C8B0B heal hook, 0x1452CDE4D tick, 0x1452C3699; 0x145109383; exec thunks 0x14505E495, 0x14505E568, 0x14505E69B, 0x14505EE5F |
+| Period routine: the Haste division has no `EffectType.Dot` or `EffectType.Hot` test before it | 0x1452D5C70, `divss` 0x1452D5E0B |
+| `UGameplayEffect.ConditionalGameplayEffects` +0x2A0 (record 0x1489892B0, deprecated): constructor and destructor alone in the ability module | 0x144A63B62, 0x144A6518C |
+| `HealthChangedInfo` field names: `TotalHealthChange`, `OverHealOrOverKillAmount`, `MitigatedDamage`, `AbsorbedDamage`, `BlockedDamage` | literals from 0x148AAF108 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

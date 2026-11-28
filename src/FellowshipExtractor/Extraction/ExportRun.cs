@@ -462,6 +462,14 @@ public static class ExportRun
         }
 
         Console.WriteLine(
+            $"  {resolver.Deltas.Read} of {resolver.Deltas.Calls} {StaggerDeltas.Execution} magnitudes read as an expression");
+
+        foreach (var unread in resolver.Deltas.Unread.Distinct(StringComparer.Ordinal))
+        {
+            Console.WriteLine($"    {unread}");
+        }
+
+        Console.WriteLine(
             $"  {resolver.Rolls.Calls - resolver.Rolls.Unread.Count} of {resolver.Rolls.Calls} proc-per-minute rolls " +
             "read a rate as a row and attributes");
 

@@ -147,6 +147,36 @@ public sealed record StaggerSettings
     public string DamageSetByCallerTag { get; init; } = string.Empty;
 
     public string DisplayText { get; init; } = string.Empty;
+
+    /// <summary>Attribute the cap multiplies: the owner's current value at each add.</summary>
+    public string MaxHealthAttribute { get; init; } = string.Empty;
+
+    /// <summary>Attribute of a hit's target. The pool takes the hit's Health damage times it.</summary>
+    public string DamageAdditionFactorAttribute { get; init; } = string.Empty;
+
+    /// <summary>Attribute of a heal's target. The heal removes its amount times it from the pool.</summary>
+    public string HealReductionFactorAttribute { get; init; } = string.Empty;
+
+    /// <summary>Tag of a heal effect <see cref="HealReductionFactorAttribute"/> applies to.</summary>
+    public string HealAffectStaggerTag { get; init; } = string.Empty;
+
+    /// <summary>Tags of a damage effect the pool takes no part of.</summary>
+    public IReadOnlyList<string> DamageIgnoreStaggerTags { get; init; } = [];
+
+    /// <summary>Execution adding its set-by-caller magnitude to the target's pool. A negative magnitude is a cleanse.</summary>
+    public string ModifyExecution { get; init; } = string.Empty;
+
+    /// <summary>Set-by-caller tag <see cref="ModifyExecution"/> reads.</summary>
+    public string ModifySetByCallerTag { get; init; } = string.Empty;
+
+    /// <summary>Resource type of the <c>RESOURCE_CHANGED</c> combat log line a <see cref="ModifyExecution"/> delta writes.</summary>
+    public int LoggedResourceType { get; init; }
+
+    public string CapText { get; init; } = string.Empty;
+
+    public string RemovalText { get; init; } = string.Empty;
+
+    public string LoggedChangeText { get; init; } = string.Empty;
 }
 
 /// <summary>

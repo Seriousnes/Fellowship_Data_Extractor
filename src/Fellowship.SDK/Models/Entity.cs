@@ -83,6 +83,7 @@ public sealed record Entity
     public double? Charges { get; init; }
     public IReadOnlyDictionary<string, double>? ChargesByLevelType { get; init; }
     public IReadOnlyList<TargetCountFalloffSource>? TargetCountFalloff { get; init; }
+    public IReadOnlyList<StaggerDeltaSource>? StaggerDeltas { get; init; }
     public double? MaxTargets { get; init; }
     public double? Cost { get; init; }
 

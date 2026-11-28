@@ -149,6 +149,7 @@ public static class DocumentProjection
             CommitTriggers = Triggers(entity, references),
             Coefficients = entity.Coefficients,
             SetByCallerScaling = entity.SetByCallerScaling,
+            StaggerDeltas = Deltas(entity, references),
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = tuned.Value.Tuning,
             Schools = Schools(entity.Tags),
@@ -1297,5 +1298,16 @@ public static class DocumentProjection
                 Threshold = source.Threshold,
             })
             .Distinct()
+            .ToArray();
+
+    private static IReadOnlyList<StaggerDelta>? Deltas(Entity entity, References references) =>
+        entity.StaggerDeltas?
+            .Select(source => new StaggerDelta
+            {
+                Effect = references.At(source.Effect),
+                DataTag = source.DataTag,
+                Formula = source.Formula,
+                Expression = source.Expression,
+            })
             .ToArray();
 }
