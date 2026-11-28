@@ -18,6 +18,7 @@ public sealed class TalentTrees
 {
     public const string SlotTable = "Talent.ID";
     public const string AugmentationTable = "CRCharacterAugmentationAsset";
+    public const string DisabledInGameField = "DisabledInGame";
 
     private const string TalentDataClass = "CRTalentData";
     private const string AssetPrefix = "DA_Talents_";
@@ -159,7 +160,7 @@ public sealed class TalentTrees
         for (var index = 0; index < rows.Properties.Count; index++)
         {
             if (rows.Properties[index]?.GenericValue is not FScriptStruct { StructType: IPropertyHolder row }) continue;
-            if (PropertyWalk.Get(row, "DisabledInGame")?.GenericValue is true) continue;
+            if (PropertyWalk.Get(row, DisabledInGameField)?.GenericValue is true) continue;
             if (PropertyWalk.GetString(row, "TalentID") is not { } slot) continue;
             if (!slots.ContainsKey(slot)) continue;
             if (PropertyWalk.AsOrdinal(PropertyWalk.Get(row, "TalentRow")?.GenericValue) is not { } gridRow) continue;

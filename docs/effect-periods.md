@@ -3,6 +3,47 @@
 A periodic gameplay effect ticks on a looping timer. `CRAbilitySystemComponent` sets the timer's rate, the
 duration of a refreshed effect and the last tick of an expiring one. Every address is of build 26320967.
 
+## Duration policy
+
+An effect's `DurationPolicy` is `Instant`, `Infinite` or `HasDuration`. A cooked effect states the field only where
+it differs from its parent class. The value otherwise comes from the constructor of the effect's native class, in the
+byte it stores at `UGameplayEffect` +0x30. An effect document has the result in `durationPolicy`.
+
+| Native class | Constructor | `DurationPolicy` |
+| --- | --- | --- |
+| `GameplayEffect` | 0x144A63AB0, store 0x144A63ED7 | `Instant` |
+| `CRGameplayEffectDamage` | 0x1450E84D0, no store of its own | `Instant` |
+| `CRCostEffect` | 0x1450E76D0, store 0x1450E7704 | `Instant` |
+| `CRDamageReflectGameplayEffect` | 0x1450E7880, store 0x1450E78B5 | `Instant` |
+| `CRInterruptGameplayEffect` | 0x1450E8C30, store 0x1450E8C64 | `Instant` |
+| `CRKnockbackEffect` | 0x1450E8DF0, store 0x1450E8E24 | `Instant` |
+| `CRLifeStealGameplayEffect` | 0x1450E9090, store 0x1450E90CD | `Instant` |
+| `CRReflectHealGameplayEffect` | 0x1450E9B10, store 0x1450E9B4D | `Instant` |
+| `CRSetByCallerDamageGameplayEffect` | 0x1450E9F70, store 0x1450E9FA0 | `Instant` |
+| `CRSetByCallerHealGameplayEffect` | 0x1450EA350, store 0x1450EA380 | `Instant` |
+| `CRAbsorptionEffect` | 0x1450E67B0, store 0x1450E6804 | `Infinite` |
+| `CRDisconnectedGameplayEffect` | 0x1450E7E30, store 0x1450E7E62 | `Infinite` |
+| `CRGameplayEffectActorDependency` | 0x1450E84A0, store 0x1450E84B5 | `Infinite` |
+| `CRGodModeEffect` | 0x1450E8700, store 0x1450E8739 | `Infinite` |
+| `CRInfiniteChannelingGameplayEffect` | 0x1450E8C00, store 0x1450E8C15 | `Infinite` |
+| `CRProcEffect` | 0x1450E9830, store 0x1450E9864 | `Infinite` |
+| `CRCastingGameplayEffect` | 0x1450E69E0, store 0x1450E6A2F | `HasDuration` |
+| `CRChannelingGameplayEffect` | 0x1450E6DE0, store 0x1450E70C2 | `HasDuration` |
+| `CRChargeEffect` | 0x1450E71E0, store 0x1450E7211 | `HasDuration` |
+| `CRGenericAbilityCooldownEffect` | 0x1450E8550, store 0x1450E8584 | `HasDuration` |
+| `CRLockoutGameplayEffect` | 0x1450E94F0, store 0x1450E953D | `HasDuration` |
+
+An `Instant` effect executes once inside each application and has no duration, period or tick of its own. A
+`duration` and a `period` on its document are rows of the ability or the actor applying it, and `ticks` is on
+documents of the `HasDuration` policy alone.
+
+Sanguine Ritual's damage effect, `GE_MC_BloodSummoner_ChannelSpawnBloodAnimation_TickDamage`, states no
+`DurationPolicy` and derives from `CRGameplayEffectDamage`. The ability's graph makes its spec and applies it to the
+ability's one target on each `OnTick` of the channel task. The ability's `Channeling Data` has `ChannelingDuration`
+10, `ChannelingTickInterval` 1, `TickImmediately` false, `Interruptible` true and `EnablePartialTicks` false. The
+first `OnTick` is one tick interval after the task's activation, and a channel ended before it has no hit:
+`docs/casting-and-channeling.md` has the task.
+
 ## Period
 
 The timer's rate is `Period / Haste x TickRateOverride`.
@@ -28,6 +69,44 @@ the new spec's.
 
 An effect with the asset tag `EffectLogic.CarryOverDuration` and without `EffectLogic.Proc` restarts with
 `Duration + min(Duration x GameplayEffectRefreshDurationCarryOverLimit, time remaining)`.
+
+## Damage added to a running periodic effect
+
+`CRBlueprintLibrary::CrAddToAndRecalculatePeriodicEffect(Ability, Source, Target, EffectClass, SetByCallerTag,
+AddedValue, TargetingFilters)` spreads `AddedValue` over the ticks of one effect on `Target`. The SetByCaller magnitude
+it writes is the amount of one tick. The function returns false on every path.
+
+It first checks `Target` against `TargetingFilters` and does nothing on a failure. It then queries `Target`'s
+ability system component for active effects whose context source object is `Source` and whose definition is exactly
+`EffectClass`, and takes the first handle with a live effect.
+
+With no such effect it makes a spec from `Ability` and applies it with
+
+`tick = AddedValue / (floor(D / P) + Fmod(D, P) / P + E)`
+
+- **`D`**, **`P`**: the new spec's `Duration` and `Period`. `P` has no Haste term.
+- **`E`**: 1 when the effect has `bExecutePeriodicEffectOnApplication`, otherwise 0.
+
+With an effect it applies no spec. It reads the effect's state:
+
+- **`R`**: the effect's time remaining.
+- **`Pr`**, **`Pe`**: the remaining and the elapsed time of the effect's period timer. The timer runs at the hasted
+  rate, so these are real seconds.
+- **`P`**: the active spec's `Period`, with no Haste term.
+- **`D`**: the effect's duration.
+- **`V`**: the active spec's magnitude for `SetByCallerTag`.
+
+The ticks left are `n + f + z`:
+
+- `n = ceil(clamp(R - Pr, 0, 10000) / P)`
+- `f = Fmod(R - Pr, P) / P` when `R >= Pr`, otherwise `(Pe + R) / P`
+- `z = 1` when `f` is 0, otherwise 0
+
+The new tick is `((n + f + z) x V + AddedValue) / (floor(D / P) + Fmod(D - Pr, P) / P)`. The function moves the
+effect's start time forward by `D - R`, which restarts the duration and leaves the period timer running. It then writes
+the new tick to the active spec's `SetByCallerTag` magnitude.
+
+Haste enters the result only through `Pr` and `Pe`. The function reads no Haste attribute and rounds no magnitude.
 
 ## Applied-effect listeners
 
@@ -98,12 +177,22 @@ The product is rounded half away from zero before the target's terms.
 
 The target's terms multiply in this order, each under its preset flag:
 
-1. `clamp(1 - Avoidance, 0, 1)`, under `ApplyTargetAvoidance`.
-2. `IncomingDamageMultiplier`, under `ApplyTargetIncomingDamageHealingMultipliers`.
-3. For an effect with the asset tag `EffectType.Physical`: `clamp(1 - PhysicalDamageReduction, 0, 1)` and
-   `PhysicalIncomingDamageMultiplier`. For `EffectType.Magic`: `clamp(1 - MagicDamageReduction, 0, 1)` and
-   `MagicalIncomingDamageMultiplier`.
-4. `AoeIncomingDamageMultiplier`, under `ApplyTargetAoeIncomingDamageMultiplier`.
+1. `CalcDamageReductionFromArmorValue(trunc(Armor))`, under `ApplyTargetArmor`. `HeroItemStatCalculation` has the
+   function: `1 - 0.00052 x Armor / (Global.ArmorToDamageReductionMultiplier + 0.00048 x |Armor|)`.
+2. `clamp(1 - Avoidance, 0, 1)`, under `ApplyTargetAvoidance`.
+3. `IncomingDamageMultiplier`, under `ApplyTargetIncomingDamageHealingMultipliers`.
+4. For an effect with an asset tag at or under `EffectType.Physical`: `clamp(1 - PhysicalDamageReduction, 0, 1)`
+   under `ApplyTargetPhysicalDamageReduction` and `PhysicalIncomingDamageMultiplier` under
+   `ApplyTargetPhysicalIncomingDamageMultiplier`. Otherwise, for a tag at or under `EffectType.Magic`:
+   `clamp(1 - MagicDamageReduction, 0, 1)` under `ApplyTargetMagicDamageReduction` and
+   `MagicalIncomingDamageMultiplier` under `ApplyTargetMagicalIncomingDamageMultiplier`.
+5. `AoeIncomingDamageMultiplier`, under `ApplyTargetAoeIncomingDamageMultiplier`.
+
+The gather captures a target attribute only for a set flag. A reduction is otherwise 0 and a multiplier 1. A school
+pair therefore needs the tag and the flag together. High Tide's damage effect has the tag `EffectType.Magic.Water`
+and the preset `EnemyPhysicalArea`, so neither pair changes its hit: the tag selects the magic pair and the preset
+has both magic flags clear. Arcane Volley's damage effect has the preset `EnemyMagicalArea`, so `Avoidance` and
+`AoeIncomingDamageMultiplier` apply to it.
 
 An instant effect executes inside its application call, so the attributes and the hit outcome of each hit are those
 of the moment the ability's graph applies it.

@@ -115,9 +115,14 @@ public sealed class EntityResolver
 
     public TargetCountFalloffs Falloffs { get; }
 
+    public StaggerDeltas Deltas { get; }
+
     public ProcRolls Rolls { get; }
 
     public CommitTriggers Commits { get; }
+
+    public EndAbilityPaths EndPaths => _creatureReads.EndPaths;
+
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
@@ -281,7 +286,9 @@ public sealed class EntityResolver
             new SectionHeadingRows(provider), Tempers, Drops, new GlyphWording(provider, _constants),
             CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, AttunementTrees,
             ModifierRecipes, new TooltipWidgetText(provider, _assets, SlotNames), new AbilityTooltipTexts(provider, _assets),
-            new EnemySettings(provider, _assets, _constants, _presets));
+            new EnemySettings(provider, _assets, _constants, _presets),
+            StaggerComponent.Read(provider, _constants),
+            GameModeRespawn.Read(provider, _assets, _constants));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));
@@ -302,6 +309,7 @@ public sealed class EntityResolver
             name => LoadDefaultObject(FindAsset(name)));
 
         Falloffs = new TargetCountFalloffs(provider, mappings, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
+        Deltas = new StaggerDeltas(provider, _constants, _tags, name => LoadDefaultObject(FindAsset(name)));
         Rolls = new ProcRolls(_constants, provider);
         Commits = new CommitTriggers(provider, _effectNames, name => Owned(name, EffectTable));
 
@@ -442,12 +450,37 @@ public sealed class EntityResolver
                 AutoAttack = facts.AutoAttack,
                 Area = facts.Area,
                 Projectile = facts.Projectile,
+                BlockAbilitiesWithTag = facts.BlockAbilitiesWithTag,
+                InterruptCooldownDuration = facts.InterruptCooldownDuration,
+                EndAbilityPaths = facts.EndAbilityPaths,
+                FieldSources = FieldSources.Set(
+                    entity.FieldSources, nameof(Entity.InterruptCooldownDuration), facts.InterruptCooldownSource),
+            };
+        }
+
+        if (cdo is not null && tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase))
+        {
+            entity = entity with
+            {
+                ScaleTimeWithAttackSpeed = AbilityTaskReads.ScalesWithAttackSpeed(cdo, _provider) ? true : null,
+                ChannelingData = AbilityTaskReads.Channeling(cdo, _provider),
+                InheritedAbilityTags = Empty(AbilityTaskReads.AbilityTags(cdo, _provider)),
+                ActivationBlockedTags = Empty(AbilityTaskReads.ActivationBlockedTags(cdo, _provider)),
             };
         }
 
         if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
         {
-            entity = entity with { CalculationPreset = _presets.Executed(cdo) };
+            var policy = DurationPolicies.Of(cdo, _provider, _mappings);
+
+            entity = entity with
+            {
+                CalculationPreset = _presets.Executed(cdo),
+                TargetTags = Empty(AbilityTaskReads.GrantedTags(cdo, _provider)),
+                Executions = Empty(AbilityTaskReads.Executions(cdo, _provider)),
+                DurationPolicy = policy,
+                Infinite = policy == DurationPolicies.Infinite ? true : null,
+            };
         }
 
         entity = WithSpentResource(entity, display, tag, cdo);
@@ -520,6 +553,7 @@ public sealed class EntityResolver
         entity = entity with { Type = Types.Of(tag, entity, asset?.PackageName.Text) };
 
         if (Owners.DisabledInSet(tag.Name) ||
+            Owners.GrantedByDisabledTalentsAlone(tag.Name) ||
             (presentation is not null &&
              PropertyWalk.Get(presentation.Row, AbilityOwners.EnabledInGameField)?.GenericValue is false) ||
             (IsDynamicDefinition(asset) && cdo is not null &&
@@ -946,11 +980,14 @@ public sealed class EntityResolver
     /// The effect's periodic executions over its duration: one per whole period, and one on application unless the
     /// effect or a Blueprint parent sets <c>bExecutePeriodicEffectOnApplication</c> false. The engine's default is
     /// true. Entropic Burst executes 6 times over 9 seconds at 1.5 seconds, and its talent prints 246% for 0.41 a tick.
+    /// An effect of the <c>HasDuration</c> policy alone has them: an <c>Instant</c> effect executes once for each
+    /// application, so a duration and a period on its record are rows of the ability or the actor applying it.
     /// </summary>
     private Entity WithTicks(Entity entity, UObject? cdo, TagRecord tag)
     {
         if (cdo is null || !tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase)) return entity;
-        if (entity is not { Duration: > 0 and var duration, Period: > 0 and var period } || entity.Infinite == true) return entity;
+        if (entity.DurationPolicy != DurationPolicies.HasDuration) return entity;
+        if (entity is not { Duration: > 0 and var duration, Period: > 0 and var period }) return entity;
 
         var onApplication = ClassDefaults.Inherited(cdo, PeriodicOnApplicationField, _provider)?.GenericValue is not false;
         var ticks = (int)Math.Floor(duration / period + 1e-9) + (onApplication ? 1 : 0);
@@ -998,19 +1035,23 @@ public sealed class EntityResolver
 
         return entity with
         {
-            Rank = cdo is null ? null : Ranked(PropertyWalk.GetTags(cdo, CharacterTagsField)),
+            Rank = cdo is null
+                ? null
+                : Ranked(PropertyWalk.AsTags(ClassDefaults.Inherited(cdo, CharacterTagsField, _provider)?.GenericValue)),
             Health = attributes?.Health,
             Armor = attributes?.Armor,
             Resist = attributes?.Resist,
             KillScore = attributes?.KillScore,
             SpiritPoints = attributes?.SpiritPoints,
             CountsTowardScore = cdo is not null &&
-                PropertyWalk.Get(cdo, CountsTowardScoreField)?.GenericValue is false
+                ClassDefaults.Inherited(cdo, CountsTowardScoreField, _provider)?.GenericValue is false
                 ? false
                 : null,
             Intellect = attributes?.Intellect,
             Strength = attributes?.Strength,
             Agility = attributes?.Agility,
+            CritChance = attributes?.CritChance,
+            CritMultiplier = attributes?.CritMultiplier,
             Abilities = Empty(Sourced(slots.Where(slot => !slot.Passive))),
             Passives = Empty(Sourced(slots.Where(slot => slot.Passive))),
             Phases = Empty(Owners.PhasesOf(tag.Name)
@@ -1649,6 +1690,7 @@ public sealed class EntityResolver
             Charges = charges.Charges,
             ChargesByLevelType = charges.ByLevelType,
             TargetCountFalloff = Falloffs.Of(cdo),
+            StaggerDeltas = Deltas.Of(cdo),
             MaxTargets = maxTargets,
             CooldownDurationScalesOff = timing?.DurationScalesOff,
             CooldownTimeRateScalesOff = timing?.TimeRateScalesOff,
@@ -1665,6 +1707,7 @@ public sealed class EntityResolver
             CastTimeScalesWithHaste = CastTimeScalesWithHaste(cdo) ? true : null,
             TickrateIgnoresHaste = cdo is not null && GameplayEffects.IgnoresHaste(cdo) ? true : null,
             CalculationModifiers = cdo is null ? null : Empty(CalculationModifiers.Of(cdo, _provider, _constants)),
+            SetByCallerModifiers = cdo is null ? null : Empty(CalculationModifiers.SetByCallers(cdo, _provider)),
             MaxStacks = maxStacks,
             Infinite = Infinite(cdo) ? true : null,
             ScalesOff = scaling.Count == 0 ? null : [.. scaling],
@@ -2729,6 +2772,7 @@ public sealed class EntityResolver
         Category = outer.Category ?? inner.Category,
         ChargesByLevelType = outer.ChargesByLevelType ?? inner.ChargesByLevelType,
         TargetCountFalloff = Union(outer.TargetCountFalloff, inner.TargetCountFalloff),
+        StaggerDeltas = Union(outer.StaggerDeltas, inner.StaggerDeltas),
         MaxTargets = outer.MaxTargets ?? inner.MaxTargets,
         Resource = outer.Resource ?? inner.Resource,
         CastTimeScalesWithHaste = outer.CastTimeScalesWithHaste ?? inner.CastTimeScalesWithHaste,
@@ -2829,6 +2873,15 @@ public sealed class EntityResolver
     {
         if (first is null || second is null) return first ?? second;
         return [.. first.Concat(second).Distinct()];
+    }
+
+    private static IReadOnlyList<StaggerDeltaSource>? Union(
+        IReadOnlyList<StaggerDeltaSource>? first, IReadOnlyList<StaggerDeltaSource>? second)
+    {
+        if (first is null || second is null) return first ?? second;
+
+        return [.. first.Concat(second.Where(delta =>
+            !first.Any(held => held.Effect == delta.Effect && held.Formula == delta.Formula)))];
     }
 
     private static IReadOnlyList<ProcRoll>? Union(IReadOnlyList<ProcRoll>? first, IReadOnlyList<ProcRoll>? second)

@@ -119,6 +119,87 @@ public sealed record MultiTargetDamageFalloff
 public sealed record FormulaSymbol(string Symbol, string Meaning);
 
 /// <summary>
+/// Every hero's <c>CRStaggerActorComponent</c>, as <c>BP_PlayerCharacter</c> binds it. The component spreads each
+/// part over <see cref="Buckets"/> buckets and, every <see cref="Period"/> seconds while the pool holds Stagger, deals
+/// the first bucket as <see cref="DamageEffect"/> and shifts the rest forward.
+/// </summary>
+public sealed record StaggerSettings
+{
+    /// <summary>Seconds between ticks (<c>StaggerPeriodRef</c>).</summary>
+    public double Period { get; init; }
+
+    public string PeriodRow { get; init; } = string.Empty;
+
+    /// <summary>Bucket count, the ceiling of <c>StaggerDurationRef</c>.</summary>
+    public int Buckets { get; init; }
+
+    public string BucketsRow { get; init; } = string.Empty;
+
+    /// <summary>Cap on the pool as a share of MaxHealth (<c>StaggerMaxHealthPercentage</c>).</summary>
+    public double MaxHealthPercentage { get; init; }
+
+    public string MaxHealthPercentageRow { get; init; } = string.Empty;
+
+    /// <summary>Effect a tick applies to the owner.</summary>
+    public string DamageEffect { get; init; } = string.Empty;
+
+    /// <summary>SetByCaller tag holding a tick's damage.</summary>
+    public string DamageSetByCallerTag { get; init; } = string.Empty;
+
+    public string DisplayText { get; init; } = string.Empty;
+
+    /// <summary>Attribute the cap multiplies: the owner's current value at each add.</summary>
+    public string MaxHealthAttribute { get; init; } = string.Empty;
+
+    /// <summary>Attribute of a hit's target. The pool takes the hit's Health damage times it.</summary>
+    public string DamageAdditionFactorAttribute { get; init; } = string.Empty;
+
+    /// <summary>Attribute of a heal's target. The heal removes its amount times it from the pool.</summary>
+    public string HealReductionFactorAttribute { get; init; } = string.Empty;
+
+    /// <summary>Tag of a heal effect <see cref="HealReductionFactorAttribute"/> applies to.</summary>
+    public string HealAffectStaggerTag { get; init; } = string.Empty;
+
+    /// <summary>Tags of a damage effect the pool takes no part of.</summary>
+    public IReadOnlyList<string> DamageIgnoreStaggerTags { get; init; } = [];
+
+    /// <summary>Execution adding its set-by-caller magnitude to the target's pool. A negative magnitude is a cleanse.</summary>
+    public string ModifyExecution { get; init; } = string.Empty;
+
+    /// <summary>Set-by-caller tag <see cref="ModifyExecution"/> reads.</summary>
+    public string ModifySetByCallerTag { get; init; } = string.Empty;
+
+    /// <summary>Resource type of the <c>RESOURCE_CHANGED</c> combat log line a <see cref="ModifyExecution"/> delta writes.</summary>
+    public int LoggedResourceType { get; init; }
+
+    public string CapText { get; init; } = string.Empty;
+
+    public string RemovalText { get; init; } = string.Empty;
+
+    public string LoggedChangeText { get; init; } = string.Empty;
+}
+
+/// <summary>
+/// The respawn of a dead player in a dungeon, as <c>CRGameModeBase</c> runs it: each player revives on a respawn
+/// request of their own, and a respawn applies <see cref="CooldownEffect"/>.
+/// </summary>
+public sealed record RespawnSettings
+{
+    /// <summary>The dungeon game mode's <c>RespawnCooldownEffect</c>.</summary>
+    public string CooldownEffect { get; init; } = string.Empty;
+
+    /// <summary>Seconds the effect lasts.</summary>
+    public double CooldownDuration { get; init; }
+
+    public string CooldownDurationRow { get; init; } = string.Empty;
+
+    /// <summary>Tag the effect grants. A respawn request is refused while the character has it.</summary>
+    public string CooldownTag { get; init; } = string.Empty;
+
+    public string DisplayText { get; init; } = string.Empty;
+}
+
+/// <summary>
 /// The chance <c>CRRandomStreamComponent.RollProcPerMinute</c> gives one roll at a rate, as the shipping binary
 /// computes it. A proc roll's rate is its <see cref="ProcRoll.Formula"/>.
 /// </summary>
@@ -138,4 +219,39 @@ public sealed record ProcPerMinuteRoll
 
     /// <summary>The most seconds since the last proc the drought factor counts.</summary>
     public double LongestDrought { get; init; }
+}
+
+/// <summary>
+/// The split of one hit between the target's absorption effects and its Health, as the shipping binary's damage
+/// calculation computes it, and the amount the combat log writes for the hit.
+/// </summary>
+public sealed record DamageAbsorption
+{
+    public string DisplayText { get; init; } = string.Empty;
+
+    /// <summary>The amount, hit points and absorption of the hit's combat log line.</summary>
+    public string LoggedAmountText { get; init; } = string.Empty;
+
+    public IReadOnlyList<FormulaSymbol> Symbols { get; init; } = [];
+
+    /// <summary>The tag of an effect the hit is split over.</summary>
+    public string EffectTag { get; init; } = string.Empty;
+
+    /// <summary>The set-by-caller magnitude with an effect's pool.</summary>
+    public string PoolMagnitude { get; init; } = string.Empty;
+
+    /// <summary>The set-by-caller magnitude with the share of absorbed damage an effect's pool loses.</summary>
+    public string ConsumptionScalerMagnitude { get; init; } = string.Empty;
+
+    /// <summary>The consumption scaler of an effect with no such magnitude.</summary>
+    public double DefaultConsumptionScaler { get; init; }
+
+    /// <summary>The factor on an effect's consumption scaler for a hit its deduction crits on.</summary>
+    public double DeductionCritScaler { get; init; }
+
+    /// <summary>The attribute of the effect's instigator the deduction crit chance comes from.</summary>
+    public string CritChanceAttribute { get; init; } = string.Empty;
+
+    /// <summary>The most times one hit goes through the effects.</summary>
+    public int MostPasses { get; init; }
 }

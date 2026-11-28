@@ -1004,6 +1004,75 @@
     "firstProcChanceFloorDivisor": 8,
     "longestDrought": 1000
   },
+  "damageAbsorption": {
+    "displayText": "The effects with the tag split the hit after mitigation, in order of capacity, least first. Capacity is pool \u00F7 (consumption scaler \u00D7 crit factor). Each pass gives every effect the share D \u00F7 n. When the least capacity is above the share, every effect absorbs the share, its pool loses share \u00D7 consumption scaler \u00D7 crit factor, and the hit is absorbed. Otherwise the effect of least capacity absorbs its capacity and ends, and the rest of the hit goes through mitigation and the effects left again. Health loses max(round(T \u00D7 DamageMitigationScale) \u2212 A, 0). The crit factor is one roll for each effect and hit, with chance 2c \u00F7 (1 \u002B c).",
+    "loggedAmountText": "amount = clamp(|H \u002B A| \u2212 absorption left, 0, Health \u2212 MinHealth). hitPoints = Health before the hit \u2212 amount. absorption = the sum of the pools after the hit. absorbed = A \u002B the reductions of the hooks after the effects. The amount of each DAMAGE_ABSORBED line is the damage one effect absorbed.",
+    "symbols": [
+      {
+        "symbol": "D",
+        "meaning": "damage left of the hit after mitigation"
+      },
+      {
+        "symbol": "n",
+        "meaning": "number of effects with the tag on the target"
+      },
+      {
+        "symbol": "T",
+        "meaning": "damage absorbed plus damage left when the passes end"
+      },
+      {
+        "symbol": "A",
+        "meaning": "damage absorbed by the effects"
+      },
+      {
+        "symbol": "H",
+        "meaning": "Health lost, after the hooks"
+      },
+      {
+        "symbol": "c",
+        "meaning": "CritChance of the effect\u0027s instigator"
+      }
+    ],
+    "effectTag": "EffectType.Absorption",
+    "poolMagnitude": "SetByCaller.System.EffectAbsorptionPool",
+    "consumptionScalerMagnitude": "SetByCaller.System.EffectAbsorptionConsumptionScaler",
+    "defaultConsumptionScaler": 1,
+    "deductionCritScaler": 0.5,
+    "critChanceAttribute": "CritChance",
+    "mostPasses": 30
+  },
+  "stagger": {
+    "period": 3,
+    "periodRow": "Stagger.Period",
+    "buckets": 5,
+    "bucketsRow": "Stagger.AmountOfBuckets",
+    "maxHealthPercentage": 0.6,
+    "maxHealthPercentageRow": "Stagger.MaxHealthPercentage",
+    "damageEffect": "GE_Shared_Stagger_Damage",
+    "damageSetByCallerTag": "SetByCaller.Damage",
+    "displayText": "A part p added part-way through a period puts p\u00B7f/(n\u22121\u002Bf) in the first bucket and p/(n\u22121\u002Bf) in each other bucket, f the share of the period left. While the pool holds Stagger, each period deals the first bucket (at most the pool) and shifts the buckets forward. The period\u0027s countdown pauses while the pool is empty and resumes at the next add. A removal outside a tick scales every bucket by the share of Stagger left.",
+    "maxHealthAttribute": "MaxHealth",
+    "damageAdditionFactorAttribute": "StaggerDamageAdditionFactor",
+    "healReductionFactorAttribute": "StaggerHealReductionFactor",
+    "healAffectStaggerTag": "EffectLogic.HealAffectStagger",
+    "damageIgnoreStaggerTags": [
+      "EffectType.Environmental",
+      "EffectLogic.DamageIgnoreStagger"
+    ],
+    "modifyExecution": "CRModifyStaggerExecution",
+    "modifySetByCallerTag": "SetByCaller.Stagger",
+    "loggedResourceType": 7,
+    "capText": "An add takes min(part, cap \u2212 pool), with cap = maxHealthPercentage \u00D7 the owner\u0027s MaxHealth at that add. A pool above the cap takes no part of an add and stays as it is. A hit keeps the part the pool does not take as Health damage. A removal has no cap.",
+    "removalText": "A delta d \u2264 0 sets the pool to max(pool \u002B d, 0) and scales every bucket by the share of Stagger left. A heal with healAffectStaggerTag removes clamp(heal \u00D7 healReductionFactorAttribute, 0, pool), and the heal loses that amount. A factor of 0 removes none. modifyExecution adds the magnitude of modifySetByCallerTag unscaled. A tick removes the first bucket. The owner\u0027s death empties the pool.",
+    "loggedChangeText": "Each modifyExecution delta writes a RESOURCE_CHANGED line of resource type loggedResourceType. Its amount is the pool after the delta, and its change is the pool\u0027s change. A hit\u0027s part, a heal\u0027s removal, a tick and the death write no such line."
+  },
+  "respawn": {
+    "cooldownEffect": "GE_Shared_RespawnCooldown",
+    "cooldownDuration": 30,
+    "cooldownDurationRow": "Shared.RespawnCooldown.Duration",
+    "cooldownTag": "Cooldown.Respawn",
+    "displayText": "A dead player revives on that player\u0027s own respawn request. The server accepts the request while the character is dead, no boss fight is in progress and the character has no cooldown tag. A respawn before the match\u0027s end applies the cooldown effect to the character. A team wipe is every player character dead: the game mode counts it, the dungeon reset follows, and each player then revives on a request of their own."
+  },
   "leagueKinds": [
     {
       "name": "Unknown",

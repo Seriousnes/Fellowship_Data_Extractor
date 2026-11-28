@@ -10,6 +10,12 @@ public sealed class EffectDocument : EntityDocument
 
     public IReadOnlyList<string>? EffectTags { get; init; }
 
+    /// <summary>The tags the effect's target has while the effect is active: its <c>TargetTagsGameplayEffectComponent</c>'s granted tags.</summary>
+    public IReadOnlyList<string>? GrantedTags { get; init; }
+
+    /// <summary>The calculation class of each of the effect's <c>Executions</c>, without its package.</summary>
+    public IReadOnlyList<string>? Executions { get; init; }
+
     public double? Duration { get; init; }
 
     /// <summary>The attribute the duration is a share of, where no one number states it.</summary>
@@ -27,11 +33,18 @@ public sealed class EffectDocument : EntityDocument
 
     /// <summary>
     /// Periodic executions over the duration: one per whole period, and one more on application unless the effect
-    /// declares it does not execute then.
+    /// declares it does not execute then. An effect of the <c>HasDuration</c> policy alone has them.
     /// </summary>
     public int? Ticks { get; init; }
 
     public bool? Infinite { get; init; }
+
+    /// <summary>
+    /// The effect's <c>DurationPolicy</c>, a member of <c>EGameplayEffectDurationType</c>: <c>Instant</c>,
+    /// <c>Infinite</c> or <c>HasDuration</c>. An <c>Instant</c> effect executes once for each application, so a
+    /// <see cref="Duration"/> and a <see cref="Period"/> on it are rows of the ability or the actor applying it.
+    /// </summary>
+    public string? DurationPolicy { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
@@ -41,6 +54,9 @@ public sealed class EffectDocument : EntityDocument
 
     /// <summary>Attribute-based modifiers its executions apply to the attributes they capture.</summary>
     public IReadOnlyList<CalculationModifier>? CalculationModifiers { get; init; }
+
+    /// <summary>Modifiers its executions apply with a magnitude the applier sets on the spec.</summary>
+    public IReadOnlyList<SetByCallerModifier>? SetByCallerModifiers { get; init; }
 
     /// <summary>
     /// The row of <c>DT_EffectCalculationPresets</c> the effect's <c>EffectCalculationPreset</c> names, on an effect

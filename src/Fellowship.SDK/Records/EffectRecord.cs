@@ -25,6 +25,8 @@ public sealed record EffectRecord : EntityRecord
 
     public bool? Infinite { get; init; }
 
+    public string? DurationPolicy { get; init; }
+
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }

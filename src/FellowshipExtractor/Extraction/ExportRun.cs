@@ -462,10 +462,27 @@ public static class ExportRun
         }
 
         Console.WriteLine(
+            $"  {resolver.Deltas.Read} of {resolver.Deltas.Calls} {StaggerDeltas.Execution} magnitudes read as an expression");
+
+        foreach (var unread in resolver.Deltas.Unread.Distinct(StringComparer.Ordinal))
+        {
+            Console.WriteLine($"    {unread}");
+        }
+
+        Console.WriteLine(
             $"  {resolver.Rolls.Calls - resolver.Rolls.Unread.Count} of {resolver.Rolls.Calls} proc-per-minute rolls " +
             "read a rate as a row and attributes");
 
         Console.WriteLine($"  {resolver.Commits.Waits} commit waits read");
+
+        Console.WriteLine(
+            $"  {resolver.EndPaths.Abilities} creature abilities with a route to K2_EndAbility, " +
+            $"{resolver.EndPaths.Waits - resolver.EndPaths.Unread} of {resolver.EndPaths.Waits} waits with their seconds read");
+
+        foreach (var truncated in resolver.EndPaths.Truncated)
+        {
+            Console.WriteLine($"    {truncated} has more than {EndAbilityPaths.MaxPaths} routes to K2_EndAbility");
+        }
 
         foreach (var unread in resolver.Commits.Unread.Distinct(StringComparer.Ordinal))
         {

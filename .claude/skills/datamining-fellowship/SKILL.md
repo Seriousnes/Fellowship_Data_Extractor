@@ -244,6 +244,22 @@ Decoded against **26320967**, written up in `docs/effect-periods.md`:
 | Calculation preset row flags: `CanBeBlocked` +0x1B to `ApplyAscensionScaling` +0x30 | bit setters of the reflection records at 0x148ABADE0 onward |
 | Healing gather; ascension scale from `GlobalAscensionReduceHealingScalerKey` (globals +0x358) | 0x1450DB8C0, flag test 0x1450DBB73, getter 0x1450CDB20 |
 
+Decoded against **26320967**, `CrAddToAndRecalculatePeriodicEffect` in `docs/effect-periods.md`:
+
+| What | Where |
+| --- | --- |
+| Name literal, native table entry, exec thunk | 0x148B13660, 0x148B30CC0, 0x144F5CA10 |
+| Body; `TargetingFilters` check; return value false on every path | **0x14521C1D0**; 0x14524B830 called at 0x14521C2B1; 0x14521CB2F |
+| Query: `EffectSource` +0x178 = `Source`, `EffectDefinition` +0x180 = `EffectClass`, on `Target`'s component; first live handle | stores 0x14521C349, 0x14521C365; `GetActiveEffects` 0x144A0D680; loop 0x14521C410 |
+| `FGameplayEffectQuery::Matches(Spec)`: context vtable +0x58 (`GetSourceObject`, as the `EffectContextGetSourceObject` thunk 0x144A32A60 calls it) against `EffectSource`; `Def` against the class default object | 0x144A82E23 to 0x144A82E4C; 0x144A82E57 to 0x144A82EBC |
+| Fresh: `AddedValue / (floor(D/P) + Fmod(D,P)/P + bExecutePeriodicEffectOnApplication)`, spec `Duration` +0x50, `Period` +0x54, CDO +0x240 | 0x14521C992 to 0x14521C9DF; getters 0x144A78C20, 0x144A7B020; bit setter 0x1434A2410 |
+| Existing: time remaining `D - D x ((t - start +0x2EC) x rate +0x2DC / D + offset +0x2E0)` | 0x144A7BF10 |
+| Existing: period timer (+0x318) remaining and elapsed | 0x1452D5AC0 (`GetTimerRemaining` 0x144042D40), 0x1452D5A10 (`GetTimerElapsed` 0x144042CD0) |
+| Existing: ticks left `ceil(clamp(R-Pr,0,10000)/P) + f + [f==0]`, `f` from `Fmod(R-Pr,P)` or `Pe+R` | 0x14521C6B4 to 0x14521C732; 10000 at 0x147C084C8; `Fmod` 0x1411EA290 |
+| Existing: new tick `(left x V + AddedValue) / (floor(D/P) + Fmod(D-Pr,P)/P)` | 0x14521C737 to 0x14521C782; `V` 0x145232130; `D` 0x144A0EF40 |
+| Duration restart: vtable +0x740 `ModifyActiveEffectStartTime(D - R)`, start `+= diff / max(rate, 0.0001)`, then `CheckDuration` | 0x14521C83F; 0x144A83160, `CheckDuration` call 0x144A83236 |
+| Magnitude edit: vtable +0x6E8 `UpdateActiveGameplayEffectSetByCallerMagnitude` | 0x14521C874; 0x144A911F0, `SetSetByCallerMagnitude` 0x144A8FB20 |
+
 Decoded against **26320967**, the activation checks of `UCRGameplayAbility`, written up in `docs/cooldown-haste.md`:
 
 | What | Where |
@@ -330,6 +346,172 @@ Decoded against **26320967**, the target selection defaults in `CreatureAbilityR
 | RemainingHealthActorSet `SelectionType` +0x78: 0, `LeastHealthLeft` | constructor 0x14506F2E0, store 0x14506F341 |
 | RandomPreferRoleActorSet `PreferredRole` +0x78: 0, `ROLE_TANK` | constructor 0x14506F160, store 0x14506F1C1 |
 | A class's constructor: name literal, registration record [-8] StaticClass, `GetPrivateStaticClassBody` argument [r11-30h] | 0x14144CE70; UObject base constructor 0x14156D290 |
+
+Decoded against **26320967**, implemented in `DamageAbsorptions.cs` and written up in `docs/damage-absorption.md`:
+
+| What | Where |
+| --- | --- |
+| Absorption pass: effects with `EffectType.Absorption` (tag global 0x14A3C9E88), share `rest / count`, an effect at its end removed and the pass ended | **0x1450E4BE0**; share 0x1450E4D99, compare 0x1450E4E6A, removal 0x1450E4F7C, `rest -= absorbed` 0x1450E4FCB |
+| Sort of the effects by `pool / (ConsumptionScaler x crit factor)`, least first | 0x1450D4FE0, predicate 0x1450D9480 |
+| Deduction crit factor: `DefaultAbsorbDeductionCritScaler` (character +0xCF8) with chance `2c / (1 + c)` of the instigator's `CritChance`, kept for each effect and hit | **0x1450D90F0**; chance 0x1450D934E to 0x1450D937C |
+| `SetByCaller.System.EffectAbsorptionConsumptionScaler` (0x14A3CA670, default 1.0), `SetByCaller.System.EffectAbsorptionPool` (0x14A3CA668) | read 0x1450E4E3F; written by the pool setter |
+| Character `CachedAbsorptionValuesMap` +0xA88, `CurrentAbsorption` +0xD38: getter by handle, total, setter | 0x1452EAC00, 0x1452EABF0, **0x1452E4DC0** |
+| Driver loop over the absorption pass: at most 30 passes, `Raw = Raw / PreBlock x rest` before each pass after the first | 0x1450DD270 to 0x1450DD373 |
+| Health damage `max(round(T x DamageMitigationScale) - A, 0)`; a hook's reduction added to `AbsorbedDamage`; event amount `-(H + A)` | 0x1450DD3E9, 0x1450DD48D, 0x1450DD4C8 and 0x1450DD6E2 |
+| Hook listeners (virtual +0x60) in the character's maps +0xC78 and +0xC90: Stagger, damage redirect, death prevention | caller 0x1450D4920; 0x1452C85F0, 0x14527DD90, 0x14527E150 |
+| Stagger pool add, cap `StaggerMaxHealthPercentage` (+0xF8) x MaxHealth, `CurrentStagger` +0x140 | 0x1452C3540 |
+| `EffectType.Environmental`, `EffectLogic.DamageIgnoreStagger`, `EffectLogic.NoLogging` | tag globals 0x14A3C9E80, 0x14A3C9F80, 0x14A3C9F30 |
+| Attribute set `PostGameplayEffectExecute`; Health `clamp(Health - Damage, MinHealth, MaxHealth)` (Health +0x58, MaxHealth +0x38, MinHealth +0x48) | 0x1450C45C0; **0x1450C4DB0**, vtable slot +0x318 |
+| Health change event to the meters, and from there to the combat log writer | 0x14527C080, call 0x14527C422 |
+| Combat log damage line: `Amount = clamp(abs(event amount) - CurrentAbsorption, 0, Health - MinHealth)`, hit points `Health - Amount` | **0x145296FB0**; 0x1452976FD to 0x145297736 |
+| Combat log `DAMAGE_ABSORBED` line, `AmountAbsorbed` the damage absorbed | 0x1452959F0, store 0x145295CE2 |
+| Damage line record: `HitType` +0x92, `Amount` +0x94, `OverAmount` +0x98, `Absorbed` +0x9C, `Blocked` +0xA0, `RawDamage` +0xA4 | reflection records 0x148AAA9B0 to 0x148AAAAD0 |
+| `FGameplayEffectContextHandle` vtable: `GetInstigator`, `GetInstigatorAbilitySystemComponent`, `GetEffectCauser` (context slots +0x28, +0x30, +0x38) | 0x148947BB8; 0x1449DE200, 0x1449DE220, 0x1449DDFB0 |
+| `CrAddOnAbsorbValue`: `x IncomingAbsorptionMultiplier` (target), `x OutgoingAbsorptionMultiplier` (instigator), `x (1 + Expertise)` | 0x14521BE40; 0x14521BFEA, 0x14521BFFA, 0x14521C02F |
+| A second execution over the absorption pass, with the captured `DamageScale` as its damage | 0x1450DDDE0, vtable entry 0x148B806C8 |
+
+Decoded against **26320967**, `CRStaggerActorComponent` (character +0xF78), behind `settings.json` `stagger`
+(`StaggerComponent.cs`):
+
+| What | Where |
+| --- | --- |
+| Vtable; `BeginPlay` +0x3C0, `TickComponent` +0x3D8, `OnStaggerChanged` broadcast +0x4B8 | 0x148C9A4A8; **0x1452C3990**, **0x1452CDD70**, 0x1452C97D0 |
+| Fields: `StaggerPeriodRef` +0xA8, `StaggerDurationRef` +0xD0, `StaggerMaxHealthPercentage` +0xF8 (all `FScalableFloat`), `DamageEffectClass` +0x120, `DamageEffectSetByCallerTag` +0x128, `CurrentStagger` +0x140, damage spec +0x158, last tick +0x168, period countdown +0x16C, buckets `TArray<float>` +0x178, `CachedStaggerContributions` +0x188 | reflection records from 0x148C98F60; constructor 0x1452C2320 |
+| Rows: `BP_PlayerCharacter` `StaggerActorComponent` binds `Stagger.Period`, `Stagger.AmountOfBuckets`, `Stagger.MaxHealthPercentage`, `GE_Shared_Stagger_Damage`, `SetByCaller.Damage`; no hero Blueprint overrides them | asset |
+| Bucket count `ceil(StaggerDurationRef)`, `SetNumZeroed` | 0x1452C3DB4 to 0x1452C3E1D |
+| Natives: `AuthClearStagger`, `AuthUpdateStagger(StaggerDelta, ShouldUpdateStaggerDamage)`, `AuthUpdateStaggerAndLog`, `UpdateStaggerDamage` | 0x1452C3510, **0x1452C3540**, 0x1452C3670, **0x1452CF830**; table 0x148C9A9B0 |
+| Pool setter: `clamp(cur + Δ, 0, cap)`, unchanged value returns at once; flag set calls the bucket update with the Δ taken | 0x1452C3580, 0x1452C35EF to 0x1452C3618, 0x1452C364E |
+| Bucket add: countdown 0 takes `Period` (first add only); `f = countdown / Period`; first bucket `Δ·f/(n−1+f)`, others `Δ/(n−1+f)` | 0x1452CF884 to 0x1452CF9AA |
+| Bucket removal (Δ ≤ 0): every bucket × `max(sum + Δ, 0) / sum`, × 0 when sum ≤ 0.0001 | 0x1452CF9C2 to 0x1452CFAF2 |
+| Tick: authority, `CurrentStagger > 0` else return before the countdown moves; countdown −= dt; on expiry pop bucket 0, shift, deal `min(bucket0, CurrentStagger)` when bucket0 > 0, `CurrentStagger −= bucket0` (flag 0), countdown += Period | 0x1452CDD80 to 0x1452CDE68; deal 0x1452C3380 (`AssignTagSetByCallerMagnitude` 0x1449FE350, apply 0x1449FE3F0) |
+| Damage hook part, flag 1; heal hook for `EffectLogic.HealAffectStagger` (0x14A3C9F88): Δ = −min(heal × `StaggerHealReductionFactor`, CurrentStagger), heal less by it | 0x1452C87D5; 0x1452C8900, call 0x1452C8B0B |
+| `CRModifyStaggerExecution`: `SetByCaller.Stagger` to `AuthUpdateStaggerAndLog` with flag 1 | 0x1451091E0, call 0x145109383 |
+| Hero death override clears Stagger before the base death (+0x92D, `EffectLogic.RemoveOnDeath`) | 0x145312310 (vtable entry 0x148CFC7A8), call 0x145312378; base 0x1452ED190 |
+
+Decoded against **26320967**, the school and armor terms of the target formula in `docs/effect-periods.md`:
+
+| What | Where |
+| --- | --- |
+| Target attribute gather: one capture for each set preset flag, `Armor` +0x22, `Avoidance` +0x23, `IncomingDamageMultiplier` +0x24, `PhysicalDamageReduction` +0x25, `MagicDamageReduction` +0x26, `PhysicalIncomingDamageMultiplier` +0x27, `MagicalIncomingDamageMultiplier` +0x28, `AoeIncomingDamageMultiplier` +0x29 | **0x1450DB100**, flag tests 0x1450DB128 to 0x1450DB303 |
+| School pair by asset tag, `GameplayTags` then `ParentTags`: `EffectType.Physical` first, else `EffectType.Magic` | 0x145107B1E to 0x145107BC0; tag globals 0x14A3C9E50, 0x14A3C9E48 |
+| Armor term: `CRItemSettings` default object +0x38, `CalcDamageReductionFromArmorValue` of `trunc(Armor)` | 0x145107A90 to 0x145107AE9, caller of the Blueprint function 0x145020120, name global 0x14A3B1970 |
+
+Decoded against **26320967**, `CRAbilityTask_ServerCasting` and `CRAbilityTask_ServerChanneling`, written up in
+`docs/casting-and-channeling.md`, behind the `channelingData` flags of `AbilityTaskReads.cs`:
+
+| What | Where |
+| --- | --- |
+| `ServerStartCasting`, exec thunk 0x144F1A680; `Duration` +0xB0 from `ModifyCastingDuration`, `CastSpeed` +0xB4 `clamp(rate, 0, 999)` | **0x145121260**; 0x14512137D, 0x14512139D to 0x1451213AD |
+| `ServerStartChanneling`, exec thunk 0x144F1C070; `rate = clamp(rate, 0.0001, 999)`, `ScaledDuration` +0xB0, `TickInterval` +0xB4 `/ rate` | **0x145121540**; 0x14512167F, 0x1451216CC, 0x1451216FD |
+| `ModifyCastingDuration`, `ModifyChannelingDuration`: callers by name, native bodies return the input (ability vtable +0x4C8, +0x4C0) | 0x144FEC850, 0x144FEC8F0; 0x1450E30F0; names 0x14A3ACC68, 0x14A3ACC70 |
+| Ability time rate for an ability instance, and for a class default object with a component | 0x1450E06E0, 0x1450E0910 |
+| End montage delay: first `AnimNotify_CastEndMarker` (class getter 0x144F19050) of the montage's notifies (+0x80, stride 0xB8), `WaitDelayCR` 0x14512E940 | cast 0x145121460 to 0x1451214C2; channel 0x1451217D0 to 0x145121830 |
+| Cast task `Activate`: `CRCastingGameplayEffect` (0x144FF4380), `SetDuration(Duration / CastSpeed)`, removal handler, time change handler | **0x14511BE30**; 0x14511C06B to 0x14511C077; 0x14511EFC0; 0x14511EE30 |
+| Channel task `Activate`: `CRChannelingGameplayEffect` (0x144FF4430) or `CRInfiniteChannelingGameplayEffect` (0x144FF44E0), tick count, looping timer with first delay -1 or 0.01 | **0x14511C300**; 0x14511C8CB to 0x14511C935; 0x14511CAE2 |
+| Channel tick timer body; expiry handler with the remaining ticks, the partial tick and `OnFinished`; time change handler | 0x145120A20; **0x14511F270**; 0x14511F030 |
+| `OnLoopTimerExpired` of the cast and of the channel; `OnDestroy` of each | 0x145120770, 0x145120820; 0x145120190, **0x1451202F0** |
+| `EstimateChannelValues`, `ForceMarkChannelComplete`; native tables | 0x14511E000, 0x14511E810; 0x148ABE700, 0x148AC0880 |
+| Channel task: `OnTick` +0x90, `OnFinished` +0xA0, `TickImmediately` +0xB8, flags +0x100 (bit 0 `ContinuousChannel`, 2 `Interruptible`, 5 `EnablePartialTicks`, 6 `AllowSpellPushback`), effect handle +0x104, start time +0x10C, tick count +0x110, ticks remaining +0x114, partial tick +0x118, timer +0x120, complete +0x129, delay task +0x130 | reflection records from 0x148ABF7A0 |
+| Cast task: `OnFinished` +0x90, flags +0xF0 (bit 0 `ShowOverhead`, 1 `Interruptible`, 2 `AllowSpellPushback`), effect handle +0xF4, end montage played +0xFC, finished +0xFD, delay task +0x100 | reflection records from 0x148ABCC40 |
+| `CRChannelingTaskData` (0x80): `ContinuousChannel` +0x00, `ChannelingDuration` +0x08, `ChannelingTickInterval` +0x30, `TickImmediately` +0x78, `ScaleDurationWithAbilityTimeRate` +0x7C, `EnablePartialTicks` +0x7E, `AllowSpellPushback` +0x7F; `CRCastingTaskData`: `CastingDuration` +0x00, `CastEndAnimMontage` +0x30, `Interruptible` +0x39 | reflection records from 0x148ABE840 and 0x148ABC1C0 |
+| `EffectVisualization.OverheadStatus`, `EffectLogic.UninterruptibleCast`, `EffectLogic.NeverShowInterruptOnCastBar`, `EffectLogic.Dynamic.NoSpellPushback` | tag globals 0x14A3CA2B0, 0x14A3C9ED0, 0x14A3C9ED8, 0x14A3C9F78 |
+
+Decoded against **26320967**, the cancel of abilities by an applied effect, written up in
+`docs/casting-and-channeling.md`:
+
+| What | Where |
+| --- | --- |
+| `CRCancelAbilitiesBlockedByThisEffectsParentExecution`: vtable 0x148B3C718, execute +0x2D0; granted tags (+0xA48) of the context's `RootGEDef` (+0x98) | **0x1451085F0** |
+| `RootGEDef` written at the application of an effect with an `AdditionalEffectsGameplayEffectComponent` (class getter 0x1449D01E0) | 0x1452D1229 to 0x1452D128A, in 0x1452D0F50 |
+| Filter: with `AbilityType.Skill` (0x14A3C9FB0) or `Ability.Skill`, without `AbilityLogic.AtomicExecution` (0x14A3CA0C8) | 0x1450CB280; without-tags form 0x1450CAF20, execution 0x145108570 |
+| Component cancel loop over the activatable abilities (+0x500, stride 0xF0): `AbilityTags` (+0xB0), `ActivationBlockedTags` (+0x248, getter 0x1450E0B30) | **0x1452D21A0**; blocked test 0x1452D23E2 to 0x1452D2483 |
+| Per-ability cancel: `CancelAbility` (vtable +0x330) on each active instance, then `ApplyCooldown` (+0x3B0) for a committed ability | 0x1452D1F50; calls 0x1452D20ED, 0x1452D2136 |
+| Engine `CancelAbility`: `CanBeCanceled` (+0x338), `EndAbility` (+0x470) with `bWasCancelled` | 0x1449DA700; 0x1449DA94B |
+| `CRGameplayAbility` flags +0x414: bit 0 ended, 1 committed, 2 cooldown applied; `CommitAbility` (+0x370), `ActivateAbility` (+0x448), `EndAbility` (+0x470) | 0x1450DC8F0, 0x1450D95A0, **0x1450DCC60** |
+| `EndAbility`: global cooldown effect removed for a cancelled ability not committed; `ApplyCooldown` under `CCP_OnAbilityEnd` (`CooldownCommitmentPolicy` +0x3C8 = 2) | 0x1450DCD26 to 0x1450DCDB1; 0x1450DCDB6 to 0x1450DCDF0 |
+| `CharacterStatus.IgnoreMoveInput`, `.IgnoreActionInput`, `.IgnoreRotationInput`, `.Silenced`, `.Uninterruptible` | tag globals 0x14A3CA1A8, 0x14A3CA1B0, 0x14A3CA1B8, 0x14A3CA200, 0x14A3CA210 |
+
+Decoded against **26320967**, the wait of `WaitDelayCR`, read by `EndAbilityPaths.cs` and written up in
+`docs/ability-end-delays.md`:
+
+| What | Where |
+| --- | --- |
+| `CRAbilityTask_WaitDelay::WaitDelayCR(OwningAbility, Time, ScaleTimeWithAbilitySpeed)`; name literals `WaitDelayCR` 0x148AD1AA0, `ScaleTimeWithAbilitySpeed` 0x148AD1A80 | **0x14512E940** |
+| `ScaleTimeWithAbilitySpeed` true: task `Time` (+0x90) is `Time / factor`, divided once in the factory | `test bpl,bpl` 0x14512EA06, factor call 0x14512EA0E, `divss` 0x14512EA19, store 0x14512EA1D |
+| `ScaleTimeWithAbilitySpeed` false: `Time` stored unchanged | 0x14512EA2D |
+| Ability time factor: 1.0, the owner's `Haste` under `ScaleTimeWithHaste` (+0x3B8 bit 0), then `+ AttackSpeed - 1` under `ScaleTimeWithAttackSpeed` (bit 1) | 0x1450E06E0; tests 0x1450E0710, 0x1450E07A1; `addss` 0x1450E07F0, `subss` 0x1450E07F7 |
+| Task `Activate`: `Time` above 0 sets a timer; `Time` of 0 or less ends the task and broadcasts the delegate at +0x80 in the same call | 0x145125D70; `comiss` 0x145125D9C, broadcast 0x145126028 |
+| `InterruptCooldownDuration` +0x4A8, `InterruptCooldownEffectBaseClass` +0x4D0: constructor default `Value` 0, no table, row or registry | `UCRGameplayAbility` constructor 0x1450D7D60, stores 0x1450D7E7E to 0x1450D7EA3 |
+
+Decoded against **26320967**, the Stagger pool's cap, removals and log line, behind the `stagger` texts in
+`StaggerComponent.cs` and the `staggerDeltas` of `StaggerDeltas.cs`, written up in `docs/stagger.md`:
+
+| What | Where |
+| --- | --- |
+| Setter cap, for Δ ≥ 0 alone: owner (component +0x98) cast to `CRFellowshipCharacter`, `StaggerMaxHealthPercentage` at level 0 × virtual +0xA38 | 0x1452C3589 to 0x1452C35EF; class getter 0x14509CBB0 |
+| Cap under the pool: Δ = 0 and return. New pool over the cap: Δ −= new − cap | 0x1452C35F3 to 0x1452C3602; 0x1452C3604 to 0x1452C3618 |
+| `CRFellowshipCharacter` vtable (constructor 0x145308740); +0xA38 is the current `MaxHealth` (attribute set character +0x898, attribute +0x38, `GetCurrentValue` 0x1421D97D0) | 0x148CFBD20; 0x1452EC9A0 |
+| Damage hook: factor getter `StaggerDamageAdditionFactor`, `H −= Δ taken`, a `DAMAGE_ABSORBED` line of Δ taken × weight (entry +0x298, stride 0x2A0) | 0x1452C76E0; 0x1452C87E9 to 0x1452C87FA; 0x1452C887C |
+| Heal hook: `Role` (+0x170) authority, target = owner, `EffectType.Environmental` returns, `EffectLogic.HealAffectStagger` required, factor getter `StaggerHealReductionFactor`, factor ≤ 0 returns, `clamp(heal × factor, 0, CurrentStagger)` | 0x1452C8932, 0x1452C8971, 0x1452C897A, 0x1452C89F2, 0x1452C7790, 0x1452C8AB6, 0x1452C8ACE to 0x1452C8AEA |
+| `CRHeroAttributeSet` constructor: `StaggerDamageAdditionFactor` +0x218 and `StaggerHealReductionFactor` +0x228, base and current value 0 | **0x14500A430**, stores 0x14500A503, 0x14500A50A; records 0x148C0F6C0, 0x148C0F700 |
+| `CRModifyStaggerExecution`: transient magnitude of `SetByCaller.Stagger` (tag global 0x14A3CA5E8), the target avatar's component (+0xF78), no other factor | 0x145109278, 0x145109367 to 0x145109383 |
+| `AuthUpdateStaggerAndLog`: setter, combat logger, meters call for a removal with an ability and an effect (`StaggerModData`: source, target, `InstigatingAbility`, `InstigatingGameplayEffect`) | 0x1452C3699, 0x1452C36E1, 0x1452C37B2 (0x14527D320) |
+| Stagger change log writer: event variant 0xA, the variant of the attribute resource writer 0x145297E00 (`RESOURCE_CHANGED`); type byte 7 at record +0xF0, amount `round(new × 100)` +0xF4, change +0xF8, maximum and overcap −1 | **0x145298560**, 0x145298685 to 0x1452986DD; queue 0x1452AE960 called at 0x145298985 |
+| Every caller of the setter and of the logging form | 0x1452C3531 clear, 0x1452C87E4 damage hook, 0x1452C8B0B heal hook, 0x1452CDE4D tick, 0x1452C3699; 0x145109383; exec thunks 0x14505E495, 0x14505E568, 0x14505E69B, 0x14505EE5F |
+| Period routine: the Haste division has no `EffectType.Dot` or `EffectType.Hot` test before it | 0x1452D5C70, `divss` 0x1452D5E0B |
+| `UGameplayEffect.ConditionalGameplayEffects` +0x2A0 (record 0x1489892B0, deprecated): constructor and destructor alone in the ability module | 0x144A63B62, 0x144A6518C |
+| `HealthChangedInfo` field names: `TotalHealthChange`, `OverHealOrOverKillAmount`, `MitigatedDamage`, `AbsorbedDamage`, `BlockedDamage` | literals from 0x148AAF108 |
+
+Decoded against **26320967**, the AI leap, the spawned actor, the Blueprint timer and the actor tick interval,
+written up in `docs/leaps-timers-respawn.md`:
+
+| What | Where |
+| --- | --- |
+| `CRAbilityTask_AILeapTo`: vtable, constructor (`LeapTime` +0x150 default 1.5), size 0x158 | 0x148A97650, 0x14510DF20, `StaticClass` 0x144EFD800 |
+| `AILeapToLocation`, `AILeapToTarget`: exec thunks, factories, parameter records | 0x144EFE0D0, 0x144EFE340; **0x14510EB10**, 0x14510EC70; 0x148A96DF0, 0x148A970B0 |
+| Task fields: delegates `OnActivate` +0x80 to `OnNoPath` +0xD0, `OwningAICharacter` +0xE0, `GoalLocation` +0xE8, `MaxHeight` +0x100, `Timeout` +0x104, `AcceptanceRadius` +0x108, curve +0x110, curve end time +0x128, start time +0x130 | records from 0x148A97360 |
+| `Activate` (vtable +0x2C8): start time, arc, timeout timer | **0x14510F4A0**; arc 0x145110650, launch velocity 0x1439CCB40, path to curve 0x14524FFF0, timeout handler 0x145115080 |
+| `FindGroundLocationAt`, called by both leap factories with 500; exec thunk 0x144F66AF0 | 0x14522EF60 |
+| `TickTask` (vtable +0x2D8): position at `clamp(elapsed / LeapTime, 0, 1)`, `OnArrived` at `LeapTime - elapsed <= 0` | **0x145117E30**; `subss` 0x145117FAB, broadcast 0x145117FD3 |
+| `UWorld::TimeSeconds` +0x6B8, read by `GameplayStatics::GetTimeSeconds` | 0x1439DC5F4 |
+| `CRAbilityTask_SpawnActorFromAbility`: factory, `BeginSpawningActor`, `FinishSpawningActor` | 0x14512BF10, 0x1451267D0, **0x145127440**; exec thunks 0x144F252A0, 0x144F249F0, 0x144F24C30 |
+| `FinishSpawningActor`: `FinishSpawning`, `EndTask`, `Success` (task +0x80); `DidNotSpawn` is +0x90 | 0x145127477, 0x14512748A, 0x1451274A2 |
+| Spawn refusal for an owner failing `DestroyConditions` (task +0xB0) | 0x145143C50 |
+| `K2_SetTimerDelegate`: exec thunk, native, variance roll, `FirstDelay = Time + InitialStartDelay` | 0x143AFFB80, **0x143ABCF70**, 0x143ABD02B to 0x143ABD060, 0x143ABD16C |
+| `FTimerManager::SetTimer` with a parameter struct (loop +0, once per frame +1, `FirstDelay` +4), and the overload building it | **0x144042D80**, 0x1440430A0; `FirstDelay < 0` takes the rate 0x144042F2F |
+| Script delegate broadcast, and its wrapper for a delegate with no parameters | 0x1421F7F60, 0x1432D7890 |
+| `SetActorTickInterval` exec (writes actor +0x3C), `AActor::SetActorTickEnabled` (vtable +0x490) | 0x1435CD9A0, 0x1435BE680 |
+| `FTickFunction::SetTickFunctionEnable`, `FTickTaskLevel::AddTickFunction` (enabled set at level +8) | 0x144055450, 0x144027480 |
+| Tick queueing: enabled function with `TickInterval > 0` goes on cooldown; next cooldown `TickInterval - (DeltaSeconds - CumulativeCooldown)` | 0x144051D20; 0x14405202C, 0x144051DCF to 0x144051DF4 |
+
+Decoded against **26320967**, the wipe and the respawn, behind `settings.json` `respawn` (`GameModeRespawn.cs`) and
+written up in `docs/leaps-timers-respawn.md`:
+
+| What | Where |
+| --- | --- |
+| `CRGameModeBase`: vtable, constructor, `StaticClass`; size 0x438 | 0x148BD4978, 0x14533DF60, 0x144FE6E30 |
+| `CRGameModeDungeon`: vtable, constructor, `StaticClass`; size 0x4E8; `OnTeamRespawnedAfterWipe` +0x438 with no broadcast | 0x148BD68A0, 0x14533E140, 0x144FE7050; record 0x148BD2A00 |
+| `CRGameModeBase` fields: `RespawnCooldownEffect` +0x3A8, `OnCharacterDeathEvent` +0x3B8, wiped flag +0x3C9, wipe count +0x3CC, actors destroyed on a dungeon reset +0x3D0 | records from 0x148BD30D0 |
+| `Tick` (vtable +0x500) runs the wipe check (+0xA38) once `HasMatchStarted` (+0x7B8) | 0x145349320, **0x145349640** |
+| Wipe virtual (+0xA30): empty in the base, wipe count to the backend component in the dungeon game mode | 0x1453465D0 |
+| Reset after a wipe: dungeon reset actors, dead AI characters' `AbilityLogic.ActivatableWhileDead` abilities, AI characters with +0xDE8 | 0x145347CC0, 0x145154DE0 |
+| `CRFellowshipPlayerController`: vtable; `ServerRequestRespawn` (+0x1028) | 0x148D05A10, **0x14532E770** |
+| Respawn: restart at a player start (+0x898) or in place (+0x8A0), `RespawnCooldownEffect` application, flag clear | **0x145347EA0**; 0x14534812A to 0x14534822A, 0x14534827C |
+| `Cooldown.Respawn`, `ActorTypeTags.Boss`, `AbilityLogic.ActivatableWhileDead` tag globals | 0x14A3CA740, 0x14A3CA6B8, 0x14A3CA0D0 |
+| `CRGameStateBossComponent.CurrentBossFightIndex` +0xD8: `IsInAnyBossFight`, setter | 0x1453450D0, 0x145348BA0 |
+| `CRGameModeBossComponent`: boss fight end (index, completed), its two callers for a completed and a reset fight | **0x145337AC0**; 0x14533A4E0, 0x14533BF00 |
+| `CRAICharacter::OnAllThreatLost`: a boss ends its boss fight, any other character resets | 0x145156CD0; reset 0x145155700; `GetBossFightIndex` 0x145155890 |
+| `HasMatchEnded` (game mode vtable +0x7C0), `HasMatchStarted` (+0x7B8) | 0x1439BBF40, 0x1439BBF90 |
+| Class names by `StaticClass`: `CRFellowshipCharacter`, `CRAICharacter`, `CRCharacterBase`, `CRGameStateBase`, `CRGameStateBossComponent`, `CRGameModeBossComponent` | 0x14509CBB0, 0x144F3A240, 0x144F86210, 0x144FF69E0, 0x144FF90C0, 0x144FE74C0 |
+
+Decoded against **26320967**, implemented in `DurationPolicies.cs` and written up in `docs/effect-periods.md`:
+
+| What | Where |
+| --- | --- |
+| `UGameplayEffect` constructor stores `DurationPolicy` (+0x30) 0, `Instant` | 0x144A63AB0, store 0x144A63ED7 |
+| `CRGameplayEffectDamage` constructor, no store at +0x30; class registration 0x144FF3E90, constructor wrapper 0x144FF5590 | **0x1450E84D0** |
+| The other native effect classes' registrations, each with its name literal and its constructor wrapper | 0x144FF4380 to 0x144FF5090, wrappers 0x144FF5500 to 0x144FF5650 |
+| Their constructors, each with one store at +0x30 after the `UGameplayEffect` constructor call | 0x1450E67B0 to 0x1450EA350, the table in `docs/effect-periods.md` |
 
 ## Traps this build sets
 

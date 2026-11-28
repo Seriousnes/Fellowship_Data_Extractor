@@ -81,6 +81,8 @@ public sealed class Settings
         LongestDrought = 1000,
     };
 
+    public DamageAbsorption DamageAbsorption { get; }
+
     public IReadOnlyList<LeagueKindEntry> LeagueKinds { get; }
 
     public IReadOnlyList<LeagueEntry> Leagues { get; }
@@ -98,6 +100,10 @@ public sealed class Settings
     public AbilityTooltipText AbilityTooltip { get; }
 
     public EnemySettings Enemies { get; }
+
+    public StaggerSettings Stagger { get; }
+
+    public RespawnSettings Respawn { get; }
 
     public Settings(
         AbstractFileProvider provider,
@@ -123,9 +129,13 @@ public sealed class Settings
         ModifierRecipes recipes,
         TooltipWidgetText widgetText,
         AbilityTooltipTexts abilityTooltip,
-        EnemySettings enemies)
+        EnemySettings enemies,
+        StaggerSettings stagger,
+        RespawnSettings respawn)
     {
         Enemies = enemies;
+        Stagger = stagger;
+        Respawn = respawn;
         _attunementTrees = attunementTrees;
         ModifierTypes = recipes.Types;
         EmptyModifierSlot = widgetText.EmptySlot;
@@ -139,6 +149,7 @@ public sealed class Settings
         Leagues = leagues.All;
         LeagueKinds = leagues.Kinds;
         Items = items.Values with { StatEnchantPower = enchants.Power };
+        DamageAbsorption = DamageAbsorptions.Read(provider);
 
         StatCalculation = statCalculation;
         GemTypes = gemTypes;
@@ -224,6 +235,9 @@ public sealed class Settings
         ModifierAbilityUnlock = ModifierAbilityUnlock,
         MultiTargetDamageFalloff = MultiTargetDamageFalloff,
         ProcPerMinuteRoll = ProcPerMinuteRoll,
+        DamageAbsorption = DamageAbsorption,
+        Stagger = Stagger,
+        Respawn = Respawn,
         LeagueKinds = LeagueKinds,
         Leagues = Leagues,
         AttunementTrees = _attunementTrees.NamedTrees,

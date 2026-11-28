@@ -72,6 +72,12 @@ public sealed class AbilityDocument : EntityDocument
 
     public bool? CastTimeScalesWithHaste { get; init; }
 
+    /// <summary>The flags of the ability's <c>ChannelingData</c>, each from the nearest class of its Blueprint chain with it.</summary>
+    public ChannelingTaskData? ChannelingData { get; init; }
+
+    /// <summary>The ability's <c>ActivationBlockedTags</c>. An owner with one of them cannot activate the ability.</summary>
+    public IReadOnlyList<string>? ActivationBlockedTags { get; init; }
+
     /// <summary>A creature ability's <c>TargetAcquisitionPolicy</c> class without the <c>CRAbilityTargetingAcquisitionPolicy_</c> prefix.</summary>
     public string? TargetAcquisition { get; init; }
 
@@ -96,11 +102,44 @@ public sealed class AbilityDocument : EntityDocument
     /// <summary>A creature ability that spawns an actor with a projectile movement component.</summary>
     public bool? Projectile { get; init; }
 
+    /// <summary>The ability's <c>AbilityTags</c>.</summary>
+    public IReadOnlyList<string>? AbilityTags { get; init; }
+
+    /// <summary>
+    /// A creature ability's <c>BlockAbilitiesWithTag</c>. From its activation to its <c>K2_EndAbility</c> the ability
+    /// blocks the activation of each ability of the same creature whose <see cref="AbilityTags"/> has one of these tags
+    /// or a tag under one: <c>Ability</c> blocks <c>Ability.AutoAttack</c>.
+    /// </summary>
+    public IReadOnlyList<string>? BlockAbilitiesWithTag { get; init; }
+
+    /// <summary>
+    /// The ability's <c>ScaleTimeWithAttackSpeed</c>. <see cref="CastTimeScalesWithHaste"/> is its
+    /// <c>ScaleTimeWithHaste</c>. The two set the ability's time factor: the owner's <c>Haste</c> for the first, plus
+    /// <c>AttackSpeed</c> minus 1 for the second, and 1 for an ability with neither.
+    /// </summary>
+    public bool? ScaleTimeWithAttackSpeed { get; init; }
+
+    /// <summary>A creature ability's <c>InterruptCooldownDuration</c> in seconds.</summary>
+    public double? InterruptCooldownDuration { get; init; }
+
+    /// <summary>
+    /// The routes of a creature ability's graph from its activation to <c>K2_EndAbility</c>, each the tasks it waits on
+    /// in order. A <c>WaitDelayCR</c> or <c>Delay</c> directly before the end is the time the ability stays active after
+    /// its hits.
+    /// </summary>
+    public IReadOnlyList<EndAbilityPath>? EndAbilityPaths { get; init; }
+
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<AbilityCoefficient>? Coefficients { get; init; }
 
     /// <summary>Set-by-caller magnitudes the ability computes as a base plus an amount for each unit counted.</summary>
     public IReadOnlyList<SetByCallerScaling>? SetByCallerScaling { get; init; }
+
+    /// <summary>
+    /// Each delta the ability assigns to a target's Stagger through an effect running
+    /// <c>CRModifyStaggerExecution</c>.
+    /// </summary>
+    public IReadOnlyList<StaggerDelta>? StaggerDeltas { get; init; }
 
     /// <summary>Proc-per-minute rolls the ability makes, each with the rate it is made at.</summary>
     public IReadOnlyList<ProcRoll>? ProcRolls { get; init; }

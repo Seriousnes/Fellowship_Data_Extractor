@@ -92,6 +92,8 @@ public sealed class AbilityOwners
 
     private readonly HashSet<string> _disabled = new(StringComparer.OrdinalIgnoreCase);
 
+    private readonly HashSet<string> _retired = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly HashSet<string> _slotted = new(StringComparer.OrdinalIgnoreCase);
 
     public const string EnabledInGameField = "EnabledInGame";
@@ -171,6 +173,9 @@ public sealed class AbilityOwners
 
     public bool DisabledInSet(string name) => _disabled.Contains(name);
 
+    /// <summary>True for an ability or effect only the augmentations of disabled talent rows grant.</summary>
+    public bool GrantedByDisabledTalentsAlone(string name) => _retired.Contains(name);
+
     public bool Slotted(string name) => _slotted.Contains(name);
 
     private void HoldOutShared()
@@ -204,6 +209,9 @@ public sealed class AbilityOwners
 
     private void SeedHeroes(IReadOnlySet<string> wanted)
     {
+        var live = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var retired = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var (codename, ability, talents) in Rosters())
         {
             foreach (var member in ability is null ? [] : SetMembers(ability))
@@ -215,11 +223,13 @@ public sealed class AbilityOwners
 
             if (talents is null) continue;
 
-            foreach (var augmentation in TalentAugmentations(talents))
+            foreach (var (augmentation, disabled) in TalentAugmentations(talents))
             {
                 Claim(augmentation, codename, wanted);
 
                 foreach (var granted in GrantedBy(augmentation)) Claim(granted, codename, wanted);
+
+                (disabled ? retired : live).Add(augmentation);
             }
 
             foreach (var replacement in TalentReplacements(talents)) Claim(replacement, codename, wanted);
@@ -230,6 +240,35 @@ public sealed class AbilityOwners
             Claim(asset, codename, wanted);
 
             foreach (var granted in GrantedBy(asset)) Claim(granted, codename, wanted);
+        }
+
+        retired.ExceptWith(live);
+        HoldRetiredGrants(retired);
+    }
+
+    /// <summary>
+    /// The abilities and effects granted by the augmentations of <c>DisabledInGame</c> talent rows and by no other
+    /// augmentation asset in the build. Vigour's <c>Spirited Fortitude (old)</c> row is disabled, and its
+    /// augmentation alone grants <c>GE_Vigor_Talent_ReducedIncomingAoeDamage</c>.
+    /// </summary>
+    private void HoldRetiredGrants(IReadOnlySet<string> retired)
+    {
+        var granted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var asset in _assets)
+        {
+            if (!asset.AssetClass.Text.Equals(TalentTrees.AugmentationTable, StringComparison.OrdinalIgnoreCase)) continue;
+            if (retired.Contains(asset.AssetName.Text)) continue;
+
+            granted.UnionWith(GrantedBy(asset.AssetName.Text));
+        }
+
+        foreach (var augmentation in retired)
+        {
+            foreach (var name in GrantedBy(augmentation))
+            {
+                if (!granted.Contains(name)) _retired.Add(name);
+            }
         }
     }
 
@@ -266,7 +305,7 @@ public sealed class AbilityOwners
         }
     }
 
-    private IEnumerable<string> TalentAugmentations(string talentData)
+    private IEnumerable<(string Augmentation, bool Disabled)> TalentAugmentations(string talentData)
     {
         if (DungeonNames.Load(_provider, talentData) is not { } talents) yield break;
         if (PropertyWalk.Get(talents, TalentsField)?.GenericValue is not UScriptArray listed) yield break;
@@ -276,7 +315,7 @@ public sealed class AbilityOwners
             if (entry?.GenericValue is not FScriptStruct { StructType: IPropertyHolder talent }) continue;
             if (PropertyWalk.GetString(talent, AugmentationField) is not { } path) continue;
 
-            yield return Leaf(path);
+            yield return (Leaf(path), PropertyWalk.Get(talent, TalentTrees.DisabledInGameField)?.GenericValue is true);
         }
     }
 
@@ -365,10 +404,8 @@ public sealed class AbilityOwners
 
     private IReadOnlyList<(string Phase, string? Tag, string Type)> Phases(UObject creature)
     {
-        if (PropertyWalk.GetString(creature, BehaviourField) is not { } behaviour) return [];
-        if (!_byName.TryGetValue(Leaf(behaviour), out var asset)) return [];
-        if (DungeonNames.Load(_provider, asset.ObjectPath) is not { } component) return [];
-        if (PropertyWalk.Get(component, PhasesField)?.GenericValue is not UScriptMap phases) return [];
+        if (Behaviour(creature) is not var (asset, component)) return [];
+        if (Inherited(component, PhasesField) is not UScriptMap phases) return [];
 
         var found = new List<(string, string?, string)>();
 
@@ -400,25 +437,23 @@ public sealed class AbilityOwners
     {
         foreach (var field in (string[])[AbilitiesField, PassiveEffectsField])
         {
-            foreach (var named in Paths(creature, field))
+            foreach (var named in Paths(Inherited(creature, field)))
             {
                 yield return new CreatureSlot(named, field, true, Passive: true);
             }
         }
 
-        if (PropertyWalk.GetString(creature, BehaviourField) is not { } behaviour) yield break;
-        if (!_byName.TryGetValue(Leaf(behaviour), out var asset)) yield break;
-        if (DungeonNames.Load(_provider, asset.ObjectPath) is not { } component) yield break;
+        if (Behaviour(creature) is not var (_, component)) yield break;
 
         foreach (var field in (string[])[LifetimeAbilitiesField, LifetimeEffectsField])
         {
-            foreach (var named in Paths(component, field))
+            foreach (var named in Paths(Inherited(component, field)))
             {
                 yield return new CreatureSlot(named, field, true, Passive: true);
             }
         }
 
-        if (PropertyWalk.Get(component, PhasesField)?.GenericValue is not UScriptMap phases) yield break;
+        if (Inherited(component, PhasesField) is not UScriptMap phases) yield break;
 
         foreach (var (key, value) in phases.Properties)
         {
@@ -454,9 +489,26 @@ public sealed class AbilityOwners
         }
     }
 
-    private static IEnumerable<string> Paths(IPropertyHolder holder, string field)
+    /// <summary>
+    /// The creature's behaviour component class, from the nearest class of the creature's Blueprint chain with a
+    /// <c>BehaviorComponentClass</c>. <c>BP_NPC_Critter_PolymorphChickenLarge</c> has none, and its parent
+    /// <c>BP_NPC_Critter_PolymorphChickenMedium</c> has <c>AIBC_Shared_PolymorphChicken</c>.
+    /// </summary>
+    private (FAssetData Asset, UObject Component)? Behaviour(UObject creature)
     {
-        if (PropertyWalk.Get(holder, field)?.GenericValue is not UScriptArray listed) yield break;
+        if (PropertyWalk.AsString(Inherited(creature, BehaviourField)) is not { } behaviour) return null;
+        if (!_byName.TryGetValue(Leaf(behaviour), out var asset)) return null;
+        if (DungeonNames.Load(_provider, asset.ObjectPath) is not { } component) return null;
+
+        return (asset, component);
+    }
+
+    /// <summary>The field's value on the nearest class of the Blueprint chain with that field.</summary>
+    private object? Inherited(UObject cdo, string field) => ClassDefaults.Inherited(cdo, field, _provider)?.GenericValue;
+
+    private static IEnumerable<string> Paths(object? value)
+    {
+        if (value is not UScriptArray listed) yield break;
 
         foreach (var entry in listed.Properties)
         {

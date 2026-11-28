@@ -131,6 +131,8 @@ public static class DocumentProjection
             Duration = entity.Duration,
             Period = entity.Period,
             CastTimeScalesWithHaste = entity.CastTimeScalesWithHaste,
+            ChannelingData = entity.ChannelingData,
+            ActivationBlockedTags = entity.ActivationBlockedTags,
             TargetAcquisition = entity.TargetAcquisition,
             TargetSelection = entity.TargetSelection,
             CastInterruptible = entity.CastInterruptible,
@@ -139,11 +141,17 @@ public static class DocumentProjection
             AutoAttack = entity.AutoAttack,
             Area = entity.Area,
             Projectile = entity.Projectile,
+            AbilityTags = entity.InheritedAbilityTags,
+            BlockAbilitiesWithTag = entity.BlockAbilitiesWithTag,
+            ScaleTimeWithAttackSpeed = entity.ScaleTimeWithAttackSpeed,
+            InterruptCooldownDuration = entity.InterruptCooldownDuration,
+            EndAbilityPaths = entity.EndAbilityPaths,
             ScalesOff = entity.ScalesOff,
             ProcRolls = Rolled(entity, references),
             CommitTriggers = Triggers(entity, references),
             Coefficients = entity.Coefficients,
             SetByCallerScaling = entity.SetByCallerScaling,
+            StaggerDeltas = Deltas(entity, references),
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = tuned.Value.Tuning,
             Schools = Schools(entity.Tags),
@@ -224,6 +232,8 @@ public static class DocumentProjection
             Description = entity.Description,
             PrimaryStat = Stat(entity),
             EffectTags = entity.EffectTags,
+            GrantedTags = entity.TargetTags,
+            Executions = entity.Executions,
             Icon = entity.Icon,
             Duration = entity.Duration,
             DurationScaling = entity.DurationScaling,
@@ -234,10 +244,12 @@ public static class DocumentProjection
             Cost = entity.Cost,
             TickrateIgnoresHaste = entity.TickrateIgnoresHaste,
             CalculationModifiers = entity.CalculationModifiers,
+            SetByCallerModifiers = entity.SetByCallerModifiers,
             CalculationPreset = entity.CalculationPreset,
             MaxStacks = entity.MaxStacks,
             Ticks = entity.Ticks,
             Infinite = entity.Infinite,
+            DurationPolicy = entity.DurationPolicy,
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = tuned.Value.Tuning,
@@ -280,6 +292,8 @@ public static class DocumentProjection
             Intellect = entity.Intellect,
             Strength = entity.Strength,
             Agility = entity.Agility,
+            CritChance = entity.CritChance,
+            CritMultiplier = entity.CritMultiplier,
             Abilities = Abilities(entity.Abilities, references),
             Passives = Abilities(entity.Passives, references),
             Phases = entity.Phases,
@@ -1289,5 +1303,16 @@ public static class DocumentProjection
                 Threshold = source.Threshold,
             })
             .Distinct()
+            .ToArray();
+
+    private static IReadOnlyList<StaggerDelta>? Deltas(Entity entity, References references) =>
+        entity.StaggerDeltas?
+            .Select(source => new StaggerDelta
+            {
+                Effect = references.At(source.Effect),
+                DataTag = source.DataTag,
+                Formula = source.Formula,
+                Expression = source.Expression,
+            })
             .ToArray();
 }
