@@ -482,6 +482,7 @@ public sealed class EntityResolver
                 AlwaysUseVisualDisplayName = logged.AlwaysUseVisualDisplayName ? true : null,
                 LogIdClass = hits ? logged.IdClass(policy) : null,
                 LoggedUnder = hits ? LoggedUnder(tag, logged, policy) : null,
+                LogsEffectEvents = CombatLogIds.LogsEffectEvents(cdo, logged, policy, _provider) ? true : null,
                 CalculationPreset = _presets.Executed(cdo),
                 TargetTags = Empty(AbilityTaskReads.GrantedTags(cdo, _provider)),
                 Executions = Empty(AbilityTaskReads.Executions(cdo, _provider)),

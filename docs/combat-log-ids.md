@@ -10,6 +10,7 @@ executable.
   instigating ability.
 - **`visualDisplayName`**, **`alwaysUseVisualDisplayName`**: the two `CRGameplayEffectDamage` members the rule reads.
 - **`logAsADifferentAbility`**: the ability's `LogAsADifferentAbility`.
+- **`logsEffectEvents`**: true for an effect with `EFFECT_APPLIED`, `EFFECT_REFRESHED` and `EFFECT_REMOVED` lines.
 
 ## The ids
 
@@ -92,12 +93,33 @@ The known lines: Final Blow's effect 2909 has `alwaysUseVisualDisplayName` and t
 the id 2909. Arcane Volley's instant effect 909 has no `alwaysUseVisualDisplayName` and its ability 749 is named, and
 its line has the id 749. Arcane Volley's effect 908 has the policy `HasDuration`, and its line has the id 908.
 
-## Aura and cast lines
+## Effect event lines
 
-`EFFECT_APPLIED`, `EFFECT_REFRESHED` and `EFFECT_REMOVED` have a `CRCombatLogEffectData`. Its resolver 0x145286AB0
-gives the line the effect's id. The name is the `Name` of the effect's `GameplayEffectUIData_BuffDebuff`, or the
-`VisualDisplayName` of a `CRGameplayEffectDamage` with `AlwaysUseVisualDisplayName`. An effect with neither name is
-unresolved (0x145286C33).
+An effect document has `logsEffectEvents`: true for an effect whose application, refresh, stack change and removal
+each write a line. `EFFECT_APPLIED`, `EFFECT_REFRESHED` and `EFFECT_REMOVED` are the `EffectEventType` values 0, 1 and
+2 of one text function (0x145275E30).
+
+The logger binds 0x145295100 to `OnActiveGameplayEffectAddedDelegateToSelf` (component +0x1A0) of each character it
+logs (0x145293F6C), and calls it for each effect active on the character then (0x14529429E). The handler has three
+tests.
+
+| Test | Where |
+| --- | --- |
+| The handle has an active effect. An `Instant` effect has none. | 0x14529513C to 0x145295147 |
+| The effect's cached asset tags (+0xA28) have one of `Effect.Buff`, `Effect.Debuff`, `EffectVisualization.Icon` and `EffectVisualization.IconOnPartyUnitFrame`. The match is on the tag itself, with no parent tags. | list 0x145292650, loop 0x145295162 to 0x1452951C7 |
+| The line's `CRCombatLogEffectData` resolves: the effect's UI data is a `GameplayEffectUIData_BuffDebuff`, or the effect is a `CRGameplayEffectDamage` with `AlwaysUseVisualDisplayName` and a `VisualDisplayName`. A record with neither is left out of the log. | resolver 0x145286AB0, 0x145286C33; record dropped 0x1452AE1CE, 0x14528B137 |
+
+The handler binds the effect's other lines after the tag test, so an effect failing it has no line of any kind:
+`EFFECT_REMOVED` on removal (0x145296DC0, event set +0x18), `EFFECT_REFRESHED` on a stack change (0x145296AE0, +0x30),
+and `EFFECT_REMOVED` from the delegate at +0x60 when its flag is true (0x1452968E0). Each repeats the tag test.
+
+No routine of the logger reads `EffectLogic.System` (tag global 0x14A3C9EC0). In the logger `EffectLogic.NoLogging`
+(0x14A3C9F30) is read by the resource line writer alone (0x145297EC3).
+
+The resolver gives the line the effect's id. The name is the `Name` of the `GameplayEffectUIData_BuffDebuff`, or the
+`VisualDisplayName`.
+
+## Cast lines
 
 A cast line has a `CRCombatLogAbilityData`. Its resolver 0x145285DC0 gives the line the id of the ability's class,
 after `LogAsADifferentAbility`, and the `AbilityDataMap` name.

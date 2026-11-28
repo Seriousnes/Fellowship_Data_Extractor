@@ -269,6 +269,7 @@ public static class RecordProjection
             AlwaysUseVisualDisplayName = document.AlwaysUseVisualDisplayName,
             LogIdClass = document.LogIdClass,
             LoggedUnder = Reference(document.LoggedUnder, view, origin),
+            LogsEffectEvents = document.LogsEffectEvents,
             LinkedBy = Some(document.LinkedBy)?.Select(link => new EffectLinkRecord(Reference(link.Parent, view, origin)!, link.ApplyTo) { Talent = Reference(link.Talent, view, origin) }).ToArray(),
             AppliedOnCommitOf = Commits(document.AppliedOnCommitOf, view, origin),
             PartOf = Reference(document.PartOf, view, origin),

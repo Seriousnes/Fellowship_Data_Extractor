@@ -1,6 +1,8 @@
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.Objects.UObject;
 
 namespace FellowshipExtractor.Extraction;
 
@@ -30,6 +32,22 @@ public static class CombatLogIds
     public static readonly IReadOnlySet<string> AutoAttackTags =
         new HashSet<string>(StringComparer.Ordinal) { "AbilityType.AutoAttack", "Ability.AutoAttack" };
 
+    /// <summary>
+    /// The asset tags of an effect with combat log lines of its application: the two tags the logger asks for by
+    /// name (literals 0x148D34608, 0x148D34620) and the tag globals 0x14A3CA2B8 and 0x14A3CA2C0, in the container
+    /// 0x145292650 returns.
+    /// </summary>
+    public static readonly IReadOnlySet<string> EffectEventTags = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "Effect.Buff",
+        "Effect.Debuff",
+        "EffectVisualization.Icon",
+        "EffectVisualization.IconOnPartyUnitFrame",
+    };
+
+    private const string BuffDebuffClass = "GameplayEffectUIData_BuffDebuff";
+    private const string UiDataPrefix = "GameplayEffectUIData";
+    private const string ComponentsField = "GEComponents";
     private const string DamageEffectClass = "CRGameplayEffectDamage";
     private const string AlwaysField = "AlwaysUseVisualDisplayName";
     private const string NameField = "VisualDisplayName";
@@ -61,7 +79,8 @@ public static class CombatLogIds
         public string IdClass(string durationPolicy) =>
             Damage && (durationPolicy != InstantPolicy || NamedAlways) ? EffectClass : AbilityClass;
 
-        private bool NamedAlways => AlwaysUseVisualDisplayName && VisualDisplayName is not null;
+        /// <summary>True for <c>AlwaysUseVisualDisplayName</c> with a <c>VisualDisplayName</c>.</summary>
+        public bool NamedAlways => AlwaysUseVisualDisplayName && VisualDisplayName is not null;
     }
 
     public static EffectMembers Of(UObject effect, AbstractFileProvider provider, TypeMappings mappings)
@@ -92,6 +111,46 @@ public static class CombatLogIds
 
     /// <summary>True for the <c>AbilityDataMap</c> name of an ability the resolver takes as named (0x145286324 to 0x14528635F).</summary>
     public static bool Names(string? dataName) => !string.IsNullOrEmpty(dataName) && dataName != InvalidAbilityData;
+
+    /// <summary>
+    /// True for an effect whose application, refresh, stack change and removal each write a combat log line. The
+    /// logger's handler of an applied effect 0x145295100 takes the active effect of the handle, so an
+    /// <c>Instant</c> effect has none (0x145295147). It goes on for an effect whose cached asset tags (+0xA28) have
+    /// one of <see cref="EffectEventTags"/> (0x145295162 to 0x1452951C7), and binds the handlers of the other lines
+    /// there. The line's <c>CRCombatLogEffectData</c> resolver 0x145286AB0 then needs a
+    /// <c>GameplayEffectUIData_BuffDebuff</c> as the effect's UI data, or <c>AlwaysUseVisualDisplayName</c> with a
+    /// <c>VisualDisplayName</c>, and a line with neither is left out (0x1452AE1CE).
+    /// </summary>
+    public static bool LogsEffectEvents(
+        UObject effect, EffectMembers members, string durationPolicy, AbstractFileProvider provider) =>
+        durationPolicy != InstantPolicy &&
+        EffectAssetTags.Of(effect, provider).Any(EffectEventTags.Contains) &&
+        (UiData(effect, provider) == BuffDebuffClass || members.NamedAlways);
+
+    /// <summary>
+    /// Class of the effect's UI data: the first <c>GameplayEffectUIData</c> component of the nearest class of its
+    /// chain with a <c>GEComponents</c> list (0x1449EECC0).
+    /// </summary>
+    private static string? UiData(UObject effect, AbstractFileProvider provider)
+    {
+        foreach (var holder in ClassDefaults.Chain(effect, provider))
+        {
+            if (PropertyWalk.Get(holder, ComponentsField)?.GenericValue is not UScriptArray components) continue;
+
+            var listed = components.Properties
+                .Select(element => (element?.GenericValue as FPackageIndex)?.ResolvedObject?.Name.Text)
+                .OfType<string>()
+                .ToArray();
+
+            var exports = (holder.Owner?.GetExports() ?? []).ToArray();
+
+            return listed
+                .Select(name => exports.FirstOrDefault(export => export.Name == name)?.ExportType)
+                .FirstOrDefault(type => type is not null && type.StartsWith(UiDataPrefix, StringComparison.Ordinal));
+        }
+
+        return null;
+    }
 
     private static bool DerivesFromDamage(UObject effect, AbstractFileProvider provider, TypeMappings mappings)
     {

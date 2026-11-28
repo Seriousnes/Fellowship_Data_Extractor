@@ -551,6 +551,12 @@ Decoded against **26320967**, implemented in `CombatLogIds.cs` and written up in
 | Record reader by schema, the dispatcher by record type, the line writer (timestamp, text, newline) | 0x1452AA370, 0x1452A8260, 0x1452A0AD0 |
 | `CRGameplayEffectDamage` constructor stores `AlwaysUseVisualDisplayName` false | 0x1450E8528 |
 | `GameplayEffectUIData_BuffDebuff` `Name` +0x28; the effect's UI data component getter | 0x144F09F40 (class), 0x1449EECC0 |
+| Logger's registration of a character: `OnActiveGameplayEffectAddedDelegateToSelf` (+0x1A0) bound to the applied handler, each active effect replayed | 0x145293BEB; bind 0x145293F6C, replay 0x14529429E |
+| Applied handler (`EFFECT_APPLIED`, record type 0xC): active effect of the handle, tag test over the effect's cached asset tags (+0xA28), handlers of the other lines bound | **0x145295100**; 0x145295147, 0x145295162 to 0x1452951C7 |
+| Tags of the test: `Effect.Buff`, `Effect.Debuff` (literals 0x148D34608, 0x148D34620), `EffectVisualization.Icon` (0x14A3CA2B8), `EffectVisualization.IconOnPartyUnitFrame` (0x14A3CA2C0) | container getter **0x145292650** |
+| Removal handler (`EFFECT_REMOVED`, event set +0x18), stack change handler (`EFFECT_REFRESHED`, record type 0xD, +0x30), handler of the delegate at +0x60 (`EFFECT_REMOVED` on a true flag), dispel line (record type 0xE) | 0x145296DC0, 0x145296AE0, 0x1452968E0, 0x145296634 |
+| Effect event record fill, its prepare (a record whose effect data does not resolve is left out), the text function with the three event names | 0x14528E2E0, **0x1452AE130** (0x1452AE1CE), 0x145275E30 |
+| `EffectLogic.System` tag global, with no reader in the logger | 0x14A3C9EC0 |
 
 No routine of the executable has the immediate 1,000,000 in the combat log code. Fellowship Logs adds it to the id of a
 line logged under an effect.

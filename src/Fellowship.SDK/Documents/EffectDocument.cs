@@ -117,10 +117,21 @@ public sealed class EffectDocument : EntityDocument
 
     /// <summary>
     /// The effect or ability with the id of the combat log line of the effect's hit, with the ability in
-    /// <see cref="AppliedBy"/> as the hit's instigating ability. An <see cref="AppliedBy"/> effect has its own
-    /// instigating ability. Null for a <see cref="LogIdClass"/> of <c>AbilityClass</c> with no applying ability.
+    /// <see cref="AppliedBy"/> as the hit's instigating ability. Where <see cref="AppliedBy"/> is an effect, the
+    /// instigating ability is the ability applying that effect. Null for a <see cref="LogIdClass"/> of
+    /// <c>AbilityClass</c> with no applying ability.
     /// </summary>
     public EntityReference? LoggedUnder { get; init; }
+
+    /// <summary>
+    /// True for an effect whose application, refresh, stack change and removal each write a combat log line
+    /// (<c>EFFECT_APPLIED</c>, <c>EFFECT_REFRESHED</c>, <c>EFFECT_REMOVED</c>), each with the effect's id. The effect
+    /// has a <see cref="DurationPolicy"/> other than <c>Instant</c>, an asset tag among <c>Effect.Buff</c>,
+    /// <c>Effect.Debuff</c>, <c>EffectVisualization.Icon</c> and <c>EffectVisualization.IconOnPartyUnitFrame</c>, and
+    /// a <c>GameplayEffectUIData_BuffDebuff</c> or <see cref="AlwaysUseVisualDisplayName"/> with a
+    /// <see cref="VisualDisplayName"/>. An effect with a duration and no such lines is active with no line in the log.
+    /// </summary>
+    public bool? LogsEffectEvents { get; init; }
 
     /// <summary>Effects applying this one through a linked effect component.</summary>
     public IReadOnlyList<EffectLink>? LinkedBy { get; init; }

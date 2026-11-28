@@ -271,6 +271,7 @@ public static class DocumentProjection
             AlwaysUseVisualDisplayName = entity.AlwaysUseVisualDisplayName,
             LogIdClass = entity.LogIdClass,
             LoggedUnder = references.At(entity.LoggedUnder),
+            LogsEffectEvents = entity.LogsEffectEvents,
             LinkedBy = Linked(entity, references),
             AppliedOnCommitOf = Commits(entity, references),
             PartOf = references.Of(EntityType.Ability, roles.PartOf(entity.Name)),

@@ -410,6 +410,9 @@ public sealed record Entity
     /// <summary>The effect or ability with the id of a hit's combat log line.</summary>
     public IconSource? LoggedUnder { get; init; }
 
+    /// <summary>True for an effect whose application, refresh, stack change and removal each write a combat log line.</summary>
+    public bool? LogsEffectEvents { get; init; }
+
     /// <summary>The ability's <c>LogAsADifferentAbility</c>.</summary>
     public IconSource? LogAsADifferentAbility { get; init; }
 

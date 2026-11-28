@@ -60,6 +60,8 @@ public sealed record EffectRecord : EntityRecord
 
     public RecordReference? LoggedUnder { get; init; }
 
+    public bool? LogsEffectEvents { get; init; }
+
     public IReadOnlyList<EffectLinkRecord>? LinkedBy { get; init; }
 
     public IReadOnlyList<CommitTriggerRecord>? AppliedOnCommitOf { get; init; }

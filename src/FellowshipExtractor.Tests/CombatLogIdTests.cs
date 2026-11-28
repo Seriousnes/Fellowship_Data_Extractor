@@ -1,5 +1,7 @@
 using System.Text.Json.Nodes;
 
+using FellowshipExtractor.Extraction;
+
 namespace FellowshipExtractor.Tests;
 
 public sealed class CombatLogIdTests
@@ -12,6 +14,10 @@ public sealed class CombatLogIdTests
 
     private const int FireBallDamageMonitor = 1565;
     private const int FireBall = 1260;
+
+    private const int KingOfTheHill = 105;
+    private const int ReducedDamageFromTarget = 2476;
+    private const int SurgingPower = 208;
 
     private const string EffectClass = "EffectClass";
     private const string AbilityClass = "AbilityClass";
@@ -34,6 +40,35 @@ public sealed class CombatLogIdTests
 
     private static (string Type, int Id)? Reference(JsonNode? reference) =>
         reference is null ? null : (reference["type"]!.GetValue<string>(), reference["id"]!.GetValue<int>());
+
+    private static bool LogsEvents(JsonObject effect) => effect["logsEffectEvents"]?.GetValue<bool>() == true;
+
+    [Theory]
+    [InlineData(KingOfTheHill, true)]
+    [InlineData(ArcaneVolleyDot, true)]
+    [InlineData(ReducedDamageFromTarget, false)]
+    [InlineData(ArcaneVolleyHit, false)]
+    public void An_effect_logs_its_events_with_a_duration_a_tag_the_logger_asks_for_and_a_name(int id, bool logged) =>
+        Assert.Equal(logged, LogsEvents(Effect(id)));
+
+    [Fact]
+    public void An_effect_logs_its_events_through_a_tag_outside_the_exported_tag_families()
+    {
+        var effect = Effect(SurgingPower);
+        var tags = effect["effectTags"]!.AsArray().Select(tag => tag!.GetValue<string>()).ToArray();
+
+        Assert.DoesNotContain(tags, tag => CombatLogIds.EffectEventTags.Contains(tag));
+        Assert.True(LogsEvents(effect));
+    }
+
+    [Fact]
+    public void Every_effect_logging_its_events_has_a_duration()
+    {
+        var logged = Of(EntityType.Effect).Where(effect => LogsEvents(effect.Body)).ToArray();
+
+        Assert.NotEmpty(logged);
+        Assert.All(logged, effect => Assert.NotEqual(Instant, effect.Body["durationPolicy"]?.GetValue<string>()));
+    }
 
     [Fact]
     public void An_instant_effect_always_using_its_visual_display_name_is_logged_under_its_own_id()
