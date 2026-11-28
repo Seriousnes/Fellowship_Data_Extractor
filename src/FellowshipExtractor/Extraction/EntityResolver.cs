@@ -287,7 +287,8 @@ public sealed class EntityResolver
             CreatureStats, Leagues, new ItemSettings(provider, SlotNames, Gems, rarities), Enchants, AttunementTrees,
             ModifierRecipes, new TooltipWidgetText(provider, _assets, SlotNames), new AbilityTooltipTexts(provider, _assets),
             new EnemySettings(provider, _assets, _constants, _presets),
-            StaggerComponent.Read(provider, _constants));
+            StaggerComponent.Read(provider, _constants),
+            GameModeRespawn.Read(provider, _assets, _constants));
 
         EffectIcons = new EffectIconSources(
             _tags, _effectNames, Presentation, tag => LoadDefaultObject(FindAsset(tag.Name)));

@@ -103,6 +103,8 @@ public sealed class Settings
 
     public StaggerSettings Stagger { get; }
 
+    public RespawnSettings Respawn { get; }
+
     public Settings(
         AbstractFileProvider provider,
         IReadOnlyList<FAssetData> assets,
@@ -128,10 +130,12 @@ public sealed class Settings
         TooltipWidgetText widgetText,
         AbilityTooltipTexts abilityTooltip,
         EnemySettings enemies,
-        StaggerSettings stagger)
+        StaggerSettings stagger,
+        RespawnSettings respawn)
     {
         Enemies = enemies;
         Stagger = stagger;
+        Respawn = respawn;
         _attunementTrees = attunementTrees;
         ModifierTypes = recipes.Types;
         EmptyModifierSlot = widgetText.EmptySlot;
@@ -233,6 +237,7 @@ public sealed class Settings
         ProcPerMinuteRoll = ProcPerMinuteRoll,
         DamageAbsorption = DamageAbsorption,
         Stagger = Stagger,
+        Respawn = Respawn,
         LeagueKinds = LeagueKinds,
         Leagues = Leagues,
         AttunementTrees = _attunementTrees.NamedTrees,

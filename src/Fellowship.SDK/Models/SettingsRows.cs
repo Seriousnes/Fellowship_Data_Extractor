@@ -180,6 +180,26 @@ public sealed record StaggerSettings
 }
 
 /// <summary>
+/// The respawn of a dead player in a dungeon, as <c>CRGameModeBase</c> runs it: each player revives on a respawn
+/// request of their own, and a respawn applies <see cref="CooldownEffect"/>.
+/// </summary>
+public sealed record RespawnSettings
+{
+    /// <summary>The dungeon game mode's <c>RespawnCooldownEffect</c>.</summary>
+    public string CooldownEffect { get; init; } = string.Empty;
+
+    /// <summary>Seconds the effect lasts.</summary>
+    public double CooldownDuration { get; init; }
+
+    public string CooldownDurationRow { get; init; } = string.Empty;
+
+    /// <summary>Tag the effect grants. A respawn request is refused while the character has it.</summary>
+    public string CooldownTag { get; init; } = string.Empty;
+
+    public string DisplayText { get; init; } = string.Empty;
+}
+
+/// <summary>
 /// The chance <c>CRRandomStreamComponent.RollProcPerMinute</c> gives one roll at a rate, as the shipping binary
 /// computes it. A proc roll's rate is its <see cref="ProcRoll.Formula"/>.
 /// </summary>

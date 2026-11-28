@@ -462,6 +462,47 @@ Decoded against **26320967**, the Stagger pool's cap, removals and log line, beh
 | `UGameplayEffect.ConditionalGameplayEffects` +0x2A0 (record 0x1489892B0, deprecated): constructor and destructor alone in the ability module | 0x144A63B62, 0x144A6518C |
 | `HealthChangedInfo` field names: `TotalHealthChange`, `OverHealOrOverKillAmount`, `MitigatedDamage`, `AbsorbedDamage`, `BlockedDamage` | literals from 0x148AAF108 |
 
+Decoded against **26320967**, the AI leap, the spawned actor, the Blueprint timer and the actor tick interval,
+written up in `docs/leaps-timers-respawn.md`:
+
+| What | Where |
+| --- | --- |
+| `CRAbilityTask_AILeapTo`: vtable, constructor (`LeapTime` +0x150 default 1.5), size 0x158 | 0x148A97650, 0x14510DF20, `StaticClass` 0x144EFD800 |
+| `AILeapToLocation`, `AILeapToTarget`: exec thunks, factories, parameter records | 0x144EFE0D0, 0x144EFE340; **0x14510EB10**, 0x14510EC70; 0x148A96DF0, 0x148A970B0 |
+| Task fields: delegates `OnActivate` +0x80 to `OnNoPath` +0xD0, `OwningAICharacter` +0xE0, `GoalLocation` +0xE8, `MaxHeight` +0x100, `Timeout` +0x104, `AcceptanceRadius` +0x108, curve +0x110, curve end time +0x128, start time +0x130 | records from 0x148A97360 |
+| `Activate` (vtable +0x2C8): start time, arc, timeout timer | **0x14510F4A0**; arc 0x145110650, launch velocity 0x1439CCB40, path to curve 0x14524FFF0, timeout handler 0x145115080 |
+| `TickTask` (vtable +0x2D8): position at `clamp(elapsed / LeapTime, 0, 1)`, `OnArrived` at `LeapTime - elapsed <= 0` | **0x145117E30**; `subss` 0x145117FAB, broadcast 0x145117FD3 |
+| `UWorld::TimeSeconds` +0x6B8, read by `GameplayStatics::GetTimeSeconds` | 0x1439DC5F4 |
+| `CRAbilityTask_SpawnActorFromAbility`: factory, `BeginSpawningActor`, `FinishSpawningActor` | 0x14512BF10, 0x1451267D0, **0x145127440**; exec thunks 0x144F252A0, 0x144F249F0, 0x144F24C30 |
+| `FinishSpawningActor`: `FinishSpawning`, `EndTask`, `Success` (task +0x80); `DidNotSpawn` is +0x90 | 0x145127477, 0x14512748A, 0x1451274A2 |
+| Spawn refusal for an owner failing `DestroyConditions` (task +0xB0) | 0x145143C50 |
+| `K2_SetTimerDelegate`: exec thunk, native, variance roll, `FirstDelay = Time + InitialStartDelay` | 0x143AFFB80, **0x143ABCF70**, 0x143ABD02B to 0x143ABD060, 0x143ABD16C |
+| `FTimerManager::SetTimer` with a parameter struct (loop +0, once per frame +1, `FirstDelay` +4), and the overload building it | **0x144042D80**, 0x1440430A0; `FirstDelay < 0` takes the rate 0x144042F2F |
+| Script delegate broadcast, and its wrapper for a delegate with no parameters | 0x1421F7F60, 0x1432D7890 |
+| `SetActorTickInterval` exec (writes actor +0x3C), `AActor::SetActorTickEnabled` (vtable +0x490) | 0x1435CD9A0, 0x1435BE680 |
+| `FTickFunction::SetTickFunctionEnable`, `FTickTaskLevel::AddTickFunction` (enabled set at level +8) | 0x144055450, 0x144027480 |
+| Tick queueing: enabled function with `TickInterval > 0` goes on cooldown; next cooldown `TickInterval - (DeltaSeconds - CumulativeCooldown)` | 0x144051D20; 0x14405202C, 0x144051DCF to 0x144051DF4 |
+
+Decoded against **26320967**, the wipe and the respawn, behind `settings.json` `respawn` (`GameModeRespawn.cs`) and
+written up in `docs/leaps-timers-respawn.md`:
+
+| What | Where |
+| --- | --- |
+| `CRGameModeBase`: vtable, constructor, `StaticClass`; size 0x438 | 0x148BD4978, 0x14533DF60, 0x144FE6E30 |
+| `CRGameModeDungeon`: vtable, constructor, `StaticClass`; size 0x4E8; `OnTeamRespawnedAfterWipe` +0x438 with no broadcast | 0x148BD68A0, 0x14533E140, 0x144FE7050; record 0x148BD2A00 |
+| `CRGameModeBase` fields: `RespawnCooldownEffect` +0x3A8, `OnCharacterDeathEvent` +0x3B8, wiped flag +0x3C9, wipe count +0x3CC, actors destroyed on a dungeon reset +0x3D0 | records from 0x148BD30D0 |
+| `Tick` (vtable +0x500) runs the wipe check (+0xA38) once `HasMatchStarted` (+0x7B8) | 0x145349320, **0x145349640** |
+| Wipe virtual (+0xA30): empty in the base, wipe count to the backend component in the dungeon game mode | 0x1453465D0 |
+| Reset after a wipe: dungeon reset actors, dead AI characters' `AbilityLogic.ActivatableWhileDead` abilities, AI characters with +0xDE8 | 0x145347CC0, 0x145154DE0 |
+| `CRFellowshipPlayerController`: vtable; `ServerRequestRespawn` (+0x1028) | 0x148D05A10, **0x14532E770** |
+| Respawn: restart at a player start (+0x898) or in place (+0x8A0), `RespawnCooldownEffect` application, flag clear | **0x145347EA0**; 0x14534812A to 0x14534822A, 0x14534827C |
+| `Cooldown.Respawn`, `ActorTypeTags.Boss`, `AbilityLogic.ActivatableWhileDead` tag globals | 0x14A3CA740, 0x14A3CA6B8, 0x14A3CA0D0 |
+| `CRGameStateBossComponent.CurrentBossFightIndex` +0xD8: `IsInAnyBossFight`, setter | 0x1453450D0, 0x145348BA0 |
+| `CRGameModeBossComponent`: boss fight end (index, completed), its two callers for a completed and a reset fight | **0x145337AC0**; 0x14533A4E0, 0x14533BF00 |
+| `CRAICharacter::OnAllThreatLost`: a boss ends its boss fight, any other character resets | 0x145156CD0; reset 0x145155700; `GetBossFightIndex` 0x145155890 |
+| `HasMatchEnded` (game mode vtable +0x7C0), `HasMatchStarted` (+0x7B8) | 0x1439BBF40, 0x1439BBF90 |
+| Class names by `StaticClass`: `CRFellowshipCharacter`, `CRAICharacter`, `CRCharacterBase`, `CRGameStateBase`, `CRGameStateBossComponent`, `CRGameModeBossComponent` | 0x14509CBB0, 0x144F3A240, 0x144F86210, 0x144FF69E0, 0x144FF90C0, 0x144FE74C0 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
