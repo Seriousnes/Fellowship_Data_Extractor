@@ -431,6 +431,17 @@ Decoded against **26320967**, the cancel of abilities by an applied effect, writ
 | `EndAbility`: global cooldown effect removed for a cancelled ability not committed; `ApplyCooldown` under `CCP_OnAbilityEnd` (`CooldownCommitmentPolicy` +0x3C8 = 2) | 0x1450DCD26 to 0x1450DCDB1; 0x1450DCDB6 to 0x1450DCDF0 |
 | `CharacterStatus.IgnoreMoveInput`, `.IgnoreActionInput`, `.IgnoreRotationInput`, `.Silenced`, `.Uninterruptible` | tag globals 0x14A3CA1A8, 0x14A3CA1B0, 0x14A3CA1B8, 0x14A3CA200, 0x14A3CA210 |
 
+Decoded against **26320967**, the wait of `WaitDelayCR`, read by `EndAbilityPaths.cs` and written up in
+`docs/ability-end-delays.md`:
+
+| What | Where |
+| --- | --- |
+| `CRAbilityTask_WaitDelay::WaitDelayCR(OwningAbility, Time, ScaleTimeWithAbilitySpeed)`; name literals `WaitDelayCR` 0x148AD1AA0, `ScaleTimeWithAbilitySpeed` 0x148AD1A80 | **0x14512E940** |
+| `ScaleTimeWithAbilitySpeed` true: task `Time` (+0x90) is `Time / factor`, divided once in the factory | `test bpl,bpl` 0x14512EA06, factor call 0x14512EA0E, `divss` 0x14512EA19, store 0x14512EA1D |
+| `ScaleTimeWithAbilitySpeed` false: `Time` stored unchanged | 0x14512EA2D |
+| Ability time factor: 1.0, the owner's `Haste` under `ScaleTimeWithHaste` (+0x3B8 bit 0), then `+ AttackSpeed - 1` under `ScaleTimeWithAttackSpeed` (bit 1) | 0x1450E06E0; tests 0x1450E0710, 0x1450E07A1; `addss` 0x1450E07F0, `subss` 0x1450E07F7 |
+| Task `Activate`: `Time` above 0 sets a timer; `Time` of 0 or less ends the task and broadcasts the delegate at +0x80 in the same call | 0x145125D70; `comiss` 0x145125D9C, broadcast 0x145126028 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

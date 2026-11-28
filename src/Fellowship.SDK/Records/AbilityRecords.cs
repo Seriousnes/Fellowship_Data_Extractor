@@ -49,6 +49,11 @@ public sealed record AbilityRecord : EntityRecord
     public bool? AutoAttack { get; init; }
     public bool? Area { get; init; }
     public bool? Projectile { get; init; }
+    public IReadOnlyList<string>? AbilityTags { get; init; }
+    public IReadOnlyList<string>? BlockAbilitiesWithTag { get; init; }
+    public bool? ScaleTimeWithAttackSpeed { get; init; }
+    public double? InterruptCooldownDuration { get; init; }
+    public IReadOnlyList<EndAbilityPath>? EndAbilityPaths { get; init; }
 
     public IReadOnlyList<string>? ScalesOff { get; init; }
 

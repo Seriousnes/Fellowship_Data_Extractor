@@ -467,6 +467,15 @@ public static class ExportRun
 
         Console.WriteLine($"  {resolver.Commits.Waits} commit waits read");
 
+        Console.WriteLine(
+            $"  {resolver.EndPaths.Abilities} creature abilities with a route to K2_EndAbility, " +
+            $"{resolver.EndPaths.Waits - resolver.EndPaths.Unread} of {resolver.EndPaths.Waits} waits with their seconds read");
+
+        foreach (var truncated in resolver.EndPaths.Truncated)
+        {
+            Console.WriteLine($"    {truncated} has more than {EndAbilityPaths.MaxPaths} routes to K2_EndAbility");
+        }
+
         foreach (var unread in resolver.Commits.Unread.Distinct(StringComparer.Ordinal))
         {
             Console.WriteLine($"  commit wait unread: {unread}");

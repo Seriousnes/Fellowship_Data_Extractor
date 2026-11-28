@@ -128,6 +128,17 @@ public sealed record Entity
 
     public bool? Projectile { get; init; }
 
+    /// <summary>A creature ability's <c>AbilityTags</c>, from the nearest class of its Blueprint chain.</summary>
+    public IReadOnlyList<string>? CreatureAbilityTags { get; init; }
+
+    public IReadOnlyList<string>? BlockAbilitiesWithTag { get; init; }
+
+    public bool? ScaleTimeWithAttackSpeed { get; init; }
+
+    public double? InterruptCooldownDuration { get; init; }
+
+    public IReadOnlyList<EndAbilityPath>? EndAbilityPaths { get; init; }
+
     public string? CalculationPreset { get; init; }
 
     public double? GlobalCooldown { get; init; }

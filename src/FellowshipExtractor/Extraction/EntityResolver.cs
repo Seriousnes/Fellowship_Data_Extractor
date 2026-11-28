@@ -118,6 +118,9 @@ public sealed class EntityResolver
     public ProcRolls Rolls { get; }
 
     public CommitTriggers Commits { get; }
+
+    public EndAbilityPaths EndPaths => _creatureReads.EndPaths;
+
     public ArmorTypes Armor { get; }
     public HeroItemTable HeroItems { get; }
     public VisualCollections Collections { get; }
@@ -443,6 +446,13 @@ public sealed class EntityResolver
                 AutoAttack = facts.AutoAttack,
                 Area = facts.Area,
                 Projectile = facts.Projectile,
+                CreatureAbilityTags = facts.AbilityTags,
+                BlockAbilitiesWithTag = facts.BlockAbilitiesWithTag,
+                ScaleTimeWithAttackSpeed = facts.ScaleTimeWithAttackSpeed,
+                InterruptCooldownDuration = facts.InterruptCooldownDuration,
+                EndAbilityPaths = facts.EndAbilityPaths,
+                FieldSources = FieldSources.Set(
+                    entity.FieldSources, nameof(Entity.InterruptCooldownDuration), facts.InterruptCooldownSource),
             };
         }
 

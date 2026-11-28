@@ -27,11 +27,24 @@ public sealed record CreatureAbilityFacts
     public bool? Area { get; init; }
 
     public bool? Projectile { get; init; }
+
+    public IReadOnlyList<string>? AbilityTags { get; init; }
+
+    public IReadOnlyList<string>? BlockAbilitiesWithTag { get; init; }
+
+    public bool? ScaleTimeWithAttackSpeed { get; init; }
+
+    public double? InterruptCooldownDuration { get; init; }
+
+    public FieldSource? InterruptCooldownSource { get; init; }
+
+    public IReadOnlyList<EndAbilityPath>? EndAbilityPaths { get; init; }
 }
 
 /// <summary>
-/// The targeting, interrupt and kind of a creature ability, each read from the nearest class of its Blueprint chain that
-/// declares it. A subobject a policy property names is read from the package that holds it.
+/// The targeting, interrupt, kind, tags and time scaling of a creature ability, each read from the nearest class of its
+/// Blueprint chain that declares it, and the routes of its graph to <c>K2_EndAbility</c>. A subobject a policy property
+/// names is read from the package that holds it.
 /// </summary>
 public sealed class CreatureAbilityReads(AbstractFileProvider provider, TypeMappings mappings, ConstantsTable constants)
 {
@@ -89,6 +102,9 @@ public sealed class CreatureAbilityReads(AbstractFileProvider provider, TypeMapp
     private const string TauntField = "ChangeTargetOnTaunt";
 
     private const string AbilityTagsField = "AbilityTags";
+    private const string BlockedTagsField = "BlockAbilitiesWithTag";
+    private const string AttackSpeedField = "ScaleTimeWithAttackSpeed";
+    private const string InterruptCooldownField = "InterruptCooldownDuration";
     private const string AutoAttackTag = "AbilityType.AutoAttack";
     private const string AreaTag = "AbilityType.Aoe";
 
@@ -99,10 +115,18 @@ public sealed class CreatureAbilityReads(AbstractFileProvider provider, TypeMapp
 
     private readonly Dictionary<string, bool> _projectiles = new(StringComparer.OrdinalIgnoreCase);
 
+    public EndAbilityPaths EndPaths { get; } = new(provider, constants);
+
     public CreatureAbilityFacts Of(UObject cdo)
     {
         var chain = ClassDefaults.Chain(cdo, provider).ToArray();
         var tags = PropertyWalk.AsTags(ClassDefaults.Inherited(cdo, AbilityTagsField, provider)?.GenericValue) ?? [];
+
+        var blocked = PropertyWalk.AsTags(ClassDefaults.Inherited(cdo, BlockedTagsField, provider)?.GenericValue) ?? [];
+        var interrupt = ClassDefaults.Inherited(cdo, InterruptCooldownField, provider)?.GenericValue is FScriptStruct { StructType: IPropertyHolder scalable }
+            ? scalable
+            : null;
+        var paths = EndPaths.Of(cdo);
 
         var (acquisition, selection) = Targeting(chain);
 
@@ -116,6 +140,12 @@ public sealed class CreatureAbilityReads(AbstractFileProvider provider, TypeMapp
             AutoAttack = tags.Contains(AutoAttackTag, StringComparer.Ordinal) ? true : null,
             Area = tags.Contains(AreaTag, StringComparer.Ordinal) ? true : null,
             Projectile = chain.Any(SpawnsProjectile) ? true : null,
+            AbilityTags = tags.Length > 0 ? tags : null,
+            BlockAbilitiesWithTag = blocked.Length > 0 ? blocked : null,
+            ScaleTimeWithAttackSpeed = ClassDefaults.Inherited(cdo, AttackSpeedField, provider)?.GenericValue is true ? true : null,
+            InterruptCooldownDuration = interrupt is null ? null : MagnitudeCalculations.Scalable(interrupt, constants),
+            InterruptCooldownSource = interrupt is null ? null : MagnitudeCalculations.Source(interrupt, constants),
+            EndAbilityPaths = paths.Count > 0 ? paths : null,
         };
     }
 
