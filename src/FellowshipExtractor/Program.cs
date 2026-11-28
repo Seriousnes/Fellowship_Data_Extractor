@@ -127,6 +127,27 @@ switch (command)
     }
     case "blueprints":
         return await BlueprintsCommand.RunAsync(options, args.Length > 1 ? args[1] : null);
+    case "tmp-selects":
+    {
+        var provider = await ProviderFactory.CreateAsync(options);
+        var effects = CsvTables.ReadTags(provider).Where(tag => tag.Table == "GameplayEffect").Select(tag => tag.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in BlueprintsCommand.Packages(provider))
+        {
+            try
+            {
+                if (ClassDefaults.Load(path, provider) is not { } cdo) continue;
+                foreach (var select in EffectSelects.Of(cdo, provider, provider.MappingsContainer!.MappingsForGame!, effects))
+                {
+                    Console.WriteLine($"{cdo.Owner?.Name} | {select.Tag} {select.Character} | {string.Join(", ", select.Cases.Select(c => $"{c.Value}:{c.Effect}{(c.Select is { } n ? $"<{n.Tag} {n.Character} {string.Join(",", n.Cases.Select(x => x.Value + ":" + x.Effect))}>" : "")}"))}");
+                }
+            }
+            catch (InvalidOperationException error)
+            {
+                Console.WriteLine($"THROW {path}: {error.Message}");
+            }
+        }
+        return 0;
+    }
     case "dump-all":
     {
         if (args.Length < 2)
