@@ -181,6 +181,18 @@ public sealed record Entity
 
     public string? DurationPolicy { get; init; }
 
+    /// <summary>
+    /// The <c>EMaxHealthModificationHealthPatchPolicy</c> member the effect's <c>CRAttributeModComponent</c> states for
+    /// Health when the effect changes MaxHealth.
+    /// </summary>
+    public string? MaxHealthModificationPolicy { get; init; }
+
+    /// <summary>
+    /// The <c>EMaxHealthModificationHealthReductionPolicy</c> member the effect's <c>CRAttributeModComponent</c> states
+    /// for Health when the effect's removal lowers MaxHealth.
+    /// </summary>
+    public string? MaxHealthOnRemovedPolicy { get; init; }
+
     public IReadOnlyList<string>? ScalesOff { get; init; }
 
     public IReadOnlyDictionary<string, Placeholder>? Placeholders { get; init; }

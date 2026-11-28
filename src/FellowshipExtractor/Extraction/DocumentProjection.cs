@@ -250,6 +250,8 @@ public static class DocumentProjection
             Ticks = entity.Ticks,
             Infinite = entity.Infinite,
             DurationPolicy = entity.DurationPolicy,
+            MaxHealthModificationPolicy = entity.MaxHealthModificationPolicy,
+            MaxHealthOnRemovedPolicy = entity.MaxHealthOnRemovedPolicy,
             ScalesOff = entity.ScalesOff,
             Placeholders = Spent(Spends(entity), entity.Placeholders),
             Tuning = tuned.Value.Tuning,
