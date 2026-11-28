@@ -472,6 +472,7 @@ public sealed class EntityResolver
         if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
         {
             var policy = DurationPolicies.Of(cdo, _provider, _mappings);
+            var healthPolicy = MaxHealthPolicies.Of(cdo, _provider, _mappings);
 
             entity = entity with
             {
@@ -480,6 +481,8 @@ public sealed class EntityResolver
                 Executions = Empty(AbilityTaskReads.Executions(cdo, _provider)),
                 DurationPolicy = policy,
                 Infinite = policy == DurationPolicies.Infinite ? true : null,
+                MaxHealthModificationPolicy = healthPolicy?.OnModification,
+                MaxHealthOnRemovedPolicy = healthPolicy?.OnRemoved,
             };
         }
 

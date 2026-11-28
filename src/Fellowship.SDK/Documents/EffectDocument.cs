@@ -46,6 +46,19 @@ public sealed class EffectDocument : EntityDocument
     /// </summary>
     public string? DurationPolicy { get; init; }
 
+    /// <summary>
+    /// The <c>EMaxHealthModificationHealthPatchPolicy</c> member the effect's <c>CRAttributeModComponent</c> states for
+    /// Health when the effect changes MaxHealth. Null where the component is absent or leaves it at the class default.
+    /// </summary>
+    public string? MaxHealthModificationPolicy { get; init; }
+
+    /// <summary>
+    /// The <c>EMaxHealthModificationHealthReductionPolicy</c> member the effect's <c>CRAttributeModComponent</c> states
+    /// for Health when the effect's removal lowers MaxHealth. Null where the component is absent or leaves it at the
+    /// class default.
+    /// </summary>
+    public string? MaxHealthOnRemovedPolicy { get; init; }
+
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<Placeholder>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }

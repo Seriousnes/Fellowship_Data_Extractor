@@ -250,6 +250,8 @@ public static class RecordProjection
             MaxStacks = document.MaxStacks,
             Infinite = document.Infinite,
             DurationPolicy = document.DurationPolicy,
+            MaxHealthModificationPolicy = document.MaxHealthModificationPolicy,
+            MaxHealthOnRemovedPolicy = document.MaxHealthOnRemovedPolicy,
             ScalesOff = Scaling(document.ScalesOff, view),
             Placeholders = Tokens(tokens, tags, view),
             Schools = Some(tags),

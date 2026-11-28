@@ -27,6 +27,10 @@ public sealed record EffectRecord : EntityRecord
 
     public string? DurationPolicy { get; init; }
 
+    public string? MaxHealthModificationPolicy { get; init; }
+
+    public string? MaxHealthOnRemovedPolicy { get; init; }
+
     public IReadOnlyList<string>? ScalesOff { get; init; }
     public IReadOnlyList<PlaceholderRecord>? Placeholders { get; init; }
     public IReadOnlyList<string>? Schools { get; init; }
