@@ -52,6 +52,14 @@ public sealed record EffectRecord : EntityRecord
 
     public RecordReference? AppliedBy { get; init; }
 
+    public string? VisualDisplayName { get; init; }
+
+    public bool? AlwaysUseVisualDisplayName { get; init; }
+
+    public string? LogIdClass { get; init; }
+
+    public RecordReference? LoggedUnder { get; init; }
+
     public IReadOnlyList<EffectLinkRecord>? LinkedBy { get; init; }
 
     public IReadOnlyList<CommitTriggerRecord>? AppliedOnCommitOf { get; init; }

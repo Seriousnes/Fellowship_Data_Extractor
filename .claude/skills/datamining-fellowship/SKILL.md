@@ -534,6 +534,27 @@ Decoded against **26320967**, the school test of the damage formula and an effec
 | `GetAbilityInstanceTags`, `GetAbilityInstanceSetByCallerMagnitudes` exec thunks | 0x144FEDDD0, 0x144FEDD00 |
 | `CRSetByCallerDamageGameplayEffect` constructor: an `AssetTagsGameplayEffectComponent` subobject with `EffectType.Magic` | 0x1450E9F70, tag at 0x1450EA0C1; heal class 0x1450EA350, 0x1450EA4A1 |
 
+Decoded against **26320967**, implemented in `CombatLogIds.cs` and written up in `docs/combat-log-ids.md`:
+
+| What | Where |
+| --- | --- |
+| `HealthChangedInfo` fill: `InstigatingAbilityClass` +0x40 from the effect context's ability (context +0x18), `InstigatingEffectClass` +0x48 from the spec's effect | **0x1450E3600**; 0x1450E3685, 0x1450E36D2 |
+| Log record's `AbilityClass` from the event's ability class, replaced by its `LogAsADifferentAbility` (`CRGameplayAbility` +0x610); the form taking an ability instance | **0x145299170**, read 0x145299285; 0x145299390 |
+| `CRCombatLogAbilityEffectData`: id +0x00, name +0x08, source ability id +0x20, duration flag +0x28, auto attack flag +0x29, `AbilityClass` +0x30, `EffectClass` +0x38; text `{0}\|"{1}"\|{2}` | text 0x1452851D0, literal 0x148D35098 |
+| Flags and resolve of a damage record's `InstigatingAbilityEffectData` (record +0x108): `DurationPolicy` not `Instant`, `AbilityType.AutoAttack` (0x14A3C9FA8) or `Ability.AutoAttack` (0x14A3CAA10) | **0x1452AE480**, called at 0x1452AB2AF; 0x1452AE5F9, 0x1452AE694, 0x1452AE6F0 |
+| Id resolver: effect id for a `CRGameplayEffectDamage` with a duration, or with `AlwaysUseVisualDisplayName` (+0xAC0) and a `VisualDisplayName` (+0xAB0) on no auto attack; else the named ability's id; else the effect's | **0x145285FC0**; 0x1452860FA, 0x1452863D3, 0x1452865D2, 0x145286769, 0x145286959 |
+| `CRCombatLogEffectData` resolver (aura lines), `CRCombatLogAbilityData` resolver (cast lines) | 0x145286AB0, 0x145285DC0 |
+| `CRCombatLogGuidSubsystem`: getter, class name to id lookup (map +0x30, `_C` removed), builder over `Content/guid` (first line 0 tags +0xD0, 1 classes +0x30, 2 strings +0x80), row parser | 0x1452AB840, **0x1452AB8D0**, 0x1452ABF80, 0x1452A80A0 |
+| `CRAbilityDataSubsystem`: getter, `AbilityDataMap` (+0x30, element 0x1E0) name lookup, default data +0x90, populator keyed by `GameplayAbilityAsset` and `AdditionalGameplayAbilityAssets` | 0x1450CD0A0, 0x1450CD280, **0x1450C7FE0** (inserts 0x1450C8459, 0x1450C84CD) |
+| Literals `Invalid Ability Data`, `Unnamed DoT` | 0x148D2A698, 0x148D350B8 |
+| Damage record constructor, its text function, the event names by `Flags` (+0x90) and `DamageTypeFlags` (+0x91) | 0x14526F780, **0x145275470** |
+| Record reader by schema, the dispatcher by record type, the line writer (timestamp, text, newline) | 0x1452AA370, 0x1452A8260, 0x1452A0AD0 |
+| `CRGameplayEffectDamage` constructor stores `AlwaysUseVisualDisplayName` false | 0x1450E8528 |
+| `GameplayEffectUIData_BuffDebuff` `Name` +0x28; the effect's UI data component getter | 0x144F09F40 (class), 0x1449EECC0 |
+
+No routine of the executable has the immediate 1,000,000 in the combat log code. Fellowship Logs adds it to the id of a
+line logged under an effect.
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

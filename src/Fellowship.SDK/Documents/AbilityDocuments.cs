@@ -119,6 +119,12 @@ public sealed class AbilityDocument : EntityDocument
     /// </summary>
     public bool? ScaleTimeWithAttackSpeed { get; init; }
 
+    /// <summary>
+    /// The ability's <c>LogAsADifferentAbility</c>. The combat log has this ability's casts and hits under that
+    /// ability's id and name.
+    /// </summary>
+    public EntityReference? LogAsADifferentAbility { get; init; }
+
     /// <summary>A creature ability's <c>InterruptCooldownDuration</c> in seconds.</summary>
     public double? InterruptCooldownDuration { get; init; }
 

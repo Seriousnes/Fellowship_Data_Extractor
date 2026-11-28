@@ -92,6 +92,36 @@ public sealed class EffectDocument : EntityDocument
 
     public EntityReference? AppliedBy { get; init; }
 
+    /// <summary>
+    /// The effect's <c>VisualDisplayName</c>, a member of <c>CRGameplayEffectDamage</c>: the name of a combat log line
+    /// with the effect's id, on an effect with no <c>GameplayEffectUIData_BuffDebuff</c> name.
+    /// </summary>
+    public string? VisualDisplayName { get; init; }
+
+    /// <summary>
+    /// The effect's <c>AlwaysUseVisualDisplayName</c>, a member of <c>CRGameplayEffectDamage</c>. With a
+    /// <see cref="VisualDisplayName"/> it gives the effect's hit a combat log line of its own id and name.
+    /// </summary>
+    public bool? AlwaysUseVisualDisplayName { get; init; }
+
+    /// <summary>
+    /// The member of <c>CRCombatLogAbilityEffectData</c> with the id of the combat log line of the effect's hit, on an
+    /// effect with a damage or healing execution. <c>EffectClass</c>: the line has the effect's id. The effect derives
+    /// from <c>CRGameplayEffectDamage</c> and has a <see cref="DurationPolicy"/> other than <c>Instant</c>, or has
+    /// <see cref="AlwaysUseVisualDisplayName"/> with a <see cref="VisualDisplayName"/>. <c>AbilityClass</c>: the line
+    /// has the id of the hit's instigating ability, or of that ability's <c>logAsADifferentAbility</c>. Where the
+    /// ability has no <c>CRAbilityDataRow</c> name, or the hit has no ability, the line has the effect's id. An
+    /// <see cref="AlwaysUseVisualDisplayName"/> effect of an auto attack ability is logged as <c>AbilityClass</c>.
+    /// </summary>
+    public string? LogIdClass { get; init; }
+
+    /// <summary>
+    /// The effect or ability with the id of the combat log line of the effect's hit, with the ability in
+    /// <see cref="AppliedBy"/> as the hit's instigating ability. An <see cref="AppliedBy"/> effect has its own
+    /// instigating ability. Null for a <see cref="LogIdClass"/> of <c>AbilityClass</c> with no applying ability.
+    /// </summary>
+    public EntityReference? LoggedUnder { get; init; }
+
     /// <summary>Effects applying this one through a linked effect component.</summary>
     public IReadOnlyList<EffectLink>? LinkedBy { get; init; }
 

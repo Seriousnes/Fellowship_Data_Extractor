@@ -398,6 +398,21 @@ public sealed record Entity
 
     public IconSource? AppliedBy { get; init; }
 
+    /// <summary>The effect's <c>VisualDisplayName</c>, a member of <c>CRGameplayEffectDamage</c>.</summary>
+    public string? VisualDisplayName { get; init; }
+
+    /// <summary>The effect's <c>AlwaysUseVisualDisplayName</c>, a member of <c>CRGameplayEffectDamage</c>.</summary>
+    public bool? AlwaysUseVisualDisplayName { get; init; }
+
+    /// <summary>Member of <c>CRCombatLogAbilityEffectData</c> the effect's own members give a hit's combat log id from.</summary>
+    public string? LogIdClass { get; init; }
+
+    /// <summary>The effect or ability with the id of a hit's combat log line.</summary>
+    public IconSource? LoggedUnder { get; init; }
+
+    /// <summary>The ability's <c>LogAsADifferentAbility</c>.</summary>
+    public IconSource? LogAsADifferentAbility { get; init; }
+
     public IReadOnlyList<LinkedEffectSource>? LinkedBy { get; init; }
 
     public IReadOnlyList<CommitTriggerSource>? CommitTriggers { get; init; }
