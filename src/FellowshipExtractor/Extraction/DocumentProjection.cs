@@ -306,6 +306,8 @@ public static class DocumentProjection
             Agility = entity.Agility,
             CritChance = entity.CritChance,
             CritMultiplier = entity.CritMultiplier,
+            Haste = entity.Haste,
+            AttackSpeed = entity.AttackSpeed,
             Abilities = Abilities(entity.Abilities, references),
             Passives = Abilities(entity.Passives, references),
             Phases = entity.Phases,

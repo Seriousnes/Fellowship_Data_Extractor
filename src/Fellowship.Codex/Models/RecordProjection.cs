@@ -180,6 +180,8 @@ public static class RecordProjection
         Agility = document.Agility,
         CritChance = document.CritChance,
         CritMultiplier = document.CritMultiplier,
+        Haste = document.Haste,
+        AttackSpeed = document.AttackSpeed,
         Abilities = Wielded(document.Abilities, view, origin),
         Passives = Wielded(document.Passives, view, origin),
         Phases = document.Phases,

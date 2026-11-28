@@ -604,6 +604,20 @@ Decoded against **26320967**, the movement, tick and combat event tasks and the 
 | Its `Activate` and event handler | 0x1451260E0, **0x1451275B0** |
 | An ability task's vtable: `Activate` +0x2C8, `TickTask` +0x2D8, `ExternalCancel` +0x2E8, `OnDestroy` +0x308 | e.g. `CRAbilityTask_AILeapTo` 0x148A97650: 0x14510F4A0, 0x145117E30 |
 
+Decoded against **26320967**, the attributes of the ability time rate and the partial channel tick, behind `haste` and
+`attackSpeed` in `CreatureStats.cs` and written up in `docs/casting-and-channeling.md`:
+
+| What | Where |
+| --- | --- |
+| `CRBasicAttributeSet` static class (size 0x430), constructor | 0x144F04090, **0x1450BB750** |
+| `Haste` +0xF8: base +0x100 and current +0x104 both 1.0 | stores 0x1450BB89E, 0x1450BB8A8; reflection record 0x148AA0D00 |
+| `AttackSpeed` +0x2A8: base +0x2B0 and current +0x2B4 both 1.0 | stores 0x1450BBABE, 0x1450BBAC8; reflection record 0x148AA13C0 |
+| Time rate reads: `Haste` property global 0x14A3C0728, `AttackSpeed` 0x14A3BFF98, `GetNumericAttribute` 0x144A10E50 | calls 0x1450E077B, 0x1450E07E6 |
+| `CRAbilityTask_TargetedNPCCast::ServerTargetedNPCCast`, exec thunk 0x144F24FC0: its cast is a `ServerStartCasting` call | **0x14512B9C0**, call 0x14512BADD |
+| Channel expiry: `EnablePartialTicks` test, `partial` (+0x118) against 1e-8, `OnTick(partial)`, `OnFinished(0)` | 0x14511F2CE, 0x14511F2E4, 0x14511F2F4, 0x14511F333 |
+| `SetDynamicDuration` (`ChannelingDuration` +0x08), `SetDynamicTickInterval` (`ChannelingTickInterval` +0x30); exec thunks 0x144F1C520, 0x144F1C660 | 0x145121B30, 0x145121B40 |
+| `FScalableFloat::SetValue`: `Value` stored, curve table, row and registry cleared | 0x144AB46C0 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`

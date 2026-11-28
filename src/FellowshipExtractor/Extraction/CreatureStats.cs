@@ -24,6 +24,10 @@ public sealed record CreatureAttributes
     public double? CritChance { get; init; }
 
     public double? CritMultiplier { get; init; }
+
+    public double? Haste { get; init; }
+
+    public double? AttackSpeed { get; init; }
 }
 
 public sealed record CreatureScaling(
@@ -50,6 +54,20 @@ public sealed class CreatureStats
     private const string Agility = "BasicAttributeSet.Agility";
     private const string CritChance = "BasicAttributeSet.CritChance";
     private const string CritMultiplier = "BasicAttributeSet.CritMultiplier";
+    private const string Haste = "BasicAttributeSet.Haste";
+    private const string AttackSpeed = "BasicAttributeSet.AttackSpeed";
+
+    /// <summary>
+    /// The base and current value of <c>Haste</c> (+0xF8) from the <c>CRBasicAttributeSet</c> constructor, for a
+    /// character with no row. Shipping exe 26320967: constructor 0x1450BB750, stores 0x1450BB89E and 0x1450BB8A8.
+    /// </summary>
+    public const double ConstructorHaste = 1;
+
+    /// <summary>
+    /// The base and current value of <c>AttackSpeed</c> (+0x2A8) from the same constructor, stores 0x1450BBABE and
+    /// 0x1450BBAC8. No character has a row.
+    /// </summary>
+    public const double ConstructorAttackSpeed = 1;
 
     private readonly Dictionary<string, double> _base = new(StringComparer.OrdinalIgnoreCase);
 
@@ -149,6 +167,8 @@ public sealed class CreatureStats
             Agility = Shared(characterId, Agility),
             CritChance = Shared(characterId, CritChance),
             CritMultiplier = Shared(characterId, CritMultiplier),
+            Haste = Shared(characterId, Haste) ?? ConstructorHaste,
+            AttackSpeed = Shared(characterId, AttackSpeed) ?? ConstructorAttackSpeed,
         };
 
         if (attributes is { Health: null, Armor: null, Resist: null, KillScore: null, SpiritPoints: null })
