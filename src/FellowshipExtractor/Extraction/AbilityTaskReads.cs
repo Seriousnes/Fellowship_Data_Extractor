@@ -62,8 +62,9 @@ public static class AbilityTaskReads
     public static bool ScalesWithAttackSpeed(UObject cdo, AbstractFileProvider provider) =>
         ClassDefaults.Inherited(cdo, AttackSpeedField, provider)?.GenericValue is true;
 
+    /// <summary>The ability's <c>AbilityTags</c> in the asset's order, from the nearest class of its chain with them.</summary>
     public static IReadOnlyList<string> AbilityTags(UObject cdo, AbstractFileProvider provider) =>
-        Tags(cdo, AbilityTagsField, provider);
+        PropertyWalk.AsTags(ClassDefaults.Inherited(cdo, AbilityTagsField, provider)?.GenericValue) ?? [];
 
     public static IReadOnlyList<string> ActivationBlockedTags(UObject cdo, AbstractFileProvider provider) =>
         Tags(cdo, BlockedTagsField, provider);

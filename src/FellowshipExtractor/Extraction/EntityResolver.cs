@@ -450,9 +450,7 @@ public sealed class EntityResolver
                 AutoAttack = facts.AutoAttack,
                 Area = facts.Area,
                 Projectile = facts.Projectile,
-                CreatureAbilityTags = facts.AbilityTags,
                 BlockAbilitiesWithTag = facts.BlockAbilitiesWithTag,
-                ScaleTimeWithAttackSpeed = facts.ScaleTimeWithAttackSpeed,
                 InterruptCooldownDuration = facts.InterruptCooldownDuration,
                 EndAbilityPaths = facts.EndAbilityPaths,
                 FieldSources = FieldSources.Set(

@@ -58,8 +58,9 @@ A change of either attribute after the factory call changes no time of a running
 
 The factory gives the delay task the time `clamp(Duration - T, 0, Duration) / CastSpeed` (0x1451214A4 to 0x1451214B1).
 `T` is the trigger time of the first `AnimNotify_CastEndMarker` among the notifies of `CastEndAnimMontage`. A montage
-with no marker has the time `Duration / CastSpeed`. `OnLoopTimerExpired` plays `CastEndAnimMontage` at the rate
-`CastSpeed`, so the marker is at the cast's end.
+with no marker has the time `Duration / CastSpeed`. The factory passes `WaitDelayCR` a `ScaleTimeWithAbilitySpeed` of
+false, because the time already has the rate. `docs/ability-end-delays.md` has that task. `OnLoopTimerExpired` plays
+`CastEndAnimMontage` at the rate `CastSpeed`, so the marker is at the cast's end.
 
 The effect's expiry calls 0x14511EFC0. A removal before the expiry returns at once. An expiry runs, in one call:
 

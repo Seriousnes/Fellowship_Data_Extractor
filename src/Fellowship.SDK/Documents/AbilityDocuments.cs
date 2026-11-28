@@ -72,14 +72,8 @@ public sealed class AbilityDocument : EntityDocument
 
     public bool? CastTimeScalesWithHaste { get; init; }
 
-    /// <summary>The ability's <c>ScaleTimeWithAttackSpeed</c>: its time rate has <c>AttackSpeed - 1</c> added.</summary>
-    public bool? ScaleTimeWithAttackSpeed { get; init; }
-
     /// <summary>The flags of the ability's <c>ChannelingData</c>, each from the nearest class of its Blueprint chain with it.</summary>
     public ChannelingTaskData? ChannelingData { get; init; }
-
-    /// <summary>The ability's <c>AbilityTags</c>.</summary>
-    public IReadOnlyList<string>? AbilityTags { get; init; }
 
     /// <summary>The ability's <c>ActivationBlockedTags</c>. An owner with one of them cannot activate the ability.</summary>
     public IReadOnlyList<string>? ActivationBlockedTags { get; init; }
@@ -108,7 +102,7 @@ public sealed class AbilityDocument : EntityDocument
     /// <summary>A creature ability that spawns an actor with a projectile movement component.</summary>
     public bool? Projectile { get; init; }
 
-    /// <summary>A creature ability's <c>AbilityTags</c>.</summary>
+    /// <summary>The ability's <c>AbilityTags</c>.</summary>
     public IReadOnlyList<string>? AbilityTags { get; init; }
 
     /// <summary>
@@ -119,7 +113,7 @@ public sealed class AbilityDocument : EntityDocument
     public IReadOnlyList<string>? BlockAbilitiesWithTag { get; init; }
 
     /// <summary>
-    /// A creature ability's <c>ScaleTimeWithAttackSpeed</c>. <see cref="CastTimeScalesWithHaste"/> is its
+    /// The ability's <c>ScaleTimeWithAttackSpeed</c>. <see cref="CastTimeScalesWithHaste"/> is its
     /// <c>ScaleTimeWithHaste</c>. The two set the ability's time factor: the owner's <c>Haste</c> for the first, plus
     /// <c>AttackSpeed</c> minus 1 for the second, and 1 for an ability with neither.
     /// </summary>

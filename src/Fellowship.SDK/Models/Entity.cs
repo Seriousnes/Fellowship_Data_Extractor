@@ -113,8 +113,6 @@ public sealed record Entity
 
     public bool? CastTimeScalesWithHaste { get; init; }
 
-    public bool? ScaleTimeWithAttackSpeed { get; init; }
-
     public ChannelingTaskData? ChannelingData { get; init; }
 
     /// <summary>The ability's <c>AbilityTags</c>, from the nearest class of its Blueprint chain with them.</summary>
@@ -142,9 +140,6 @@ public sealed record Entity
     public bool? Area { get; init; }
 
     public bool? Projectile { get; init; }
-
-    /// <summary>A creature ability's <c>AbilityTags</c>, from the nearest class of its Blueprint chain.</summary>
-    public IReadOnlyList<string>? CreatureAbilityTags { get; init; }
 
     public IReadOnlyList<string>? BlockAbilitiesWithTag { get; init; }
 
