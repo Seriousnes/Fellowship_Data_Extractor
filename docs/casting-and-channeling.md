@@ -3,6 +3,28 @@
 `CRAbilityTask_ServerCasting` is an ability's cast on the server and `CRAbilityTask_ServerChanneling` is its channel.
 Both are native. Every address is of the build 26320967 shipping executable.
 
+## Export fields
+
+An ability document has:
+
+- **`castTime`**, **`channelTime`**, **`channelTick`**: `CastingDuration`, `ChannelingDuration` and
+  `ChannelingTickInterval`.
+- **`castTimeScalesWithHaste`**, **`scaleTimeWithAttackSpeed`**: `ScaleTimeWithHaste` and `ScaleTimeWithAttackSpeed`,
+  the two flags of the time rate.
+- **`channelingData`**: `continuousChannel`, `tickImmediately`, `scaleDurationWithAbilityTimeRate`,
+  `enablePartialTicks` and `allowSpellPushback` of the ability's `ChannelingData`. Each flag is from the nearest class
+  of the ability's Blueprint chain with it.
+- **`abilityTags`**, **`activationBlockedTags`**: `AbilityTags` and `ActivationBlockedTags`.
+
+An effect document has:
+
+- **`grantedTags`**: the combined granted tags of the effect's `TargetTagsGameplayEffectComponent`.
+- **`executions`**: the calculation class of each of the effect's `Executions`.
+
+A stun cancels an ability when an effect of the stun's `applies` has
+`CRCancelAbilitiesBlockedByThisEffectsParentExecution` in its `executions`, and the ability's `abilityTags` and
+`activationBlockedTags` pass the tests of [Cancel by a stun](#cancel-by-a-stun) against the stun's `grantedTags`.
+
 ## Ability time rate
 
 Both tasks read the ability's time rate once, in their factory call. The rate (0x1450E06E0) is:

@@ -460,9 +460,25 @@ public sealed class EntityResolver
             };
         }
 
+        if (cdo is not null && tag.Table.Equals(AbilityTable, StringComparison.OrdinalIgnoreCase))
+        {
+            entity = entity with
+            {
+                ScaleTimeWithAttackSpeed = AbilityTaskReads.ScalesWithAttackSpeed(cdo, _provider) ? true : null,
+                ChannelingData = AbilityTaskReads.Channeling(cdo, _provider),
+                InheritedAbilityTags = Empty(AbilityTaskReads.AbilityTags(cdo, _provider)),
+                ActivationBlockedTags = Empty(AbilityTaskReads.ActivationBlockedTags(cdo, _provider)),
+            };
+        }
+
         if (cdo is not null && tag.Table.Equals(EffectTable, StringComparison.OrdinalIgnoreCase))
         {
-            entity = entity with { CalculationPreset = _presets.Executed(cdo) };
+            entity = entity with
+            {
+                CalculationPreset = _presets.Executed(cdo),
+                TargetTags = Empty(AbilityTaskReads.GrantedTags(cdo, _provider)),
+                Executions = Empty(AbilityTaskReads.Executions(cdo, _provider)),
+            };
         }
 
         entity = WithSpentResource(entity, display, tag, cdo);

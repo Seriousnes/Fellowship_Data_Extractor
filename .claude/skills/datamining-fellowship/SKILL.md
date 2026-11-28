@@ -397,7 +397,7 @@ Decoded against **26320967**, the school and armor terms of the target formula i
 | Armor term: `CRItemSettings` default object +0x38, `CalcDamageReductionFromArmorValue` of `trunc(Armor)` | 0x145107A90 to 0x145107AE9, caller of the Blueprint function 0x145020120, name global 0x14A3B1970 |
 
 Decoded against **26320967**, `CRAbilityTask_ServerCasting` and `CRAbilityTask_ServerChanneling`, written up in
-`docs/casting-and-channeling.md`:
+`docs/casting-and-channeling.md`, behind the `channelingData` flags of `AbilityTaskReads.cs`:
 
 | What | Where |
 | --- | --- |

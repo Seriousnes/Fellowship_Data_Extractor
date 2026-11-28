@@ -113,6 +113,20 @@ public sealed record Entity
 
     public bool? CastTimeScalesWithHaste { get; init; }
 
+    public bool? ScaleTimeWithAttackSpeed { get; init; }
+
+    public ChannelingTaskData? ChannelingData { get; init; }
+
+    /// <summary>The ability's <c>AbilityTags</c>, from the nearest class of its Blueprint chain with them.</summary>
+    public IReadOnlyList<string>? InheritedAbilityTags { get; init; }
+
+    public IReadOnlyList<string>? ActivationBlockedTags { get; init; }
+
+    /// <summary>The granted tags of the effect's <c>TargetTagsGameplayEffectComponent</c>.</summary>
+    public IReadOnlyList<string>? TargetTags { get; init; }
+
+    public IReadOnlyList<string>? Executions { get; init; }
+
     public string? TargetAcquisition { get; init; }
 
     public TargetSelection? TargetSelection { get; init; }

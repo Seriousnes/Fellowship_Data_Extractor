@@ -72,6 +72,18 @@ public sealed class AbilityDocument : EntityDocument
 
     public bool? CastTimeScalesWithHaste { get; init; }
 
+    /// <summary>The ability's <c>ScaleTimeWithAttackSpeed</c>: its time rate has <c>AttackSpeed - 1</c> added.</summary>
+    public bool? ScaleTimeWithAttackSpeed { get; init; }
+
+    /// <summary>The flags of the ability's <c>ChannelingData</c>, each from the nearest class of its Blueprint chain with it.</summary>
+    public ChannelingTaskData? ChannelingData { get; init; }
+
+    /// <summary>The ability's <c>AbilityTags</c>.</summary>
+    public IReadOnlyList<string>? AbilityTags { get; init; }
+
+    /// <summary>The ability's <c>ActivationBlockedTags</c>. An owner with one of them cannot activate the ability.</summary>
+    public IReadOnlyList<string>? ActivationBlockedTags { get; init; }
+
     /// <summary>A creature ability's <c>TargetAcquisitionPolicy</c> class without the <c>CRAbilityTargetingAcquisitionPolicy_</c> prefix.</summary>
     public string? TargetAcquisition { get; init; }
 

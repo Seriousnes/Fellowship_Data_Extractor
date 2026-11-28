@@ -10,6 +10,12 @@ public sealed class EffectDocument : EntityDocument
 
     public IReadOnlyList<string>? EffectTags { get; init; }
 
+    /// <summary>The tags the effect's target has while the effect is active: its <c>TargetTagsGameplayEffectComponent</c>'s granted tags.</summary>
+    public IReadOnlyList<string>? GrantedTags { get; init; }
+
+    /// <summary>The calculation class of each of the effect's <c>Executions</c>, without its package.</summary>
+    public IReadOnlyList<string>? Executions { get; init; }
+
     public double? Duration { get; init; }
 
     /// <summary>The attribute the duration is a share of, where no one number states it.</summary>

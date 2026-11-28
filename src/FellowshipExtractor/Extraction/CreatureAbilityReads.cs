@@ -286,10 +286,19 @@ public sealed class CreatureAbilityReads(AbstractFileProvider provider, TypeMapp
     }
 
     /// <summary>
-    /// A struct field's bool, from the nearest class holding a property of that name, spaces aside. Where the chain holds
-    /// two such properties, the one the ability's graph reads is the one read.
+    /// A struct field's bool, from the nearest class with that member in a property of that name. A class deriving from
+    /// the property's first class has the members it changes alone.
     /// </summary>
-    private static bool? Flag(IReadOnlyList<UObject> chain, string field, string member)
+    private static bool? Flag(IReadOnlyList<UObject> chain, string field, string member) =>
+        Held(chain, field)
+            .Select(data => PropertyWalk.Get(data, member)?.GenericValue as bool?)
+            .FirstOrDefault(value => value is not null);
+
+    /// <summary>
+    /// The structs of the chain's property of that name, spaces aside, nearest class first. Where the chain holds two
+    /// such properties, the one the ability's graph reads is the one read.
+    /// </summary>
+    public static IReadOnlyList<IPropertyHolder> Held(IReadOnlyList<UObject> chain, string field)
     {
         var held = new List<(string Name, IPropertyHolder Data)>();
 
@@ -299,17 +308,18 @@ public sealed class CreatureAbilityReads(AbstractFileProvider provider, TypeMapp
             {
                 if (!property.Name.Text.Replace(" ", string.Empty).Equals(field, StringComparison.OrdinalIgnoreCase)) continue;
                 if (property.Tag?.GenericValue is not FScriptStruct { StructType: IPropertyHolder data }) continue;
-                if (held.Any(entry => entry.Name == property.Name.Text)) continue;
 
                 held.Add((property.Name.Text, data));
             }
         }
 
-        if (held.Count == 0) return null;
+        var names = held.Select(entry => entry.Name).Distinct(StringComparer.Ordinal).ToArray();
 
-        var read = held.Count == 1 ? held[0].Data : held.FirstOrDefault(entry => Reads(chain, entry.Name)).Data ?? held[0].Data;
+        if (names.Length == 0) return [];
 
-        return PropertyWalk.Get(read, member)?.GenericValue as bool?;
+        var read = names.Length == 1 ? names[0] : names.FirstOrDefault(name => Reads(chain, name)) ?? names[0];
+
+        return [.. held.Where(entry => entry.Name == read).Select(entry => entry.Data)];
     }
 
     /// <summary>Whether a graph of the chain's packages reads the instance variable.</summary>
