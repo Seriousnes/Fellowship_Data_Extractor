@@ -74,8 +74,6 @@ public sealed class EntityResolver
 
     private const string MountClass = "CRMountData";
     private const string TextureClass = "Texture2D";
-    private const string EffectTagsField = "InheritableGameplayEffectTags";
-    private const string CombinedTagsField = "CombinedTags";
     private const string MountIdField = "MountID";
     private const string MountRarityField = "Rarity";
     private readonly HashSet<string> _effectNames = new(StringComparer.OrdinalIgnoreCase);
@@ -2963,10 +2961,8 @@ public sealed class EntityResolver
 
     private static readonly string[] EffectTagFamilies = ["EffectType.", "EffectLogic.", "EffectVisualization."];
 
-    private static List<string> EffectTags(UObject cdo) =>
-        [.. (PropertyWalk.GetStruct(cdo, EffectTagsField) is { } inherited
-                ? PropertyWalk.GetTags(inherited, CombinedTagsField) ?? []
-                : [])
+    private List<string> EffectTags(UObject cdo) =>
+        [.. EffectAssetTags.Of(cdo, _provider)
             .Where(tag => EffectTagFamilies.Any(family => tag.StartsWith(family, StringComparison.Ordinal)))
             .Order(StringComparer.Ordinal)];
 

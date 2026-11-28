@@ -181,18 +181,68 @@ The target's terms multiply in this order, each under its preset flag:
    function: `1 - 0.00052 x Armor / (Global.ArmorToDamageReductionMultiplier + 0.00048 x |Armor|)`.
 2. `clamp(1 - Avoidance, 0, 1)`, under `ApplyTargetAvoidance`.
 3. `IncomingDamageMultiplier`, under `ApplyTargetIncomingDamageHealingMultipliers`.
-4. For an effect with an asset tag at or under `EffectType.Physical`: `clamp(1 - PhysicalDamageReduction, 0, 1)`
-   under `ApplyTargetPhysicalDamageReduction` and `PhysicalIncomingDamageMultiplier` under
-   `ApplyTargetPhysicalIncomingDamageMultiplier`. Otherwise, for a tag at or under `EffectType.Magic`:
-   `clamp(1 - MagicDamageReduction, 0, 1)` under `ApplyTargetMagicDamageReduction` and
-   `MagicalIncomingDamageMultiplier` under `ApplyTargetMagicalIncomingDamageMultiplier`.
+4. The school pair. For a hit with a source tag at or under `EffectType.Physical`:
+   `clamp(1 - PhysicalDamageReduction, 0, 1)` under `ApplyTargetPhysicalDamageReduction` and
+   `PhysicalIncomingDamageMultiplier` under `ApplyTargetPhysicalIncomingDamageMultiplier`. Otherwise, for a source
+   tag at or under `EffectType.Magic`: `clamp(1 - MagicDamageReduction, 0, 1)` under
+   `ApplyTargetMagicDamageReduction` and `MagicalIncomingDamageMultiplier` under
+   `ApplyTargetMagicalIncomingDamageMultiplier`.
 5. `AoeIncomingDamageMultiplier`, under `ApplyTargetAoeIncomingDamageMultiplier`.
+
+`DamageMitigationScale` multiplies the hit after its absorption passes, under no flag.
 
 The gather captures a target attribute only for a set flag. A reduction is otherwise 0 and a multiplier 1. A school
 pair therefore needs the tag and the flag together. High Tide's damage effect has the tag `EffectType.Magic.Water`
 and the preset `EnemyPhysicalArea`, so neither pair changes its hit: the tag selects the magic pair and the preset
 has both magic flags clear. Arcane Volley's damage effect has the preset `EnemyMagicalArea`, so `Avoidance` and
 `AoeIncomingDamageMultiplier` apply to it.
+
+### The school test
+
+The test reads one container, the spec's aggregated captured source tags. The preset's name, the calculation class
+and the main stat have no part in it. The container has:
+
+- the effect's asset tags, `effectTags` in the export
+- each tag a graph adds to the spec with `AddAssetTag` or `AddAssetTags`
+- the `AbilityTags` and the `AbilityInstanceTags` of the ability making the spec
+- the source actor's owned tags at the spec's creation
+
+`EffectType.Physical` is tested first, so a hit with a tag of each school takes the physical pair. A hit with a tag
+of neither school takes no pair. Shatterstrike's damage effect for a wet target has no asset tags component, its
+ability's tags are `AbilityType` tags, and its preset is `EnemyMagicalArea`: the hit takes `Avoidance`,
+`IncomingDamageMultiplier` and `AoeIncomingDamageMultiplier`, and neither `MagicDamageReduction` nor
+`MagicalIncomingDamageMultiplier`.
+
+Piercing Howl's damage effect has the tag `EffectType.Physical` and the preset `EnemyMagicalArea`. The tag selects
+the physical pair, the preset has both physical flags clear, and the magic pair's attributes are captured and
+multiplied into nothing. The hit takes no school pair.
+
+Each captured attribute is evaluated against the hit's source tags and target tags. A modifier with
+`sourceRequireTags`, `sourceIgnoreTags`, `targetRequireTags` or `targetIgnoreTags` in the export therefore applies to
+one hit and not to another: Rot Wave's `IncomingDamageMultiplier` modifier requires the source tag
+`EffectType.Magic`.
+
+The hit's flag byte has its own school test, over the spec's asset tags alone and with `EffectType.Magic` first:
+bit 0x10 for a magic hit, otherwise bit 0x08 for a physical one. The same byte has bit 0x01 for the source tag
+`AbilityType.AutoAttack`, 0x40 for `EffectLogic.NotReflectable`, 0x80 for `EffectType.StaggerDamage`, and 0x04 for a
+periodic effect or 0x02 for any other.
+
+The spread roll is `(rand() & 0x7FFF) / 32767 - 0.5`, so `SpreadRoll x Spread + 1` is uniform from `1 - Spread / 2`
+to `1 + Spread / 2`.
+
+### An effect's asset tags
+
+An effect's asset tags are the `CombinedTags` of its `AssetTagsGameplayEffectComponent`. At load the component
+rebuilds them from the component of the effect's parent class, less its `Removed` tags and plus its `Added` tags,
+and copies them to the effect. The cooked component of a child class omits `CombinedTags` equal to its parent's, so
+`effectTags` has the tags of the nearest class of the chain stating them. An effect with no such component has no
+asset tags.
+
+`CRInterruptGameplayEffect`, `CRLockoutGameplayEffect`, `CRCostEffect`, `CRProcEffect`, `CRChargeEffect` and
+`CRAbsorptionEffect` create the component in their constructors with tags of their own, and a Blueprint child's
+`CombinedTags` has them. `CRSetByCallerDamageGameplayEffect` creates it with `EffectType.Magic`,
+`EffectType.Harmful`, `EffectLogic.System` and `EffectLogic.NoThreatGeneration`.
+`CRSetByCallerHealGameplayEffect` creates it with `EffectType.Magic` too.
 
 An instant effect executes inside its application call, so the attributes and the hit outcome of each hit are those
 of the moment the ability's graph applies it.

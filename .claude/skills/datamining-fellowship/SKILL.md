@@ -513,6 +513,27 @@ Decoded against **26320967**, implemented in `DurationPolicies.cs` and written u
 | The other native effect classes' registrations, each with its name literal and its constructor wrapper | 0x144FF4380 to 0x144FF5090, wrappers 0x144FF5500 to 0x144FF5650 |
 | Their constructors, each with one store at +0x30 after the `UGameplayEffect` constructor call | 0x1450E67B0 to 0x1450EA350, the table in `docs/effect-periods.md` |
 
+Decoded against **26320967**, the school test of the damage formula and an effect's asset tags, implemented in
+`EffectAssetTags.cs` and written up in `docs/effect-periods.md`:
+
+| What | Where |
+| --- | --- |
+| Calculation context: evaluate parameters +0x08 (source tags pointer, target tags pointer), spec copy +0x70, `GetAllAssetTags` +0x308, preset row +0x328, aggregated source tags +0x330, aggregated target tags +0x350 | **0x145106850**; `GetAggregatedTags` 0x144AAAF50 called at 0x145106929 and 0x145106940 |
+| Spec: `CapturedSourceTags` +0x60, `CapturedTargetTags` +0xE8, `DynamicAssetTags` +0x190 | 0x145106922, 0x145106939, 0x144A76EB0 |
+| School test over the aggregated source tags: `EffectType.Physical` first, then `EffectType.Magic` | 0x145107B1E, 0x145107B6E; tag globals 0x14A3C9E50, 0x14A3C9E48; the container is the driver's `r9` at 0x1450DD27E |
+| Gather: preset flags +0x25 to +0x28 over the four school captures | 0x1450DB1AB, 0x1450DB1D6, 0x1450DB201, 0x1450DB22C |
+| Value defaults: reductions (+0x34, +0x38) 0, multipliers (+0x30, +0x3C, +0x40, +0x44) 1 | constants 0x147CC0F50 and 0x147F57540, stored at 0x1450DD187 and 0x1450DD195 |
+| Preset row of an effect (`EffectCalculationPreset` at Def +0xAA0); the row for `Execution.UseEmptyCalculationPreset` (tag global 0x14A3C9F90) | 0x1450ECDB0; 0x149FD0140 |
+| Hit flag byte: `AbilityType.AutoAttack` 0x01, periodic 0x04 or 0x02, `EffectType.Magic` 0x10 before `EffectType.Physical` 0x08, `EffectLogic.NotReflectable` 0x40, `EffectType.StaggerDamage` 0x80 | **0x145107C50**; tests 0x145107CBD, 0x145107D77, 0x145107DB0, 0x145107E16, 0x145107E71, 0x145107D1B |
+| Attack table roll and spread roll `(rand() & 0x7FFF) / 32767 - 0.5` | 0x14510C4D0; 0x14510C5D0 to 0x14510C5EA |
+| `FGameplayEffectSpec::GetAllAssetTags`: `DynamicAssetTags` and the Def's cached asset tags (+0xA28) | 0x144A76EA0 |
+| `AssetTagsGameplayEffectComponent` load and `SetAndApplyAssetTagChanges`: parent component 0x144A9CD90, `UpdateInheritedTagProperties` 0x144A91D70, `ApplyTo` 0x144A6B880 | 0x144AAFE60, 0x144AB4390 |
+| `ApplyTo`: an empty target container takes `CombinedTags` whole | 0x144A6B88A to 0x144A6B8AC |
+| `FellowshipMakeEffectSpec` calls the ability's virtual +0x2E0 with the new spec | 0x1450E03DC |
+| `CRGameplayAbility::ApplyAbilityTagsToGameplayEffectSpec`: the engine's body (`AbilityTags` +0xB0), then `AbilityInstanceTags` (+0x648) into the spec's source tags and `AbilityInstanceSetByCallerMagnitudes` (+0x668) into the spec | **0x1450D9940**; engine 0x1449D8EB0 |
+| `GetAbilityInstanceTags`, `GetAbilityInstanceSetByCallerMagnitudes` exec thunks | 0x144FEDDD0, 0x144FEDD00 |
+| `CRSetByCallerDamageGameplayEffect` constructor: an `AssetTagsGameplayEffectComponent` subobject with `EffectType.Magic` | 0x1450E9F70, tag at 0x1450EA0C1; heal class 0x1450EA350, 0x1450EA4A1 |
+
 ## Traps this build sets
 
 **An omitted asset field is a live C++ constructor default, not zero.** `DA_StatCalculationSettings`
