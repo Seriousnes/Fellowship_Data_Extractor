@@ -26,7 +26,7 @@ there.
 
 ```
 factory:                                                 # 0x14510EB10, target 0x14510EC70
-    if LeapToGround: goal = ground under goal, within 500 units   # 0x14522EF60
+    if LeapToGround: goal = FindGroundLocationAt(goal, 500)       # 0x14522EF60
     task.GoalLocation = goal                             # +0xE8
     task.MaxHeight = clamp(MaxHeight, 0, 1)              # +0x100, 0x14510EBEC to 0x14510EC15
     task.Timeout = Timeout                               # +0x104

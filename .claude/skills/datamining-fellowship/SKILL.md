@@ -471,6 +471,7 @@ written up in `docs/leaps-timers-respawn.md`:
 | `AILeapToLocation`, `AILeapToTarget`: exec thunks, factories, parameter records | 0x144EFE0D0, 0x144EFE340; **0x14510EB10**, 0x14510EC70; 0x148A96DF0, 0x148A970B0 |
 | Task fields: delegates `OnActivate` +0x80 to `OnNoPath` +0xD0, `OwningAICharacter` +0xE0, `GoalLocation` +0xE8, `MaxHeight` +0x100, `Timeout` +0x104, `AcceptanceRadius` +0x108, curve +0x110, curve end time +0x128, start time +0x130 | records from 0x148A97360 |
 | `Activate` (vtable +0x2C8): start time, arc, timeout timer | **0x14510F4A0**; arc 0x145110650, launch velocity 0x1439CCB40, path to curve 0x14524FFF0, timeout handler 0x145115080 |
+| `FindGroundLocationAt`, called by both leap factories with 500; exec thunk 0x144F66AF0 | 0x14522EF60 |
 | `TickTask` (vtable +0x2D8): position at `clamp(elapsed / LeapTime, 0, 1)`, `OnArrived` at `LeapTime - elapsed <= 0` | **0x145117E30**; `subss` 0x145117FAB, broadcast 0x145117FD3 |
 | `UWorld::TimeSeconds` +0x6B8, read by `GameplayStatics::GetTimeSeconds` | 0x1439DC5F4 |
 | `CRAbilityTask_SpawnActorFromAbility`: factory, `BeginSpawningActor`, `FinishSpawningActor` | 0x14512BF10, 0x1451267D0, **0x145127440**; exec thunks 0x144F252A0, 0x144F249F0, 0x144F24C30 |
