@@ -1066,6 +1066,13 @@
     "removalText": "A delta d \u2264 0 sets the pool to max(pool \u002B d, 0) and scales every bucket by the share of Stagger left. A heal with healAffectStaggerTag removes clamp(heal \u00D7 healReductionFactorAttribute, 0, pool), and the heal loses that amount. A factor of 0 removes none. modifyExecution adds the magnitude of modifySetByCallerTag unscaled. A tick removes the first bucket. The owner\u0027s death empties the pool.",
     "loggedChangeText": "Each modifyExecution delta writes a RESOURCE_CHANGED line of resource type loggedResourceType. Its amount is the pool after the delta, and its change is the pool\u0027s change. A hit\u0027s part, a heal\u0027s removal, a tick and the death write no such line."
   },
+  "respawn": {
+    "cooldownEffect": "GE_Shared_RespawnCooldown",
+    "cooldownDuration": 30,
+    "cooldownDurationRow": "Shared.RespawnCooldown.Duration",
+    "cooldownTag": "Cooldown.Respawn",
+    "displayText": "A dead player revives on that player\u0027s own respawn request. The server accepts the request while the character is dead, no boss fight is in progress and the character has no cooldown tag. A respawn before the match\u0027s end applies the cooldown effect to the character. A team wipe is every player character dead: the game mode counts it, the dungeon reset follows, and each player then revives on a request of their own."
+  },
   "leagueKinds": [
     {
       "name": "Unknown",
