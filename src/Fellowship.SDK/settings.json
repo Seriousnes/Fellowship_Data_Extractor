@@ -1050,7 +1050,21 @@
     "maxHealthPercentageRow": "Stagger.MaxHealthPercentage",
     "damageEffect": "GE_Shared_Stagger_Damage",
     "damageSetByCallerTag": "SetByCaller.Damage",
-    "displayText": "A part p added part-way through a period puts p\u00B7f/(n\u22121\u002Bf) in the first bucket and p/(n\u22121\u002Bf) in each other bucket, f the share of the period left. While the pool holds Stagger, each period deals the first bucket (at most the pool) and shifts the buckets forward. The period\u0027s countdown pauses while the pool is empty and resumes at the next add. A removal outside a tick scales every bucket by the share of Stagger left."
+    "displayText": "A part p added part-way through a period puts p\u00B7f/(n\u22121\u002Bf) in the first bucket and p/(n\u22121\u002Bf) in each other bucket, f the share of the period left. While the pool holds Stagger, each period deals the first bucket (at most the pool) and shifts the buckets forward. The period\u0027s countdown pauses while the pool is empty and resumes at the next add. A removal outside a tick scales every bucket by the share of Stagger left.",
+    "maxHealthAttribute": "MaxHealth",
+    "damageAdditionFactorAttribute": "StaggerDamageAdditionFactor",
+    "healReductionFactorAttribute": "StaggerHealReductionFactor",
+    "healAffectStaggerTag": "EffectLogic.HealAffectStagger",
+    "damageIgnoreStaggerTags": [
+      "EffectType.Environmental",
+      "EffectLogic.DamageIgnoreStagger"
+    ],
+    "modifyExecution": "CRModifyStaggerExecution",
+    "modifySetByCallerTag": "SetByCaller.Stagger",
+    "loggedResourceType": 7,
+    "capText": "An add takes min(part, cap \u2212 pool), with cap = maxHealthPercentage \u00D7 the owner\u0027s MaxHealth at that add. A pool above the cap takes no part of an add and stays as it is. A hit keeps the part the pool does not take as Health damage. A removal has no cap.",
+    "removalText": "A delta d \u2264 0 sets the pool to max(pool \u002B d, 0) and scales every bucket by the share of Stagger left. A heal with healAffectStaggerTag removes clamp(heal \u00D7 healReductionFactorAttribute, 0, pool), and the heal loses that amount. A factor of 0 removes none. modifyExecution adds the magnitude of modifySetByCallerTag unscaled. A tick removes the first bucket. The owner\u0027s death empties the pool.",
+    "loggedChangeText": "Each modifyExecution delta writes a RESOURCE_CHANGED line of resource type loggedResourceType. Its amount is the pool after the delta, and its change is the pool\u0027s change. A hit\u0027s part, a heal\u0027s removal, a tick and the death write no such line."
   },
   "leagueKinds": [
     {
